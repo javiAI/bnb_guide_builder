@@ -2,40 +2,43 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { PrimaryCta } from "@/components/ui/primary-cta";
 import { STATUS_LABELS, STATUS_TONES, type PropertyStatus } from "@/lib/types";
+import { DeletePropertyButton } from "./delete-property-button";
 
 function PropertyCard({ property }: { property: { id: string; propertyNickname: string; status: string; city: string | null; country: string | null; maxGuests: number | null; bedroomsCount: number | null; bathroomsCount: number | null } }) {
   return (
-    <a
-      href={`/properties/${property.id}`}
-      className="block rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5 transition-shadow hover:shadow-md"
-    >
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold text-[var(--foreground)]">
-            {property.propertyNickname}
-          </h3>
-          <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
-            {[property.city, property.country].filter(Boolean).join(", ") ||
-              "Sin ubicación"}
-          </p>
+    <div className="relative rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5 transition-shadow hover:shadow-md">
+      <a href={`/properties/${property.id}`} className="block">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-base font-semibold text-[var(--foreground)]">
+              {property.propertyNickname}
+            </h3>
+            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+              {[property.city, property.country].filter(Boolean).join(", ") ||
+                "Sin ubicación"}
+            </p>
+          </div>
+          <Badge
+            label={STATUS_LABELS[property.status as PropertyStatus] ?? property.status}
+            tone={STATUS_TONES[property.status as PropertyStatus] ?? "neutral"}
+          />
         </div>
-        <Badge
-          label={STATUS_LABELS[property.status as PropertyStatus] ?? property.status}
-          tone={STATUS_TONES[property.status as PropertyStatus] ?? "neutral"}
-        />
+        <div className="mt-3 flex gap-4 text-xs text-[var(--color-neutral-500)]">
+          {property.maxGuests != null && (
+            <span>{property.maxGuests} huéspedes</span>
+          )}
+          {property.bedroomsCount != null && (
+            <span>{property.bedroomsCount} dormitorios</span>
+          )}
+          {property.bathroomsCount != null && (
+            <span>{property.bathroomsCount} baños</span>
+          )}
+        </div>
+      </a>
+      <div className="absolute bottom-3 right-3">
+        <DeletePropertyButton propertyId={property.id} propertyName={property.propertyNickname} />
       </div>
-      <div className="mt-3 flex gap-4 text-xs text-[var(--color-neutral-500)]">
-        {property.maxGuests != null && (
-          <span>{property.maxGuests} huéspedes</span>
-        )}
-        {property.bedroomsCount != null && (
-          <span>{property.bedroomsCount} dormitorios</span>
-        )}
-        {property.bathroomsCount != null && (
-          <span>{property.bathroomsCount} baños</span>
-        )}
-      </div>
-    </a>
+    </div>
   );
 }
 

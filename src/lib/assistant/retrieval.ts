@@ -66,7 +66,7 @@ export async function retrieveCandidates(
 
     // Calculate relevance: topic matches weighted 2x, body 1x
     let matchCount = 0;
-    let totalQueryWords = queryWords.length || 1;
+    const totalQueryWords = queryWords.length || 1;
 
     for (const qw of queryWords) {
       if (topicWords.some((tw) => tw.includes(qw) || qw.includes(tw))) {

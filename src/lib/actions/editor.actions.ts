@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   basicsSchema,
   arrivalSchema,
@@ -20,6 +21,23 @@ export type ActionResult = {
   error?: string;
   fieldErrors?: Record<string, string[]>;
 };
+
+// ── Delete property ──
+
+export async function deletePropertyAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  if (!propertyId) {
+    return { success: false, error: "Falta el ID de la propiedad" };
+  }
+
+  await prisma.property.delete({ where: { id: propertyId } });
+
+  revalidatePath("/");
+  redirect("/");
+}
 
 // ── Basics (S-09) ──
 
@@ -51,6 +69,23 @@ export async function saveBasicsAction(
       success: false,
       fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
     };
+  }
+
+  const property = await prisma.property.findUniqueOrThrow({
+    where: { id: propertyId },
+    select: { workspaceId: true },
+  });
+
+  const duplicate = await prisma.property.findFirst({
+    where: {
+      workspaceId: property.workspaceId,
+      propertyNickname: result.data.propertyNickname,
+      id: { not: propertyId },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return { success: false, error: "Ya existe otra propiedad con ese nombre" };
   }
 
   await prisma.property.update({
