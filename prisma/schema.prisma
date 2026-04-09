@@ -98,6 +98,7 @@ model Property {
   secretReferences      SecretReference[]
   auditLogs             AuditLog[]
 
+  @@unique([workspaceId, propertyNickname])
   @@index([workspaceId])
   @@index([status])
   @@map("properties")
@@ -116,7 +117,7 @@ model WizardSession {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  property  Property        @relation(fields: [propertyId], references: [id])
+  property  Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   responses WizardResponse[]
 
   @@index([propertyId])
@@ -132,7 +133,7 @@ model WizardResponse {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  wizardSession WizardSession @relation(fields: [wizardSessionId], references: [id])
+  wizardSession WizardSession @relation(fields: [wizardSessionId], references: [id], onDelete: Cascade)
 
   @@index([wizardSessionId])
   @@map("wizard_responses")
@@ -155,7 +156,7 @@ model Space {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, visibility])
@@ -176,7 +177,7 @@ model PropertyAmenity {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, amenityKey])
@@ -198,7 +199,7 @@ model TroubleshootingPlaybook {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, playbookKey])
@@ -223,7 +224,7 @@ model LocalPlace {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, categoryKey])
@@ -242,7 +243,7 @@ model OpsChecklistItem {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("ops_checklist_items")
@@ -259,7 +260,7 @@ model StockItem {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("stock_items")
@@ -276,7 +277,7 @@ model MaintenanceTask {
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([nextDueAt])
@@ -500,7 +501,7 @@ model MessageDraft {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("message_drafts")
@@ -555,7 +556,7 @@ model SecretReference {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@map("secret_references")
@@ -571,7 +572,7 @@ model AuditLog {
   diffJson   Json?    @map("diff_json")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  property Property @relation(fields: [propertyId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, entityType])

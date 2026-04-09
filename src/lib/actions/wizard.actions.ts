@@ -35,11 +35,20 @@ export async function createDraftAction(
   }
 
   const workspaceId = await ensureWorkspace();
+  const trimmed = nickname.trim();
+
+  const existing = await prisma.property.findFirst({
+    where: { workspaceId, propertyNickname: trimmed },
+    select: { id: true },
+  });
+  if (existing) {
+    return { success: false, error: "Ya existe una propiedad con ese nombre" };
+  }
 
   const property = await prisma.property.create({
     data: {
       workspaceId,
-      propertyNickname: nickname.trim(),
+      propertyNickname: trimmed,
       status: "draft",
     },
   });
