@@ -1,0 +1,106 @@
+{
+  "file": "space_types.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "sp.bedroom",
+      "label": "Dormitorio",
+      "description": "Espacio destinado principalmente al descanso.",
+      "parent_id": null,
+      "recommended": true
+    },
+    {
+      "id": "sp.bathroom",
+      "label": "Baño",
+      "description": "Espacio de aseo con lavabo, ducha o bañera.",
+      "parent_id": null,
+      "recommended": true
+    },
+    {
+      "id": "sp.kitchen",
+      "label": "Cocina",
+      "description": "Espacio de cocina completo.",
+      "parent_id": null,
+      "recommended": true
+    },
+    {
+      "id": "sp.living_room",
+      "label": "Salón",
+      "description": "Espacio principal de estar y descanso.",
+      "parent_id": null,
+      "recommended": true
+    },
+    {
+      "id": "sp.dining",
+      "label": "Comedor",
+      "description": "Espacio específico para comer.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.office",
+      "label": "Despacho",
+      "description": "Espacio orientado a trabajo o estudio.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.laundry",
+      "label": "Lavandería",
+      "description": "Espacio específico de colada o limpieza.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.balcony",
+      "label": "Balcón",
+      "description": "Espacio exterior elevado asociado a la vivienda.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.patio",
+      "label": "Patio",
+      "description": "Espacio exterior a nivel de la vivienda.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.garden",
+      "label": "Jardín",
+      "description": "Espacio exterior ajardinado.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.garage",
+      "label": "Garaje",
+      "description": "Espacio cerrado para vehículo o almacenamiento.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.storage",
+      "label": "Trastero",
+      "description": "Espacio de almacenamiento secundario.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.shared_area",
+      "label": "Zona compartida",
+      "description": "Espacio común compartido con otras personas.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.other",
+      "label": "Otro espacio",
+      "description": "Espacio no cubierto por la taxonomía base.",
+      "parent_id": null,
+      "recommended": false
+    }
+  ]
+}

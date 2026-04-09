@@ -1,0 +1,213 @@
+{
+  "file": "media_requirements.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "mr.property_cover",
+      "section": "basics",
+      "entity": "property_cover",
+      "label": "Portada de la propiedad",
+      "description": "Imagen principal para ficha interna, guía huésped y previews.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Crear una portada clara y reconocible.",
+      "capture_instructions": "Tomar en horizontal, con buena luz natural, orden visual y encuadre limpio.",
+      "count_or_length": {
+        "suggested_count": 1,
+        "orientation": "horizontal",
+        "min_resolution": "1024x683"
+      },
+      "good_examples": [
+        "Salón principal ordenado",
+        "Fachada clara si la entrada es distintiva"
+      ]
+    },
+    {
+      "id": "mr.arrival_path",
+      "section": "arrival",
+      "entity": "entry_path",
+      "label": "Ruta de llegada",
+      "description": "Secuencia visual desde el punto de llegada hasta la puerta del alojamiento.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Reducir fricción en la llegada y evitar soporte innecesario.",
+      "capture_instructions": "Crear una secuencia en orden real: calle o parking, portal, ascensor o escalera, pasillo y puerta final.",
+      "count_or_length": {
+        "suggested_count": 5,
+        "max_count": 8,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Parking → portal → ascensor → puerta",
+        "Entrada con detalle de números o referencias visuales"
+      ]
+    },
+    {
+      "id": "mr.entry_walkthrough_video",
+      "section": "arrival",
+      "entity": "entry_walkthrough_video",
+      "label": "Vídeo de llegada",
+      "description": "Vídeo corto mostrando el recorrido real y los puntos confusos de acceso.",
+      "media_type": "video",
+      "required_level": "recommended",
+      "objective": "Explicar pasos complejos mejor que con solo texto.",
+      "capture_instructions": "Grabar andando despacio, sin movimientos bruscos, enseñando cerraduras, timbres y giros relevantes.",
+      "count_or_length": {
+        "max_seconds": 60,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Desde la calle hasta abrir la puerta del alojamiento"
+      ]
+    },
+    {
+      "id": "mr.lockbox_device",
+      "section": "arrival",
+      "entity": "lockbox_or_keypad",
+      "label": "Dispositivo de acceso",
+      "description": "Fotos del lockbox, keypad o smart lock en contexto y detalle.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Evitar que el huésped dude al identificar el dispositivo correcto.",
+      "capture_instructions": "Hacer una foto contextual y otra de detalle. No mostrar secretos si la imagen se reutiliza en salida guest-facing abierta.",
+      "count_or_length": {
+        "suggested_count": 2,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Lockbox visible en pared",
+        "Detalle del teclado o pestillo"
+      ]
+    },
+    {
+      "id": "mr.accessibility_feature",
+      "section": "spaces",
+      "entity": "accessibility_feature",
+      "label": "Feature de accesibilidad",
+      "description": "Fotos verificables de cualquier feature de accesibilidad declarada.",
+      "media_type": "photo",
+      "required_level": "required",
+      "objective": "Verificar la feature y evitar declaraciones ambiguas.",
+      "capture_instructions": "Tomar varias fotos claras, con luz suficiente y, cuando aplique, mostrando medidas en centímetros o metros.",
+      "count_or_length": {
+        "suggested_count": 2,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Medida visible de paso libre",
+        "Varios ángulos de una ducha sin escalón"
+      ]
+    },
+    {
+      "id": "mr.space_core_photo",
+      "section": "spaces",
+      "entity": "space_photo",
+      "label": "Foto principal de espacio",
+      "description": "Foto representativa de cada espacio importante.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Aportar orientación visual al huésped y al equipo.",
+      "capture_instructions": "Una foto general por espacio como mínimo; mejor dos si hay elementos clave adicionales.",
+      "count_or_length": {
+        "suggested_count": 1,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Dormitorio con cama y almacenaje",
+        "Baño con ducha y lavabo visibles"
+      ]
+    },
+    {
+      "id": "mr.pool_media",
+      "section": "amenities",
+      "entity": "pool",
+      "label": "Media de piscina",
+      "description": "Fotos y opcionalmente vídeo de piscina.",
+      "media_type": "photo_or_video",
+      "required_level": "recommended",
+      "objective": "Alinear expectativas y explicar acceso o seguridad.",
+      "capture_instructions": "Tomar foto general, accesos y elementos de seguridad. Vídeo solo si el acceso o uso no es obvio.",
+      "count_or_length": {
+        "suggested_count": 3,
+        "max_seconds": 30,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Piscina con escalera o borde visible",
+        "Recorrido hasta piscina en complejos grandes"
+      ]
+    },
+    {
+      "id": "mr.electrical_panel",
+      "section": "troubleshooting",
+      "entity": "electrical_panel",
+      "label": "Cuadro eléctrico",
+      "description": "Foto legible del cuadro eléctrico para incidencias.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Reducir tiempo de soporte en cortes eléctricos.",
+      "capture_instructions": "Tomar una foto frontal, nítida y sin reflejos, con etiquetas legibles.",
+      "count_or_length": {
+        "suggested_count": 1,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Cuadro abierto con magnetotérmicos visibles"
+      ]
+    },
+    {
+      "id": "mr.ops_supply_closet",
+      "section": "ops",
+      "entity": "supply_closet",
+      "label": "Armario de suministros",
+      "description": "Foto del armario o zona de consumibles para operaciones.",
+      "media_type": "photo",
+      "required_level": "recommended",
+      "objective": "Facilitar turnovers y reposición.",
+      "capture_instructions": "Tomar una foto general y otra de detalle si hay varias baldas o categorías.",
+      "count_or_length": {
+        "suggested_count": 2,
+        "orientation": "horizontal"
+      },
+      "good_examples": [
+        "Baldas etiquetadas por categoría"
+      ]
+    }
+  ],
+  "source_refs": {
+    "airbnb_room_types_help": "https://www.airbnb.com/help/article/5",
+    "airbnb_space_type_hosting": "https://www.airbnb.com/resources/hosting-homes/a/how-to-select-the-type-of-space-guests-will-have-366",
+    "airbnb_property_type_resource_center": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-define-what-kind-of-space-youre-hosting-361",
+    "airbnb_amenity_filters": "https://www.airbnb.com/help/article/3740",
+    "airbnb_checkin_checkout": "https://www.airbnb.com/help/article/1926",
+    "airbnb_house_rules": "https://www.airbnb.com/help/article/472",
+    "airbnb_photos": "https://www.airbnb.com/help/article/746",
+    "airbnb_accessibility_photos": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-photograph-accessibility-features-30",
+    "airbnb_scheduled_quick_replies": "https://www.airbnb.com/help/article/2897",
+    "airbnb_scheduled_messages": "https://www.airbnb.com/resources/hosting-homes/a/using-scheduled-messages-to-save-time-275",
+    "airbnb_quick_replies": "https://www.airbnb.com/resources/hosting-homes/a/using-quick-replies-to-save-time-73",
+    "airbnb_smart_lock": "https://www.airbnb.com/resources/hosting-homes/a/connect-a-smart-lock-to-airbnb-for-smoother-check-ins-667",
+    "airbnb_essentials": "https://www.airbnb.com/help/article/2343",
+    "airbnb_amenities_importance": "https://www.airbnb.com/help/article/2804",
+    "airbnb_ground_rules": "https://www.airbnb.com/help/article/2894",
+    "airbnb_party_policy": "https://www.airbnb.com/help/article/3345",
+    "airbnb_pet_fee": "https://www.airbnb.com/help/article/3623",
+    "airbnb_cleaning_fee": "https://www.airbnb.com/help/article/2385",
+    "booking_facilities_intro": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/introduction-to-facilities-api",
+    "booking_facilities_list": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/property-room-facilities-list",
+    "booking_messaging_api": "https://developers.booking.com/connectivity/docs/messaging-api/understanding-the-messaging-api",
+    "booking_photo_requirements": "https://partner.booking.com/en-us/help/property-page/photos-extranet/understanding-photo-requirements-your-property",
+    "booking_house_rules_help": "https://partner.booking.com/en-gb/help/first-steps/first-reservations/creating-house-rules",
+    "booking_top_facilities_codes": "https://developers.booking.com/connectivity/docs/codes-hac",
+    "wcag_contrast": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "wcag_non_text_contrast": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html",
+    "aria_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+    "aria_select_only_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/",
+    "apple_typography": "https://developer.apple.com/design/human-interface-guidelines/typography",
+    "material_typography": "https://m3.material.io/styles/typography/applying-type",
+    "material_type_scale": "https://m3.material.io/styles/typography/type-scale-tokens",
+    "material_nav_guidelines": "https://m3.material.io/components/navigation-rail/guidelines"
+  }
+}

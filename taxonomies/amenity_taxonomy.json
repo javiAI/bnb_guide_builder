@@ -1,0 +1,2081 @@
+{
+  "file": "amenity_taxonomy.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "groups": [
+    {
+      "id": "ag.popular",
+      "label": "Populares",
+      "description": "Amenities con mayor impacto inmediato en conversión y expectativas.",
+      "parent_id": null,
+      "item_ids": [
+        "am.wifi",
+        "am.kitchen",
+        "am.air_conditioning",
+        "am.washer",
+        "am.free_parking",
+        "am.iron"
+      ]
+    },
+    {
+      "id": "ag.bathroom",
+      "label": "Baño",
+      "description": "Amenities específicos del baño y aseo.",
+      "parent_id": null,
+      "item_ids": [
+        "am.bathtub",
+        "am.bidet",
+        "am.body_soap",
+        "am.cleaning_products",
+        "am.conditioner",
+        "am.hair_dryer",
+        "am.hot_water",
+        "am.outdoor_shower",
+        "am.shampoo",
+        "am.shower_gel"
+      ]
+    },
+    {
+      "id": "ag.bedroom_laundry",
+      "label": "Dormitorio y lavandería",
+      "description": "Amenities de descanso, ropa y colada.",
+      "parent_id": null,
+      "item_ids": [
+        "am.bed_linens",
+        "am.clothing_storage",
+        "am.dryer",
+        "am.drying_rack",
+        "am.essentials",
+        "am.extra_pillows_blankets",
+        "am.hangers",
+        "am.mosquito_net",
+        "am.room_darkening_shades",
+        "am.safe"
+      ]
+    },
+    {
+      "id": "ag.entertainment",
+      "label": "Entretenimiento",
+      "description": "Equipamiento de ocio y audiovisual.",
+      "parent_id": null,
+      "item_ids": [
+        "am.arcade_games",
+        "am.batting_cage",
+        "am.books_reading",
+        "am.bowling_alley",
+        "am.climbing_wall",
+        "am.ethernet",
+        "am.exercise_equipment",
+        "am.game_console",
+        "am.laser_tag",
+        "am.life_size_games",
+        "am.mini_golf",
+        "am.movie_theater",
+        "am.piano",
+        "am.ping_pong",
+        "am.pool_table",
+        "am.record_player",
+        "am.skate_ramp",
+        "am.sound_system",
+        "am.theme_room",
+        "am.tv"
+      ]
+    },
+    {
+      "id": "ag.family",
+      "label": "Familia",
+      "description": "Amenities orientados a bebés, niños y familias.",
+      "parent_id": null,
+      "item_ids": [
+        "am.baby_bath",
+        "am.baby_monitor",
+        "am.baby_safety_gates",
+        "am.babysitter_recs",
+        "am.board_games",
+        "am.changing_table",
+        "am.childrens_playroom",
+        "am.childrens_bikes",
+        "am.childrens_books_toys",
+        "am.childrens_dinnerware",
+        "am.crib",
+        "am.fire_screen",
+        "am.high_chair",
+        "am.outdoor_playground",
+        "am.outlet_covers",
+        "am.pack_n_play",
+        "am.table_corner_guards",
+        "am.window_guards"
+      ]
+    },
+    {
+      "id": "ag.heating_cooling",
+      "label": "Climatización",
+      "description": "Sistemas de calefacción, ventilación y enfriamiento.",
+      "parent_id": null,
+      "item_ids": [
+        "am.ceiling_fan",
+        "am.heating",
+        "am.indoor_fireplace",
+        "am.portable_fans"
+      ]
+    },
+    {
+      "id": "ag.home_safety",
+      "label": "Seguridad",
+      "description": "Equipamiento de seguridad doméstica.",
+      "parent_id": null,
+      "item_ids": [
+        "am.co_alarm",
+        "am.fire_extinguisher",
+        "am.first_aid_kit",
+        "am.smoke_alarm"
+      ]
+    },
+    {
+      "id": "ag.internet_office",
+      "label": "Internet y trabajo",
+      "description": "Conectividad y facilidades para trabajar.",
+      "parent_id": null,
+      "item_ids": [
+        "am.dedicated_workspace",
+        "am.pocket_wifi"
+      ]
+    },
+    {
+      "id": "ag.kitchen_dining",
+      "label": "Cocina y comedor",
+      "description": "Equipamiento culinario, menaje y comedor.",
+      "parent_id": null,
+      "item_ids": [
+        "am.baking_sheet",
+        "am.bbq_utensils",
+        "am.blender",
+        "am.bread_maker",
+        "am.coffee",
+        "am.coffee_maker",
+        "am.cooking_basics",
+        "am.dining_table",
+        "am.dishes_silverware",
+        "am.dishwasher",
+        "am.freezer",
+        "am.kettle",
+        "am.kitchenette",
+        "am.microwave",
+        "am.mini_fridge",
+        "am.oven",
+        "am.refrigerator",
+        "am.rice_maker",
+        "am.stove",
+        "am.toaster",
+        "am.trash_compactor",
+        "am.wine_glasses"
+      ]
+    },
+    {
+      "id": "ag.location_features",
+      "label": "Entorno y acceso",
+      "description": "Características del entorno o del acceso a la ubicación.",
+      "parent_id": null,
+      "item_ids": [
+        "am.beach_access",
+        "am.lake_access",
+        "am.laundromat_nearby",
+        "am.private_entrance",
+        "am.resort_access",
+        "am.ski_in_out",
+        "am.waterfront"
+      ]
+    },
+    {
+      "id": "ag.outdoor",
+      "label": "Exterior",
+      "description": "Equipamiento y espacios exteriores.",
+      "parent_id": null,
+      "item_ids": [
+        "am.backyard",
+        "am.bbq_grill",
+        "am.beach_essentials",
+        "am.bikes",
+        "am.boat_slip",
+        "am.fire_pit",
+        "am.hammock",
+        "am.kayak",
+        "am.outdoor_dining_area",
+        "am.outdoor_furniture",
+        "am.outdoor_kitchen",
+        "am.patio_balcony",
+        "am.sun_loungers"
+      ]
+    },
+    {
+      "id": "ag.parking_facilities",
+      "label": "Aparcamiento e instalaciones",
+      "description": "Parking, wellness, accesos e instalaciones adicionales.",
+      "parent_id": null,
+      "item_ids": [
+        "am.elevator",
+        "am.ev_charger",
+        "am.free_parking_premises",
+        "am.free_street_parking",
+        "am.gym",
+        "am.hockey_rink",
+        "am.hot_tub",
+        "am.paid_parking_off_premises",
+        "am.paid_parking_on_premises",
+        "am.pool",
+        "am.private_living_room",
+        "am.sauna",
+        "am.single_level_home"
+      ]
+    },
+    {
+      "id": "ag.accessibility",
+      "label": "Accesibilidad",
+      "description": "Características físicas de accesibilidad que requieren evidencia visual.",
+      "parent_id": null,
+      "item_ids": [
+        "ax.step_free_guest_entrance",
+        "ax.guest_entrance_wide_81cm",
+        "ax.accessible_parking_spot",
+        "ax.step_free_path_to_entrance",
+        "ax.step_free_bedroom_access",
+        "ax.bedroom_entrance_wide_81cm",
+        "ax.step_free_bathroom_access",
+        "ax.bathroom_entrance_wide_81cm",
+        "ax.shower_grab_bar",
+        "ax.toilet_grab_bar",
+        "ax.step_free_shower",
+        "ax.shower_bath_chair",
+        "ax.ceiling_mobile_hoist"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "am.wifi",
+      "label": "Wifi",
+      "description": "Conectividad inalámbrica para los huéspedes.",
+      "parent_id": "ag.popular",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [
+        "wifi.ssid",
+        "wifi.password"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.kitchen",
+      "label": "Cocina",
+      "description": "Espacio o equipamiento para cocinar dentro del alojamiento.",
+      "parent_id": "ag.popular",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.air_conditioning",
+      "label": "Aire acondicionado",
+      "description": "Sistema de climatización para enfriar estancias.",
+      "parent_id": "ag.popular",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.washer",
+      "label": "Lavadora",
+      "description": "Electrodoméstico para lavar ropa en la propiedad.",
+      "parent_id": "ag.popular",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.free_parking",
+      "label": "Aparcamiento gratuito",
+      "description": "Opción de estacionamiento sin coste para el huésped.",
+      "parent_id": "ag.popular",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "parking.type",
+        "parking.location"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.iron",
+      "label": "Plancha",
+      "description": "Plancha de ropa disponible para huéspedes.",
+      "parent_id": "ag.popular",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.bathtub",
+      "label": "Bañera",
+      "description": "Bañera disponible en al menos un baño.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bidet",
+      "label": "Bidé",
+      "description": "Bidé disponible en al menos un baño.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.body_soap",
+      "label": "Jabón corporal",
+      "description": "Jabón de cuerpo disponible para huéspedes.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.cleaning_products",
+      "label": "Productos de limpieza",
+      "description": "Productos básicos de limpieza disponibles.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.conditioner",
+      "label": "Acondicionador",
+      "description": "Acondicionador de pelo disponible.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.hair_dryer",
+      "label": "Secador de pelo",
+      "description": "Secador de pelo disponible en la propiedad.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.hot_water",
+      "label": "Agua caliente",
+      "description": "Suministro de agua caliente operativo.",
+      "parent_id": "ag.bathroom",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outdoor_shower",
+      "label": "Ducha exterior",
+      "description": "Ducha situada fuera del espacio interior principal.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.shampoo",
+      "label": "Champú",
+      "description": "Champú disponible para huéspedes.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.shower_gel",
+      "label": "Gel de ducha",
+      "description": "Gel de ducha disponible para huéspedes.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bed_linens",
+      "label": "Ropa de cama",
+      "description": "Sábanas y ropa de cama incluidas.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.clothing_storage",
+      "label": "Almacenaje de ropa",
+      "description": "Armario, cómoda, perchero u otra solución para guardar ropa.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.dryer",
+      "label": "Secadora",
+      "description": "Electrodoméstico para secar ropa.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.drying_rack",
+      "label": "Tendedero",
+      "description": "Elemento para secar ropa sin secadora.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.essentials",
+      "label": "Elementos básicos",
+      "description": "Incluye como mínimo papel higiénico, jabón, toallas, almohadas y ropa de cama.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.extra_pillows_blankets",
+      "label": "Almohadas y mantas extra",
+      "description": "Ropa de descanso adicional disponible.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.hangers",
+      "label": "Perchas",
+      "description": "Perchas disponibles para colgar ropa.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.mosquito_net",
+      "label": "Mosquitera",
+      "description": "Protección física frente a mosquitos en camas o ventanas.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.room_darkening_shades",
+      "label": "Persianas opacas",
+      "description": "Elementos que oscurecen la habitación para dormir mejor.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.safe",
+      "label": "Caja fuerte",
+      "description": "Caja o compartimento seguro para objetos de valor.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.arcade_games",
+      "label": "Máquinas arcade",
+      "description": "Máquinas recreativas o juegos arcade en la propiedad.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.batting_cage",
+      "label": "Jaula de bateo",
+      "description": "Instalación para práctica de bateo.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.books_reading",
+      "label": "Libros y material de lectura",
+      "description": "Selección de libros, revistas o guías de lectura.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bowling_alley",
+      "label": "Bolera",
+      "description": "Pista o instalación privada de bolos.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.climbing_wall",
+      "label": "Rocódromo",
+      "description": "Pared o estructura para escalar.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.ethernet",
+      "label": "Conexión Ethernet",
+      "description": "Toma de red cableada para internet.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.exercise_equipment",
+      "label": "Equipamiento de ejercicio",
+      "description": "Material deportivo o de gimnasio dentro de la propiedad.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.game_console",
+      "label": "Consola de videojuegos",
+      "description": "Consola para jugar conectada a TV o monitor.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.laser_tag",
+      "label": "Laser tag",
+      "description": "Equipamiento o instalación de laser tag.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.life_size_games",
+      "label": "Juegos de tamaño real",
+      "description": "Juegos grandes tipo ajedrez o similares.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.mini_golf",
+      "label": "Mini golf",
+      "description": "Zona o equipamiento de mini golf.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.movie_theater",
+      "label": "Sala de cine",
+      "description": "Espacio dedicado a proyección audiovisual.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.piano",
+      "label": "Piano",
+      "description": "Piano u otro instrumento equivalente disponible.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.ping_pong",
+      "label": "Mesa de ping-pong",
+      "description": "Mesa de tenis de mesa disponible.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.pool_table",
+      "label": "Mesa de billar",
+      "description": "Mesa de billar o similar.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.record_player",
+      "label": "Tocadiscos",
+      "description": "Reproductor de vinilos disponible.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.skate_ramp",
+      "label": "Rampa de skate",
+      "description": "Rampa o instalación para monopatín.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.sound_system",
+      "label": "Equipo de sonido",
+      "description": "Sistema dedicado de audio o altavoces.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.theme_room",
+      "label": "Habitación temática",
+      "description": "Espacio decorado con temática marcada para ocio.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.tv",
+      "label": "Televisión",
+      "description": "Televisión disponible para huéspedes.",
+      "parent_id": "ag.entertainment",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.baby_bath",
+      "label": "Bañera para bebé",
+      "description": "Bañera específica para bebés.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.baby_monitor",
+      "label": "Vigilabebés",
+      "description": "Dispositivo para monitorizar a un bebé.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.baby_safety_gates",
+      "label": "Barreras de seguridad para bebés",
+      "description": "Barreras o puertas para limitar accesos.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.babysitter_recs",
+      "label": "Recomendaciones de canguro",
+      "description": "Contactos o recomendaciones de cuidado infantil.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.board_games",
+      "label": "Juegos de mesa",
+      "description": "Juegos de mesa disponibles para huéspedes.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.changing_table",
+      "label": "Cambiador",
+      "description": "Superficie o mueble para cambiar bebés.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.childrens_playroom",
+      "label": "Sala de juegos infantil",
+      "description": "Espacio dedicado a juego infantil.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.childrens_bikes",
+      "label": "Bicicletas infantiles",
+      "description": "Bicicletas adaptadas para niños.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.childrens_books_toys",
+      "label": "Libros y juguetes infantiles",
+      "description": "Recursos y juguetes para niños.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.childrens_dinnerware",
+      "label": "Vajilla infantil",
+      "description": "Platos, vasos o cubiertos para niños.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.crib",
+      "label": "Cuna",
+      "description": "Cuna fija o portátil para bebé.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.fire_screen",
+      "label": "Pantalla para chimenea",
+      "description": "Protección frente al fuego de una chimenea.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.high_chair",
+      "label": "Trona",
+      "description": "Silla alta para bebés o niños pequeños.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outdoor_playground",
+      "label": "Zona de juegos exterior",
+      "description": "Espacio exterior de juego infantil.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outlet_covers",
+      "label": "Protectores de enchufes",
+      "description": "Elementos de seguridad para enchufes.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.pack_n_play",
+      "label": "Cuna de viaje",
+      "description": "Cuna de viaje o parque plegable.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.table_corner_guards",
+      "label": "Protectores de esquinas",
+      "description": "Protecciones en esquinas de mesas o muebles.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.window_guards",
+      "label": "Protectores de ventanas",
+      "description": "Elementos de seguridad en ventanas.",
+      "parent_id": "ag.family",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.ceiling_fan",
+      "label": "Ventilador de techo",
+      "description": "Ventilador fijado al techo para ventilación.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.heating",
+      "label": "Calefacción",
+      "description": "Sistema de calefacción disponible.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.indoor_fireplace",
+      "label": "Chimenea interior",
+      "description": "Chimenea o cassette interior operativo.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.portable_fans",
+      "label": "Ventiladores portátiles",
+      "description": "Ventiladores móviles disponibles.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.co_alarm",
+      "label": "Detector de monóxido de carbono",
+      "description": "Alarma de seguridad para monóxido de carbono.",
+      "parent_id": "ag.home_safety",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.fire_extinguisher",
+      "label": "Extintor",
+      "description": "Extintor accesible dentro de la propiedad.",
+      "parent_id": "ag.home_safety",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.first_aid_kit",
+      "label": "Botiquín",
+      "description": "Botiquín básico de primeros auxilios.",
+      "parent_id": "ag.home_safety",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.smoke_alarm",
+      "label": "Detector de humo",
+      "description": "Alarma de humo instalada y operativa.",
+      "parent_id": "ag.home_safety",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.dedicated_workspace",
+      "label": "Espacio de trabajo",
+      "description": "Zona apta para trabajar con mesa y silla.",
+      "parent_id": "ag.internet_office",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.pocket_wifi",
+      "label": "Wifi portátil",
+      "description": "Dispositivo portátil de conectividad para huéspedes.",
+      "parent_id": "ag.internet_office",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.baking_sheet",
+      "label": "Bandeja de horno",
+      "description": "Bandeja apta para hornear.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bbq_utensils",
+      "label": "Utensilios de barbacoa",
+      "description": "Herramientas para cocinar en barbacoa.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.blender",
+      "label": "Batidora",
+      "description": "Batidora o blender para cocina.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bread_maker",
+      "label": "Panificadora",
+      "description": "Máquina para hacer pan.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.coffee",
+      "label": "Café disponible",
+      "description": "Suministro inicial de café para huéspedes.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.coffee_maker",
+      "label": "Cafetera",
+      "description": "Sistema para preparar café en la propiedad.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "coffee_maker.subtype",
+        "coffee_maker.instructions"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.cooking_basics",
+      "label": "Básicos de cocina",
+      "description": "Aceite, sal, pimienta y utensilios básicos equivalentes.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.dining_table",
+      "label": "Mesa de comedor",
+      "description": "Mesa específica para comer.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.dishes_silverware",
+      "label": "Vajilla y cubiertos",
+      "description": "Platos, vasos y cubiertos suficientes para la ocupación.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.dishwasher",
+      "label": "Lavavajillas",
+      "description": "Electrodoméstico para lavar vajilla.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.freezer",
+      "label": "Congelador",
+      "description": "Espacio de congelación disponible.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.kettle",
+      "label": "Hervidor de agua",
+      "description": "Hervidor eléctrico o equivalente.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.kitchenette",
+      "label": "Kitchenette",
+      "description": "Cocina compacta o parcial.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.microwave",
+      "label": "Microondas",
+      "description": "Microondas disponible.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.mini_fridge",
+      "label": "Mini nevera",
+      "description": "Nevera compacta de pequeño formato.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.oven",
+      "label": "Horno",
+      "description": "Horno de cocina disponible.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.refrigerator",
+      "label": "Nevera",
+      "description": "Nevera de tamaño estándar o equivalente.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.rice_maker",
+      "label": "Arrocera",
+      "description": "Electrodoméstico específico para arroz.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.stove",
+      "label": "Placa de cocina",
+      "description": "Sistema de cocción de fuegos o inducción.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": true,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.toaster",
+      "label": "Tostadora",
+      "description": "Tostadora de pan.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.trash_compactor",
+      "label": "Compactador de basura",
+      "description": "Sistema de compactación de residuos.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.wine_glasses",
+      "label": "Copas de vino",
+      "description": "Juego de copas para vino.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.beach_access",
+      "label": "Acceso a playa",
+      "description": "Acceso cercano o directo a playa.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.lake_access",
+      "label": "Acceso a lago",
+      "description": "Acceso cercano o directo a lago.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.laundromat_nearby",
+      "label": "Lavandería cercana",
+      "description": "Lavandería autoservicio próxima a la propiedad.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.private_entrance",
+      "label": "Entrada privada",
+      "description": "Entrada independiente para el huésped.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.resort_access",
+      "label": "Acceso a resort",
+      "description": "Acceso a instalaciones de un resort.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.ski_in_out",
+      "label": "Acceso directo a pistas",
+      "description": "Entrada o salida directa a pistas de esquí.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.waterfront",
+      "label": "Primera línea de agua",
+      "description": "Ubicación junto al mar, lago o río.",
+      "parent_id": "ag.location_features",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.backyard",
+      "label": "Patio / jardín trasero",
+      "description": "Espacio exterior privado tipo patio o jardín trasero.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bbq_grill",
+      "label": "Barbacoa",
+      "description": "Equipo de barbacoa disponible para huéspedes.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "bbq.instructions",
+        "bbq.fuel_type"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.beach_essentials",
+      "label": "Elementos de playa",
+      "description": "Sombrilla, toallas, sillas o accesorios de playa.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.bikes",
+      "label": "Bicicletas",
+      "description": "Bicicletas disponibles para uso del huésped.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.boat_slip",
+      "label": "Amarre para barco",
+      "description": "Amarre o acceso para embarcaciones.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.fire_pit",
+      "label": "Brasero exterior",
+      "description": "Zona exterior con fuego controlado.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.hammock",
+      "label": "Hamaca",
+      "description": "Hamaca exterior o interior de descanso.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.kayak",
+      "label": "Kayak",
+      "description": "Kayak disponible para uso del huésped.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outdoor_dining_area",
+      "label": "Comedor exterior",
+      "description": "Zona exterior habilitada para comer.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outdoor_furniture",
+      "label": "Mobiliario exterior",
+      "description": "Sillas, mesas o sofás de exterior.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.outdoor_kitchen",
+      "label": "Cocina exterior",
+      "description": "Zona exterior con equipamiento de cocina.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.patio_balcony",
+      "label": "Patio o balcón",
+      "description": "Espacio exterior accesible desde la vivienda.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.sun_loungers",
+      "label": "Tumbonas",
+      "description": "Tumbonas o sillas largas para descanso exterior.",
+      "parent_id": "ag.outdoor",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "am.elevator",
+      "label": "Ascensor",
+      "description": "Ascensor disponible en el edificio o acceso principal.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.ev_charger",
+      "label": "Cargador de vehículo eléctrico",
+      "description": "Punto de carga para coche eléctrico.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "ev.power_kw",
+        "ev.socket_type"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.free_parking_premises",
+      "label": "Aparcamiento gratuito en la propiedad",
+      "description": "Aparcamiento sin coste dentro de la propiedad o edificio.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "parking.type",
+        "parking.clearance_m"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.free_street_parking",
+      "label": "Aparcamiento gratuito en la calle",
+      "description": "Estacionamiento gratuito en vía pública cercana.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "parking.reliability"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.gym",
+      "label": "Gimnasio",
+      "description": "Acceso a gimnasio privado o compartido.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.hockey_rink",
+      "label": "Pista de hockey",
+      "description": "Instalación para hockey dentro de la propiedad o complejo.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.hot_tub",
+      "label": "Jacuzzi",
+      "description": "Bañera de hidromasaje privada o compartida.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "hot_tub.shared",
+        "hot_tub.rules"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.paid_parking_off_premises",
+      "label": "Aparcamiento de pago fuera de la propiedad",
+      "description": "Parking de pago cercano pero externo a la propiedad.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "parking.location",
+        "parking.cost_eur"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.paid_parking_on_premises",
+      "label": "Aparcamiento de pago en la propiedad",
+      "description": "Parking de pago dentro de la propiedad o edificio.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "parking.type",
+        "parking.cost_eur"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.pool",
+      "label": "Piscina",
+      "description": "Piscina privada o compartida disponible.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "pool.shared",
+        "pool.type",
+        "pool.rules"
+      ],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.private_living_room",
+      "label": "Salón privado",
+      "description": "Salón de uso exclusivo del huésped.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.sauna",
+      "label": "Sauna",
+      "description": "Sauna privada o compartida en la propiedad.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "am.single_level_home",
+      "label": "Vivienda en una sola planta",
+      "description": "Toda la vivienda principal se desarrolla en una sola planta.",
+      "parent_id": "ag.parking_facilities",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [
+        "airbnb_amenity_filters",
+        "booking_top_facilities_codes"
+      ]
+    },
+    {
+      "id": "ax.step_free_guest_entrance",
+      "label": "Entrada de huéspedes sin escalones",
+      "description": "La entrada principal utilizada por el huésped no requiere subir escalones.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.guest_entrance_wide_81cm",
+      "label": "Entrada de huéspedes de más de 81 cm",
+      "description": "La anchura libre útil de la entrada del huésped supera 81 cm.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.accessible_parking_spot",
+      "label": "Plaza de aparcamiento accesible",
+      "description": "Existe plaza adaptada o accesible asociada al alojamiento.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.step_free_path_to_entrance",
+      "label": "Recorrido sin escalones hasta la entrada",
+      "description": "El trayecto desde llegada o aparcamiento hasta la entrada no tiene escalones.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.step_free_bedroom_access",
+      "label": "Acceso al dormitorio sin escalones",
+      "description": "Se puede llegar al dormitorio sin salvar escalones.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.bedroom_entrance_wide_81cm",
+      "label": "Entrada del dormitorio de más de 81 cm",
+      "description": "La anchura útil de la puerta del dormitorio supera 81 cm.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.step_free_bathroom_access",
+      "label": "Acceso al baño sin escalones",
+      "description": "Se puede llegar al baño sin salvar escalones.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.bathroom_entrance_wide_81cm",
+      "label": "Entrada del baño de más de 81 cm",
+      "description": "La anchura útil de la puerta del baño supera 81 cm.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.shower_grab_bar",
+      "label": "Barra de apoyo en ducha",
+      "description": "La ducha dispone de barra de apoyo fijada o equivalente.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.toilet_grab_bar",
+      "label": "Barra de apoyo en inodoro",
+      "description": "Existe barra de apoyo junto al inodoro.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.step_free_shower",
+      "label": "Ducha sin escalón",
+      "description": "La ducha permite acceso sin resalte o con transición accesible.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.shower_bath_chair",
+      "label": "Silla de ducha o baño",
+      "description": "Existe silla o asiento de apoyo para ducha o bañera.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    },
+    {
+      "id": "ax.ceiling_mobile_hoist",
+      "label": "Grúa fija o móvil",
+      "description": "Existe sistema de elevación fijo o móvil para accesibilidad.",
+      "parent_id": "ag.accessibility",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "accessibility.photo_required"
+      ],
+      "source": [
+        "airbnb_amenity_filters"
+      ]
+    }
+  ],
+  "source_refs": {
+    "airbnb_room_types_help": "https://www.airbnb.com/help/article/5",
+    "airbnb_space_type_hosting": "https://www.airbnb.com/resources/hosting-homes/a/how-to-select-the-type-of-space-guests-will-have-366",
+    "airbnb_property_type_resource_center": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-define-what-kind-of-space-youre-hosting-361",
+    "airbnb_amenity_filters": "https://www.airbnb.com/help/article/3740",
+    "airbnb_checkin_checkout": "https://www.airbnb.com/help/article/1926",
+    "airbnb_house_rules": "https://www.airbnb.com/help/article/472",
+    "airbnb_photos": "https://www.airbnb.com/help/article/746",
+    "airbnb_accessibility_photos": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-photograph-accessibility-features-30",
+    "airbnb_scheduled_quick_replies": "https://www.airbnb.com/help/article/2897",
+    "airbnb_scheduled_messages": "https://www.airbnb.com/resources/hosting-homes/a/using-scheduled-messages-to-save-time-275",
+    "airbnb_quick_replies": "https://www.airbnb.com/resources/hosting-homes/a/using-quick-replies-to-save-time-73",
+    "airbnb_smart_lock": "https://www.airbnb.com/resources/hosting-homes/a/connect-a-smart-lock-to-airbnb-for-smoother-check-ins-667",
+    "airbnb_essentials": "https://www.airbnb.com/help/article/2343",
+    "airbnb_amenities_importance": "https://www.airbnb.com/help/article/2804",
+    "airbnb_ground_rules": "https://www.airbnb.com/help/article/2894",
+    "airbnb_party_policy": "https://www.airbnb.com/help/article/3345",
+    "airbnb_pet_fee": "https://www.airbnb.com/help/article/3623",
+    "airbnb_cleaning_fee": "https://www.airbnb.com/help/article/2385",
+    "booking_facilities_intro": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/introduction-to-facilities-api",
+    "booking_facilities_list": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/property-room-facilities-list",
+    "booking_messaging_api": "https://developers.booking.com/connectivity/docs/messaging-api/understanding-the-messaging-api",
+    "booking_photo_requirements": "https://partner.booking.com/en-us/help/property-page/photos-extranet/understanding-photo-requirements-your-property",
+    "booking_house_rules_help": "https://partner.booking.com/en-gb/help/first-steps/first-reservations/creating-house-rules",
+    "booking_top_facilities_codes": "https://developers.booking.com/connectivity/docs/codes-hac",
+    "wcag_contrast": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "wcag_non_text_contrast": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html",
+    "aria_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+    "aria_select_only_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/",
+    "apple_typography": "https://developer.apple.com/design/human-interface-guidelines/typography",
+    "material_typography": "https://m3.material.io/styles/typography/applying-type",
+    "material_type_scale": "https://m3.material.io/styles/typography/type-scale-tokens",
+    "material_nav_guidelines": "https://m3.material.io/components/navigation-rail/guidelines"
+  }
+}

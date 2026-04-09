@@ -1,0 +1,14 @@
+{
+  "file": "review_reasons.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {"id": "stale_content", "label": "Contenido desactualizado", "description": "Información sin revisar o potencialmente obsoleta."},
+    {"id": "low_confidence", "label": "Baja confianza", "description": "Conocimiento con soporte insuficiente."},
+    {"id": "missing_media", "label": "Falta media", "description": "La entidad necesita fotos o vídeo para ser clara."},
+    {"id": "publish_blocker", "label": "Bloqueo de publicación", "description": "Falta información necesaria para publicar."},
+    {"id": "visibility_mismatch", "label": "Visibilidad incorrecta", "description": "El contenido no tiene bien resuelta su audiencia."},
+    {"id": "missing_citations", "label": "Faltan citas", "description": "Conocimiento o respuesta sin trazabilidad suficiente."}
+  ]
+}

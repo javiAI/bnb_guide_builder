@@ -1,0 +1,14 @@
+export { propertyRepository } from "./property.repository";
+export { workspaceRepository } from "./workspace.repository";
+export { wizardRepository } from "./wizard.repository";
+export { spaceRepository } from "./space.repository";
+export { amenityRepository } from "./amenity.repository";
+export { troubleshootingRepository } from "./troubleshooting.repository";
+export { localPlaceRepository } from "./local-place.repository";
+export { opsRepository } from "./ops.repository";
+export { mediaRepository } from "./media.repository";
+export { knowledgeRepository } from "./knowledge.repository";
+export { guideRepository } from "./guide.repository";
+export { messagingRepository } from "./messaging.repository";
+export { assistantRepository } from "./assistant.repository";
+export { auditRepository } from "./audit.repository";

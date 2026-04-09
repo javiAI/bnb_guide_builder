@@ -1,0 +1,79 @@
+{
+  "name": "tourist-guide-app-full-stack-kit-v3",
+  "version": "2026-04-07",
+  "required_docs": [
+    "docs/MASTER_IMPLEMENTATION_SPEC.md",
+    "docs/IMPLEMENTATION_PLAN.md",
+    "docs/REPOSITORY_APPLICATION_GUIDE.md",
+    "docs/SYSTEM_ARCHITECTURE.md",
+    "docs/DATA_MODEL_AND_PERSISTENCE.md",
+    "docs/API_CONTRACTS.md",
+    "docs/TAXONOMY_RUNTIME_AND_RULE_ENGINE.md",
+    "docs/KNOWLEDGE_GUIDE_ASSISTANT_SPEC.md",
+    "docs/MESSAGING_AUTOMATION_SPEC.md",
+    "docs/MEDIA_ASSET_SPEC.md",
+    "docs/SECURITY_VISIBILITY_AND_AUDIT.md",
+    "docs/QA_EVALS_AND_RELEASE.md",
+    "docs/SCREEN_MAP.md",
+    "docs/REFERENCE_SOURCES.md"
+  ],
+  "required_taxonomies": [
+    "taxonomies/property_types.json",
+    "taxonomies/room_types.json",
+    "taxonomies/policy_taxonomy.json",
+    "taxonomies/access_methods.json",
+    "taxonomies/amenity_taxonomy.json",
+    "taxonomies/amenity_subtypes.json",
+    "taxonomies/troubleshooting_taxonomy.json",
+    "taxonomies/messaging_touchpoints.json",
+    "taxonomies/guide_outputs.json",
+    "taxonomies/visibility_levels.json",
+    "taxonomies/media_requirements.json",
+    "taxonomies/space_types.json",
+    "taxonomies/dynamic_field_rules.json",
+    "taxonomies/automation_channels.json",
+    "taxonomies/media_asset_roles.json",
+    "taxonomies/review_reasons.json"
+  ],
+  "required_prompts": [
+    "prompts/00_START_HERE.md",
+    "prompts/01_ADOPT_AND_ALIGN_FOUNDATION.md",
+    "prompts/02_IMPLEMENT_CANONICAL_DATA_MODEL.md",
+    "prompts/03_IMPLEMENT_CREATION_WIZARD_AND_SHELL.md",
+    "prompts/04_IMPLEMENT_CORE_EDITOR_SECTIONS.md",
+    "prompts/05_IMPLEMENT_TAXONOMIES_RULES_AND_MEDIA.md",
+    "prompts/06_IMPLEMENT_KNOWLEDGE_GUIDE_AND_PUBLISHING.md",
+    "prompts/07_IMPLEMENT_ASSISTANT.md",
+    "prompts/08_IMPLEMENT_MESSAGING_AUTOMATION.md",
+    "prompts/09_IMPLEMENT_OPS_ANALYTICS_SETTINGS.md",
+    "prompts/10_QA_HARDEN_RELEASE.md",
+    "prompts/ORDER.md"
+  ],
+  "required_skills": [
+    "skills/orchestrator/SKILL.md",
+    "skills/design-system/SKILL.md",
+    "skills/data-platform/SKILL.md",
+    "skills/workspace/SKILL.md",
+    "skills/wizard/SKILL.md",
+    "skills/taxonomies/SKILL.md",
+    "skills/rule-engine/SKILL.md",
+    "skills/outputs/SKILL.md",
+    "skills/assistant/SKILL.md",
+    "skills/messaging/SKILL.md",
+    "skills/media/SKILL.md",
+    "skills/qa/SKILL.md"
+  ],
+  "required_scripts": [
+    "scripts/validate_bundle.py",
+    "scripts/validate_prompt_references.py",
+    "scripts/validate_metric_units.py",
+    "scripts/validate_screen_inventory.py",
+    "scripts/validate_taxonomy_runtime.py",
+    "scripts/validate_phase_bundle.py"
+  ],
+  "required_checks": [
+    "checks/ACCEPTANCE_CRITERIA.md",
+    "checks/UX_QA_CHECKLIST.md",
+    "checks/RELEASE_CHECKLIST.md"
+  ]
+}

@@ -1,0 +1,500 @@
+{
+  "file": "amenity_subtypes.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "subtypes": [
+    {
+      "amenity_id": "am.coffee_maker",
+      "label": "Subtipos de cafetera",
+      "description": "Configuración detallada para capturar tipo de cafetera, consumibles e instrucciones.",
+      "fields": [
+        {
+          "id": "coffee_maker.subtype",
+          "label": "Tipo de cafetera",
+          "description": "Sistema principal de preparación de café disponible.",
+          "type": "enum",
+          "default": "drip",
+          "options": [
+            {
+              "id": "drip",
+              "label": "Goteo",
+              "description": "Cafetera de filtro por goteo.",
+              "recommended": true
+            },
+            {
+              "id": "espresso_manual",
+              "label": "Espresso manual",
+              "description": "Máquina espresso manual o semiautomática."
+            },
+            {
+              "id": "espresso_superauto",
+              "label": "Espresso superautomática",
+              "description": "Máquina automática con molido o preparación integrada."
+            },
+            {
+              "id": "pod_nespresso",
+              "label": "Cápsulas Nespresso",
+              "description": "Sistema de cápsulas Nespresso o compatible."
+            },
+            {
+              "id": "pod_keurig",
+              "label": "Cápsulas Keurig",
+              "description": "Sistema de cápsulas Keurig o compatible."
+            },
+            {
+              "id": "french_press",
+              "label": "Prensa francesa",
+              "description": "Cafetera de émbolo."
+            },
+            {
+              "id": "moka",
+              "label": "Moka italiana",
+              "description": "Cafetera italiana de fogón."
+            },
+            {
+              "id": "instant",
+              "label": "Café instantáneo",
+              "description": "Solo preparación con café soluble."
+            },
+            {
+              "id": "other",
+              "label": "Otro",
+              "description": "Sistema no contemplado en las opciones anteriores."
+            }
+          ]
+        },
+        {
+          "id": "coffee_maker.pods_system",
+          "label": "Sistema de cápsulas",
+          "description": "Marca o familia compatible de cápsulas.",
+          "type": "text_optional",
+          "shown_if": {
+            "field": "coffee_maker.subtype",
+            "in": [
+              "pod_nespresso",
+              "pod_keurig"
+            ]
+          }
+        },
+        {
+          "id": "coffee_maker.instructions",
+          "label": "Instrucciones para huésped",
+          "description": "Instrucciones breves y claras de uso.",
+          "type": "markdown_short"
+        },
+        {
+          "id": "coffee_maker.welcome_pack",
+          "label": "Pack de bienvenida",
+          "description": "Cantidad y formato de café o cápsulas incluidas al inicio de la estancia.",
+          "type": "enum_optional",
+          "options": [
+            {
+              "id": "none",
+              "label": "No incluido",
+              "description": "No se deja café de cortesía."
+            },
+            {
+              "id": "starter_small",
+              "label": "Pack pequeño",
+              "description": "Cantidad suficiente para la primera mañana."
+            },
+            {
+              "id": "starter_standard",
+              "label": "Pack estándar",
+              "description": "Cantidad suficiente para una estancia corta."
+            },
+            {
+              "id": "replenishable",
+              "label": "Reposición disponible",
+              "description": "Existe reposición o compra adicional."
+            }
+          ]
+        },
+        {
+          "id": "coffee_maker.supplies_location",
+          "label": "Ubicación de café y consumibles",
+          "description": "Lugar exacto donde se guardan café, filtros o cápsulas. Solo uso interno.",
+          "type": "text_optional",
+          "visibility": "vis.internal"
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.coffee_setup_photo",
+          "label": "Foto del set de café",
+          "description": "Foto contextual de la cafetera, consumibles y área de uso.",
+          "type": "photo",
+          "required_level": "recommended",
+          "capture_goal": "Evitar dudas del huésped y mejorar guía visual.",
+          "orientation": "horizontal",
+          "count_suggested": 2
+        }
+      ]
+    },
+    {
+      "amenity_id": "am.wifi",
+      "label": "Detalle de wifi",
+      "description": "Configuración operativa y de soporte del wifi.",
+      "fields": [
+        {
+          "id": "wifi.ssid",
+          "label": "Nombre de red",
+          "description": "Nombre exacto de la red wifi visible para el huésped.",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "wifi.password",
+          "label": "Contraseña",
+          "description": "Clave de acceso al wifi. Debe marcarse como sensible por defecto.",
+          "type": "sensitive_text",
+          "required": true
+        },
+        {
+          "id": "wifi.router_location",
+          "label": "Ubicación del router",
+          "description": "Ubicación física del router para operaciones o troubleshooting.",
+          "type": "text_optional",
+          "visibility": "vis.internal"
+        },
+        {
+          "id": "wifi.speed_tier",
+          "label": "Nivel de velocidad",
+          "description": "Clasificación comercial simple para expectativas de uso.",
+          "type": "enum_optional",
+          "options": [
+            {
+              "id": "basic",
+              "label": "Básica",
+              "description": "Adecuada para navegación y mensajería."
+            },
+            {
+              "id": "streaming",
+              "label": "Streaming",
+              "description": "Adecuada para vídeo y uso familiar."
+            },
+            {
+              "id": "remote_work",
+              "label": "Teletrabajo",
+              "description": "Adecuada para videollamadas y trabajo remoto."
+            }
+          ]
+        },
+        {
+          "id": "wifi.troubleshooting",
+          "label": "Resolución de incidencias",
+          "description": "Pasos breves para reinicio o solución básica.",
+          "type": "markdown_short"
+        }
+      ],
+      "media_requirements": []
+    },
+    {
+      "amenity_id": "am.pool",
+      "label": "Detalle de piscina",
+      "description": "Configuración, reglas y características relevantes de la piscina.",
+      "fields": [
+        {
+          "id": "pool.shared",
+          "label": "¿Es compartida?",
+          "description": "Indica si la piscina es privada o compartida.",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "pool.type",
+          "label": "Tipo",
+          "description": "Ubicación principal de la piscina.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "indoor",
+              "label": "Interior",
+              "description": "Piscina cubierta."
+            },
+            {
+              "id": "outdoor",
+              "label": "Exterior",
+              "description": "Piscina al aire libre."
+            }
+          ]
+        },
+        {
+          "id": "pool.heated",
+          "label": "¿Climatizada?",
+          "description": "Indica si el agua está climatizada.",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "pool.depth_m",
+          "label": "Profundidad máxima (m)",
+          "description": "Profundidad máxima aproximada en metros.",
+          "type": "number_optional",
+          "unit": "m"
+        },
+        {
+          "id": "pool.rules",
+          "label": "Normas de uso",
+          "description": "Normas de seguridad y uso para huéspedes.",
+          "type": "markdown_short"
+        },
+        {
+          "id": "pool.hours",
+          "label": "Horario de uso",
+          "description": "Franja horaria permitida para usar la piscina.",
+          "type": "time_range_optional"
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.pool_photo",
+          "label": "Fotos de piscina",
+          "description": "Fotos generales y de seguridad de la piscina.",
+          "type": "photo",
+          "required_level": "recommended",
+          "capture_goal": "Alinear expectativa, acceso y seguridad.",
+          "orientation": "horizontal",
+          "count_suggested": 3
+        },
+        {
+          "id": "mr.pool_video",
+          "label": "Vídeo corto de acceso a piscina",
+          "description": "Vídeo opcional del recorrido y condiciones de acceso.",
+          "type": "video",
+          "required_level": "optional",
+          "capture_goal": "Reducir dudas operativas si el acceso es complejo.",
+          "orientation": "horizontal",
+          "max_seconds": 30
+        }
+      ]
+    },
+    {
+      "amenity_id": "am.hot_tub",
+      "label": "Detalle de jacuzzi",
+      "description": "Configuración, uso seguro y mantenimiento básico del jacuzzi.",
+      "fields": [
+        {
+          "id": "hot_tub.shared",
+          "label": "¿Es compartido?",
+          "description": "Indica si el jacuzzi es exclusivo o compartido.",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "id": "hot_tub.heated",
+          "label": "¿Está climatizado?",
+          "description": "Indica si mantiene temperatura activa.",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "id": "hot_tub.rules",
+          "label": "Normas de uso",
+          "description": "Normas y límites de uso para huéspedes.",
+          "type": "markdown_short"
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.hot_tub_photo",
+          "label": "Foto de jacuzzi",
+          "description": "Foto general y foto del panel o tapas si el uso no es obvio.",
+          "type": "photo",
+          "required_level": "recommended",
+          "capture_goal": "Mostrar acceso y uso correcto.",
+          "orientation": "horizontal",
+          "count_suggested": 2
+        }
+      ]
+    },
+    {
+      "amenity_id": "am.ev_charger",
+      "label": "Detalle de cargador EV",
+      "description": "Configuración del cargador para vehículo eléctrico.",
+      "fields": [
+        {
+          "id": "ev.power_kw",
+          "label": "Potencia (kW)",
+          "description": "Potencia nominal del cargador en kilovatios.",
+          "type": "number_optional",
+          "unit": "kW"
+        },
+        {
+          "id": "ev.socket_type",
+          "label": "Tipo de conector",
+          "description": "Tipo de conector o estándar del punto de carga.",
+          "type": "enum_optional",
+          "options": [
+            {
+              "id": "type2",
+              "label": "Tipo 2",
+              "description": "Conector europeo Tipo 2."
+            },
+            {
+              "id": "schuko",
+              "label": "Schuko",
+              "description": "Enchufe Schuko doméstico."
+            },
+            {
+              "id": "tesla",
+              "label": "Tesla",
+              "description": "Conector específico Tesla o equivalente."
+            },
+            {
+              "id": "other",
+              "label": "Otro",
+              "description": "Otro tipo de conector."
+            }
+          ]
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.ev_photo",
+          "label": "Foto del punto de carga",
+          "description": "Foto del cargador y su ubicación dentro del parking.",
+          "type": "photo",
+          "required_level": "recommended",
+          "capture_goal": "Aclarar localización y compatibilidad.",
+          "orientation": "horizontal",
+          "count_suggested": 2
+        }
+      ]
+    },
+    {
+      "amenity_id": "am.bbq_grill",
+      "label": "Detalle de barbacoa",
+      "description": "Configuración, combustible y normas de uso de la barbacoa.",
+      "fields": [
+        {
+          "id": "bbq.fuel_type",
+          "label": "Combustible",
+          "description": "Tipo de combustible o fuente de calor.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "charcoal",
+              "label": "Carbón",
+              "description": "Barbacoa de carbón."
+            },
+            {
+              "id": "gas",
+              "label": "Gas",
+              "description": "Barbacoa de gas."
+            },
+            {
+              "id": "electric",
+              "label": "Eléctrica",
+              "description": "Barbacoa eléctrica."
+            },
+            {
+              "id": "wood",
+              "label": "Leña",
+              "description": "Barbacoa de leña."
+            }
+          ]
+        },
+        {
+          "id": "bbq.instructions",
+          "label": "Instrucciones",
+          "description": "Instrucciones de uso y apagado seguro.",
+          "type": "markdown_short"
+        },
+        {
+          "id": "bbq.cleaning",
+          "label": "Limpieza requerida",
+          "description": "Indicación de limpieza mínima tras el uso.",
+          "type": "markdown_short"
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.bbq_photo",
+          "label": "Fotos de barbacoa",
+          "description": "Foto general y detalle de mandos o encendido.",
+          "type": "photo",
+          "required_level": "optional",
+          "capture_goal": "Reducir mal uso y soporte.",
+          "orientation": "horizontal",
+          "count_suggested": 2
+        }
+      ]
+    },
+    {
+      "amenity_id": "ag.accessibility",
+      "label": "Evidencia visual de accesibilidad",
+      "description": "Requisitos comunes de evidencia visual cuando se declaran features de accesibilidad.",
+      "fields": [
+        {
+          "id": "accessibility.measurements_cm",
+          "label": "Medidas en centímetros",
+          "description": "Registrar medidas útiles relevantes en centímetros.",
+          "type": "number_list_optional",
+          "unit": "cm"
+        },
+        {
+          "id": "accessibility.photo_required",
+          "label": "Foto obligatoria",
+          "description": "Toda feature declarada requiere al menos una foto clara.",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "id": "accessibility.multi_angle",
+          "label": "Múltiples ángulos",
+          "description": "Tomar varias fotos desde diferentes ángulos cuando la feature lo requiera.",
+          "type": "boolean",
+          "default": true
+        }
+      ],
+      "media_requirements": [
+        {
+          "id": "mr.accessibility_feature_photos",
+          "label": "Fotos de feature accesible",
+          "description": "Fotos claras, con medida visible cuando aplique y varios ángulos.",
+          "type": "photo",
+          "required_level": "required",
+          "capture_goal": "Verificar accesibilidad y evitar declaraciones ambiguas.",
+          "orientation": "horizontal",
+          "count_suggested": 2
+        }
+      ]
+    }
+  ],
+  "source_refs": {
+    "airbnb_room_types_help": "https://www.airbnb.com/help/article/5",
+    "airbnb_space_type_hosting": "https://www.airbnb.com/resources/hosting-homes/a/how-to-select-the-type-of-space-guests-will-have-366",
+    "airbnb_property_type_resource_center": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-define-what-kind-of-space-youre-hosting-361",
+    "airbnb_amenity_filters": "https://www.airbnb.com/help/article/3740",
+    "airbnb_checkin_checkout": "https://www.airbnb.com/help/article/1926",
+    "airbnb_house_rules": "https://www.airbnb.com/help/article/472",
+    "airbnb_photos": "https://www.airbnb.com/help/article/746",
+    "airbnb_accessibility_photos": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-photograph-accessibility-features-30",
+    "airbnb_scheduled_quick_replies": "https://www.airbnb.com/help/article/2897",
+    "airbnb_scheduled_messages": "https://www.airbnb.com/resources/hosting-homes/a/using-scheduled-messages-to-save-time-275",
+    "airbnb_quick_replies": "https://www.airbnb.com/resources/hosting-homes/a/using-quick-replies-to-save-time-73",
+    "airbnb_smart_lock": "https://www.airbnb.com/resources/hosting-homes/a/connect-a-smart-lock-to-airbnb-for-smoother-check-ins-667",
+    "airbnb_essentials": "https://www.airbnb.com/help/article/2343",
+    "airbnb_amenities_importance": "https://www.airbnb.com/help/article/2804",
+    "airbnb_ground_rules": "https://www.airbnb.com/help/article/2894",
+    "airbnb_party_policy": "https://www.airbnb.com/help/article/3345",
+    "airbnb_pet_fee": "https://www.airbnb.com/help/article/3623",
+    "airbnb_cleaning_fee": "https://www.airbnb.com/help/article/2385",
+    "booking_facilities_intro": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/introduction-to-facilities-api",
+    "booking_facilities_list": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/property-room-facilities-list",
+    "booking_messaging_api": "https://developers.booking.com/connectivity/docs/messaging-api/understanding-the-messaging-api",
+    "booking_photo_requirements": "https://partner.booking.com/en-us/help/property-page/photos-extranet/understanding-photo-requirements-your-property",
+    "booking_house_rules_help": "https://partner.booking.com/en-gb/help/first-steps/first-reservations/creating-house-rules",
+    "booking_top_facilities_codes": "https://developers.booking.com/connectivity/docs/codes-hac",
+    "wcag_contrast": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "wcag_non_text_contrast": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html",
+    "aria_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+    "aria_select_only_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/",
+    "apple_typography": "https://developer.apple.com/design/human-interface-guidelines/typography",
+    "material_typography": "https://m3.material.io/styles/typography/applying-type",
+    "material_type_scale": "https://m3.material.io/styles/typography/type-scale-tokens",
+    "material_nav_guidelines": "https://m3.material.io/components/navigation-rail/guidelines"
+  }
+}

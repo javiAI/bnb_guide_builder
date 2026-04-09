@@ -1,0 +1,480 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import {
+  basicsSchema,
+  arrivalSchema,
+  createSpaceSchema,
+  updateSpaceSchema,
+  updateAmenitySchema,
+  createPlaybookSchema,
+  updatePlaybookSchema,
+  createLocalPlaceSchema,
+  updateLocalPlaceSchema,
+  createMediaAssetSchema,
+} from "@/lib/schemas/editor.schema";
+
+export type ActionResult = {
+  success: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+};
+
+// ── Basics (S-09) ──
+
+export async function saveBasicsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    propertyNickname: formData.get("propertyNickname") as string,
+    propertyType: formData.get("propertyType") as string,
+    roomType: formData.get("roomType") as string,
+    country: formData.get("country") as string,
+    city: formData.get("city") as string,
+    region: (formData.get("region") as string) || undefined,
+    postalCode: (formData.get("postalCode") as string) || undefined,
+    streetAddress: (formData.get("streetAddress") as string) || undefined,
+    addressLevel: (formData.get("addressLevel") as string) || undefined,
+    timezone: formData.get("timezone") as string,
+    maxGuests: Number(formData.get("maxGuests")),
+    bedroomsCount: Number(formData.get("bedroomsCount")),
+    bedsCount: Number(formData.get("bedsCount")),
+    bathroomsCount: Number(formData.get("bathroomsCount")),
+  };
+
+  const result = basicsSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}`);
+  return { success: true };
+}
+
+// ── Arrival (S-10) ──
+
+export async function saveArrivalAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    checkInStart: formData.get("checkInStart") as string,
+    checkInEnd: formData.get("checkInEnd") as string,
+    checkOutTime: formData.get("checkOutTime") as string,
+    primaryAccessMethod: formData.get("primaryAccessMethod") as string,
+    hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
+    supportContact: (formData.get("supportContact") as string) || undefined,
+  };
+
+  const result = arrivalSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}`);
+  return { success: true };
+}
+
+// ── Policies (S-11) ──
+// Policies are stored as JSON in a property-level field.
+// Since the Property model doesn't have a dedicated policies column,
+// we store policy values in a separate approach: one row per policy item
+// as KnowledgeItem with category 'policy'. For Phase 4, we use a simple
+// JSON approach via a dedicated policies JSONB field that we'll add to Property.
+
+export async function savePoliciesAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+
+  // Collect all policy values from form
+  const policies: Record<string, string> = {};
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("pol.") || key.startsWith("fee.")) {
+      policies[key] = value as string;
+    }
+  }
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: { policiesJson: JSON.stringify(policies) },
+  });
+
+  revalidatePath(`/properties/${propertyId}`);
+  return { success: true };
+}
+
+// ── Spaces (S-12, S-13) ──
+
+export async function createSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    spaceType: formData.get("spaceType") as string,
+    name: formData.get("name") as string,
+    guestNotes: (formData.get("guestNotes") as string) || undefined,
+    internalNotes: (formData.get("internalNotes") as string) || undefined,
+  };
+
+  const result = createSpaceSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.space.create({
+    data: {
+      ...result.data,
+      property: { connect: { id: propertyId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function updateSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    name: formData.get("name") as string,
+    guestNotes: (formData.get("guestNotes") as string) || undefined,
+    aiNotes: (formData.get("aiNotes") as string) || undefined,
+    internalNotes: (formData.get("internalNotes") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+
+  const result = updateSpaceSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.space.update({
+    where: { id: spaceId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function deleteSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const propertyId = formData.get("propertyId") as string;
+
+  await prisma.space.delete({ where: { id: spaceId } });
+
+  revalidatePath(`/properties/${propertyId}/spaces`);
+  return { success: true };
+}
+
+// ── Amenities (S-14, S-15) ──
+
+export async function toggleAmenityAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const amenityKey = formData.get("amenityKey") as string;
+  const enabled = formData.get("enabled") === "true";
+
+  if (enabled) {
+    // Check if already exists
+    const existing = await prisma.propertyAmenity.findFirst({
+      where: { propertyId, amenityKey },
+    });
+    if (!existing) {
+      await prisma.propertyAmenity.create({
+        data: {
+          amenityKey,
+          property: { connect: { id: propertyId } },
+        },
+      });
+    }
+  } else {
+    await prisma.propertyAmenity.deleteMany({
+      where: { propertyId, amenityKey },
+    });
+  }
+
+  revalidatePath(`/properties/${propertyId}/amenities`);
+  return { success: true };
+}
+
+export async function updateAmenityAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const amenityId = formData.get("amenityId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    subtypeKey: (formData.get("subtypeKey") as string) || undefined,
+    guestInstructions: (formData.get("guestInstructions") as string) || undefined,
+    aiInstructions: (formData.get("aiInstructions") as string) || undefined,
+    internalNotes: (formData.get("internalNotes") as string) || undefined,
+    troubleshootingNotes: (formData.get("troubleshootingNotes") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+
+  const result = updateAmenitySchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.propertyAmenity.update({
+    where: { id: amenityId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}/amenities`);
+  return { success: true };
+}
+
+// ── Troubleshooting (S-16, S-17) ──
+
+export async function createPlaybookAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    playbookKey: formData.get("playbookKey") as string,
+    title: formData.get("title") as string,
+    severity: (formData.get("severity") as string) || undefined,
+  };
+
+  const result = createPlaybookSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.troubleshootingPlaybook.create({
+    data: {
+      ...result.data,
+      severity: result.data.severity ?? "medium",
+      property: { connect: { id: propertyId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/troubleshooting`);
+  return { success: true };
+}
+
+export async function updatePlaybookAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const playbookId = formData.get("playbookId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    title: formData.get("title") as string,
+    severity: (formData.get("severity") as string) || undefined,
+    symptomsMd: (formData.get("symptomsMd") as string) || undefined,
+    guestStepsMd: (formData.get("guestStepsMd") as string) || undefined,
+    internalStepsMd: (formData.get("internalStepsMd") as string) || undefined,
+    escalationRule: (formData.get("escalationRule") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+
+  const result = updatePlaybookSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.troubleshootingPlaybook.update({
+    where: { id: playbookId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}/troubleshooting`);
+  return { success: true };
+}
+
+// ── Local Guide (S-18) ──
+
+export async function createLocalPlaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    categoryKey: formData.get("categoryKey") as string,
+    name: formData.get("name") as string,
+    shortNote: (formData.get("shortNote") as string) || undefined,
+    distanceMeters: formData.get("distanceMeters")
+      ? Number(formData.get("distanceMeters"))
+      : undefined,
+  };
+
+  const result = createLocalPlaceSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.localPlace.create({
+    data: {
+      ...result.data,
+      property: { connect: { id: propertyId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  return { success: true };
+}
+
+export async function updateLocalPlaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const placeId = formData.get("placeId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    name: formData.get("name") as string,
+    shortNote: (formData.get("shortNote") as string) || undefined,
+    guestDescription: (formData.get("guestDescription") as string) || undefined,
+    aiNotes: (formData.get("aiNotes") as string) || undefined,
+    distanceMeters: formData.get("distanceMeters")
+      ? Number(formData.get("distanceMeters"))
+      : undefined,
+    hoursText: (formData.get("hoursText") as string) || undefined,
+    linkUrl: (formData.get("linkUrl") as string) || undefined,
+    bestFor: (formData.get("bestFor") as string) || undefined,
+    seasonalNotes: (formData.get("seasonalNotes") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+
+  const result = updateLocalPlaceSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.localPlace.update({
+    where: { id: placeId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  return { success: true };
+}
+
+export async function deleteLocalPlaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const placeId = formData.get("placeId") as string;
+  const propertyId = formData.get("propertyId") as string;
+
+  await prisma.localPlace.delete({ where: { id: placeId } });
+
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  return { success: true };
+}
+
+// ── Media ──
+
+export async function createMediaAssetAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    assetRoleKey: formData.get("assetRoleKey") as string,
+    mediaType: formData.get("mediaType") as string,
+    caption: (formData.get("caption") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+
+  const result = createMediaAssetSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  await prisma.mediaAsset.create({
+    data: {
+      ...result.data,
+      storageKey: `placeholder_${Date.now()}`,
+      mimeType: result.data.mediaType === "photo" ? "image/jpeg" : "video/mp4",
+      visibility: result.data.visibility ?? "public",
+      status: "pending",
+      property: { connect: { id: propertyId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/media`);
+  return { success: true };
+}
+
+export async function assignMediaAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const mediaAssetId = formData.get("mediaAssetId") as string;
+  const entityType = formData.get("entityType") as string;
+  const entityId = formData.get("entityId") as string;
+  const usageKey = (formData.get("usageKey") as string) || undefined;
+  const propertyId = formData.get("propertyId") as string;
+
+  await prisma.mediaAssignment.create({
+    data: {
+      entityType,
+      entityId,
+      usageKey,
+      mediaAsset: { connect: { id: mediaAssetId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/media`);
+  return { success: true };
+}

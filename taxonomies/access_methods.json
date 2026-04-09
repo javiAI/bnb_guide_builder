@@ -1,0 +1,156 @@
+{
+  "file": "access_methods.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "am.smart_lock",
+      "label": "Cerradura inteligente",
+      "description": "Acceso mediante cerradura conectada con código, app o clave digital.",
+      "parent_id": null,
+      "recommended": true,
+      "sensitivity": "high",
+      "defaults": {
+        "backup_method": "am.lockbox"
+      },
+      "dependency_hints": [
+        "Pedir marca, modelo, batería, dependencia de wifi y backup."
+      ],
+      "mappings": {
+        "airbnb": {
+          "checkin_method": "smart_lock"
+        },
+        "booking_hint": [
+          "digital_key",
+          "contactless_checkin"
+        ]
+      }
+    },
+    {
+      "id": "am.keypad",
+      "label": "Teclado numérico",
+      "description": "Acceso mediante código en teclado físico o electrónico.",
+      "parent_id": null,
+      "recommended": true,
+      "sensitivity": "high",
+      "defaults": {
+        "backup_method": "physical_key"
+      },
+      "dependency_hints": [
+        "Pedir código, ubicación e instrucciones de fallo."
+      ],
+      "mappings": {
+        "airbnb": {
+          "checkin_method": "keypad"
+        }
+      }
+    },
+    {
+      "id": "am.lockbox",
+      "label": "Caja de llaves",
+      "description": "Caja segura con código que contiene la llave física de acceso.",
+      "parent_id": null,
+      "recommended": true,
+      "sensitivity": "high",
+      "defaults": {
+        "backup_method": "am.in_person"
+      },
+      "dependency_hints": [
+        "Pedir ubicación exacta, foto contextual y procedimiento alternativo."
+      ],
+      "mappings": {
+        "airbnb": {
+          "checkin_method": "lockbox"
+        },
+        "booking_hint": [
+          "lockbox_key_collection_at_property",
+          "lockbox_key_collection_at_separate_location"
+        ]
+      }
+    },
+    {
+      "id": "am.building_staff",
+      "label": "Personal del edificio / recepción",
+      "description": "El acceso depende de recepción, portería o personal del edificio.",
+      "parent_id": null,
+      "recommended": false,
+      "sensitivity": "medium",
+      "defaults": {
+        "availability": "24_7"
+      },
+      "dependency_hints": [
+        "Si se presenta como self check-in, exigir disponibilidad 24/7."
+      ],
+      "mappings": {
+        "airbnb": {
+          "checkin_method": "building_staff"
+        }
+      }
+    },
+    {
+      "id": "am.in_person",
+      "label": "Entrega en persona",
+      "description": "El anfitrión o cohost entrega las llaves o acompaña el acceso.",
+      "parent_id": null,
+      "recommended": true,
+      "sensitivity": "low",
+      "defaults": {},
+      "dependency_hints": [
+        "Pedir ventana horaria, responsable y punto de encuentro."
+      ],
+      "mappings": {
+        "airbnb": {
+          "checkin_method": "in_person_greeting"
+        }
+      }
+    },
+    {
+      "id": "am.other",
+      "label": "Otro método",
+      "description": "Método específico no cubierto por las opciones principales.",
+      "parent_id": null,
+      "recommended": false,
+      "sensitivity": "variable",
+      "defaults": {},
+      "dependency_hints": [
+        "Pedir descripción estructurada y razón de uso."
+      ],
+      "mappings": {}
+    }
+  ],
+  "source_refs": {
+    "airbnb_room_types_help": "https://www.airbnb.com/help/article/5",
+    "airbnb_space_type_hosting": "https://www.airbnb.com/resources/hosting-homes/a/how-to-select-the-type-of-space-guests-will-have-366",
+    "airbnb_property_type_resource_center": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-define-what-kind-of-space-youre-hosting-361",
+    "airbnb_amenity_filters": "https://www.airbnb.com/help/article/3740",
+    "airbnb_checkin_checkout": "https://www.airbnb.com/help/article/1926",
+    "airbnb_house_rules": "https://www.airbnb.com/help/article/472",
+    "airbnb_photos": "https://www.airbnb.com/help/article/746",
+    "airbnb_accessibility_photos": "https://fr.airbnb.be/resources/hosting-homes/a/how-to-photograph-accessibility-features-30",
+    "airbnb_scheduled_quick_replies": "https://www.airbnb.com/help/article/2897",
+    "airbnb_scheduled_messages": "https://www.airbnb.com/resources/hosting-homes/a/using-scheduled-messages-to-save-time-275",
+    "airbnb_quick_replies": "https://www.airbnb.com/resources/hosting-homes/a/using-quick-replies-to-save-time-73",
+    "airbnb_smart_lock": "https://www.airbnb.com/resources/hosting-homes/a/connect-a-smart-lock-to-airbnb-for-smoother-check-ins-667",
+    "airbnb_essentials": "https://www.airbnb.com/help/article/2343",
+    "airbnb_amenities_importance": "https://www.airbnb.com/help/article/2804",
+    "airbnb_ground_rules": "https://www.airbnb.com/help/article/2894",
+    "airbnb_party_policy": "https://www.airbnb.com/help/article/3345",
+    "airbnb_pet_fee": "https://www.airbnb.com/help/article/3623",
+    "airbnb_cleaning_fee": "https://www.airbnb.com/help/article/2385",
+    "booking_facilities_intro": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/introduction-to-facilities-api",
+    "booking_facilities_list": "https://developers.booking.com/connectivity/docs/content-api-modules/facilities-api/property-room-facilities-list",
+    "booking_messaging_api": "https://developers.booking.com/connectivity/docs/messaging-api/understanding-the-messaging-api",
+    "booking_photo_requirements": "https://partner.booking.com/en-us/help/property-page/photos-extranet/understanding-photo-requirements-your-property",
+    "booking_house_rules_help": "https://partner.booking.com/en-gb/help/first-steps/first-reservations/creating-house-rules",
+    "booking_top_facilities_codes": "https://developers.booking.com/connectivity/docs/codes-hac",
+    "wcag_contrast": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "wcag_non_text_contrast": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html",
+    "aria_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/",
+    "aria_select_only_combobox": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/",
+    "apple_typography": "https://developer.apple.com/design/human-interface-guidelines/typography",
+    "material_typography": "https://m3.material.io/styles/typography/applying-type",
+    "material_type_scale": "https://m3.material.io/styles/typography/type-scale-tokens",
+    "material_nav_guidelines": "https://m3.material.io/components/navigation-rail/guidelines"
+  }
+}

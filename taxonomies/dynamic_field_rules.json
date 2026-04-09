@@ -1,0 +1,260 @@
+{
+  "file": "dynamic_field_rules.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "dfr.access_smart_lock",
+      "trigger": "arrival.access.method",
+      "condition": {
+        "equals": "am.smart_lock"
+      },
+      "shown_fields": [
+        "lock.brand",
+        "lock.model",
+        "access.credentials.type",
+        "access.credentials.value",
+        "access.backup_method",
+        "lock.battery_policy",
+        "lock.wifi_dependency",
+        "troubleshooting.tr.lockout"
+      ],
+      "defaults": {
+        "access.backup_method": "am.lockbox"
+      },
+      "rationale": "Las cerraduras inteligentes requieren configuración técnica y plan de backup."
+    },
+    {
+      "id": "dfr.access_keypad",
+      "trigger": "arrival.access.method",
+      "condition": {
+        "equals": "am.keypad"
+      },
+      "shown_fields": [
+        "access.credentials.type",
+        "access.credentials.value",
+        "access.backup_method",
+        "troubleshooting.tr.lockout"
+      ],
+      "defaults": {
+        "access.backup_method": "physical_key"
+      },
+      "rationale": "Un keypad necesita código y alternativa de entrada."
+    },
+    {
+      "id": "dfr.access_lockbox",
+      "trigger": "arrival.access.method",
+      "condition": {
+        "equals": "am.lockbox"
+      },
+      "shown_fields": [
+        "lockbox.location_desc",
+        "access.credentials.type",
+        "access.credentials.value",
+        "arrival.media.lockbox",
+        "access.backup_method",
+        "troubleshooting.tr.lockout"
+      ],
+      "defaults": {
+        "access.backup_method": "am.in_person"
+      },
+      "rationale": "La caja de llaves exige localización clara y backup."
+    },
+    {
+      "id": "dfr.access_building_staff",
+      "trigger": "arrival.access.method",
+      "condition": {
+        "equals": "am.building_staff"
+      },
+      "shown_fields": [
+        "staff.hours",
+        "staff.instructions",
+        "staff.contact"
+      ],
+      "defaults": {
+        "staff.hours": "24_7"
+      },
+      "rationale": "El acceso por personal requiere horarios y contacto claros."
+    },
+    {
+      "id": "dfr.pets_allowed",
+      "trigger": "pol.pets.allowed",
+      "condition": {
+        "equals": true
+      },
+      "shown_fields": [
+        "pol.pets.max",
+        "pol.pets.fee_mode",
+        "pol.pets.fee_amount",
+        "pol.pets.restrictions",
+        "ops.pet_protocol",
+        "messaging.pet_notes"
+      ],
+      "defaults": {
+        "pol.pets.max": 1,
+        "pol.pets.fee_mode": "per_booking"
+      },
+      "rationale": "Si se permiten mascotas, hay que capturar límites, suplemento y operación."
+    },
+    {
+      "id": "dfr.coffee_maker_selected",
+      "trigger": "amenities.selected",
+      "condition": {
+        "contains": "am.coffee_maker"
+      },
+      "shown_fields": [
+        "coffee_maker.subtype",
+        "coffee_maker.pods_system",
+        "coffee_maker.instructions",
+        "coffee_maker.welcome_pack",
+        "media.mr.coffee_setup_photo"
+      ],
+      "defaults": {
+        "coffee_maker.subtype": "drip"
+      },
+      "rationale": "La cafetera necesita subtipo e instrucciones reutilizables."
+    },
+    {
+      "id": "dfr.wifi_selected",
+      "trigger": "amenities.selected",
+      "condition": {
+        "contains": "am.wifi"
+      },
+      "shown_fields": [
+        "wifi.ssid",
+        "wifi.password",
+        "wifi.router_location",
+        "wifi.speed_tier",
+        "wifi.troubleshooting"
+      ],
+      "defaults": {},
+      "rationale": "El wifi requiere credenciales y soporte básico."
+    },
+    {
+      "id": "dfr.parking_selected",
+      "trigger": "amenities.selected",
+      "condition": {
+        "intersects": [
+          "am.free_parking",
+          "am.free_parking_premises",
+          "am.free_street_parking",
+          "am.paid_parking_on_premises",
+          "am.paid_parking_off_premises"
+        ]
+      },
+      "shown_fields": [
+        "parking.type",
+        "parking.location",
+        "parking.cost_eur",
+        "parking.clearance_m",
+        "arrival.parking_directions",
+        "troubleshooting.tr.parking_question"
+      ],
+      "defaults": {
+        "parking.type": "outdoor"
+      },
+      "rationale": "El parking implica detalles logísticos y preguntas frecuentes."
+    },
+    {
+      "id": "dfr.pool_selected",
+      "trigger": "amenities.selected",
+      "condition": {
+        "contains": "am.pool"
+      },
+      "shown_fields": [
+        "pool.shared",
+        "pool.type",
+        "pool.heated",
+        "pool.depth_m",
+        "pool.rules",
+        "pool.hours",
+        "media.mr.pool_media"
+      ],
+      "defaults": {
+        "pool.shared": false,
+        "pool.type": "outdoor",
+        "pool.heated": false
+      },
+      "rationale": "La piscina necesita expectativa, seguridad y horarios."
+    },
+    {
+      "id": "dfr.family_friendly",
+      "trigger": "profile.family_friendly",
+      "condition": {
+        "equals": true
+      },
+      "shown_fields": [
+        "family.amenity_suggestions",
+        "family.photo_suggestions"
+      ],
+      "defaults": {
+        "family.amenity_suggestions": [
+          "am.crib",
+          "am.high_chair",
+          "am.childrens_books_toys"
+        ]
+      },
+      "rationale": "Una propiedad family-friendly debe sugerir amenities y media relevantes."
+    },
+    {
+      "id": "dfr.accessibility_selected",
+      "trigger": "amenities.selected",
+      "condition": {
+        "prefix_contains": "ax."
+      },
+      "shown_fields": [
+        "accessibility.measurements_cm",
+        "accessibility.photo_required",
+        "accessibility.multi_angle",
+        "media.mr.accessibility_feature"
+      ],
+      "defaults": {
+        "accessibility.photo_required": true,
+        "accessibility.multi_angle": true
+      },
+      "rationale": "Las features de accesibilidad exigen medidas y evidencia visual."
+    },
+    {
+      "id": "dfr.publish_airbnb",
+      "trigger": "publishing.channels",
+      "condition": {
+        "contains": "airbnb"
+      },
+      "shown_fields": [
+        "publishing.airbnb.constraints"
+      ],
+      "defaults": {},
+      "rationale": "La salida Airbnb tiene límites y timing propios."
+    },
+    {
+      "id": "dfr.publish_booking",
+      "trigger": "publishing.channels",
+      "condition": {
+        "contains": "booking"
+      },
+      "shown_fields": [
+        "publishing.booking.facility_mapping",
+        "publishing.booking.house_rules"
+      ],
+      "defaults": {},
+      "rationale": "Booking requiere mapping de facilities y reglas alineadas."
+    },
+    {
+      "id": "dfr.messaging_scheduled",
+      "trigger": "messaging.scheduled_enabled",
+      "condition": {
+        "equals": true
+      },
+      "shown_fields": [
+        "message.trigger",
+        "message.send_time_offset",
+        "message.timezone"
+      ],
+      "defaults": {
+        "message.timezone": "property_timezone"
+      },
+      "rationale": "Los envíos programados necesitan trigger y timezone consistente."
+    }
+  ]
+}

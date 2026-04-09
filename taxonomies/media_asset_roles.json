@@ -1,0 +1,15 @@
+{
+  "file": "media_asset_roles.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {"id": "property_cover", "label": "Portada de propiedad", "description": "Imagen principal de la propiedad."},
+    {"id": "arrival_path", "label": "Ruta de llegada", "description": "Secuencia visual del camino hasta la puerta."},
+    {"id": "access_device", "label": "Dispositivo de acceso", "description": "Lockbox, keypad o smart lock."},
+    {"id": "space_overview", "label": "Vista de espacio", "description": "Imagen general de un espacio."},
+    {"id": "amenity_instruction", "label": "Amenity instructiva", "description": "Foto o vídeo útil para usar una amenity."},
+    {"id": "troubleshooting_reference", "label": "Referencia de troubleshooting", "description": "Media de apoyo para resolver una incidencia."},
+    {"id": "ops_reference", "label": "Referencia operativa", "description": "Media útil para limpieza, stock o mantenimiento."}
+  ]
+}

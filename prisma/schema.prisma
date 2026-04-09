@@ -1,0 +1,580 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ──────────────────────────────────────────────
+// Core context
+// ──────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  members    WorkspaceMembership[]
+  properties Property[]
+
+  @@map("workspaces")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships  WorkspaceMembership[]
+  mediaAssets  MediaAsset[]
+
+  @@map("users")
+}
+
+model WorkspaceMembership {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  role        String   @default("owner")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([workspaceId, userId])
+  @@map("workspace_memberships")
+}
+
+model Property {
+  id               String   @id @default(cuid())
+  workspaceId      String   @map("workspace_id")
+  propertyNickname String   @map("property_nickname")
+  propertyType     String?  @map("property_type")
+  roomType         String?  @map("room_type")
+  country          String?
+  city             String?
+  region           String?
+  postalCode       String?  @map("postal_code")
+  streetAddress    String?  @map("street_address")
+  addressLevel     String?  @map("address_level")
+  timezone         String?
+  maxGuests        Int?     @map("max_guests")
+  bedroomsCount    Int?     @map("bedrooms_count")
+  bedsCount        Int?     @map("beds_count")
+  bathroomsCount   Int?     @map("bathrooms_count")
+  checkInStart     String?  @map("check_in_start")
+  checkInEnd       String?  @map("check_in_end")
+  checkOutTime     String?  @map("check_out_time")
+  primaryAccessMethod String? @map("primary_access_method")
+  hostContactPhone String?  @map("host_contact_phone")
+  supportContact   String?  @map("support_contact")
+  policiesJson     Json?    @map("policies_json")
+  status           String   @default("draft")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  workspace             Workspace               @relation(fields: [workspaceId], references: [id])
+  wizardSessions        WizardSession[]
+  spaces                Space[]
+  amenities             PropertyAmenity[]
+  troubleshootingPlaybooks TroubleshootingPlaybook[]
+  localPlaces           LocalPlace[]
+  opsChecklistItems     OpsChecklistItem[]
+  stockItems            StockItem[]
+  maintenanceTasks      MaintenanceTask[]
+  mediaAssets           MediaAsset[]
+  knowledgeSources      KnowledgeSource[]
+  knowledgeItems        KnowledgeItem[]
+  guideVersions         GuideVersion[]
+  messageTemplates      MessageTemplate[]
+  messageAutomations    MessageAutomation[]
+  messageDrafts         MessageDraft[]
+  assistantConversations AssistantConversation[]
+  secretReferences      SecretReference[]
+  auditLogs             AuditLog[]
+
+  @@index([workspaceId])
+  @@index([status])
+  @@map("properties")
+}
+
+// ──────────────────────────────────────────────
+// Capture and continuity
+// ──────────────────────────────────────────────
+
+model WizardSession {
+  id          String    @id @default(cuid())
+  propertyId  String    @map("property_id")
+  status      String    @default("in_progress")
+  currentStep Int       @default(1) @map("current_step")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  property  Property        @relation(fields: [propertyId], references: [id])
+  responses WizardResponse[]
+
+  @@index([propertyId])
+  @@map("wizard_sessions")
+}
+
+model WizardResponse {
+  id              String   @id @default(cuid())
+  wizardSessionId String   @map("wizard_session_id")
+  stepNumber      Int      @map("step_number")
+  fieldKey        String   @map("field_key")
+  valueJson       Json     @map("value_json")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  wizardSession WizardSession @relation(fields: [wizardSessionId], references: [id])
+
+  @@index([wizardSessionId])
+  @@map("wizard_responses")
+}
+
+// ──────────────────────────────────────────────
+// Canonical property entities
+// ──────────────────────────────────────────────
+
+model Space {
+  id            String   @id @default(cuid())
+  propertyId    String   @map("property_id")
+  spaceType     String   @map("space_type")
+  name          String
+  sortOrder     Int      @default(0) @map("sort_order")
+  guestNotes    String?  @map("guest_notes")
+  aiNotes       String?  @map("ai_notes")
+  internalNotes String?  @map("internal_notes")
+  visibility    String   @default("public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, visibility])
+  @@map("spaces")
+}
+
+model PropertyAmenity {
+  id                   String   @id @default(cuid())
+  propertyId           String   @map("property_id")
+  amenityKey           String   @map("amenity_key")
+  subtypeKey           String?  @map("subtype_key")
+  spaceId              String?  @map("space_id")
+  guestInstructions    String?  @map("guest_instructions")
+  aiInstructions       String?  @map("ai_instructions")
+  internalNotes        String?  @map("internal_notes")
+  troubleshootingNotes String?  @map("troubleshooting_notes")
+  visibility           String   @default("public")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, amenityKey])
+  @@map("property_amenities")
+}
+
+model TroubleshootingPlaybook {
+  id              String   @id @default(cuid())
+  propertyId      String   @map("property_id")
+  playbookKey     String   @map("playbook_key")
+  title           String
+  severity        String   @default("medium")
+  symptomsMd      String?  @map("symptoms_md")
+  guestStepsMd    String?  @map("guest_steps_md")
+  internalStepsMd String?  @map("internal_steps_md")
+  escalationRule  String?  @map("escalation_rule")
+  visibility      String   @default("public")
+  language        String   @default("es")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, playbookKey])
+  @@map("troubleshooting_playbooks")
+}
+
+model LocalPlace {
+  id               String    @id @default(cuid())
+  propertyId       String    @map("property_id")
+  categoryKey      String    @map("category_key")
+  name             String
+  shortNote        String?   @map("short_note")
+  guestDescription String?   @map("guest_description")
+  aiNotes          String?   @map("ai_notes")
+  distanceMeters   Int?      @map("distance_meters")
+  hoursText        String?   @map("hours_text")
+  linkUrl          String?   @map("link_url")
+  bestFor          String?   @map("best_for")
+  seasonalNotes    String?   @map("seasonal_notes")
+  verifiedAt       DateTime? @map("verified_at")
+  visibility       String    @default("public")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, categoryKey])
+  @@map("local_places")
+}
+
+model OpsChecklistItem {
+  id               String   @id @default(cuid())
+  propertyId       String   @map("property_id")
+  scopeKey         String   @map("scope_key")
+  title            String
+  detailsMd        String?  @map("details_md")
+  estimatedMinutes Int?     @map("estimated_minutes")
+  required         Boolean  @default(false)
+  sortOrder        Int      @default(0) @map("sort_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("ops_checklist_items")
+}
+
+model StockItem {
+  id               String   @id @default(cuid())
+  propertyId       String   @map("property_id")
+  categoryKey      String   @map("category_key")
+  name             String
+  restockThreshold Int?     @map("restock_threshold")
+  locationNote     String?  @map("location_note")
+  unitLabel        String?  @map("unit_label")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("stock_items")
+}
+
+model MaintenanceTask {
+  id         String    @id @default(cuid())
+  propertyId String    @map("property_id")
+  taskType   String    @map("task_type")
+  title      String
+  cadenceKey String?   @map("cadence_key")
+  nextDueAt  DateTime? @map("next_due_at")
+  ownerNote  String?   @map("owner_note")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([nextDueAt])
+  @@map("maintenance_tasks")
+}
+
+// ──────────────────────────────────────────────
+// Media
+// ──────────────────────────────────────────────
+
+model MediaAsset {
+  id               String   @id @default(cuid())
+  propertyId       String   @map("property_id")
+  assetRoleKey     String   @map("asset_role_key")
+  mediaType        String   @map("media_type")
+  storageKey       String   @map("storage_key")
+  mimeType         String   @map("mime_type")
+  language         String   @default("es")
+  caption          String?
+  visibility       String   @default("public")
+  status           String   @default("pending")
+  uploadedByUserId String?  @map("uploaded_by_user_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  property     Property          @relation(fields: [propertyId], references: [id])
+  uploadedBy   User?             @relation(fields: [uploadedByUserId], references: [id])
+  assignments  MediaAssignment[]
+
+  @@index([propertyId])
+  @@index([propertyId, visibility, status])
+  @@map("media_assets")
+}
+
+model MediaAssignment {
+  id           String   @id @default(cuid())
+  mediaAssetId String   @map("media_asset_id")
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  sortOrder    Int      @default(0) @map("sort_order")
+  usageKey     String?  @map("usage_key")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("media_assignments")
+}
+
+// ──────────────────────────────────────────────
+// Knowledge and guide
+// ──────────────────────────────────────────────
+
+model KnowledgeSource {
+  id            String   @id @default(cuid())
+  propertyId    String   @map("property_id")
+  sourceType    String   @map("source_type")
+  sourceRef     String?  @map("source_ref")
+  lastSyncedAt  DateTime? @map("last_synced_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  property  Property           @relation(fields: [propertyId], references: [id])
+  items     KnowledgeItem[]
+  citations KnowledgeCitation[]
+
+  @@index([propertyId])
+  @@map("knowledge_sources")
+}
+
+model KnowledgeItem {
+  id              String   @id @default(cuid())
+  propertyId      String   @map("property_id")
+  sourceId        String?  @map("source_id")
+  topic           String
+  bodyMd          String   @map("body_md")
+  language        String   @default("es")
+  visibility      String   @default("public")
+  confidenceScore Float?   @map("confidence_score")
+  journeyStage    String?  @map("journey_stage")
+  lastVerifiedAt  DateTime? @map("last_verified_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  property  Property           @relation(fields: [propertyId], references: [id])
+  source    KnowledgeSource?   @relation(fields: [sourceId], references: [id])
+  citations KnowledgeCitation[]
+
+  @@index([propertyId])
+  @@index([propertyId, visibility, language])
+  @@index([propertyId, journeyStage])
+  @@map("knowledge_items")
+}
+
+model KnowledgeCitation {
+  id              String   @id @default(cuid())
+  knowledgeItemId String   @map("knowledge_item_id")
+  sourceId        String   @map("source_id")
+  quoteOrNote     String?  @map("quote_or_note")
+  relevanceScore  Float?   @map("relevance_score")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  knowledgeItem KnowledgeItem   @relation(fields: [knowledgeItemId], references: [id])
+  source        KnowledgeSource @relation(fields: [sourceId], references: [id])
+
+  @@index([knowledgeItemId])
+  @@map("knowledge_citations")
+}
+
+model Intent {
+  id          String   @id @default(cuid())
+  intentKey   String   @unique @map("intent_key")
+  label       String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("intents")
+}
+
+model GuideVersion {
+  id         String    @id @default(cuid())
+  propertyId String    @map("property_id")
+  version    Int       @default(1)
+  status     String    @default("draft")
+  publishedAt DateTime? @map("published_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  property Property       @relation(fields: [propertyId], references: [id])
+  sections GuideSection[]
+
+  @@index([propertyId])
+  @@index([propertyId, status])
+  @@map("guide_versions")
+}
+
+model GuideSection {
+  id             String   @id @default(cuid())
+  guideVersionId String   @map("guide_version_id")
+  sectionKey     String   @map("section_key")
+  title          String
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  guideVersion GuideVersion     @relation(fields: [guideVersionId], references: [id])
+  items        GuideSectionItem[]
+
+  @@index([guideVersionId])
+  @@map("guide_sections")
+}
+
+model GuideSectionItem {
+  id             String   @id @default(cuid())
+  guideSectionId String   @map("guide_section_id")
+  contentMd      String   @map("content_md")
+  visibility     String   @default("public")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  guideSection GuideSection @relation(fields: [guideSectionId], references: [id])
+
+  @@index([guideSectionId])
+  @@map("guide_section_items")
+}
+
+// ──────────────────────────────────────────────
+// Messaging
+// ──────────────────────────────────────────────
+
+model MessageTemplate {
+  id            String   @id @default(cuid())
+  propertyId    String   @map("property_id")
+  touchpointKey String   @map("touchpoint_key")
+  channelKey    String?  @map("channel_key")
+  subjectLine   String?  @map("subject_line")
+  bodyMd        String   @map("body_md")
+  variablesJson Json?    @map("variables_json")
+  language      String   @default("es")
+  status        String   @default("draft")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  property    Property             @relation(fields: [propertyId], references: [id])
+  automations MessageAutomation[]
+
+  @@index([propertyId])
+  @@index([propertyId, touchpointKey])
+  @@map("message_templates")
+}
+
+model MessageAutomation {
+  id                String   @id @default(cuid())
+  propertyId        String   @map("property_id")
+  touchpointKey     String   @map("touchpoint_key")
+  templateId        String   @map("template_id")
+  channelKey        String   @map("channel_key")
+  active            Boolean  @default(false)
+  triggerType       String   @map("trigger_type")
+  sendOffsetMinutes Int      @map("send_offset_minutes")
+  timezoneSource    String   @default("property_timezone") @map("timezone_source")
+  conditionsJson    Json?    @map("conditions_json")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  property Property        @relation(fields: [propertyId], references: [id])
+  template MessageTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, touchpointKey])
+  @@map("message_automations")
+}
+
+model MessageDraft {
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  bodyMd     String   @map("body_md")
+  channelKey String?  @map("channel_key")
+  status     String   @default("draft")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("message_drafts")
+}
+
+// ──────────────────────────────────────────────
+// Assistant
+// ──────────────────────────────────────────────
+
+model AssistantConversation {
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  actorType  String   @map("actor_type")
+  audience   String   @default("public")
+  language   String   @default("es")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  property Property           @relation(fields: [propertyId], references: [id])
+  messages AssistantMessage[]
+
+  @@index([propertyId])
+  @@map("assistant_conversations")
+}
+
+model AssistantMessage {
+  id              String   @id @default(cuid())
+  conversationId  String   @map("conversation_id")
+  role            String
+  body            String
+  citationsJson   Json?    @map("citations_json")
+  confidenceScore Float?   @map("confidence_score")
+  escalated       Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+  @@map("assistant_messages")
+}
+
+// ──────────────────────────────────────────────
+// Security and audit
+// ──────────────────────────────────────────────
+
+model SecretReference {
+  id          String   @id @default(cuid())
+  propertyId  String   @map("property_id")
+  secretType  String   @map("secret_type")
+  vaultKey    String   @map("vault_key")
+  label       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@map("secret_references")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  actor      String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  action     String
+  diffJson   Json?    @map("diff_json")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([propertyId])
+  @@index([propertyId, entityType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

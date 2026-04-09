@@ -1,0 +1,12 @@
+{
+  "file": "automation_channels.json",
+  "version": "2026-04-07",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {"id": "ota_inbox", "label": "Inbox OTA", "description": "Canal interno de mensajería de Airbnb, Booking u OTA similar."},
+    {"id": "whatsapp", "label": "WhatsApp", "description": "Canal conversacional externo con soporte a mensajes transaccionales."},
+    {"id": "sms", "label": "SMS", "description": "Canal corto y transaccional para recordatorios críticos."},
+    {"id": "email", "label": "Email", "description": "Correo electrónico estructurado para contenido más largo."}
+  ]
+}
