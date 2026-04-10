@@ -95,6 +95,12 @@ function normalize(str: string): string {
     .trim();
 }
 
+// Build normalized lookup map at module load
+const NORMALIZED_MAP: Record<string, string> = {};
+for (const [key, value] of Object.entries(CITY_PROVINCE_MAP)) {
+  NORMALIZED_MAP[normalize(key)] = value;
+}
+
 export function inferProvince(city: string): string | null {
-  return CITY_PROVINCE_MAP[normalize(city)] ?? null;
+  return NORMALIZED_MAP[normalize(city)] ?? null;
 }

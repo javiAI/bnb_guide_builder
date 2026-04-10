@@ -42,7 +42,7 @@ export const accessSchema = z.object({
   isAutonomousCheckin: z.boolean(),
   hasBuildingAccess: z.boolean(),
   buildingAccess: accessLayerSchema.optional(),
-  unitAccess: accessLayerSchema,
+  unitAccess: accessLayerSchema.refine((d) => d.methods.length > 0, { message: "Selecciona al menos un método de acceso a la vivienda" }),
   hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
 });

@@ -110,7 +110,11 @@ export async function deleteDraftAction(
 ): Promise<{ success: boolean }> {
   const sessionId = formData.get("sessionId") as string;
   if (!sessionId) return { success: false };
-  await prisma.wizardSession.delete({ where: { id: sessionId } }).catch(() => {});
+  try {
+    await prisma.wizardSession.delete({ where: { id: sessionId } });
+  } catch {
+    return { success: false };
+  }
   const { revalidatePath } = await import("next/cache");
   revalidatePath("/");
   return { success: true };

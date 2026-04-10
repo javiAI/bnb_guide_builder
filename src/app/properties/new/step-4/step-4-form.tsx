@@ -46,9 +46,7 @@ const YES_NO_OPTIONS: RadioCardOption[] = [
   { id: "no", label: "No", description: "" },
 ];
 
-interface Step4FormProps extends StepFormProps {
-  requiresBuildingAccess: boolean | string;
-}
+type Step4FormProps = StepFormProps;
 
 export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, snapshotStep }: Step4FormProps) {
   const initBuilding = (initialState.buildingAccess as { methods?: string[]; customLabel?: string; customDesc?: string }) ?? {};
@@ -148,8 +146,12 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
     >
       <form action={formAction} data-wizard-form className="space-y-6">
         <input type="hidden" name="sessionId" value={sessionId} />
-        <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === "yes" ? "true" : "false"} />
-        <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
+        {isAutonomous !== null && (
+          <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === "yes" ? "true" : "false"} />
+        )}
+        {hasBuildingAccess !== null && (
+          <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
+        )}
         {buildingMethods.map((m) => <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />)}
         {unitMethods.map((m) => <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />)}
 

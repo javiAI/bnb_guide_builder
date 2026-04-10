@@ -62,25 +62,29 @@ export function CollapsibleSection({
   const [visible, setVisible] = useState(expanded);
 
   useEffect(() => {
+    let expandTimer: ReturnType<typeof setTimeout>;
+    let collapseTimer: ReturnType<typeof setTimeout>;
+
     if (expanded) {
       setVisible(true);
       requestAnimationFrame(() => {
         if (contentRef.current) {
           setHeight(contentRef.current.scrollHeight);
-          const timer = setTimeout(() => setHeight("auto"), 300);
-          return () => clearTimeout(timer);
+          expandTimer = setTimeout(() => setHeight("auto"), 300);
         }
       });
     } else {
       if (contentRef.current) {
         setHeight(contentRef.current.scrollHeight);
-        requestAnimationFrame(() => {
-          setHeight(0);
-        });
+        requestAnimationFrame(() => setHeight(0));
       }
-      const timer = setTimeout(() => setVisible(false), 300);
-      return () => clearTimeout(timer);
+      collapseTimer = setTimeout(() => setVisible(false), 300);
     }
+
+    return () => {
+      clearTimeout(expandTimer);
+      clearTimeout(collapseTimer);
+    };
   }, [expanded]);
 
   if (!visible && !expanded && !selectedLabel) return null;
