@@ -146,12 +146,8 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
     >
       <form action={formAction} data-wizard-form className="space-y-6">
         <input type="hidden" name="sessionId" value={sessionId} />
-        {isAutonomous !== null && (
-          <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === "yes" ? "true" : "false"} />
-        )}
-        {hasBuildingAccess !== null && (
-          <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
-        )}
+        <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === null ? "" : isAutonomous === "yes" ? "true" : "false"} />
+        <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === null ? "" : hasBuildingAccess === "yes" ? "true" : "false"} />
         {buildingMethods.map((m) => <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />)}
         {unitMethods.map((m) => <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />)}
 

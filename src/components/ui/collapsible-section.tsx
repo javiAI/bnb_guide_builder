@@ -62,8 +62,8 @@ export function CollapsibleSection({
   const [visible, setVisible] = useState(expanded);
 
   useEffect(() => {
-    let expandTimer: ReturnType<typeof setTimeout>;
-    let collapseTimer: ReturnType<typeof setTimeout>;
+    let expandTimer: ReturnType<typeof setTimeout> | undefined;
+    let collapseTimer: ReturnType<typeof setTimeout> | undefined;
 
     if (expanded) {
       setVisible(true);
