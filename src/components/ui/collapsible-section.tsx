@@ -64,10 +64,11 @@ export function CollapsibleSection({
   useEffect(() => {
     let expandTimer: ReturnType<typeof setTimeout> | undefined;
     let collapseTimer: ReturnType<typeof setTimeout> | undefined;
+    let rafId: number | undefined;
 
     if (expanded) {
       setVisible(true);
-      requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(() => {
         if (contentRef.current) {
           setHeight(contentRef.current.scrollHeight);
           expandTimer = setTimeout(() => setHeight("auto"), 300);
@@ -76,12 +77,13 @@ export function CollapsibleSection({
     } else {
       if (contentRef.current) {
         setHeight(contentRef.current.scrollHeight);
-        requestAnimationFrame(() => setHeight(0));
+        rafId = requestAnimationFrame(() => setHeight(0));
       }
       collapseTimer = setTimeout(() => setVisible(false), 300);
     }
 
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(expandTimer);
       clearTimeout(collapseTimer);
     };
