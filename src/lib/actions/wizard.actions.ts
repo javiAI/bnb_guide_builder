@@ -7,13 +7,17 @@ import {
   step2Schema,
   step3Schema,
   step4Schema,
+  fullWizardSchema,
 } from "@/lib/schemas/wizard.schema";
+import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT } from "@/lib/taxonomy-loader";
 
 export type ActionResult = {
   success: boolean;
   error?: string;
   fieldErrors?: Record<string, string[]>;
 };
+
+// ── Helpers ──
 
 async function ensureWorkspace(): Promise<string> {
   let workspace = await prisma.workspace.findFirst();
@@ -25,7 +29,96 @@ async function ensureWorkspace(): Promise<string> {
   return workspace.id;
 }
 
-export async function createDraftAction(
+async function getSessionState(sessionId: string): Promise<Record<string, unknown>> {
+  const session = await prisma.wizardSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { stateJson: true },
+  });
+  return (session.stateJson as Record<string, unknown>) ?? {};
+}
+
+async function mergeSessionState(
+  sessionId: string,
+  data: Record<string, unknown>,
+  nextStep: number,
+): Promise<void> {
+  const current = await getSessionState(sessionId);
+  const merged = { ...current, ...data };
+  await prisma.wizardSession.update({
+    where: { id: sessionId },
+    data: {
+      stateJson: merged as object,
+      currentStep: nextStep,
+    },
+  });
+}
+
+async function handleSaveAndExit(
+  formData: FormData,
+  sessionId: string,
+  raw: Record<string, unknown>,
+  defaultStep: number,
+): Promise<boolean> {
+  if (!formData.get("_saveAndExit")) return false;
+  const partial: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) { if (v != null && v !== "") partial[k] = v; }
+  await mergeSessionState(sessionId, partial, Number(formData.get("_currentStep") || defaultStep));
+  redirect("/");
+}
+
+// ── Duplicate name check (checks both properties and draft sessions) ──
+
+export async function checkDuplicateNameAction(
+  nickname: string,
+): Promise<{ duplicate: boolean }> {
+  const workspaceId = await ensureWorkspace();
+  const trimmed = nickname.trim();
+  const [existingProperty, existingDraft] = await Promise.all([
+    prisma.property.findFirst({
+      where: { workspaceId, propertyNickname: trimmed },
+      select: { id: true },
+    }),
+    prisma.wizardSession.findFirst({
+      where: { workspaceId, propertyNickname: trimmed, status: "in_progress", propertyId: null },
+      select: { id: true },
+    }),
+  ]);
+  return { duplicate: !!(existingProperty || existingDraft) };
+}
+
+// ── Restore snapshot (for cancel) ──
+
+export async function restoreSnapshotAction(
+  sessionId: string,
+  snapshot: Record<string, unknown>,
+  originalStep: number,
+): Promise<void> {
+  await prisma.wizardSession.update({
+    where: { id: sessionId },
+    data: {
+      stateJson: snapshot as object,
+      currentStep: originalStep,
+    },
+  });
+}
+
+// ── Delete draft from dashboard ──
+
+export async function deleteDraftAction(
+  _prev: { success: boolean } | null,
+  formData: FormData,
+): Promise<{ success: boolean }> {
+  const sessionId = formData.get("sessionId") as string;
+  if (!sessionId) return { success: false };
+  await prisma.wizardSession.delete({ where: { id: sessionId } }).catch(() => {});
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/");
+  return { success: true };
+}
+
+// ── Welcome: start wizard session (no property created) ──
+
+export async function startWizardAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -34,45 +127,49 @@ export async function createDraftAction(
     return { success: false, error: "El nombre es obligatorio" };
   }
 
-  const workspaceId = await ensureWorkspace();
-  const trimmed = nickname.trim();
+  const existingSessionId = formData.get("sessionId") as string | null;
 
-  const existing = await prisma.property.findFirst({
-    where: { workspaceId, propertyNickname: trimmed },
-    select: { id: true },
-  });
-  if (existing) {
-    return { success: false, error: "Ya existe una propiedad con ese nombre" };
+  // If returning to welcome with an existing session, update the nickname
+  if (existingSessionId) {
+    await prisma.wizardSession.update({
+      where: { id: existingSessionId },
+      data: { propertyNickname: nickname.trim() },
+    });
+    redirect(`/properties/new/step-1?sessionId=${existingSessionId}`);
   }
 
-  const property = await prisma.property.create({
-    data: {
-      workspaceId,
-      propertyNickname: trimmed,
-      status: "draft",
-    },
-  });
+  const workspaceId = await ensureWorkspace();
 
-  await prisma.wizardSession.create({
+  const session = await prisma.wizardSession.create({
     data: {
-      propertyId: property.id,
+      workspace: { connect: { id: workspaceId } },
+      propertyNickname: nickname.trim(),
       status: "in_progress",
       currentStep: 1,
+      stateJson: {},
     },
   });
 
-  redirect(`/properties/new/step-1?propertyId=${property.id}`);
+  redirect(`/properties/new/step-1?sessionId=${session.id}`);
 }
+
+// ── Step 1: property type + room type ──
 
 export async function saveStep1Action(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
+  const sessionId = formData.get("sessionId") as string;
   const raw = {
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
+    customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
+    customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
+    customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
+    customRoomTypeDesc: (formData.get("customRoomTypeDesc") as string) || undefined,
   };
+
+  await handleSaveAndExit(formData, sessionId, raw, 1);
 
   const result = step1Schema.safeParse(raw);
   if (!result.success) {
@@ -82,22 +179,17 @@ export async function saveStep1Action(
     };
   }
 
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: {
-      propertyType: result.data.propertyType,
-      roomType: result.data.roomType,
-    },
-  });
-
-  redirect(`/properties/new/step-2?propertyId=${propertyId}`);
+  await mergeSessionState(sessionId, result.data, 2);
+  redirect(`/properties/new/step-2?sessionId=${sessionId}`);
 }
+
+// ── Step 2: location ──
 
 export async function saveStep2Action(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
+  const sessionId = formData.get("sessionId") as string;
   const raw = {
     country: formData.get("country") as string,
     city: formData.get("city") as string,
@@ -108,6 +200,8 @@ export async function saveStep2Action(
     timezone: formData.get("timezone") as string,
   };
 
+  await handleSaveAndExit(formData, sessionId, raw, 2);
+
   const result = step2Schema.safeParse(raw);
   if (!result.success) {
     return {
@@ -116,25 +210,34 @@ export async function saveStep2Action(
     };
   }
 
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: result.data,
-  });
-
-  redirect(`/properties/new/step-3?propertyId=${propertyId}`);
+  await mergeSessionState(sessionId, result.data, 3);
+  redirect(`/properties/new/step-3?sessionId=${sessionId}`);
 }
+
+// ── Step 3: capacity + beds ──
 
 export async function saveStep3Action(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
+  const sessionId = formData.get("sessionId") as string;
+  const bedsRaw = formData.get("beds") as string;
+  let beds: Array<{ spaceIndex: number; spaceType: string; spaceLabel?: string; bedType: string; quantity: number }> = [];
+  try {
+    if (bedsRaw) beds = JSON.parse(bedsRaw);
+  } catch { /* ignore */ }
+
   const raw = {
     maxGuests: Number(formData.get("maxGuests")),
+    maxAdults: Number(formData.get("maxAdults")),
+    maxChildren: Number(formData.get("maxChildren")),
+    infantsAllowed: formData.get("infantsAllowed") === "on",
     bedroomsCount: Number(formData.get("bedroomsCount")),
-    bedsCount: Number(formData.get("bedsCount")),
     bathroomsCount: Number(formData.get("bathroomsCount")),
+    beds,
   };
+
+  await handleSaveAndExit(formData, sessionId, raw as Record<string, unknown>, 3);
 
   const result = step3Schema.safeParse(raw);
   if (!result.success) {
@@ -144,27 +247,45 @@ export async function saveStep3Action(
     };
   }
 
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: result.data,
-  });
-
-  redirect(`/properties/new/step-4?propertyId=${propertyId}`);
+  await mergeSessionState(sessionId, result.data, 4);
+  redirect(`/properties/new/step-4?sessionId=${sessionId}`);
 }
+
+// ── Step 4: arrival ──
 
 export async function saveStep4Action(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
+  const sessionId = formData.get("sessionId") as string;
+  const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
+
+  const buildingMethods = formData.getAll("buildingMethods") as string[];
+  const unitMethods = formData.getAll("unitMethods") as string[];
+
+  const isAutonomousCheckin = formData.get("isAutonomousCheckin") === "true";
+
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
     checkInEnd: formData.get("checkInEnd") as string,
     checkOutTime: formData.get("checkOutTime") as string,
-    primaryAccessMethod: formData.get("primaryAccessMethod") as string,
+    isAutonomousCheckin,
+    hasBuildingAccess,
+    buildingAccess: hasBuildingAccess ? {
+      methods: buildingMethods,
+      customLabel: (formData.get("buildingCustomLabel") as string) || null,
+      customDesc: (formData.get("buildingCustomDesc") as string) || null,
+    } : undefined,
+    unitAccess: {
+      methods: unitMethods,
+      customLabel: (formData.get("unitCustomLabel") as string) || null,
+      customDesc: (formData.get("unitCustomDesc") as string) || null,
+    },
+    hostName: (formData.get("hostName") as string) || undefined,
     hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
-    supportContact: (formData.get("supportContact") as string) || undefined,
   };
+
+  await handleSaveAndExit(formData, sessionId, raw as Record<string, unknown>, 4);
 
   const result = step4Schema.safeParse(raw);
   if (!result.success) {
@@ -174,59 +295,143 @@ export async function saveStep4Action(
     };
   }
 
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: result.data,
-  });
-
-  redirect(`/properties/new/review?propertyId=${propertyId}`);
+  await mergeSessionState(sessionId, result.data, 5);
+  redirect(`/properties/new/review?sessionId=${sessionId}`);
 }
 
-export async function createUsableAction(
+// ── Review: complete wizard and create property ──
+
+export async function completeWizardAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
+  const sessionId = formData.get("sessionId") as string;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
+  const session = await prisma.wizardSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    select: { workspaceId: true, propertyNickname: true, stateJson: true },
   });
 
-  if (!property) {
-    return { success: false, error: "Propiedad no encontrada" };
+  const state = (session.stateJson as Record<string, unknown>) ?? {};
+  const fullState = {
+    propertyNickname: session.propertyNickname,
+    ...state,
+  };
+
+  const result = fullWizardSchema.safeParse(fullState);
+  if (!result.success) {
+    return { success: false, error: "Faltan datos obligatorios. Revisa todos los pasos." };
   }
 
-  // Validate minimum fields for usable property
-  if (!property.propertyType || !property.roomType) {
-    return { success: false, error: "Faltan tipo de alojamiento y espacio" };
-  }
-  if (!property.country || !property.city || !property.timezone) {
-    return { success: false, error: "Faltan datos de ubicación" };
-  }
-  if (!property.maxGuests || !property.bedsCount || !property.bathroomsCount) {
-    return { success: false, error: "Faltan datos de capacidad" };
-  }
-  if (!property.checkInStart || !property.checkOutTime || !property.primaryAccessMethod) {
-    return { success: false, error: "Faltan datos de llegada" };
-  }
+  const d = result.data;
 
-  // Mark session as completed
-  const session = await prisma.wizardSession.findFirst({
-    where: { propertyId },
-    orderBy: { createdAt: "desc" },
+  // Check for duplicate name
+  const existing = await prisma.property.findFirst({
+    where: { workspaceId: session.workspaceId, propertyNickname: d.propertyNickname },
+    select: { id: true },
   });
-  if (session) {
-    await prisma.wizardSession.update({
-      where: { id: session.id },
-      data: { status: "completed", completedAt: new Date() },
+  if (existing) {
+    return { success: false, error: "Ya existe una propiedad con ese nombre" };
+  }
+
+  // Create property + spaces + beds in transaction
+  const property = await prisma.$transaction(async (tx) => {
+    const prop = await tx.property.create({
+      data: {
+        workspace: { connect: { id: session.workspaceId } },
+        propertyNickname: d.propertyNickname,
+        propertyType: d.propertyType,
+        roomType: d.roomType,
+        customPropertyTypeLabel: d.customPropertyTypeLabel,
+        customPropertyTypeDesc: d.customPropertyTypeDesc,
+        customRoomTypeLabel: d.customRoomTypeLabel,
+        customRoomTypeDesc: d.customRoomTypeDesc,
+        country: d.country,
+        city: d.city,
+        region: d.region,
+        postalCode: d.postalCode,
+        streetAddress: d.streetAddress,
+        addressLevel: d.addressLevel,
+        timezone: d.timezone,
+        maxGuests: d.maxGuests,
+        maxAdults: d.maxAdults,
+        maxChildren: d.maxChildren,
+        childrenAgeLimit: CHILDREN_AGE_LIMIT,
+        bedroomsCount: d.bedroomsCount,
+        bedsCount: (d.beds ?? []).reduce((sum, b) => sum + b.quantity, 0),
+        bathroomsCount: d.bathroomsCount,
+        checkInStart: d.checkInStart,
+        checkInEnd: d.checkInEnd,
+        checkOutTime: d.checkOutTime,
+        primaryAccessMethod: d.unitAccess.methods[0] ?? null,
+        accessMethodsJson: {
+          building: d.buildingAccess ?? null,
+          unit: d.unitAccess,
+        },
+        customAccessMethodLabel: d.unitAccess.customLabel,
+        customAccessMethodDesc: d.unitAccess.customDesc,
+        infantsAllowed: d.infantsAllowed ?? false,
+        isAutonomousCheckin: d.isAutonomousCheckin,
+        hasBuildingAccess: d.hasBuildingAccess,
+        hostName: d.hostName,
+        hostContactPhone: d.hostContactPhone,
+        status: "active",
+      },
     });
-  }
 
-  // Activate property
-  await prisma.property.update({
-    where: { id: propertyId },
-    data: { status: "active" },
+    // Create spaces with bed configurations
+    if (d.beds && d.beds.length > 0) {
+      // Group beds by spaceIndex
+      const spaceMap = new Map<number, typeof d.beds>();
+      for (const bed of d.beds) {
+        const existing = spaceMap.get(bed.spaceIndex) ?? [];
+        existing.push(bed);
+        spaceMap.set(bed.spaceIndex, existing);
+      }
+
+
+      let sortOrder = 0;
+      for (const [spaceIdx, spaceBeds] of spaceMap) {
+        const first = spaceBeds[0];
+        const spaceType = first.spaceType ?? "sp.bedroom";
+        const isBedroom = spaceType === "sp.bedroom";
+        const label = SPACE_TYPE_LABELS[spaceType] ?? "Zona";
+        const name = isBedroom
+          ? `Dormitorio ${spaceIdx + 1}`
+          : first.spaceLabel ?? label;
+
+        const space = await tx.space.create({
+          data: {
+            propertyId: prop.id,
+            spaceType,
+            name,
+            sortOrder: sortOrder++,
+          },
+        });
+        for (const bed of spaceBeds) {
+          await tx.bedConfiguration.create({
+            data: {
+              spaceId: space.id,
+              bedType: bed.bedType,
+              quantity: bed.quantity,
+            },
+          });
+        }
+      }
+    }
+
+    // Link session to property
+    await tx.wizardSession.update({
+      where: { id: sessionId },
+      data: {
+        propertyId: prop.id,
+        status: "completed",
+        completedAt: new Date(),
+      },
+    });
+
+    return prop;
   });
 
-  redirect(`/properties/${propertyId}`);
+  redirect(`/properties/${property.id}`);
 }

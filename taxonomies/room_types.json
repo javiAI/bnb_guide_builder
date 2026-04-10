@@ -69,6 +69,18 @@
       "source": [
         "airbnb_room_types_help"
       ]
+    },
+    {
+      "id": "rt.other",
+      "label": "Otro",
+      "description": "Tipo de espacio no incluido en las opciones anteriores.",
+      "parent_id": null,
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [
+        "Recoger título y descripción personalizados."
+      ],
+      "source": []
     }
   ],
   "source_refs": {

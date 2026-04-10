@@ -1,0 +1,71 @@
+{
+  "file": "bed_types.json",
+  "version": "2026-04-09",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "bt.single",
+      "label": "Cama individual",
+      "description": "Cama de 90 cm de ancho, ideal para una persona.",
+      "recommended": false,
+      "sleepingCapacity": 1,
+      "widthCm": 90,
+      "source": ["airbnb:single", "booking:single"]
+    },
+    {
+      "id": "bt.double",
+      "label": "Cama doble",
+      "description": "Cama de 135 cm de ancho para dos personas.",
+      "recommended": true,
+      "sleepingCapacity": 2,
+      "widthCm": 135,
+      "source": ["airbnb:double", "booking:double"]
+    },
+    {
+      "id": "bt.king",
+      "label": "Cama King",
+      "description": "Cama de 180 cm o más, máximo confort para dos personas.",
+      "recommended": true,
+      "sleepingCapacity": 2,
+      "widthCm": 180,
+      "source": ["airbnb:king", "booking:king"]
+    },
+    {
+      "id": "bt.sofa_bed_single",
+      "label": "Sofá cama individual",
+      "description": "Sofá convertible para una persona.",
+      "recommended": false,
+      "sleepingCapacity": 1,
+      "widthCm": 90,
+      "source": ["airbnb:sofa_bed", "booking:sofa_bed"]
+    },
+    {
+      "id": "bt.sofa_bed_double",
+      "label": "Sofá cama doble",
+      "description": "Sofá convertible para dos personas.",
+      "recommended": false,
+      "sleepingCapacity": 2,
+      "widthCm": 140,
+      "source": ["airbnb:sofa_bed", "booking:sofa_bed"]
+    },
+    {
+      "id": "bt.bunk",
+      "label": "Litera",
+      "description": "Dos camas individuales apiladas, una por nivel.",
+      "recommended": false,
+      "sleepingCapacity": 2,
+      "widthCm": 90,
+      "source": ["airbnb:bunk", "booking:bunk"]
+    },
+    {
+      "id": "bt.crib",
+      "label": "Cuna",
+      "description": "Para bebés e infantes, no cuenta como cama principal.",
+      "recommended": false,
+      "sleepingCapacity": 1,
+      "widthCm": 60,
+      "source": ["airbnb:crib", "booking:crib"]
+    }
+  ]
+}

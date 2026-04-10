@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  basicsSchema,
-  arrivalSchema,
+  propertySchema,
+  accessSchema,
   createSpaceSchema,
   updateSpaceSchema,
   updateAmenitySchema,
@@ -39,9 +39,9 @@ export async function deletePropertyAction(
   redirect("/");
 }
 
-// ── Basics (S-09) ──
+// ── Property editor (replaces basics) ──
 
-export async function saveBasicsAction(
+export async function savePropertyAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -50,6 +50,10 @@ export async function saveBasicsAction(
     propertyNickname: formData.get("propertyNickname") as string,
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
+    customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
+    customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
+    customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
+    customRoomTypeDesc: (formData.get("customRoomTypeDesc") as string) || undefined,
     country: formData.get("country") as string,
     city: formData.get("city") as string,
     region: (formData.get("region") as string) || undefined,
@@ -58,17 +62,16 @@ export async function saveBasicsAction(
     addressLevel: (formData.get("addressLevel") as string) || undefined,
     timezone: formData.get("timezone") as string,
     maxGuests: Number(formData.get("maxGuests")),
+    maxAdults: Number(formData.get("maxAdults")),
+    maxChildren: Number(formData.get("maxChildren")),
+    infantsAllowed: formData.get("infantsAllowed") === "on" || formData.get("infantsAllowed") === "true",
     bedroomsCount: Number(formData.get("bedroomsCount")),
-    bedsCount: Number(formData.get("bedsCount")),
     bathroomsCount: Number(formData.get("bathroomsCount")),
   };
 
-  const result = basicsSchema.safeParse(raw);
+  const result = propertySchema.safeParse(raw);
   if (!result.success) {
-    return {
-      success: false,
-      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
 
   const property = await prisma.property.findUniqueOrThrow({
@@ -77,11 +80,7 @@ export async function saveBasicsAction(
   });
 
   const duplicate = await prisma.property.findFirst({
-    where: {
-      workspaceId: property.workspaceId,
-      propertyNickname: result.data.propertyNickname,
-      id: { not: propertyId },
-    },
+    where: { workspaceId: property.workspaceId, propertyNickname: result.data.propertyNickname, id: { not: propertyId } },
     select: { id: true },
   });
   if (duplicate) {
@@ -90,52 +89,116 @@ export async function saveBasicsAction(
 
   await prisma.property.update({
     where: { id: propertyId },
-    data: result.data,
+    data: {
+      ...result.data,
+      maxGuests: result.data.maxGuests,
+    },
   });
 
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
 
-// ── Arrival (S-10) ──
+// ── Access editor (replaces arrival) ──
 
-export async function saveArrivalAction(
+export async function saveAccessAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
+  const buildingMethods = formData.getAll("buildingMethods") as string[];
+  const unitMethods = formData.getAll("unitMethods") as string[];
+
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
     checkInEnd: formData.get("checkInEnd") as string,
     checkOutTime: formData.get("checkOutTime") as string,
-    primaryAccessMethod: formData.get("primaryAccessMethod") as string,
+    isAutonomousCheckin: formData.get("isAutonomousCheckin") === "true",
+    hasBuildingAccess,
+    buildingAccess: hasBuildingAccess ? {
+      methods: buildingMethods,
+      customLabel: (formData.get("buildingCustomLabel") as string) || null,
+      customDesc: (formData.get("buildingCustomDesc") as string) || null,
+    } : undefined,
+    unitAccess: {
+      methods: unitMethods,
+      customLabel: (formData.get("unitCustomLabel") as string) || null,
+      customDesc: (formData.get("unitCustomDesc") as string) || null,
+    },
+    hostName: (formData.get("hostName") as string) || undefined,
     hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
-    supportContact: (formData.get("supportContact") as string) || undefined,
   };
 
-  const result = arrivalSchema.safeParse(raw);
+  const result = accessSchema.safeParse(raw);
   if (!result.success) {
-    return {
-      success: false,
-      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
+
+  const d = result.data;
 
   await prisma.property.update({
     where: { id: propertyId },
-    data: result.data,
+    data: {
+      checkInStart: d.checkInStart,
+      checkInEnd: d.checkInEnd,
+      checkOutTime: d.checkOutTime,
+      isAutonomousCheckin: d.isAutonomousCheckin,
+      hasBuildingAccess: d.hasBuildingAccess,
+      primaryAccessMethod: d.unitAccess.methods[0] ?? null,
+      accessMethodsJson: {
+        building: d.buildingAccess ?? null,
+        unit: d.unitAccess,
+      },
+      customAccessMethodLabel: d.unitAccess.customLabel,
+      customAccessMethodDesc: d.unitAccess.customDesc,
+      hostName: d.hostName,
+      hostContactPhone: d.hostContactPhone,
+    },
   });
 
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
 
-// ── Policies (S-11) ──
-// Policies are stored as JSON in a property-level field.
-// Since the Property model doesn't have a dedicated policies column,
-// we store policy values in a separate approach: one row per policy item
-// as KnowledgeItem with category 'policy'. For Phase 4, we use a simple
-// JSON approach via a dedicated policies JSONB field that we'll add to Property.
+// ── Settings ──
+
+export async function saveSettingsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const propertyNickname = formData.get("propertyNickname") as string;
+  const timezone = formData.get("timezone") as string;
+  const status = formData.get("status") as string;
+
+  if (!propertyNickname?.trim()) {
+    return { success: false, error: "El nombre es obligatorio" };
+  }
+
+  const property = await prisma.property.findUniqueOrThrow({
+    where: { id: propertyId },
+    select: { workspaceId: true },
+  });
+
+  const duplicate = await prisma.property.findFirst({
+    where: { workspaceId: property.workspaceId, propertyNickname: propertyNickname.trim(), id: { not: propertyId } },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return { success: false, error: "Ya existe otra propiedad con ese nombre" };
+  }
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: { propertyNickname: propertyNickname.trim(), timezone, status },
+  });
+
+  revalidatePath(`/properties/${propertyId}`);
+  return { success: true };
+}
+
+// ── Policies ──
 
 export async function savePoliciesAction(
   _prev: ActionResult | null,

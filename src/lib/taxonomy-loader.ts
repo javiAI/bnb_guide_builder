@@ -28,6 +28,9 @@ import dynamicFieldRulesJson from "../../taxonomies/dynamic_field_rules.json";
 import automationChannelsJson from "../../taxonomies/automation_channels.json";
 import mediaAssetRolesJson from "../../taxonomies/media_asset_roles.json";
 import reviewReasonsJson from "../../taxonomies/review_reasons.json";
+import bedTypesJson from "../../taxonomies/bed_types.json";
+import spanishProvincesJson from "../../taxonomies/spanish_provinces.json";
+import buildingAccessMethodsJson from "../../taxonomies/building_access_methods.json";
 
 // ── Item-based taxonomies ──
 
@@ -43,6 +46,9 @@ export const mediaRequirements = mediaRequirementsJson as unknown as ItemTaxonom
 export const automationChannels = automationChannelsJson as unknown as ItemTaxonomyFile;
 export const mediaAssetRoles = mediaAssetRolesJson as unknown as ItemTaxonomyFile;
 export const reviewReasons = reviewReasonsJson as unknown as ItemTaxonomyFile;
+export const bedTypes = bedTypesJson as unknown as ItemTaxonomyFile;
+export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyFile;
+export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
 
 // ── Grouped taxonomies ──
 
@@ -73,6 +79,20 @@ export function findItem(
 export function getRecommendedItems(taxonomy: ItemTaxonomyFile): TaxonomyItem[] {
   return taxonomy.items.filter((item) => item.recommended);
 }
+
+// ── Space type labels ──
+
+export const SPACE_TYPE_LABELS: Record<string, string> = {
+  "sp.bedroom": "Dormitorio",
+  "sp.living_room": "Salón",
+  "sp.shared_area": "Zona compartida",
+  "sp.office": "Despacho",
+  "sp.other": "Otra zona",
+};
+
+// ── Children age limit ──
+
+export const CHILDREN_AGE_LIMIT = 14;
 
 // ── Amenity group helpers ──
 

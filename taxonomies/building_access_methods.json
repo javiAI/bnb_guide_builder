@@ -1,0 +1,78 @@
+{
+  "file": "building_access_methods.json",
+  "version": "2026-04-10",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "ba.portal_code",
+      "label": "Código de portal",
+      "description": "Código numérico o alfanumérico para abrir la puerta del edificio.",
+      "recommended": true,
+      "autonomous": true
+    },
+    {
+      "id": "ba.access_link",
+      "label": "Enlace o app para abrir",
+      "description": "El huésped recibe un enlace o usa una app para abrir la puerta del edificio.",
+      "recommended": true,
+      "autonomous": true
+    },
+    {
+      "id": "ba.intercom_auto",
+      "label": "Telefonillo automático",
+      "description": "El huésped llama al telefonillo y la puerta se abre automáticamente.",
+      "recommended": true,
+      "autonomous": true
+    },
+    {
+      "id": "ba.lockbox",
+      "label": "Caja de llaves",
+      "description": "Caja segura con código en el exterior que contiene la llave de acceso al edificio.",
+      "recommended": true,
+      "autonomous": true
+    },
+    {
+      "id": "ba.open_access",
+      "label": "Acceso libre",
+      "description": "El portal o recinto está siempre abierto, sin restricción de acceso.",
+      "recommended": true,
+      "autonomous": true
+    },
+    {
+      "id": "ba.intercom_host",
+      "label": "Telefonillo (el anfitrión abre)",
+      "description": "El huésped llama al telefonillo y el anfitrión abre remotamente.",
+      "recommended": false,
+      "autonomous": true
+    },
+    {
+      "id": "ba.reception",
+      "label": "Recepción o portería",
+      "description": "El acceso al edificio se gestiona a través de recepción o portero.",
+      "recommended": false,
+      "autonomous": false
+    },
+    {
+      "id": "ba.key_pickup",
+      "label": "Recogida de llaves en establecimiento",
+      "description": "El huésped recoge las llaves en un comercio, cafetería u otro punto acordado.",
+      "recommended": false,
+      "autonomous": false
+    },
+    {
+      "id": "ba.in_person",
+      "label": "Entrega en persona",
+      "description": "Alguien entrega las llaves o acompaña al huésped para acceder al edificio.",
+      "recommended": false,
+      "autonomous": false
+    },
+    {
+      "id": "ba.other",
+      "label": "Otro método",
+      "description": "Método de acceso al edificio no incluido en las opciones anteriores.",
+      "recommended": false,
+      "autonomous": false
+    }
+  ]
+}

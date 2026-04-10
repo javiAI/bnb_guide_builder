@@ -17,8 +17,9 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  members    WorkspaceMembership[]
-  properties Property[]
+  members        WorkspaceMembership[]
+  properties     Property[]
+  wizardSessions WizardSession[]
 
   @@map("workspaces")
 }
@@ -64,6 +65,9 @@ model Property {
   addressLevel     String?  @map("address_level")
   timezone         String?
   maxGuests        Int?     @map("max_guests")
+  maxAdults        Int      @default(2) @map("max_adults")
+  maxChildren      Int      @default(0) @map("max_children")
+  childrenAgeLimit Int      @default(14) @map("children_age_limit")
   bedroomsCount    Int?     @map("bedrooms_count")
   bedsCount        Int?     @map("beds_count")
   bathroomsCount   Int?     @map("bathrooms_count")
@@ -71,9 +75,20 @@ model Property {
   checkInEnd       String?  @map("check_in_end")
   checkOutTime     String?  @map("check_out_time")
   primaryAccessMethod String? @map("primary_access_method")
+  accessMethodsJson   Json?    @map("access_methods_json")
   hostContactPhone String?  @map("host_contact_phone")
   supportContact   String?  @map("support_contact")
   policiesJson     Json?    @map("policies_json")
+  customPropertyTypeLabel String? @map("custom_property_type_label")
+  customPropertyTypeDesc  String? @map("custom_property_type_desc")
+  customRoomTypeLabel     String? @map("custom_room_type_label")
+  customRoomTypeDesc      String? @map("custom_room_type_desc")
+  customAccessMethodLabel String? @map("custom_access_method_label")
+  customAccessMethodDesc  String? @map("custom_access_method_desc")
+  infantsAllowed          Boolean @default(false) @map("infants_allowed")
+  isAutonomousCheckin     Boolean @default(false) @map("is_autonomous_checkin")
+  hasBuildingAccess       Boolean @default(false) @map("has_building_access")
+  hostName                String? @map("host_name")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -109,17 +124,22 @@ model Property {
 // ──────────────────────────────────────────────
 
 model WizardSession {
-  id          String    @id @default(cuid())
-  propertyId  String    @map("property_id")
-  status      String    @default("in_progress")
-  currentStep Int       @default(1) @map("current_step")
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  workspaceId      String    @map("workspace_id")
+  propertyId       String?   @map("property_id")
+  propertyNickname String?   @map("property_nickname")
+  stateJson        Json?     @map("state_json")
+  status           String    @default("in_progress")
+  currentStep      Int       @default(1) @map("current_step")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  property  Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  workspace Workspace       @relation(fields: [workspaceId], references: [id])
+  property  Property?       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   responses WizardResponse[]
 
+  @@index([workspaceId])
   @@index([propertyId])
   @@map("wizard_sessions")
 }
@@ -156,11 +176,25 @@ model Space {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  beds     BedConfiguration[]
 
   @@index([propertyId])
   @@index([propertyId, visibility])
   @@map("spaces")
+}
+
+model BedConfiguration {
+  id        String   @id @default(cuid())
+  spaceId   String   @map("space_id")
+  bedType   String   @map("bed_type")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
+  @@map("bed_configurations")
 }
 
 model PropertyAmenity {
@@ -303,7 +337,7 @@ model MediaAsset {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  property     Property          @relation(fields: [propertyId], references: [id])
+  property     Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   uploadedBy   User?             @relation(fields: [uploadedByUserId], references: [id])
   assignments  MediaAssignment[]
 
@@ -321,7 +355,7 @@ model MediaAssignment {
   usageKey     String?  @map("usage_key")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
   @@map("media_assignments")
@@ -340,7 +374,7 @@ model KnowledgeSource {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property  Property           @relation(fields: [propertyId], references: [id])
+  property  Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   items     KnowledgeItem[]
   citations KnowledgeCitation[]
 
@@ -362,8 +396,8 @@ model KnowledgeItem {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  property  Property           @relation(fields: [propertyId], references: [id])
-  source    KnowledgeSource?   @relation(fields: [sourceId], references: [id])
+  property  Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  source    KnowledgeSource?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   citations KnowledgeCitation[]
 
   @@index([propertyId])
@@ -380,8 +414,8 @@ model KnowledgeCitation {
   relevanceScore  Float?   @map("relevance_score")
   createdAt       DateTime @default(now()) @map("created_at")
 
-  knowledgeItem KnowledgeItem   @relation(fields: [knowledgeItemId], references: [id])
-  source        KnowledgeSource @relation(fields: [sourceId], references: [id])
+  knowledgeItem KnowledgeItem   @relation(fields: [knowledgeItemId], references: [id], onDelete: Cascade)
+  source        KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   @@index([knowledgeItemId])
   @@map("knowledge_citations")
@@ -406,7 +440,7 @@ model GuideVersion {
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
-  property Property       @relation(fields: [propertyId], references: [id])
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   sections GuideSection[]
 
   @@index([propertyId])
@@ -423,7 +457,7 @@ model GuideSection {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  guideVersion GuideVersion     @relation(fields: [guideVersionId], references: [id])
+  guideVersion GuideVersion     @relation(fields: [guideVersionId], references: [id], onDelete: Cascade)
   items        GuideSectionItem[]
 
   @@index([guideVersionId])
@@ -439,7 +473,7 @@ model GuideSectionItem {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  guideSection GuideSection @relation(fields: [guideSectionId], references: [id])
+  guideSection GuideSection @relation(fields: [guideSectionId], references: [id], onDelete: Cascade)
 
   @@index([guideSectionId])
   @@map("guide_section_items")
@@ -462,7 +496,7 @@ model MessageTemplate {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property    Property             @relation(fields: [propertyId], references: [id])
+  property    Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   automations MessageAutomation[]
 
   @@index([propertyId])
@@ -484,8 +518,8 @@ model MessageAutomation {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  property Property        @relation(fields: [propertyId], references: [id])
-  template MessageTemplate @relation(fields: [templateId], references: [id])
+  property Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  template MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, touchpointKey])
@@ -520,7 +554,7 @@ model AssistantConversation {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  property Property           @relation(fields: [propertyId], references: [id])
+  property Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   messages AssistantMessage[]
 
   @@index([propertyId])
@@ -537,7 +571,7 @@ model AssistantMessage {
   escalated       Boolean  @default(false)
   createdAt       DateTime @default(now()) @map("created_at")
 
-  conversation AssistantConversation @relation(fields: [conversationId], references: [id])
+  conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@map("assistant_messages")

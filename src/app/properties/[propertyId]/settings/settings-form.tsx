@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveBasicsAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { saveSettingsAction, type ActionResult } from "@/lib/actions/editor.actions";
 
 interface SettingsFormProps {
   propertyId: string;
@@ -38,7 +38,7 @@ export function SettingsForm({
   currentStatus,
 }: SettingsFormProps) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    saveBasicsAction,
+    saveSettingsAction,
     null,
   );
 

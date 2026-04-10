@@ -1,25 +1,33 @@
 "use client";
 
-export interface RadioCardOption {
+export interface CheckboxCardOption {
   id: string;
   label: string;
   description: string;
   recommended?: boolean;
 }
 
-interface RadioCardGroupProps {
+interface CheckboxCardGroupProps {
   name: string;
-  options: RadioCardOption[];
-  value: string | null;
-  onChange: (value: string) => void;
+  options: CheckboxCardOption[];
+  value: string[];
+  onChange: (values: string[]) => void;
   showRecommended?: boolean;
 }
 
-export function RadioCardGroup({ name, options, value, onChange, showRecommended = true }: RadioCardGroupProps) {
+export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true }: CheckboxCardGroupProps) {
+  function toggle(id: string) {
+    if (value.includes(id)) {
+      onChange(value.filter((v) => v !== id));
+    } else {
+      onChange([...value, id]);
+    }
+  }
+
   return (
     <fieldset className="space-y-3">
       {options.map((option) => {
-        const selected = value === option.id;
+        const selected = value.includes(option.id);
         return (
           <label
             key={option.id}
@@ -30,11 +38,11 @@ export function RadioCardGroup({ name, options, value, onChange, showRecommended
             }`}
           >
             <input
-              type="radio"
+              type="checkbox"
               name={name}
               value={option.id}
               checked={selected}
-              onChange={() => onChange(option.id)}
+              onChange={() => toggle(option.id)}
               className="mt-0.5 h-4 w-4 accent-[var(--color-primary-500)]"
             />
             <div className="min-w-0 flex-1">

@@ -1,11 +1,15 @@
 import { z } from "zod";
 
-// ── Basics editor (S-09) ──
+// ── Property editor (replaces basics) ──
 
-export const basicsSchema = z.object({
+export const propertySchema = z.object({
   propertyNickname: z.string().min(1, "El nombre es obligatorio"),
   propertyType: z.string().min(1, "El tipo de propiedad es obligatorio"),
   roomType: z.string().min(1, "El tipo de espacio es obligatorio"),
+  customPropertyTypeLabel: z.string().optional(),
+  customPropertyTypeDesc: z.string().optional(),
+  customRoomTypeLabel: z.string().optional(),
+  customRoomTypeDesc: z.string().optional(),
   country: z.string().min(1, "El país es obligatorio"),
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),
@@ -14,25 +18,36 @@ export const basicsSchema = z.object({
   addressLevel: z.string().optional(),
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
   maxGuests: z.number().int().min(1, "Al menos 1 huésped"),
+  maxAdults: z.number().int().min(1, "Al menos 1 adulto"),
+  maxChildren: z.number().int().min(0),
+  infantsAllowed: z.boolean(),
   bedroomsCount: z.number().int().min(0),
-  bedsCount: z.number().int().min(1, "Al menos 1 cama"),
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
 });
 
-export type BasicsData = z.infer<typeof basicsSchema>;
+export type PropertyData = z.infer<typeof propertySchema>;
 
-// ── Arrival editor (S-10) ──
+// ── Access editor (replaces arrival) ──
 
-export const arrivalSchema = z.object({
+const accessLayerSchema = z.object({
+  methods: z.array(z.string()),
+  customLabel: z.string().nullable().optional(),
+  customDesc: z.string().nullable().optional(),
+});
+
+export const accessSchema = z.object({
   checkInStart: z.string().min(1, "La hora de entrada es obligatoria"),
   checkInEnd: z.string().min(1, "La hora límite es obligatoria"),
   checkOutTime: z.string().min(1, "La hora de salida es obligatoria"),
-  primaryAccessMethod: z.string().min(1, "El método de acceso es obligatorio"),
+  isAutonomousCheckin: z.boolean(),
+  hasBuildingAccess: z.boolean(),
+  buildingAccess: accessLayerSchema.optional(),
+  unitAccess: accessLayerSchema,
+  hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
-  supportContact: z.string().optional(),
 });
 
-export type ArrivalData = z.infer<typeof arrivalSchema>;
+export type AccessData = z.infer<typeof accessSchema>;
 
 // ── Policies editor (S-11) ──
 // Policy data is stored as JSONB in a flexible structure

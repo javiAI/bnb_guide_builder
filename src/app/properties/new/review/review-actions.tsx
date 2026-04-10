@@ -2,16 +2,16 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { createUsableAction, type ActionResult } from "@/lib/actions/wizard.actions";
+import { completeWizardAction, type ActionResult } from "@/lib/actions/wizard.actions";
 
 interface ReviewActionsProps {
-  propertyId: string;
+  sessionId: string;
   allComplete: boolean;
 }
 
-export function ReviewActions({ propertyId, allComplete }: ReviewActionsProps) {
+export function ReviewActions({ sessionId, allComplete }: ReviewActionsProps) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    createUsableAction,
+    completeWizardAction,
     null,
   );
 
@@ -24,7 +24,7 @@ export function ReviewActions({ propertyId, allComplete }: ReviewActionsProps) {
       )}
 
       <form action={formAction}>
-        <input type="hidden" name="propertyId" value={propertyId} />
+        <input type="hidden" name="sessionId" value={sessionId} />
         <button
           type="submit"
           disabled={pending || !allComplete}
@@ -44,7 +44,7 @@ export function ReviewActions({ propertyId, allComplete }: ReviewActionsProps) {
         href="/"
         className="mt-4 block text-center text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
       >
-        Guardar como borrador y salir
+        Cancelar
       </Link>
     </div>
   );
