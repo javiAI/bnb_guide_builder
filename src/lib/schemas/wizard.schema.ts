@@ -40,13 +40,10 @@ export const step3Schema = z.object({
   infantsAllowed: z.boolean().optional(),
   bedroomsCount: z.number().int().min(0),
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
-  beds: z.array(bedConfigSchema).optional(),
+  beds: z.array(bedConfigSchema).min(1, "Añade al menos una cama"),
 }).refine(
-  (d) => d.maxAdults <= d.maxGuests,
-  { message: "El máximo de adultos no puede superar el total de huéspedes", path: ["maxAdults"] },
-).refine(
-  (d) => d.maxChildren <= d.maxGuests - 1,
-  { message: "Debe haber al menos 1 adulto, los niños no pueden cubrir todo el cupo", path: ["maxChildren"] },
+  (d) => d.maxAdults + d.maxChildren === d.maxGuests,
+  { message: "La suma de adultos y niños debe ser igual al máximo de huéspedes", path: ["maxAdults"] },
 );
 
 const accessLayerSchema = z.object({
@@ -96,17 +93,29 @@ export const fullWizardSchema = z.object({
   infantsAllowed: z.boolean().optional(),
   bedroomsCount: z.number().int().min(0),
   bathroomsCount: z.number().int().min(1),
-  beds: z.array(bedConfigSchema).optional(),
+  beds: z.array(bedConfigSchema).min(1),
   checkInStart: z.string().min(1),
   checkInEnd: z.string().min(1),
   checkOutTime: z.string().min(1),
   isAutonomousCheckin: z.boolean(),
   hasBuildingAccess: z.boolean(),
   buildingAccess: accessLayerSchema.optional(),
-  unitAccess: accessLayerSchema,
+  unitAccess: accessLayerSchema.refine(
+    (d) => d.methods.length > 0,
+    { message: "Selecciona al menos un método de acceso a la vivienda", path: ["methods"] },
+  ),
   hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
-});
+}).refine(
+  (d) => d.propertyType !== "pt.other" || (d.customPropertyTypeLabel && d.customPropertyTypeLabel.length > 0),
+  { message: "El nombre del tipo personalizado es obligatorio", path: ["customPropertyTypeLabel"] },
+).refine(
+  (d) => d.roomType !== "rt.other" || (d.customRoomTypeLabel && d.customRoomTypeLabel.length > 0),
+  { message: "El nombre del espacio personalizado es obligatorio", path: ["customRoomTypeLabel"] },
+).refine(
+  (d) => d.maxAdults + d.maxChildren === d.maxGuests,
+  { message: "La suma de adultos y niños debe ser igual al máximo de huéspedes", path: ["maxAdults"] },
+);
 
 export type Step1Data = z.infer<typeof step1Schema>;
 export type Step2Data = z.infer<typeof step2Schema>;

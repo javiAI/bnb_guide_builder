@@ -64,7 +64,7 @@ function DraftWizardCard({ session }: { session: { id: string; propertyNickname:
               {session.propertyNickname || "Sin nombre"}
             </h3>
             <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
-              Paso {session.currentStep} de 4
+              {session.currentStep > 4 ? "Revisión" : `Paso ${session.currentStep} de 4`}
             </p>
           </div>
           <Badge label="Borrador" tone="warning" />
