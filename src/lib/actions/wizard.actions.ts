@@ -110,10 +110,14 @@ export async function deleteDraftAction(
 ): Promise<{ success: boolean }> {
   const sessionId = formData.get("sessionId") as string;
   if (!sessionId) return { success: false };
-  await prisma.wizardSession.deleteMany({ where: { id: sessionId } });
-  const { revalidatePath } = await import("next/cache");
-  revalidatePath("/");
-  return { success: true };
+  try {
+    await prisma.wizardSession.deleteMany({ where: { id: sessionId } });
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
 }
 
 // ── Welcome: start wizard session (no property created) ──
@@ -267,13 +271,14 @@ export async function saveStep4Action(
   const buildingRaw = formData.get("hasBuildingAccess") as string;
   const isAutonomousCheckin = autonomousRaw === "" ? undefined : autonomousRaw === "true";
   const hasBuildingAccessParsed = buildingRaw === "" ? undefined : buildingRaw === "true";
+  const isSaveAndExit = !!formData.get("_saveAndExit");
 
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
     checkInEnd: formData.get("checkInEnd") as string,
     checkOutTime: formData.get("checkOutTime") as string,
-    isAutonomousCheckin: isAutonomousCheckin ?? false,
-    hasBuildingAccess: hasBuildingAccessParsed ?? false,
+    isAutonomousCheckin: isSaveAndExit ? isAutonomousCheckin : (isAutonomousCheckin ?? false),
+    hasBuildingAccess: isSaveAndExit ? hasBuildingAccessParsed : (hasBuildingAccessParsed ?? false),
     buildingAccess: hasBuildingAccess ? {
       methods: buildingMethods,
       customLabel: (formData.get("buildingCustomLabel") as string) || null,
