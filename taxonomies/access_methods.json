@@ -70,30 +70,11 @@
       }
     },
     {
-      "id": "am.building_staff",
-      "label": "Personal del edificio / recepción",
-      "description": "El acceso depende de recepción, portería o personal del edificio.",
-      "parent_id": null,
-      "recommended": false,
-      "sensitivity": "medium",
-      "defaults": {
-        "availability": "24_7"
-      },
-      "dependency_hints": [
-        "Si se presenta como self check-in, exigir disponibilidad 24/7."
-      ],
-      "mappings": {
-        "airbnb": {
-          "checkin_method": "building_staff"
-        }
-      }
-    },
-    {
       "id": "am.in_person",
       "label": "Entrega en persona",
       "description": "El anfitrión o cohost entrega las llaves o acompaña el acceso.",
       "parent_id": null,
-      "recommended": true,
+      "recommended": false,
       "sensitivity": "low",
       "defaults": {},
       "dependency_hints": [
@@ -104,6 +85,19 @@
           "checkin_method": "in_person_greeting"
         }
       }
+    },
+    {
+      "id": "am.key_pickup",
+      "label": "Recogida de llaves en establecimiento",
+      "description": "El huésped recoge las llaves en un comercio, cafetería u otro punto acordado.",
+      "parent_id": null,
+      "recommended": false,
+      "sensitivity": "medium",
+      "defaults": {},
+      "dependency_hints": [
+        "Pedir nombre y dirección del establecimiento, horario de recogida."
+      ],
+      "mappings": {}
     },
     {
       "id": "am.other",

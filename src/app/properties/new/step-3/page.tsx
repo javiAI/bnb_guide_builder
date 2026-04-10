@@ -1,83 +1,23 @@
-"use client";
+import { prisma } from "@/lib/db";
+import { redirect } from "next/navigation";
+import { Step3Form } from "./step-3-form";
 
-import { useActionState, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { WizardShell } from "@/components/wizard/wizard-shell";
-import { NumberStepper } from "@/components/ui/number-stepper";
-import { saveStep3Action, type ActionResult } from "@/lib/actions/wizard.actions";
+interface Props {
+  searchParams: Promise<{ sessionId?: string }>;
+}
 
-export default function WizardStep3Page() {
-  const searchParams = useSearchParams();
-  const propertyId = searchParams.get("propertyId") ?? "";
+export default async function Step3Page({ searchParams }: Props) {
+  const { sessionId } = await searchParams;
+  if (!sessionId) redirect("/properties/new/welcome");
 
-  const [maxGuests, setMaxGuests] = useState(2);
-  const [bedroomsCount, setBedroomsCount] = useState(1);
-  const [bedsCount, setBedsCount] = useState(1);
-  const [bathroomsCount, setBathroomsCount] = useState(1);
+  const session = await prisma.wizardSession.findUnique({
+    where: { id: sessionId },
+    select: { stateJson: true, currentStep: true },
+  });
 
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    saveStep3Action,
-    null,
-  );
+  if (!session) redirect("/properties/new/welcome");
 
-  return (
-    <WizardShell
-      currentStep={3}
-      totalSteps={4}
-      title="Capacidad"
-      subtitle="¿Cuántas personas caben y cómo se distribuye el espacio?"
-      backHref={`/properties/new/step-2?propertyId=${propertyId}`}
-    >
-      <form action={formAction}>
-        <input type="hidden" name="propertyId" value={propertyId} />
-        <input type="hidden" name="maxGuests" value={maxGuests} />
-        <input type="hidden" name="bedroomsCount" value={bedroomsCount} />
-        <input type="hidden" name="bedsCount" value={bedsCount} />
-        <input type="hidden" name="bathroomsCount" value={bathroomsCount} />
+  const state = (session.stateJson as Record<string, unknown>) ?? {};
 
-        <div className="space-y-3">
-          <NumberStepper
-            label="Huéspedes"
-            value={maxGuests}
-            min={1}
-            max={30}
-            onChange={setMaxGuests}
-          />
-          <NumberStepper
-            label="Dormitorios"
-            value={bedroomsCount}
-            min={0}
-            max={20}
-            onChange={setBedroomsCount}
-          />
-          <NumberStepper
-            label="Camas"
-            value={bedsCount}
-            min={1}
-            max={30}
-            onChange={setBedsCount}
-          />
-          <NumberStepper
-            label="Baños"
-            value={bathroomsCount}
-            min={1}
-            max={15}
-            onChange={setBathroomsCount}
-          />
-        </div>
-
-        {state?.error && (
-          <p className="mt-4 text-sm text-[var(--color-danger-500)]">{state.error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-8 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-        >
-          {pending ? "Guardando…" : "Continuar"}
-        </button>
-      </form>
-    </WizardShell>
-  );
+  return <Step3Form sessionId={sessionId} initialState={state} maxStepReached={session.currentStep} snapshot={state} snapshotStep={session.currentStep} />;
 }

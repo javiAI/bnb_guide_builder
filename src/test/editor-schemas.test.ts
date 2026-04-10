@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
-  basicsSchema,
-  arrivalSchema,
+  propertySchema,
+  accessSchema,
   createSpaceSchema,
   updateSpaceSchema,
   toggleAmenitySchema,
   updateAmenitySchema,
 } from "@/lib/schemas/editor.schema";
 
-describe("Basics editor schema", () => {
-  it("validates complete basics data", () => {
-    const result = basicsSchema.safeParse({
+describe("Property editor schema", () => {
+  it("validates complete property data", () => {
+    const result = propertySchema.safeParse({
       propertyNickname: "Casa Playa",
       propertyType: "pt.apartment",
       roomType: "rt.entire_place",
@@ -18,15 +18,17 @@ describe("Basics editor schema", () => {
       city: "Valencia",
       timezone: "Europe/Madrid",
       maxGuests: 4,
+      maxAdults: 4,
+      maxChildren: 0,
+      infantsAllowed: false,
       bedroomsCount: 2,
-      bedsCount: 3,
       bathroomsCount: 1,
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects missing required fields", () => {
-    const result = basicsSchema.safeParse({
+    const result = propertySchema.safeParse({
       propertyNickname: "",
       propertyType: "",
       roomType: "",
@@ -34,31 +36,17 @@ describe("Basics editor schema", () => {
       city: "",
       timezone: "",
       maxGuests: 0,
+      maxAdults: 0,
+      maxChildren: 0,
+      infantsAllowed: false,
       bedroomsCount: 0,
-      bedsCount: 0,
       bathroomsCount: 0,
     });
     expect(result.success).toBe(false);
   });
 
-  it("accepts optional fields as undefined", () => {
-    const result = basicsSchema.safeParse({
-      propertyNickname: "Test",
-      propertyType: "pt.house",
-      roomType: "rt.entire_place",
-      country: "España",
-      city: "Madrid",
-      timezone: "Europe/Madrid",
-      maxGuests: 2,
-      bedroomsCount: 1,
-      bedsCount: 1,
-      bathroomsCount: 1,
-    });
-    expect(result.success).toBe(true);
-  });
-
   it("rejects maxGuests below 1", () => {
-    const result = basicsSchema.safeParse({
+    const result = propertySchema.safeParse({
       propertyNickname: "Test",
       propertyType: "pt.house",
       roomType: "rt.entire_place",
@@ -66,43 +54,37 @@ describe("Basics editor schema", () => {
       city: "Madrid",
       timezone: "Europe/Madrid",
       maxGuests: 0,
+      maxAdults: 0,
+      maxChildren: 0,
+      infantsAllowed: false,
       bedroomsCount: 1,
-      bedsCount: 1,
       bathroomsCount: 1,
     });
     expect(result.success).toBe(false);
   });
 });
 
-describe("Arrival editor schema", () => {
-  it("validates complete arrival data", () => {
-    const result = arrivalSchema.safeParse({
+describe("Access editor schema", () => {
+  it("validates complete access data", () => {
+    const result = accessSchema.safeParse({
       checkInStart: "16:00",
       checkInEnd: "22:00",
       checkOutTime: "11:00",
-      primaryAccessMethod: "am.smart_lock",
+      isAutonomousCheckin: true,
+      hasBuildingAccess: false,
+      unitAccess: { methods: ["am.smart_lock"] },
     });
     expect(result.success).toBe(true);
   });
 
-  it("accepts optional contact fields", () => {
-    const result = arrivalSchema.safeParse({
-      checkInStart: "14:00",
-      checkInEnd: "20:00",
-      checkOutTime: "10:00",
-      primaryAccessMethod: "am.lockbox",
-      hostContactPhone: "+34600000000",
-      supportContact: "Equipo Central",
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects missing access method", () => {
-    const result = arrivalSchema.safeParse({
+  it("rejects empty unit access methods", () => {
+    const result = accessSchema.safeParse({
       checkInStart: "16:00",
       checkInEnd: "22:00",
       checkOutTime: "11:00",
-      primaryAccessMethod: "",
+      isAutonomousCheckin: false,
+      hasBuildingAccess: false,
+      unitAccess: { methods: [] },
     });
     expect(result.success).toBe(false);
   });

@@ -1,0 +1,121 @@
+"use client";
+
+import { useRef, useEffect, useState } from "react";
+
+interface CollapsibleSectionProps {
+  title: React.ReactNode;
+  selectedLabel?: string | null;
+  expanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function SelectionBadge({ label }: { label: string }) {
+  const [hovered, setHovered] = useState(false);
+
+  // Split by comma to detect multiple selections
+  const parts = label.split(", ").map((s) => s.trim()).filter(Boolean);
+
+  if (parts.length <= 1) {
+    return (
+      <span className="rounded-full bg-[var(--color-primary-100)] px-3 py-0.5 text-xs font-medium text-[var(--color-primary-700)]">
+        {label}
+      </span>
+    );
+  }
+
+  // Multiple selections — show first + count badge with hover tooltip
+  return (
+    <span
+      className="relative inline-flex items-center gap-1"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span className="rounded-full bg-[var(--color-primary-100)] px-3 py-0.5 text-xs font-medium text-[var(--color-primary-700)]">
+        {parts[0]}
+      </span>
+      <span className="rounded-full bg-[var(--color-neutral-200)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-neutral-600)]">
+        +{parts.length - 1}
+      </span>
+      {hovered && (
+        <span className="absolute right-0 top-full z-20 mt-1 w-56 rounded-[var(--radius-md)] bg-[var(--foreground)] px-3 py-2 text-xs text-white shadow-lg">
+          <ul className="space-y-1">
+            {parts.map((p, i) => (
+              <li key={i}>{p}</li>
+            ))}
+          </ul>
+        </span>
+      )}
+    </span>
+  );
+}
+
+export function CollapsibleSection({
+  title,
+  selectedLabel,
+  expanded,
+  onToggle,
+  children,
+}: CollapsibleSectionProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | "auto">(expanded ? "auto" : 0);
+  const [visible, setVisible] = useState(expanded);
+
+  useEffect(() => {
+    if (expanded) {
+      setVisible(true);
+      requestAnimationFrame(() => {
+        if (contentRef.current) {
+          setHeight(contentRef.current.scrollHeight);
+          const timer = setTimeout(() => setHeight("auto"), 300);
+          return () => clearTimeout(timer);
+        }
+      });
+    } else {
+      if (contentRef.current) {
+        setHeight(contentRef.current.scrollHeight);
+        requestAnimationFrame(() => {
+          setHeight(0);
+        });
+      }
+      const timer = setTimeout(() => setVisible(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [expanded]);
+
+  if (!visible && !expanded && !selectedLabel) return null;
+
+  return (
+    <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--border)] bg-[var(--surface-elevated)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full p-4 text-left"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-[var(--foreground)] shrink-0">{title}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            {!expanded && selectedLabel && (
+              <SelectionBadge label={selectedLabel} />
+            )}
+            <span className="text-xs text-[var(--color-neutral-400)] shrink-0">
+              {expanded ? "▲" : "▼"}
+            </span>
+          </div>
+        </div>
+      </button>
+
+      <div
+        ref={contentRef}
+        style={{ maxHeight: height === "auto" ? "none" : `${height}px` }}
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+      >
+        {visible && (
+          <div className="px-4 pb-4">
+            {children}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

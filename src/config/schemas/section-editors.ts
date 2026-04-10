@@ -40,20 +40,27 @@ export interface SectionEditorDef {
 export const SECTION_EDITORS: SectionEditorDef[] = [
   // ── Content group ──
   {
-    key: "basics",
-    label: "Datos básicos",
+    key: "property",
+    label: "Propiedad",
     description: "Identidad, ubicación y capacidad",
     group: "content",
     phase: 3,
-    completenessFields: ["propertyType", "country"],
+    completenessFields: ["propertyType", "country", "maxGuests"],
   },
   {
-    key: "arrival",
-    label: "Llegada y acceso",
-    description: "Check-in, check-out y método de acceso",
+    key: "access",
+    label: "Acceso y check-in",
+    description: "Horarios, métodos de acceso y anfitrión",
     group: "content",
     phase: 3,
     completenessFields: ["checkInStart", "primaryAccessMethod"],
+  },
+  {
+    key: "contacts",
+    label: "Contactos",
+    description: "Anfitrión, limpieza, mantenimiento y otros",
+    group: "content",
+    phase: 3,
   },
   {
     key: "policies",

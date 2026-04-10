@@ -3,7 +3,17 @@ import { z } from "zod";
 export const step1Schema = z.object({
   propertyType: z.string().min(1, "Selecciona un tipo de alojamiento"),
   roomType: z.string().min(1, "Selecciona un tipo de espacio"),
-});
+  customPropertyTypeLabel: z.string().optional(),
+  customPropertyTypeDesc: z.string().optional(),
+  customRoomTypeLabel: z.string().optional(),
+  customRoomTypeDesc: z.string().optional(),
+}).refine(
+  (d) => d.propertyType !== "pt.other" || (d.customPropertyTypeLabel && d.customPropertyTypeLabel.length > 0),
+  { message: "El nombre del tipo personalizado es obligatorio", path: ["customPropertyTypeLabel"] },
+).refine(
+  (d) => d.roomType !== "rt.other" || (d.customRoomTypeLabel && d.customRoomTypeLabel.length > 0),
+  { message: "El nombre del espacio personalizado es obligatorio", path: ["customRoomTypeLabel"] },
+);
 
 export const step2Schema = z.object({
   country: z.string().min(1, "El país es obligatorio"),
@@ -15,20 +25,49 @@ export const step2Schema = z.object({
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
 });
 
+const bedConfigSchema = z.object({
+  spaceIndex: z.number().int().min(0),
+  spaceType: z.string().min(1),
+  spaceLabel: z.string().optional(),
+  bedType: z.string().min(1),
+  quantity: z.number().int().min(1),
+});
+
 export const step3Schema = z.object({
   maxGuests: z.number().int().min(1, "Al menos 1 huésped"),
+  maxAdults: z.number().int().min(1, "Al menos 1 adulto"),
+  maxChildren: z.number().int().min(0),
+  infantsAllowed: z.boolean().optional(),
   bedroomsCount: z.number().int().min(0),
-  bedsCount: z.number().int().min(1, "Al menos 1 cama"),
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
+  beds: z.array(bedConfigSchema).optional(),
+}).refine(
+  (d) => d.maxAdults <= d.maxGuests,
+  { message: "El máximo de adultos no puede superar el total de huéspedes", path: ["maxAdults"] },
+).refine(
+  (d) => d.maxChildren <= d.maxGuests - 1,
+  { message: "Debe haber al menos 1 adulto, los niños no pueden cubrir todo el cupo", path: ["maxChildren"] },
+);
+
+const accessLayerSchema = z.object({
+  methods: z.array(z.string()),
+  customLabel: z.string().nullable().optional(),
+  customDesc: z.string().nullable().optional(),
 });
 
 export const step4Schema = z.object({
   checkInStart: z.string().min(1, "La hora de entrada es obligatoria"),
-  checkInEnd: z.string().min(1, "La hora límite de entrada es obligatoria"),
+  checkInEnd: z.string().min(1, "Selecciona hora límite o flexible"),
   checkOutTime: z.string().min(1, "La hora de salida es obligatoria"),
-  primaryAccessMethod: z.string().min(1, "Selecciona un método de acceso"),
+  isAutonomousCheckin: z.boolean(),
+  hasBuildingAccess: z.boolean(),
+  buildingAccess: accessLayerSchema.optional(),
+  unitAccess: accessLayerSchema.refine(
+    (d) => d.methods.length > 0,
+    { message: "Selecciona al menos un método de acceso a la vivienda" },
+  ),
+  hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
-  supportContact: z.string().optional(),
 });
 
 export const createDraftSchema = z.object({
@@ -36,8 +75,42 @@ export const createDraftSchema = z.object({
   propertyNickname: z.string().min(1, "El nombre es obligatorio"),
 });
 
+export const fullWizardSchema = z.object({
+  propertyNickname: z.string().min(1),
+  propertyType: z.string().min(1),
+  roomType: z.string().min(1),
+  customPropertyTypeLabel: z.string().optional(),
+  customPropertyTypeDesc: z.string().optional(),
+  customRoomTypeLabel: z.string().optional(),
+  customRoomTypeDesc: z.string().optional(),
+  country: z.string().min(1),
+  city: z.string().min(1),
+  region: z.string().optional(),
+  postalCode: z.string().optional(),
+  streetAddress: z.string().optional(),
+  addressLevel: z.string().optional(),
+  timezone: z.string().min(1),
+  maxGuests: z.number().int().min(1),
+  maxAdults: z.number().int().min(1),
+  maxChildren: z.number().int().min(0),
+  infantsAllowed: z.boolean().optional(),
+  bedroomsCount: z.number().int().min(0),
+  bathroomsCount: z.number().int().min(1),
+  beds: z.array(bedConfigSchema).optional(),
+  checkInStart: z.string().min(1),
+  checkInEnd: z.string().min(1),
+  checkOutTime: z.string().min(1),
+  isAutonomousCheckin: z.boolean(),
+  hasBuildingAccess: z.boolean(),
+  buildingAccess: accessLayerSchema.optional(),
+  unitAccess: accessLayerSchema,
+  hostName: z.string().optional(),
+  hostContactPhone: z.string().optional(),
+});
+
 export type Step1Data = z.infer<typeof step1Schema>;
 export type Step2Data = z.infer<typeof step2Schema>;
 export type Step3Data = z.infer<typeof step3Schema>;
 export type Step4Data = z.infer<typeof step4Schema>;
 export type CreateDraftData = z.infer<typeof createDraftSchema>;
+export type FullWizardData = z.infer<typeof fullWizardSchema>;

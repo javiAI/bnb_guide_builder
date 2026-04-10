@@ -13,6 +13,7 @@
       "defaults": {
         "room_type": "rt.entire_place"
       },
+      "requiresBuildingAccess": true,
       "dependency_hints": [],
       "source": [
         "airbnb_property_type_resource_center"
@@ -27,6 +28,7 @@
       "defaults": {
         "room_type": "rt.entire_place"
       },
+      "requiresBuildingAccess": false,
       "dependency_hints": [],
       "source": [
         "airbnb_property_type_resource_center"
@@ -41,6 +43,7 @@
       "defaults": {
         "room_type": "rt.entire_place"
       },
+      "requiresBuildingAccess": "ask",
       "dependency_hints": [
         "Sugerir aclarar si la entrada es privada o compartida en Arrival & access."
       ],
@@ -57,6 +60,7 @@
       "defaults": {
         "room_type": "rt.entire_place"
       },
+      "requiresBuildingAccess": false,
       "dependency_hints": [
         "Activar campos adicionales de contexto y seguridad."
       ],
@@ -73,6 +77,7 @@
       "defaults": {
         "room_type": "rt.private_room"
       },
+      "requiresBuildingAccess": true,
       "dependency_hints": [
         "Mostrar hotel_room como opción cuando aplique."
       ],
@@ -89,12 +94,26 @@
       "defaults": {
         "room_type": "rt.hotel_room"
       },
+      "requiresBuildingAccess": true,
       "dependency_hints": [
         "Habilitar hotel_room y políticas de front desk / building staff."
       ],
       "source": [
         "airbnb_property_type_resource_center"
       ]
+    },
+    {
+      "id": "pt.other",
+      "label": "Otro",
+      "description": "Tipo de alojamiento no incluido en las opciones anteriores.",
+      "parent_id": null,
+      "recommended": false,
+      "defaults": {},
+      "requiresBuildingAccess": "ask",
+      "dependency_hints": [
+        "Recoger título y descripción personalizados."
+      ],
+      "source": []
     }
   ],
   "source_refs": {

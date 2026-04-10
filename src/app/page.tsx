@@ -3,6 +3,15 @@ import { Badge } from "@/components/ui/badge";
 import { PrimaryCta } from "@/components/ui/primary-cta";
 import { STATUS_LABELS, STATUS_TONES, type PropertyStatus } from "@/lib/types";
 import { DeletePropertyButton } from "./delete-property-button";
+import { DeleteDraftButton } from "./delete-draft-button";
+
+const STEP_PATHS = [
+  "/properties/new/step-1",
+  "/properties/new/step-2",
+  "/properties/new/step-3",
+  "/properties/new/step-4",
+  "/properties/new/review",
+];
 
 function PropertyCard({ property }: { property: { id: string; propertyNickname: string; status: string; city: string | null; country: string | null; maxGuests: number | null; bedroomsCount: number | null; bathroomsCount: number | null } }) {
   return (
@@ -42,6 +51,35 @@ function PropertyCard({ property }: { property: { id: string; propertyNickname: 
   );
 }
 
+function DraftWizardCard({ session }: { session: { id: string; propertyNickname: string | null; currentStep: number; updatedAt: Date } }) {
+  const stepIndex = Math.min(session.currentStep - 1, STEP_PATHS.length - 1);
+  const resumeHref = `${STEP_PATHS[stepIndex]}?sessionId=${session.id}`;
+
+  return (
+    <div className="relative rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] p-5 transition-all hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)]">
+      <a href={resumeHref} className="block">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-base font-semibold text-[var(--foreground)]">
+              {session.propertyNickname || "Sin nombre"}
+            </h3>
+            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+              Paso {session.currentStep} de 4
+            </p>
+          </div>
+          <Badge label="Borrador" tone="warning" />
+        </div>
+        <p className="mt-3 text-xs font-medium text-[var(--color-primary-500)]">
+          Continuar configuración &rarr;
+        </p>
+      </a>
+      <div className="absolute bottom-3 right-3">
+        <DeleteDraftButton sessionId={session.id} sessionName={session.propertyNickname ?? "borrador"} />
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border-2 border-dashed border-[var(--color-neutral-300)] px-8 py-16 text-center">
@@ -60,19 +98,33 @@ function EmptyState() {
 }
 
 export default async function DashboardPage() {
-  const properties = await prisma.property.findMany({
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      propertyNickname: true,
-      status: true,
-      city: true,
-      country: true,
-      maxGuests: true,
-      bedroomsCount: true,
-      bathroomsCount: true,
-    },
-  });
+  const [properties, draftSessions] = await Promise.all([
+    prisma.property.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        propertyNickname: true,
+        status: true,
+        city: true,
+        country: true,
+        maxGuests: true,
+        bedroomsCount: true,
+        bathroomsCount: true,
+      },
+    }),
+    prisma.wizardSession.findMany({
+      where: { status: "in_progress", propertyId: null },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        propertyNickname: true,
+        currentStep: true,
+        updatedAt: true,
+      },
+    }),
+  ]);
+
+  const hasContent = properties.length > 0 || draftSessions.length > 0;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
@@ -85,16 +137,19 @@ export default async function DashboardPage() {
             Gestiona tus alojamientos y sus guías
           </p>
         </div>
-        {properties.length > 0 && (
+        {hasContent && (
           <PrimaryCta label="Crear propiedad" href="/properties/new/welcome" />
         )}
       </div>
 
       <div className="mt-8">
-        {properties.length === 0 ? (
+        {!hasContent ? (
           <EmptyState />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {draftSessions.map((session) => (
+              <DraftWizardCard key={session.id} session={session} />
+            ))}
             {properties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
