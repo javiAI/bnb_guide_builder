@@ -50,7 +50,7 @@ export const reviewReasons = reviewReasonsJson as unknown as ItemTaxonomyFile;
 export const bedTypes = bedTypesJson as unknown as ItemTaxonomyFile;
 export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyFile;
 export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
-export const contactTypes = contactTypesJson as unknown as { groups: Array<{ id: string; label: string }>; items: Array<{ id: string; label: string; description: string; group: string; recommended: boolean; defaultVisibility: string; defaultEntityType: string }> };
+export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
 
 // ── Grouped taxonomies ──
 

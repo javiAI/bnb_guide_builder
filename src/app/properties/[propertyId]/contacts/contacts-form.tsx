@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import { createContactAction, updateContactAction, deleteContactAction, type ActionResult } from "@/lib/actions/editor.actions";
-import { contactTypes } from "@/lib/taxonomy-loader";
+import { contactTypes } from "@/lib/contact-types-loader";
 
 interface Contact {
   id: string;

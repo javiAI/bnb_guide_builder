@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   propertySchema,
   accessSchema,
+  createContactSchema,
+  updateContactSchema,
   createSpaceSchema,
   updateSpaceSchema,
   toggleAmenitySchema,
@@ -90,6 +92,67 @@ describe("Access editor schema", () => {
       unitAccess: { methods: [] },
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("Contact schemas", () => {
+  it("createContactSchema validates required fields", () => {
+    const result = createContactSchema.safeParse({
+      roleKey: "ct.host",
+      entityType: "person",
+      displayName: "Juan García",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("createContactSchema rejects empty displayName", () => {
+    const result = createContactSchema.safeParse({
+      roleKey: "ct.host",
+      entityType: "person",
+      displayName: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("createContactSchema rejects missing roleKey", () => {
+    const result = createContactSchema.safeParse({
+      roleKey: "",
+      entityType: "person",
+      displayName: "Juan",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("createContactSchema accepts optional fields", () => {
+    const result = createContactSchema.safeParse({
+      roleKey: "ct.cleaning",
+      entityType: "company",
+      displayName: "CleanPro S.L.",
+      contactPersonName: "María López",
+      phone: "+34 611 111 111",
+      email: "info@cleanpro.es",
+      whatsapp: "+34 611 111 111",
+      emergencyAvailable: true,
+      hasPropertyAccess: true,
+      visibility: "internal",
+      isPrimary: false,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateContactSchema rejects empty displayName", () => {
+    const result = updateContactSchema.safeParse({
+      displayName: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateContactSchema accepts partial update", () => {
+    const result = updateContactSchema.safeParse({
+      displayName: "Updated Name",
+      phone: "+34 622 222 222",
+    });
+    expect(result.success).toBe(true);
   });
 });
 
