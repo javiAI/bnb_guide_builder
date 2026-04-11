@@ -1,0 +1,15 @@
+export const CP_PROVINCE_MAP: Record<string, string> = {
+  "01": "prov.alava", "02": "prov.albacete", "03": "prov.alicante", "04": "prov.almeria",
+  "05": "prov.avila", "06": "prov.badajoz", "07": "prov.baleares", "08": "prov.barcelona",
+  "09": "prov.burgos", "10": "prov.caceres", "11": "prov.cadiz", "12": "prov.castellon",
+  "13": "prov.ciudad_real", "14": "prov.cordoba", "15": "prov.coruna", "16": "prov.cuenca",
+  "17": "prov.girona", "18": "prov.granada", "19": "prov.guadalajara", "20": "prov.gipuzkoa",
+  "21": "prov.huelva", "22": "prov.huesca", "23": "prov.jaen", "24": "prov.leon",
+  "25": "prov.lleida", "26": "prov.rioja", "27": "prov.lugo", "28": "prov.madrid",
+  "29": "prov.malaga", "30": "prov.murcia", "31": "prov.navarra", "32": "prov.ourense",
+  "33": "prov.asturias", "34": "prov.palencia", "35": "prov.las_palmas", "36": "prov.pontevedra",
+  "37": "prov.salamanca", "38": "prov.tenerife", "39": "prov.cantabria", "40": "prov.segovia",
+  "41": "prov.sevilla", "42": "prov.soria", "43": "prov.tarragona", "44": "prov.teruel",
+  "45": "prov.toledo", "46": "prov.valencia", "47": "prov.valladolid", "48": "prov.bizkaia",
+  "49": "prov.zamora", "50": "prov.zaragoza", "51": "prov.ceuta", "52": "prov.melilla",
+};

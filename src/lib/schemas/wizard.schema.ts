@@ -20,9 +20,12 @@ export const step2Schema = z.object({
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),
   postalCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  streetAddress: z.string().min(1, "La dirección es obligatoria"),
+  addressExtra: z.string().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
 });
 
 const bedConfigSchema = z.object({
@@ -84,9 +87,12 @@ export const fullWizardSchema = z.object({
   city: z.string().min(1),
   region: z.string().optional(),
   postalCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  streetAddress: z.string().min(1),
+  addressExtra: z.string().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   maxGuests: z.number().int().min(1),
   maxAdults: z.number().int().min(1),
   maxChildren: z.number().int().min(0),

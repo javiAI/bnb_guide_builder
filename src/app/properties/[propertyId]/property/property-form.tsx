@@ -9,6 +9,10 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { savePropertyAction, type ActionResult } from "@/lib/actions/editor.actions";
 import { propertyTypes, roomTypes, spanishProvinces, getItems, findItem } from "@/lib/taxonomy-loader";
+import { COMMON_TIMEZONES } from "@/lib/timezones";
+import dynamic from "next/dynamic";
+
+const LocationMap = dynamic(() => import("@/components/ui/location-map").then((m) => m.LocationMap), { ssr: false, loading: () => <div className="h-64 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] flex items-center justify-center text-sm text-[var(--color-neutral-500)]">Cargando mapa...</div> });
 
 const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
@@ -17,19 +21,6 @@ const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
 const provinces = getItems(spanishProvinces);
-
-const COMMON_TIMEZONES = [
-  { value: "Europe/Madrid", label: "España peninsular" },
-  { value: "Atlantic/Canary", label: "Canarias" },
-  { value: "Europe/Lisbon", label: "Portugal" },
-  { value: "Europe/Paris", label: "Francia" },
-  { value: "Europe/Rome", label: "Italia" },
-  { value: "Europe/London", label: "Reino Unido" },
-  { value: "America/Mexico_City", label: "México" },
-  { value: "America/Bogota", label: "Colombia" },
-  { value: "America/Argentina/Buenos_Aires", label: "Argentina" },
-  { value: "America/Santiago", label: "Chile" },
-];
 
 interface PropertyFormProps {
   propertyId: string;
@@ -46,6 +37,7 @@ interface PropertyFormProps {
     region: string | null;
     postalCode: string | null;
     streetAddress: string | null;
+    addressExtra: string | null;
     addressLevel: string | null;
     timezone: string | null;
     maxGuests: number | null;
@@ -54,6 +46,8 @@ interface PropertyFormProps {
     infantsAllowed: boolean;
     bedroomsCount: number | null;
     bathroomsCount: number | null;
+    latitude: number | null;
+    longitude: number | null;
   };
 }
 
@@ -70,7 +64,14 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const [country, setCountry] = useState(p.country ?? "España");
   const [city, setCity] = useState(p.city ?? "");
   const [province, setProvince] = useState(p.region ?? "");
+  const [streetAddress, setStreetAddress] = useState(p.streetAddress ?? "");
+  const [addressExtra, setAddressExtra] = useState(p.addressExtra ?? "");
+  const [postalCode, setPostalCode] = useState(p.postalCode ?? "");
   const [timezone, setTimezone] = useState(p.timezone ?? "Europe/Madrid");
+  const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set());
+  const [latitude, setLatitude] = useState<number | null>(p.latitude);
+  const [longitude, setLongitude] = useState<number | null>(p.longitude);
+  const [geocoding, setGeocoding] = useState(false);
   const [maxGuests, setMaxGuests] = useState(p.maxGuests ?? 2);
   const [maxAdults, setMaxAdults] = useState(p.maxAdults);
   const [maxChildren, setMaxChildren] = useState(p.maxChildren);
@@ -98,7 +99,66 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     maxGuests !== (p.maxGuests ?? 2) ||
     maxAdults !== p.maxAdults ||
     maxChildren !== p.maxChildren ||
-    infantsAllowed !== p.infantsAllowed;
+    infantsAllowed !== p.infantsAllowed ||
+    streetAddress !== (p.streetAddress ?? "") ||
+    addressExtra !== (p.addressExtra ?? "") ||
+    postalCode !== (p.postalCode ?? "") ||
+    latitude !== p.latitude ||
+    longitude !== p.longitude;
+
+  function flashField(name: string) {
+    setAutoFilled((prev) => new Set(prev).add(name));
+    setTimeout(() => setAutoFilled((prev) => { const n = new Set(prev); n.delete(name); return n; }), 1500);
+  }
+  const autoFillCls = (name: string) => autoFilled.has(name) ? "!bg-[var(--color-primary-50)] !border-[var(--color-primary-400)]" : "";
+
+  async function handlePinMove(lat: number, lng: number) {
+    setLatitude(lat);
+    setLongitude(lng);
+    try {
+      const res = await fetch("/api/geo/reverse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng }),
+      });
+      const data = await res.json();
+      if (data.matchFound) {
+        if (data.streetAddress) { setStreetAddress(data.streetAddress); flashField("streetAddress"); }
+        if (data.city) { setCity(data.city); flashField("city"); }
+        if (data.country) { setCountry(data.country); flashField("country"); }
+        if (data.postalCode) { setPostalCode(data.postalCode); flashField("postalCode"); }
+        if (data.provinceId) { setProvince(data.provinceId); flashField("region"); }
+        if (data.timezone) { setTimezone(data.timezone); flashField("timezone"); }
+      }
+    } catch { /* ignore */ }
+  }
+
+  function handleAddressBlur() {
+    if (country.trim() && city.trim() && streetAddress.trim() && !geocoding) handleGeocode();
+  }
+
+  async function handleGeocode() {
+    if (geocoding || (!city && !country)) return;
+    setGeocoding(true);
+    try {
+      const res = await fetch("/api/geo/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ streetAddress: streetAddress || undefined, city, country }),
+      });
+      const data = await res.json();
+      if (data.matchFound) {
+        setLatitude(data.lat);
+        setLongitude(data.lng);
+        const d = data.derived;
+        if (d?.timezone) { setTimezone(d.timezone); flashField("timezone"); }
+        if (d?.provinceId) { setProvince(d.provinceId); flashField("region"); }
+        if (d?.postalCode) { setPostalCode(d.postalCode); flashField("postalCode"); }
+      }
+    } finally {
+      setGeocoding(false);
+    }
+  }
 
   const handleMaxGuestsChange = useCallback((val: number) => {
     setMaxGuests(val);
@@ -202,13 +262,29 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <label className="block"><span className="text-sm font-medium">País *</span><input name="country" type="text" required value={country} onChange={(e) => setCountry(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
               <label className="block"><span className="text-sm font-medium">Ciudad *</span><input name="city" type="text" required value={city} onChange={(e) => setCity(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block"><span className="text-sm font-medium">Provincia</span><select name="region" value={province} onChange={(e) => setProvince(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm"><option value="">Seleccionar</option>{provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}</select></label>
-              <label className="block"><span className="text-sm font-medium">Código postal</span><input name="postalCode" type="text" defaultValue={p.postalCode ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <label className="block sm:col-span-2"><span className="text-sm font-medium">Dirección (vía y número) *</span><input name="streetAddress" type="text" required value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm placeholder:text-[var(--color-neutral-400)]" /></label>
+              <label className="block"><span className="text-sm font-medium">Piso / Puerta</span><input name="addressExtra" type="text" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm placeholder:text-[var(--color-neutral-400)]" /></label>
             </div>
-            <label className="block"><span className="text-sm font-medium">Dirección</span><input name="streetAddress" type="text" defaultValue={p.streetAddress ?? ""} placeholder="Calle, número, piso" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm placeholder:text-[var(--color-neutral-400)]" /></label>
             <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
-            <label className="block"><span className="text-sm font-medium">Zona horaria *</span><select name="timezone" required value={timezone} onChange={(e) => setTimezone(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm">{COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}</select></label>
+            <input type="hidden" name="latitude" value={latitude ?? ""} />
+            <input type="hidden" name="longitude" value={longitude ?? ""} />
+
+            <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" /></svg>
+              {geocoding ? "Buscando..." : "Encontrar ubicación"}
+            </button>
+
+            <LocationMap lat={latitude} lng={longitude} onPositionChange={handlePinMove} />
+            {latitude != null && longitude != null && (
+              <p className="text-xs text-[var(--color-neutral-400)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block"><span className="text-sm font-medium text-[var(--color-neutral-500)]">Provincia</span><select name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={`mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm ${autoFillCls("region")}`}><option value="">Seleccionar</option>{provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}</select></label>
+              <label className="block"><span className="text-sm font-medium text-[var(--color-neutral-500)]">Código postal</span><input name="postalCode" type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={`mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm ${autoFillCls("postalCode")}`} /></label>
+            </div>
+            <label className="block"><span className="text-sm font-medium text-[var(--color-neutral-500)]">Zona horaria *</span><select name="timezone" required value={timezone} onChange={(e) => setTimezone(e.target.value)} className={`mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm ${autoFillCls("timezone")}`}>{COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}</select></label>
           </div>
         </CollapsibleSection>
 

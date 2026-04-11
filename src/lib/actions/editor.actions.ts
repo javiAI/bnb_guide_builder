@@ -58,7 +58,8 @@ export async function savePropertyAction(
     city: formData.get("city") as string,
     region: (formData.get("region") as string) || undefined,
     postalCode: (formData.get("postalCode") as string) || undefined,
-    streetAddress: (formData.get("streetAddress") as string) || undefined,
+    streetAddress: formData.get("streetAddress") as string,
+    addressExtra: (formData.get("addressExtra") as string) || undefined,
     addressLevel: (formData.get("addressLevel") as string) || undefined,
     timezone: formData.get("timezone") as string,
     maxGuests: Number(formData.get("maxGuests")),
@@ -67,6 +68,8 @@ export async function savePropertyAction(
     infantsAllowed: formData.get("infantsAllowed") === "on" || formData.get("infantsAllowed") === "true",
     bedroomsCount: Number(formData.get("bedroomsCount")),
     bathroomsCount: Number(formData.get("bathroomsCount")),
+    latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
+    longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };
 
   const result = propertySchema.safeParse(raw);
