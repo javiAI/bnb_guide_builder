@@ -197,10 +197,10 @@ export async function saveStep2Action(
   const raw = {
     country: formData.get("country") as string,
     city: formData.get("city") as string,
-    region: (formData.get("region") as string) || undefined,
-    postalCode: (formData.get("postalCode") as string) || undefined,
+    region: (formData.get("region") as string) || null,
+    postalCode: (formData.get("postalCode") as string) || null,
     streetAddress: formData.get("streetAddress") as string,
-    addressExtra: (formData.get("addressExtra") as string) || undefined,
+    addressExtra: (formData.get("addressExtra") as string) || null,
     addressLevel: (formData.get("addressLevel") as string) || undefined,
     timezone: formData.get("timezone") as string,
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,

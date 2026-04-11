@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useCallback } from "react";
+import { useActionState, useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
@@ -106,9 +106,17 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     latitude !== p.latitude ||
     longitude !== p.longitude;
 
+  const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
+
   function flashField(name: string) {
     setAutoFilled((prev) => new Set(prev).add(name));
-    setTimeout(() => setAutoFilled((prev) => { const n = new Set(prev); n.delete(name); return n; }), 1500);
+    const existing = flashTimers.current.get(name);
+    if (existing) clearTimeout(existing);
+    flashTimers.current.set(name, setTimeout(() => {
+      setAutoFilled((prev) => { const n = new Set(prev); n.delete(name); return n; });
+      flashTimers.current.delete(name);
+    }, 1500));
   }
   const autoFillCls = (name: string) => autoFilled.has(name) ? "!bg-[var(--color-primary-50)] !border-[var(--color-primary-400)]" : "";
 
@@ -128,7 +136,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         if (data.country) { setCountry(data.country); flashField("country"); }
         if (data.postalCode) { setPostalCode(data.postalCode); flashField("postalCode"); }
         if (data.provinceId) { setProvince(data.provinceId); flashField("region"); }
-        if (data.timezone) { setTimezone(data.timezone); flashField("timezone"); }
+        if (data.timezone && COMMON_TIMEZONES.some((tz) => tz.value === data.timezone)) { setTimezone(data.timezone); flashField("timezone"); }
       }
     } catch { /* ignore */ }
   }

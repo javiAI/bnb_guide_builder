@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef, useEffect } from "react";
 import { WizardShell } from "@/components/wizard/wizard-shell";
 import { saveStep2Action, type ActionResult } from "@/lib/actions/wizard.actions";
 import { spanishProvinces, getItems } from "@/lib/taxonomy-loader";
@@ -34,9 +34,17 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
   const fieldError = (field: string) => state?.fieldErrors?.[field]?.[0];
   const canContinue = country.trim().length > 0 && city.trim().length > 0 && streetAddress.trim().length > 0 && timezone.length > 0;
 
+  const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
+
   function flashField(name: string) {
     setAutoFilled((prev) => new Set(prev).add(name));
-    setTimeout(() => setAutoFilled((prev) => { const n = new Set(prev); n.delete(name); return n; }), 1500);
+    const existing = flashTimers.current.get(name);
+    if (existing) clearTimeout(existing);
+    flashTimers.current.set(name, setTimeout(() => {
+      setAutoFilled((prev) => { const n = new Set(prev); n.delete(name); return n; });
+      flashTimers.current.delete(name);
+    }, 1500));
   }
 
   const autoFillCls = (name: string) => autoFilled.has(name) ? "!bg-[var(--color-primary-50)] !border-[var(--color-primary-400)]" : "";
@@ -84,7 +92,7 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
         if (data.country) { setCountry(data.country); flashField("country"); }
         if (data.postalCode) { setPostalCode(data.postalCode); flashField("postalCode"); }
         if (data.provinceId) { setProvince(data.provinceId); flashField("region"); }
-        if (data.timezone) { setTimezone(data.timezone); flashField("timezone"); }
+        if (data.timezone && COMMON_TIMEZONES.some((tz) => tz.value === data.timezone)) { setTimezone(data.timezone); flashField("timezone"); }
       }
     } catch { /* ignore reverse geocode errors */ }
   }
