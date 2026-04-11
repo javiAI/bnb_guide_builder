@@ -398,7 +398,7 @@ export async function completeWizardAction(
           propertyId: prop.id,
           roleKey: "ct.host",
           entityType: "person",
-          displayName: d.hostName ?? "Anfitrión",
+          displayName: d.hostName?.trim() || "Anfitrión",
           phone: d.hostContactPhone,
           visibility: "guest",
           isPrimary: true,
