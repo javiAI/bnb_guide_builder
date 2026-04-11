@@ -80,6 +80,7 @@ function ContactCard({ contact, propertyId }: { contact: Contact; propertyId: st
               <option value="person">Persona</option>
               <option value="company">Empresa</option>
               <option value="institution">Institución</option>
+              <option value="platform">Plataforma</option>
             </select>
           </label>
         </div>
@@ -151,6 +152,9 @@ function ContactCard({ contact, propertyId }: { contact: Contact; propertyId: st
         </label>
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
+        {state?.fieldErrors && Object.entries(state.fieldErrors).map(([field, errors]) => (
+          <p key={field} className="text-sm text-[var(--color-danger-500)]">{errors?.[0]}</p>
+        ))}
 
         <div className="flex items-center justify-between">
           <button type="submit" disabled={pending} className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">
@@ -230,6 +234,9 @@ function CreateContactForm({ propertyId }: { propertyId: string }) {
         <input type="hidden" name="visibility" value="internal" />
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
+        {state?.fieldErrors && Object.entries(state.fieldErrors).map(([field, errors]) => (
+          <p key={field} className="text-sm text-[var(--color-danger-500)]">{errors?.[0]}</p>
+        ))}
 
         <div className="flex gap-3">
           <button type="submit" disabled={pending} className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">

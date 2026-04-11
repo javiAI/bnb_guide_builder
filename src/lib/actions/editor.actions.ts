@@ -272,7 +272,7 @@ export async function updateContactAction(
   }
 
   await prisma.contact.update({
-    where: { id: contactId },
+    where: { id: contactId, propertyId },
     data: result.data,
   });
 
@@ -281,13 +281,20 @@ export async function updateContactAction(
 }
 
 export async function deleteContactAction(
-  _prev: ActionResult | null,
+  _prev: { success: boolean } | null,
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<{ success: boolean }> {
   const contactId = formData.get("contactId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!contactId) return { success: false };
+
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    select: { propertyId: true },
+  });
+  if (!contact) return { success: false };
+
   await prisma.contact.deleteMany({ where: { id: contactId } });
-  revalidatePath(`/properties/${propertyId}/contacts`);
+  revalidatePath(`/properties/${contact.propertyId}/contacts`);
   return { success: true };
 }
 
