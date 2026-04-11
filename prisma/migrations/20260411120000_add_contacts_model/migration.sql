@@ -1,6 +1,3 @@
--- Ensure pgcrypto is available for gen_random_uuid()
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- CreateTable
 CREATE TABLE "contacts" (
     "id" TEXT NOT NULL,
@@ -41,7 +38,7 @@ ALTER TABLE "contacts" ADD CONSTRAINT "contacts_property_id_fkey" FOREIGN KEY ("
 -- Migrate host data from properties to contacts
 INSERT INTO "contacts" ("id", "property_id", "role_key", "entity_type", "display_name", "phone", "visibility", "is_primary", "updated_at")
 SELECT
-    gen_random_uuid()::text,
+    'mig_' || p."id" || '_host',
     p."id",
     'ct.host',
     'person',

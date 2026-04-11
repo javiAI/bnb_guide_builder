@@ -39,10 +39,6 @@ function getTypeLabel(roleKey: string): string {
   return typeItems.find((t) => t.id === roleKey)?.label ?? roleKey;
 }
 
-function getGroupLabel(groupId: string): string {
-  return groups.find((g) => g.id === groupId)?.label ?? groupId;
-}
-
 function ContactCard({ contact, propertyId }: { contact: Contact; propertyId: string }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(updateContactAction, null);

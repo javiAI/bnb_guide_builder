@@ -14,6 +14,26 @@ export default async function ContactsPage({ params }: Props) {
     prisma.contact.findMany({
       where: { propertyId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        roleKey: true,
+        entityType: true,
+        displayName: true,
+        contactPersonName: true,
+        phone: true,
+        phoneSecondary: true,
+        email: true,
+        whatsapp: true,
+        address: true,
+        availabilitySchedule: true,
+        emergencyAvailable: true,
+        hasPropertyAccess: true,
+        internalNotes: true,
+        guestVisibleNotes: true,
+        visibility: true,
+        isPrimary: true,
+        sortOrder: true,
+      },
     }),
   ]);
 
