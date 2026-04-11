@@ -55,11 +55,11 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
         setLatitude(data.lat);
         setLongitude(data.lng);
         const d = data.derived;
-        if (d?.timezone) { setTimezone(d.timezone); flashField("timezone"); }
+        if (d?.timezone && COMMON_TIMEZONES.some((tz) => tz.value === d.timezone)) { setTimezone(d.timezone); flashField("timezone"); }
         if (d?.provinceId) { setProvince(d.provinceId); flashField("region"); }
         if (d?.postalCode) { setPostalCode(d.postalCode); flashField("postalCode"); }
       }
-    } finally {
+    } catch { /* geocode error — ignore, user can retry */ } finally {
       setGeocoding(false);
     }
   }
@@ -124,7 +124,7 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
         <div className="grid gap-5 sm:grid-cols-3">
           <label className="block sm:col-span-2">
             <span className="text-sm font-medium text-[var(--foreground)]">Dirección (vía y número) *</span>
-            <input name="streetAddress" type="text" required value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" className={`mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] ${autoFillCls("streetAddress")}`} />
+            <input name="streetAddress" type="text" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" className={`mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] ${autoFillCls("streetAddress")}`} />
             {fieldError("streetAddress") && <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("streetAddress")}</p>}
           </label>
           <label className="block">

@@ -151,11 +151,11 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         setLatitude(data.lat);
         setLongitude(data.lng);
         const d = data.derived;
-        if (d?.timezone) { setTimezone(d.timezone); flashField("timezone"); }
+        if (d?.timezone && COMMON_TIMEZONES.some((tz) => tz.value === d.timezone)) { setTimezone(d.timezone); flashField("timezone"); }
         if (d?.provinceId) { setProvince(d.provinceId); flashField("region"); }
         if (d?.postalCode) { setPostalCode(d.postalCode); flashField("postalCode"); }
       }
-    } finally {
+    } catch { /* geocode error — ignore, user can retry */ } finally {
       setGeocoding(false);
     }
   }

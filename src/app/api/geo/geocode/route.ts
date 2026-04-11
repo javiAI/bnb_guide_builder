@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
     const feature = features[0];
     const [lng, lat] = feature.center ?? feature.geometry?.coordinates ?? [];
 
+    if (typeof lat !== "number" || typeof lng !== "number" || !isFinite(lat) || !isFinite(lng)) {
+      return NextResponse.json({ matchFound: false, query: queryParts.join(", ") });
+    }
+
     // Extract structured data from context
     const context = feature.context ?? [];
     let derivedPostalCode: string | null = null;

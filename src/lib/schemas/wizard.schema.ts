@@ -124,6 +124,9 @@ export const fullWizardSchema = z.object({
 ).refine(
   (d) => d.maxAdults + d.maxChildren === d.maxGuests,
   { message: "La suma de adultos y niños debe ser igual al máximo de huéspedes", path: ["maxAdults"] },
+).refine(
+  (d) => (d.latitude == null) === (d.longitude == null),
+  { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
 );
 
 export type Step1Data = z.infer<typeof step1Schema>;

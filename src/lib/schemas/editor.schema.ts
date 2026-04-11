@@ -15,7 +15,7 @@ export const propertySchema = z.object({
   region: z.string().optional(),
   postalCode: z.string().optional(),
   streetAddress: z.string().min(1, "La dirección es obligatoria"),
-  addressExtra: z.string().optional(),
+  addressExtra: z.string().nullable().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
   maxGuests: z.number().int().min(1, "Al menos 1 huésped"),

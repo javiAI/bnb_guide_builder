@@ -59,7 +59,7 @@ export async function savePropertyAction(
     region: (formData.get("region") as string) || undefined,
     postalCode: (formData.get("postalCode") as string) || undefined,
     streetAddress: formData.get("streetAddress") as string,
-    addressExtra: (formData.get("addressExtra") as string) || undefined,
+    addressExtra: (formData.get("addressExtra") as string) || null,
     addressLevel: (formData.get("addressLevel") as string) || undefined,
     timezone: formData.get("timezone") as string,
     maxGuests: Number(formData.get("maxGuests")),
