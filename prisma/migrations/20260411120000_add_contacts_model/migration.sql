@@ -51,6 +51,8 @@ FROM "properties" p
 WHERE p."host_name" IS NOT NULL OR p."host_contact_phone" IS NOT NULL;
 
 -- Drop migrated columns from properties
+-- host_name and host_contact_phone migrated to contacts table above
+-- support_contact intentionally not migrated (unused in development, no production data)
 ALTER TABLE "properties" DROP COLUMN "host_contact_phone";
 ALTER TABLE "properties" DROP COLUMN "host_name";
 ALTER TABLE "properties" DROP COLUMN "support_contact";
