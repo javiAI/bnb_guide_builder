@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import {
   propertySchema,
   accessSchema,
+  createContactSchema,
+  updateContactSchema,
   createSpaceSchema,
   updateSpaceSchema,
   updateAmenitySchema,
@@ -129,8 +131,6 @@ export async function saveAccessAction(
       customLabel: (formData.get("unitCustomLabel") as string) || null,
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
-    hostName: (formData.get("hostName") as string) || undefined,
-    hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
   };
 
   const result = accessSchema.safeParse(raw);
@@ -155,8 +155,6 @@ export async function saveAccessAction(
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,
-      hostName: d.hostName,
-      hostContactPhone: d.hostContactPhone,
     },
   });
 
@@ -198,6 +196,98 @@ export async function saveSettingsAction(
   });
 
   revalidatePath(`/properties/${propertyId}`);
+  return { success: true };
+}
+
+// ── Contacts ──
+
+export async function createContactAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    roleKey: formData.get("roleKey") as string,
+    entityType: (formData.get("entityType") as string) || "person",
+    displayName: formData.get("displayName") as string,
+    contactPersonName: (formData.get("contactPersonName") as string) || undefined,
+    phone: (formData.get("phone") as string) || undefined,
+    phoneSecondary: (formData.get("phoneSecondary") as string) || undefined,
+    email: (formData.get("email") as string) || undefined,
+    whatsapp: (formData.get("whatsapp") as string) || undefined,
+    address: (formData.get("address") as string) || undefined,
+    availabilitySchedule: (formData.get("availabilitySchedule") as string) || undefined,
+    emergencyAvailable: formData.get("emergencyAvailable") === "on",
+    hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
+    internalNotes: (formData.get("internalNotes") as string) || undefined,
+    guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || "internal",
+    isPrimary: formData.get("isPrimary") === "on",
+  };
+
+  const result = createContactSchema.safeParse(raw);
+  if (!result.success) {
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+
+  await prisma.contact.create({
+    data: {
+      ...result.data,
+      property: { connect: { id: propertyId } },
+    },
+  });
+
+  revalidatePath(`/properties/${propertyId}/contacts`);
+  return { success: true };
+}
+
+export async function updateContactAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const contactId = formData.get("contactId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    roleKey: formData.get("roleKey") as string,
+    entityType: (formData.get("entityType") as string) || "person",
+    displayName: formData.get("displayName") as string,
+    contactPersonName: (formData.get("contactPersonName") as string) || undefined,
+    phone: (formData.get("phone") as string) || undefined,
+    phoneSecondary: (formData.get("phoneSecondary") as string) || undefined,
+    email: (formData.get("email") as string) || undefined,
+    whatsapp: (formData.get("whatsapp") as string) || undefined,
+    address: (formData.get("address") as string) || undefined,
+    availabilitySchedule: (formData.get("availabilitySchedule") as string) || undefined,
+    emergencyAvailable: formData.get("emergencyAvailable") === "on",
+    hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
+    internalNotes: (formData.get("internalNotes") as string) || undefined,
+    guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || undefined,
+    visibility: (formData.get("visibility") as string) || "internal",
+    isPrimary: formData.get("isPrimary") === "on",
+  };
+
+  const result = updateContactSchema.safeParse(raw);
+  if (!result.success) {
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+
+  await prisma.contact.update({
+    where: { id: contactId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${propertyId}/contacts`);
+  return { success: true };
+}
+
+export async function deleteContactAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const contactId = formData.get("contactId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  await prisma.contact.deleteMany({ where: { id: contactId } });
+  revalidatePath(`/properties/${propertyId}/contacts`);
   return { success: true };
 }
 

@@ -61,6 +61,7 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     description: "Anfitrión, limpieza, mantenimiento y otros",
     group: "content",
     phase: 3,
+    hasList: true,
   },
   {
     key: "policies",

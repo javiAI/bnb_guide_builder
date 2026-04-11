@@ -50,8 +50,6 @@ interface AccessFormProps {
     hasBuildingAccess: boolean;
     buildingAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
     unitAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
-    hostName: string | null;
-    hostContactPhone: string | null;
   };
 }
 
@@ -107,8 +105,6 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
         <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
         {buildingMethods.map((m) => <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />)}
         {unitMethods.map((m) => <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />)}
-        <input type="hidden" name="hostName" value={p.hostName ?? ""} />
-        <input type="hidden" name="hostContactPhone" value={p.hostContactPhone ?? ""} />
 
         {/* Horarios */}
         <CollapsibleSection title="Horarios" selectedLabel={hoursLabel} expanded={hoursOpen} onToggle={() => setHoursOpen(!hoursOpen)}>
