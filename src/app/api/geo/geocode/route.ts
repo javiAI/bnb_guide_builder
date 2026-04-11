@@ -10,15 +10,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Geocoding no configurado", matchFound: false }, { status: 503 });
   }
 
-  const body = await request.json();
-  const { streetAddress, city, country } = body as Record<string, string>;
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido", matchFound: false }, { status: 400 });
+  }
+  const streetAddress = typeof body.streetAddress === "string" ? body.streetAddress.trim() : undefined;
+  const city = typeof body.city === "string" ? body.city.trim() : undefined;
+  const country = typeof body.country === "string" ? body.country.trim() : undefined;
 
-  // Strip floor/apartment from street address (e.g. "Calle X 17, 2C" → "Calle X 17")
-  const cleanAddress = streetAddress
-    ? streetAddress.replace(/,\s*\d+[ºª°]?\s*[A-Za-z]?\s*$/, "").trim()
-    : undefined;
-
-  const queryParts = [cleanAddress, city, country].filter(Boolean);
+  const queryParts = [streetAddress, city, country].filter(Boolean);
   if (queryParts.length === 0) {
     return NextResponse.json({ error: "Dirección vacía", matchFound: false }, { status: 400 });
   }

@@ -26,7 +26,10 @@ export const step2Schema = z.object({
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-});
+}).refine(
+  (d) => (d.latitude == null) === (d.longitude == null),
+  { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
+);
 
 const bedConfigSchema = z.object({
   spaceIndex: z.number().int().min(0),

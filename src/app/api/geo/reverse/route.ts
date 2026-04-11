@@ -10,9 +10,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Geocoding no configurado" }, { status: 503 });
   }
 
-  const { lat, lng } = await request.json();
-  if (lat == null || lng == null) {
-    return NextResponse.json({ error: "Coordenadas requeridas" }, { status: 400 });
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "JSON inválido", matchFound: false }, { status: 400 });
+  }
+  const lat = typeof body.lat === "number" && isFinite(body.lat) ? body.lat : null;
+  const lng = typeof body.lng === "number" && isFinite(body.lng) ? body.lng : null;
+  if (lat == null || lng == null || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return NextResponse.json({ error: "Coordenadas inválidas", matchFound: false }, { status: 400 });
   }
 
   const url = `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_API_KEY}&language=es`;

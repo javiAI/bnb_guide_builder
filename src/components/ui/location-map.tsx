@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 interface LocationMapProps {
   lat: number | null;
@@ -20,13 +19,20 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     fetch("/api/geo/tiles-config")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.styleUrl) setStyleUrl(data.styleUrl);
-        else setError("Mapa no disponible");
+      .then((res) => {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
       })
-      .catch(() => setError("Error al cargar configuración del mapa"));
+      .then((data) => {
+        if (!cancelled) {
+          if (data.styleUrl) setStyleUrl(data.styleUrl);
+          else setError("Mapa no disponible");
+        }
+      })
+      .catch(() => { if (!cancelled) setError("Error al cargar configuración del mapa"); });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
