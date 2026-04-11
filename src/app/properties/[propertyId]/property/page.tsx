@@ -25,6 +25,7 @@ export default async function PropertyPage({ params }: Props) {
       region: true,
       postalCode: true,
       streetAddress: true,
+      addressExtra: true,
       addressLevel: true,
       timezone: true,
       maxGuests: true,
@@ -33,6 +34,8 @@ export default async function PropertyPage({ params }: Props) {
       infantsAllowed: true,
       bedroomsCount: true,
       bathroomsCount: true,
+      latitude: true,
+      longitude: true,
     },
   });
 

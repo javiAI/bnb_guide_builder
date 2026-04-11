@@ -14,7 +14,8 @@ export const propertySchema = z.object({
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),
   postalCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  streetAddress: z.string().min(1, "La dirección es obligatoria"),
+  addressExtra: z.string().nullable().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
   maxGuests: z.number().int().min(1, "Al menos 1 huésped"),
@@ -23,7 +24,12 @@ export const propertySchema = z.object({
   infantsAllowed: z.boolean(),
   bedroomsCount: z.number().int().min(0),
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
-});
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+}).refine(
+  (d) => (d.latitude == null) === (d.longitude == null),
+  { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
+);
 
 export type PropertyData = z.infer<typeof propertySchema>;
 

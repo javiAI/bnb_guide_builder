@@ -62,8 +62,11 @@ model Property {
   region           String?
   postalCode       String?  @map("postal_code")
   streetAddress    String?  @map("street_address")
+  addressExtra     String?  @map("address_extra")
   addressLevel     String?  @map("address_level")
   timezone         String?
+  latitude         Float?
+  longitude        Float?
   maxGuests        Int?     @map("max_guests")
   maxAdults        Int      @default(2) @map("max_adults")
   maxChildren      Int      @default(0) @map("max_children")

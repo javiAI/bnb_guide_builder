@@ -18,12 +18,18 @@ export const step1Schema = z.object({
 export const step2Schema = z.object({
   country: z.string().min(1, "El país es obligatorio"),
   city: z.string().min(1, "La ciudad es obligatoria"),
-  region: z.string().optional(),
-  postalCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  region: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
+  streetAddress: z.string().min(1, "La dirección es obligatoria"),
+  addressExtra: z.string().nullable().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1, "La zona horaria es obligatoria"),
-});
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
+}).refine(
+  (d) => (d.latitude == null) === (d.longitude == null),
+  { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
+);
 
 const bedConfigSchema = z.object({
   spaceIndex: z.number().int().min(0),
@@ -82,11 +88,14 @@ export const fullWizardSchema = z.object({
   customRoomTypeDesc: z.string().optional(),
   country: z.string().min(1),
   city: z.string().min(1),
-  region: z.string().optional(),
-  postalCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  region: z.string().nullable().optional(),
+  postalCode: z.string().nullable().optional(),
+  streetAddress: z.string().min(1),
+  addressExtra: z.string().nullable().optional(),
   addressLevel: z.string().optional(),
   timezone: z.string().min(1),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   maxGuests: z.number().int().min(1),
   maxAdults: z.number().int().min(1),
   maxChildren: z.number().int().min(0),
@@ -115,6 +124,9 @@ export const fullWizardSchema = z.object({
 ).refine(
   (d) => d.maxAdults + d.maxChildren === d.maxGuests,
   { message: "La suma de adultos y niños debe ser igual al máximo de huéspedes", path: ["maxAdults"] },
+).refine(
+  (d) => (d.latitude == null) === (d.longitude == null),
+  { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
 );
 
 export type Step1Data = z.infer<typeof step1Schema>;

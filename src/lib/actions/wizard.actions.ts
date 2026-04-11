@@ -197,11 +197,14 @@ export async function saveStep2Action(
   const raw = {
     country: formData.get("country") as string,
     city: formData.get("city") as string,
-    region: (formData.get("region") as string) || undefined,
-    postalCode: (formData.get("postalCode") as string) || undefined,
-    streetAddress: (formData.get("streetAddress") as string) || undefined,
+    region: (formData.get("region") as string) || null,
+    postalCode: (formData.get("postalCode") as string) || null,
+    streetAddress: formData.get("streetAddress") as string,
+    addressExtra: (formData.get("addressExtra") as string) || null,
     addressLevel: (formData.get("addressLevel") as string) || undefined,
     timezone: formData.get("timezone") as string,
+    latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
+    longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };
 
   await handleSaveAndExit(formData, sessionId, raw, 2);
@@ -359,8 +362,11 @@ export async function completeWizardAction(
         region: d.region,
         postalCode: d.postalCode,
         streetAddress: d.streetAddress,
+        addressExtra: d.addressExtra,
         addressLevel: d.addressLevel,
         timezone: d.timezone,
+        latitude: d.latitude,
+        longitude: d.longitude,
         maxGuests: d.maxGuests,
         maxAdults: d.maxAdults,
         maxChildren: d.maxChildren,
