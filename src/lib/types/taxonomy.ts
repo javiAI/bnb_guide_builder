@@ -96,6 +96,26 @@ export interface SubtypeTaxonomyFile extends TaxonomyFileBase {
   subtypes: AmenitySubtype[];
 }
 
+export interface ContactTypeGroup {
+  id: string;
+  label: string;
+}
+
+export interface ContactTypeItem {
+  id: string;
+  label: string;
+  description: string;
+  group: string;
+  recommended: boolean;
+  defaultVisibility: string;
+  defaultEntityType: string;
+}
+
+export interface ContactTypesTaxonomyFile extends TaxonomyFileBase {
+  groups: ContactTypeGroup[];
+  items: ContactTypeItem[];
+}
+
 export interface RuleTaxonomyFile extends TaxonomyFileBase {
   items: DynamicFieldRule[];
 }

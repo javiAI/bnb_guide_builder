@@ -79,8 +79,6 @@ model Property {
   checkOutTime     String?  @map("check_out_time")
   primaryAccessMethod String? @map("primary_access_method")
   accessMethodsJson   Json?    @map("access_methods_json")
-  hostContactPhone String?  @map("host_contact_phone")
-  supportContact   String?  @map("support_contact")
   policiesJson     Json?    @map("policies_json")
   customPropertyTypeLabel String? @map("custom_property_type_label")
   customPropertyTypeDesc  String? @map("custom_property_type_desc")
@@ -91,7 +89,6 @@ model Property {
   infantsAllowed          Boolean @default(false) @map("infants_allowed")
   isAutonomousCheckin     Boolean @default(false) @map("is_autonomous_checkin")
   hasBuildingAccess       Boolean @default(false) @map("has_building_access")
-  hostName                String? @map("host_name")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -115,6 +112,7 @@ model Property {
   assistantConversations AssistantConversation[]
   secretReferences      SecretReference[]
   auditLogs             AuditLog[]
+  contacts              Contact[]
 
   @@unique([workspaceId, propertyNickname])
   @@index([workspaceId])
@@ -160,6 +158,41 @@ model WizardResponse {
 
   @@index([wizardSessionId])
   @@map("wizard_responses")
+}
+
+// ──────────────────────────────────────────────
+// Contacts
+// ──────────────────────────────────────────────
+
+model Contact {
+  id                     String   @id @default(cuid())
+  propertyId             String   @map("property_id")
+  roleKey                String   @map("role_key")
+  entityType             String   @default("person") @map("entity_type")
+  displayName            String   @map("display_name")
+  contactPersonName      String?  @map("contact_person_name")
+  phone                  String?
+  phoneSecondary         String?  @map("phone_secondary")
+  email                  String?
+  whatsapp               String?
+  address                String?
+  availabilitySchedule   String?  @map("availability_schedule")
+  emergencyAvailable     Boolean  @default(false) @map("emergency_available")
+  hasPropertyAccess      Boolean  @default(false) @map("has_property_access")
+  internalNotes          String?  @map("internal_notes")
+  guestVisibleNotes      String?  @map("guest_visible_notes")
+  visibility             String   @default("internal")
+  isPrimary              Boolean  @default(false) @map("is_primary")
+  sortOrder              Int      @default(0) @map("sort_order")
+  metadataJson           Json?    @map("metadata_json")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([propertyId, roleKey])
+  @@map("contacts")
 }
 
 // ──────────────────────────────────────────────

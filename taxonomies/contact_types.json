@@ -1,0 +1,59 @@
+{
+  "file": "contact_types.json",
+  "version": "2026-04-11",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "groups": [
+    { "id": "ctg.operations", "label": "Operaciones" },
+    { "id": "ctg.cleaning", "label": "Limpieza" },
+    { "id": "ctg.maintenance", "label": "Mantenimiento" },
+    { "id": "ctg.emergency", "label": "Emergencias" },
+    { "id": "ctg.building", "label": "Edificio" },
+    { "id": "ctg.services", "label": "Servicios" },
+    { "id": "ctg.admin", "label": "Administrativo" },
+    { "id": "ctg.platforms", "label": "Plataformas" },
+    { "id": "ctg.other", "label": "Otro" }
+  ],
+  "items": [
+    { "id": "ct.host", "label": "Anfitrión", "description": "Propietario o anfitrión principal de la propiedad.", "group": "ctg.operations", "recommended": true, "defaultVisibility": "guest", "defaultEntityType": "person" },
+    { "id": "ct.cohost", "label": "Co-anfitrión", "description": "Persona que co-gestiona la propiedad.", "group": "ctg.operations", "recommended": true, "defaultVisibility": "guest", "defaultEntityType": "person" },
+    { "id": "ct.property_manager", "label": "Gestor de propiedad", "description": "Empresa o persona que gestiona la propiedad profesionalmente.", "group": "ctg.operations", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "company" },
+    { "id": "ct.checkin_person", "label": "Persona de check-in", "description": "Persona que recibe a los huéspedes a su llegada.", "group": "ctg.operations", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "person" },
+    { "id": "ct.keyholder", "label": "Portador de llaves", "description": "Persona con acceso a la propiedad para emergencias.", "group": "ctg.operations", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+
+    { "id": "ct.cleaning", "label": "Limpieza", "description": "Equipo o persona encargada de la limpieza entre estancias.", "group": "ctg.cleaning", "recommended": true, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.laundry", "label": "Lavandería", "description": "Servicio de lavandería de ropa de cama y toallas.", "group": "ctg.cleaning", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "company" },
+
+    { "id": "ct.handyman", "label": "Mantenimiento general", "description": "Persona para reparaciones generales y pequeños arreglos.", "group": "ctg.maintenance", "recommended": true, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.plumber", "label": "Fontanero", "description": "Profesional para problemas de fontanería.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.electrician", "label": "Electricista", "description": "Profesional para problemas eléctricos.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.locksmith", "label": "Cerrajero", "description": "Profesional para cerraduras y accesos.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.hvac", "label": "Técnico climatización", "description": "Profesional para aire acondicionado y calefacción.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.appliance_repair", "label": "Reparación electrodomésticos", "description": "Servicio técnico para electrodomésticos.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "company" },
+    { "id": "ct.pest_control", "label": "Control de plagas", "description": "Servicio de desinsectación y control de plagas.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "company" },
+    { "id": "ct.garden_pool", "label": "Jardín / piscina", "description": "Mantenimiento de jardín, terraza o piscina.", "group": "ctg.maintenance", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+
+    { "id": "ct.emergency_police", "label": "Policía", "description": "Número de emergencias y comisaría local.", "group": "ctg.emergency", "recommended": true, "defaultVisibility": "guest", "defaultEntityType": "institution" },
+    { "id": "ct.emergency_hospital", "label": "Hospital / urgencias", "description": "Hospital o centro de urgencias más cercano.", "group": "ctg.emergency", "recommended": true, "defaultVisibility": "guest", "defaultEntityType": "institution" },
+    { "id": "ct.emergency_fire", "label": "Bomberos", "description": "Servicio de bomberos local.", "group": "ctg.emergency", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "institution" },
+    { "id": "ct.emergency_pharmacy", "label": "Farmacia de guardia", "description": "Farmacia más cercana o de guardia 24h.", "group": "ctg.emergency", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "institution" },
+
+    { "id": "ct.building_manager", "label": "Portero / conserje", "description": "Portero o conserje del edificio.", "group": "ctg.building", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "person" },
+    { "id": "ct.community_president", "label": "Presidente comunidad", "description": "Presidente de la comunidad de vecinos.", "group": "ctg.building", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+    { "id": "ct.neighbor", "label": "Vecino de confianza", "description": "Vecino que puede ayudar en caso de emergencia.", "group": "ctg.building", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" },
+
+    { "id": "ct.transfer", "label": "Transfer / taxi", "description": "Servicio de transfer al aeropuerto o taxi de confianza.", "group": "ctg.services", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "company" },
+    { "id": "ct.pet_service", "label": "Servicio mascotas", "description": "Cuidador de mascotas, paseador o veterinario.", "group": "ctg.services", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "person" },
+    { "id": "ct.tourism_board", "label": "Oficina de turismo", "description": "Oficina de turismo local.", "group": "ctg.services", "recommended": false, "defaultVisibility": "guest", "defaultEntityType": "institution" },
+
+    { "id": "ct.insurance", "label": "Seguros", "description": "Agente o compañía de seguros de la propiedad.", "group": "ctg.admin", "recommended": false, "defaultVisibility": "sensitive", "defaultEntityType": "company" },
+    { "id": "ct.legal", "label": "Legal / licencia turística", "description": "Asesor legal, gestor de licencia turística.", "group": "ctg.admin", "recommended": false, "defaultVisibility": "sensitive", "defaultEntityType": "company" },
+    { "id": "ct.accountant", "label": "Contable / asesor fiscal", "description": "Contable o asesor fiscal.", "group": "ctg.admin", "recommended": false, "defaultVisibility": "sensitive", "defaultEntityType": "company" },
+
+    { "id": "ct.platform_airbnb", "label": "Soporte Airbnb", "description": "Contacto de soporte de Airbnb.", "group": "ctg.platforms", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "platform" },
+    { "id": "ct.platform_booking", "label": "Soporte Booking", "description": "Contacto de soporte de Booking.com.", "group": "ctg.platforms", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "platform" },
+    { "id": "ct.platform_other", "label": "Otra plataforma", "description": "Contacto de soporte de otra plataforma.", "group": "ctg.platforms", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "platform" },
+
+    { "id": "ct.other", "label": "Otro", "description": "Otro tipo de contacto no incluido en las categorías anteriores.", "group": "ctg.other", "recommended": false, "defaultVisibility": "internal", "defaultEntityType": "person" }
+  ]
+}

@@ -49,11 +49,34 @@ export const accessSchema = z.object({
   hasBuildingAccess: z.boolean(),
   buildingAccess: accessLayerSchema.optional(),
   unitAccess: accessLayerSchema.refine((d) => d.methods.length > 0, { message: "Selecciona al menos un método de acceso a la vivienda" }),
-  hostName: z.string().optional(),
-  hostContactPhone: z.string().optional(),
 });
 
 export type AccessData = z.infer<typeof accessSchema>;
+
+// ── Contact schemas ──
+
+export const createContactSchema = z.object({
+  roleKey: z.string().min(1, "Selecciona un tipo de contacto"),
+  entityType: z.string().min(1),
+  displayName: z.string().min(1, "El nombre es obligatorio"),
+  contactPersonName: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  phoneSecondary: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+  whatsapp: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  availabilitySchedule: z.string().nullable().optional(),
+  emergencyAvailable: z.boolean().optional(),
+  hasPropertyAccess: z.boolean().optional(),
+  internalNotes: z.string().nullable().optional(),
+  guestVisibleNotes: z.string().nullable().optional(),
+  visibility: z.string().optional(),
+  isPrimary: z.boolean().optional(),
+});
+
+export const updateContactSchema = createContactSchema.partial().extend({
+  displayName: z.string().min(1, "El nombre es obligatorio"),
+});
 
 // ── Policies editor (S-11) ──
 // Policy data is stored as JSONB in a flexible structure

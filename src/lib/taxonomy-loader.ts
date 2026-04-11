@@ -31,6 +31,7 @@ import reviewReasonsJson from "../../taxonomies/review_reasons.json";
 import bedTypesJson from "../../taxonomies/bed_types.json";
 import spanishProvincesJson from "../../taxonomies/spanish_provinces.json";
 import buildingAccessMethodsJson from "../../taxonomies/building_access_methods.json";
+import contactTypesJson from "../../taxonomies/contact_types.json";
 
 // ── Item-based taxonomies ──
 
@@ -49,6 +50,7 @@ export const reviewReasons = reviewReasonsJson as unknown as ItemTaxonomyFile;
 export const bedTypes = bedTypesJson as unknown as ItemTaxonomyFile;
 export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyFile;
 export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
+export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
 
 // ── Grouped taxonomies ──
 

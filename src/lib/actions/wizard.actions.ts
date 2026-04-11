@@ -387,11 +387,24 @@ export async function completeWizardAction(
         infantsAllowed: d.infantsAllowed ?? false,
         isAutonomousCheckin: d.isAutonomousCheckin,
         hasBuildingAccess: d.hasBuildingAccess,
-        hostName: d.hostName,
-        hostContactPhone: d.hostContactPhone,
         status: "active",
       },
     });
+
+    // Create host contact if name or phone provided
+    if (d.hostName || d.hostContactPhone) {
+      await tx.contact.create({
+        data: {
+          propertyId: prop.id,
+          roleKey: "ct.host",
+          entityType: "person",
+          displayName: d.hostName?.trim() || "Anfitrión",
+          phone: d.hostContactPhone,
+          visibility: "guest",
+          isPrimary: true,
+        },
+      });
+    }
 
     // Create spaces with bed configurations
     if (d.beds && d.beds.length > 0) {

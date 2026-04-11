@@ -21,8 +21,6 @@ export default async function AccessPage({ params }: Props) {
       accessMethodsJson: true,
       customAccessMethodLabel: true,
       customAccessMethodDesc: true,
-      hostName: true,
-      hostContactPhone: true,
     },
   });
 
@@ -42,8 +40,6 @@ export default async function AccessPage({ params }: Props) {
         hasBuildingAccess: property.hasBuildingAccess,
         buildingAccess: accessJson?.building ?? null,
         unitAccess: accessJson?.unit ?? null,
-        hostName: property.hostName,
-        hostContactPhone: property.hostContactPhone,
       }}
     />
   );
