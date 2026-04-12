@@ -78,7 +78,45 @@ export const updateContactSchema = createContactSchema.partial().extend({
   displayName: z.string().min(1, "El nombre es obligatorio"),
 });
 
-// ── Policies editor (S-11) ──
+// ── Policies editor ──
+
+export const policiesSchema = z.object({
+  quietHours: z.object({
+    enabled: z.boolean(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+  }),
+  smoking: z.enum(["not_allowed", "outdoors_only", "designated_area", "no_restriction"]),
+  smokingArea: z.string().nullable().optional(),
+  events: z.object({
+    policy: z.enum(["not_allowed", "small_gatherings", "with_approval"]),
+    maxPeople: z.number().int().min(1).optional(),
+    approvalInstructions: z.string().nullable().optional(),
+  }),
+  commercialPhotography: z.enum(["not_allowed", "with_permission"]),
+  pets: z.object({
+    allowed: z.boolean(),
+    types: z.array(z.string()).optional(),
+    sizeRestriction: z.enum(["none", "small_only", "medium_max", "custom_weight"]).optional(),
+    maxWeightKg: z.number().min(1).optional(),
+    maxCount: z.number().int().min(1).max(10).optional(),
+    feeMode: z.enum(["none", "per_booking", "per_night", "per_pet", "per_pet_per_night"]).optional(),
+    feeAmount: z.number().min(0).optional(),
+    restrictions: z.array(z.string()).optional(),
+    notes: z.string().nullable().optional(),
+  }),
+  supplements: z.object({
+    cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }),
+    extraGuest: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional(), fromGuest: z.number().int().min(1).optional() }),
+  }),
+  services: z.object({
+    allowed: z.boolean(),
+    types: z.array(z.string()).optional(),
+    notes: z.string().nullable().optional(),
+  }),
+});
+
+export type PoliciesData = z.infer<typeof policiesSchema>;
 // Policy data is stored as JSONB in a flexible structure
 // since policy items have varying types (enum, number, object, etc.)
 

@@ -1,6 +1,20 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { PoliciesForm } from "./policies-form";
+import type { PoliciesData } from "@/lib/schemas/editor.schema";
+
+const DEFAULT_POLICIES: PoliciesData = {
+  quietHours: { enabled: false },
+  smoking: "not_allowed",
+  events: { policy: "not_allowed" },
+  commercialPhotography: "not_allowed",
+  pets: { allowed: false },
+  supplements: {
+    cleaning: { enabled: false },
+    extraGuest: { enabled: false },
+  },
+  services: { allowed: false },
+};
 
 export default async function PoliciesPage({
   params,
@@ -15,39 +29,21 @@ export default async function PoliciesPage({
       id: true,
       policiesJson: true,
       maxGuests: true,
-      checkInStart: true,
-      checkInEnd: true,
-      checkOutTime: true,
     },
   });
 
   if (!property) notFound();
 
-  // Parse stored policies or empty object
-  const savedPolicies =
-    property.policiesJson && typeof property.policiesJson === "object"
-      ? (property.policiesJson as Record<string, string>)
-      : {};
+  const saved = property.policiesJson as PoliciesData | null;
+  const policies: PoliciesData = saved ? { ...DEFAULT_POLICIES, ...saved } : DEFAULT_POLICIES;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">Normas</h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Normas de convivencia, restricciones y suplementos.
-      </p>
-
-      <div className="mt-8">
-        <PoliciesForm
-          propertyId={propertyId}
-          savedPolicies={savedPolicies}
-          propertyDefaults={{
-            maxGuests: property.maxGuests,
-            checkInStart: property.checkInStart,
-            checkInEnd: property.checkInEnd,
-            checkOutTime: property.checkOutTime,
-          }}
-        />
-      </div>
-    </div>
+    <PoliciesForm
+      propertyId={propertyId}
+      policies={policies}
+      propertyDefaults={{
+        maxGuests: property.maxGuests,
+      }}
+    />
   );
 }
