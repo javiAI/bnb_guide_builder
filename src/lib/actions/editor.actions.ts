@@ -409,13 +409,11 @@ export async function deleteSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  // Null out spaceId on any PropertyAmenity linked to this space (no FK relation, manual cleanup)
-  await prisma.propertyAmenity.updateMany({
-    where: { spaceId },
-    data: { spaceId: null },
-  });
-
-  await prisma.space.delete({ where: { id: spaceId } });
+  // Atomic: null out orphaned PropertyAmenity.spaceId then delete the space
+  await prisma.$transaction([
+    prisma.propertyAmenity.updateMany({ where: { spaceId }, data: { spaceId: null } }),
+    prisma.space.delete({ where: { id: spaceId } }),
+  ]);
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };

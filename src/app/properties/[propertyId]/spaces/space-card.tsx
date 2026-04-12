@@ -107,7 +107,10 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
   }, [editingName]);
 
   useEffect(() => {
-    if (renameState?.success) setEditingName(false);
+    if (renameState?.success) {
+      setNameValue((current) => current.trim());
+      setEditingName(false);
+    }
   }, [renameState]);
 
   // ── Feature state ──
