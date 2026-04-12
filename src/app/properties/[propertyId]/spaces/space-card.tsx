@@ -604,7 +604,11 @@ function StructuredField({
           step={field.type === "integer_optional" ? "1" : "0.1"}
           min={0}
           value={(value as number) ?? ""}
-          onChange={(e) => onChange(e.target.value !== "" ? Number(e.target.value) : null)}
+          onChange={(e) => {
+            if (e.target.value === "") { onChange(null); return; }
+            const n = Number(e.target.value);
+            onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
+          }}
           placeholder="—"
           className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
         />
