@@ -81,14 +81,18 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
   const [commercialPhoto, setCommercialPhoto] = useState(initial.commercialPhotography);
 
   // ── Mascotas state ──
+  const validPetTypeIds = new Set(PET_TYPE_OPTIONS.map((o) => o.id));
+  const validPetRestrictionIds = new Set(PET_RESTRICTION_OPTIONS.map((o) => o.id));
+  const validServiceTypeIds = new Set(SERVICE_TYPE_OPTIONS.map((o) => o.id));
+
   const [petsAllowed, setPetsAllowed] = useState(initial.pets.allowed);
-  const [petTypes, setPetTypes] = useState<string[]>(initial.pets.types ?? []);
+  const [petTypes, setPetTypes] = useState<string[]>((initial.pets.types ?? []).filter((id) => validPetTypeIds.has(id)));
   const [petSize, setPetSize] = useState(initial.pets.sizeRestriction ?? "none");
   const [petMaxWeight, setPetMaxWeight] = useState(initial.pets.maxWeightKg ?? 15);
   const [petMaxCount, setPetMaxCount] = useState(initial.pets.maxCount ?? 2);
   const [petFeeMode, setPetFeeMode] = useState(initial.pets.feeMode ?? "none");
   const [petFeeAmount, setPetFeeAmount] = useState(initial.pets.feeAmount ?? 0);
-  const [petRestrictions, setPetRestrictions] = useState<string[]>(initial.pets.restrictions ?? []);
+  const [petRestrictions, setPetRestrictions] = useState<string[]>((initial.pets.restrictions ?? []).filter((id) => validPetRestrictionIds.has(id)));
   const [petNotes, setPetNotes] = useState(initial.pets.notes ?? "");
 
   // ── Suplementos state ──
@@ -100,7 +104,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
   // ── Servicios state ──
   const [servicesAllowed, setServicesAllowed] = useState(initial.services.allowed);
-  const [serviceTypes, setServiceTypes] = useState<string[]>(initial.services.types ?? []);
+  const [serviceTypes, setServiceTypes] = useState<string[]>((initial.services.types ?? []).filter((id) => validServiceTypeIds.has(id)));
   const [serviceNotes, setServiceNotes] = useState(initial.services.notes ?? "");
 
   // ── Section expand state ──

@@ -127,8 +127,14 @@ export const policiesSchema = z.object({
     if (v.feeMode && v.feeMode !== "none" && v.feeAmount === undefined) ctx.addIssue({ code: "custom", path: ["feeAmount"], message: "Indica el importe del cargo" });
   }),
   supplements: z.object({
-    cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }),
-    extraGuest: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional(), fromGuest: z.number().int().min(1).optional() }),
+    cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }).superRefine((v, ctx) => {
+      if (v.enabled && v.amount === undefined) ctx.addIssue({ code: "custom", path: ["amount"], message: "Indica el importe del suplemento de limpieza" });
+    }),
+    extraGuest: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional(), fromGuest: z.number().int().min(1).optional() }).superRefine((v, ctx) => {
+      if (!v.enabled) return;
+      if (v.amount === undefined) ctx.addIssue({ code: "custom", path: ["amount"], message: "Indica el importe por huésped extra" });
+      if (v.fromGuest === undefined) ctx.addIssue({ code: "custom", path: ["fromGuest"], message: "Indica a partir de cuántos huéspedes" });
+    }),
   }),
   services: z.object({
     allowed: z.boolean(),

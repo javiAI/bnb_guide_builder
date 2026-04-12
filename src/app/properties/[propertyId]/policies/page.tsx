@@ -34,14 +34,22 @@ export default async function PoliciesPage({
 
   if (!property) notFound();
 
-  const saved = property.policiesJson as Partial<PoliciesData> | null;
-  const policies: PoliciesData = saved
+  // Legacy saves stored JSON.stringify(...) — parse string before merging
+  const rawJson = property.policiesJson;
+  const parsed: Partial<PoliciesData> | null =
+    rawJson === null
+      ? null
+      : typeof rawJson === "string"
+        ? (() => { try { return JSON.parse(rawJson); } catch { return null; } })()
+        : (rawJson as Partial<PoliciesData>);
+
+  const policies: PoliciesData = parsed
     ? {
         ...DEFAULT_POLICIES,
-        ...saved,
+        ...parsed,
         supplements: {
-          cleaning: { ...DEFAULT_POLICIES.supplements.cleaning, ...saved.supplements?.cleaning },
-          extraGuest: { ...DEFAULT_POLICIES.supplements.extraGuest, ...saved.supplements?.extraGuest },
+          cleaning: { ...DEFAULT_POLICIES.supplements.cleaning, ...parsed.supplements?.cleaning },
+          extraGuest: { ...DEFAULT_POLICIES.supplements.extraGuest, ...parsed.supplements?.extraGuest },
         },
       }
     : DEFAULT_POLICIES;

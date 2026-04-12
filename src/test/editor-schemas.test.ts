@@ -383,4 +383,48 @@ describe("Policies schema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects cleaning enabled without amount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: true },
+        extraGuest: { enabled: false },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects extraGuest enabled without amount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: true, fromGuest: 3 },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects extraGuest enabled without fromGuest", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: true, amount: 20 },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts supplements disabled without amounts", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: false },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
 });

@@ -322,7 +322,7 @@ export async function savePoliciesAction(
 
   await prisma.property.update({
     where: { id: propertyId },
-    data: { policiesJson: result.data as object },
+    data: { policiesJson: result.data },
   });
 
   revalidatePath(`/properties/${propertyId}`);
