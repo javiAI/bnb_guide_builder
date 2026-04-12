@@ -9,6 +9,8 @@ interface NumberStepperProps {
   onChange: (value: number) => void;
   /** Form field name — renders a hidden input for form submission */
   name?: string;
+  /** Unit suffix shown after the value (e.g. "kg", "EUR") */
+  suffix?: string;
 }
 
 export function NumberStepper({
@@ -19,6 +21,7 @@ export function NumberStepper({
   step = 1,
   onChange,
   name,
+  suffix,
 }: NumberStepperProps) {
   return (
     <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3">
@@ -34,8 +37,8 @@ export function NumberStepper({
         >
           &minus;
         </button>
-        <span className="w-8 text-center text-sm font-semibold text-[var(--foreground)]">
-          {value}
+        <span className="min-w-[2rem] text-center text-sm font-semibold text-[var(--foreground)]">
+          {value}{suffix ? ` ${suffix}` : ""}
         </span>
         <button
           type="button"

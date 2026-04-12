@@ -117,15 +117,6 @@ export const policiesSchema = z.object({
 });
 
 export type PoliciesData = z.infer<typeof policiesSchema>;
-// Policy data is stored as JSONB in a flexible structure
-// since policy items have varying types (enum, number, object, etc.)
-
-export const policyValueSchema = z.record(
-  z.string(),
-  z.union([z.string(), z.number(), z.boolean(), z.null()]),
-);
-
-export type PolicyValues = z.infer<typeof policyValueSchema>;
 
 // ── Spaces (S-12, S-13) ──
 

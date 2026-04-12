@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
-import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
+import { RadioCardGroup } from "@/components/ui/radio-card-group";
+import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
+import { NumberStepper } from "@/components/ui/number-stepper";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { savePoliciesAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { getPolicyOptions, getPolicyFieldOptions } from "@/lib/taxonomy-loader";
 import type { PoliciesData } from "@/lib/schemas/editor.schema";
 
 // ── Time options (30min intervals) ──
@@ -18,62 +20,16 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return `${h}:${m}`;
 });
 
-// ── Static option sets ──
+// ── Options loaded from policy_taxonomy.json ──
 
-const SMOKING_OPTIONS: RadioCardOption[] = [
-  { id: "not_allowed", label: "No permitido", description: "Está prohibido fumar en toda la propiedad" },
-  { id: "outdoors_only", label: "Solo en exterior", description: "Permitido solo en terrazas, balcones o jardín" },
-  { id: "designated_area", label: "Zona designada", description: "Hay una zona específica habilitada para fumar" },
-  { id: "no_restriction", label: "Sin restricción", description: "Se puede fumar libremente en la propiedad" },
-];
-
-const EVENTS_OPTIONS: RadioCardOption[] = [
-  { id: "not_allowed", label: "No permitidos", description: "No se permiten reuniones ni eventos" },
-  { id: "small_gatherings", label: "Pequeñas reuniones", description: "Se permiten reuniones tranquilas hasta un máximo de personas" },
-  { id: "with_approval", label: "Con aprobación previa", description: "Se permiten con autorización del anfitrión" },
-];
-
-const PHOTOGRAPHY_OPTIONS: RadioCardOption[] = [
-  { id: "not_allowed", label: "No permitida", description: "No se permite fotografía o filmación comercial" },
-  { id: "with_permission", label: "Permitida con permiso", description: "Permitida previa autorización del anfitrión" },
-];
-
-const PET_TYPE_OPTIONS: CheckboxCardOption[] = [
-  { id: "dogs", label: "Perros", description: "Se admiten perros" },
-  { id: "cats", label: "Gatos", description: "Se admiten gatos" },
-  { id: "other", label: "Otros", description: "Otros animales (especificar en notas)" },
-];
-
-const PET_SIZE_OPTIONS: RadioCardOption[] = [
-  { id: "none", label: "Sin restricción", description: "Se admiten mascotas de cualquier tamaño" },
-  { id: "small_only", label: "Solo pequeños (< 10 kg)", description: "Solo mascotas de hasta 10 kg" },
-  { id: "medium_max", label: "Medianos (< 25 kg)", description: "Solo mascotas de hasta 25 kg" },
-  { id: "custom_weight", label: "Peso máximo personalizado", description: "Establece un límite de peso específico" },
-];
-
-const PET_FEE_OPTIONS: RadioCardOption[] = [
-  { id: "none", label: "Sin cargo", description: "No se cobra suplemento por mascota" },
-  { id: "per_booking", label: "Por reserva", description: "Un cargo fijo por toda la estancia" },
-  { id: "per_night", label: "Por noche", description: "Un cargo por cada noche de estancia" },
-  { id: "per_pet", label: "Por mascota", description: "Un cargo fijo por cada mascota" },
-  { id: "per_pet_per_night", label: "Por mascota y noche", description: "Un cargo por mascota por cada noche" },
-];
-
-const PET_RESTRICTION_OPTIONS: CheckboxCardOption[] = [
-  { id: "no_bedrooms", label: "No en dormitorios", description: "Las mascotas no pueden acceder a los dormitorios" },
-  { id: "no_sofas", label: "No en los sofás", description: "Las mascotas no pueden subir a los sofás" },
-  { id: "extra_cleaning", label: "Requieren limpieza extra", description: "Se aplica limpieza adicional tras la estancia" },
-  { id: "must_be_supervised", label: "Supervisadas en todo momento", description: "Las mascotas no pueden quedarse solas en la propiedad" },
-];
-
-const SERVICE_TYPE_OPTIONS: CheckboxCardOption[] = [
-  { id: "chef", label: "Chef privado", description: "Servicio de chef a domicilio" },
-  { id: "massage", label: "Masajista", description: "Servicio de masaje o spa" },
-  { id: "photographer", label: "Fotógrafo", description: "Sesiones de fotografía profesional" },
-  { id: "celebrations", label: "Celebraciones", description: "Cumpleaños, aniversarios y eventos similares" },
-  { id: "classes", label: "Clases particulares", description: "Yoga, cocina, idiomas y similares" },
-  { id: "other", label: "Otro", description: "Otros servicios no incluidos" },
-];
+const SMOKING_OPTIONS = getPolicyOptions("pol.smoking");
+const EVENTS_OPTIONS = getPolicyOptions("pol.events");
+const PHOTOGRAPHY_OPTIONS = getPolicyOptions("pol.commercial_photography");
+const PET_TYPE_OPTIONS = getPolicyFieldOptions("pol.pets", "types");
+const PET_SIZE_OPTIONS = getPolicyFieldOptions("pol.pets", "size_restriction");
+const PET_FEE_OPTIONS = getPolicyFieldOptions("pol.pets", "fee_mode");
+const PET_RESTRICTION_OPTIONS = getPolicyFieldOptions("pol.pets", "restrictions");
+const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
 
 // ── Helpers ──
 
@@ -231,28 +187,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
     );
   }
 
-  function NumberStepper({ value, onChange, min, max, suffix }: { value: number; onChange: (v: number) => void; min: number; max: number; suffix?: string }) {
-    return (
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(min, value - 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)]"
-        >
-          −
-        </button>
-        <span className="min-w-[3rem] text-center text-sm font-medium">{value}{suffix ? ` ${suffix}` : ""}</span>
-        <button
-          type="button"
-          onClick={() => onChange(Math.min(max, value + 1))}
-          className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)]"
-        >
-          +
-        </button>
-      </div>
-    );
-  }
-
   return (
     <form
       action={(formData) => {
@@ -327,8 +261,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <RadioCardGroup name="_events" options={EVENTS_OPTIONS} value={eventsPolicy} onChange={(v) => setEventsPolicy(v as PoliciesData["events"]["policy"])} showRecommended={false} />
             {eventsPolicy === "small_gatherings" && (
               <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">Máximo de personas</span>
-                <NumberStepper value={eventsMaxPeople} onChange={setEventsMaxPeople} min={2} max={50} />
+                <NumberStepper label="Máximo de personas" value={eventsMaxPeople} onChange={setEventsMaxPeople} min={2} max={50} />
               </div>
             )}
             {eventsPolicy === "with_approval" && (
@@ -374,16 +307,14 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <RadioCardGroup name="_petSize" options={PET_SIZE_OPTIONS} value={petSize} onChange={(v) => setPetSize(v as NonNullable<PoliciesData["pets"]["sizeRestriction"]>)} showRecommended={false} />
                 {petSize === "custom_weight" && (
                   <div className="mt-3">
-                    <span className="text-xs text-[var(--color-neutral-500)]">Peso máximo (kg)</span>
-                    <NumberStepper value={petMaxWeight} onChange={setPetMaxWeight} min={1} max={100} suffix="kg" />
+                    <NumberStepper label="Peso máximo" value={petMaxWeight} onChange={setPetMaxWeight} min={1} max={100} suffix="kg" />
                   </div>
                 )}
               </div>
 
               {/* Max count */}
               <div>
-                <span className={labelCls}>Número máximo de mascotas</span>
-                <NumberStepper value={petMaxCount} onChange={setPetMaxCount} min={1} max={10} />
+                <NumberStepper label="Número máximo de mascotas" value={petMaxCount} onChange={setPetMaxCount} min={1} max={10} />
               </div>
 
               {/* Fee */}
@@ -481,8 +412,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                   />
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">A partir de cuántos huéspedes</span>
-                  <NumberStepper value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
+                  <NumberStepper label="A partir de cuántos huéspedes" value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
                   <p className="mt-1.5 text-xs text-[var(--color-neutral-400)]">
                     Máximo de huéspedes: {propertyDefaults.maxGuests ?? "—"} ·{" "}
                     <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-primary-500)] hover:underline">
