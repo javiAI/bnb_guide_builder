@@ -15,7 +15,7 @@ import {
 } from "@/lib/taxonomy-loader";
 
 describe("Phase 4 section editors are config-driven", () => {
-  const phase4Sections = ["basics", "arrival", "policies", "spaces", "amenities"];
+  const phase4Sections = ["property", "access", "contacts", "policies", "spaces", "amenities"];
 
   it("all Phase 4 sections exist in the registry", () => {
     for (const key of phase4Sections) {
@@ -30,11 +30,11 @@ describe("Phase 4 section editors are config-driven", () => {
     }
   });
 
-  it("basics and arrival have completenessFields defined", () => {
-    const basics = getSectionEditor("basics")!;
-    expect(basics.completenessFields!.length).toBeGreaterThan(0);
-    const arrival = getSectionEditor("arrival")!;
-    expect(arrival.completenessFields!.length).toBeGreaterThan(0);
+  it("property and access have completenessFields defined", () => {
+    const property = getSectionEditor("property")!;
+    expect(property.completenessFields!.length).toBeGreaterThan(0);
+    const access = getSectionEditor("access")!;
+    expect(access.completenessFields!.length).toBeGreaterThan(0);
   });
 
   it("spaces, amenities reference their taxonomy source", () => {

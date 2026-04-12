@@ -200,16 +200,16 @@ describe("Field dependency engine", () => {
 
 describe("Renderer registry", () => {
   it("defines render configs for content sections", () => {
-    expect(getRenderConfig("basics")).toBeDefined();
-    expect(getRenderConfig("arrival")).toBeDefined();
+    expect(getRenderConfig("property")).toBeDefined();
+    expect(getRenderConfig("access")).toBeDefined();
     expect(getRenderConfig("amenities")).toBeDefined();
   });
 
   it("guest_guide target includes public content", () => {
     const guideConfigs = getRenderConfigsForTarget("guest_guide");
     expect(guideConfigs.length).toBeGreaterThan(0);
-    const basics = guideConfigs.find((c) => c.sectionKey === "basics");
-    expect(basics?.maxVisibility).toBe("public");
+    const property = guideConfigs.find((c) => c.sectionKey === "property");
+    expect(property?.maxVisibility).toBe("public");
   });
 
   it("ai_view target includes more sections than guest_guide", () => {
@@ -234,7 +234,7 @@ describe("Icon registry", () => {
   });
 
   it("lookupIcon resolves section and taxonomy icons", () => {
-    expect(lookupIcon("basics")).toBe("home");
+    expect(lookupIcon("property")).toBe("home");
     expect(lookupIcon("am.smart_lock")).toBe("smartphone");
   });
 

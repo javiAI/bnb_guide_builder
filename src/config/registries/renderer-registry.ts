@@ -31,7 +31,7 @@ export interface RenderConfig {
 
 export const RENDER_CONFIGS: RenderConfig[] = [
   {
-    sectionKey: "basics",
+    sectionKey: "property",
     targets: ["guest_guide", "ai_view", "internal"],
     maxVisibility: "public",
     includeMedia: true,
@@ -39,12 +39,19 @@ export const RENDER_CONFIGS: RenderConfig[] = [
     knowledgeCategory: "property_info",
   },
   {
-    sectionKey: "arrival",
+    sectionKey: "access",
     targets: ["guest_guide", "ai_view", "internal", "messaging"],
     maxVisibility: "booked_guest",
     includeMedia: true,
     guideSectionType: "arrival",
     knowledgeCategory: "check_in",
+  },
+  {
+    sectionKey: "contacts",
+    targets: ["ai_view", "internal"],
+    maxVisibility: "internal",
+    includeMedia: false,
+    knowledgeCategory: "contacts",
   },
   {
     sectionKey: "policies",

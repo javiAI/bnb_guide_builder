@@ -7,6 +7,9 @@ vi.mock("@/lib/db", () => ({
     property: {
       findMany: vi.fn(),
     },
+    wizardSession: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 

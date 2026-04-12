@@ -16,8 +16,9 @@
 // ── Section icons (workspace sidebar) ──
 
 export const SECTION_ICONS: Record<string, string> = {
-  basics: "home",
-  arrival: "key",
+  property: "home",
+  access: "key",
+  contacts: "users",
   policies: "shield",
   spaces: "layout",
   amenities: "coffee",
