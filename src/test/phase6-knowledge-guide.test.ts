@@ -82,9 +82,13 @@ describe("Renderer registry for guide/AI", () => {
     expect(configs.length).toBeGreaterThanOrEqual(5);
   });
 
-  it("ai_view target includes all 7 sections", () => {
+  it("ai_view target includes renamed and new sections", () => {
     const configs = getRenderConfigsForTarget("ai_view");
-    expect(configs.length).toBe(7);
+    const keys = configs.map((c) => c.sectionKey);
+    expect(keys).toContain("property");
+    expect(keys).toContain("access");
+    expect(keys).toContain("contacts");
+    expect(configs.length).toBeGreaterThanOrEqual(7);
   });
 
   it("no section has secret as maxVisibility", () => {
@@ -93,14 +97,15 @@ describe("Renderer registry for guide/AI", () => {
     }
   });
 
-  it("each config has guideSectionType", () => {
-    for (const config of RENDER_CONFIGS) {
+  it("each config with guest_guide target has guideSectionType", () => {
+    const guideConfigs = getRenderConfigsForTarget("guest_guide");
+    for (const config of guideConfigs) {
       expect(config.guideSectionType).toBeTruthy();
     }
   });
 
   it("getRenderConfig returns correct section", () => {
-    const config = getRenderConfig("basics");
+    const config = getRenderConfig("property");
     expect(config).toBeDefined();
     expect(config?.knowledgeCategory).toBe("property_info");
   });

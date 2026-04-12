@@ -5,8 +5,9 @@ describe("Navigation", () => {
   it("has all workspace modules defined", () => {
     const keys = WORKSPACE_NAV.map((item) => item.key);
     expect(keys).toContain("overview");
-    expect(keys).toContain("basics");
-    expect(keys).toContain("arrival");
+    expect(keys).toContain("property");
+    expect(keys).toContain("access");
+    expect(keys).toContain("contacts");
     expect(keys).toContain("policies");
     expect(keys).toContain("spaces");
     expect(keys).toContain("amenities");
@@ -28,8 +29,8 @@ describe("Navigation", () => {
     const overview = WORKSPACE_NAV.find((n) => n.key === "overview")!;
     expect(overview.href("prop_123")).toBe("/properties/prop_123");
 
-    const basics = WORKSPACE_NAV.find((n) => n.key === "basics")!;
-    expect(basics.href("prop_123")).toBe("/properties/prop_123/basics");
+    const property = WORKSPACE_NAV.find((n) => n.key === "property")!;
+    expect(property.href("prop_123")).toBe("/properties/prop_123/property");
   });
 
   it("has all group labels in Spanish", () => {
