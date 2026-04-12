@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -11,6 +12,9 @@ import {
   updateContactSchema,
   createSpaceSchema,
   updateSpaceSchema,
+  spaceFeaturesSchema,
+  createBedSchema,
+  updateBedSchema,
   updateAmenitySchema,
   createPlaybookSchema,
   updatePlaybookSchema,
@@ -398,11 +402,205 @@ export async function deleteSpaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
-  const propertyId = formData.get("propertyId") as string;
 
-  await prisma.space.delete({ where: { id: spaceId } });
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  revalidatePath(`/properties/${propertyId}/spaces`);
+  // Atomic: null out orphaned PropertyAmenity.spaceId then delete the space
+  await prisma.$transaction([
+    prisma.propertyAmenity.updateMany({ where: { spaceId }, data: { spaceId: null } }),
+    prisma.space.delete({ where: { id: spaceId } }),
+  ]);
+
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function renameSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const name = (formData.get("name") as string)?.trim();
+
+  if (!name) return { success: false, error: "El nombre es obligatorio" };
+
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
+  await prisma.space.update({ where: { id: spaceId }, data: { name } });
+
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function updateSpaceDetailsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const featuresRaw = formData.get("featuresJson") as string | null;
+  const guestNotes = (formData.get("guestNotes") as string) || null;
+  const aiNotes = (formData.get("aiNotes") as string) || null;
+  const internalNotes = (formData.get("internalNotes") as string) || null;
+
+  // Validate visibility server-side — never trust arbitrary client string
+  const ALLOWED_VISIBILITIES = ["public", "booked_guest", "internal"] as const;
+  const visibilityRaw = formData.get("visibility") as string;
+  const visibility = (ALLOWED_VISIBILITIES as readonly string[]).includes(visibilityRaw)
+    ? (visibilityRaw as (typeof ALLOWED_VISIBILITIES)[number])
+    : "public";
+
+  // Verify space exists and derive propertyId from DB (don't trust client)
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
+  // Parse and validate featuresJson if provided
+  let featuresJson: Record<string, unknown> | null = null;
+  if (featuresRaw) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(featuresRaw);
+    } catch {
+      return { success: false, error: "Datos de características inválidos" };
+    }
+    const result = spaceFeaturesSchema.safeParse(parsed);
+    if (!result.success) {
+      return { success: false, error: "Datos de características incorrectos" };
+    }
+    featuresJson = result.data;
+  }
+
+  await prisma.space.update({
+    where: { id: spaceId },
+    data: {
+      guestNotes,
+      aiNotes,
+      internalNotes,
+      visibility,
+      ...(featuresJson !== null && { featuresJson: featuresJson as Prisma.InputJsonValue }),
+    },
+  });
+
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
+// ── Bed configurations ──
+
+export async function addBedAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const raw = {
+    bedType: formData.get("bedType") as string,
+    quantity: Number(formData.get("quantity") ?? 1),
+  };
+
+  const result = createBedSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  // Derive propertyId from DB (don't trust client)
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
+  // If same bed type already exists in this space, increment quantity
+  const existing = await prisma.bedConfiguration.findFirst({
+    where: { spaceId, bedType: result.data.bedType },
+  });
+
+  if (existing) {
+    await prisma.bedConfiguration.update({
+      where: { id: existing.id },
+      data: { quantity: existing.quantity + result.data.quantity },
+    });
+  } else {
+    await prisma.bedConfiguration.create({
+      data: {
+        ...result.data,
+        space: { connect: { id: spaceId } },
+      },
+    });
+  }
+
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function updateBedAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const bedId = formData.get("bedId") as string;
+  const spaceId = formData.get("spaceId") as string;
+  const raw = {
+    bedType: formData.get("bedType") as string,
+    quantity: Number(formData.get("quantity") ?? 1),
+  };
+
+  const result = updateBedSchema.safeParse(raw);
+  if (!result.success) {
+    return {
+      success: false,
+      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  // Verify ownership: bed must belong to the claimed space
+  const bed = await prisma.bedConfiguration.findUnique({
+    where: { id: bedId },
+    select: { spaceId: true, space: { select: { propertyId: true } } },
+  });
+  if (!bed || bed.spaceId !== spaceId) {
+    return { success: false, error: "Cama no encontrada" };
+  }
+
+  await prisma.bedConfiguration.update({
+    where: { id: bedId },
+    data: result.data,
+  });
+
+  revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function deleteBedAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const bedId = formData.get("bedId") as string;
+  const spaceId = formData.get("spaceId") as string;
+
+  // Verify ownership: bed must belong to the claimed space
+  const bed = await prisma.bedConfiguration.findUnique({
+    where: { id: bedId },
+    select: { spaceId: true, space: { select: { propertyId: true } } },
+  });
+  if (!bed || bed.spaceId !== spaceId) {
+    return { success: false, error: "Cama no encontrada" };
+  }
+
+  await prisma.bedConfiguration.delete({ where: { id: bedId } });
+
+  revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
 

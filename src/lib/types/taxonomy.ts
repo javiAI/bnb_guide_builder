@@ -37,6 +37,9 @@ export interface TaxonomyItem {
   sensitivity?: string;
   options?: TaxonomyOption[];
   fields?: PolicyItemField[];
+  // Bed types
+  sleepingCapacity?: number;
+  widthCm?: number;
 }
 
 // Amenity taxonomy groups: reference items by id
@@ -137,6 +140,30 @@ export interface ContactTypesTaxonomyFile extends TaxonomyFileBase {
 
 export interface RuleTaxonomyFile extends TaxonomyFileBase {
   items: DynamicFieldRule[];
+}
+
+// Space features taxonomy (space_features.json)
+
+export interface SpaceFeatureField {
+  id: string;
+  label: string;
+  description: string;
+  type: "boolean" | "enum" | "enum_multiselect" | "number_optional" | "integer_optional";
+  options?: TaxonomyOption[];
+  shown_if?: { field: string; equals: unknown };
+  source?: string[];
+}
+
+export interface SpaceFeatureGroup {
+  id: string;
+  label: string;
+  description: string;
+  applies_to: string[]; // space type IDs, or ["*"] for all
+  fields: SpaceFeatureField[];
+}
+
+export interface SpaceFeaturesFile extends TaxonomyFileBase {
+  groups: SpaceFeatureGroup[];
 }
 
 export type TaxonomyFile =

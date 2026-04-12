@@ -1,0 +1,750 @@
+{
+  "file": "space_features.json",
+  "version": "2026-04-12",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "source_refs": {
+    "airbnb": "https://www.airbnb.com/help/article/1911",
+    "booking": "https://partner.booking.com/en-us/help/property-description"
+  },
+  "groups": [
+    {
+      "id": "sfg.dimensions",
+      "label": "Dimensiones",
+      "description": "Tamaño y características físicas del espacio.",
+      "applies_to": ["*"],
+      "fields": [
+        {
+          "id": "sf.area_sqm",
+          "label": "Superficie (m²)",
+          "description": "Superficie aproximada en metros cuadrados.",
+          "type": "number_optional",
+          "source": ["airbnb:square_feet_m2", "booking:room_size_sqm"]
+        },
+        {
+          "id": "sf.ceiling_height_cm",
+          "label": "Altura de techo (cm)",
+          "description": "Altura libre de techo en centímetros.",
+          "type": "integer_optional"
+        }
+      ]
+    },
+    {
+      "id": "sfg.bedroom_privacy",
+      "label": "Privacidad",
+      "description": "Características de privacidad del dormitorio.",
+      "applies_to": ["sp.bedroom"],
+      "fields": [
+        {
+          "id": "sf.door_lock",
+          "label": "Cerradura en la puerta",
+          "description": "La puerta tiene cerradura propia.",
+          "type": "boolean",
+          "source": ["airbnb:lock_on_bedroom_door"]
+        },
+        {
+          "id": "sf.en_suite_bathroom",
+          "label": "Baño en suite",
+          "description": "Baño privado vinculado a este dormitorio.",
+          "type": "boolean",
+          "source": ["airbnb:private_bathroom", "booking:en_suite_bathroom"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.bedroom_storage",
+      "label": "Almacenamiento",
+      "description": "Mobiliario y espacio de almacenamiento disponible.",
+      "applies_to": ["sp.bedroom"],
+      "fields": [
+        {
+          "id": "sf.wardrobe_type",
+          "label": "Tipo de armario",
+          "description": "Tipo de almacenamiento de ropa disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "none", "label": "Sin armario", "description": "" },
+            { "id": "open", "label": "Perchero abierto", "description": "" },
+            { "id": "wardrobe", "label": "Armario", "description": "" },
+            { "id": "built_in", "label": "Armario empotrado", "description": "" }
+          ],
+          "source": ["airbnb:clothes_storage"]
+        },
+        {
+          "id": "sf.hangers",
+          "label": "Perchas",
+          "description": "Perchas disponibles en el dormitorio.",
+          "type": "boolean",
+          "source": ["airbnb:hangers"]
+        },
+        {
+          "id": "sf.safe",
+          "label": "Caja fuerte",
+          "description": "Caja fuerte para objetos de valor.",
+          "type": "boolean",
+          "source": ["airbnb:safe", "booking:safe"]
+        },
+        {
+          "id": "sf.drawers",
+          "label": "Cajones",
+          "description": "Cajones disponibles para guardar ropa.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.bedroom_comfort",
+      "label": "Confort",
+      "description": "Climatización y comodidades del dormitorio.",
+      "applies_to": ["sp.bedroom"],
+      "fields": [
+        {
+          "id": "sf.ac",
+          "label": "Aire acondicionado",
+          "description": "Dispone de aire acondicionado.",
+          "type": "boolean",
+          "source": ["airbnb:air_conditioning", "booking:air_conditioning"]
+        },
+        {
+          "id": "sf.heating_type",
+          "label": "Tipo de calefacción",
+          "description": "Sistema de calefacción disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "none", "label": "Sin calefacción", "description": "" },
+            { "id": "central", "label": "Calefacción central", "description": "" },
+            { "id": "split", "label": "Split frío/calor", "description": "" },
+            { "id": "oil_radiator", "label": "Radiador de aceite", "description": "" },
+            { "id": "electric_radiator", "label": "Radiador eléctrico", "description": "" },
+            { "id": "underfloor", "label": "Suelo radiante", "description": "" }
+          ],
+          "source": ["airbnb:heating", "booking:heating"]
+        },
+        {
+          "id": "sf.blackout_curtains",
+          "label": "Cortinas blackout",
+          "description": "Cortinas que bloquean completamente la luz.",
+          "type": "boolean",
+          "source": ["airbnb:room_darkening_shades"]
+        },
+        {
+          "id": "sf.tv_bedroom",
+          "label": "Televisión",
+          "description": "Televisión disponible en el dormitorio.",
+          "type": "boolean",
+          "source": ["airbnb:tv", "booking:tv"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.bedroom_workspace",
+      "label": "Zona de trabajo",
+      "description": "Equipamiento para trabajar en el dormitorio.",
+      "applies_to": ["sp.bedroom"],
+      "fields": [
+        {
+          "id": "sf.desk",
+          "label": "Escritorio",
+          "description": "Escritorio o mesa de trabajo.",
+          "type": "boolean",
+          "source": ["airbnb:dedicated_workspace"]
+        },
+        {
+          "id": "sf.desk_chair",
+          "label": "Silla de escritorio",
+          "description": "Silla cómoda para trabajar.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.bathroom_fixtures",
+      "label": "Equipamiento del baño",
+      "description": "Elementos y aparatos del baño.",
+      "applies_to": ["sp.bathroom"],
+      "fields": [
+        {
+          "id": "sf.toilet",
+          "label": "Inodoro",
+          "description": "Inodoro disponible.",
+          "type": "boolean",
+          "source": ["booking:toilet"]
+        },
+        {
+          "id": "sf.bidet",
+          "label": "Bidé",
+          "description": "Bidé disponible.",
+          "type": "boolean",
+          "source": ["booking:bidet"]
+        },
+        {
+          "id": "sf.sink_count",
+          "label": "Número de lavabos",
+          "description": "Cantidad de lavabos en el baño.",
+          "type": "integer_optional"
+        },
+        {
+          "id": "sf.shower",
+          "label": "Ducha",
+          "description": "Ducha disponible.",
+          "type": "boolean",
+          "source": ["airbnb:shower", "booking:shower"]
+        },
+        {
+          "id": "sf.shower_type",
+          "label": "Tipo de mampara",
+          "description": "Tipo de cierre de la ducha.",
+          "type": "enum",
+          "shown_if": { "field": "sf.shower", "equals": true },
+          "options": [
+            { "id": "curtain", "label": "Cortina", "description": "" },
+            { "id": "glass_fixed", "label": "Mampara fija", "description": "" },
+            { "id": "glass_sliding", "label": "Mampara corredera", "description": "" }
+          ]
+        },
+        {
+          "id": "sf.bathtub",
+          "label": "Bañera",
+          "description": "Bañera disponible.",
+          "type": "boolean",
+          "source": ["airbnb:bathtub", "booking:bathtub"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.bathroom_supplies",
+      "label": "Suministros del baño",
+      "description": "Artículos y suministros disponibles.",
+      "applies_to": ["sp.bathroom"],
+      "fields": [
+        {
+          "id": "sf.hairdryer",
+          "label": "Secador de pelo",
+          "description": "Secador de pelo disponible.",
+          "type": "boolean",
+          "source": ["airbnb:hair_dryer", "booking:hairdryer"]
+        },
+        {
+          "id": "sf.towels_provided",
+          "label": "Toallas incluidas",
+          "description": "Se proporcionan toallas limpias.",
+          "type": "boolean",
+          "source": ["airbnb:linens", "booking:towels"]
+        },
+        {
+          "id": "sf.toiletries_provided",
+          "label": "Artículos de baño incluidos",
+          "description": "Jabón, champú y artículos básicos de baño.",
+          "type": "boolean",
+          "source": ["airbnb:shampoo", "booking:toiletries"]
+        },
+        {
+          "id": "sf.toilet_paper_provided",
+          "label": "Papel higiénico incluido",
+          "description": "Papel higiénico de cortesía.",
+          "type": "boolean",
+          "source": ["airbnb:toilet_paper"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.kitchen_cooking",
+      "label": "Cocción",
+      "description": "Equipamiento de cocina para cocinar.",
+      "applies_to": ["sp.kitchen"],
+      "fields": [
+        {
+          "id": "sf.hob_type",
+          "label": "Tipo de fuegos",
+          "description": "Tipo de placa de cocina disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "none", "label": "Sin fuegos", "description": "" },
+            { "id": "gas", "label": "Gas", "description": "" },
+            { "id": "electric", "label": "Eléctrico", "description": "" },
+            { "id": "induction", "label": "Inducción", "description": "" },
+            { "id": "ceramic", "label": "Vitrocerámica", "description": "" }
+          ],
+          "source": ["airbnb:cooking_basics", "booking:kitchenette"]
+        },
+        {
+          "id": "sf.hobs_count",
+          "label": "Número de fuegos",
+          "description": "Cantidad de fuegos disponibles.",
+          "type": "integer_optional"
+        },
+        {
+          "id": "sf.oven",
+          "label": "Horno",
+          "description": "Horno disponible.",
+          "type": "boolean",
+          "source": ["airbnb:oven", "booking:oven"]
+        },
+        {
+          "id": "sf.microwave",
+          "label": "Microondas",
+          "description": "Microondas disponible.",
+          "type": "boolean",
+          "source": ["airbnb:microwave", "booking:microwave"]
+        },
+        {
+          "id": "sf.toaster",
+          "label": "Tostadora",
+          "description": "Tostadora disponible.",
+          "type": "boolean",
+          "source": ["airbnb:toaster"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.kitchen_appliances",
+      "label": "Electrodomésticos",
+      "description": "Electrodomésticos de refrigeración y bebidas.",
+      "applies_to": ["sp.kitchen"],
+      "fields": [
+        {
+          "id": "sf.fridge",
+          "label": "Nevera",
+          "description": "Nevera disponible.",
+          "type": "boolean",
+          "source": ["airbnb:refrigerator", "booking:refrigerator"]
+        },
+        {
+          "id": "sf.fridge_size",
+          "label": "Tamaño de nevera",
+          "description": "Capacidad aproximada de la nevera.",
+          "type": "enum",
+          "shown_if": { "field": "sf.fridge", "equals": true },
+          "options": [
+            { "id": "mini", "label": "Mini (bar)", "description": "" },
+            { "id": "standard", "label": "Estándar", "description": "" },
+            { "id": "large", "label": "Grande / americano", "description": "" }
+          ]
+        },
+        {
+          "id": "sf.freezer",
+          "label": "Congelador",
+          "description": "Congelador disponible (independiente o en nevera).",
+          "type": "boolean",
+          "source": ["booking:freezer"]
+        },
+        {
+          "id": "sf.dishwasher",
+          "label": "Lavavajillas",
+          "description": "Lavavajillas disponible.",
+          "type": "boolean",
+          "source": ["airbnb:dishwasher", "booking:dishwasher"]
+        },
+        {
+          "id": "sf.coffee_maker",
+          "label": "Cafetera",
+          "description": "Cafetera disponible.",
+          "type": "boolean",
+          "source": ["airbnb:coffee_maker"]
+        },
+        {
+          "id": "sf.kettle",
+          "label": "Hervidor de agua",
+          "description": "Hervidor eléctrico disponible.",
+          "type": "boolean",
+          "source": ["booking:kettle"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.kitchen_utensils",
+      "label": "Utensilios y menaje",
+      "description": "Utensilios de cocina y menaje disponibles.",
+      "applies_to": ["sp.kitchen"],
+      "fields": [
+        {
+          "id": "sf.basic_utensils",
+          "label": "Vajilla y cubiertos básicos",
+          "description": "Platos, vasos, cubiertos suficientes para los huéspedes.",
+          "type": "boolean",
+          "source": ["airbnb:dishes_and_silverware", "booking:kitchenware"]
+        },
+        {
+          "id": "sf.pots_pans",
+          "label": "Ollas y sartenes",
+          "description": "Batería de cocina para cocinar.",
+          "type": "boolean",
+          "source": ["airbnb:pots_and_pans"]
+        },
+        {
+          "id": "sf.cooking_oil_spices",
+          "label": "Aceite y especias",
+          "description": "Aceite de cocina y condimentos básicos.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.living_seating",
+      "label": "Asientos",
+      "description": "Sofá y capacidad de asientos en el salón.",
+      "applies_to": ["sp.living_room"],
+      "fields": [
+        {
+          "id": "sf.sofa_type",
+          "label": "Tipo de sofá",
+          "description": "Tipo de sofá principal disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "none", "label": "Sin sofá", "description": "" },
+            { "id": "sofa", "label": "Sofá", "description": "" },
+            { "id": "sofa_bed", "label": "Sofá cama", "description": "" },
+            { "id": "sectional", "label": "Sofá esquinero", "description": "" },
+            { "id": "armchairs", "label": "Sillones", "description": "" }
+          ],
+          "source": ["booking:sofa"]
+        },
+        {
+          "id": "sf.seating_capacity",
+          "label": "Capacidad de asientos",
+          "description": "Número total de personas que pueden sentarse.",
+          "type": "integer_optional"
+        }
+      ]
+    },
+    {
+      "id": "sfg.living_entertainment",
+      "label": "Entretenimiento",
+      "description": "Televisión y entretenimiento en el salón.",
+      "applies_to": ["sp.living_room"],
+      "fields": [
+        {
+          "id": "sf.tv_living",
+          "label": "Televisión",
+          "description": "Televisión disponible en el salón.",
+          "type": "boolean",
+          "source": ["airbnb:tv", "booking:tv"]
+        },
+        {
+          "id": "sf.tv_size_inches",
+          "label": "Tamaño de TV (pulgadas)",
+          "description": "Tamaño aproximado de la pantalla.",
+          "type": "integer_optional",
+          "shown_if": { "field": "sf.tv_living", "equals": true }
+        },
+        {
+          "id": "sf.streaming_services",
+          "label": "Servicios de streaming",
+          "description": "Netflix, Disney+, HBO u otros accesibles.",
+          "type": "boolean",
+          "source": ["airbnb:netflix", "booking:streaming_service"]
+        },
+        {
+          "id": "sf.board_games",
+          "label": "Juegos de mesa",
+          "description": "Juegos de mesa disponibles para los huéspedes.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.living_comfort",
+      "label": "Climatización",
+      "description": "Climatización del salón.",
+      "applies_to": ["sp.living_room"],
+      "fields": [
+        {
+          "id": "sf.ac_living",
+          "label": "Aire acondicionado",
+          "description": "Aire acondicionado en el salón.",
+          "type": "boolean",
+          "source": ["airbnb:air_conditioning", "booking:air_conditioning"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.dining_table",
+      "label": "Mesa de comedor",
+      "description": "Mesa y capacidad del comedor.",
+      "applies_to": ["sp.dining"],
+      "fields": [
+        {
+          "id": "sf.dining_seats",
+          "label": "Plazas en mesa",
+          "description": "Número de personas que pueden sentarse a la mesa.",
+          "type": "integer_optional",
+          "source": ["airbnb:dining_table", "booking:dining_area"]
+        },
+        {
+          "id": "sf.dining_table_type",
+          "label": "Tipo de mesa",
+          "description": "Tipo de mesa disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "fixed", "label": "Fija", "description": "" },
+            { "id": "extendable", "label": "Extensible", "description": "" },
+            { "id": "bar", "label": "Barra / alta", "description": "" }
+          ]
+        },
+        {
+          "id": "sf.high_chair",
+          "label": "Trona para bebé",
+          "description": "Trona disponible para bebés o niños pequeños.",
+          "type": "boolean",
+          "source": ["airbnb:high_chair", "booking:baby_high_chair"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.office_workspace",
+      "label": "Puesto de trabajo",
+      "description": "Equipamiento del despacho o zona de trabajo.",
+      "applies_to": ["sp.office"],
+      "fields": [
+        {
+          "id": "sf.desk_type",
+          "label": "Tipo de escritorio",
+          "description": "Tipo de escritorio disponible.",
+          "type": "enum",
+          "options": [
+            { "id": "standard", "label": "Estándar", "description": "" },
+            { "id": "standing", "label": "De pie / ajustable", "description": "" },
+            { "id": "corner", "label": "Esquinero", "description": "" }
+          ],
+          "source": ["airbnb:dedicated_workspace"]
+        },
+        {
+          "id": "sf.monitor",
+          "label": "Monitor externo",
+          "description": "Monitor adicional disponible.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.ergonomic_chair",
+          "label": "Silla ergonómica",
+          "description": "Silla de trabajo ergonómica.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.printer",
+          "label": "Impresora",
+          "description": "Impresora disponible para los huéspedes.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.office_connectivity",
+      "label": "Conectividad",
+      "description": "Opciones de conexión a internet en el despacho.",
+      "applies_to": ["sp.office"],
+      "fields": [
+        {
+          "id": "sf.ethernet_port",
+          "label": "Puerto ethernet",
+          "description": "Conexión por cable ethernet disponible.",
+          "type": "boolean",
+          "source": ["airbnb:ethernet_connection"]
+        },
+        {
+          "id": "sf.dedicated_wifi",
+          "label": "WiFi dedicado",
+          "description": "Punto de acceso WiFi propio en esta zona.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.laundry_appliances",
+      "label": "Electrodomésticos de lavandería",
+      "description": "Equipamiento para lavar y secar ropa.",
+      "applies_to": ["sp.laundry"],
+      "fields": [
+        {
+          "id": "sf.washing_machine",
+          "label": "Lavadora",
+          "description": "Lavadora disponible.",
+          "type": "boolean",
+          "source": ["airbnb:washer", "booking:washing_machine"]
+        },
+        {
+          "id": "sf.dryer",
+          "label": "Secadora",
+          "description": "Secadora disponible.",
+          "type": "boolean",
+          "source": ["airbnb:dryer", "booking:dryer"]
+        },
+        {
+          "id": "sf.iron",
+          "label": "Plancha",
+          "description": "Plancha disponible.",
+          "type": "boolean",
+          "source": ["airbnb:iron", "booking:iron"]
+        },
+        {
+          "id": "sf.ironing_board",
+          "label": "Tabla de planchar",
+          "description": "Tabla de planchar disponible.",
+          "type": "boolean",
+          "source": ["airbnb:ironing_board"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.laundry_supplies",
+      "label": "Suministros de lavandería",
+      "description": "Productos y accesorios de lavado.",
+      "applies_to": ["sp.laundry"],
+      "fields": [
+        {
+          "id": "sf.detergent_provided",
+          "label": "Detergente incluido",
+          "description": "Detergente de lavadora disponible para los huéspedes.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.drying_rack",
+          "label": "Tendedero",
+          "description": "Tendedero para secar ropa al aire.",
+          "type": "boolean",
+          "source": ["airbnb:drying_rack"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.outdoor_setup",
+      "label": "Equipamiento exterior",
+      "description": "Mobiliario y características del espacio exterior.",
+      "applies_to": ["sp.balcony", "sp.patio", "sp.garden"],
+      "fields": [
+        {
+          "id": "sf.outdoor_furniture",
+          "label": "Mobiliario exterior",
+          "description": "Mesa, sillas u otro mobiliario exterior.",
+          "type": "boolean",
+          "source": ["airbnb:patio_or_balcony", "booking:balcony"]
+        },
+        {
+          "id": "sf.outdoor_dining",
+          "label": "Zona de comedor exterior",
+          "description": "Mesa de comedor en el exterior.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.barbecue",
+          "label": "Barbacoa",
+          "description": "Barbacoa disponible para los huéspedes.",
+          "type": "boolean",
+          "source": ["airbnb:bbq_grill", "booking:barbecue"]
+        },
+        {
+          "id": "sf.outdoor_privacy",
+          "label": "Nivel de privacidad",
+          "description": "Grado de privacidad del espacio exterior.",
+          "type": "enum",
+          "options": [
+            { "id": "open", "label": "Abierto (visible desde fuera)", "description": "" },
+            { "id": "partial", "label": "Parcialmente privado", "description": "" },
+            { "id": "private", "label": "Completamente privado", "description": "" }
+          ]
+        },
+        {
+          "id": "sf.outdoor_views",
+          "label": "Vistas",
+          "description": "Tipo de vistas desde este espacio.",
+          "type": "enum_multiselect",
+          "options": [
+            { "id": "garden", "label": "Jardín", "description": "" },
+            { "id": "street", "label": "Calle", "description": "" },
+            { "id": "sea", "label": "Mar", "description": "" },
+            { "id": "mountain", "label": "Montaña", "description": "" },
+            { "id": "pool", "label": "Piscina", "description": "" },
+            { "id": "city", "label": "Ciudad", "description": "" },
+            { "id": "nature", "label": "Naturaleza", "description": "" }
+          ],
+          "source": ["airbnb:beachfront", "booking:sea_view"]
+        }
+      ]
+    },
+    {
+      "id": "sfg.garage_setup",
+      "label": "Características del garaje",
+      "description": "Capacidad y equipamiento del garaje.",
+      "applies_to": ["sp.garage"],
+      "fields": [
+        {
+          "id": "sf.garage_capacity",
+          "label": "Capacidad (vehículos)",
+          "description": "Número de vehículos que caben en el garaje.",
+          "type": "integer_optional",
+          "source": ["airbnb:free_parking", "booking:parking"]
+        },
+        {
+          "id": "sf.electric_charger",
+          "label": "Cargador para vehículo eléctrico",
+          "description": "Punto de carga eléctrica disponible.",
+          "type": "boolean",
+          "source": ["airbnb:ev_charger", "booking:electric_vehicle_charging"]
+        },
+        {
+          "id": "sf.garage_door_type",
+          "label": "Tipo de puerta",
+          "description": "Tipo de apertura del garaje.",
+          "type": "enum",
+          "options": [
+            { "id": "manual", "label": "Manual", "description": "" },
+            { "id": "automated", "label": "Automatizada", "description": "" }
+          ]
+        },
+        {
+          "id": "sf.garage_shared",
+          "label": "Compartido con otros propietarios",
+          "description": "El garaje es de uso compartido.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.storage_setup",
+      "label": "Características del trastero",
+      "description": "Acceso y características del espacio de almacenamiento.",
+      "applies_to": ["sp.storage"],
+      "fields": [
+        {
+          "id": "sf.storage_lockable",
+          "label": "Con cerradura",
+          "description": "El trastero tiene cerradura propia.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.storage_accessible",
+          "label": "Accesible a huéspedes",
+          "description": "Los huéspedes pueden usar el trastero.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.storage_shelving",
+          "label": "Con estanterías",
+          "description": "Estanterías disponibles para organizar.",
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.shared_access",
+      "label": "Acceso y circulación",
+      "description": "Características de acceso de zonas comunes.",
+      "applies_to": ["sp.shared_area"],
+      "fields": [
+        {
+          "id": "sf.elevator",
+          "label": "Ascensor",
+          "description": "Ascensor disponible en la zona común.",
+          "type": "boolean",
+          "source": ["airbnb:elevator", "booking:lift"]
+        },
+        {
+          "id": "sf.stairs_only",
+          "label": "Solo escaleras",
+          "description": "El acceso es únicamente por escaleras.",
+          "type": "boolean"
+        }
+      ]
+    }
+  ]
+}
