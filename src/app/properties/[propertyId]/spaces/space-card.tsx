@@ -131,8 +131,15 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
   >(updateSpaceDetailsAction, null);
 
   useEffect(() => {
-    if (detailsState?.success) setFeaturesDirty(false);
+    if (detailsState?.success) {
+      setFeaturesDirty(false);
+      setNotesDirty(false);
+    }
   }, [detailsState]);
+
+  // Notes dirty tracking (uncontrolled fields — track via onChange)
+  const [notesDirty, setNotesDirty] = useState(false);
+  const formDirty = featuresDirty || notesDirty;
 
   const saveStatus = detailsPending
     ? "saving"
@@ -311,6 +318,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                       rows={2}
                       defaultValue={space.guestNotes ?? ""}
                       placeholder="Información útil para el huésped sobre este espacio…"
+                      onChange={() => setNotesDirty(true)}
                       className={inputCls}
                     />
                   </label>
@@ -326,6 +334,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                         rows={2}
                         defaultValue={space.aiNotes ?? ""}
                         placeholder="Contexto para el asistente…"
+                        onChange={() => setNotesDirty(true)}
                         className={inputCls}
                       />
                     </label>
@@ -340,6 +349,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                         rows={2}
                         defaultValue={space.internalNotes ?? ""}
                         placeholder="Notas de operación…"
+                        onChange={() => setNotesDirty(true)}
                         className={inputCls}
                       />
                     </label>
@@ -349,7 +359,12 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                     <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
                       Visibilidad
                     </span>
-                    <select name="visibility" defaultValue={space.visibility} className={inputCls}>
+                    <select
+                      name="visibility"
+                      defaultValue={space.visibility}
+                      onChange={() => setNotesDirty(true)}
+                      className={inputCls}
+                    >
                       {VISIBILITY_OPTIONS.map((v) => (
                         <option key={v.id} value={v.id}>
                           {v.label}
@@ -368,7 +383,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                 <button
                   type="submit"
                   form={`details-${space.id}`}
-                  disabled={detailsPending}
+                  disabled={detailsPending || !formDirty}
                   className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
                 >
                   {detailsPending ? "Guardando…" : "Guardar cambios"}
@@ -474,6 +489,7 @@ function FlatFeatureSection({
               <button
                 key={field.id}
                 type="button"
+                aria-pressed={active}
                 title={field.description}
                 onClick={() => onChangeFeature(field.id, !active)}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
@@ -522,10 +538,10 @@ function StructuredField({
 }) {
   if (field.type === "enum" && field.options) {
     return (
-      <div>
-        <label className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
           {field.label}
-        </label>
+        </span>
         <select
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
@@ -538,7 +554,7 @@ function StructuredField({
             </option>
           ))}
         </select>
-      </div>
+      </label>
     );
   }
 
@@ -546,9 +562,7 @@ function StructuredField({
     const selected = (value as string[]) ?? [];
     return (
       <div className="col-span-2 sm:col-span-3">
-        <label className="mb-2 block text-xs font-medium text-[var(--color-neutral-600)]">
-          {field.label}
-        </label>
+        <p className="mb-2 text-xs font-medium text-[var(--color-neutral-600)]">{field.label}</p>
         <div className="flex flex-wrap gap-2">
           {field.options.map((opt) => {
             const checked = selected.includes(opt.id);
@@ -556,6 +570,7 @@ function StructuredField({
               <button
                 key={opt.id}
                 type="button"
+                aria-pressed={checked}
                 onClick={() => {
                   const next = checked
                     ? selected.filter((id) => id !== opt.id)
@@ -580,10 +595,10 @@ function StructuredField({
 
   if (field.type === "number_optional" || field.type === "integer_optional") {
     return (
-      <div>
-        <label className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
+      <label className="block">
+        <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
           {field.label}
-        </label>
+        </span>
         <input
           type="number"
           step={field.type === "integer_optional" ? "1" : "0.1"}
@@ -593,7 +608,7 @@ function StructuredField({
           placeholder="—"
           className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
         />
-      </div>
+      </label>
     );
   }
 

@@ -153,7 +153,13 @@ function BedRow({
       </div>
 
       <div className="flex items-center gap-2">
-        <NumberStepper label="" value={quantity} min={1} max={10} onChange={setQuantity} />
+        <NumberStepper
+          label={`Cantidad de ${typeInfo?.label ?? bed.bedType}`}
+          value={quantity}
+          min={1}
+          max={10}
+          onChange={setQuantity}
+        />
 
         {dirty && (
           <form action={updateAction}>
