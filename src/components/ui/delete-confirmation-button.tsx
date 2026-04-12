@@ -29,9 +29,17 @@ export function DeleteConfirmationButton({
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
-      dialog.showModal?.();
+      if (typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute("open", "");
+      }
     } else {
-      dialog.close?.();
+      if (typeof dialog.close === "function") {
+        dialog.close();
+      } else {
+        dialog.removeAttribute("open");
+      }
       setConfirmation("");
     }
   }, [open]);

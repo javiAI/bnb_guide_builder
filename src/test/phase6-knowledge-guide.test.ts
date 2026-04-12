@@ -82,8 +82,12 @@ describe("Renderer registry for guide/AI", () => {
     expect(configs.length).toBeGreaterThanOrEqual(5);
   });
 
-  it("ai_view target includes at least 7 sections", () => {
+  it("ai_view target includes renamed and new sections", () => {
     const configs = getRenderConfigsForTarget("ai_view");
+    const keys = configs.map((c) => c.sectionKey);
+    expect(keys).toContain("property");
+    expect(keys).toContain("access");
+    expect(keys).toContain("contacts");
     expect(configs.length).toBeGreaterThanOrEqual(7);
   });
 
