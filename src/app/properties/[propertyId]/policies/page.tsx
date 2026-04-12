@@ -34,8 +34,17 @@ export default async function PoliciesPage({
 
   if (!property) notFound();
 
-  const saved = property.policiesJson as PoliciesData | null;
-  const policies: PoliciesData = saved ? { ...DEFAULT_POLICIES, ...saved } : DEFAULT_POLICIES;
+  const saved = property.policiesJson as Partial<PoliciesData> | null;
+  const policies: PoliciesData = saved
+    ? {
+        ...DEFAULT_POLICIES,
+        ...saved,
+        supplements: {
+          cleaning: { ...DEFAULT_POLICIES.supplements.cleaning, ...saved.supplements?.cleaning },
+          extraGuest: { ...DEFAULT_POLICIES.supplements.extraGuest, ...saved.supplements?.extraGuest },
+        },
+      }
+    : DEFAULT_POLICIES;
 
   return (
     <PoliciesForm

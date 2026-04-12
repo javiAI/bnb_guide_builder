@@ -80,11 +80,17 @@ export const updateContactSchema = createContactSchema.partial().extend({
 
 // ── Policies editor ──
 
+const timeFormat = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 export const policiesSchema = z.object({
   quietHours: z.object({
     enabled: z.boolean(),
-    from: z.string().optional(),
-    to: z.string().optional(),
+    from: z.string().regex(timeFormat, "Formato inválido, usa HH:MM").optional(),
+    to: z.string().regex(timeFormat, "Formato inválido, usa HH:MM").optional(),
+  }).superRefine((v, ctx) => {
+    if (!v.enabled) return;
+    if (!v.from) ctx.addIssue({ code: "custom", path: ["from"], message: "La hora de inicio es obligatoria" });
+    if (!v.to) ctx.addIssue({ code: "custom", path: ["to"], message: "La hora de fin es obligatoria" });
   }),
   smoking: z.enum(["not_allowed", "outdoors_only", "designated_area", "no_restriction"]),
   smokingArea: z.string().nullable().optional(),
@@ -92,6 +98,13 @@ export const policiesSchema = z.object({
     policy: z.enum(["not_allowed", "small_gatherings", "with_approval"]),
     maxPeople: z.number().int().min(1).optional(),
     approvalInstructions: z.string().nullable().optional(),
+  }).superRefine((v, ctx) => {
+    if (v.policy === "small_gatherings" && v.maxPeople === undefined) {
+      ctx.addIssue({ code: "custom", path: ["maxPeople"], message: "Indica el máximo de personas" });
+    }
+    if (v.policy === "with_approval" && (!v.approvalInstructions || v.approvalInstructions.trim().length === 0)) {
+      ctx.addIssue({ code: "custom", path: ["approvalInstructions"], message: "Indica las instrucciones de aprobación" });
+    }
   }),
   commercialPhotography: z.enum(["not_allowed", "with_permission"]),
   pets: z.object({
@@ -104,6 +117,14 @@ export const policiesSchema = z.object({
     feeAmount: z.number().min(0).optional(),
     restrictions: z.array(z.string()).optional(),
     notes: z.string().nullable().optional(),
+  }).superRefine((v, ctx) => {
+    if (!v.allowed) return;
+    if (!v.types || v.types.length === 0) ctx.addIssue({ code: "custom", path: ["types"], message: "Selecciona al menos un tipo de mascota" });
+    if (v.sizeRestriction === undefined) ctx.addIssue({ code: "custom", path: ["sizeRestriction"], message: "Indica la restricción de tamaño" });
+    if (v.maxCount === undefined) ctx.addIssue({ code: "custom", path: ["maxCount"], message: "Indica el número máximo de mascotas" });
+    if (v.feeMode === undefined) ctx.addIssue({ code: "custom", path: ["feeMode"], message: "Indica el tipo de cargo" });
+    if (v.sizeRestriction === "custom_weight" && v.maxWeightKg === undefined) ctx.addIssue({ code: "custom", path: ["maxWeightKg"], message: "Indica el peso máximo" });
+    if (v.feeMode && v.feeMode !== "none" && v.feeAmount === undefined) ctx.addIssue({ code: "custom", path: ["feeAmount"], message: "Indica el importe del cargo" });
   }),
   supplements: z.object({
     cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }),

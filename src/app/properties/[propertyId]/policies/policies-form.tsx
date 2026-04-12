@@ -177,6 +177,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
           type="button"
           role="switch"
           aria-checked={checked}
+          aria-label={label}
           onClick={() => onChange(!checked)}
           className={`${toggleCls} ${checked ? "bg-[var(--color-primary-500)]" : "bg-[var(--color-neutral-300)]"}`}
         >
@@ -443,7 +444,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         </div>
       </CollapsibleSection>
 
-      {/* ── Block 5: Servicios ── */}
+      {/* ── Block 4: Servicios ── */}
       <CollapsibleSection
         title="Servicios permitidos"
         selectedLabel={summaryLabels.servicios}

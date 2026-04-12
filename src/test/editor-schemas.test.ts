@@ -307,4 +307,80 @@ describe("Policies schema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("rejects quietHours enabled without from/to", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: true },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid time format in quietHours", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: true, from: "25:00", to: "08:00" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts quietHours disabled without from/to", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: false },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects small_gatherings without maxPeople", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      events: { policy: "small_gatherings" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects with_approval without instructions", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      events: { policy: "with_approval" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets allowed without required fields", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: { allowed: true },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets custom_weight without maxWeightKg", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: {
+        allowed: true,
+        types: ["dogs"],
+        sizeRestriction: "custom_weight",
+        maxCount: 1,
+        feeMode: "none",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets feeMode with charge but no feeAmount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: {
+        allowed: true,
+        types: ["dogs"],
+        sizeRestriction: "none",
+        maxCount: 1,
+        feeMode: "per_booking",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
 });
