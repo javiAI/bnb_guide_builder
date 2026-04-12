@@ -1,3 +1,25 @@
+// Reusable option shape (used by policy items, subtype fields, etc.)
+export interface TaxonomyOption {
+  id: string;
+  label: string;
+  description: string;
+  recommended?: boolean;
+}
+
+// Nested field inside a policy item (e.g., pol.pets → types, fee_mode)
+export interface PolicyItemField {
+  id: string;
+  label: string;
+  description: string;
+  type: string;
+  default?: unknown;
+  min?: number;
+  max?: number;
+  currency?: string;
+  shown_if?: { field: string; equals: unknown };
+  options?: TaxonomyOption[];
+}
+
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
   id: string;
@@ -13,6 +35,8 @@ export interface TaxonomyItem {
   required?: boolean;
   default_from_field?: string | null;
   sensitivity?: string;
+  options?: TaxonomyOption[];
+  fields?: PolicyItemField[];
 }
 
 // Amenity taxonomy groups: reference items by id
@@ -34,12 +58,7 @@ export interface PolicyGroup {
 }
 
 // Amenity subtype fields (amenity_subtypes.json)
-export interface SubtypeFieldOption {
-  id: string;
-  label: string;
-  description?: string;
-  recommended?: boolean;
-}
+export type SubtypeFieldOption = TaxonomyOption;
 
 export interface SubtypeField {
   id: string;
@@ -47,7 +66,7 @@ export interface SubtypeField {
   description: string;
   type: string;
   default?: string;
-  options?: SubtypeFieldOption[];
+  options?: TaxonomyOption[];
 }
 
 export interface AmenitySubtype {

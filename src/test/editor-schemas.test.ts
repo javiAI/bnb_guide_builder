@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   propertySchema,
   accessSchema,
+  policiesSchema,
   createContactSchema,
   updateContactSchema,
   createSpaceSchema,
@@ -202,6 +203,228 @@ describe("Amenity schemas", () => {
 
   it("updateAmenitySchema accepts empty object", () => {
     const result = updateAmenitySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("Policies schema", () => {
+  const validPolicies = {
+    quietHours: { enabled: true, from: "22:00", to: "08:00" },
+    smoking: "not_allowed" as const,
+    events: { policy: "not_allowed" as const },
+    commercialPhotography: "not_allowed" as const,
+    pets: { allowed: false },
+    supplements: {
+      cleaning: { enabled: false },
+      extraGuest: { enabled: false },
+    },
+    services: { allowed: false },
+  };
+
+  it("validates minimal policies", () => {
+    const result = policiesSchema.safeParse(validPolicies);
+    expect(result.success).toBe(true);
+  });
+
+  it("validates full policies with all options", () => {
+    const result = policiesSchema.safeParse({
+      quietHours: { enabled: true, from: "23:00", to: "07:00" },
+      smoking: "designated_area",
+      smokingArea: "Terraza trasera",
+      events: { policy: "small_gatherings", maxPeople: 8 },
+      commercialPhotography: "with_permission",
+      pets: {
+        allowed: true,
+        types: ["dogs", "cats"],
+        sizeRestriction: "custom_weight",
+        maxWeightKg: 20,
+        maxCount: 2,
+        feeMode: "per_booking",
+        feeAmount: 30,
+        restrictions: ["no_bedrooms", "must_be_supervised"],
+        notes: "Documentación veterinaria requerida",
+      },
+      supplements: {
+        cleaning: { enabled: true, amount: 50 },
+        extraGuest: { enabled: true, amount: 25, fromGuest: 3 },
+      },
+      services: {
+        allowed: true,
+        types: ["chef", "massage"],
+        notes: "Coordinar con anfitrión",
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects invalid smoking value", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      smoking: "everywhere",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid events policy", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      events: { policy: "unlimited" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing quietHours.enabled", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: {},
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets.maxCount over 10", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: { allowed: true, maxCount: 15 },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts pets disabled with minimal fields", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: { allowed: false },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("validates supplements with amounts", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: true, amount: 45.50 },
+        extraGuest: { enabled: true, amount: 15, fromGuest: 2 },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects quietHours enabled without from/to", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: true },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects invalid time format in quietHours", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: true, from: "25:00", to: "08:00" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts quietHours disabled without from/to", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      quietHours: { enabled: false },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects small_gatherings without maxPeople", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      events: { policy: "small_gatherings" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects with_approval without instructions", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      events: { policy: "with_approval" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets allowed without required fields", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: { allowed: true },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets custom_weight without maxWeightKg", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: {
+        allowed: true,
+        types: ["dogs"],
+        sizeRestriction: "custom_weight",
+        maxCount: 1,
+        feeMode: "none",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects pets feeMode with charge but no feeAmount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      pets: {
+        allowed: true,
+        types: ["dogs"],
+        sizeRestriction: "none",
+        maxCount: 1,
+        feeMode: "per_booking",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects cleaning enabled without amount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: true },
+        extraGuest: { enabled: false },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects extraGuest enabled without amount", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: true, fromGuest: 3 },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects extraGuest enabled without fromGuest", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: true, amount: 20 },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts supplements disabled without amounts", () => {
+    const result = policiesSchema.safeParse({
+      ...validPolicies,
+      supplements: {
+        cleaning: { enabled: false },
+        extraGuest: { enabled: false },
+      },
+    });
     expect(result.success).toBe(true);
   });
 });

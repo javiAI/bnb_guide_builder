@@ -1,5 +1,7 @@
 import type {
   TaxonomyItem,
+  TaxonomyOption,
+  PolicyItemField,
   AmenityGroup,
   PolicyGroup,
   AmenitySubtype,
@@ -121,6 +123,21 @@ export function getPolicyGroups(taxonomy: PolicyGroupedFile): PolicyGroup[] {
 
 export function getPolicyItems(taxonomy: PolicyGroupedFile): TaxonomyItem[] {
   return taxonomy.groups.flatMap((g) => g.items);
+}
+
+export function findPolicyItem(itemId: string): TaxonomyItem | undefined {
+  return getPolicyItems(policyTaxonomy).find((i) => i.id === itemId);
+}
+
+export function getPolicyOptions(itemId: string): TaxonomyOption[] {
+  return findPolicyItem(itemId)?.options ?? [];
+}
+
+export function getPolicyFieldOptions(itemId: string, fieldId: string): TaxonomyOption[] {
+  const item = findPolicyItem(itemId);
+  if (!item?.fields) return [];
+  const field = item.fields.find((f: PolicyItemField) => f.id === fieldId);
+  return field?.options ?? [];
 }
 
 // ── Subtype helpers ──

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import {
   propertySchema,
   accessSchema,
+  policiesSchema,
   createContactSchema,
   updateContactSchema,
   createSpaceSchema,
@@ -305,18 +306,23 @@ export async function savePoliciesAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  const policiesRaw = formData.get("policiesJson") as string;
 
-  // Collect all policy values from form
-  const policies: Record<string, string> = {};
-  for (const [key, value] of formData.entries()) {
-    if (key.startsWith("pol.") || key.startsWith("fee.")) {
-      policies[key] = value as string;
-    }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(policiesRaw);
+  } catch {
+    return { success: false, error: "Datos de normas inválidos" };
+  }
+
+  const result = policiesSchema.safeParse(parsed);
+  if (!result.success) {
+    return { success: false, error: "Datos de normas incompletos o inválidos" };
   }
 
   await prisma.property.update({
     where: { id: propertyId },
-    data: { policiesJson: JSON.stringify(policies) },
+    data: { policiesJson: result.data },
   });
 
   revalidatePath(`/properties/${propertyId}`);

@@ -1,6 +1,6 @@
 {
   "file": "policy_taxonomy.json",
-  "version": "2026-04-07",
+  "version": "2026-04-12",
   "locale": "es-ES",
   "units_system": "metric",
   "groups": [
@@ -41,28 +41,28 @@
           "type": "enum",
           "required": true,
           "recommended": true,
-          "default": "no",
+          "default": "not_allowed",
           "options": [
             {
-              "id": "no",
+              "id": "not_allowed",
               "label": "No permitido",
               "description": "Prohibido en toda la propiedad.",
               "recommended": true
             },
             {
               "id": "outdoors_only",
-              "label": "Solo exterior",
+              "label": "Solo en exterior",
               "description": "Permitido únicamente fuera del alojamiento."
             },
             {
               "id": "designated_area",
-              "label": "Solo zona designada",
+              "label": "Zona designada",
               "description": "Permitido solo en zonas marcadas."
             },
             {
-              "id": "anywhere",
-              "label": "Permitido en cualquier zona",
-              "description": "Sin restricciones internas específicas."
+              "id": "no_restriction",
+              "label": "Sin restricción",
+              "description": "Sin restricciones específicas."
             }
           ],
           "dependency_hints": []
@@ -74,23 +74,23 @@
           "type": "enum",
           "required": true,
           "recommended": true,
-          "default": "no",
+          "default": "not_allowed",
           "options": [
             {
-              "id": "no",
+              "id": "not_allowed",
               "label": "No permitidos",
               "description": "No se permiten fiestas ni reuniones.",
               "recommended": true
             },
             {
               "id": "small_gatherings",
-              "label": "Solo reuniones pequeñas",
-              "description": "Se permiten reuniones reducidas, sin convocatoria abierta."
+              "label": "Pequeñas reuniones",
+              "description": "Se permiten reuniones reducidas hasta un máximo de personas."
             },
             {
               "id": "with_approval",
-              "label": "Solo con aprobación previa",
-              "description": "Requiere autorización explícita."
+              "label": "Con aprobación previa",
+              "description": "Requiere autorización explícita del anfitrión."
             }
           ],
           "dependency_hints": [
@@ -116,27 +116,79 @@
               "default": false
             },
             {
+              "id": "types",
+              "label": "Tipos permitidos",
+              "description": "Qué tipos de mascotas se admiten.",
+              "type": "multi_select",
+              "shown_if": { "field": "allowed", "equals": true },
+              "options": [
+                {
+                  "id": "dogs",
+                  "label": "Perros",
+                  "description": "Se admiten perros."
+                },
+                {
+                  "id": "cats",
+                  "label": "Gatos",
+                  "description": "Se admiten gatos."
+                },
+                {
+                  "id": "other",
+                  "label": "Otros",
+                  "description": "Otros animales (especificar en notas)."
+                }
+              ]
+            },
+            {
+              "id": "size_restriction",
+              "label": "Restricción de tamaño",
+              "description": "Límite de peso para mascotas admitidas.",
+              "type": "enum",
+              "shown_if": { "field": "allowed", "equals": true },
+              "options": [
+                {
+                  "id": "none",
+                  "label": "Sin restricción",
+                  "description": "Se admiten mascotas de cualquier tamaño."
+                },
+                {
+                  "id": "small_only",
+                  "label": "Solo pequeños (< 10 kg)",
+                  "description": "Solo mascotas de hasta 10 kg."
+                },
+                {
+                  "id": "medium_max",
+                  "label": "Medianos (< 25 kg)",
+                  "description": "Solo mascotas de hasta 25 kg."
+                },
+                {
+                  "id": "custom_weight",
+                  "label": "Peso máximo personalizado",
+                  "description": "Establece un límite de peso específico."
+                }
+              ]
+            },
+            {
               "id": "max",
               "label": "Número máximo",
               "description": "Número máximo de mascotas permitido.",
               "type": "number",
-              "min": 0,
-              "max": 5,
-              "shown_if": {
-                "field": "allowed",
-                "equals": true
-              }
+              "min": 1,
+              "max": 10,
+              "shown_if": { "field": "allowed", "equals": true }
             },
             {
               "id": "fee_mode",
               "label": "Modo de cargo",
               "description": "Forma de cobro del suplemento de mascotas.",
               "type": "enum",
-              "shown_if": {
-                "field": "allowed",
-                "equals": true
-              },
+              "shown_if": { "field": "allowed", "equals": true },
               "options": [
+                {
+                  "id": "none",
+                  "label": "Sin cargo",
+                  "description": "No se cobra suplemento por mascota."
+                },
                 {
                   "id": "per_booking",
                   "label": "Por reserva",
@@ -165,26 +217,15 @@
               "description": "Cantidad económica del cargo, en euros.",
               "type": "money",
               "currency": "EUR",
-              "shown_if": {
-                "field": "allowed",
-                "equals": true
-              }
+              "shown_if": { "field": "allowed", "equals": true }
             },
             {
               "id": "restrictions",
-              "label": "Restricciones",
-              "description": "Límites por tamaño, zonas, limpieza u otros criterios.",
+              "label": "Restricciones adicionales",
+              "description": "Límites por zonas, limpieza u otros criterios.",
               "type": "multi_select_optional",
-              "shown_if": {
-                "field": "allowed",
-                "equals": true
-              },
+              "shown_if": { "field": "allowed", "equals": true },
               "options": [
-                {
-                  "id": "small_only",
-                  "label": "Solo mascotas pequeñas",
-                  "description": "Solo se aceptan animales de tamaño reducido."
-                },
                 {
                   "id": "no_bedrooms",
                   "label": "No en dormitorios",
@@ -196,13 +237,13 @@
                   "description": "No se permite subir a sofás o camas."
                 },
                 {
-                  "id": "extra_cleaning_required",
+                  "id": "extra_cleaning",
                   "label": "Limpieza extra obligatoria",
                   "description": "Se exige protocolo extra de limpieza o suplemento adicional."
                 },
                 {
                   "id": "must_be_supervised",
-                  "label": "Siempre supervisadas",
+                  "label": "Supervisadas en todo momento",
                   "description": "La mascota no debe quedarse sola en la propiedad."
                 }
               ]
@@ -248,13 +289,13 @@
           "options": [
             {
               "id": "not_allowed",
-              "label": "No permitido",
+              "label": "No permitida",
               "description": "No se permite ningún uso audiovisual comercial.",
               "recommended": true
             },
             {
-              "id": "allowed_with_permission",
-              "label": "Solo con permiso previo",
+              "id": "with_permission",
+              "label": "Permitida con permiso previo",
               "description": "Requiere autorización escrita o específica."
             }
           ],
@@ -270,12 +311,17 @@
           "options": [
             {
               "id": "chef",
-              "label": "Chef",
+              "label": "Chef privado",
               "description": "Servicio de cocina privada en la propiedad."
             },
             {
+              "id": "massage",
+              "label": "Masajista",
+              "description": "Servicio de masaje o spa."
+            },
+            {
               "id": "photography",
-              "label": "Fotografía",
+              "label": "Fotógrafo",
               "description": "Sesiones fotográficas o de contenido."
             },
             {
@@ -284,19 +330,9 @@
               "description": "Entrega y servicio de comida preparada."
             },
             {
-              "id": "prepared_meals",
-              "label": "Comida preparada",
-              "description": "Preparación puntual de comidas en la propiedad."
-            },
-            {
               "id": "personal_training",
               "label": "Entrenamiento personal",
               "description": "Sesiones privadas deportivas o de bienestar."
-            },
-            {
-              "id": "massage",
-              "label": "Masaje",
-              "description": "Servicio de masaje individual."
             },
             {
               "id": "spa",
@@ -304,19 +340,19 @@
               "description": "Servicios de bienestar o estética."
             },
             {
-              "id": "hair",
-              "label": "Peinado",
-              "description": "Servicios de peluquería."
+              "id": "celebrations",
+              "label": "Celebraciones",
+              "description": "Cumpleaños, aniversarios y eventos similares."
             },
             {
-              "id": "makeup",
-              "label": "Maquillaje",
-              "description": "Servicio de maquillaje profesional."
+              "id": "classes",
+              "label": "Clases particulares",
+              "description": "Yoga, cocina, idiomas y similares."
             },
             {
-              "id": "nails",
-              "label": "Manicura / uñas",
-              "description": "Servicio de uñas o manicura."
+              "id": "other",
+              "label": "Otro",
+              "description": "Otros servicios no incluidos en las categorías anteriores."
             }
           ],
           "dependency_hints": []
