@@ -145,6 +145,15 @@ export const policiesSchema = z.object({
 
 export type PoliciesData = z.infer<typeof policiesSchema>;
 
+// ── Space features ──
+
+export const spaceFeaturesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]),
+);
+
+export type SpaceFeaturesData = z.infer<typeof spaceFeaturesSchema>;
+
 // ── Spaces (S-12, S-13) ──
 
 export const createSpaceSchema = z.object({
@@ -165,6 +174,21 @@ export const updateSpaceSchema = z.object({
 
 export type CreateSpaceData = z.infer<typeof createSpaceSchema>;
 export type UpdateSpaceData = z.infer<typeof updateSpaceSchema>;
+
+// ── Bed configurations ──
+
+export const createBedSchema = z.object({
+  bedType: z.string().min(1, "El tipo de cama es obligatorio"),
+  quantity: z.number().int().min(1, "Mínimo 1").max(10, "Máximo 10"),
+});
+
+export const updateBedSchema = z.object({
+  bedType: z.string().min(1, "El tipo de cama es obligatorio"),
+  quantity: z.number().int().min(1, "Mínimo 1").max(10, "Máximo 10"),
+});
+
+export type CreateBedData = z.infer<typeof createBedSchema>;
+export type UpdateBedData = z.infer<typeof updateBedSchema>;
 
 // ── Amenities (S-14, S-15) ──
 

@@ -25,7 +25,6 @@ describe("Canonical screens exist", () => {
     "properties/[propertyId]/contacts",
     "properties/[propertyId]/policies",
     "properties/[propertyId]/spaces",
-    "properties/[propertyId]/spaces/[spaceId]",
     "properties/[propertyId]/amenities",
     "properties/[propertyId]/amenities/[amenityId]",
     "properties/[propertyId]/troubleshooting",

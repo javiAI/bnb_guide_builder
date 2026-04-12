@@ -7,6 +7,9 @@ import {
   updateContactSchema,
   createSpaceSchema,
   updateSpaceSchema,
+  spaceFeaturesSchema,
+  createBedSchema,
+  updateBedSchema,
   toggleAmenitySchema,
   updateAmenitySchema,
 } from "@/lib/schemas/editor.schema";
@@ -178,6 +181,81 @@ describe("Space schemas", () => {
     const result = updateSpaceSchema.safeParse({
       name: "Salón reformado",
       visibility: "booked_guest",
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("Bed configuration schemas", () => {
+  it("createBedSchema validates valid bed", () => {
+    const result = createBedSchema.safeParse({
+      bedType: "bt.king",
+      quantity: 1,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("createBedSchema rejects empty bedType", () => {
+    const result = createBedSchema.safeParse({
+      bedType: "",
+      quantity: 1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("createBedSchema rejects quantity below 1", () => {
+    const result = createBedSchema.safeParse({
+      bedType: "bt.single",
+      quantity: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("createBedSchema rejects quantity above 10", () => {
+    const result = createBedSchema.safeParse({
+      bedType: "bt.single",
+      quantity: 11,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateBedSchema validates bed update", () => {
+    const result = updateBedSchema.safeParse({
+      bedType: "bt.double",
+      quantity: 2,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateBedSchema rejects non-integer quantity", () => {
+    const result = updateBedSchema.safeParse({
+      bedType: "bt.king",
+      quantity: 1.5,
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("Space features schema", () => {
+  it("accepts empty object", () => {
+    expect(spaceFeaturesSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts boolean, string, number, and array values", () => {
+    const result = spaceFeaturesSchema.safeParse({
+      "sf.ac": true,
+      "sf.wardrobe_type": "built_in",
+      "sf.area_sqm": 18.5,
+      "sf.sink_count": 2,
+      "sf.outdoor_views": ["garden", "sea"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts null values (field cleared)", () => {
+    const result = spaceFeaturesSchema.safeParse({
+      "sf.ac": null,
+      "sf.area_sqm": null,
     });
     expect(result.success).toBe(true);
   });

@@ -8,6 +8,8 @@ interface CollapsibleSectionProps {
   expanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
+  /** Optional action rendered outside the toggle button (e.g. edit icon). Must not contain interactive elements that conflict with the outer button. */
+  headerAction?: React.ReactNode;
 }
 
 function SelectionBadge({ label }: { label: string }) {
@@ -56,6 +58,7 @@ export function CollapsibleSection({
   expanded,
   onToggle,
   children,
+  headerAction,
 }: CollapsibleSectionProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">(expanded ? "auto" : 0);
@@ -93,10 +96,11 @@ export function CollapsibleSection({
 
   return (
     <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--border)] bg-[var(--surface-elevated)]">
+      <div className="flex items-center">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 text-left"
+        className="flex-1 p-4 text-left min-w-0"
       >
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-[var(--foreground)] shrink-0">{title}</span>
@@ -110,6 +114,12 @@ export function CollapsibleSection({
           </div>
         </div>
       </button>
+      {headerAction && (
+        <div className="flex-shrink-0 pr-3">
+          {headerAction}
+        </div>
+      )}
+      </div>
 
       <div
         ref={contentRef}

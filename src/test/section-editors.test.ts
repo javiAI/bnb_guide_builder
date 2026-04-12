@@ -7,11 +7,15 @@ import {
   getPolicyGroups,
   getPolicyItems,
   spaceTypes,
+  bedTypes,
   getItems,
+  findItem,
   amenityTaxonomy,
   getAmenityGroups,
   getAmenityGroupItems,
   findSubtype,
+  spaceFeatures,
+  getSpaceFeatureGroups,
 } from "@/lib/taxonomy-loader";
 
 describe("Phase 4 section editors are config-driven", () => {
@@ -96,6 +100,120 @@ describe("Spaces editor is taxonomy-driven", () => {
     const types = getItems(spaceTypes);
     for (const type of types) {
       expect(type.id).toMatch(/^sp\./);
+    }
+  });
+});
+
+describe("Bed types taxonomy", () => {
+  it("bed types are loaded from taxonomy", () => {
+    const types = getItems(bedTypes);
+    expect(types.length).toBeGreaterThan(0);
+  });
+
+  it("bed types have stable IDs starting with bt.", () => {
+    const types = getItems(bedTypes);
+    for (const type of types) {
+      expect(type.id).toMatch(/^bt\./);
+    }
+  });
+
+  it("bed types have sleepingCapacity", () => {
+    const types = getItems(bedTypes);
+    for (const type of types) {
+      expect(type.sleepingCapacity).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it("recommended bed types exist", () => {
+    const types = getItems(bedTypes);
+    const recommended = types.filter((t) => t.recommended);
+    expect(recommended.length).toBeGreaterThan(0);
+  });
+
+  it("common bed types are findable", () => {
+    expect(findItem(bedTypes, "bt.single")).toBeDefined();
+    expect(findItem(bedTypes, "bt.double")).toBeDefined();
+    expect(findItem(bedTypes, "bt.king")).toBeDefined();
+    expect(findItem(bedTypes, "bt.crib")).toBeDefined();
+  });
+});
+
+describe("Space features taxonomy", () => {
+  it("space feature groups are loaded from taxonomy", () => {
+    expect(spaceFeatures.groups.length).toBeGreaterThan(0);
+  });
+
+  it("all groups have at least one field", () => {
+    for (const group of spaceFeatures.groups) {
+      expect(group.fields.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("all field IDs start with sf.", () => {
+    for (const group of spaceFeatures.groups) {
+      for (const field of group.fields) {
+        expect(field.id).toMatch(/^sf\./);
+      }
+    }
+  });
+
+  it("all group IDs start with sfg.", () => {
+    for (const group of spaceFeatures.groups) {
+      expect(group.id).toMatch(/^sfg\./);
+    }
+  });
+
+  it("dimensions group applies to all space types", () => {
+    const dim = spaceFeatures.groups.find((g) => g.id === "sfg.dimensions");
+    expect(dim).toBeDefined();
+    expect(dim!.applies_to).toContain("*");
+  });
+
+  it("getSpaceFeatureGroups returns dimensions for every space type", () => {
+    const types = getItems(spaceTypes);
+    for (const type of types) {
+      const groups = getSpaceFeatureGroups(type.id);
+      const hasDimensions = groups.some((g) => g.id === "sfg.dimensions");
+      expect(hasDimensions).toBe(true);
+    }
+  });
+
+  it("bedroom-specific groups are returned only for sp.bedroom", () => {
+    const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
+    const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
+    const bedroomIds = bedroomGroups.map((g) => g.id);
+    const bathroomIds = bathroomGroups.map((g) => g.id);
+    expect(bedroomIds).toContain("sfg.bedroom_comfort");
+    expect(bathroomIds).not.toContain("sfg.bedroom_comfort");
+  });
+
+  it("kitchen groups are returned only for sp.kitchen", () => {
+    const kitchenGroups = getSpaceFeatureGroups("sp.kitchen");
+    const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
+    const kitchenIds = kitchenGroups.map((g) => g.id);
+    const bedroomIds = bedroomGroups.map((g) => g.id);
+    expect(kitchenIds).toContain("sfg.kitchen_cooking");
+    expect(bedroomIds).not.toContain("sfg.kitchen_cooking");
+  });
+
+  it("boolean fields have no options", () => {
+    for (const group of spaceFeatures.groups) {
+      for (const field of group.fields) {
+        if (field.type === "boolean") {
+          expect(field.options).toBeUndefined();
+        }
+      }
+    }
+  });
+
+  it("enum and enum_multiselect fields have options", () => {
+    for (const group of spaceFeatures.groups) {
+      for (const field of group.fields) {
+        if (field.type === "enum" || field.type === "enum_multiselect") {
+          expect(field.options).toBeDefined();
+          expect(field.options!.length).toBeGreaterThan(0);
+        }
+      }
     }
   });
 });

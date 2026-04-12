@@ -12,6 +12,8 @@ import type {
   PolicyGroupedFile,
   SubtypeTaxonomyFile,
   RuleTaxonomyFile,
+  SpaceFeatureGroup,
+  SpaceFeaturesFile,
 } from "./types/taxonomy";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
@@ -34,6 +36,7 @@ import bedTypesJson from "../../taxonomies/bed_types.json";
 import spanishProvincesJson from "../../taxonomies/spanish_provinces.json";
 import buildingAccessMethodsJson from "../../taxonomies/building_access_methods.json";
 import contactTypesJson from "../../taxonomies/contact_types.json";
+import spaceFeaturesJson from "../../taxonomies/space_features.json";
 
 // ── Item-based taxonomies ──
 
@@ -53,6 +56,7 @@ export const bedTypes = bedTypesJson as unknown as ItemTaxonomyFile;
 export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyFile;
 export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
 export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
+export const spaceFeatures = spaceFeaturesJson as unknown as SpaceFeaturesFile;
 
 // ── Grouped taxonomies ──
 
@@ -146,6 +150,14 @@ export function findSubtype(
   amenityId: string,
 ): AmenitySubtype | undefined {
   return amenitySubtypes.subtypes.find((s) => s.amenity_id === amenityId);
+}
+
+// ── Space feature helpers ──
+
+export function getSpaceFeatureGroups(spaceTypeId: string): SpaceFeatureGroup[] {
+  return spaceFeatures.groups.filter(
+    (g) => g.applies_to.includes("*") || g.applies_to.includes(spaceTypeId),
+  );
 }
 
 // ── Rule helpers ──
