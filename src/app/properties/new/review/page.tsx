@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { findItem, propertyTypes, roomTypes, accessMethods, buildingAccessMethods, bedTypes, SPACE_TYPE_LABELS } from "@/lib/taxonomy-loader";
+import { findItem, propertyTypes, roomTypes, accessMethods, buildingAccessMethods, bedTypes, SPACE_TYPE_LABELS, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { ReviewActions } from "./review-actions";
 import Link from "next/link";
 
@@ -147,11 +147,36 @@ export default async function WizardReviewPage({ searchParams }: Props) {
           lines: unitLabels.length > 1 ? unitLabels : undefined,
         },
         ...((state.hostName as string) ? [{ label: "Anfitrión", value: `${state.hostName}${(state.hostContactPhone as string) ? ` · ${state.hostContactPhone}` : ""}` }] : []),
+        ...((state.wifiSsid as string) ? [{ label: "WiFi", value: `${state.wifiSsid as string}${(state.wifiPassword as string) ? ` / ${state.wifiPassword as string}` : ""}` }] : []),
       ],
       complete: !!(state.checkInStart) && !!(state.checkOutTime) && (unitAccess?.methods?.length ?? 0) > 0,
       editHref: `/properties/new/step-4?sessionId=${sessionId}`,
     },
   ];
+
+  // Pre-populated spaces preview
+  const layoutKey = state.layoutKey as string | undefined;
+  const bathroomsCount = (state.bathroomsCount as number) ?? 0;
+  const prePopulatedSpaces: string[] = [];
+
+  // Bedrooms from wizard beds
+  const bedroomIndices = Array.from(new Set(beds.filter((b) => (b.spaceType ?? "sp.bedroom") === "sp.bedroom").map((b) => b.spaceIndex)));
+  if (bedroomIndices.length > 0) {
+    bedroomIndices.forEach((idx) => prePopulatedSpaces.push(bedroomsCount === 1 ? "Dormitorio" : `Dormitorio ${idx + 1}`));
+  } else if (bedroomsCount > 0) {
+    for (let i = 0; i < bedroomsCount; i++) {
+      prePopulatedSpaces.push(bedroomsCount === 1 ? "Dormitorio" : `Dormitorio ${i + 1}`);
+    }
+  }
+
+  // Living/studio space from layoutKey
+  const layoutSpaceType = layoutKey ? LAYOUT_SPACE_MAP[layoutKey] : undefined;
+  if (layoutSpaceType) prePopulatedSpaces.push(getSpaceTypeLabel(layoutSpaceType));
+
+  // Bathrooms
+  for (let i = 0; i < bathroomsCount; i++) {
+    prePopulatedSpaces.push(bathroomsCount === 1 ? "Baño" : `Baño ${i + 1}`);
+  }
 
   const allComplete = sections.every((s) => s.complete);
 
@@ -216,6 +241,23 @@ export default async function WizardReviewPage({ searchParams }: Props) {
           </div>
         ))}
       </div>
+
+      {prePopulatedSpaces.length > 0 && (
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">Espacios que se crearán</h2>
+          <p className="mt-1 text-xs text-[var(--color-neutral-500)]">
+            Al completar el wizard se crearán automáticamente estos espacios con los datos ya configurados.
+          </p>
+          <ul className="mt-3 space-y-1">
+            {prePopulatedSpaces.map((name, i) => (
+              <li key={i} className="flex items-center gap-2 text-sm text-[var(--foreground)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary-400)]" />
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <ReviewActions sessionId={sessionId} allComplete={allComplete} />
 
