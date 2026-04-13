@@ -3,6 +3,7 @@ import { z } from "zod";
 export const step1Schema = z.object({
   propertyType: z.string().min(1, "Selecciona un tipo de alojamiento"),
   roomType: z.string().min(1, "Selecciona un tipo de espacio"),
+  layoutKey: z.string().optional(),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
@@ -13,6 +14,9 @@ export const step1Schema = z.object({
 ).refine(
   (d) => d.roomType !== "rt.other" || (d.customRoomTypeLabel && d.customRoomTypeLabel.length > 0),
   { message: "El nombre del espacio personalizado es obligatorio", path: ["customRoomTypeLabel"] },
+).refine(
+  (d) => d.roomType !== "rt.entire_place" || !!d.layoutKey,
+  { message: "Selecciona la distribución del alojamiento", path: ["layoutKey"] },
 );
 
 export const step2Schema = z.object({
@@ -82,6 +86,7 @@ export const fullWizardSchema = z.object({
   propertyNickname: z.string().min(1),
   propertyType: z.string().min(1),
   roomType: z.string().min(1),
+  layoutKey: z.string().optional(),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),

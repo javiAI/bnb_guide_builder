@@ -59,6 +59,7 @@ export interface SpaceTypesTaxonomyFile extends TaxonomyFileBase {
 export interface SpaceLayoutKey {
   id: string;
   label: string;
+  description: string;
 }
 
 export interface SpaceAvailabilityRule {
