@@ -6,7 +6,7 @@ export const propertySchema = z.object({
   propertyNickname: z.string().min(1, "El nombre es obligatorio"),
   propertyType: z.string().min(1, "El tipo de propiedad es obligatorio"),
   roomType: z.string().min(1, "El tipo de espacio es obligatorio"),
-  layoutKey: z.string().optional(),
+  layoutKey: z.string().nullable().optional(),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
