@@ -3,8 +3,10 @@
   "version": "2026-04-13",
   "locale": "es-ES",
   "units_system": "metric",
+  "scopePoliciesMeta": {
+    "comment": "scopePolicy values: property_only | space_only | multi_instance | derived. Used by amenities-v2 to drive creation flow and deduplication."
+  },
   "scopePolicies": {
-    "_comment": "scopePolicy values: property_only | space_only | multi_instance | derived. Used by amenities-v2 to drive creation flow and deduplication.",
     "am.wifi": {
       "scopePolicy": "property_only",
       "isDerived": false,

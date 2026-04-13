@@ -206,6 +206,7 @@ export interface ItemTaxonomyFile extends TaxonomyFileBase {
 export interface AmenityGroupedFile extends TaxonomyFileBase {
   groups: AmenityGroup[];
   items: TaxonomyItem[];
+  scopePoliciesMeta?: { comment: string };
   scopePolicies?: Record<string, AmenityScopePolicyEntry>;
 }
 
