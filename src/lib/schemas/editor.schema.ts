@@ -36,6 +36,9 @@ export const propertySchema = z.object({
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
+).refine(
+  (d) => d.roomType !== "rt.entire_place" || !!d.layoutKey,
+  { message: "La distribución es obligatoria para alojamientos completos", path: ["layoutKey"] },
 );
 
 export type PropertyData = z.infer<typeof propertySchema>;

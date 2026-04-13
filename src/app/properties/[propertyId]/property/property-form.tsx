@@ -266,7 +266,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
-        <input type="hidden" name="layoutKey" value={layoutKey} />
+        <input type="hidden" name="layoutKey" value={roomType === "rt.entire_place" ? layoutKey : ""} />
         <input type="hidden" name="customPropertyTypeLabel" value={customPtLabel} />
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />

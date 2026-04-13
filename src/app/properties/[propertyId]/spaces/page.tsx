@@ -25,7 +25,8 @@ export default async function SpacesPage({
   });
 
   // Compute available space types from roomType + layoutKey
-  const roomType = property.roomType ?? "rt.entire_place";
+  // Treat missing roomType as unknown — don't apply entire-place rules to legacy/incomplete properties
+  const roomType = property.roomType ?? "";
   const layoutKey = property.layoutKey ?? null;
   const { required, recommended, optional, excluded } = getAvailableSpaceTypes(roomType, layoutKey);
 
@@ -69,7 +70,7 @@ export default async function SpacesPage({
       {missingRequired.length > 0 && spaces.length > 0 && (
         <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-4 py-3">
           <p className="text-xs text-[var(--color-primary-700)]">
-            Espacios recomendados para este tipo de alojamiento aún no añadidos:
+            Espacios obligatorios para este tipo de alojamiento aún no añadidos:
             {" "}<span className="font-medium">{missingRequired.map((id) => getSpaceTypeLabel(id)).join(", ")}</span>
           </p>
         </div>
