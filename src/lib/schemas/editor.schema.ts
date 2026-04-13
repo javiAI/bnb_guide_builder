@@ -30,7 +30,7 @@ export const propertySchema = z.object({
     heatingTypes: z.array(z.string()).optional(),
     coolingTypes: z.array(z.string()).optional(),
     hasElevator: z.boolean().optional(),
-    floors: z.number().int().min(1).max(200).optional(),
+    buildingFloors: z.number().int().min(1).max(200).optional(),
   }).optional(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
@@ -198,8 +198,11 @@ export type UpdateBedData = z.infer<typeof updateBedSchema>;
 
 export const bedConfigSchema = z.object({
   mattressType: z.string().optional(),
-  linenProvided: z.boolean().optional(),
-  pillowsCount: z.number().int().min(0).max(20).optional(),
+  mattressFirmness: z.string().optional(),
+  pillowTypes: z.array(z.string()).optional(),
+  linenIncluded: z.boolean().optional(),
+  extraBlanket: z.boolean().optional(),
+  mattressProtector: z.boolean().optional(),
   customLabel: z.string().max(100).optional(),
   customCapacity: z.number().int().min(1).max(20).optional(),
 });

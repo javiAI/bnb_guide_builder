@@ -515,7 +515,13 @@ export async function addBedAction(
     };
   }
 
-  const customLabel = (formData.get("customLabel") as string | null)?.trim() || undefined;
+  const rawCustomLabel = (formData.get("customLabel") as string | null)?.trim() || undefined;
+  let initialConfigJson: Prisma.InputJsonValue | undefined;
+  if (rawCustomLabel !== undefined) {
+    const validated = bedConfigSchema.pick({ customLabel: true }).safeParse({ customLabel: rawCustomLabel });
+    if (!validated.success) return { success: false, error: "Nombre de cama inválido (máx. 100 caracteres)" };
+    initialConfigJson = validated.data as Prisma.InputJsonValue;
+  }
 
   // Derive propertyId from DB (don't trust client)
   const space = await prisma.space.findUnique({
@@ -528,7 +534,7 @@ export async function addBedAction(
   // Other types: increment quantity if same type already exists
   if (result.data.bedType === "bt.other") {
     await prisma.bedConfiguration.create({
-      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: customLabel ? { customLabel } : undefined },
+      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: initialConfigJson },
     });
   } else {
     const existing = await prisma.bedConfiguration.findFirst({
