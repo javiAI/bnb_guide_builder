@@ -23,8 +23,6 @@ export const propertySchema = z.object({
   maxAdults: z.number().int().min(1, "Al menos 1 adulto"),
   maxChildren: z.number().int().min(0),
   infantsAllowed: z.boolean(),
-  bedroomsCount: z.number().int().min(0),
-  bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   infrastructureJson: z.object({

@@ -75,8 +75,6 @@ export async function savePropertyAction(
     maxAdults: Number(formData.get("maxAdults")),
     maxChildren: Number(formData.get("maxChildren")),
     infantsAllowed: formData.get("infantsAllowed") === "on" || formData.get("infantsAllowed") === "true",
-    bedroomsCount: Number(formData.get("bedroomsCount")),
-    bathroomsCount: Number(formData.get("bathroomsCount")),
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };
@@ -344,6 +342,34 @@ export async function savePoliciesAction(
   return { success: true };
 }
 
+// ── Derived counts ──
+
+/**
+ * Recomputes bedroomsCount, bathroomsCount, and bedsCount from actual Space/Bed
+ * rows and writes them back to the Property. Call after any space or bed mutation.
+ */
+async function recomputePropertyCounts(propertyId: string): Promise<void> {
+  const spaces = await prisma.space.findMany({
+    where: { propertyId },
+    select: {
+      spaceType: true,
+      beds: { select: { quantity: true } },
+    },
+  });
+
+  const bedroomsCount = spaces.filter((s) => s.spaceType === "sp.bedroom").length;
+  const bathroomsCount = spaces.filter((s) => s.spaceType === "sp.bathroom").length;
+  const bedsCount = spaces.reduce(
+    (sum, s) => sum + s.beds.reduce((bsum, b) => bsum + b.quantity, 0),
+    0,
+  );
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: { bedroomsCount, bathroomsCount, bedsCount },
+  });
+}
+
 // ── Spaces (S-12, S-13) ──
 
 export async function createSpaceAction(
@@ -373,6 +399,7 @@ export async function createSpaceAction(
     },
   });
 
+  await recomputePropertyCounts(propertyId);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
@@ -426,6 +453,7 @@ export async function deleteSpaceAction(
     prisma.space.delete({ where: { id: spaceId } }),
   ]);
 
+  await recomputePropertyCounts(space.propertyId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -556,6 +584,7 @@ export async function addBedAction(
     }
   }
 
+  await recomputePropertyCounts(space.propertyId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -593,6 +622,7 @@ export async function updateBedAction(
     data: result.data,
   });
 
+  await recomputePropertyCounts(bed.space.propertyId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -615,6 +645,7 @@ export async function deleteBedAction(
 
   await prisma.bedConfiguration.delete({ where: { id: bedId } });
 
+  await recomputePropertyCounts(bed.space.propertyId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }

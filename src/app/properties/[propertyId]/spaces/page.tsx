@@ -33,6 +33,14 @@ export default async function SpacesPage({
   const allAvailable = [...required, ...recommended, ...optional];
   const existingTypes = new Set(spaces.map((s) => s.spaceType));
 
+  // Capacity: total beds across all spaces vs maxGuests
+  const totalBedCapacity = spaces.reduce(
+    (sum, s) => sum + s.beds.reduce((bsum, b) => bsum + b.quantity, 0),
+    0,
+  );
+  const capacityMismatch =
+    property.maxGuests != null && totalBedCapacity > 0 && totalBedCapacity < property.maxGuests;
+
   // Spaces that conflict with current layout (in excluded list)
   const conflictingSpaces = spaces.filter((s) => excluded.includes(s.spaceType));
 
@@ -62,6 +70,21 @@ export default async function SpacesPage({
           <p className="mt-1 text-xs text-[var(--color-warning-600)]">
             Los siguientes espacios no son compatibles con la distribución actual y deberían eliminarse:
             {" "}<span className="font-medium">{conflictingSpaces.map((s) => s.name || getSpaceTypeLabel(s.spaceType)).join(", ")}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Capacity mismatch banner */}
+      {capacityMismatch && (
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] px-4 py-3">
+          <p className="text-sm font-medium text-[var(--color-warning-700)]">Capacidad insuficiente</p>
+          <p className="mt-1 text-xs text-[var(--color-warning-600)]">
+            Las camas configuradas permiten{" "}
+            <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "huésped" : "huéspedes"}</span>
+            {" "}pero el máximo de huéspedes es{" "}
+            <span className="font-medium">{property.maxGuests}</span>.
+            {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
+            <a href={`/properties/${propertyId}/property`} className="underline hover:text-[var(--color-warning-800)]">Propiedad</a>.
           </p>
         </div>
       )}
