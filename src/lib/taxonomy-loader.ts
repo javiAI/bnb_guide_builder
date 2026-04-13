@@ -214,14 +214,16 @@ export function getAvailableSpaceTypes(
   };
 }
 
-/** Maps layout keys to the non-bedroom space type they imply (used in wizard + review). */
-export const LAYOUT_SPACE_MAP: Record<string, string> = {
-  "layout.studio": "sp.studio",
-  "layout.loft": "sp.loft",
-  "layout.kitchen_living": "sp.kitchen_living",
-  "layout.kitchen_dining_living": "sp.kitchen_dining_living",
-  "layout.open_plan_living_dining": "sp.open_plan_living_dining",
-};
+/** Maps layout keys to the non-bedroom space type they imply (derived from taxonomy derivedByLayoutKeys). */
+export const LAYOUT_SPACE_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const item of spaceTypes.items) {
+    for (const layoutKey of item.derivedByLayoutKeys) {
+      map[layoutKey] = item.id;
+    }
+  }
+  return map;
+})();
 
 // ── System taxonomy helpers ──
 

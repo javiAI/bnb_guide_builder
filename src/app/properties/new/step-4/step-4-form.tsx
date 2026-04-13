@@ -283,7 +283,7 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
                 </label>
                 <label className="block">
                   <span className="text-sm font-medium text-[var(--foreground)]">Contraseña</span>
-                  <input name="wifiPassword" type="text" defaultValue={(initialState.wifiPassword as string) ?? ""} placeholder="contraseña123" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none" />
+                  <input name="wifiPassword" type="password" autoComplete="new-password" defaultValue={(initialState.wifiPassword as string) ?? ""} placeholder="contraseña123" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none" />
                 </label>
               </div>
             </div>

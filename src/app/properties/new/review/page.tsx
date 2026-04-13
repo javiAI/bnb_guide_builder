@@ -162,10 +162,10 @@ export default async function WizardReviewPage({ searchParams }: Props) {
   // Bedrooms from wizard beds
   const bedroomIndices = Array.from(new Set(beds.filter((b) => (b.spaceType ?? "sp.bedroom") === "sp.bedroom").map((b) => b.spaceIndex)));
   if (bedroomIndices.length > 0) {
-    bedroomIndices.forEach((idx) => prePopulatedSpaces.push(bedroomIndices.length === 1 ? "Dormitorio" : `Dormitorio ${idx + 1}`));
+    bedroomIndices.forEach((idx) => prePopulatedSpaces.push(`Dormitorio ${idx + 1}`));
   } else if (bedroomsCount > 0) {
     for (let i = 0; i < bedroomsCount; i++) {
-      prePopulatedSpaces.push(bedroomsCount === 1 ? "Dormitorio" : `Dormitorio ${i + 1}`);
+      prePopulatedSpaces.push(`Dormitorio ${i + 1}`);
     }
   }
 

@@ -9,7 +9,7 @@ import {
   step4Schema,
   fullWizardSchema,
 } from "@/lib/schemas/wizard.schema";
-import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getAvailableSpaceTypes, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
+import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 
 export type ActionResult = {
@@ -296,8 +296,8 @@ export async function saveStep4Action(
     },
     hostName: (formData.get("hostName") as string) || undefined,
     hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
-    wifiSsid: (formData.get("wifiSsid") as string) || undefined,
-    wifiPassword: (formData.get("wifiPassword") as string) || undefined,
+    wifiSsid: (formData.get("wifiSsid") as string)?.trim() || undefined,
+    wifiPassword: (formData.get("wifiPassword") as string)?.trim() || undefined,
   };
 
   await handleSaveAndExit(formData, sessionId, raw as Record<string, unknown>, 4);
