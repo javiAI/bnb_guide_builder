@@ -148,7 +148,9 @@ export interface SpaceFeatureField {
   id: string;
   label: string;
   description: string;
-  type: "boolean" | "enum" | "enum_multiselect" | "number_optional" | "integer_optional";
+  /** Short clarifying text shown as a clickable "?" tooltip in the UI. Only add when the label alone is ambiguous. */
+  tooltip?: string;
+  type: "boolean" | "enum" | "enum_multiselect" | "number_optional" | "integer_optional" | "text" | "text_chips";
   options?: TaxonomyOption[];
   shown_if?: { field: string; equals: unknown };
   source?: string[];

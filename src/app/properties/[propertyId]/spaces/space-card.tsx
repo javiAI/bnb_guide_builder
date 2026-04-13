@@ -14,37 +14,35 @@ import {
   getSpaceFeatureGroups,
 } from "@/lib/taxonomy-loader";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
-import { Badge } from "@/components/ui/badge";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BedManager, type BedData } from "./bed-manager";
 
 // Space types that can have sleeping beds
 const SPACE_TYPES_WITH_BEDS = new Set([
   "sp.bedroom",
   "sp.living_room",
+  "sp.studio",
+  "sp.loft",
+  "sp.open_plan",
+  "sp.kitchen_living",
+  "sp.kitchen_dining_living",
   "sp.office",
   "sp.other",
 ]);
-
-const VISIBILITY_OPTIONS = [
-  { id: "public", label: "Público (visible en guía)" },
-  { id: "booked_guest", label: "Solo huésped confirmado" },
-  { id: "internal", label: "Interno (operador)" },
-];
 
 interface SpaceData {
   id: string;
   spaceType: string;
   name: string;
   guestNotes: string | null;
-  aiNotes: string | null;
   internalNotes: string | null;
-  visibility: string;
   featuresJson: Record<string, unknown> | null;
 }
 
 interface SpaceCardProps {
   propertyId: string;
+  maxGuests: number | null;
   space: SpaceData;
   beds: BedData[];
 }
@@ -55,10 +53,34 @@ type FeatureState = Record<string, FeatureValue>;
 const inputCls =
   "block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
 
-const sectionLabelCls =
-  "text-[10px] font-semibold uppercase tracking-widest text-[var(--color-neutral-400)] mb-3";
+function computeProgressDot(
+  features: FeatureState,
+  featureGroups: import("@/lib/types/taxonomy").SpaceFeatureGroup[],
+  hasBeds: boolean,
+  bedCount: number,
+): "none" | "partial" | "complete" {
+  const filledFeatures = Object.values(features).filter(
+    (v) => v !== null && v !== false && v !== "" && !(Array.isArray(v) && v.length === 0),
+  ).length;
 
-export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
+  const hasAny = filledFeatures > 0 || (hasBeds && bedCount > 0);
+  if (!hasAny) return "none";
+
+  // "complete" = at least one field filled per non-dimensions group
+  const contentGroups = featureGroups.filter((g) => g.id !== "sfg.dimensions");
+  if (contentGroups.length === 0) return hasBeds && bedCount > 0 ? "complete" : "partial";
+
+  const groupsWithData = contentGroups.filter((g) =>
+    g.fields.some((f) => {
+      const v = features[f.id];
+      return v !== null && v !== undefined && v !== false && v !== "" && !(Array.isArray(v) && v.length === 0);
+    })
+  );
+  if (groupsWithData.length >= contentGroups.length) return "complete";
+  return "partial";
+}
+
+export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps) {
   // ── Expand / collapse ──
   const bodyRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">(0);
@@ -127,6 +149,10 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
   // ── Feature groups ──
   const featureGroups = getSpaceFeatureGroups(space.spaceType);
 
+  // ── Progress ──
+  const hasBeds = SPACE_TYPES_WITH_BEDS.has(space.spaceType);
+  const progressDot = computeProgressDot(features, featureGroups, hasBeds, beds.length);
+
   // ── Details save form ──
   const [detailsState, detailsAction, detailsPending] = useActionState<
     ActionResult | null,
@@ -140,8 +166,8 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
     }
   }, [detailsState]);
 
-  // Notes dirty tracking (uncontrolled fields — track via onChange)
   const [notesDirty, setNotesDirty] = useState(false);
+  const [showInternalNotes, setShowInternalNotes] = useState(Boolean(space.internalNotes));
   const formDirty = featuresDirty || notesDirty;
 
   const saveStatus = detailsPending
@@ -161,25 +187,41 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
 
   // ── Derived ──
   const typeInfo = findItem(spaceTypes, space.spaceType);
-  const totalCapacity = beds.reduce((sum, bed) => {
+  const adultCapacity = beds.reduce((sum, bed) => {
+    if (bed.bedType === "bt.other") {
+      const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
+      return sum + customCap * bed.quantity;
+    }
     const bt = findItem(bedTypes, bed.bedType);
     return sum + (bt?.sleepingCapacity ?? 1) * bed.quantity;
   }, 0);
+  const cribCount = beds
+    .filter((b) => b.bedType === "bt.crib")
+    .reduce((sum, b) => sum + b.quantity, 0);
 
-  const visLabel =
-    space.visibility === "public"
-      ? "Público"
-      : space.visibility === "booked_guest"
-        ? "Huésped"
-        : "Interno";
-  const visTone: "success" | "neutral" =
-    space.visibility === "public" ? "success" : "neutral";
+  let capacityLabel = "";
+  if (adultCapacity > 0 || cribCount > 0) {
+    const parts: string[] = [];
+    if (adultCapacity > 0) parts.push(`${adultCapacity} ${adultCapacity === 1 ? "pers." : "pers."}`);
+    if (cribCount > 0) parts.push(`+ ${cribCount} ${cribCount === 1 ? "cuna" : "cunas"}`);
+    capacityLabel = parts.join(" ");
+  }
 
   return (
     <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--border)] bg-[var(--surface-elevated)]">
       {/* ── Card header ── */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        {/* Left: name + type */}
+      <div
+        className={`flex items-center gap-3 px-4 py-3 ${!editingName ? "cursor-pointer select-none" : ""}`}
+        role={!editingName ? "button" : undefined}
+        tabIndex={!editingName ? 0 : undefined}
+        aria-expanded={!editingName ? expanded : undefined}
+        onClick={() => { if (!editingName) setExpanded((e) => !e); }}
+        onKeyDown={(e) => {
+          if (editingName) return;
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((prev) => !prev); }
+        }}
+      >
         <div className="flex-1 min-w-0">
           {editingName ? (
             <form action={renameAction} className="flex items-center gap-2">
@@ -208,10 +250,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setNameValue(space.name);
-                  setEditingName(false);
-                }}
+                onClick={() => { setNameValue(space.name); setEditingName(false); }}
                 className="rounded-[var(--radius-md)] border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
               >
                 ✕
@@ -224,19 +263,11 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
               </span>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingName(true);
-                }}
+                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
                 className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-opacity"
                 title="Renombrar espacio"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  className="h-3.5 w-3.5"
-                >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
                   <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
                 </svg>
               </button>
@@ -244,19 +275,28 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
           )}
           <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
             {typeInfo?.label ?? space.spaceType}
-            {totalCapacity > 0 && ` · ${totalCapacity} pers.`}
+            {capacityLabel && ` · ${capacityLabel}`}
           </p>
           {renameState?.error && (
             <p className="mt-0.5 text-xs text-[var(--color-danger-500)]">{renameState.error}</p>
           )}
         </div>
 
-        {/* Right: visibility + expand toggle */}
+        {/* Right: progress dot + expand toggle */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge label={visLabel} tone={visTone} />
+          {progressDot !== "none" && (
+            <span
+              title={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
+              className={`h-2 w-2 rounded-full ${
+                progressDot === "complete"
+                  ? "bg-[var(--color-success-500,#22c55e)]"
+                  : "bg-[var(--color-warning-400,#facc15)]"
+              }`}
+            />
+          )}
           <button
             type="button"
-            onClick={() => setExpanded((e) => !e)}
+            onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
             className="rounded-[var(--radius-md)] p-1.5 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
             aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
           >
@@ -266,11 +306,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
               fill="currentColor"
               className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
             >
-              <path
-                fillRule="evenodd"
-                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
+              <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
@@ -283,105 +319,147 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
         className="overflow-hidden transition-all duration-300 ease-in-out"
       >
         {bodyVisible && (
-          <div className="border-t border-[var(--border)] px-4 pb-5 pt-5 space-y-6">
-            {/* Beds (only for applicable types) */}
-            {SPACE_TYPES_WITH_BEDS.has(space.spaceType) && (
-              <section>
-                <p className={sectionLabelCls}>Camas</p>
-                <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} />
-              </section>
+          <div className="border-t border-[var(--border)] px-4 pb-6 pt-4 space-y-1">
+
+            {/* Photos first */}
+            <SpaceSection label="Fotos y vídeo">
+              <div className="flex flex-wrap gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 w-24 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--surface)] flex flex-col items-center justify-center gap-0.5 text-[var(--color-neutral-400)] cursor-not-allowed"
+                    title="Subida de fotos — próximamente"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path fillRule="evenodd" d="M1 8a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 018.07 3h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 6H17a2 2 0 012 2v7a2 2 0 01-2 2H3a2 2 0 01-2-2V8zm13.5 3a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM10 14a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-[9px]">{i === 0 ? "Principal" : `Foto ${i + 1}`}</span>
+                  </div>
+                ))}
+                <div
+                  className="h-16 w-24 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--surface)] flex flex-col items-center justify-center gap-0.5 text-[var(--color-neutral-400)] cursor-not-allowed"
+                  title="Vídeo — próximamente"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                    <path d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
+                  </svg>
+                  <span className="text-[9px]">Vídeo</span>
+                </div>
+              </div>
+              <p className="mt-2 text-[11px] text-[var(--color-neutral-400)]">
+                Disponible próximamente — podrás asociar fotos a cada zona del espacio.
+              </p>
+            </SpaceSection>
+
+            {/* Beds — pass maxGuests for inline capacity warning */}
+            {/* Dimensions */}
+            <SpaceSection label="Dimensiones">
+              {(() => {
+                const dimGroup = featureGroups.find((g) => g.id === "sfg.dimensions");
+                if (!dimGroup) return null;
+                return (
+                  <FlatFeatureSection
+                    group={dimGroup}
+                    features={features}
+                    onChangeFeature={setFeature}
+                    noBorder
+                  />
+                );
+              })()}
+            </SpaceSection>
+
+            {/* Beds */}
+            {hasBeds && (
+              <SpaceSection label="Camas">
+                <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} maxGuests={maxGuests} />
+              </SpaceSection>
             )}
 
-            {/* Feature sections — flat, always visible */}
-            <form id={`details-${space.id}`} action={detailsAction} className="space-y-6">
+            {/* All remaining feature groups except dimensions */}
+            <form id={`details-${space.id}`} action={detailsAction}>
               <input type="hidden" name="spaceId" value={space.id} />
               <input type="hidden" name="propertyId" value={propertyId} />
               <input type="hidden" name="featuresJson" value={JSON.stringify(features)} />
 
-              {featureGroups.map((group) => (
-                <FlatFeatureSection
-                  key={group.id}
-                  group={group}
-                  features={features}
-                  onChangeFeature={setFeature}
-                />
-              ))}
+              {featureGroups
+                .filter((g) => g.id !== "sfg.dimensions")
+                .map((group) => (
+                  <SpaceSection key={group.id} label={group.label}>
+                    <FlatFeatureSection
+                      group={group}
+                      features={features}
+                      onChangeFeature={setFeature}
+                      noBorder
+                    />
+                  </SpaceSection>
+                ))}
 
-              {/* Notes + visibility */}
-              <section>
-                <p className={sectionLabelCls}>Notas y visibilidad</p>
-                <div className="space-y-4">
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
-                      Notas para el huésped{" "}
-                      <span className="font-normal text-[var(--color-neutral-400)]">(público)</span>
-                    </span>
+              {/* Custom "Otros" field */}
+              {featureGroups.length > 0 && (
+                <SpaceSection label="Otros detalles">
+                  <textarea
+                    rows={2}
+                    value={(features["sf.custom"] as string) ?? ""}
+                    onChange={(e) => setFeature("sf.custom", e.target.value || null)}
+                    placeholder="Cualquier detalle relevante que no encaje en las secciones anteriores…"
+                    className={inputCls}
+                  />
+                </SpaceSection>
+              )}
+
+              {/* Notes */}
+              <SpaceSection label="Notas para el huésped">
+                <textarea
+                  name="guestNotes"
+                  rows={2}
+                  defaultValue={space.guestNotes ?? ""}
+                  placeholder="Información útil sobre este espacio visible en la guía del huésped…"
+                  onChange={() => setNotesDirty(true)}
+                  className={inputCls}
+                />
+              </SpaceSection>
+
+              {/* Internal notes — toggle */}
+              <div className="py-1">
+                <button
+                  type="button"
+                  onClick={() => setShowInternalNotes((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-neutral-500)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className={`h-3.5 w-3.5 transition-transform duration-150 ${showInternalNotes ? "rotate-90" : ""}`}
+                  >
+                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                  </svg>
+                  Notas internas
+                  {space.internalNotes && (
+                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-neutral-400)]" />
+                  )}
+                </button>
+                {showInternalNotes && (
+                  <div className="mt-2">
                     <textarea
-                      name="guestNotes"
+                      name="internalNotes"
                       rows={2}
-                      defaultValue={space.guestNotes ?? ""}
-                      placeholder="Información útil para el huésped sobre este espacio…"
+                      defaultValue={space.internalNotes ?? ""}
+                      placeholder="Notas de operación solo visibles para el operador…"
                       onChange={() => setNotesDirty(true)}
                       className={inputCls}
                     />
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
-                        Notas para AI{" "}
-                        <span className="font-normal text-[var(--color-neutral-400)]">(knowledge base)</span>
-                      </span>
-                      <textarea
-                        name="aiNotes"
-                        rows={2}
-                        defaultValue={space.aiNotes ?? ""}
-                        placeholder="Contexto para el asistente…"
-                        onChange={() => setNotesDirty(true)}
-                        className={inputCls}
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
-                        Notas internas{" "}
-                        <span className="font-normal text-[var(--color-neutral-400)]">(solo operador)</span>
-                      </span>
-                      <textarea
-                        name="internalNotes"
-                        rows={2}
-                        defaultValue={space.internalNotes ?? ""}
-                        placeholder="Notas de operación…"
-                        onChange={() => setNotesDirty(true)}
-                        className={inputCls}
-                      />
-                    </label>
                   </div>
-
-                  <label className="block max-w-xs">
-                    <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
-                      Visibilidad
-                    </span>
-                    <select
-                      name="visibility"
-                      defaultValue={space.visibility}
-                      onChange={() => setNotesDirty(true)}
-                      className={inputCls}
-                    >
-                      {VISIBILITY_OPTIONS.map((v) => (
-                        <option key={v.id} value={v.id}>
-                          {v.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              </section>
+                )}
+                {!showInternalNotes && (
+                  <input type="hidden" name="internalNotes" value={space.internalNotes ?? ""} />
+                )}
+              </div>
 
             </form>
 
-            {/* Footer: save left, delete right — outside form to avoid nested <form> */}
-            <div className="flex items-center justify-between border-t border-[var(--border)] pt-4">
+            {/* Footer — outside form to avoid nested <form> */}
+            <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-2">
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
@@ -393,18 +471,13 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                 </button>
                 {saveStatus && <InlineSaveStatus status={saveStatus} />}
                 {detailsState?.error && (
-                  <span className="text-xs text-[var(--color-danger-500)]">
-                    {detailsState.error}
-                  </span>
+                  <span className="text-xs text-[var(--color-danger-500)]">{detailsState.error}</span>
                 )}
               </div>
 
-              {/* Delete */}
               {confirmDelete ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-danger-700)]">
-                    ¿Eliminar este espacio?
-                  </span>
+                  <span className="text-xs text-[var(--color-danger-700)]">¿Eliminar este espacio?</span>
                   <form action={deleteAction}>
                     <input type="hidden" name="spaceId" value={space.id} />
                     <button
@@ -423,9 +496,7 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
                     Cancelar
                   </button>
                   {deleteState?.error && (
-                    <span className="text-xs text-[var(--color-danger-500)]">
-                      {deleteState.error}
-                    </span>
+                    <span className="text-xs text-[var(--color-danger-500)]">{deleteState.error}</span>
                   )}
                 </div>
               ) : (
@@ -445,18 +516,33 @@ export function SpaceCard({ propertyId, space, beds }: SpaceCardProps) {
   );
 }
 
-// ── Flat feature section (no CollapsibleSection nesting — avoids early-return bug) ──
+// ── Section wrapper — clear visual separation between topics ──
+
+function SpaceSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-4 my-2 first:mt-0">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-neutral-600)] mb-3 flex items-center gap-2">
+        <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary-400)] flex-shrink-0" />
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+// ── Flat feature section — renders fields inside a SpaceSection ──
 
 function FlatFeatureSection({
   group,
   features,
   onChangeFeature,
+  noBorder,
 }: {
   group: SpaceFeatureGroup;
   features: FeatureState;
   onChangeFeature: (fieldId: string, value: FeatureValue) => void;
+  noBorder?: boolean;
 }) {
-  // Separate boolean fields (pill toggles) from structured fields (inputs)
   const boolFields = group.fields.filter((f) => {
     if (f.type !== "boolean") return false;
     if (f.shown_if) {
@@ -477,15 +563,10 @@ function FlatFeatureSection({
 
   if (boolFields.length === 0 && structuredFields.length === 0) return null;
 
-  return (
-    <section>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-neutral-400)] mb-3">
-        {group.label}
-      </p>
-
-      {/* Boolean pills — compact flex-wrap grid */}
+  const content = (
+    <>
       {boolFields.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-3">
           {boolFields.map((field) => {
             const active = Boolean(features[field.id]);
             return (
@@ -495,15 +576,13 @@ function FlatFeatureSection({
                 aria-pressed={active}
                 title={field.description}
                 onClick={() => onChangeFeature(field.id, !active)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   active
-                    ? "border-[var(--color-primary-400)] bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
-                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--color-neutral-500)] hover:border-[var(--color-neutral-400)] hover:text-[var(--foreground)]"
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
+                    : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
                 }`}
               >
-                {active && (
-                  <span className="mr-1 text-[var(--color-primary-600)]">✓</span>
-                )}
+                {active && <span className="mr-1">✓</span>}
                 {field.label}
               </button>
             );
@@ -511,7 +590,6 @@ function FlatFeatureSection({
         </div>
       )}
 
-      {/* Structured fields — grid */}
       {structuredFields.length > 0 && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
           {structuredFields.map((field) => (
@@ -524,11 +602,14 @@ function FlatFeatureSection({
           ))}
         </div>
       )}
-    </section>
+    </>
   );
+
+  if (noBorder) return <>{content}</>;
+  return content;
 }
 
-// ── Structured field: enum, enum_multiselect, number ──
+// ── Structured field: enum, enum_multiselect, number, text, text_chips ──
 
 function StructuredField({
   field,
@@ -539,11 +620,15 @@ function StructuredField({
   value: FeatureValue;
   onChange: (v: FeatureValue) => void;
 }) {
+  const tooltipText = field.tooltip ?? null;
+  const labelCls = "mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--foreground)]";
+
   if (field.type === "enum" && field.options) {
     return (
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
+        <span className={labelCls}>
           {field.label}
+          {tooltipText && <InfoTooltip text={tooltipText} />}
         </span>
         <select
           value={(value as string) ?? ""}
@@ -552,9 +637,7 @@ function StructuredField({
         >
           <option value="">—</option>
           {field.options.map((opt) => (
-            <option key={opt.id} value={opt.id}>
-              {opt.label}
-            </option>
+            <option key={opt.id} value={opt.id}>{opt.label}</option>
           ))}
         </select>
       </label>
@@ -565,8 +648,11 @@ function StructuredField({
     const selected = (value as string[]) ?? [];
     return (
       <div className="col-span-2 sm:col-span-3">
-        <p className="mb-2 text-xs font-medium text-[var(--color-neutral-600)]">{field.label}</p>
-        <div className="flex flex-wrap gap-2">
+        <p className={labelCls}>
+          {field.label}
+          {tooltipText && <InfoTooltip text={tooltipText} />}
+        </p>
+        <div className="flex flex-wrap gap-2 mt-1">
           {field.options.map((opt) => {
             const checked = selected.includes(opt.id);
             return (
@@ -580,13 +666,13 @@ function StructuredField({
                     : [...selected, opt.id];
                   onChange(next.length > 0 ? next : null);
                 }}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   checked
-                    ? "border-[var(--color-primary-400)] bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
-                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--color-neutral-500)] hover:border-[var(--color-neutral-400)] hover:text-[var(--foreground)]"
+                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
+                    : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
                 }`}
               >
-                {checked && <span className="mr-1 text-[var(--color-primary-600)]">✓</span>}
+                {checked && <span className="mr-1">✓</span>}
                 {opt.label}
               </button>
             );
@@ -599,8 +685,9 @@ function StructuredField({
   if (field.type === "number_optional" || field.type === "integer_optional") {
     return (
       <label className="block">
-        <span className="mb-1 block text-xs font-medium text-[var(--color-neutral-600)]">
+        <span className={labelCls}>
           {field.label}
+          {tooltipText && <InfoTooltip text={tooltipText} />}
         </span>
         <input
           type="number"
@@ -619,5 +706,103 @@ function StructuredField({
     );
   }
 
+  if (field.type === "text") {
+    return (
+      <div className="col-span-2 sm:col-span-3">
+        <label className="block">
+          <span className={labelCls}>
+            {field.label}
+            {tooltipText && <InfoTooltip text={tooltipText} />}
+          </span>
+          <input
+            type="text"
+            value={(value as string) ?? ""}
+            onChange={(e) => onChange(e.target.value || null)}
+            placeholder="Describe brevemente…"
+            className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none placeholder:text-[var(--color-neutral-400)]"
+          />
+        </label>
+      </div>
+    );
+  }
+
+  if (field.type === "text_chips") {
+    return (
+      <TextChipsField
+        field={field}
+        value={value}
+        onChange={onChange}
+        labelCls={labelCls}
+      />
+    );
+  }
+
   return null;
+}
+
+// ── Text chips field — press Enter to add a custom tag ──
+
+function TextChipsField({
+  field,
+  value,
+  onChange,
+  labelCls,
+}: {
+  field: SpaceFeatureField;
+  value: FeatureValue;
+  onChange: (v: FeatureValue) => void;
+  labelCls: string;
+}) {
+  const [draft, setDraft] = useState("");
+  const chips = (value as string[]) ?? [];
+  const tooltipText = field.tooltip ?? null;
+
+  function addChip() {
+    const trimmed = draft.trim();
+    if (!trimmed || chips.includes(trimmed)) { setDraft(""); return; }
+    onChange([...chips, trimmed]);
+    setDraft("");
+  }
+
+  function removeChip(chip: string) {
+    const next = chips.filter((c) => c !== chip);
+    onChange(next.length > 0 ? next : null);
+  }
+
+  return (
+    <div className="col-span-2 sm:col-span-3">
+      <p className={labelCls}>
+        {field.label}
+        {tooltipText && <InfoTooltip text={tooltipText} />}
+      </p>
+      <div className="mt-1 flex flex-wrap gap-2">
+        {chips.map((chip) => (
+          <span
+            key={chip}
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-primary-500)] bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-semibold text-white"
+          >
+            {chip}
+            <button
+              type="button"
+              onClick={() => removeChip(chip)}
+              className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full opacity-70 hover:opacity-100"
+              aria-label={`Eliminar ${chip}`}
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); addChip(); }
+          }}
+          placeholder="Escribe y pulsa Enter…"
+          className="h-8 flex-1 min-w-[160px] rounded-full border border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
+        />
+      </div>
+    </div>
+  );
 }

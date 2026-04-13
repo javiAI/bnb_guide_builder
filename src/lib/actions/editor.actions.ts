@@ -15,6 +15,7 @@ import {
   spaceFeaturesSchema,
   createBedSchema,
   updateBedSchema,
+  bedConfigSchema,
   updateAmenitySchema,
   createPlaybookSchema,
   updatePlaybookSchema,
@@ -78,6 +79,15 @@ export async function savePropertyAction(
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };
+
+  const infraRaw = formData.get("infrastructureJson") as string | null;
+  if (infraRaw) {
+    try {
+      (raw as Record<string, unknown>).infrastructureJson = JSON.parse(infraRaw);
+    } catch {
+      return { success: false, error: "Datos de infraestructura inválidos" };
+    }
+  }
 
   const result = propertySchema.safeParse(raw);
   if (!result.success) {
@@ -447,15 +457,7 @@ export async function updateSpaceDetailsAction(
   const spaceId = formData.get("spaceId") as string;
   const featuresRaw = formData.get("featuresJson") as string | null;
   const guestNotes = (formData.get("guestNotes") as string) || null;
-  const aiNotes = (formData.get("aiNotes") as string) || null;
   const internalNotes = (formData.get("internalNotes") as string) || null;
-
-  // Validate visibility server-side — never trust arbitrary client string
-  const ALLOWED_VISIBILITIES = ["public", "booked_guest", "internal"] as const;
-  const visibilityRaw = formData.get("visibility") as string;
-  const visibility = (ALLOWED_VISIBILITIES as readonly string[]).includes(visibilityRaw)
-    ? (visibilityRaw as (typeof ALLOWED_VISIBILITIES)[number])
-    : "public";
 
   // Verify space exists and derive propertyId from DB (don't trust client)
   const space = await prisma.space.findUnique({
@@ -484,9 +486,7 @@ export async function updateSpaceDetailsAction(
     where: { id: spaceId },
     data: {
       guestNotes,
-      aiNotes,
       internalNotes,
-      visibility,
       ...(featuresJson !== null && { featuresJson: featuresJson as Prisma.InputJsonValue }),
     },
   });
@@ -515,6 +515,17 @@ export async function addBedAction(
     };
   }
 
+  const rawCustomLabel = (formData.get("customLabel") as string | null)?.trim() || undefined;
+  if (result.data.bedType === "bt.other" && !rawCustomLabel) {
+    return { success: false, error: "Las camas personalizadas requieren un nombre" };
+  }
+  let initialConfigJson: Prisma.InputJsonValue | undefined;
+  if (rawCustomLabel !== undefined) {
+    const validated = bedConfigSchema.pick({ customLabel: true }).safeParse({ customLabel: rawCustomLabel });
+    if (!validated.success) return { success: false, error: "Nombre de cama inválido (máx. 100 caracteres)" };
+    initialConfigJson = validated.data as Prisma.InputJsonValue;
+  }
+
   // Derive propertyId from DB (don't trust client)
   const space = await prisma.space.findUnique({
     where: { id: spaceId },
@@ -522,23 +533,26 @@ export async function addBedAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  // If same bed type already exists in this space, increment quantity
-  const existing = await prisma.bedConfiguration.findFirst({
-    where: { spaceId, bedType: result.data.bedType },
-  });
-
-  if (existing) {
-    await prisma.bedConfiguration.update({
-      where: { id: existing.id },
-      data: { quantity: existing.quantity + result.data.quantity },
+  // bt.other: always create a new row (each is a distinct custom bed)
+  // Other types: increment quantity if same type already exists
+  if (result.data.bedType === "bt.other") {
+    await prisma.bedConfiguration.create({
+      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: initialConfigJson },
     });
   } else {
-    await prisma.bedConfiguration.create({
-      data: {
-        ...result.data,
-        space: { connect: { id: spaceId } },
-      },
+    const existing = await prisma.bedConfiguration.findFirst({
+      where: { spaceId, bedType: result.data.bedType },
     });
+    if (existing) {
+      await prisma.bedConfiguration.update({
+        where: { id: existing.id },
+        data: { quantity: existing.quantity + result.data.quantity },
+      });
+    } else {
+      await prisma.bedConfiguration.create({
+        data: { ...result.data, space: { connect: { id: spaceId } } },
+      });
+    }
   }
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
@@ -599,6 +613,40 @@ export async function deleteBedAction(
   }
 
   await prisma.bedConfiguration.delete({ where: { id: bedId } });
+
+  revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
+  return { success: true };
+}
+
+export async function updateBedConfigAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const bedId = formData.get("bedId") as string;
+  const spaceId = formData.get("spaceId") as string;
+  const rawJson = formData.get("configJson") as string | null;
+
+  const bed = await prisma.bedConfiguration.findUnique({
+    where: { id: bedId },
+    select: { spaceId: true, space: { select: { propertyId: true } } },
+  });
+  if (!bed || bed.spaceId !== spaceId) {
+    return { success: false, error: "Cama no encontrada" };
+  }
+
+  let configJson: Prisma.InputJsonValue | undefined;
+  if (rawJson) {
+    let parsed: unknown;
+    try { parsed = JSON.parse(rawJson); } catch { return { success: false, error: "Datos inválidos" }; }
+    const validated = bedConfigSchema.safeParse(parsed);
+    if (!validated.success) return { success: false, error: "Configuración de cama inválida" };
+    configJson = validated.data as Prisma.InputJsonValue;
+  }
+
+  await prisma.bedConfiguration.update({
+    where: { id: bedId },
+    data: { configJson },
+  });
 
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };

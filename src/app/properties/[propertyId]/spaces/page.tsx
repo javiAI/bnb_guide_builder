@@ -12,7 +12,7 @@ export default async function SpacesPage({
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, maxGuests: true },
   });
 
   if (!property) notFound();
@@ -49,20 +49,20 @@ export default async function SpacesPage({
             <SpaceCard
               key={space.id}
               propertyId={propertyId}
+              maxGuests={property.maxGuests}
               space={{
                 id: space.id,
                 spaceType: space.spaceType,
                 name: space.name,
                 guestNotes: space.guestNotes,
-                aiNotes: space.aiNotes,
                 internalNotes: space.internalNotes,
-                visibility: space.visibility,
                 featuresJson: space.featuresJson as Record<string, unknown> | null,
               }}
               beds={space.beds.map((b) => ({
                 id: b.id,
                 bedType: b.bedType,
                 quantity: b.quantity,
+                configJson: b.configJson as Record<string, unknown> | null,
               }))}
             />
           ))

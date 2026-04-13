@@ -89,6 +89,7 @@ model Property {
   infantsAllowed          Boolean @default(false) @map("infants_allowed")
   isAutonomousCheckin     Boolean @default(false) @map("is_autonomous_checkin")
   hasBuildingAccess       Boolean @default(false) @map("has_building_access")
+  infrastructureJson      Json?   @map("infrastructure_json")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -222,11 +223,12 @@ model Space {
 }
 
 model BedConfiguration {
-  id        String   @id @default(cuid())
-  spaceId   String   @map("space_id")
-  bedType   String   @map("bed_type")
-  quantity  Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(cuid())
+  spaceId    String   @map("space_id")
+  bedType    String   @map("bed_type")
+  quantity   Int      @default(1)
+  configJson Json?    @map("config_json")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
