@@ -5,58 +5,998 @@
   "units_system": "metric",
   "scopePolicies": {
     "_comment": "scopePolicy values: property_only | space_only | multi_instance | derived. Used by amenities-v2 to drive creation flow and deduplication.",
-    "am.wifi":                 { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.kitchen":              { "scopePolicy": "derived",         "isDerived": true,  "suggestedSpaceTypes": ["sp.kitchen", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.kitchen_dining_living"] },
-    "am.air_conditioning":     { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.living_room", "sp.studio", "sp.loft"] },
-    "am.washer":               { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.laundry", "sp.bathroom", "sp.kitchen"] },
-    "am.free_parking":         { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.iron":                 { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.laundry", "sp.bedroom"] },
-    "am.bathtub":              { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.bidet":                { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.body_soap":            { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.cleaning_products":    { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.conditioner":          { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.hair_dryer":           { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.hot_water":            { "scopePolicy": "derived",         "isDerived": true,  "suggestedSpaceTypes": [] },
-    "am.outdoor_shower":       { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.garden", "sp.patio", "sp.pool"] },
-    "am.shampoo":              { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.shower_gel":           { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bathroom"] },
-    "am.bed_linens":           { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.studio", "sp.loft"] },
-    "am.clothing_storage":     { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.studio"] },
-    "am.dryer":                { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.laundry", "sp.bathroom"] },
-    "am.drying_rack":          { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.laundry", "sp.balcony", "sp.patio"] },
-    "am.essentials":           { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.extra_pillows_blankets":{ "scopePolicy": "space_only",     "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.studio", "sp.loft"] },
-    "am.hangers":              { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.studio"] },
-    "am.mosquito_net":         { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom"] },
-    "am.room_darkening_shades":{ "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.studio", "sp.loft"] },
-    "am.safe":                 { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom"] },
-    "am.tv":                   { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": ["sp.bedroom", "sp.living_room", "sp.studio", "sp.kitchen_living"] },
-    "am.ethernet":             { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": ["sp.office", "sp.bedroom", "sp.living_room"] },
-    "am.exercise_equipment":   { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.other"] },
-    "am.game_console":         { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.living_room", "sp.bedroom", "sp.studio"] },
-    "am.books_reading":        { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.sound_system":         { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": ["sp.living_room", "sp.kitchen"] },
-    "am.bbq":                  { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.garden", "sp.patio", "sp.balcony"] },
-    "am.outdoor_furniture":    { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.garden", "sp.patio", "sp.balcony"] },
-    "am.pool":                 { "scopePolicy": "derived",         "isDerived": true,  "suggestedSpaceTypes": ["sp.pool"] },
-    "am.hot_tub":              { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.garden", "sp.patio"] },
-    "am.fire_pit":             { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.garden", "sp.patio"] },
-    "am.coffee_maker":         { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen", "sp.studio", "sp.kitchen_living", "sp.kitchen_dining_living"] },
-    "am.refrigerator":         { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen", "sp.studio"] },
-    "am.microwave":            { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen", "sp.studio"] },
-    "am.oven":                 { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen"] },
-    "am.dishwasher":           { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen"] },
-    "am.stove":                { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen", "sp.studio"] },
-    "am.first_aid_kit":        { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.fire_extinguisher":    { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": ["sp.kitchen"] },
-    "am.smoke_alarm":          { "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.carbon_monoxide_alarm":{ "scopePolicy": "multi_instance",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.elevator":             { "scopePolicy": "derived",         "isDerived": true,  "suggestedSpaceTypes": [] },
-    "am.wheelchair_accessible":{ "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.long_term_stays":      { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.luggage_storage":      { "scopePolicy": "property_only",  "isDerived": false, "suggestedSpaceTypes": [] },
-    "am.workspace":            { "scopePolicy": "space_only",      "isDerived": false, "suggestedSpaceTypes": ["sp.office", "sp.bedroom"] }
+    "am.wifi": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.kitchen": {
+      "scopePolicy": "derived",
+      "isDerived": true,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.studio",
+        "sp.loft",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.air_conditioning": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.studio",
+        "sp.loft"
+      ]
+    },
+    "am.washer": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.laundry",
+        "sp.bathroom",
+        "sp.kitchen"
+      ]
+    },
+    "am.free_parking": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.iron": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.laundry",
+        "sp.bedroom"
+      ]
+    },
+    "am.bathtub": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.bidet": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.body_soap": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.cleaning_products": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.conditioner": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.hair_dryer": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.hot_water": {
+      "scopePolicy": "derived",
+      "isDerived": true,
+      "suggestedSpaceTypes": []
+    },
+    "am.outdoor_shower": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio",
+        "sp.pool"
+      ]
+    },
+    "am.shampoo": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.shower_gel": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.bed_linens": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.studio",
+        "sp.loft"
+      ]
+    },
+    "am.clothing_storage": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.studio"
+      ]
+    },
+    "am.dryer": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.laundry",
+        "sp.bathroom"
+      ]
+    },
+    "am.drying_rack": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.laundry",
+        "sp.balcony",
+        "sp.patio"
+      ]
+    },
+    "am.essentials": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.extra_pillows_blankets": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.studio",
+        "sp.loft"
+      ]
+    },
+    "am.hangers": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.studio"
+      ]
+    },
+    "am.mosquito_net": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.room_darkening_shades": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.studio",
+        "sp.loft"
+      ]
+    },
+    "am.safe": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.tv": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.studio",
+        "sp.kitchen_living"
+      ]
+    },
+    "am.ethernet": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.office",
+        "sp.bedroom",
+        "sp.living_room"
+      ]
+    },
+    "am.exercise_equipment": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.other"
+      ]
+    },
+    "am.game_console": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.bedroom",
+        "sp.studio"
+      ]
+    },
+    "am.books_reading": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.sound_system": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.kitchen"
+      ]
+    },
+    "am.bbq_grill": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio",
+        "sp.balcony"
+      ]
+    },
+    "am.outdoor_furniture": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio",
+        "sp.balcony"
+      ]
+    },
+    "am.pool": {
+      "scopePolicy": "derived",
+      "isDerived": true,
+      "suggestedSpaceTypes": [
+        "sp.pool"
+      ]
+    },
+    "am.hot_tub": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio"
+      ]
+    },
+    "am.fire_pit": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio"
+      ]
+    },
+    "am.coffee_maker": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.studio",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.refrigerator": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.studio"
+      ]
+    },
+    "am.microwave": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.studio"
+      ]
+    },
+    "am.oven": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen"
+      ]
+    },
+    "am.dishwasher": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen"
+      ]
+    },
+    "am.stove": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.studio"
+      ]
+    },
+    "am.first_aid_kit": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.fire_extinguisher": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen"
+      ]
+    },
+    "am.smoke_alarm": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.co_alarm": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.elevator": {
+      "scopePolicy": "derived",
+      "isDerived": true,
+      "suggestedSpaceTypes": []
+    },
+    "am.dedicated_workspace": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.office",
+        "sp.bedroom"
+      ]
+    },
+    "am.backyard": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.batting_cage": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.beach_access": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.boat_slip": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.bowling_alley": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.climbing_wall": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.ev_charger": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.free_parking_premises": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.free_street_parking": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.gym": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.hockey_rink": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.lake_access": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.laser_tag": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.laundromat_nearby": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.life_size_games": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.mini_golf": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.movie_theater": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.outdoor_dining_area": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.patio",
+        "sp.garden"
+      ]
+    },
+    "am.outdoor_kitchen": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.patio",
+        "sp.garden"
+      ]
+    },
+    "am.outdoor_playground": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden"
+      ]
+    },
+    "am.paid_parking_off_premises": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.paid_parking_on_premises": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.piano": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.ping_pong": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.pocket_wifi": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.pool_table": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.resort_access": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.sauna": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.single_level_home": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.skate_ramp": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.ski_in_out": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.sun_loungers": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.pool",
+        "sp.garden",
+        "sp.patio"
+      ]
+    },
+    "am.waterfront": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.hammock": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.garden",
+        "sp.patio"
+      ]
+    },
+    "am.heating": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.beach_essentials": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.babysitter_recs": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.ceiling_fan": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.indoor_fireplace": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan",
+        "sp.bedroom"
+      ]
+    },
+    "am.portable_fans": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room"
+      ]
+    },
+    "am.private_entrance": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.private_living_room": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room"
+      ]
+    },
+    "am.kitchenette": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.studio",
+        "sp.loft"
+      ]
+    },
+    "am.patio_balcony": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.balcony",
+        "sp.patio"
+      ]
+    },
+    "am.theme_room": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.arcade_games": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.baby_bath": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "am.baby_monitor": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.baby_safety_gates": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room"
+      ]
+    },
+    "am.baking_sheet": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.bbq_utensils": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.patio",
+        "sp.garden"
+      ]
+    },
+    "am.bikes": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.blender": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.board_games": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.bread_maker": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.changing_table": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.bathroom"
+      ]
+    },
+    "am.childrens_bikes": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.childrens_books_toys": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room"
+      ]
+    },
+    "am.childrens_dinnerware": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.dining"
+      ]
+    },
+    "am.childrens_playroom": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.coffee": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.cooking_basics": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.crib": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.dining_table": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.dining",
+        "sp.open_plan",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.dishes_silverware": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.dining"
+      ]
+    },
+    "am.fire_screen": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.freezer": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.high_chair": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.dining"
+      ]
+    },
+    "am.kayak": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "am.kettle": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.mini_fridge": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.kitchen"
+      ]
+    },
+    "am.outlet_covers": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom",
+        "sp.living_room"
+      ]
+    },
+    "am.pack_n_play": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.record_player": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.living_room",
+        "sp.open_plan"
+      ]
+    },
+    "am.rice_maker": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.table_corner_guards": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.dining",
+        "sp.living_room"
+      ]
+    },
+    "am.toaster": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ]
+    },
+    "am.trash_compactor": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen"
+      ]
+    },
+    "am.window_guards": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "am.wine_glasses": {
+      "scopePolicy": "multi_instance",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.kitchen",
+        "sp.dining"
+      ]
+    },
+    "ax.accessible_parking_spot": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "ax.bathroom_entrance_wide_81cm": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "ax.bedroom_entrance_wide_81cm": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "ax.ceiling_mobile_hoist": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom",
+        "sp.bedroom"
+      ]
+    },
+    "ax.guest_entrance_wide_81cm": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "ax.shower_bath_chair": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "ax.shower_grab_bar": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "ax.step_free_bathroom_access": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "ax.step_free_bedroom_access": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bedroom"
+      ]
+    },
+    "ax.step_free_guest_entrance": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "ax.step_free_path_to_entrance": {
+      "scopePolicy": "property_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": []
+    },
+    "ax.step_free_shower": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    },
+    "ax.toilet_grab_bar": {
+      "scopePolicy": "space_only",
+      "isDerived": false,
+      "suggestedSpaceTypes": [
+        "sp.bathroom"
+      ]
+    }
   },
   "groups": [
     {
