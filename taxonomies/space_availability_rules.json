@@ -1,6 +1,8 @@
 {
   "file": "space_availability_rules.json",
   "version": "2026-04-13",
+  "locale": "es-ES",
+  "units_system": "metric",
   "description": "Defines which space types are required, recommended, optional or excluded per roomType and layoutKey combination. Consumed by getAvailableSpaceTypes() in taxonomy-loader.",
   "layoutKeys": [
     { "id": "layout.studio",                  "label": "Estudio" },

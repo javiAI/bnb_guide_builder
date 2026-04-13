@@ -393,6 +393,7 @@
           "id": "code",
           "label": "Código de alarma",
           "type": "password",
+          "visibility": "sensitive",
           "required": false
         }
       ]

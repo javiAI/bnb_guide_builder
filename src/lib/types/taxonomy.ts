@@ -74,10 +74,7 @@ export interface SpaceAvailabilityRule {
   bathroomsMax: number;
 }
 
-export interface SpaceAvailabilityRulesFile {
-  file: string;
-  version: string;
-  description: string;
+export interface SpaceAvailabilityRulesFile extends TaxonomyFileBase {
   layoutKeys: SpaceLayoutKey[];
   rules: SpaceAvailabilityRule[];
 }

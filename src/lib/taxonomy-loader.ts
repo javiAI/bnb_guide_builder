@@ -104,30 +104,18 @@ export function getRecommendedItems(taxonomy: ItemTaxonomyFile): TaxonomyItem[] 
   return taxonomy.items.filter((item) => item.recommended);
 }
 
-// ── Space type labels ──
+// ── Space type label helpers ──
+// Single source of truth: spaceTypes taxonomy. SPACE_TYPE_LABELS kept for
+// backward compatibility at existing call sites — do not add new entries here.
 
-export const SPACE_TYPE_LABELS: Record<string, string> = {
-  "sp.bedroom": "Dormitorio",
-  "sp.bathroom": "Baño",
-  "sp.kitchen": "Cocina",
-  "sp.living_room": "Salón",
-  "sp.dining": "Comedor",
-  "sp.office": "Despacho",
-  "sp.laundry": "Lavadero",
-  "sp.balcony": "Balcón",
-  "sp.patio": "Patio",
-  "sp.garden": "Jardín",
-  "sp.garage": "Garaje",
-  "sp.storage": "Trastero",
-  "sp.studio": "Estudio",
-  "sp.loft": "Loft",
-  "sp.open_plan": "Espacio abierto",
-  "sp.kitchen_living": "Cocina-Salón",
-  "sp.kitchen_dining_living": "Cocina-Comedor-Salón",
-  "sp.pool": "Piscina",
-  "sp.shared_area": "Zona compartida",
-  "sp.other": "Otra zona",
-};
+export function getSpaceTypeLabel(id: string, fallback = id): string {
+  return getSpaceTypeItem(id)?.label ?? fallback;
+}
+
+/** @deprecated Use getSpaceTypeLabel(id) instead — reads from spaceTypes taxonomy */
+export const SPACE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  spaceTypes.items.map((s) => [s.id, s.label]),
+);
 
 // ── Children age limit ──
 
