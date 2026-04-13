@@ -55,7 +55,7 @@ export default async function WizardReviewPage({ searchParams }: Props) {
     : [];
 
   const maxGuests = state.maxGuests as number | undefined;
-  const beds = (state.beds as Array<{ spaceIndex: number; spaceType?: string; bedType: string; quantity: number }>) ?? [];
+  const beds = (state.beds as Array<{ spaceIndex: number; spaceType?: string; spaceLabel?: string; bedType: string; quantity: number }>) ?? [];
   const bedroomsCount = (state.bedroomsCount as number) ?? 0;
 
   const checkInEnd = state.checkInEnd as string | undefined;
@@ -159,10 +159,20 @@ export default async function WizardReviewPage({ searchParams }: Props) {
   const bathroomsCount = (state.bathroomsCount as number) ?? 0;
   const prePopulatedSpaces: string[] = [];
 
-  // Bedrooms from wizard beds
-  const bedroomIndices = Array.from(new Set(beds.filter((b) => (b.spaceType ?? "sp.bedroom") === "sp.bedroom").map((b) => b.spaceIndex)));
-  if (bedroomIndices.length > 0) {
-    bedroomIndices.forEach((idx) => prePopulatedSpaces.push(`Dormitorio ${idx + 1}`));
+  // Spaces from wizard beds — mirrors completeWizardAction grouping logic
+  if (beds.length > 0) {
+    const spaceMap = new Map<number, typeof beds>();
+    for (const b of beds) {
+      const arr = spaceMap.get(b.spaceIndex) ?? [];
+      arr.push(b);
+      spaceMap.set(b.spaceIndex, arr);
+    }
+    for (const [spaceIdx, spaceBeds] of spaceMap) {
+      const first = spaceBeds[0];
+      const spaceType = first.spaceType ?? "sp.bedroom";
+      const isBedroom = spaceType === "sp.bedroom";
+      prePopulatedSpaces.push(isBedroom ? `Dormitorio ${spaceIdx + 1}` : (first.spaceLabel ?? getSpaceTypeLabel(spaceType)));
+    }
   } else if (bedroomsCount > 0) {
     for (let i = 0; i < bedroomsCount; i++) {
       prePopulatedSpaces.push(`Dormitorio ${i + 1}`);
