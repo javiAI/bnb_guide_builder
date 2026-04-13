@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { recomputePropertyCounts } from "@/lib/property-counts";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -340,40 +341,6 @@ export async function savePoliciesAction(
 
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
-}
-
-// ── Derived counts ──
-
-type PrismaTransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
-
-/**
- * Recomputes bedroomsCount, bathroomsCount, and bedsCount from actual Space/Bed
- * rows and writes them back to the Property. Must be called with a transaction
- * client so the mutation and recompute are atomic.
- */
-async function recomputePropertyCounts(
-  tx: PrismaTransactionClient,
-  propertyId: string,
-): Promise<void> {
-  const spaces = await tx.space.findMany({
-    where: { propertyId },
-    select: {
-      spaceType: true,
-      beds: { select: { quantity: true } },
-    },
-  });
-
-  const bedroomsCount = spaces.filter((s) => s.spaceType === "sp.bedroom").length;
-  const bathroomsCount = spaces.filter((s) => s.spaceType === "sp.bathroom").length;
-  const bedsCount = spaces.reduce(
-    (sum, s) => sum + s.beds.reduce((bsum, b) => bsum + b.quantity, 0),
-    0,
-  );
-
-  await tx.property.update({
-    where: { id: propertyId },
-    data: { bedroomsCount, bathroomsCount, bedsCount },
-  });
 }
 
 // ── Spaces (S-12, S-13) ──

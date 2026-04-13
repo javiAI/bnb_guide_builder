@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { SpaceCard } from "./space-card";
 import { CreateSpaceForm } from "./create-space-form";
 import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
+import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export default async function SpacesPage({
   params,
@@ -34,9 +35,20 @@ export default async function SpacesPage({
   const allAvailable = [...required, ...recommended, ...optional];
   const existingTypes = new Set(spaces.map((s) => s.spaceType));
 
-  // Capacity: total beds across all spaces vs maxGuests
+  // Capacity: total sleeping places across all beds (uses sleepingCapacity from bed_types.json)
   const totalBedCapacity = spaces.reduce(
-    (sum, s) => sum + s.beds.reduce((bsum, b) => bsum + b.quantity, 0),
+    (sum, s) =>
+      sum +
+      s.beds.reduce(
+        (bsum, b) =>
+          bsum +
+          getBedSleepingCapacity(
+            b.bedType,
+            b.quantity,
+            b.configJson as Record<string, unknown> | null,
+          ),
+        0,
+      ),
     0,
   );
   const capacityMismatch =
