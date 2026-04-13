@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useId } from "react";
+import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 
 interface InfoTooltipProps {

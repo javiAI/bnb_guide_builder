@@ -592,7 +592,7 @@
           "label": "Barras de apoyo",
           "description": "Barras de apoyo instaladas en ducha o bañera.",
           "type": "boolean",
-          "source": ["airbnb:handheld_shower_head"]
+          "source": ["airbnb:grab_rails_or_bars"]
         },
         {
           "id": "sf.roll_in_shower",
@@ -1367,7 +1367,7 @@
           "label": "Tabla de planchar",
           "description": "Tabla de planchar disponible.",
           "type": "boolean",
-          "source": ["airbnb:iron"]
+          "source": ["airbnb:ironing_board"]
         },
         {
           "id": "sf.steam_press",
