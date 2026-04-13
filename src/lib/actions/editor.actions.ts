@@ -516,6 +516,9 @@ export async function addBedAction(
   }
 
   const rawCustomLabel = (formData.get("customLabel") as string | null)?.trim() || undefined;
+  if (result.data.bedType === "bt.other" && !rawCustomLabel) {
+    return { success: false, error: "Las camas personalizadas requieren un nombre" };
+  }
   let initialConfigJson: Prisma.InputJsonValue | undefined;
   if (rawCustomLabel !== undefined) {
     const validated = bedConfigSchema.pick({ customLabel: true }).safeParse({ customLabel: rawCustomLabel });

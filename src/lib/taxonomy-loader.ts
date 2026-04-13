@@ -92,9 +92,24 @@ export function getRecommendedItems(taxonomy: ItemTaxonomyFile): TaxonomyItem[] 
 
 export const SPACE_TYPE_LABELS: Record<string, string> = {
   "sp.bedroom": "Dormitorio",
+  "sp.bathroom": "Baño",
+  "sp.kitchen": "Cocina",
   "sp.living_room": "Salón",
-  "sp.shared_area": "Zona compartida",
+  "sp.dining": "Comedor",
   "sp.office": "Despacho",
+  "sp.laundry": "Lavadero",
+  "sp.balcony": "Balcón",
+  "sp.patio": "Patio",
+  "sp.garden": "Jardín",
+  "sp.garage": "Garaje",
+  "sp.storage": "Trastero",
+  "sp.studio": "Estudio",
+  "sp.loft": "Loft",
+  "sp.open_plan": "Espacio abierto",
+  "sp.kitchen_living": "Cocina-Salón",
+  "sp.kitchen_dining_living": "Cocina-Comedor-Salón",
+  "sp.pool": "Piscina",
+  "sp.shared_area": "Zona compartida",
   "sp.other": "Otra zona",
 };
 

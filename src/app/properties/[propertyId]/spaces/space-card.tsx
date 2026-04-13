@@ -218,6 +218,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps
         onClick={() => { if (!editingName) setExpanded((e) => !e); }}
         onKeyDown={(e) => {
           if (editingName) return;
+          if (e.target !== e.currentTarget) return;
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((prev) => !prev); }
         }}
       >
