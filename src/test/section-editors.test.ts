@@ -201,7 +201,7 @@ describe("Space features taxonomy", () => {
     expect(bathroomIds).not.toContain("sfg.living_entertainment");
   });
 
-  it("kitchen groups are returned only for sp.kitchen", () => {
+  it("kitchen groups are returned for sp.kitchen and not for sp.bedroom", () => {
     const kitchenGroups = getSpaceFeatureGroups("sp.kitchen");
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const kitchenIds = kitchenGroups.map((g) => g.id);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
 
 interface InfoTooltipProps {
@@ -8,6 +8,7 @@ interface InfoTooltipProps {
 }
 
 export function InfoTooltip({ text }: InfoTooltipProps) {
+  const tooltipId = useId();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLSpanElement>(null);
@@ -46,6 +47,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
 
   const tooltip = (
     <span
+      id={tooltipId}
       role="tooltip"
       onMouseDown={(e) => e.stopPropagation()}
       style={{
@@ -76,6 +78,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } }}
         className="ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-neutral-200)] text-[10px] font-bold text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-300)] hover:text-[var(--color-neutral-700)] transition-colors"
         aria-label="Más información"
+        aria-describedby={open ? tooltipId : undefined}
       >
         ?
       </span>

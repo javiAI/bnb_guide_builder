@@ -358,9 +358,9 @@ function BedRow({
                 <label className="block">
                   <span className="text-xs font-semibold text-[var(--foreground)] mb-1 block">Capacidad (personas)</span>
                   <div className="flex items-center gap-1 mt-1">
-                    <button type="button" onClick={() => setCustomCapacity(Math.max(0, customCapacity - 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={customCapacity <= 0}>−</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={customCapacity <= 1}>−</button>
                     <span className="w-6 text-center text-sm font-medium">{customCapacity}</span>
-                    <button type="button" onClick={() => setCustomCapacity(Math.min(10, customCapacity + 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)]">+</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)]">+</button>
                   </div>
                 </label>
               </div>

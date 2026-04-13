@@ -232,8 +232,12 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   if (hasElevator) infraLabelParts.push("Ascensor");
   const infraLabel = infraLabelParts.length > 0 ? infraLabelParts.slice(0, 2).join(" · ") + (infraLabelParts.length > 2 ? ` +${infraLabelParts.length - 2}` : "") : "Sin configurar";
 
-  function toggleMulti(list: string[], setList: (v: string[]) => void, id: string) {
-    setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id]);
+  function toggleMulti(list: string[], setList: (v: string[]) => void, id: string, noneId?: string) {
+    if (id === noneId) {
+      setList(list.includes(id) ? [] : [id]);
+    } else {
+      setList(list.includes(id) ? list.filter((v) => v !== id) : [...list.filter((v) => v !== noneId), id]);
+    }
   }
 
   return (
@@ -368,7 +372,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {HEATING_OPTIONS.map((opt) => (
                   <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={heatingTypes.includes(opt.id)} onChange={() => toggleMulti(heatingTypes, setHeatingTypes, opt.id)} />
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={heatingTypes.includes(opt.id)} onChange={() => toggleMulti(heatingTypes, setHeatingTypes, opt.id, "no_heating")} />
                     <span>{opt.label}</span>
                   </label>
                 ))}
@@ -381,7 +385,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {COOLING_OPTIONS.map((opt) => (
                   <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={coolingTypes.includes(opt.id)} onChange={() => toggleMulti(coolingTypes, setCoolingTypes, opt.id)} />
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={coolingTypes.includes(opt.id)} onChange={() => toggleMulti(coolingTypes, setCoolingTypes, opt.id, "no_cooling")} />
                     <span>{opt.label}</span>
                   </label>
                 ))}
