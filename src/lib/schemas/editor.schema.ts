@@ -26,6 +26,7 @@ export const propertySchema = z.object({
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
+  infrastructureJson: z.any().optional(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },

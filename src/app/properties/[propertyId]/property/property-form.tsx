@@ -22,6 +22,22 @@ const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
 }));
 const provinces = getItems(spanishProvinces);
 
+const HEATING_OPTIONS = [
+  { id: "gas_boiler", label: "Caldera de gas" },
+  { id: "heat_pump", label: "Bomba de calor" },
+  { id: "electric_radiators", label: "Radiadores eléctricos" },
+  { id: "underfloor", label: "Suelo radiante" },
+  { id: "wood_fireplace", label: "Chimenea / Leña" },
+  { id: "no_heating", label: "Sin calefacción" },
+];
+const COOLING_OPTIONS = [
+  { id: "ac_split", label: "Aire acondicionado split" },
+  { id: "ac_central", label: "Aire acondicionado central" },
+  { id: "ceiling_fan", label: "Ventilador de techo" },
+  { id: "portable_fan", label: "Ventilador portátil" },
+  { id: "no_cooling", label: "Sin refrigeración" },
+];
+
 interface PropertyFormProps {
   propertyId: string;
   property: {
@@ -48,6 +64,7 @@ interface PropertyFormProps {
     bathroomsCount: number | null;
     latitude: number | null;
     longitude: number | null;
+    infrastructureJson: unknown;
   };
 }
 
@@ -77,10 +94,22 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const [maxChildren, setMaxChildren] = useState(p.maxChildren);
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
 
+  const infra = p.infrastructureJson as {
+    heatingTypes?: string[];
+    coolingTypes?: string[];
+    hasElevator?: boolean;
+    buildingFloors?: number;
+  } | null ?? {};
+  const [heatingTypes, setHeatingTypes] = useState<string[]>(infra.heatingTypes ?? []);
+  const [coolingTypes, setCoolingTypes] = useState<string[]>(infra.coolingTypes ?? []);
+  const [hasElevator, setHasElevator] = useState<boolean>(infra.hasElevator ?? false);
+  const [buildingFloors, setBuildingFloors] = useState<number>(infra.buildingFloors ?? 1);
+
   const [ptOpen, setPtOpen] = useState(false);
   const [rtOpen, setRtOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(true);
   const [guestsOpen, setGuestsOpen] = useState(true);
+  const [infraOpen, setInfraOpen] = useState(false);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
 
@@ -104,7 +133,11 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     addressExtra !== (p.addressExtra ?? "") ||
     postalCode !== (p.postalCode ?? "") ||
     latitude !== p.latitude ||
-    longitude !== p.longitude;
+    longitude !== p.longitude ||
+    JSON.stringify(heatingTypes.sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
+    JSON.stringify(coolingTypes.sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
+    hasElevator !== (infra.hasElevator ?? false) ||
+    buildingFloors !== (infra.buildingFloors ?? 1);
 
   const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
@@ -193,6 +226,15 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const tzLabel = COMMON_TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone ?? "";
   const locationLabel = locationParts.length > 0 ? `${locationParts.join(", ")} · ${tzLabel}` : "Sin definir";
   const guestsLabel = `${maxGuests} huéspedes (${maxAdults} adultos, ${maxChildren} niños)`;
+  const infraLabelParts: string[] = [];
+  if (heatingTypes.length > 0) infraLabelParts.push(HEATING_OPTIONS.find((o) => o.id === heatingTypes[0])?.label ?? heatingTypes[0]);
+  if (coolingTypes.length > 0) infraLabelParts.push(COOLING_OPTIONS.find((o) => o.id === coolingTypes[0])?.label ?? coolingTypes[0]);
+  if (hasElevator) infraLabelParts.push("Ascensor");
+  const infraLabel = infraLabelParts.length > 0 ? infraLabelParts.slice(0, 2).join(" · ") + (infraLabelParts.length > 2 ? ` +${infraLabelParts.length - 2}` : "") : "Sin configurar";
+
+  function toggleMulti(list: string[], setList: (v: string[]) => void, id: string) {
+    setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id]);
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -215,6 +257,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         {/* Keep bedroomsCount/bathroomsCount from current values so save doesn't null them */}
         <input type="hidden" name="bedroomsCount" value={p.bedroomsCount ?? 0} />
         <input type="hidden" name="bathroomsCount" value={p.bathroomsCount ?? 1} />
+        <input type="hidden" name="infrastructureJson" value={JSON.stringify({ heatingTypes, coolingTypes, hasElevator, buildingFloors })} />
 
         {/* Inline editable name */}
         <div className="rounded-[var(--radius-lg)] border-2 border-[var(--border)] bg-[var(--surface-elevated)] p-4">
@@ -313,6 +356,53 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <span className="text-sm">Se admiten bebés (cuna disponible)</span>
               <InfoTooltip text="Los bebés menores de 2 años no cuentan como huéspedes." />
             </label>
+          </div>
+        </CollapsibleSection>
+
+        {/* Infraestructura del edificio */}
+        <CollapsibleSection title="Infraestructura del edificio" selectedLabel={infraLabel} expanded={infraOpen} onToggle={() => setInfraOpen(!infraOpen)}>
+          <div className="space-y-5">
+            {/* Calefacción */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-[var(--foreground)]">Sistema de calefacción</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {HEATING_OPTIONS.map((opt) => (
+                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={heatingTypes.includes(opt.id)} onChange={() => toggleMulti(heatingTypes, setHeatingTypes, opt.id)} />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Refrigeración */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-[var(--foreground)]">Sistema de refrigeración</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {COOLING_OPTIONS.map((opt) => (
+                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={coolingTypes.includes(opt.id)} onChange={() => toggleMulti(coolingTypes, setCoolingTypes, opt.id)} />
+                    <span>{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Ascensor y plantas */}
+            <div className="space-y-3">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
+                <span className="text-sm font-medium text-[var(--foreground)]">El edificio tiene ascensor</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-[var(--foreground)]">Número de plantas del edificio</label>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => setBuildingFloors(Math.max(1, buildingFloors - 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={buildingFloors <= 1}>−</button>
+                  <span className="w-6 text-center text-sm font-medium">{buildingFloors}</span>
+                  <button type="button" onClick={() => setBuildingFloors(Math.min(50, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
+                </div>
+              </div>
+            </div>
           </div>
         </CollapsibleSection>
 

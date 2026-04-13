@@ -36,6 +36,7 @@ export default async function PropertyPage({ params }: Props) {
       bathroomsCount: true,
       latitude: true,
       longitude: true,
+      infrastructureJson: true,
     },
   });
 

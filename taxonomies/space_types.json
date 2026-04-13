@@ -89,6 +89,48 @@
       "recommended": false
     },
     {
+      "id": "sp.studio",
+      "label": "Estudio",
+      "description": "Espacio único que integra dormitorio, sala y cocina sin separación.",
+      "parent_id": null,
+      "recommended": true
+    },
+    {
+      "id": "sp.loft",
+      "label": "Loft",
+      "description": "Espacio abierto de doble altura o planta diáfana con zona de descanso elevada.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.open_plan",
+      "label": "Salón-comedor",
+      "description": "Espacio abierto que combina sala de estar y comedor.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.kitchen_living",
+      "label": "Cocina-salón",
+      "description": "Espacio abierto que combina cocina y sala de estar.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.kitchen_dining_living",
+      "label": "Salón-comedor-cocina",
+      "description": "Espacio abierto que integra cocina, comedor y sala de estar.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
+      "id": "sp.pool",
+      "label": "Piscina",
+      "description": "Espacio con piscina privada o de uso exclusivo.",
+      "parent_id": null,
+      "recommended": false
+    },
+    {
       "id": "sp.shared_area",
       "label": "Zona compartida",
       "description": "Espacio común compartido con otras personas.",

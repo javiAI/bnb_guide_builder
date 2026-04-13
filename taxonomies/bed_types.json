@@ -61,11 +61,20 @@
     {
       "id": "bt.crib",
       "label": "Cuna",
-      "description": "Para bebés e infantes, no cuenta como cama principal.",
+      "description": "Para bebés e infantes. No cuenta como plaza de huésped adulto.",
       "recommended": false,
-      "sleepingCapacity": 1,
+      "sleepingCapacity": 0,
       "widthCm": 60,
       "source": ["airbnb:crib", "booking:crib"]
+    },
+    {
+      "id": "bt.other",
+      "label": "Otro tipo de cama",
+      "description": "Cama o superficie de descanso que no encaja en los tipos estándar. Especificar nombre y capacidad manualmente.",
+      "recommended": false,
+      "sleepingCapacity": 1,
+      "widthCm": null,
+      "source": []
     }
   ]
 }

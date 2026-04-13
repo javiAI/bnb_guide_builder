@@ -120,7 +120,9 @@ describe("Bed types taxonomy", () => {
   it("bed types have sleepingCapacity", () => {
     const types = getItems(bedTypes);
     for (const type of types) {
-      expect(type.sleepingCapacity).toBeGreaterThanOrEqual(1);
+      // Cribs (bt.crib) have capacity 0 — they don't count as adult guest slots
+      const min = type.id === "bt.crib" ? 0 : 1;
+      expect(type.sleepingCapacity).toBeGreaterThanOrEqual(min);
     }
   });
 
@@ -183,8 +185,20 @@ describe("Space features taxonomy", () => {
     const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
     const bedroomIds = bedroomGroups.map((g) => g.id);
     const bathroomIds = bathroomGroups.map((g) => g.id);
-    expect(bedroomIds).toContain("sfg.bedroom_comfort");
-    expect(bathroomIds).not.toContain("sfg.bedroom_comfort");
+    expect(bedroomIds).toContain("sfg.bedroom_heating");
+    expect(bathroomIds).not.toContain("sfg.bedroom_heating");
+  });
+
+  it("living room groups are returned for sp.living_room", () => {
+    const livingGroups = getSpaceFeatureGroups("sp.living_room");
+    const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
+    const livingIds = livingGroups.map((g) => g.id);
+    const bathroomIds = bathroomGroups.map((g) => g.id);
+    expect(livingIds).toContain("sfg.living_seating");
+    expect(livingIds).toContain("sfg.living_entertainment");
+    expect(livingIds).toContain("sfg.living_comfort");
+    expect(livingIds).toContain("sfg.living_views");
+    expect(bathroomIds).not.toContain("sfg.living_entertainment");
   });
 
   it("kitchen groups are returned only for sp.kitchen", () => {
@@ -192,8 +206,90 @@ describe("Space features taxonomy", () => {
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const kitchenIds = kitchenGroups.map((g) => g.id);
     const bedroomIds = bedroomGroups.map((g) => g.id);
+    expect(kitchenIds).toContain("sfg.kitchen_type");
     expect(kitchenIds).toContain("sfg.kitchen_cooking");
+    expect(kitchenIds).toContain("sfg.kitchen_appliances");
+    expect(kitchenIds).toContain("sfg.kitchen_small_appliances");
+    expect(kitchenIds).toContain("sfg.kitchen_utensils");
+    expect(kitchenIds).toContain("sfg.kitchen_layout");
     expect(bedroomIds).not.toContain("sfg.kitchen_cooking");
+    expect(bedroomIds).not.toContain("sfg.kitchen_type");
+  });
+
+  it("bathroom-specific groups are returned only for sp.bathroom", () => {
+    const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
+    const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
+    const bathroomIds = bathroomGroups.map((g) => g.id);
+    const bedroomIds = bedroomGroups.map((g) => g.id);
+    expect(bathroomIds).toContain("sfg.bathroom_type");
+    expect(bathroomIds).toContain("sfg.bathroom_fixtures");
+    expect(bathroomIds).toContain("sfg.bathroom_equipment");
+    expect(bathroomIds).toContain("sfg.bathroom_supplies");
+    expect(bathroomIds).toContain("sfg.bathroom_accessibility");
+    expect(bedroomIds).not.toContain("sfg.bathroom_type");
+    expect(bedroomIds).not.toContain("sfg.bathroom_equipment");
+  });
+
+  it("dining groups include atmosphere and table", () => {
+    const diningGroups = getSpaceFeatureGroups("sp.dining");
+    const diningIds = diningGroups.map((g) => g.id);
+    expect(diningIds).toContain("sfg.dining_table");
+    expect(diningIds).toContain("sfg.dining_atmosphere");
+  });
+
+  it("studio and loft get studio_layout group", () => {
+    const studioGroups = getSpaceFeatureGroups("sp.studio");
+    const loftGroups = getSpaceFeatureGroups("sp.loft");
+    const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
+    expect(studioGroups.map((g) => g.id)).toContain("sfg.studio_layout");
+    expect(loftGroups.map((g) => g.id)).toContain("sfg.studio_layout");
+    expect(bathroomGroups.map((g) => g.id)).not.toContain("sfg.studio_layout");
+  });
+
+  it("office gets workspace and connectivity groups", () => {
+    const officeGroups = getSpaceFeatureGroups("sp.office");
+    const officeIds = officeGroups.map((g) => g.id);
+    expect(officeIds).toContain("sfg.office_workspace");
+    expect(officeIds).toContain("sfg.office_connectivity");
+  });
+
+  it("laundry gets appliances and ironing groups", () => {
+    const laundryGroups = getSpaceFeatureGroups("sp.laundry");
+    const laundryIds = laundryGroups.map((g) => g.id);
+    expect(laundryIds).toContain("sfg.laundry_appliances");
+    expect(laundryIds).toContain("sfg.laundry_ironing");
+  });
+
+  it("outdoor spaces get setup and environment groups", () => {
+    const balconyGroups = getSpaceFeatureGroups("sp.balcony");
+    const gardenGroups = getSpaceFeatureGroups("sp.garden");
+    const balconyIds = balconyGroups.map((g) => g.id);
+    const gardenIds = gardenGroups.map((g) => g.id);
+    expect(balconyIds).toContain("sfg.outdoor_setup");
+    expect(balconyIds).toContain("sfg.outdoor_environment");
+    expect(gardenIds).toContain("sfg.garden_features");
+    expect(balconyIds).not.toContain("sfg.garden_features");
+  });
+
+  it("pool gets all three pool groups", () => {
+    const poolGroups = getSpaceFeatureGroups("sp.pool");
+    const poolIds = poolGroups.map((g) => g.id);
+    expect(poolIds).toContain("sfg.pool_features");
+    expect(poolIds).toContain("sfg.pool_safety");
+    expect(poolIds).toContain("sfg.pool_area");
+  });
+
+  it("shared_area gets access and amenities groups", () => {
+    const sharedGroups = getSpaceFeatureGroups("sp.shared_area");
+    const sharedIds = sharedGroups.map((g) => g.id);
+    expect(sharedIds).toContain("sfg.shared_access");
+    expect(sharedIds).toContain("sfg.shared_amenities");
+  });
+
+  it("sp.other gets generic description group", () => {
+    const otherGroups = getSpaceFeatureGroups("sp.other");
+    const otherIds = otherGroups.map((g) => g.id);
+    expect(otherIds).toContain("sfg.other_space_details");
   });
 
   it("boolean fields have no options", () => {
