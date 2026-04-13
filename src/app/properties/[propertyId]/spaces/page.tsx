@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { SpaceCard } from "./space-card";
 import { CreateSpaceForm } from "./create-space-form";
@@ -39,7 +40,7 @@ export default async function SpacesPage({
     0,
   );
   const capacityMismatch =
-    property.maxGuests != null && totalBedCapacity > 0 && totalBedCapacity < property.maxGuests;
+    property.maxGuests != null && totalBedCapacity < property.maxGuests;
 
   // Spaces that conflict with current layout (in excluded list)
   const conflictingSpaces = spaces.filter((s) => excluded.includes(s.spaceType));
@@ -84,7 +85,7 @@ export default async function SpacesPage({
             {" "}pero el máximo de huéspedes es{" "}
             <span className="font-medium">{property.maxGuests}</span>.
             {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
-            <a href={`/properties/${propertyId}/property`} className="underline hover:text-[var(--color-warning-800)]">Propiedad</a>.
+            <Link href={`/properties/${propertyId}/property`} className="underline hover:text-[var(--color-warning-800)]">Propiedad</Link>.
           </p>
         </div>
       )}
