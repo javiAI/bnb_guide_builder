@@ -1,6 +1,6 @@
 {
   "file": "space_types.json",
-  "version": "2026-04-07",
+  "version": "2026-04-13",
   "locale": "es-ES",
   "units_system": "metric",
   "items": [
@@ -9,140 +9,240 @@
       "label": "Dormitorio",
       "description": "Espacio destinado principalmente al descanso.",
       "parent_id": null,
-      "recommended": true
+      "recommended": true,
+      "allowsSleeping": true,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.hotel_room"]
     },
     {
       "id": "sp.bathroom",
       "label": "Baño",
       "description": "Espacio de aseo con lavabo, ducha o bañera.",
       "parent_id": null,
-      "recommended": true
+      "recommended": true,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.shared_room", "rt.hotel_room", "rt.other"]
     },
     {
       "id": "sp.kitchen",
       "label": "Cocina",
       "description": "Espacio de cocina completo.",
       "parent_id": null,
-      "recommended": true
+      "recommended": true,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": ["sp.kitchen_living", "sp.kitchen_dining_living"],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.living_room",
       "label": "Salón",
       "description": "Espacio principal de estar y descanso.",
       "parent_id": null,
-      "recommended": true
+      "recommended": true,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": ["sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living", "sp.studio", "sp.loft"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.dining",
       "label": "Comedor",
       "description": "Espacio específico para comer.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": ["sp.open_plan", "sp.kitchen_dining_living"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.office",
       "label": "Despacho",
       "description": "Espacio orientado a trabajo o estudio.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.laundry",
       "label": "Lavandería",
       "description": "Espacio específico de colada o limpieza.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.balcony",
       "label": "Balcón",
       "description": "Espacio exterior elevado asociado a la vivienda.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.hotel_room"]
     },
     {
       "id": "sp.patio",
       "label": "Patio",
       "description": "Espacio exterior a nivel de la vivienda.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.garden",
       "label": "Jardín",
       "description": "Espacio exterior ajardinado.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.garage",
       "label": "Garaje",
       "description": "Espacio cerrado para vehículo o almacenamiento.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.storage",
       "label": "Trastero",
       "description": "Espacio de almacenamiento secundario.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.studio",
       "label": "Estudio",
       "description": "Espacio único que integra dormitorio, sala y cocina sin separación.",
       "parent_id": null,
-      "recommended": true
+      "recommended": true,
+      "allowsSleeping": true,
+      "isComposite": true,
+      "derivedByLayoutKeys": ["layout.studio"],
+      "mutuallyExclusiveWith": ["sp.bedroom", "sp.living_room", "sp.kitchen", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.loft",
       "label": "Loft",
       "description": "Espacio abierto de doble altura o planta diáfana con zona de descanso elevada.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": true,
+      "isComposite": true,
+      "derivedByLayoutKeys": ["layout.loft"],
+      "mutuallyExclusiveWith": ["sp.bedroom", "sp.living_room", "sp.studio", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.open_plan",
       "label": "Salón-comedor",
       "description": "Espacio abierto que combina sala de estar y comedor.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": true,
+      "derivedByLayoutKeys": ["layout.open_plan_living_dining"],
+      "mutuallyExclusiveWith": ["sp.living_room", "sp.dining", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.kitchen_dining_living"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.kitchen_living",
       "label": "Cocina-salón",
       "description": "Espacio abierto que combina cocina y sala de estar.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": true,
+      "derivedByLayoutKeys": ["layout.kitchen_living"],
+      "mutuallyExclusiveWith": ["sp.kitchen", "sp.living_room", "sp.studio", "sp.loft", "sp.kitchen_dining_living", "sp.open_plan"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.kitchen_dining_living",
       "label": "Salón-comedor-cocina",
       "description": "Espacio abierto que integra cocina, comedor y sala de estar.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": true,
+      "derivedByLayoutKeys": ["layout.kitchen_dining_living"],
+      "mutuallyExclusiveWith": ["sp.kitchen", "sp.living_room", "sp.dining", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.open_plan"],
+      "applicableRoomTypes": ["rt.entire_place"]
     },
     {
       "id": "sp.pool",
       "label": "Piscina",
       "description": "Espacio con piscina privada o de uso exclusivo.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
     },
     {
       "id": "sp.shared_area",
       "label": "Zona compartida",
       "description": "Espacio común compartido con otras personas.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.private_room", "rt.shared_room", "rt.hotel_room"]
     },
     {
       "id": "sp.other",
       "label": "Otro espacio",
       "description": "Espacio no cubierto por la taxonomía base.",
       "parent_id": null,
-      "recommended": false
+      "recommended": false,
+      "allowsSleeping": false,
+      "isComposite": false,
+      "derivedByLayoutKeys": [],
+      "mutuallyExclusiveWith": [],
+      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.shared_room", "rt.hotel_room", "rt.other"]
     }
   ]
 }

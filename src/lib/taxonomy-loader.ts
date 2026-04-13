@@ -14,6 +14,16 @@ import type {
   RuleTaxonomyFile,
   SpaceFeatureGroup,
   SpaceFeaturesFile,
+  SpaceTypeItem,
+  SpaceTypesTaxonomyFile,
+  SpaceAvailabilityRule,
+  SpaceAvailabilityRulesFile,
+  SystemItem,
+  SystemGroup,
+  SystemTaxonomyFile,
+  SystemSubtype,
+  SystemSubtypesTaxonomyFile,
+  AmenityScopePolicyEntry,
 } from "./types/taxonomy";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
@@ -37,12 +47,15 @@ import spanishProvincesJson from "../../taxonomies/spanish_provinces.json";
 import buildingAccessMethodsJson from "../../taxonomies/building_access_methods.json";
 import contactTypesJson from "../../taxonomies/contact_types.json";
 import spaceFeaturesJson from "../../taxonomies/space_features.json";
+import spaceAvailabilityRulesJson from "../../taxonomies/space_availability_rules.json";
+import systemTaxonomyJson from "../../taxonomies/system_taxonomy.json";
+import systemSubtypesJson from "../../taxonomies/system_subtypes.json";
 
 // ── Item-based taxonomies ──
 
 export const propertyTypes = propertyTypesJson as unknown as ItemTaxonomyFile;
 export const roomTypes = roomTypesJson as unknown as ItemTaxonomyFile;
-export const spaceTypes = spaceTypesJson as unknown as ItemTaxonomyFile;
+export const spaceTypes = spaceTypesJson as unknown as SpaceTypesTaxonomyFile;
 export const accessMethods = accessMethodsJson as unknown as ItemTaxonomyFile;
 export const troubleshootingTaxonomy = troubleshootingTaxonomyJson as unknown as ItemTaxonomyFile;
 export const messagingTouchpoints = messagingTouchpointsJson as unknown as ItemTaxonomyFile;
@@ -57,6 +70,9 @@ export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyF
 export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
 export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
 export const spaceFeatures = spaceFeaturesJson as unknown as SpaceFeaturesFile;
+export const spaceAvailabilityRules = spaceAvailabilityRulesJson as unknown as SpaceAvailabilityRulesFile;
+export const systemTaxonomy = systemTaxonomyJson as unknown as SystemTaxonomyFile;
+export const systemSubtypes = systemSubtypesJson as unknown as SystemSubtypesTaxonomyFile;
 
 // ── Grouped taxonomies ──
 
@@ -173,6 +189,65 @@ export function getSpaceFeatureGroups(spaceTypeId: string): SpaceFeatureGroup[] 
   return spaceFeatures.groups.filter(
     (g) => g.applies_to.includes("*") || g.applies_to.includes(spaceTypeId),
   );
+}
+
+// ── Space type metadata helpers ──
+
+export function getSpaceTypeItem(id: string): SpaceTypeItem | undefined {
+  return spaceTypes.items.find((s) => s.id === id);
+}
+
+export function getSpaceTypesForRoomType(roomTypeId: string): SpaceTypeItem[] {
+  return spaceTypes.items.filter((s) => s.applicableRoomTypes.includes(roomTypeId));
+}
+
+// ── Space availability rule helpers ──
+
+export function getSpaceAvailabilityRule(
+  roomType: string,
+  layoutKey: string | null,
+): SpaceAvailabilityRule | undefined {
+  return spaceAvailabilityRules.rules.find(
+    (r) => r.roomType === roomType && r.layout === layoutKey,
+  );
+}
+
+export function getAvailableSpaceTypes(
+  roomType: string,
+  layoutKey: string | null,
+): { required: string[]; recommended: string[]; optional: string[]; excluded: string[] } {
+  const rule = getSpaceAvailabilityRule(roomType, layoutKey);
+  if (!rule) return { required: [], recommended: [], optional: [], excluded: [] };
+  return {
+    required: rule.required,
+    recommended: rule.recommended,
+    optional: rule.optional,
+    excluded: rule.excluded,
+  };
+}
+
+// ── System taxonomy helpers ──
+
+export function getSystemGroups(): SystemGroup[] {
+  return systemTaxonomy.groups;
+}
+
+export function getAllSystemItems(): SystemItem[] {
+  return systemTaxonomy.groups.flatMap((g) => g.items);
+}
+
+export function findSystemItem(id: string): SystemItem | undefined {
+  return getAllSystemItems().find((s) => s.id === id);
+}
+
+export function findSystemSubtype(systemKey: string): SystemSubtype | undefined {
+  return systemSubtypes.subtypes.find((s) => s.systemKey === systemKey);
+}
+
+// ── Amenity scope policy helpers ──
+
+export function getAmenityScopePolicy(amenityId: string): AmenityScopePolicyEntry | undefined {
+  return amenityTaxonomy.scopePolicies?.[amenityId];
 }
 
 // ── Rule helpers ──

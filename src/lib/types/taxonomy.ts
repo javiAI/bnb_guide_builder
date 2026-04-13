@@ -42,6 +42,104 @@ export interface TaxonomyItem {
   widthCm?: number;
 }
 
+// Space type item — extends TaxonomyItem with space-specific metadata
+export interface SpaceTypeItem extends TaxonomyItem {
+  allowsSleeping: boolean;
+  isComposite: boolean;
+  derivedByLayoutKeys: string[];
+  mutuallyExclusiveWith: string[];
+  applicableRoomTypes: string[];
+}
+
+export interface SpaceTypesTaxonomyFile extends TaxonomyFileBase {
+  items: SpaceTypeItem[];
+}
+
+// Space availability rules (space_availability_rules.json)
+export interface SpaceLayoutKey {
+  id: string;
+  label: string;
+}
+
+export interface SpaceAvailabilityRule {
+  roomType: string;
+  layout: string | null;
+  required: string[];
+  recommended: string[];
+  optional: string[];
+  excluded: string[];
+  bedroomsMin: number;
+  bedroomsMax: number;
+  bathroomsMin: number;
+  bathroomsMax: number;
+}
+
+export interface SpaceAvailabilityRulesFile {
+  file: string;
+  version: string;
+  description: string;
+  layoutKeys: SpaceLayoutKey[];
+  rules: SpaceAvailabilityRule[];
+}
+
+// System taxonomy (system_taxonomy.json)
+export type SystemCoverageRule = "all_relevant_spaces" | "selected_spaces" | "property_only";
+export type SystemVisibility = "public" | "internal";
+
+export interface SystemItem {
+  id: string;
+  label: string;
+  description: string;
+  subtypeKey: string | null;
+  defaultCoverageRule: SystemCoverageRule;
+  visibility: SystemVisibility;
+  recommended: boolean;
+  source: string[];
+}
+
+export interface SystemGroup {
+  id: string;
+  label: string;
+  items: SystemItem[];
+}
+
+export interface SystemTaxonomyFile extends TaxonomyFileBase {
+  groups: SystemGroup[];
+}
+
+// System subtypes (system_subtypes.json)
+export type SystemFieldVisibility = "public" | "internal" | "sensitive";
+
+export interface SystemSubtypeField {
+  id: string;
+  label: string;
+  type: string;
+  visibility?: SystemFieldVisibility;
+  required: boolean;
+  options?: TaxonomyOption[];
+}
+
+export interface SystemSubtype {
+  id: string;
+  systemKey: string;
+  label: string;
+  detailsFields: SystemSubtypeField[];
+  opsFields: SystemSubtypeField[];
+}
+
+export interface SystemSubtypesTaxonomyFile extends TaxonomyFileBase {
+  subtypes: SystemSubtype[];
+}
+
+// Amenity scope policy (used in amenity_taxonomy.json scopePolicies map)
+export type AmenityScopePolicy = "property_only" | "space_only" | "multi_instance" | "derived";
+
+export interface AmenityScopePolicyEntry {
+  scopePolicy: AmenityScopePolicy;
+  isDerived: boolean;
+  suggestedSpaceTypes: string[];
+}
+
 // Amenity taxonomy groups: reference items by id
 export interface AmenityGroup {
   id: string;
@@ -108,6 +206,7 @@ export interface ItemTaxonomyFile extends TaxonomyFileBase {
 export interface AmenityGroupedFile extends TaxonomyFileBase {
   groups: AmenityGroup[];
   items: TaxonomyItem[];
+  scopePolicies?: Record<string, AmenityScopePolicyEntry>;
 }
 
 export interface PolicyGroupedFile extends TaxonomyFileBase {
@@ -170,7 +269,11 @@ export interface SpaceFeaturesFile extends TaxonomyFileBase {
 
 export type TaxonomyFile =
   | ItemTaxonomyFile
+  | SpaceTypesTaxonomyFile
   | AmenityGroupedFile
   | PolicyGroupedFile
   | SubtypeTaxonomyFile
-  | RuleTaxonomyFile;
+  | RuleTaxonomyFile
+  | SpaceAvailabilityRulesFile
+  | SystemTaxonomyFile
+  | SystemSubtypesTaxonomyFile;

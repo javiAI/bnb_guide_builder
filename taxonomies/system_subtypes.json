@@ -1,0 +1,191 @@
+{
+  "file": "system_subtypes.json",
+  "version": "2026-04-13",
+  "locale": "es-ES",
+  "description": "Typed field definitions for each system subtype. Consumed by the Systems module UI to render config forms config-driven (analogous to amenity_subtypes.json).",
+  "subtypes": [
+    {
+      "id": "sys.internet",
+      "systemKey": "sys.internet",
+      "label": "Internet / Wifi",
+      "detailsFields": [
+        { "id": "provider",       "label": "Proveedor",           "type": "text",     "visibility": "internal", "required": false },
+        { "id": "ssid",           "label": "Nombre de red (SSID)","type": "text",     "visibility": "public",   "required": true  },
+        { "id": "password",       "label": "Contraseña",          "type": "password", "visibility": "sensitive","required": true  },
+        { "id": "speed_mbps",     "label": "Velocidad (Mbps)",    "type": "number",   "visibility": "public",   "required": false },
+        { "id": "wifi_5ghz",      "label": "Red 5 GHz disponible","type": "boolean",  "visibility": "public",   "required": false },
+        { "id": "router_location","label": "Ubicación del router","type": "text",     "visibility": "internal", "required": false }
+      ],
+      "opsFields": [
+        { "id": "router_model",   "label": "Modelo de router",    "type": "text",  "required": false },
+        { "id": "support_phone",  "label": "Teléfono soporte",    "type": "text",  "required": false },
+        { "id": "restart_steps",  "label": "Pasos para reiniciar","type": "textarea","required": false }
+      ]
+    },
+    {
+      "id": "sys.heating",
+      "systemKey": "sys.heating",
+      "label": "Calefacción",
+      "detailsFields": [
+        { "id": "fuel_type",      "label": "Tipo de combustible", "type": "enum",    "visibility": "public",   "required": true,
+          "options": [
+            { "id": "gas",        "label": "Gas natural" },
+            { "id": "lpg",        "label": "Gas butano / propano" },
+            { "id": "electric",   "label": "Eléctrico" },
+            { "id": "heat_pump",  "label": "Bomba de calor" },
+            { "id": "wood",       "label": "Leña / biomasa" },
+            { "id": "diesel",     "label": "Gasoil" }
+          ]
+        },
+        { "id": "system_type",    "label": "Tipo de sistema",     "type": "enum",    "visibility": "public",   "required": false,
+          "options": [
+            { "id": "central",    "label": "Calefacción central" },
+            { "id": "radiators",  "label": "Radiadores" },
+            { "id": "underfloor", "label": "Suelo radiante" },
+            { "id": "splits",     "label": "Splits individuales" },
+            { "id": "fireplace",  "label": "Chimenea" }
+          ]
+        },
+        { "id": "thermostat_type","label": "Tipo de termostato",  "type": "enum",    "visibility": "public",   "required": false,
+          "options": [
+            { "id": "manual",     "label": "Manual" },
+            { "id": "programmable","label": "Programable" },
+            { "id": "smart",      "label": "Inteligente (app)" }
+          ]
+        },
+        { "id": "thermostat_location","label":"Ubicación termostato","type":"text",  "visibility": "public",   "required": false }
+      ],
+      "opsFields": [
+        { "id": "provider",       "label": "Empresa suministradora","type": "text","required": false },
+        { "id": "contract_ref",   "label": "Nº contrato",          "type": "text","required": false },
+        { "id": "boiler_location","label": "Ubicación caldera",    "type": "text","required": false },
+        { "id": "restart_steps",  "label": "Pasos para reiniciar","type": "textarea","required": false },
+        { "id": "last_service",   "label": "Última revisión",      "type": "date","required": false }
+      ]
+    },
+    {
+      "id": "sys.cooling",
+      "systemKey": "sys.cooling",
+      "label": "Refrigeración",
+      "detailsFields": [
+        { "id": "system_type",    "label": "Tipo de sistema",     "type": "enum",    "visibility": "public",   "required": true,
+          "options": [
+            { "id": "split",      "label": "Split individual" },
+            { "id": "central_ac", "label": "Aire acondicionado central" },
+            { "id": "fan_only",   "label": "Solo ventiladores" },
+            { "id": "portable",   "label": "Portátil" }
+          ]
+        },
+        { "id": "remote_location","label": "Ubicación del mando", "type": "text",    "visibility": "public",   "required": false }
+      ],
+      "opsFields": [
+        { "id": "filter_location","label": "Ubicación filtros",  "type": "text","required": false },
+        { "id": "last_filter_clean","label":"Última limpieza filtro","type":"date","required": false },
+        { "id": "restart_steps",  "label": "Pasos para reiniciar","type":"textarea","required": false }
+      ]
+    },
+    {
+      "id": "sys.hot_water",
+      "systemKey": "sys.hot_water",
+      "label": "Agua caliente",
+      "detailsFields": [
+        { "id": "system_type",    "label": "Tipo de sistema",     "type": "enum",    "visibility": "internal", "required": true,
+          "options": [
+            { "id": "boiler_gas", "label": "Caldera de gas" },
+            { "id": "boiler_electric","label":"Calentador eléctrico"},
+            { "id": "heat_pump",  "label": "Bomba de calor (aerotermia)" },
+            { "id": "solar",      "label": "Solar térmico" },
+            { "id": "district",   "label": "Calefacción de distrito" }
+          ]
+        },
+        { "id": "capacity_liters","label": "Capacidad (litros)",  "type": "number",  "visibility": "internal", "required": false },
+        { "id": "wait_time_minutes","label":"Tiempo de espera (min)","type":"number","visibility":"public",    "required": false }
+      ],
+      "opsFields": [
+        { "id": "location",       "label": "Ubicación del equipo","type": "text","required": false },
+        { "id": "pilot_steps",    "label": "Encender piloto",     "type": "textarea","required": false },
+        { "id": "last_service",   "label": "Última revisión",     "type": "date","required": false }
+      ]
+    },
+    {
+      "id": "sys.alarm",
+      "systemKey": "sys.alarm",
+      "label": "Alarma de seguridad",
+      "detailsFields": [
+        { "id": "brand",          "label": "Marca / empresa",     "type": "text",    "visibility": "internal", "required": false },
+        { "id": "panel_location", "label": "Ubicación del panel", "type": "text",    "visibility": "internal", "required": false },
+        { "id": "arming_steps",   "label": "Instrucciones de armado","type":"textarea","visibility":"internal","required": false }
+      ],
+      "opsFields": [
+        { "id": "monitoring_phone","label":"Teléfono central",    "type": "text","required": false },
+        { "id": "code",           "label": "Código de alarma",    "type": "password","required": false }
+      ]
+    },
+    {
+      "id": "sys.elevator",
+      "systemKey": "sys.elevator",
+      "label": "Ascensor",
+      "detailsFields": [
+        { "id": "location",       "label": "Ubicación / acceso",  "type": "text",    "visibility": "public",   "required": false },
+        { "id": "requires_key",   "label": "Requiere llave/código","type": "boolean","visibility": "public",   "required": false },
+        { "id": "floors_served",  "label": "Plantas que cubre",   "type": "text",    "visibility": "public",   "required": false }
+      ],
+      "opsFields": [
+        { "id": "company",        "label": "Empresa mantenimiento","type":"text","required": false },
+        { "id": "emergency_phone","label":"Teléfono emergencias",  "type":"text","required": false }
+      ]
+    },
+    {
+      "id": "sys.electricity",
+      "systemKey": "sys.electricity",
+      "label": "Suministro eléctrico",
+      "detailsFields": [],
+      "opsFields": [
+        { "id": "provider",       "label": "Comercializadora",    "type": "text","required": false },
+        { "id": "contract_power_kw","label":"Potencia contratada (kW)","type":"number","required": false },
+        { "id": "meter_location", "label": "Ubicación contador",  "type": "text","required": false },
+        { "id": "icp_location",   "label": "Ubicación ICP/cuadro","type": "text","required": false },
+        { "id": "cups",           "label": "CUPS",                "type": "text","required": false }
+      ]
+    },
+    {
+      "id": "sys.gas",
+      "systemKey": "sys.gas",
+      "label": "Suministro de gas",
+      "detailsFields": [],
+      "opsFields": [
+        { "id": "type",           "label": "Tipo de gas",         "type": "enum","required": false,
+          "options": [
+            { "id": "natural",    "label": "Gas natural (red)" },
+            { "id": "lpg_bottle", "label": "Butano/propano (bombona)" },
+            { "id": "lpg_tank",   "label": "Propano (depósito)" }
+          ]
+        },
+        { "id": "provider",       "label": "Comercializadora",    "type": "text","required": false },
+        { "id": "meter_location", "label": "Ubicación contador",  "type": "text","required": false },
+        { "id": "shutoff_location","label":"Llave de paso",       "type": "text","required": false }
+      ]
+    },
+    {
+      "id": "sys.pool_maintenance",
+      "systemKey": "sys.pool_maintenance",
+      "label": "Mantenimiento de piscina",
+      "detailsFields": [
+        { "id": "treatment_type", "label": "Tipo de tratamiento", "type": "enum",    "visibility": "internal", "required": false,
+          "options": [
+            { "id": "chlorine",   "label": "Cloro" },
+            { "id": "salt",       "label": "Sal (electrólisis)" },
+            { "id": "uv",         "label": "UV + mínimo cloro" },
+            { "id": "natural",    "label": "Piscina natural/biológica" }
+          ]
+        }
+      ],
+      "opsFields": [
+        { "id": "maintenance_company","label":"Empresa mantenimiento","type":"text","required": false },
+        { "id": "maintenance_schedule","label":"Días de revisión","type":"text","required": false },
+        { "id": "pump_location",  "label": "Ubicación bomba/depuradora","type":"text","required": false },
+        { "id": "chemical_location","label":"Ubicación productos","type":"text","required": false }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "file": "system_taxonomy.json",
+  "version": "2026-04-13",
+  "locale": "es-ES",
+  "description": "Global property systems — infrastructure-level services that apply property-wide and may have per-space coverage. Consumed by the Systems module (feat/systems-module).",
+  "groups": [
+    {
+      "id": "sgrp.connectivity",
+      "label": "Conectividad",
+      "items": [
+        {
+          "id": "sys.internet",
+          "label": "Internet / Wifi",
+          "description": "Servicio de internet y red wifi.",
+          "subtypeKey": "sys.internet",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:wifi"]
+        },
+        {
+          "id": "sys.cable_tv",
+          "label": "TV por cable / satélite",
+          "description": "Servicio de televisión por cable o satélite.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "selected_spaces",
+          "visibility": "public",
+          "recommended": false,
+          "source": ["airbnb:cable_tv"]
+        }
+      ]
+    },
+    {
+      "id": "sgrp.climate",
+      "label": "Climatización",
+      "items": [
+        {
+          "id": "sys.heating",
+          "label": "Calefacción",
+          "description": "Sistema de calefacción global de la propiedad.",
+          "subtypeKey": "sys.heating",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:heating"]
+        },
+        {
+          "id": "sys.cooling",
+          "label": "Refrigeración / Aire acondicionado",
+          "description": "Sistema de refrigeración o aire acondicionado.",
+          "subtypeKey": "sys.cooling",
+          "defaultCoverageRule": "selected_spaces",
+          "visibility": "public",
+          "recommended": false,
+          "source": ["airbnb:air_conditioning"]
+        },
+        {
+          "id": "sys.ventilation",
+          "label": "Ventilación mecánica",
+          "description": "Sistema de ventilación o recuperación de aire.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "internal",
+          "recommended": false,
+          "source": []
+        }
+      ]
+    },
+    {
+      "id": "sgrp.water",
+      "label": "Agua",
+      "items": [
+        {
+          "id": "sys.hot_water",
+          "label": "Agua caliente",
+          "description": "Sistema de producción de agua caliente sanitaria.",
+          "subtypeKey": "sys.hot_water",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "internal",
+          "recommended": true,
+          "source": []
+        },
+        {
+          "id": "sys.water_filter",
+          "label": "Filtrado de agua",
+          "description": "Sistema de filtrado o osmosis inversa.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": []
+        }
+      ]
+    },
+    {
+      "id": "sgrp.security",
+      "label": "Seguridad",
+      "items": [
+        {
+          "id": "sys.alarm",
+          "label": "Alarma de seguridad",
+          "description": "Sistema de alarma perimetral o de intrusión.",
+          "subtypeKey": "sys.alarm",
+          "defaultCoverageRule": "property_only",
+          "visibility": "internal",
+          "recommended": false,
+          "source": []
+        },
+        {
+          "id": "sys.cctv",
+          "label": "Videovigilancia exterior",
+          "description": "Cámaras de seguridad en zonas exteriores de la propiedad.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": []
+        },
+        {
+          "id": "sys.intercom",
+          "label": "Portero automático / Videoportero",
+          "description": "Sistema de comunicación con la entrada del edificio.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": []
+        }
+      ]
+    },
+    {
+      "id": "sgrp.energy",
+      "label": "Energía",
+      "items": [
+        {
+          "id": "sys.electricity",
+          "label": "Suministro eléctrico",
+          "description": "Información del suministro eléctrico (potencia, proveedor, contador).",
+          "subtypeKey": "sys.electricity",
+          "defaultCoverageRule": "property_only",
+          "visibility": "internal",
+          "recommended": false,
+          "source": []
+        },
+        {
+          "id": "sys.gas",
+          "label": "Suministro de gas",
+          "description": "Información del suministro de gas (tipo, proveedor, ICP).",
+          "subtypeKey": "sys.gas",
+          "defaultCoverageRule": "property_only",
+          "visibility": "internal",
+          "recommended": false,
+          "source": []
+        },
+        {
+          "id": "sys.solar",
+          "label": "Instalación solar",
+          "description": "Paneles solares fotovoltaicos o térmicos.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": []
+        }
+      ]
+    },
+    {
+      "id": "sgrp.building",
+      "label": "Edificio",
+      "items": [
+        {
+          "id": "sys.elevator",
+          "label": "Ascensor",
+          "description": "Ascensor del edificio — acceso y funcionamiento.",
+          "subtypeKey": "sys.elevator",
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": ["airbnb:elevator"]
+        },
+        {
+          "id": "sys.garbage",
+          "label": "Recogida de basuras",
+          "description": "Ubicación y normas de contenedores y reciclaje.",
+          "subtypeKey": null,
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": false,
+          "source": []
+        },
+        {
+          "id": "sys.pool_maintenance",
+          "label": "Mantenimiento de piscina",
+          "description": "Sistema de mantenimiento y tratamiento del agua de la piscina.",
+          "subtypeKey": "sys.pool_maintenance",
+          "defaultCoverageRule": "selected_spaces",
+          "visibility": "internal",
+          "recommended": false,
+          "source": []
+        }
+      ]
+    }
+  ]
+}
