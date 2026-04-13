@@ -55,7 +55,7 @@ const inputCls =
 
 function computeProgressDot(
   features: FeatureState,
-  featureGroupCount: number,
+  featureGroups: import("@/lib/types/taxonomy").SpaceFeatureGroup[],
   hasBeds: boolean,
   bedCount: number,
 ): "none" | "partial" | "complete" {
@@ -65,7 +65,18 @@ function computeProgressDot(
 
   const hasAny = filledFeatures > 0 || (hasBeds && bedCount > 0);
   if (!hasAny) return "none";
-  if (filledFeatures >= featureGroupCount) return "complete";
+
+  // "complete" = at least one field filled per non-dimensions group
+  const contentGroups = featureGroups.filter((g) => g.id !== "sfg.dimensions");
+  if (contentGroups.length === 0) return hasBeds && bedCount > 0 ? "complete" : "partial";
+
+  const groupsWithData = contentGroups.filter((g) =>
+    g.fields.some((f) => {
+      const v = features[f.id];
+      return v !== null && v !== undefined && v !== false && v !== "" && !(Array.isArray(v) && v.length === 0);
+    })
+  );
+  if (groupsWithData.length >= contentGroups.length) return "complete";
   return "partial";
 }
 
@@ -140,7 +151,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps
 
   // ── Progress ──
   const hasBeds = SPACE_TYPES_WITH_BEDS.has(space.spaceType);
-  const progressDot = computeProgressDot(features, featureGroups.length, hasBeds, beds.length);
+  const progressDot = computeProgressDot(features, featureGroups, hasBeds, beds.length);
 
   // ── Details save form ──
   const [detailsState, detailsAction, detailsPending] = useActionState<
@@ -177,6 +188,10 @@ export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps
   // ── Derived ──
   const typeInfo = findItem(spaceTypes, space.spaceType);
   const adultCapacity = beds.reduce((sum, bed) => {
+    if (bed.bedType === "bt.other") {
+      const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
+      return sum + customCap * bed.quantity;
+    }
     const bt = findItem(bedTypes, bed.bedType);
     return sum + (bt?.sleepingCapacity ?? 1) * bed.quantity;
   }, 0);

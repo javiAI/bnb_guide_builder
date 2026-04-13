@@ -77,12 +77,16 @@ export async function savePropertyAction(
     bathroomsCount: Number(formData.get("bathroomsCount")),
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
-    infrastructureJson: (() => {
-      const raw = formData.get("infrastructureJson") as string | null;
-      if (!raw) return undefined;
-      try { return JSON.parse(raw); } catch { return undefined; }
-    })(),
   };
+
+  const infraRaw = formData.get("infrastructureJson") as string | null;
+  if (infraRaw) {
+    try {
+      (raw as Record<string, unknown>).infrastructureJson = JSON.parse(infraRaw);
+    } catch {
+      return { success: false, error: "Datos de infraestructura inválidos" };
+    }
+  }
 
   const result = propertySchema.safeParse(raw);
   if (!result.success) {

@@ -29,7 +29,10 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
 
   useEffect(() => {
     if (!open) return;
-    const close = () => setOpen(false);
+    const close = (e: MouseEvent) => {
+      if (btnRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
     const reposition = () => calcPos();
     document.addEventListener("mousedown", close);
     window.addEventListener("scroll", reposition, true);

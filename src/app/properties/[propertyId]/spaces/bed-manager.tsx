@@ -58,6 +58,10 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
   const [customBedLabel, setCustomBedLabel] = useState("");
 
   const totalCapacity = beds.reduce((sum, bed) => {
+    if (bed.bedType === "bt.other") {
+      const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
+      return sum + customCap * bed.quantity;
+    }
     const typeInfo = findItem(bedTypes, bed.bedType);
     return sum + (typeInfo?.sleepingCapacity ?? 1) * bed.quantity;
   }, 0);

@@ -134,8 +134,8 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     postalCode !== (p.postalCode ?? "") ||
     latitude !== p.latitude ||
     longitude !== p.longitude ||
-    JSON.stringify(heatingTypes.sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
-    JSON.stringify(coolingTypes.sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
+    JSON.stringify(heatingTypes.slice().sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
+    JSON.stringify(coolingTypes.slice().sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
     hasElevator !== (infra.hasElevator ?? false) ||
     buildingFloors !== (infra.buildingFloors ?? 1);
 
