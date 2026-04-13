@@ -212,7 +212,14 @@ export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps
       {/* ── Card header ── */}
       <div
         className={`flex items-center gap-3 px-4 py-3 ${!editingName ? "cursor-pointer select-none" : ""}`}
+        role={!editingName ? "button" : undefined}
+        tabIndex={!editingName ? 0 : undefined}
+        aria-expanded={!editingName ? expanded : undefined}
         onClick={() => { if (!editingName) setExpanded((e) => !e); }}
+        onKeyDown={(e) => {
+          if (editingName) return;
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((prev) => !prev); }
+        }}
       >
         <div className="flex-1 min-w-0">
           {editingName ? (

@@ -443,6 +443,9 @@ function BedRow({
             {configState?.success && !configDirty && (
               <span className="text-xs text-[var(--color-success-600)]">Guardado</span>
             )}
+            {configState?.error && (
+              <span className="text-xs text-[var(--color-danger-600)]">{configState.error}</span>
+            )}
           </div>
         </form>
       )}

@@ -26,7 +26,12 @@ export const propertySchema = z.object({
   bathroomsCount: z.number().int().min(1, "Al menos 1 baño"),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-  infrastructureJson: z.any().optional(),
+  infrastructureJson: z.object({
+    heatingTypes: z.array(z.string()).optional(),
+    coolingTypes: z.array(z.string()).optional(),
+    hasElevator: z.boolean().optional(),
+    floors: z.number().int().min(1).max(200).optional(),
+  }).optional(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
@@ -190,6 +195,16 @@ export const updateBedSchema = z.object({
 
 export type CreateBedData = z.infer<typeof createBedSchema>;
 export type UpdateBedData = z.infer<typeof updateBedSchema>;
+
+export const bedConfigSchema = z.object({
+  mattressType: z.string().optional(),
+  linenProvided: z.boolean().optional(),
+  pillowsCount: z.number().int().min(0).max(20).optional(),
+  customLabel: z.string().max(100).optional(),
+  customCapacity: z.number().int().min(1).max(20).optional(),
+});
+
+export type BedConfigData = z.infer<typeof bedConfigSchema>;
 
 // ── Amenities (S-14, S-15) ──
 

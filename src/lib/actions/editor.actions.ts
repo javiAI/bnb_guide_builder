@@ -15,6 +15,7 @@ import {
   spaceFeaturesSchema,
   createBedSchema,
   updateBedSchema,
+  bedConfigSchema,
   updateAmenitySchema,
   createPlaybookSchema,
   updatePlaybookSchema,
@@ -527,8 +528,7 @@ export async function addBedAction(
   // Other types: increment quantity if same type already exists
   if (result.data.bedType === "bt.other") {
     await prisma.bedConfiguration.create({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: customLabel ? { customLabel } as any : undefined },
+      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: customLabel ? { customLabel } : undefined },
     });
   } else {
     const existing = await prisma.bedConfiguration.findFirst({
@@ -625,15 +625,18 @@ export async function updateBedConfigAction(
     return { success: false, error: "Cama no encontrada" };
   }
 
-  let configJson: unknown = null;
+  let configJson: Prisma.InputJsonValue | undefined;
   if (rawJson) {
-    try { configJson = JSON.parse(rawJson); } catch { return { success: false, error: "Datos inválidos" }; }
+    let parsed: unknown;
+    try { parsed = JSON.parse(rawJson); } catch { return { success: false, error: "Datos inválidos" }; }
+    const validated = bedConfigSchema.safeParse(parsed);
+    if (!validated.success) return { success: false, error: "Configuración de cama inválida" };
+    configJson = validated.data as Prisma.InputJsonValue;
   }
 
   await prisma.bedConfiguration.update({
     where: { id: bedId },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data: { configJson: configJson as any },
+    data: { configJson },
   });
 
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);

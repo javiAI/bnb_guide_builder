@@ -73,7 +73,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         role="button"
         tabIndex={0}
         onClick={toggle}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggle(e); }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } }}
         className="ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-neutral-200)] text-[10px] font-bold text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-300)] hover:text-[var(--color-neutral-700)] transition-colors"
         aria-label="Más información"
       >
