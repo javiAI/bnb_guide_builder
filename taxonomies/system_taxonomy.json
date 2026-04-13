@@ -3,7 +3,7 @@
   "version": "2026-04-13",
   "locale": "es-ES",
   "units_system": "metric",
-  "description": "Global property systems — infrastructure-level services that apply property-wide and may have per-space coverage. Consumed by the Systems module (feat/systems-module).",
+  "description": "Sistemas globales de la propiedad — servicios de infraestructura que aplican a toda la propiedad y pueden tener cobertura por espacio. Consumido por el módulo de Sistemas.",
   "groups": [
     {
       "id": "sgrp.connectivity",

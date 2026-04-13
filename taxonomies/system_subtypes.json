@@ -3,7 +3,7 @@
   "version": "2026-04-13",
   "locale": "es-ES",
   "units_system": "metric",
-  "description": "Typed field definitions for each system subtype. Consumed by the Systems module UI to render config forms config-driven (analogous to amenity_subtypes.json).",
+  "description": "Definiciones de campos tipados para cada subtipo de sistema. La UI del módulo de Sistemas los consume para renderizar formularios de configuración guiados por configuración (análogo a amenity_subtypes.json).",
   "subtypes": [
     {
       "id": "sys.internet",
