@@ -113,6 +113,13 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
 
+  // Infra dirty: tracks whether infrastructure fields differ from what's in DB
+  const infraDirty =
+    JSON.stringify(heatingTypes.slice().sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
+    JSON.stringify(coolingTypes.slice().sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
+    hasElevator !== (infra.hasElevator ?? false) ||
+    buildingFloors !== (infra.buildingFloors ?? 1);
+
   // Dirty tracking — compare against initial values
   const isDirty = nickname !== p.propertyNickname ||
     propertyType !== (p.propertyType ?? "") ||
@@ -134,10 +141,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     postalCode !== (p.postalCode ?? "") ||
     latitude !== p.latitude ||
     longitude !== p.longitude ||
-    JSON.stringify(heatingTypes.slice().sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
-    JSON.stringify(coolingTypes.slice().sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
-    hasElevator !== (infra.hasElevator ?? false) ||
-    buildingFloors !== (infra.buildingFloors ?? 1);
+    infraDirty;
 
   const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
@@ -261,7 +265,10 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         {/* Keep bedroomsCount/bathroomsCount from current values so save doesn't null them */}
         <input type="hidden" name="bedroomsCount" value={p.bedroomsCount ?? 0} />
         <input type="hidden" name="bathroomsCount" value={p.bathroomsCount ?? 1} />
-        <input type="hidden" name="infrastructureJson" value={JSON.stringify({ heatingTypes, coolingTypes, hasElevator, buildingFloors })} />
+        {/* Only send infrastructureJson if already configured in DB or user changed something */}
+        {(p.infrastructureJson != null || infraDirty) && (
+          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ heatingTypes, coolingTypes, hasElevator, buildingFloors })} />
+        )}
 
         {/* Inline editable name */}
         <div className="rounded-[var(--radius-lg)] border-2 border-[var(--border)] bg-[var(--surface-elevated)] p-4">
@@ -403,7 +410,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
                 <div className="flex items-center gap-1">
                   <button type="button" onClick={() => setBuildingFloors(Math.max(1, buildingFloors - 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={buildingFloors <= 1}>−</button>
                   <span className="w-6 text-center text-sm font-medium">{buildingFloors}</span>
-                  <button type="button" onClick={() => setBuildingFloors(Math.min(50, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
+                  <button type="button" onClick={() => setBuildingFloors(Math.min(200, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
                 </div>
               </div>
             </div>
