@@ -167,6 +167,7 @@ export async function saveStep1Action(
   const raw = {
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
+    layoutKey: (formData.get("layoutKey") as string) || undefined,
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
@@ -353,6 +354,7 @@ export async function completeWizardAction(
         propertyNickname: d.propertyNickname,
         propertyType: d.propertyType,
         roomType: d.roomType,
+        layoutKey: d.layoutKey,
         customPropertyTypeLabel: d.customPropertyTypeLabel,
         customPropertyTypeDesc: d.customPropertyTypeDesc,
         customRoomTypeLabel: d.customRoomTypeLabel,

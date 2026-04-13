@@ -57,6 +57,7 @@ model Property {
   propertyNickname String   @map("property_nickname")
   propertyType     String?  @map("property_type")
   roomType         String?  @map("room_type")
+  layoutKey        String?  @map("layout_key")
   country          String?
   city             String?
   region           String?

@@ -58,6 +58,7 @@ export async function savePropertyAction(
     propertyNickname: formData.get("propertyNickname") as string,
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
+    layoutKey: (formData.get("layoutKey") as string) || null,
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,

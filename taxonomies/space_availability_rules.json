@@ -5,12 +5,12 @@
   "units_system": "metric",
   "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos según cada combinación de roomType y layoutKey. Consumido por getAvailableSpaceTypes() en taxonomy-loader.",
   "layoutKeys": [
-    { "id": "layout.studio",                  "label": "Estudio" },
-    { "id": "layout.loft",                    "label": "Loft" },
-    { "id": "layout.kitchen_living",          "label": "Cocina-salón abierto" },
-    { "id": "layout.kitchen_dining_living",   "label": "Cocina-comedor-salón abierto" },
-    { "id": "layout.open_plan_living_dining", "label": "Salón-comedor abierto" },
-    { "id": "layout.separate_rooms",          "label": "Habitaciones separadas" }
+    { "id": "layout.separate_rooms",          "label": "Habitaciones separadas",          "description": "Dormitorios, salón, cocina y baño en estancias diferenciadas." },
+    { "id": "layout.kitchen_living",          "label": "Cocina-salón abierto",            "description": "Cocina y salón integrados en un espacio único." },
+    { "id": "layout.kitchen_dining_living",   "label": "Cocina-comedor-salón",            "description": "Cocina, comedor y salón integrados en un gran espacio diáfano." },
+    { "id": "layout.open_plan_living_dining", "label": "Salón-comedor abierto",           "description": "Salón y comedor integrados, con cocina separada." },
+    { "id": "layout.studio",                  "label": "Estudio",                         "description": "Espacio único que integra dormitorio, sala y cocina sin separación." },
+    { "id": "layout.loft",                    "label": "Loft",                            "description": "Espacio diáfano de doble altura con zona de descanso elevada." }
   ],
   "rules": [
     {

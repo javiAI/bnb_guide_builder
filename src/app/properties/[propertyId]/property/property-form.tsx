@@ -8,7 +8,7 @@ import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { savePropertyAction, type ActionResult } from "@/lib/actions/editor.actions";
-import { propertyTypes, roomTypes, spanishProvinces, getItems, findItem } from "@/lib/taxonomy-loader";
+import { propertyTypes, roomTypes, spanishProvinces, spaceAvailabilityRules, getItems, findItem } from "@/lib/taxonomy-loader";
 import { COMMON_TIMEZONES } from "@/lib/timezones";
 import dynamic from "next/dynamic";
 
@@ -19,6 +19,9 @@ const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item
 }));
 const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
+}));
+const layoutKeyOptions: RadioCardOption[] = spaceAvailabilityRules.layoutKeys.map((lk) => ({
+  id: lk.id, label: lk.label, description: lk.description,
 }));
 const provinces = getItems(spanishProvinces);
 
@@ -44,6 +47,7 @@ interface PropertyFormProps {
     propertyNickname: string;
     propertyType: string | null;
     roomType: string | null;
+    layoutKey: string | null;
     customPropertyTypeLabel: string | null;
     customPropertyTypeDesc: string | null;
     customRoomTypeLabel: string | null;
@@ -74,6 +78,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   const [propertyType, setPropertyType] = useState(p.propertyType ?? "");
   const [roomType, setRoomType] = useState(p.roomType ?? "");
+  const [layoutKey, setLayoutKey] = useState(p.layoutKey ?? "");
   const [customPtLabel, setCustomPtLabel] = useState(p.customPropertyTypeLabel ?? "");
   const [customPtDesc, setCustomPtDesc] = useState(p.customPropertyTypeDesc ?? "");
   const [customRtLabel, setCustomRtLabel] = useState(p.customRoomTypeLabel ?? "");
@@ -107,6 +112,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   const [ptOpen, setPtOpen] = useState(false);
   const [rtOpen, setRtOpen] = useState(false);
+  const [lkOpen, setLkOpen] = useState(false);
   const [locOpen, setLocOpen] = useState(true);
   const [guestsOpen, setGuestsOpen] = useState(true);
   const [infraOpen, setInfraOpen] = useState(false);
@@ -124,6 +130,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const isDirty = nickname !== p.propertyNickname ||
     propertyType !== (p.propertyType ?? "") ||
     roomType !== (p.roomType ?? "") ||
+    layoutKey !== (p.layoutKey ?? "") ||
     customPtLabel !== (p.customPropertyTypeLabel ?? "") ||
     customPtDesc !== (p.customPropertyTypeDesc ?? "") ||
     customRtLabel !== (p.customRoomTypeLabel ?? "") ||
@@ -224,6 +231,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   const ptLabel = propertyType === "pt.other" ? (customPtLabel || "Otro") : findItem(propertyTypes, propertyType)?.label ?? "Sin definir";
   const rtLabel = roomType === "rt.other" ? (customRtLabel || "Otro") : findItem(roomTypes, roomType)?.label ?? "Sin definir";
+  const lkLabel = layoutKey ? (layoutKeyOptions.find((o) => o.id === layoutKey)?.label ?? "Sin definir") : "Sin definir";
   const locationParts = [city, country].filter(Boolean);
   const provLabel = provinces.find((pr) => pr.id === province)?.label;
   if (provLabel) locationParts.push(provLabel);
@@ -258,6 +266,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
+        <input type="hidden" name="layoutKey" value={roomType === "rt.entire_place" ? layoutKey : ""} />
         <input type="hidden" name="customPropertyTypeLabel" value={customPtLabel} />
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
@@ -316,6 +325,30 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             </div>
           )}
         </CollapsibleSection>
+
+        {/* Distribución — solo para alojamiento completo */}
+        {roomType === "rt.entire_place" && (
+          <CollapsibleSection title="Distribución" selectedLabel={lkLabel} expanded={lkOpen} onToggle={() => setLkOpen(!lkOpen)}>
+            <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
+              ¿Cómo están organizados los espacios? Esto determina qué tipos de espacio puedes añadir.
+            </p>
+            {layoutKey && layoutKey !== (p.layoutKey ?? "") && (
+              <div className="mb-3 rounded-[var(--radius-md)] bg-[var(--color-warning-50)] border border-[var(--color-warning-200)] px-3 py-2 text-xs text-[var(--color-warning-700)]">
+                Cambiar la distribución puede generar conflictos con los espacios ya creados. Revisa la sección Espacios tras guardar.
+              </div>
+            )}
+            <RadioCardGroup
+              name="_layoutKey"
+              options={layoutKeyOptions}
+              value={layoutKey || null}
+              onChange={(val) => {
+                setLayoutKey(val);
+                setTimeout(() => setLkOpen(false), 200);
+              }}
+              showRecommended={false}
+            />
+          </CollapsibleSection>
+        )}
 
         {/* Ubicación y zona horaria */}
         <CollapsibleSection title="Ubicación y zona horaria" selectedLabel={locationLabel} expanded={locOpen} onToggle={() => setLocOpen(!locOpen)}>
