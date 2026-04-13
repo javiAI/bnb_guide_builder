@@ -10,6 +10,7 @@ import {
   fullWizardSchema,
 } from "@/lib/schemas/wizard.schema";
 import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT } from "@/lib/taxonomy-loader";
+import { recomputePropertyCounts } from "@/lib/property-counts";
 
 export type ActionResult = {
   success: boolean;
@@ -448,6 +449,9 @@ export async function completeWizardAction(
         }
       }
     }
+
+    // Recompute derived counts from actual Space/Bed rows (overrides wizard form values)
+    await recomputePropertyCounts(tx, prop.id);
 
     // Link session to property
     await tx.wizardSession.update({

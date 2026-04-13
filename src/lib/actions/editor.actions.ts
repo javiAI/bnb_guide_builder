@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { recomputePropertyCounts } from "@/lib/property-counts";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -75,8 +76,6 @@ export async function savePropertyAction(
     maxAdults: Number(formData.get("maxAdults")),
     maxChildren: Number(formData.get("maxChildren")),
     infantsAllowed: formData.get("infantsAllowed") === "on" || formData.get("infantsAllowed") === "true",
-    bedroomsCount: Number(formData.get("bedroomsCount")),
-    bathroomsCount: Number(formData.get("bathroomsCount")),
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };
@@ -366,11 +365,14 @@ export async function createSpaceAction(
     };
   }
 
-  await prisma.space.create({
-    data: {
-      ...result.data,
-      property: { connect: { id: propertyId } },
-    },
+  await prisma.$transaction(async (tx) => {
+    await tx.space.create({
+      data: {
+        ...result.data,
+        property: { connect: { id: propertyId } },
+      },
+    });
+    await recomputePropertyCounts(tx, propertyId);
   });
 
   revalidatePath(`/properties/${propertyId}/spaces`);
@@ -420,11 +422,12 @@ export async function deleteSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  // Atomic: null out orphaned PropertyAmenity.spaceId then delete the space
-  await prisma.$transaction([
-    prisma.propertyAmenity.updateMany({ where: { spaceId }, data: { spaceId: null } }),
-    prisma.space.delete({ where: { id: spaceId } }),
-  ]);
+  // Atomic: null out orphaned PropertyAmenity.spaceId, delete space, recompute counts
+  await prisma.$transaction(async (tx) => {
+    await tx.propertyAmenity.updateMany({ where: { spaceId }, data: { spaceId: null } });
+    await tx.space.delete({ where: { id: spaceId } });
+    await recomputePropertyCounts(tx, space.propertyId);
+  });
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
@@ -536,25 +539,28 @@ export async function addBedAction(
 
   // bt.other: always create a new row (each is a distinct custom bed)
   // Other types: increment quantity if same type already exists
-  if (result.data.bedType === "bt.other") {
-    await prisma.bedConfiguration.create({
-      data: { ...result.data, space: { connect: { id: spaceId } }, configJson: initialConfigJson },
-    });
-  } else {
-    const existing = await prisma.bedConfiguration.findFirst({
-      where: { spaceId, bedType: result.data.bedType },
-    });
-    if (existing) {
-      await prisma.bedConfiguration.update({
-        where: { id: existing.id },
-        data: { quantity: existing.quantity + result.data.quantity },
+  await prisma.$transaction(async (tx) => {
+    if (result.data.bedType === "bt.other") {
+      await tx.bedConfiguration.create({
+        data: { ...result.data, space: { connect: { id: spaceId } }, configJson: initialConfigJson },
       });
     } else {
-      await prisma.bedConfiguration.create({
-        data: { ...result.data, space: { connect: { id: spaceId } } },
+      const existing = await tx.bedConfiguration.findFirst({
+        where: { spaceId, bedType: result.data.bedType },
       });
+      if (existing) {
+        await tx.bedConfiguration.update({
+          where: { id: existing.id },
+          data: { quantity: existing.quantity + result.data.quantity },
+        });
+      } else {
+        await tx.bedConfiguration.create({
+          data: { ...result.data, space: { connect: { id: spaceId } } },
+        });
+      }
     }
-  }
+    await recomputePropertyCounts(tx, space.propertyId);
+  });
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
@@ -588,9 +594,9 @@ export async function updateBedAction(
     return { success: false, error: "Cama no encontrada" };
   }
 
-  await prisma.bedConfiguration.update({
-    where: { id: bedId },
-    data: result.data,
+  await prisma.$transaction(async (tx) => {
+    await tx.bedConfiguration.update({ where: { id: bedId }, data: result.data });
+    await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
@@ -613,7 +619,10 @@ export async function deleteBedAction(
     return { success: false, error: "Cama no encontrada" };
   }
 
-  await prisma.bedConfiguration.delete({ where: { id: bedId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.bedConfiguration.delete({ where: { id: bedId } });
+    await recomputePropertyCounts(tx, bed.space.propertyId);
+  });
 
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };

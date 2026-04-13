@@ -271,9 +271,6 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
-        {/* Keep bedroomsCount/bathroomsCount from current values so save doesn't null them */}
-        <input type="hidden" name="bedroomsCount" value={p.bedroomsCount ?? 0} />
-        <input type="hidden" name="bathroomsCount" value={p.bathroomsCount ?? 1} />
         {/* Only send infrastructureJson if already configured in DB or user changed something */}
         {(p.infrastructureJson != null || infraDirty) && (
           <input type="hidden" name="infrastructureJson" value={JSON.stringify({ heatingTypes, coolingTypes, hasElevator, buildingFloors })} />
@@ -402,6 +399,28 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             </label>
           </div>
         </CollapsibleSection>
+
+        {/* Habitaciones y baños — derivados de Espacios */}
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[var(--foreground)]">Habitaciones y baños</p>
+            <Link
+              href={`/properties/${propertyId}/spaces`}
+              className="text-xs text-[var(--color-primary-600)] hover:underline"
+            >
+              Gestionar espacios →
+            </Link>
+          </div>
+          <div className="mt-2 flex gap-6">
+            <span className="text-sm text-[var(--color-neutral-600)]">
+              <span className="font-medium text-[var(--foreground)]">{p.bedroomsCount ?? 0}</span> dormitorios
+            </span>
+            <span className="text-sm text-[var(--color-neutral-600)]">
+              <span className="font-medium text-[var(--foreground)]">{p.bathroomsCount ?? 0}</span> baños
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-[var(--color-neutral-400)]">Calculado automáticamente a partir de los espacios definidos.</p>
+        </div>
 
         {/* Infraestructura del edificio */}
         <CollapsibleSection title="Infraestructura del edificio" selectedLabel={infraLabel} expanded={infraOpen} onToggle={() => setInfraOpen(!infraOpen)}>

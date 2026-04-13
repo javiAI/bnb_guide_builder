@@ -20,6 +20,7 @@ describe("Property editor schema", () => {
       propertyNickname: "Casa Playa",
       propertyType: "pt.apartment",
       roomType: "rt.entire_place",
+      layoutKey: "layout.separate_rooms",
       country: "España",
       city: "Valencia",
       streetAddress: "Calle Mayor, 10",
@@ -28,8 +29,6 @@ describe("Property editor schema", () => {
       maxAdults: 4,
       maxChildren: 0,
       infantsAllowed: false,
-      bedroomsCount: 2,
-      bathroomsCount: 1,
     });
     expect(result.success).toBe(true);
   });
@@ -47,8 +46,23 @@ describe("Property editor schema", () => {
       maxAdults: 0,
       maxChildren: 0,
       infantsAllowed: false,
-      bedroomsCount: 0,
-      bathroomsCount: 0,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects rt.entire_place without layoutKey", () => {
+    const result = propertySchema.safeParse({
+      propertyNickname: "Test",
+      propertyType: "pt.house",
+      roomType: "rt.entire_place",
+      country: "España",
+      city: "Madrid",
+      streetAddress: "Calle Sol, 5",
+      timezone: "Europe/Madrid",
+      maxGuests: 2,
+      maxAdults: 2,
+      maxChildren: 0,
+      infantsAllowed: false,
     });
     expect(result.success).toBe(false);
   });
@@ -58,6 +72,7 @@ describe("Property editor schema", () => {
       propertyNickname: "Test",
       propertyType: "pt.house",
       roomType: "rt.entire_place",
+      layoutKey: "layout.separate_rooms",
       country: "España",
       city: "Madrid",
       streetAddress: "Calle Sol, 5",
@@ -66,8 +81,6 @@ describe("Property editor schema", () => {
       maxAdults: 0,
       maxChildren: 0,
       infantsAllowed: false,
-      bedroomsCount: 1,
-      bathroomsCount: 1,
     });
     expect(result.success).toBe(false);
   });
