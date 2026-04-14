@@ -726,7 +726,7 @@ export async function updateAmenityAction(
   if (!amenityId) return { success: false, error: "Falta el ID del amenity" };
   const amenity = await prisma.propertyAmenity.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true },
+    select: { propertyId: true, amenityKey: true, spaceId: true },
   });
   if (!amenity) return { success: false, error: "Amenity no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
@@ -774,21 +774,13 @@ export async function updateAmenityAction(
     data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
   }
 
-  // Look up amenity key + spaceId before mutating so we can mirror to
-  // the new Instance model via composite key.
-  const fullAmenity = await prisma.propertyAmenity.findUnique({
-    where: { id: amenityId },
-    select: { amenityKey: true, spaceId: true },
-  });
-  if (!fullAmenity) return { success: false, error: "Amenity no encontrado" };
-
   await prisma.$transaction(async (tx) => {
     await tx.propertyAmenity.update({ where: { id: amenityId }, data });
     await mirrorUpdateToNew(
       {
         propertyId: amenity.propertyId,
-        amenityKey: fullAmenity.amenityKey,
-        spaceId: fullAmenity.spaceId,
+        amenityKey: amenity.amenityKey,
+        spaceId: amenity.spaceId,
         data: data as Parameters<typeof mirrorUpdateToNew>[0]["data"],
       },
       tx,
