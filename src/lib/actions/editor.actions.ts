@@ -120,6 +120,7 @@ export async function savePropertyAction(
     maxAdults: Number(formData.get("maxAdults")),
     maxChildren: Number(formData.get("maxChildren")),
     infantsAllowed: formData.get("infantsAllowed") === "on" || formData.get("infantsAllowed") === "true",
+    hasPrivateEntrance: formData.get("hasPrivateEntrance") === "on" || formData.get("hasPrivateEntrance") === "true",
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
   };

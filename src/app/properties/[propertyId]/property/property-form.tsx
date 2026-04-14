@@ -53,6 +53,7 @@ interface PropertyFormProps {
     maxAdults: number;
     maxChildren: number;
     infantsAllowed: boolean;
+    hasPrivateEntrance: boolean;
     bedroomsCount: number | null;
     bathroomsCount: number | null;
     latitude: number | null;
@@ -88,6 +89,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const [maxAdults, setMaxAdults] = useState(p.maxAdults);
   const [maxChildren, setMaxChildren] = useState(p.maxChildren);
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
+  const [hasPrivateEntrance, setHasPrivateEntrance] = useState(p.hasPrivateEntrance);
 
   const infra = p.infrastructureJson as {
     hasElevator?: boolean;
@@ -129,6 +131,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     maxAdults !== p.maxAdults ||
     maxChildren !== p.maxChildren ||
     infantsAllowed !== p.infantsAllowed ||
+    hasPrivateEntrance !== p.hasPrivateEntrance ||
     streetAddress !== (p.streetAddress ?? "") ||
     addressExtra !== (p.addressExtra ?? "") ||
     postalCode !== (p.postalCode ?? "") ||
@@ -435,6 +438,11 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             <label className="flex cursor-pointer items-center gap-2">
               <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
               <span className="text-sm font-medium text-[var(--foreground)]">El edificio tiene ascensor</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
+              <span className="text-sm font-medium text-[var(--foreground)]">Entrada privada</span>
+              <InfoTooltip text="La vivienda tiene una entrada independiente que el huésped usa sin compartir pasillos o zonas interiores con otros inquilinos o el anfitrión." />
             </label>
             <div className="flex items-center gap-3">
               <label className="text-sm font-medium text-[var(--foreground)]">Número de plantas del edificio</label>

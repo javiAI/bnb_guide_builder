@@ -34,6 +34,7 @@ export default async function PropertyPage({ params }: Props) {
       maxAdults: true,
       maxChildren: true,
       infantsAllowed: true,
+      hasPrivateEntrance: true,
       bedroomsCount: true,
       bathroomsCount: true,
       latitude: true,
