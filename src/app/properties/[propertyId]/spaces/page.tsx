@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { SpaceCard } from "./space-card";
 import { CreateSpaceForm } from "./create-space-form";
-import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
+import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export default async function SpacesPage({
@@ -25,6 +25,50 @@ export default async function SpacesPage({
     orderBy: { sortOrder: "asc" },
     include: { beds: { orderBy: { createdAt: "asc" } } },
   });
+
+  // All systems installed on this property (inherited by all spaces by default)
+  const propertySystems = await prisma.propertySystem.findMany({
+    where: { propertyId },
+    select: { id: true, systemKey: true },
+  });
+
+  // Explicit per-space coverage overrides
+  const systemCoverages = await prisma.propertySystemCoverage.findMany({
+    where: { space: { propertyId } },
+    include: { system: { select: { id: true, systemKey: true } } },
+  });
+
+  // Build default set respecting defaultCoverageRule from taxonomy:
+  // - all_relevant_spaces: shown on all spaces by default (can be overridden)
+  // - selected_spaces: only shown when explicitly override_yes
+  // - property_only: never shown on space cards
+  const defaultSystems = propertySystems.flatMap((sys) => {
+    const item = findSystemItem(sys.systemKey);
+    if (!item || item.defaultCoverageRule !== "all_relevant_spaces") return [];
+    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label }];
+  });
+
+  // Build map: spaceId → SpaceSystem[], starting from inherited defaults then applying overrides
+  const systemsBySpace = new Map<string, { id: string; systemKey: string; label: string }[]>();
+  for (const space of spaces) {
+    systemsBySpace.set(space.id, [...defaultSystems]);
+  }
+  for (const coverage of systemCoverages) {
+    const item = findSystemItem(coverage.system.systemKey);
+    if (!item) continue;
+    const spaceId = coverage.spaceId;
+    const current = systemsBySpace.get(spaceId) ?? [];
+    if (coverage.mode === "override_no") {
+      systemsBySpace.set(spaceId, current.filter((s) => s.id !== coverage.system.id));
+    } else if (
+      coverage.mode === "override_yes" &&
+      item.defaultCoverageRule !== "property_only" &&
+      !current.some((s) => s.id === coverage.system.id)
+    ) {
+      current.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
+      systemsBySpace.set(spaceId, current);
+    }
+  }
 
   // Compute available space types from roomType + layoutKey
   // Treat missing roomType as unknown — don't apply entire-place rules to legacy/incomplete properties
@@ -142,6 +186,7 @@ export default async function SpacesPage({
                 quantity: b.quantity,
                 configJson: b.configJson as Record<string, unknown> | null,
               }))}
+              spaceSystems={systemsBySpace.get(space.id) ?? []}
             />
           ))
         )}

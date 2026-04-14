@@ -240,7 +240,7 @@ export function findSystemItem(id: string): SystemItem | undefined {
 }
 
 export function findSystemSubtype(systemKey: string): SystemSubtype | undefined {
-  return systemSubtypes.subtypes.find((s) => s.systemKey === systemKey);
+  return systemSubtypes.subtypes.find((s) => s.systemKey === systemKey || s.id === systemKey);
 }
 
 // ── Amenity scope policy helpers ──

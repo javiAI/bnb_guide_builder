@@ -70,6 +70,14 @@ export const RENDER_CONFIGS: RenderConfig[] = [
     knowledgeCategory: "spaces",
   },
   {
+    sectionKey: "systems",
+    targets: ["guest_guide", "ai_view", "internal"],
+    maxVisibility: "public",
+    includeMedia: false,
+    guideSectionType: "systems",
+    knowledgeCategory: "systems",
+  },
+  {
     sectionKey: "amenities",
     targets: ["guest_guide", "ai_view", "internal"],
     maxVisibility: "public",

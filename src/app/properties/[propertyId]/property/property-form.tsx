@@ -25,21 +25,6 @@ const layoutKeyOptions: RadioCardOption[] = spaceAvailabilityRules.layoutKeys.ma
 }));
 const provinces = getItems(spanishProvinces);
 
-const HEATING_OPTIONS = [
-  { id: "gas_boiler", label: "Caldera de gas" },
-  { id: "heat_pump", label: "Bomba de calor" },
-  { id: "electric_radiators", label: "Radiadores eléctricos" },
-  { id: "underfloor", label: "Suelo radiante" },
-  { id: "wood_fireplace", label: "Chimenea / Leña" },
-  { id: "no_heating", label: "Sin calefacción" },
-];
-const COOLING_OPTIONS = [
-  { id: "ac_split", label: "Aire acondicionado split" },
-  { id: "ac_central", label: "Aire acondicionado central" },
-  { id: "ceiling_fan", label: "Ventilador de techo" },
-  { id: "portable_fan", label: "Ventilador portátil" },
-  { id: "no_cooling", label: "Sin refrigeración" },
-];
 
 interface PropertyFormProps {
   propertyId: string;
@@ -100,13 +85,9 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
 
   const infra = p.infrastructureJson as {
-    heatingTypes?: string[];
-    coolingTypes?: string[];
     hasElevator?: boolean;
     buildingFloors?: number;
   } | null ?? {};
-  const [heatingTypes, setHeatingTypes] = useState<string[]>(infra.heatingTypes ?? []);
-  const [coolingTypes, setCoolingTypes] = useState<string[]>(infra.coolingTypes ?? []);
   const [hasElevator, setHasElevator] = useState<boolean>(infra.hasElevator ?? false);
   const [buildingFloors, setBuildingFloors] = useState<number>(infra.buildingFloors ?? 1);
 
@@ -121,8 +102,6 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   // Infra dirty: tracks whether infrastructure fields differ from what's in DB
   const infraDirty =
-    JSON.stringify(heatingTypes.slice().sort()) !== JSON.stringify((infra.heatingTypes ?? []).slice().sort()) ||
-    JSON.stringify(coolingTypes.slice().sort()) !== JSON.stringify((infra.coolingTypes ?? []).slice().sort()) ||
     hasElevator !== (infra.hasElevator ?? false) ||
     buildingFloors !== (infra.buildingFloors ?? 1);
 
@@ -238,19 +217,14 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const tzLabel = COMMON_TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone ?? "";
   const locationLabel = locationParts.length > 0 ? `${locationParts.join(", ")} · ${tzLabel}` : "Sin definir";
   const guestsLabel = `${maxGuests} huéspedes (${maxAdults} adultos, ${maxChildren} niños)`;
-  const infraLabelParts: string[] = [];
-  if (heatingTypes.length > 0) infraLabelParts.push(HEATING_OPTIONS.find((o) => o.id === heatingTypes[0])?.label ?? heatingTypes[0]);
-  if (coolingTypes.length > 0) infraLabelParts.push(COOLING_OPTIONS.find((o) => o.id === coolingTypes[0])?.label ?? coolingTypes[0]);
-  if (hasElevator) infraLabelParts.push("Ascensor");
-  const infraLabel = infraLabelParts.length > 0 ? infraLabelParts.slice(0, 2).join(" · ") + (infraLabelParts.length > 2 ? ` +${infraLabelParts.length - 2}` : "") : "Sin configurar";
+  const infraConfigured = infraDirty || (infra.hasElevator != null || infra.buildingFloors != null);
+  const infraLabel = !infraConfigured
+    ? "Sin configurar"
+    : hasElevator
+      ? `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""} · Ascensor`
+      : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
 
-  function toggleMulti(list: string[], setList: (v: string[]) => void, id: string, noneId?: string) {
-    if (id === noneId) {
-      setList(list.includes(id) ? [] : [id]);
-    } else {
-      setList(list.includes(id) ? list.filter((v) => v !== id) : [...list.filter((v) => v !== noneId), id]);
-    }
-  }
+
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -271,9 +245,9 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
-        {/* Only send infrastructureJson if already configured in DB or user changed something */}
-        {(p.infrastructureJson != null || infraDirty) && (
-          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ heatingTypes, coolingTypes, hasElevator, buildingFloors })} />
+        {/* Only send infrastructureJson when user changed infra fields — avoids overwriting existing JSON keys on unrelated saves */}
+        {infraDirty && (
+          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ hasElevator, buildingFloors })} />
         )}
 
         {/* Inline editable name */}
@@ -424,46 +398,21 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
         {/* Infraestructura del edificio */}
         <CollapsibleSection title="Infraestructura del edificio" selectedLabel={infraLabel} expanded={infraOpen} onToggle={() => setInfraOpen(!infraOpen)}>
-          <div className="space-y-5">
-            {/* Calefacción */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--foreground)]">Sistema de calefacción</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {HEATING_OPTIONS.map((opt) => (
-                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={heatingTypes.includes(opt.id)} onChange={() => toggleMulti(heatingTypes, setHeatingTypes, opt.id, "no_heating")} />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Refrigeración */}
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--foreground)]">Sistema de refrigeración</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {COOLING_OPTIONS.map((opt) => (
-                  <label key={opt.id} className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-neutral-50)] has-[:checked]:border-[var(--color-primary-400)] has-[:checked]:bg-[var(--color-primary-50)]">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={coolingTypes.includes(opt.id)} onChange={() => toggleMulti(coolingTypes, setCoolingTypes, opt.id, "no_cooling")} />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Ascensor y plantas */}
-            <div className="space-y-3">
-              <label className="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
-                <span className="text-sm font-medium text-[var(--foreground)]">El edificio tiene ascensor</span>
-              </label>
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-[var(--foreground)]">Número de plantas del edificio</label>
-                <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => setBuildingFloors(Math.max(1, buildingFloors - 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={buildingFloors <= 1}>−</button>
-                  <span className="w-6 text-center text-sm font-medium">{buildingFloors}</span>
-                  <button type="button" onClick={() => setBuildingFloors(Math.min(200, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
-                </div>
+          <div className="space-y-4">
+            <p className="text-xs text-[var(--color-neutral-500)]">
+              Los sistemas de calefacción y refrigeración se gestionan en la sección{" "}
+              <Link href={`/properties/${propertyId}/systems`} className="text-[var(--color-primary-500)] hover:underline">Sistemas</Link>.
+            </p>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
+              <span className="text-sm font-medium text-[var(--foreground)]">El edificio tiene ascensor</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-[var(--foreground)]">Número de plantas del edificio</label>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={() => setBuildingFloors(Math.max(1, buildingFloors - 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={buildingFloors <= 1}>−</button>
+                <span className="w-6 text-center text-sm font-medium">{buildingFloors}</span>
+                <button type="button" onClick={() => setBuildingFloors(Math.min(200, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
               </div>
             </div>
           </div>

@@ -26,8 +26,6 @@ export const propertySchema = z.object({
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   infrastructureJson: z.object({
-    heatingTypes: z.array(z.string()).optional(),
-    coolingTypes: z.array(z.string()).optional(),
     hasElevator: z.boolean().optional(),
     buildingFloors: z.number().int().min(1).max(200).optional(),
   }).optional(),
@@ -294,3 +292,26 @@ export const assignMediaSchema = z.object({
 
 export type CreateMediaAssetData = z.infer<typeof createMediaAssetSchema>;
 export type AssignMediaData = z.infer<typeof assignMediaSchema>;
+
+// ── Systems (Branch 5) ──
+
+export const createSystemSchema = z.object({
+  systemKey: z.string().min(1, "El tipo de sistema es obligatorio"),
+});
+
+export const updateSystemSchema = z.object({
+  detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  opsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
+  internalNotes: z.string().nullable().optional(),
+  visibility: z.enum(["public", "internal"]).optional(),
+});
+
+export const updateSystemCoverageSchema = z.object({
+  spaceId: z.string().min(1),
+  mode: z.enum(["inherited", "override_yes", "override_no"]),
+  note: z.string().nullable().optional(),
+});
+
+export type CreateSystemData = z.infer<typeof createSystemSchema>;
+export type UpdateSystemData = z.infer<typeof updateSystemSchema>;
+export type UpdateSystemCoverageData = z.infer<typeof updateSystemCoverageSchema>;

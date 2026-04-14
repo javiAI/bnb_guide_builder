@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -40,11 +41,18 @@ interface SpaceData {
   featuresJson: Record<string, unknown> | null;
 }
 
+interface SpaceSystem {
+  id: string;
+  systemKey: string;
+  label: string;
+}
+
 interface SpaceCardProps {
   propertyId: string;
   maxGuests: number | null;
   space: SpaceData;
   beds: BedData[];
+  spaceSystems?: SpaceSystem[];
 }
 
 type FeatureValue = string | number | boolean | string[] | null;
@@ -80,7 +88,7 @@ function computeProgressDot(
   return "partial";
 }
 
-export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps) {
+export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [] }: SpaceCardProps) {
   // ── Expand / collapse ──
   const bodyRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">(0);
@@ -457,6 +465,33 @@ export function SpaceCard({ propertyId, maxGuests, space, beds }: SpaceCardProps
               </div>
 
             </form>
+
+            {/* Systems in this space — read-only */}
+            {spaceSystems.length > 0 && (
+              <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--color-neutral-50)] px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-[var(--color-neutral-600)]">Sistemas en este espacio</p>
+                  <Link
+                    href={`/properties/${propertyId}/systems`}
+                    className="text-xs text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)]"
+                  >
+                    Gestionar →
+                  </Link>
+                </div>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {spaceSystems.map((sys) => (
+                    <li key={sys.id}>
+                      <Link
+                        href={`/properties/${propertyId}/systems/${sys.id}`}
+                        className="inline-flex items-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                      >
+                        {sys.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Footer — outside form to avoid nested <form> */}
             <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-2">
