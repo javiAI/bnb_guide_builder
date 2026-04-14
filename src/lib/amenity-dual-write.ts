@@ -17,18 +17,15 @@
 
 import { Prisma, type PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "@/lib/db";
+import {
+  instanceKeyFor,
+  spaceIdFromInstanceKey,
+  isCanonicalInstanceKey,
+} from "@/lib/amenity-instance-keys";
+
+export { instanceKeyFor, spaceIdFromInstanceKey } from "@/lib/amenity-instance-keys";
 
 type Tx = PrismaClient | Prisma.TransactionClient;
-
-export function instanceKeyFor(spaceId: string | null): string {
-  return spaceId ? `space:${spaceId}` : "default";
-}
-
-export function spaceIdFromInstanceKey(instanceKey: string): string | null {
-  if (instanceKey === "default") return null;
-  if (instanceKey.startsWith("space:")) return instanceKey.slice("space:".length);
-  return null;
-}
 
 /** OLD → NEW: mirror a toggle-enable (create). Idempotent via upsert. */
 export async function mirrorEnableToNew(
@@ -140,14 +137,12 @@ export async function mirrorInstanceToOld(
   },
   tx: Tx = defaultPrisma,
 ): Promise<void> {
-  const spaceId = spaceIdFromInstanceKey(instance.instanceKey);
   // Custom (non-canonical) instanceKeys have no 1:1 mirror target in the
   // old model — skip. Legacy reads will simply not see such rows; this
   // is acceptable because reads still come from the old model and new
   // actions aren't yet wired to UI.
-  if (instance.instanceKey !== "default" && !instance.instanceKey.startsWith("space:")) {
-    return;
-  }
+  if (!isCanonicalInstanceKey(instance.instanceKey)) return;
+  const spaceId = spaceIdFromInstanceKey(instance.instanceKey);
 
   const existing = await tx.propertyAmenity.findFirst({
     where: { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
@@ -166,16 +161,23 @@ export async function mirrorInstanceToOld(
 
   if (existing) {
     await tx.propertyAmenity.update({ where: { id: existing.id }, data: writeData });
-  } else {
-    await tx.propertyAmenity.create({
-      data: {
-        ...writeData,
-        amenityKey: instance.amenityKey,
-        property: { connect: { id: instance.propertyId } },
-        ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
-      },
-    });
+    return;
   }
+  // Concurrency note: if a concurrent writer creates the same composite
+  // key between our findFirst and create, we get P2002. The whole tx
+  // (new-model write + this mirror) rolls back. That's safe because
+  // every dual-write path also mirrors, so the concurrent winner has
+  // already produced both sides. Recovering in-place is not possible —
+  // Prisma interactive transactions don't use savepoints, so a PG
+  // constraint violation aborts the tx.
+  await tx.propertyAmenity.create({
+    data: {
+      ...writeData,
+      amenityKey: instance.amenityKey,
+      property: { connect: { id: instance.propertyId } },
+      ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
+    },
+  });
 }
 
 /** NEW → OLD: mirror delete of an Instance. */
@@ -183,14 +185,19 @@ export async function mirrorInstanceDeleteToOld(
   args: { propertyId: string; amenityKey: string; instanceKey: string },
   tx: Tx = defaultPrisma,
 ): Promise<void> {
-  if (args.instanceKey !== "default" && !args.instanceKey.startsWith("space:")) return;
+  if (!isCanonicalInstanceKey(args.instanceKey)) return;
   const spaceId = spaceIdFromInstanceKey(args.instanceKey);
   await tx.propertyAmenity.deleteMany({
     where: { propertyId: args.propertyId, amenityKey: args.amenityKey, spaceId },
   });
 }
 
-/** NEW → OLD: mirror adding a placement (ensure PropertyAmenity row for that space). */
+/** NEW → OLD: mirror adding a placement (ensure PropertyAmenity row for that space).
+ *
+ * Copies instance-level scalar fields (subtypeKey, detailsJson, instructions,
+ * visibility) into the new legacy row so legacy reads during the dual-write
+ * window see the same configuration as the new model. The source instance is
+ * the canonical "space:<spaceId>" one for this placement. */
 export async function mirrorPlacementAddToOld(
   args: { propertyId: string; amenityKey: string; spaceId: string },
   tx: Tx = defaultPrisma,
@@ -200,18 +207,50 @@ export async function mirrorPlacementAddToOld(
     select: { id: true },
   });
   if (existing) return;
-  try {
-    await tx.propertyAmenity.create({
-      data: {
+
+  const instance = await tx.propertyAmenityInstance.findUnique({
+    where: {
+      propertyId_amenityKey_instanceKey: {
+        propertyId: args.propertyId,
         amenityKey: args.amenityKey,
-        property: { connect: { id: args.propertyId } },
-        space: { connect: { id: args.spaceId } },
+        instanceKey: instanceKeyFor(args.spaceId),
       },
-    });
-  } catch (err) {
-    // P2002 from concurrent writer — safe to ignore, row already exists.
-    if ((err as { code?: string }).code !== "P2002") throw err;
-  }
+    },
+    select: {
+      subtypeKey: true,
+      detailsJson: true,
+      guestInstructions: true,
+      aiInstructions: true,
+      internalNotes: true,
+      troubleshootingNotes: true,
+      visibility: true,
+    },
+  });
+
+  const scalarData = instance
+    ? {
+        subtypeKey: instance.subtypeKey,
+        detailsJson:
+          instance.detailsJson === null ? Prisma.DbNull : (instance.detailsJson as Prisma.InputJsonValue),
+        guestInstructions: instance.guestInstructions,
+        aiInstructions: instance.aiInstructions,
+        internalNotes: instance.internalNotes,
+        troubleshootingNotes: instance.troubleshootingNotes,
+        visibility: instance.visibility,
+      }
+    : {};
+
+  // Concurrency: see mirrorInstanceToOld — P2002 aborts the tx and the
+  // whole operation rolls back. Safe under the dual-write invariant
+  // (concurrent winner also mirrors).
+  await tx.propertyAmenity.create({
+    data: {
+      ...scalarData,
+      amenityKey: args.amenityKey,
+      property: { connect: { id: args.propertyId } },
+      space: { connect: { id: args.spaceId } },
+    },
+  });
 }
 
 /** NEW → OLD: mirror removing a placement. */

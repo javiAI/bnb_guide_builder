@@ -93,6 +93,13 @@ describe("instance key convention", () => {
   it("returns null for non-canonical instanceKeys", () => {
     expect(spaceIdFromInstanceKey("custom-key")).toBeNull();
   });
+
+  it("returns null for 'space:' with empty suffix (guards against false-canonical)", () => {
+    // Without this guard, an empty suffix would be treated as canonical
+    // and mirror as spaceId=null (falsy), silently creating a
+    // property-scoped legacy row in place of a space-scoped one.
+    expect(spaceIdFromInstanceKey("space:")).toBeNull();
+  });
 });
 
 // ── Old → New mirrors ──

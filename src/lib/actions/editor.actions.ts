@@ -685,6 +685,14 @@ export async function toggleAmenityAction(
   if (enabled) {
     // Phase 2 / 2B dual-write: old model + new Instance(+Placement) in a
     // single transaction so a failure in one rolls back the other.
+    //
+    // Concurrency: if two toggles race and ours P2002s on the legacy
+    // create, our tx rolls back (including the mirror). No drift,
+    // because every other toggle path ALSO dual-writes — the concurrent
+    // winner mirrors too. Catching P2002 *inside* the tx callback would
+    // be unsafe: Postgres aborts the tx on constraint violation (Prisma
+    // does not wrap statements in savepoints), so subsequent statements
+    // in the callback would fail with "current transaction is aborted".
     try {
       await prisma.$transaction(async (tx) => {
         const existing = await tx.propertyAmenity.findFirst({
@@ -702,8 +710,9 @@ export async function toggleAmenityAction(
         await mirrorEnableToNew({ propertyId, amenityKey, spaceId }, tx);
       });
     } catch (err) {
+      // Concurrent toggle already wrote the row AND its own mirror — tx
+      // rolled back; system state is consistent.
       if ((err as { code?: string }).code !== "P2002") throw err;
-      // P2002 = unique constraint violation from concurrent toggle — row already exists, safe to ignore
     }
   } else {
     await prisma.$transaction(async (tx) => {
