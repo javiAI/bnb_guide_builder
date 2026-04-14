@@ -231,9 +231,11 @@ export function getSystemGroups(): SystemGroup[] {
   return systemTaxonomy.groups;
 }
 
-const _allSystemItems: SystemItem[] = systemTaxonomy.groups.flatMap((g) => g.items);
+const _allSystemItems: ReadonlyArray<SystemItem> = Object.freeze(
+  systemTaxonomy.groups.flatMap((g) => g.items),
+);
 
-export function getAllSystemItems(): SystemItem[] {
+export function getAllSystemItems(): ReadonlyArray<SystemItem> {
   return _allSystemItems;
 }
 

@@ -293,7 +293,7 @@ export async function deleteContactAction(
   });
   if (!contact) return { success: false };
 
-  await prisma.contact.delete({ where: { id: contactId } });
+  await prisma.contact.deleteMany({ where: { id: contactId } });
   revalidatePath(`/properties/${contact.propertyId}/contacts`);
   return { success: true };
 }
