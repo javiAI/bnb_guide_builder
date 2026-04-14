@@ -217,7 +217,11 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const tzLabel = COMMON_TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone ?? "";
   const locationLabel = locationParts.length > 0 ? `${locationParts.join(", ")} · ${tzLabel}` : "Sin definir";
   const guestsLabel = `${maxGuests} huéspedes (${maxAdults} adultos, ${maxChildren} niños)`;
-  const infraLabel = hasElevator ? `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""} · Ascensor` : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
+  const infraLabel = p.infrastructureJson == null && !infraDirty
+    ? "Sin configurar"
+    : hasElevator
+      ? `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""} · Ascensor`
+      : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
 
 
 

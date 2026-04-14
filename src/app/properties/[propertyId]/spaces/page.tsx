@@ -38,10 +38,13 @@ export default async function SpacesPage({
     include: { system: { select: { id: true, systemKey: true } } },
   });
 
-  // Build default set from all property systems (label lookup)
+  // Build default set respecting defaultCoverageRule from taxonomy:
+  // - all_relevant_spaces: shown on all spaces by default (can be overridden)
+  // - selected_spaces: only shown when explicitly override_yes
+  // - property_only: never shown on space cards
   const defaultSystems = propertySystems.flatMap((sys) => {
     const item = findSystemItem(sys.systemKey);
-    if (!item) return [];
+    if (!item || item.defaultCoverageRule !== "all_relevant_spaces") return [];
     return [{ id: sys.id, systemKey: sys.systemKey, label: item.label }];
   });
 

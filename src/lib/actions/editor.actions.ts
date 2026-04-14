@@ -926,6 +926,7 @@ export async function createSystemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
   const raw = { systemKey: formData.get("systemKey") as string };
   const result = createSystemSchema.safeParse(raw);
   if (!result.success) {
@@ -935,8 +936,12 @@ export async function createSystemAction(
     await prisma.propertySystem.create({
       data: { propertyId, systemKey: result.data.systemKey, visibility: "public" },
     });
-  } catch {
-    return { success: false, error: "Este sistema ya está configurado en la propiedad" };
+  } catch (err) {
+    // P2002 = unique constraint violation (duplicate systemKey for this property)
+    if ((err as { code?: string }).code === "P2002") {
+      return { success: false, error: "Este sistema ya está configurado en la propiedad" };
+    }
+    throw err;
   }
   revalidatePath(`/properties/${propertyId}/systems`);
   return { success: true };
@@ -1024,11 +1029,17 @@ export async function updateSystemCoverageAction(
     return { success: false, error: "Acceso denegado" };
   }
 
-  await prisma.propertySystemCoverage.upsert({
-    where: { systemId_spaceId: { systemId, spaceId: result.data.spaceId } },
-    create: { systemId, spaceId: result.data.spaceId, mode: result.data.mode, note: result.data.note },
-    update: { mode: result.data.mode, note: result.data.note },
-  });
+  if (result.data.mode === "inherited") {
+    await prisma.propertySystemCoverage.deleteMany({
+      where: { systemId, spaceId: result.data.spaceId },
+    });
+  } else {
+    await prisma.propertySystemCoverage.upsert({
+      where: { systemId_spaceId: { systemId, spaceId: result.data.spaceId } },
+      create: { systemId, spaceId: result.data.spaceId, mode: result.data.mode, note: result.data.note },
+      update: { mode: result.data.mode, note: result.data.note },
+    });
+  }
   revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
   revalidatePath(`/properties/${system.propertyId}/spaces`);
   return { success: true };

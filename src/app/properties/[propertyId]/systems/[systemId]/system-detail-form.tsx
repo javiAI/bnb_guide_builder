@@ -81,7 +81,7 @@ function FieldInput({
     );
   }
 
-  if (field.type === "select" && field.options) {
+  if ((field.type === "select" || field.type === "enum") && field.options) {
     return (
       <label className="block">
         <span className="text-sm font-medium text-[var(--foreground)]">
@@ -102,7 +102,24 @@ function FieldInput({
     );
   }
 
-  // text / password / date
+  if (field.type === "date") {
+    return (
+      <label className="block">
+        <span className="text-sm font-medium text-[var(--foreground)]">
+          {field.label}
+          {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
+        </span>
+        <input
+          type="date"
+          value={strVal}
+          onChange={(e) => onChange(e.target.value || null)}
+          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+        />
+      </label>
+    );
+  }
+
+  // text / password (fallback)
   return (
     <label className="block">
       <span className="text-sm font-medium text-[var(--foreground)]">
@@ -142,13 +159,17 @@ export function SystemDetailForm({
   const [notes, setNotes] = useState(internalNotes ?? "");
   const [vis, setVis] = useState(visibility);
 
+  function stripNulls(obj: Record<string, unknown>): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== ""));
+  }
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData();
     fd.append("systemId", systemId);
     fd.append("propertyId", propertyId);
-    fd.append("detailsJson", JSON.stringify(details));
-    fd.append("opsJson", JSON.stringify(ops));
+    fd.append("detailsJson", JSON.stringify(stripNulls(details)));
+    fd.append("opsJson", JSON.stringify(stripNulls(ops)));
     fd.append("internalNotes", notes);
     fd.append("visibility", vis);
     action(fd);

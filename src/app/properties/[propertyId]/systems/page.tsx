@@ -76,6 +76,9 @@ export default async function SystemsPage({
                 {installed.map((sys) => {
                   const item = findSystemItem(sys.systemKey);
                   const details = sys.detailsJson as Record<string, unknown> | null;
+                  const configuredCount = details
+                    ? Object.values(details).filter((v) => v !== null && v !== "").length
+                    : 0;
                   return (
                     <Link
                       key={sys.id}
@@ -86,12 +89,12 @@ export default async function SystemsPage({
                         <p className="text-sm font-medium text-[var(--foreground)]">
                           {item?.label ?? sys.systemKey}
                         </p>
-                        {details && Object.keys(details).length > 0 && (
+                        {configuredCount > 0 && (
                           <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
-                            {Object.keys(details).length} campo{Object.keys(details).length !== 1 ? "s" : ""} configurado{Object.keys(details).length !== 1 ? "s" : ""}
+                            {configuredCount} campo{configuredCount !== 1 ? "s" : ""} configurado{configuredCount !== 1 ? "s" : ""}
                           </p>
                         )}
-                        {(!details || Object.keys(details).length === 0) && (
+                        {configuredCount === 0 && (
                           <p className="mt-0.5 text-xs text-[var(--color-neutral-400)]">Sin detalles aún</p>
                         )}
                       </div>
