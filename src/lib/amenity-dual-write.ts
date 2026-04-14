@@ -89,36 +89,6 @@ export async function mirrorDisableToNew(
   });
 }
 
-type AmenityUpdateData = {
-  subtypeKey?: string | null;
-  detailsJson?: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
-  guestInstructions?: string | null;
-  aiInstructions?: string | null;
-  internalNotes?: string | null;
-  troubleshootingNotes?: string | null;
-  visibility?: string;
-};
-
-/** OLD → NEW: mirror an update. Looks up matching Instance via composite key. */
-export async function mirrorUpdateToNew(
-  args: {
-    propertyId: string;
-    amenityKey: string;
-    spaceId: string | null;
-    data: AmenityUpdateData;
-  },
-  tx: Tx = defaultPrisma,
-): Promise<void> {
-  const instanceKey = instanceKeyFor(args.spaceId);
-  await tx.propertyAmenityInstance.updateMany({
-    where: {
-      propertyId: args.propertyId,
-      amenityKey: args.amenityKey,
-      instanceKey,
-    },
-    data: args.data,
-  });
-}
 
 /** NEW → OLD: mirror create/update of an Instance onto PropertyAmenity. */
 export async function mirrorInstanceToOld(

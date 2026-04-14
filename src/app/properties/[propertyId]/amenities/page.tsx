@@ -6,6 +6,10 @@ import {
   getAmenityScopePolicy,
 } from "@/lib/taxonomy-loader";
 import type { ImportanceLevel, SubtypeField } from "@/lib/types/taxonomy";
+import {
+  isCanonicalInstanceKey,
+  spaceIdFromInstanceKey,
+} from "@/lib/amenity-instance-keys";
 import { AmenitySelectorV2 } from "./amenity-selector-v2";
 
 // ── Serialisable types for client ──
@@ -19,8 +23,17 @@ export interface EnrichedAmenityItem {
   hasSubtype: boolean;
   subtypeFields: SubtypeField[];
   enabled: boolean;
+  /** `PropertyAmenityInstance.id` of the enabled instance, if any. */
   dbId: string | null;
   detailsJson: Record<string, unknown> | null;
+  /**
+   * True for instances whose `instanceKey` is non-canonical (i.e. not
+   * "default" / "space:<id>"). Currently these are only produced by
+   * `createAmenityInstanceAction`, which isn't UI-wired yet, so this is
+   * forward-looking — it lets the UI badge custom instances when that
+   * surface lands.
+   */
+  isCustomInstance: boolean;
 }
 
 export interface SpaceSection {
@@ -50,10 +63,20 @@ export default async function AmenitiesPage({
   });
   if (!property) notFound();
 
-  // All existing amenity rows for this property
-  const existingAmenities = await prisma.propertyAmenity.findMany({
+  // Phase 2 / Branch 2C — read from the new model.
+  // We load instances with their placements so that, for each canonical
+  // space-scoped instance (`space:<id>`), we can surface it at each of
+  // its placement spaceIds. Non-canonical (custom) instances are carried
+  // through via `isCustomInstance` so the UI can surface them separately.
+  const existingInstances = await prisma.propertyAmenityInstance.findMany({
     where: { propertyId },
-    select: { id: true, amenityKey: true, spaceId: true, detailsJson: true },
+    select: {
+      id: true,
+      amenityKey: true,
+      instanceKey: true,
+      detailsJson: true,
+      placements: { select: { spaceId: true } },
+    },
   });
 
   // ── Build item sets ──
@@ -86,10 +109,57 @@ export default async function AmenitiesPage({
     return scope?.scopePolicy === "space_only" || scope?.scopePolicy === "multi_instance";
   });
 
-  // Index existing amenity rows: key = `${amenityKey}|${spaceId ?? ""}` → row
-  const amenityIndex = new Map<string, typeof existingAmenities[number]>();
-  for (const a of existingAmenities) {
-    amenityIndex.set(`${a.amenityKey}|${a.spaceId ?? ""}`, a);
+  // Index by `${amenityKey}|${spaceId ?? ""}` so `enrichItem` can lookup
+  // in O(1) for any (taxonomy item, space) pair.
+  //
+  // Two passes are used so canonical instances always win a key collision:
+  //   Pass 1: canonical instances ("default" / "space:<id>") — these map
+  //           1:1 to legacy per-space rows and are the UI's source of
+  //           truth. "space:<id>" instances are indexed per placement.
+  //   Pass 2: non-canonical (custom) instances — indexed from their
+  //           placements, or (if placements are empty) under the
+  //           property-wide slot, but ONLY into keys a canonical instance
+  //           didn't already claim. This lets the "Personalizado" badge
+  //           render for the still-to-be-UI-wired custom-instance surface
+  //           without hiding canonical chips.
+  type IndexedInstance = {
+    id: string;
+    amenityKey: string;
+    detailsJson: unknown;
+    isCustomInstance: boolean;
+  };
+  const instanceIndex = new Map<string, IndexedInstance>();
+  const indexedFrom = (inst: typeof existingInstances[number], isCustom: boolean): IndexedInstance => ({
+    id: inst.id,
+    amenityKey: inst.amenityKey,
+    detailsJson: inst.detailsJson,
+    isCustomInstance: isCustom,
+  });
+
+  for (const inst of existingInstances) {
+    if (!isCanonicalInstanceKey(inst.instanceKey)) continue;
+    const derivedSpaceId = spaceIdFromInstanceKey(inst.instanceKey);
+    // Canonical instances are 1:1 per space by design — the instanceKey
+    // (`default` / `space:<id>`) is the authoritative slot, not the
+    // placements. Using `derivedSpaceId` here keeps the UI stable against
+    // placement drift: a `space:X` instance with a stray placement on Y
+    // surfaces only at X, matching the convention enforced by the
+    // dual-write helpers and the drift script.
+    const slot = derivedSpaceId === null ? `${inst.amenityKey}|` : `${inst.amenityKey}|${derivedSpaceId}`;
+    instanceIndex.set(slot, indexedFrom(inst, false));
+  }
+  for (const inst of existingInstances) {
+    if (isCanonicalInstanceKey(inst.instanceKey)) continue;
+    const custom = indexedFrom(inst, true);
+    if (inst.placements.length === 0) {
+      const slot = `${inst.amenityKey}|`;
+      if (!instanceIndex.has(slot)) instanceIndex.set(slot, custom);
+    } else {
+      for (const p of inst.placements) {
+        const slot = `${inst.amenityKey}|${p.spaceId}`;
+        if (!instanceIndex.has(slot)) instanceIndex.set(slot, custom);
+      }
+    }
   }
 
   function enrichItem(
@@ -97,7 +167,7 @@ export default async function AmenitiesPage({
     spaceId: string | null,
   ): EnrichedAmenityItem {
     const key = `${item.id}|${spaceId ?? ""}`;
-    const existing = amenityIndex.get(key);
+    const existing = instanceIndex.get(key);
     const subtype = findSubtype(item.id);
     return {
       id: item.id,
@@ -110,6 +180,7 @@ export default async function AmenitiesPage({
       enabled: !!existing,
       dbId: existing?.id ?? null,
       detailsJson: (existing?.detailsJson as Record<string, unknown>) ?? null,
+      isCustomInstance: existing?.isCustomInstance ?? false,
     };
   }
 

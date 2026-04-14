@@ -69,6 +69,14 @@ function AmenityChip({
           ) : (
             <span>{item.label}</span>
           )}
+          {item.isCustomInstance && (
+            <span
+              className="ml-1 rounded-full bg-white/25 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
+              title="Instancia personalizada (clave no canónica)"
+            >
+              Personalizado
+            </span>
+          )}
           <button
             type="button"
             onClick={handleToggle}

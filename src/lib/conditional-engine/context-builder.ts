@@ -25,10 +25,11 @@ type MinimalPrisma = {
       select: { systemKey: true };
     }) => Promise<Array<{ systemKey: string }>>;
   };
-  propertyAmenity: {
+  propertyAmenityInstance: {
     findMany: (args: {
       where: { propertyId: string };
       select: { amenityKey: true };
+      distinct?: "amenityKey"[];
     }) => Promise<Array<{ amenityKey: string }>>;
   };
 };
@@ -47,9 +48,15 @@ export async function buildPropertyContext(
       where: { propertyId },
       select: { systemKey: true },
     }),
-    prisma.propertyAmenity.findMany({
+    // Phase 2 / Branch 2C — reads now source from the instance model.
+    // `distinct` collapses duplicate amenityKey rows produced by multiple
+    // space-scoped instances of the same amenity (e.g. "space:s1" +
+    // "space:s2") — the legacy table had separate rows too, but the
+    // downstream context only wants the unique key set.
+    prisma.propertyAmenityInstance.findMany({
       where: { propertyId },
       select: { amenityKey: true },
+      distinct: ["amenityKey"],
     }),
   ]);
 

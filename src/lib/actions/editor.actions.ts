@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { findSystemItem, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
@@ -9,7 +9,7 @@ import { stripNulls } from "@/lib/utils";
 import {
   mirrorEnableToNew,
   mirrorDisableToNew,
-  mirrorUpdateToNew,
+  mirrorInstanceToOld,
 } from "@/lib/amenity-dual-write";
 import { redirect } from "next/navigation";
 import {
@@ -731,15 +731,20 @@ export async function updateAmenityAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  // Phase 2 / Branch 2C — `amenityId` now points at
+  // `PropertyAmenityInstance.id` (was the legacy `PropertyAmenity.id`
+  // under dual-write). The mirror direction flips: we update the
+  // instance as source of truth and fan the change back to the legacy
+  // row via `mirrorInstanceToOld`.
   const amenityId = formData.get("amenityId") as string;
   if (!amenityId) return { success: false, error: "Falta el ID del amenity" };
-  const amenity = await prisma.propertyAmenity.findUnique({
+  const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true, spaceId: true },
+    select: { propertyId: true },
   });
-  if (!amenity) return { success: false, error: "Amenity no encontrado" };
+  if (!instance) return { success: false, error: "Amenity no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
-  if (!formPropertyId || formPropertyId !== amenity.propertyId) {
+  if (!formPropertyId || formPropertyId !== instance.propertyId) {
     return { success: false, error: "El amenity no pertenece a la propiedad indicada" };
   }
 
@@ -778,25 +783,38 @@ export async function updateAmenityAction(
 
   // Persist detailsJson: empty object → null (clear), otherwise store as-is
   const { detailsJson: validatedDetails, ...rest } = result.data;
-  const data: Record<string, unknown> = { ...rest };
+  const data: Prisma.PropertyAmenityInstanceUpdateInput = { ...rest };
   if (validatedDetails !== undefined) {
-    data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
+    data.detailsJson =
+      Object.keys(validatedDetails).length > 0
+        ? (validatedDetails as Prisma.InputJsonValue)
+        : Prisma.DbNull;
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.propertyAmenity.update({ where: { id: amenityId }, data });
-    await mirrorUpdateToNew(
+    const updated = await tx.propertyAmenityInstance.update({
+      where: { id: amenityId },
+      data,
+    });
+    await mirrorInstanceToOld(
       {
-        propertyId: amenity.propertyId,
-        amenityKey: amenity.amenityKey,
-        spaceId: amenity.spaceId,
-        data: data as Parameters<typeof mirrorUpdateToNew>[0]["data"],
+        id: updated.id,
+        propertyId: updated.propertyId,
+        amenityKey: updated.amenityKey,
+        instanceKey: updated.instanceKey,
+        subtypeKey: updated.subtypeKey,
+        detailsJson: updated.detailsJson,
+        guestInstructions: updated.guestInstructions,
+        aiInstructions: updated.aiInstructions,
+        internalNotes: updated.internalNotes,
+        troubleshootingNotes: updated.troubleshootingNotes,
+        visibility: updated.visibility,
       },
       tx,
     );
   });
 
-  revalidatePath(`/properties/${amenity.propertyId}/amenities`);
+  revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }
 
