@@ -40,7 +40,9 @@ export const amenityInstanceRepository = {
     return prisma.propertyAmenityPlacement.upsert({
       where: { amenityId_spaceId: { amenityId, spaceId } },
       create: { amenityId, spaceId, note: note ?? null },
-      update: { note: note ?? null },
+      // Only touch `note` when caller passed one explicitly — omitting it
+      // preserves any existing note instead of clearing it.
+      update: note !== undefined ? { note } : {},
     });
   },
 

@@ -65,7 +65,7 @@ async function main() {
             amenityKey: row.amenityKey,
             instanceKey,
             subtypeKey: row.subtypeKey,
-            detailsJson: row.detailsJson ?? Prisma.JsonNull,
+            detailsJson: row.detailsJson ?? Prisma.DbNull,
             guestInstructions: row.guestInstructions,
             aiInstructions: row.aiInstructions,
             internalNotes: row.internalNotes,
@@ -74,7 +74,7 @@ async function main() {
           },
           update: {
             subtypeKey: row.subtypeKey,
-            detailsJson: row.detailsJson ?? Prisma.JsonNull,
+            detailsJson: row.detailsJson ?? Prisma.DbNull,
             guestInstructions: row.guestInstructions,
             aiInstructions: row.aiInstructions,
             internalNotes: row.internalNotes,

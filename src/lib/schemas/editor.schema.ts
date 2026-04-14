@@ -155,12 +155,19 @@ export const policiesSchema = z.object({
 
 export type PoliciesData = z.infer<typeof policiesSchema>;
 
-// ── Space features ──
+// ── Shared JSON record shape ──
+// Flat key → (string | number | boolean | string[] | null) record. Used by
+// space featuresJson and amenity detailsJson. Keep these aligned by
+// referencing this constant rather than redefining inline.
 
-export const spaceFeaturesSchema = z.record(
+export const flatJsonRecordSchema = z.record(
   z.string(),
   z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]),
 );
+
+// ── Space features ──
+
+export const spaceFeaturesSchema = flatJsonRecordSchema;
 
 export type SpaceFeaturesData = z.infer<typeof spaceFeaturesSchema>;
 
@@ -219,7 +226,7 @@ export const toggleAmenitySchema = z.object({
 
 export const updateAmenitySchema = z.object({
   subtypeKey: z.string().optional(),
-  detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])).optional(),
+  detailsJson: flatJsonRecordSchema.optional(),
   guestInstructions: z.string().optional(),
   aiInstructions: z.string().optional(),
   internalNotes: z.string().optional(),
@@ -241,7 +248,7 @@ export const createAmenityInstanceSchema = z.object({
 
 export const updateAmenityInstanceSchema = z.object({
   subtypeKey: z.string().optional(),
-  detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])).optional(),
+  detailsJson: flatJsonRecordSchema.optional(),
   guestInstructions: z.string().optional(),
   aiInstructions: z.string().optional(),
   internalNotes: z.string().optional(),

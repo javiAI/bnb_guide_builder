@@ -164,12 +164,15 @@ export async function addAmenityPlacementAction(
     return { success: false, error: "El espacio no pertenece a la propiedad del amenity" };
   }
 
-  const note = (formData.get("note") as string) || null;
+  // Only overwrite `note` on update when the form explicitly includes
+  // the field; otherwise keep whatever note the placement already has.
+  const hasNoteField = formData.has("note");
+  const note = hasNoteField ? ((formData.get("note") as string) || null) : null;
 
   await prisma.propertyAmenityPlacement.upsert({
     where: { amenityId_spaceId: { amenityId, spaceId } },
     create: { amenityId, spaceId, note },
-    update: { note },
+    update: hasNoteField ? { note } : {},
   });
 
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
