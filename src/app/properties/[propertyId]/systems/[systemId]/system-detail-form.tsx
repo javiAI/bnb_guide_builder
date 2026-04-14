@@ -56,6 +56,7 @@ function FieldInput({
         </span>
         <textarea
           value={strVal}
+          required={field.required}
           onChange={(e) => onChange(e.target.value || null)}
           rows={3}
           className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none resize-none"
@@ -74,6 +75,7 @@ function FieldInput({
         <input
           type="number"
           value={strVal}
+          required={field.required}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
           className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
         />
@@ -90,6 +92,7 @@ function FieldInput({
         </span>
         <select
           value={strVal}
+          required={field.required}
           onChange={(e) => onChange(e.target.value || null)}
           className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
         >
@@ -112,6 +115,7 @@ function FieldInput({
         <input
           type="date"
           value={strVal}
+          required={field.required}
           onChange={(e) => onChange(e.target.value || null)}
           className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
         />
@@ -133,6 +137,7 @@ function FieldInput({
         type={field.type === "password" ? "password" : "text"}
         autoComplete={field.type === "password" ? "new-password" : undefined}
         value={strVal}
+        required={field.required}
         onChange={(e) => onChange(e.target.value || null)}
         className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
       />

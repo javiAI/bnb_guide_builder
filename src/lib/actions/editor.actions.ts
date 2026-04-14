@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
+import { findSystemItem } from "@/lib/taxonomy-loader";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -932,9 +933,11 @@ export async function createSystemAction(
   if (!result.success) {
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
+  const taxonomyItem = findSystemItem(result.data.systemKey);
+  const defaultVisibility = taxonomyItem?.visibility ?? "public";
   try {
     await prisma.propertySystem.create({
-      data: { propertyId, systemKey: result.data.systemKey, visibility: "public" },
+      data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },
     });
   } catch (err) {
     // P2002 = unique constraint violation (duplicate systemKey for this property)

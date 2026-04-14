@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 import { updateSystemCoverageAction } from "@/lib/actions/editor.actions";
 
 interface Space {
@@ -24,8 +24,10 @@ const MODE_LABELS: Record<string, string> = {
 
 export function SystemCoverageTable({ systemId, propertyId, spaces, coverageMap }: Props) {
   const [, startTransition] = useTransition();
+  const [localMap, setLocalMap] = useState<Record<string, string>>(coverageMap);
 
   function handleChange(spaceId: string, mode: string) {
+    setLocalMap((prev) => ({ ...prev, [spaceId]: mode }));
     const fd = new FormData();
     fd.append("systemId", systemId);
     fd.append("propertyId", propertyId);
@@ -47,7 +49,7 @@ export function SystemCoverageTable({ systemId, propertyId, spaces, coverageMap 
         </thead>
         <tbody className="divide-y divide-[var(--border)]">
           {spaces.map((space) => {
-            const mode = coverageMap[space.id] ?? "inherited";
+            const mode = localMap[space.id] ?? "inherited";
             return (
               <tr key={space.id}>
                 <td className="px-4 py-2.5 text-sm text-[var(--foreground)]">{space.name}</td>
