@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   renameSpaceAction,
@@ -13,24 +13,13 @@ import {
   findItem,
   bedTypes,
   getSpaceFeatureGroups,
+  getSpaceTypeItem,
 } from "@/lib/taxonomy-loader";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { BedManager, type BedData } from "./bed-manager";
 
-// Space types that can have sleeping beds
-const SPACE_TYPES_WITH_BEDS = new Set([
-  "sp.bedroom",
-  "sp.living_room",
-  "sp.studio",
-  "sp.loft",
-  "sp.open_plan",
-  "sp.kitchen_living",
-  "sp.kitchen_dining_living",
-  "sp.office",
-  "sp.other",
-]);
 
 interface SpaceData {
   id: string;
@@ -155,10 +144,10 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
   }
 
   // ── Feature groups ──
-  const featureGroups = getSpaceFeatureGroups(space.spaceType);
+  const featureGroups = useMemo(() => getSpaceFeatureGroups(space.spaceType), [space.spaceType]);
 
   // ── Progress ──
-  const hasBeds = SPACE_TYPES_WITH_BEDS.has(space.spaceType);
+  const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
   const progressDot = computeProgressDot(features, featureGroups, hasBeds, beds.length);
 
   // ── Details save form ──
@@ -210,7 +199,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
   let capacityLabel = "";
   if (adultCapacity > 0 || cribCount > 0) {
     const parts: string[] = [];
-    if (adultCapacity > 0) parts.push(`${adultCapacity} ${adultCapacity === 1 ? "pers." : "pers."}`);
+    if (adultCapacity > 0) parts.push(`${adultCapacity} pers.`);
     if (cribCount > 0) parts.push(`+ ${cribCount} ${cribCount === 1 ? "cuna" : "cunas"}`);
     capacityLabel = parts.join(" ");
   }

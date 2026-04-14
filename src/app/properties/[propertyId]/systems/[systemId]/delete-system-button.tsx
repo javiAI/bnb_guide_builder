@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
@@ -12,10 +12,11 @@ interface Props {
 
 export function DeleteSystemButton({ systemId, propertyId }: Props) {
   const router = useRouter();
-  const [result, action, pending] = useActionState<ActionResult | null, FormData>(
+  const [result, action] = useActionState<ActionResult | null, FormData>(
     deleteSystemAction,
     null,
   );
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (result?.success) {
@@ -28,17 +29,17 @@ export function DeleteSystemButton({ systemId, propertyId }: Props) {
     const fd = new FormData();
     fd.append("systemId", systemId);
     fd.append("propertyId", propertyId);
-    action(fd);
+    startTransition(() => action(fd));
   }
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={pending}
+      disabled={isPending}
       className="rounded-[var(--radius-md)] border border-[var(--color-error-300)] px-3 py-1.5 text-xs font-medium text-[var(--color-error-600)] hover:bg-[var(--color-error-50)] disabled:opacity-50 transition-colors"
     >
-      {pending ? "Eliminando…" : "Eliminar sistema"}
+      {isPending ? "Eliminando…" : "Eliminar sistema"}
     </button>
   );
 }

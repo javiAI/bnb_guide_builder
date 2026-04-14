@@ -188,13 +188,10 @@ export const createBedSchema = z.object({
   quantity: z.number().int().min(1, "Mínimo 1").max(10, "Máximo 10"),
 });
 
-export const updateBedSchema = z.object({
-  bedType: z.string().min(1, "El tipo de cama es obligatorio"),
-  quantity: z.number().int().min(1, "Mínimo 1").max(10, "Máximo 10"),
-});
+export const updateBedSchema = createBedSchema;
 
 export type CreateBedData = z.infer<typeof createBedSchema>;
-export type UpdateBedData = z.infer<typeof updateBedSchema>;
+export type UpdateBedData = CreateBedData;
 
 export const bedConfigSchema = z.object({
   mattressType: z.string().optional(),

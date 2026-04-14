@@ -35,6 +35,44 @@ export type ActionResult = {
   fieldErrors?: Record<string, string[]>;
 };
 
+// ── Shared helpers ──
+
+function extractContactFields(formData: FormData) {
+  return {
+    roleKey: formData.get("roleKey") as string,
+    entityType: (formData.get("entityType") as string) || "person",
+    displayName: formData.get("displayName") as string,
+    contactPersonName: (formData.get("contactPersonName") as string) || null,
+    phone: (formData.get("phone") as string) || null,
+    phoneSecondary: (formData.get("phoneSecondary") as string) || null,
+    email: (formData.get("email") as string) || null,
+    whatsapp: (formData.get("whatsapp") as string) || null,
+    address: (formData.get("address") as string) || null,
+    availabilitySchedule: (formData.get("availabilitySchedule") as string) || null,
+    emergencyAvailable: formData.get("emergencyAvailable") === "on",
+    hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
+    internalNotes: (formData.get("internalNotes") as string) || null,
+    guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || null,
+    visibility: (formData.get("visibility") as string) || "internal",
+    isPrimary: formData.get("isPrimary") === "on",
+  };
+}
+
+async function assertNicknameUnique(propertyId: string, nickname: string): Promise<ActionResult | null> {
+  const property = await prisma.property.findUniqueOrThrow({
+    where: { id: propertyId },
+    select: { workspaceId: true },
+  });
+  const duplicate = await prisma.property.findFirst({
+    where: { workspaceId: property.workspaceId, propertyNickname: nickname, id: { not: propertyId } },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return { success: false, error: "Ya existe otra propiedad con ese nombre" };
+  }
+  return null;
+}
+
 // ── Delete property ──
 
 export async function deletePropertyAction(
@@ -98,25 +136,12 @@ export async function savePropertyAction(
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
 
-  const property = await prisma.property.findUniqueOrThrow({
-    where: { id: propertyId },
-    select: { workspaceId: true },
-  });
-
-  const duplicate = await prisma.property.findFirst({
-    where: { workspaceId: property.workspaceId, propertyNickname: result.data.propertyNickname, id: { not: propertyId } },
-    select: { id: true },
-  });
-  if (duplicate) {
-    return { success: false, error: "Ya existe otra propiedad con ese nombre" };
-  }
+  const nicknameError = await assertNicknameUnique(propertyId, result.data.propertyNickname);
+  if (nicknameError) return nicknameError;
 
   await prisma.property.update({
     where: { id: propertyId },
-    data: {
-      ...result.data,
-      maxGuests: result.data.maxGuests,
-    },
+    data: result.data,
   });
 
   revalidatePath(`/properties/${propertyId}`);
@@ -196,18 +221,8 @@ export async function saveSettingsAction(
     return { success: false, error: "El nombre es obligatorio" };
   }
 
-  const property = await prisma.property.findUniqueOrThrow({
-    where: { id: propertyId },
-    select: { workspaceId: true },
-  });
-
-  const duplicate = await prisma.property.findFirst({
-    where: { workspaceId: property.workspaceId, propertyNickname: propertyNickname.trim(), id: { not: propertyId } },
-    select: { id: true },
-  });
-  if (duplicate) {
-    return { success: false, error: "Ya existe otra propiedad con ese nombre" };
-  }
+  const nicknameError = await assertNicknameUnique(propertyId, propertyNickname.trim());
+  if (nicknameError) return nicknameError;
 
   await prisma.property.update({
     where: { id: propertyId },
@@ -225,24 +240,7 @@ export async function createContactAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  const raw = {
-    roleKey: formData.get("roleKey") as string,
-    entityType: (formData.get("entityType") as string) || "person",
-    displayName: formData.get("displayName") as string,
-    contactPersonName: (formData.get("contactPersonName") as string) || null,
-    phone: (formData.get("phone") as string) || null,
-    phoneSecondary: (formData.get("phoneSecondary") as string) || null,
-    email: (formData.get("email") as string) || null,
-    whatsapp: (formData.get("whatsapp") as string) || null,
-    address: (formData.get("address") as string) || null,
-    availabilitySchedule: (formData.get("availabilitySchedule") as string) || null,
-    emergencyAvailable: formData.get("emergencyAvailable") === "on",
-    hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
-    internalNotes: (formData.get("internalNotes") as string) || null,
-    guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || null,
-    visibility: (formData.get("visibility") as string) || "internal",
-    isPrimary: formData.get("isPrimary") === "on",
-  };
+  const raw = extractContactFields(formData);
 
   const result = createContactSchema.safeParse(raw);
   if (!result.success) {
@@ -266,24 +264,7 @@ export async function updateContactAction(
 ): Promise<ActionResult> {
   const contactId = formData.get("contactId") as string;
   const propertyId = formData.get("propertyId") as string;
-  const raw = {
-    roleKey: formData.get("roleKey") as string,
-    entityType: (formData.get("entityType") as string) || "person",
-    displayName: formData.get("displayName") as string,
-    contactPersonName: (formData.get("contactPersonName") as string) || null,
-    phone: (formData.get("phone") as string) || null,
-    phoneSecondary: (formData.get("phoneSecondary") as string) || null,
-    email: (formData.get("email") as string) || null,
-    whatsapp: (formData.get("whatsapp") as string) || null,
-    address: (formData.get("address") as string) || null,
-    availabilitySchedule: (formData.get("availabilitySchedule") as string) || null,
-    emergencyAvailable: formData.get("emergencyAvailable") === "on",
-    hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
-    internalNotes: (formData.get("internalNotes") as string) || null,
-    guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || null,
-    visibility: (formData.get("visibility") as string) || "internal",
-    isPrimary: formData.get("isPrimary") === "on",
-  };
+  const raw = extractContactFields(formData);
 
   const result = updateContactSchema.safeParse(raw);
   if (!result.success) {
@@ -704,7 +685,17 @@ export async function updateAmenityAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const amenityId = formData.get("amenityId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!amenityId) return { success: false, error: "Falta el ID del amenity" };
+  const amenity = await prisma.propertyAmenity.findUnique({
+    where: { id: amenityId },
+    select: { propertyId: true },
+  });
+  if (!amenity) return { success: false, error: "Amenity no encontrado" };
+  const formPropertyId = formData.get("propertyId") as string | null;
+  if (!formPropertyId || formPropertyId !== amenity.propertyId) {
+    return { success: false, error: "El amenity no pertenece a la propiedad indicada" };
+  }
+
   const raw = {
     subtypeKey: (formData.get("subtypeKey") as string) || undefined,
     guestInstructions: (formData.get("guestInstructions") as string) || undefined,
@@ -727,7 +718,7 @@ export async function updateAmenityAction(
     data: result.data,
   });
 
-  revalidatePath(`/properties/${propertyId}/amenities`);
+  revalidatePath(`/properties/${amenity.propertyId}/amenities`);
   return { success: true };
 }
 
@@ -769,7 +760,17 @@ export async function updatePlaybookAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const playbookId = formData.get("playbookId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!playbookId) return { success: false, error: "Falta el ID del playbook" };
+  const playbook = await prisma.troubleshootingPlaybook.findUnique({
+    where: { id: playbookId },
+    select: { propertyId: true },
+  });
+  if (!playbook) return { success: false, error: "Playbook no encontrado" };
+  const formPropertyId = formData.get("propertyId") as string | null;
+  if (!formPropertyId || formPropertyId !== playbook.propertyId) {
+    return { success: false, error: "El playbook no pertenece a la propiedad indicada" };
+  }
+
   const raw = {
     title: formData.get("title") as string,
     severity: (formData.get("severity") as string) || undefined,
@@ -793,7 +794,7 @@ export async function updatePlaybookAction(
     data: result.data,
   });
 
-  revalidatePath(`/properties/${propertyId}/troubleshooting`);
+  revalidatePath(`/properties/${playbook.propertyId}/troubleshooting`);
   return { success: true };
 }
 
@@ -837,7 +838,17 @@ export async function updateLocalPlaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const placeId = formData.get("placeId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!placeId) return { success: false, error: "Falta el ID del lugar" };
+  const place = await prisma.localPlace.findUnique({
+    where: { id: placeId },
+    select: { propertyId: true },
+  });
+  if (!place) return { success: false, error: "Lugar no encontrado" };
+  const formPropertyId = formData.get("propertyId") as string | null;
+  if (!formPropertyId || formPropertyId !== place.propertyId) {
+    return { success: false, error: "El lugar no pertenece a la propiedad indicada" };
+  }
+
   const raw = {
     name: formData.get("name") as string,
     shortNote: (formData.get("shortNote") as string) || undefined,
@@ -866,7 +877,7 @@ export async function updateLocalPlaceAction(
     data: result.data,
   });
 
-  revalidatePath(`/properties/${propertyId}/local-guide`);
+  revalidatePath(`/properties/${place.propertyId}/local-guide`);
   return { success: true };
 }
 
@@ -875,11 +886,20 @@ export async function deleteLocalPlaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const placeId = formData.get("placeId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!placeId) return { success: false, error: "Falta el ID del lugar" };
+  const place = await prisma.localPlace.findUnique({
+    where: { id: placeId },
+    select: { propertyId: true },
+  });
+  if (!place) return { success: false, error: "Lugar no encontrado" };
+  const formPropertyId = formData.get("propertyId") as string | null;
+  if (!formPropertyId || formPropertyId !== place.propertyId) {
+    return { success: false, error: "El lugar no pertenece a la propiedad indicada" };
+  }
 
   await prisma.localPlace.delete({ where: { id: placeId } });
 
-  revalidatePath(`/properties/${propertyId}/local-guide`);
+  revalidatePath(`/properties/${place.propertyId}/local-guide`);
   return { success: true };
 }
 

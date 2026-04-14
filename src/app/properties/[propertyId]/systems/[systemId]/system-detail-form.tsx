@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState, type FormEvent } from "react";
+import { useActionState, useState, useTransition, type FormEvent } from "react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
+import { stripNulls } from "@/lib/utils";
 
 interface Props {
   systemId: string;
@@ -154,19 +155,16 @@ export function SystemDetailForm({
   internalNotes,
   visibility,
 }: Props) {
-  const [result, action, pending] = useActionState<ActionResult | null, FormData>(
+  const [result, action] = useActionState<ActionResult | null, FormData>(
     updateSystemAction,
     null,
   );
+  const [isPending, startTransition] = useTransition();
 
   const [details, setDetails] = useState<Record<string, unknown>>({ ...detailsJson });
   const [ops, setOps] = useState<Record<string, unknown>>({ ...opsJson });
   const [notes, setNotes] = useState(internalNotes ?? "");
   const [vis, setVis] = useState(visibility);
-
-  function stripNulls(obj: Record<string, unknown>): Record<string, unknown> {
-    return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== ""));
-  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -177,7 +175,7 @@ export function SystemDetailForm({
     fd.append("opsJson", JSON.stringify(stripNulls(ops)));
     fd.append("internalNotes", notes);
     fd.append("visibility", vis);
-    action(fd);
+    startTransition(() => action(fd));
   }
 
   const hasFields = subtype && (subtype.detailsFields.length > 0 || subtype.opsFields.length > 0);
@@ -252,10 +250,10 @@ export function SystemDetailForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={isPending}
         className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
       >
-        {pending ? "Guardando…" : "Guardar cambios"}
+        {isPending ? "Guardando…" : "Guardar cambios"}
       </button>
     </form>
   );
