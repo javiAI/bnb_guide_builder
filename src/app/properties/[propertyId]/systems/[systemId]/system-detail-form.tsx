@@ -4,6 +4,7 @@ import { useActionState, useState, type FormEvent } from "react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
+import { stripNulls } from "@/lib/utils";
 
 interface Props {
   systemId: string;
@@ -163,10 +164,6 @@ export function SystemDetailForm({
   const [ops, setOps] = useState<Record<string, unknown>>({ ...opsJson });
   const [notes, setNotes] = useState(internalNotes ?? "");
   const [vis, setVis] = useState(visibility);
-
-  function stripNulls(obj: Record<string, unknown>): Record<string, unknown> {
-    return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== ""));
-  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
