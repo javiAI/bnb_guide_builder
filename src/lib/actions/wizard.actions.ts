@@ -11,6 +11,7 @@ import {
 } from "@/lib/schemas/wizard.schema";
 import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { recomputePropertyCounts } from "@/lib/property-counts";
+import { mirrorEnableToNew } from "@/lib/amenity-dual-write";
 
 export type ActionResult = {
   success: boolean;
@@ -480,19 +481,31 @@ export async function completeWizardAction(
       });
     }
 
-    // Create wifi amenity if SSID provided
+    // Create wifi amenity if SSID provided (dual-write: legacy + Instance)
     if (d.wifiSsid) {
+      const guestInstructions = [
+        d.wifiSsid ? `Red: ${d.wifiSsid}` : null,
+        d.wifiPassword ? `Contraseña: ${d.wifiPassword}` : null,
+      ].filter(Boolean).join("\n") || null;
+
       await tx.propertyAmenity.create({
         data: {
           propertyId: prop.id,
           amenityKey: "am.wifi",
-          guestInstructions: [
-            d.wifiSsid ? `Red: ${d.wifiSsid}` : null,
-            d.wifiPassword ? `Contraseña: ${d.wifiPassword}` : null,
-          ].filter(Boolean).join("\n") || null,
+          guestInstructions,
           visibility: "public",
         },
       });
+      await mirrorEnableToNew(
+        {
+          propertyId: prop.id,
+          amenityKey: "am.wifi",
+          spaceId: null,
+          guestInstructions,
+          visibility: "public",
+        },
+        tx,
+      );
     }
 
     // Recompute derived counts from actual Space/Bed rows (overrides wizard form values)

@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts",
-    "migrate-amenities-to-instances": "tsx scripts/migrate-amenities-to-instances.ts"
+    "migrate-amenities-to-instances": "tsx scripts/migrate-amenities-to-instances.ts",
+    "detect-amenity-drift": "tsx scripts/detect-amenity-drift.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
