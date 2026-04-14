@@ -304,13 +304,13 @@
     {
       "id": "am.free_parking_premises",
       "destination": "moved_to_access",
-      "target": "parking_options",
+      "target": "pk.free_on_premises",
       "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.free_street_parking",
       "destination": "moved_to_access",
-      "target": "parking_options",
+      "target": "pk.free_street",
       "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
@@ -490,13 +490,13 @@
     {
       "id": "am.paid_parking_off_premises",
       "destination": "moved_to_access",
-      "target": "parking_options",
+      "target": "pk.paid_off_premises",
       "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.paid_parking_on_premises",
       "destination": "moved_to_access",
-      "target": "parking_options",
+      "target": "pk.paid_on_premises",
       "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
@@ -594,7 +594,7 @@
     {
       "id": "am.single_level_home",
       "destination": "moved_to_access",
-      "target": "accessibility_features",
+      "target": "ax.single_level_home",
       "note": "Es atributo de accesibilidad (no equipamiento)."
     },
     {
@@ -682,67 +682,80 @@
     {
       "id": "ax.accessible_parking_spot",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.accessible_parking_spot",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.bathroom_entrance_wide_81cm",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.bathroom_entrance_wide_81cm",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.bedroom_entrance_wide_81cm",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.bedroom_entrance_wide_81cm",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.ceiling_mobile_hoist",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.ceiling_mobile_hoist",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.guest_entrance_wide_81cm",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.guest_entrance_wide_81cm",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.shower_bath_chair",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.shower_bath_chair",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.shower_grab_bar",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.shower_grab_bar",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_bathroom_access",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.step_free_bathroom_access",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_bedroom_access",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.step_free_bedroom_access",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_guest_entrance",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.step_free_guest_entrance",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_path_to_entrance",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.step_free_path_to_entrance",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_shower",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.step_free_shower",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.toilet_grab_bar",
       "destination": "moved_to_access",
-      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
+      "target": "ax.toilet_grab_bar",
+      "note": "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity."
     }
   ]
 }
