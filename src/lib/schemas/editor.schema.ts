@@ -230,6 +230,28 @@ export const updateAmenitySchema = z.object({
 export type ToggleAmenityData = z.infer<typeof toggleAmenitySchema>;
 export type UpdateAmenityData = z.infer<typeof updateAmenitySchema>;
 
+// ── Amenity instances (Phase 2 / Branch 2A) ──
+
+export const createAmenityInstanceSchema = z.object({
+  amenityKey: z.string().min(1),
+  instanceKey: z.string().min(1).default("default"),
+  subtypeKey: z.string().optional(),
+  visibility: z.enum(["public", "internal", "sensitive"]).optional(),
+});
+
+export const updateAmenityInstanceSchema = z.object({
+  subtypeKey: z.string().optional(),
+  detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])).optional(),
+  guestInstructions: z.string().optional(),
+  aiInstructions: z.string().optional(),
+  internalNotes: z.string().optional(),
+  troubleshootingNotes: z.string().optional(),
+  visibility: z.enum(["public", "internal", "sensitive"]).optional(),
+});
+
+export type CreateAmenityInstanceData = z.infer<typeof createAmenityInstanceSchema>;
+export type UpdateAmenityInstanceData = z.infer<typeof updateAmenityInstanceSchema>;
+
 // ── Troubleshooting (S-16, S-17) ──
 
 export const createPlaybookSchema = z.object({

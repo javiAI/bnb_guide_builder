@@ -3,6 +3,7 @@ export { workspaceRepository } from "./workspace.repository";
 export { wizardRepository } from "./wizard.repository";
 export { spaceRepository } from "./space.repository";
 export { amenityRepository } from "./amenity.repository";
+export { amenityInstanceRepository } from "./amenity-instance.repository";
 export { troubleshootingRepository } from "./troubleshooting.repository";
 export { localPlaceRepository } from "./local-place.repository";
 export { opsRepository } from "./ops.repository";
