@@ -102,6 +102,7 @@ model Property {
   spaces                Space[]
   systems               PropertySystem[]
   amenities             PropertyAmenity[]
+  amenityInstances      PropertyAmenityInstance[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
   localPlaces           LocalPlace[]
   opsChecklistItems     OpsChecklistItem[]
@@ -222,6 +223,7 @@ model Space {
   beds             BedConfiguration[]
   systemCoverages  PropertySystemCoverage[]
   amenities        PropertyAmenity[]
+  amenityPlacements PropertyAmenityPlacement[]
 
   @@index([propertyId])
   @@index([propertyId, visibility])
@@ -302,6 +304,47 @@ model PropertyAmenity {
   @@index([spaceId])
   @@index([propertyId, amenityKey])
   @@map("property_amenities")
+}
+
+model PropertyAmenityInstance {
+  id                   String   @id @default(cuid())
+  propertyId           String   @map("property_id")
+  amenityKey           String   @map("amenity_key")
+  instanceKey          String   @default("default") @map("instance_key")
+  subtypeKey           String?  @map("subtype_key")
+  detailsJson          Json?    @map("details_json")
+  guestInstructions    String?  @map("guest_instructions")
+  aiInstructions       String?  @map("ai_instructions")
+  internalNotes        String?  @map("internal_notes")
+  troubleshootingNotes String?  @map("troubleshooting_notes")
+  visibility           String   @default("public")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  property   Property                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  placements PropertyAmenityPlacement[]
+
+  @@unique([propertyId, amenityKey, instanceKey])
+  @@index([propertyId])
+  @@index([propertyId, amenityKey])
+  @@map("property_amenity_instances")
+}
+
+model PropertyAmenityPlacement {
+  id         String   @id @default(cuid())
+  amenityId  String   @map("amenity_id")
+  spaceId    String   @map("space_id")
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  amenity PropertyAmenityInstance @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  space   Space                   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([amenityId, spaceId])
+  @@index([amenityId])
+  @@index([spaceId])
+  @@map("property_amenity_placements")
 }
 
 model TroubleshootingPlaybook {
