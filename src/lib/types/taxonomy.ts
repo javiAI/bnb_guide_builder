@@ -23,6 +23,20 @@ export interface PolicyItemField {
 // Amenity importance classification (maps to OTA categories)
 export type ImportanceLevel = "highlight" | "standard" | "bonus";
 
+// Amenity destination classification (audit 1B). Defines where the concept lives:
+// - `amenity_configurable`: stays as configurable amenity instance
+// - `derived_from_space|system|access`: shown derived, not captured in PropertyAmenity
+// - `moved_to_*`: relocated out of Amenities (section target indicated by `target`)
+export type AmenityDestination =
+  | "amenity_configurable"
+  | "derived_from_space"
+  | "derived_from_system"
+  | "derived_from_access"
+  | "moved_to_system"
+  | "moved_to_access"
+  | "moved_to_property_attribute"
+  | "moved_to_guide_content";
+
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
   id: string;
@@ -36,6 +50,10 @@ export interface TaxonomyItem {
   // Amenity-specific
   importanceLevel?: ImportanceLevel;
   canonicalOwner?: string;
+  /** Amenity audit destination (see AmenityDestination). Populated by scripts/apply-amenity-destinations.ts. */
+  destination?: AmenityDestination;
+  /** Optional target module/attribute id for moved/derived amenities (e.g. "sys.internet", "parking_options"). */
+  target?: string;
   // Policy items can have extra fields
   type?: string;
   required?: boolean;
@@ -135,6 +153,12 @@ export interface SystemSubtypesTaxonomyFile extends TaxonomyFileBase {
   subtypes: SystemSubtype[];
 }
 
+// Amenity item: a TaxonomyItem with a required `destination` (post audit 1B).
+export type AmenityItem = TaxonomyItem & {
+  destination: AmenityDestination;
+  target?: string;
+};
+
 // Amenity scope policy (used in amenity_taxonomy.json scopePolicies map)
 export type AmenityScopePolicy = "property_only" | "space_only" | "multi_instance" | "derived";
 
@@ -213,7 +237,8 @@ export interface ItemTaxonomyFile extends TaxonomyFileBase {
 
 export interface AmenityGroupedFile extends TaxonomyFileBase {
   groups: AmenityGroup[];
-  items: TaxonomyItem[];
+  /** Post-audit 1B: every amenity has a required `destination`. */
+  items: AmenityItem[];
   scopePoliciesMeta?: { comment: string };
   scopePolicies?: Record<string, AmenityScopePolicyEntry>;
 }
