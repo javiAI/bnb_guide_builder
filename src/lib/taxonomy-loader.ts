@@ -25,6 +25,7 @@ import type {
   SystemSubtypesTaxonomyFile,
   AmenityScopePolicyEntry,
 } from "./types/taxonomy";
+import { evaluateFieldCondition } from "./conditional-engine/evaluator";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
 import roomTypesJson from "../../taxonomies/room_types.json";
@@ -309,30 +310,10 @@ export function evaluateRule(
   rule: DynamicFieldRule,
   currentValue: RuleConditionValue,
 ): boolean {
-  if ("equals" in rule.condition) {
-    return currentValue === rule.condition.equals;
-  }
-  if ("contains" in rule.condition) {
-    const needle = rule.condition.contains as string;
-    if (Array.isArray(currentValue)) {
-      return currentValue.includes(needle);
-    }
-    return currentValue === needle;
-  }
-  if ("intersects" in rule.condition && Array.isArray(rule.condition.intersects)) {
-    if (Array.isArray(currentValue)) {
-      return currentValue.some((v) =>
-        (rule.condition.intersects as string[]).includes(v),
-      );
-    }
-    return (rule.condition.intersects as string[]).includes(currentValue as string);
-  }
-  if ("prefix_contains" in rule.condition) {
-    const prefix = rule.condition.prefix_contains as string;
-    if (Array.isArray(currentValue)) {
-      return currentValue.some((v) => typeof v === "string" && v.startsWith(prefix));
-    }
-    return typeof currentValue === "string" && currentValue.startsWith(prefix);
-  }
-  return false;
+  // Delegate to the unified conditional engine so form-field visibility and
+  // catalog item availability share one operator implementation.
+  return evaluateFieldCondition(
+    rule.condition as Record<string, unknown>,
+    currentValue,
+  );
 }
