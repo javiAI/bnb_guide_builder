@@ -3023,7 +3023,7 @@
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "pk.free_on_premises"
     },
     {
       "id": "am.free_street_parking",
@@ -3040,7 +3040,7 @@
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "pk.free_street"
     },
     {
       "id": "am.gym",
@@ -3105,7 +3105,7 @@
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "pk.paid_off_premises"
     },
     {
       "id": "am.paid_parking_on_premises",
@@ -3123,7 +3123,7 @@
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "pk.paid_on_premises"
     },
     {
       "id": "am.pool",
@@ -3187,7 +3187,7 @@
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_access",
-      "target": "accessibility_features"
+      "target": "ax.single_level_home"
     },
     {
       "id": "ax.step_free_guest_entrance",
@@ -3202,7 +3202,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.step_free_guest_entrance"
     },
     {
       "id": "ax.guest_entrance_wide_81cm",
@@ -3217,7 +3218,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.guest_entrance_wide_81cm"
     },
     {
       "id": "ax.accessible_parking_spot",
@@ -3232,7 +3234,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.accessible_parking_spot"
     },
     {
       "id": "ax.step_free_path_to_entrance",
@@ -3247,7 +3250,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.step_free_path_to_entrance"
     },
     {
       "id": "ax.step_free_bedroom_access",
@@ -3262,7 +3266,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.step_free_bedroom_access"
     },
     {
       "id": "ax.bedroom_entrance_wide_81cm",
@@ -3277,7 +3282,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.bedroom_entrance_wide_81cm"
     },
     {
       "id": "ax.step_free_bathroom_access",
@@ -3292,7 +3298,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.step_free_bathroom_access"
     },
     {
       "id": "ax.bathroom_entrance_wide_81cm",
@@ -3307,7 +3314,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.bathroom_entrance_wide_81cm"
     },
     {
       "id": "ax.shower_grab_bar",
@@ -3321,7 +3329,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.shower_grab_bar"
     },
     {
       "id": "ax.toilet_grab_bar",
@@ -3335,7 +3344,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.toilet_grab_bar"
     },
     {
       "id": "ax.step_free_shower",
@@ -3350,7 +3360,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.step_free_shower"
     },
     {
       "id": "ax.shower_bath_chair",
@@ -3364,7 +3375,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.shower_bath_chair"
     },
     {
       "id": "ax.ceiling_mobile_hoist",
@@ -3378,7 +3390,8 @@
       ],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "target": "ax.ceiling_mobile_hoist"
     }
   ],
   "source_refs": {

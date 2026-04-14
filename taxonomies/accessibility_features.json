@@ -5,6 +5,12 @@
   "units_system": "metric",
   "items": [
     {
+      "id": "ax.single_level_home",
+      "label": "Vivienda en una sola planta",
+      "description": "Toda la vivienda se desarrolla en un único nivel, sin escaleras internas entre estancias.",
+      "recommended": false
+    },
+    {
       "id": "ax.step_free_guest_entrance",
       "label": "Entrada de huéspedes sin escalones",
       "description": "El huésped puede acceder a la entrada principal sin subir ni bajar escalones.",
@@ -26,6 +32,60 @@
       "id": "ax.accessible_parking_spot",
       "label": "Plaza de aparcamiento accesible",
       "description": "Existe una plaza de aparcamiento adaptada para personas con movilidad reducida.",
+      "recommended": false
+    },
+    {
+      "id": "ax.step_free_bedroom_access",
+      "label": "Acceso al dormitorio sin escalones",
+      "description": "Se puede llegar al dormitorio sin subir ni bajar escalones.",
+      "recommended": false
+    },
+    {
+      "id": "ax.bedroom_entrance_wide_81cm",
+      "label": "Entrada del dormitorio de más de 81 cm",
+      "description": "La puerta del dormitorio tiene un ancho libre de al menos 81 cm.",
+      "recommended": false
+    },
+    {
+      "id": "ax.step_free_bathroom_access",
+      "label": "Acceso al baño sin escalones",
+      "description": "Se puede llegar al baño sin subir ni bajar escalones.",
+      "recommended": false
+    },
+    {
+      "id": "ax.bathroom_entrance_wide_81cm",
+      "label": "Entrada del baño de más de 81 cm",
+      "description": "La puerta del baño tiene un ancho libre de al menos 81 cm.",
+      "recommended": false
+    },
+    {
+      "id": "ax.step_free_shower",
+      "label": "Ducha sin escalón",
+      "description": "Ducha a ras de suelo sin escalón de acceso.",
+      "recommended": false
+    },
+    {
+      "id": "ax.shower_grab_bar",
+      "label": "Barra de apoyo en ducha",
+      "description": "Barra de apoyo fija instalada en la zona de ducha.",
+      "recommended": false
+    },
+    {
+      "id": "ax.toilet_grab_bar",
+      "label": "Barra de apoyo en inodoro",
+      "description": "Barra de apoyo fija instalada junto al inodoro.",
+      "recommended": false
+    },
+    {
+      "id": "ax.shower_bath_chair",
+      "label": "Silla de ducha o baño",
+      "description": "Silla fija o portátil disponible para la ducha o bañera.",
+      "recommended": false
+    },
+    {
+      "id": "ax.ceiling_mobile_hoist",
+      "label": "Grúa fija o móvil",
+      "description": "Sistema de grúa (fija en techo o móvil) para transferencias asistidas.",
       "recommended": false
     }
   ]
