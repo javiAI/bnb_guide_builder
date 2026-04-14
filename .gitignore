@@ -48,5 +48,9 @@ coverage/
 __pycache__/
 *.pyc
 
+# Playwright CLI
+.playwright/
+.playwright-cli/
+
 # Misc
 *.log
