@@ -24,6 +24,7 @@ import type {
   SystemSubtype,
   SystemSubtypesTaxonomyFile,
   AmenityScopePolicyEntry,
+  AmenityDestination,
 } from "./types/taxonomy";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
 
@@ -292,6 +293,31 @@ export function partitionAmenitiesBySpaces(
     }
   }
   return { relevant, irrelevant };
+}
+
+// ── Amenity destination helpers (audit 1B) ──
+
+export function getAmenityDestination(amenityId: string): AmenityDestination | undefined {
+  return findAmenityItem(amenityId)?.destination;
+}
+
+export function isAmenityConfigurable(amenityId: string): boolean {
+  return getAmenityDestination(amenityId) === "amenity_configurable";
+}
+
+export function isAmenityDerived(amenityId: string): boolean {
+  const d = getAmenityDestination(amenityId);
+  return d === "derived_from_space" || d === "derived_from_system" || d === "derived_from_access";
+}
+
+export function isAmenityMoved(amenityId: string): boolean {
+  const d = getAmenityDestination(amenityId);
+  return (
+    d === "moved_to_system" ||
+    d === "moved_to_access" ||
+    d === "moved_to_property_attribute" ||
+    d === "moved_to_guide_content"
+  );
 }
 
 // ── Amenity scope policy helpers ──

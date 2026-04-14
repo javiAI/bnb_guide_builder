@@ -1,0 +1,606 @@
+{
+  "file": "amenity_destinations_summary.json",
+  "generator": "scripts/apply-amenity-destinations.ts",
+  "source": "docs/deep_research_2/amenities_arquitecture.md",
+  "total": 142,
+  "countsByDestination": {
+    "derived_from_system": 5,
+    "amenity_configurable": 87,
+    "derived_from_space": 20,
+    "moved_to_property_attribute": 6,
+    "moved_to_system": 4,
+    "derived_from_access": 1,
+    "moved_to_access": 18,
+    "moved_to_guide_content": 1
+  },
+  "items": [
+    {
+      "id": "am.air_conditioning",
+      "destination": "derived_from_system",
+      "target": "sys.cooling"
+    },
+    {
+      "id": "am.arcade_games",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.baby_bath",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.baby_monitor",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.baby_safety_gates",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.babysitter_recs",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.backyard",
+      "destination": "derived_from_space",
+      "target": "sp.garden"
+    },
+    {
+      "id": "am.baking_sheet",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bathtub",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.batting_cage",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bbq_grill",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bbq_utensils",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.beach_access",
+      "destination": "moved_to_property_attribute"
+    },
+    {
+      "id": "am.beach_essentials",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bed_linens",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bidet",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.bikes",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.blender",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.board_games",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.boat_slip",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.body_soap",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.books_reading",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bowling_alley",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.bread_maker",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.ceiling_fan",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.changing_table",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.childrens_bikes",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.childrens_books_toys",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.childrens_dinnerware",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.childrens_playroom",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.cleaning_products",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.climbing_wall",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.clothing_storage",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.co_alarm",
+      "destination": "moved_to_system",
+      "target": "sys.co_detector"
+    },
+    {
+      "id": "am.coffee",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.coffee_maker",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.conditioner",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.cooking_basics",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.crib",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.dedicated_workspace",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.dining_table",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.dishes_silverware",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.dishwasher",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.dryer",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.drying_rack",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.elevator",
+      "destination": "derived_from_system",
+      "target": "sys.elevator"
+    },
+    {
+      "id": "am.essentials",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.ethernet",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.ev_charger",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.exercise_equipment",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.extra_pillows_blankets",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.fire_extinguisher",
+      "destination": "moved_to_system",
+      "target": "sys.fire_extinguisher"
+    },
+    {
+      "id": "am.fire_pit",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.fire_screen",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.first_aid_kit",
+      "destination": "moved_to_system",
+      "target": "sys.first_aid_kit"
+    },
+    {
+      "id": "am.free_parking",
+      "destination": "derived_from_access",
+      "target": "parking_options"
+    },
+    {
+      "id": "am.free_parking_premises",
+      "destination": "moved_to_access",
+      "target": "parking_options"
+    },
+    {
+      "id": "am.free_street_parking",
+      "destination": "moved_to_access",
+      "target": "parking_options"
+    },
+    {
+      "id": "am.freezer",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.game_console",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.gym",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.hair_dryer",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.hammock",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.hangers",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.heating",
+      "destination": "derived_from_system",
+      "target": "sys.heating"
+    },
+    {
+      "id": "am.high_chair",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.hockey_rink",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.hot_tub",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.hot_water",
+      "destination": "derived_from_system",
+      "target": "sys.hot_water"
+    },
+    {
+      "id": "am.indoor_fireplace",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.iron",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.kayak",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.kettle",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.kitchen",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.kitchenette",
+      "destination": "derived_from_space",
+      "target": "sp.studio|sp.loft"
+    },
+    {
+      "id": "am.lake_access",
+      "destination": "moved_to_property_attribute"
+    },
+    {
+      "id": "am.laser_tag",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.laundromat_nearby",
+      "destination": "moved_to_guide_content",
+      "target": "local_guide"
+    },
+    {
+      "id": "am.life_size_games",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.microwave",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.mini_fridge",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.mini_golf",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.mosquito_net",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.movie_theater",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.outdoor_dining_area",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.outdoor_furniture",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.outdoor_kitchen",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.outdoor_playground",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.outdoor_shower",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.outlet_covers",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.oven",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.pack_n_play",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.paid_parking_off_premises",
+      "destination": "moved_to_access",
+      "target": "parking_options"
+    },
+    {
+      "id": "am.paid_parking_on_premises",
+      "destination": "moved_to_access",
+      "target": "parking_options"
+    },
+    {
+      "id": "am.patio_balcony",
+      "destination": "derived_from_space",
+      "target": "sp.balcony|sp.patio"
+    },
+    {
+      "id": "am.piano",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.ping_pong",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.pocket_wifi",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.pool",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.pool_table",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.portable_fans",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.private_entrance",
+      "destination": "moved_to_property_attribute",
+      "target": "Property.hasPrivateEntrance"
+    },
+    {
+      "id": "am.private_living_room",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.record_player",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.refrigerator",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.resort_access",
+      "destination": "moved_to_property_attribute"
+    },
+    {
+      "id": "am.rice_maker",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.room_darkening_shades",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.safe",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.sauna",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.shampoo",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.shower_gel",
+      "destination": "derived_from_space"
+    },
+    {
+      "id": "am.single_level_home",
+      "destination": "moved_to_access",
+      "target": "accessibility_features"
+    },
+    {
+      "id": "am.skate_ramp",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.ski_in_out",
+      "destination": "moved_to_property_attribute"
+    },
+    {
+      "id": "am.smoke_alarm",
+      "destination": "moved_to_system",
+      "target": "sys.smoke_detector"
+    },
+    {
+      "id": "am.sound_system",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.stove",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.sun_loungers",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.table_corner_guards",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.theme_room",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.toaster",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.trash_compactor",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.tv",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.washer",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.waterfront",
+      "destination": "moved_to_property_attribute"
+    },
+    {
+      "id": "am.wifi",
+      "destination": "derived_from_system",
+      "target": "sys.internet"
+    },
+    {
+      "id": "am.window_guards",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.wine_glasses",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "ax.accessible_parking_spot",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.bathroom_entrance_wide_81cm",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.bedroom_entrance_wide_81cm",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.ceiling_mobile_hoist",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.guest_entrance_wide_81cm",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.shower_bath_chair",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.shower_grab_bar",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.step_free_bathroom_access",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.step_free_bedroom_access",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.step_free_guest_entrance",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.step_free_path_to_entrance",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.step_free_shower",
+      "destination": "moved_to_access"
+    },
+    {
+      "id": "ax.toilet_grab_bar",
+      "destination": "moved_to_access"
+    }
+  ]
+}
