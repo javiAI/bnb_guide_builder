@@ -257,6 +257,15 @@ export async function removeAmenityPlacementAction(
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
 
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+  if (space.propertyId !== instance.propertyId) {
+    return { success: false, error: "El espacio no pertenece a la propiedad del amenity" };
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.propertyAmenityPlacement.deleteMany({ where: { amenityId, spaceId } });
     if (isCanonicalInstanceKey(instance.instanceKey)) {

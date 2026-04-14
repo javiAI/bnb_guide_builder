@@ -137,10 +137,13 @@ export async function mirrorInstanceToOld(
   },
   tx: Tx = defaultPrisma,
 ): Promise<void> {
-  // Custom (non-canonical) instanceKeys have no 1:1 mirror target in the
-  // old model — skip. Legacy reads will simply not see such rows; this
-  // is acceptable because reads still come from the old model and new
-  // actions aren't yet wired to UI.
+  // Custom (non-canonical) instanceKeys have no direct 1:1 mirror target
+  // in the old model, so skip mirroring the instance payload here. Note
+  // this does NOT make them fully invisible to legacy reads: placement
+  // mirroring (mirrorPlacementAddToOld) is also gated on
+  // isCanonicalInstanceKey at the action layer, so neither the instance
+  // row nor its placements produce legacy rows while the instanceKey is
+  // non-canonical. New actions are not yet wired to the UI.
   if (!isCanonicalInstanceKey(instance.instanceKey)) return;
   const spaceId = spaceIdFromInstanceKey(instance.instanceKey);
 
