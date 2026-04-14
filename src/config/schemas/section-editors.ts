@@ -82,6 +82,16 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     hasDetail: true,
   },
   {
+    key: "systems",
+    label: "Sistemas",
+    description: "Climatización, agua, electricidad y conectividad",
+    group: "content",
+    phase: 5,
+    taxonomySource: "systemTaxonomy",
+    hasList: true,
+    hasDetail: true,
+  },
+  {
     key: "amenities",
     label: "Equipamiento",
     description: "Amenities disponibles para huéspedes",

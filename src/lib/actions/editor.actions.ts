@@ -23,6 +23,9 @@ import {
   createLocalPlaceSchema,
   updateLocalPlaceSchema,
   createMediaAssetSchema,
+  createSystemSchema,
+  updateSystemSchema,
+  updateSystemCoverageSchema,
 } from "@/lib/schemas/editor.schema";
 
 export type ActionResult = {
@@ -913,6 +916,97 @@ export async function createMediaAssetAction(
   });
 
   revalidatePath(`/properties/${propertyId}/media`);
+  return { success: true };
+}
+
+// ── Systems ──
+
+export async function createSystemAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const raw = { systemKey: formData.get("systemKey") as string };
+  const result = createSystemSchema.safeParse(raw);
+  if (!result.success) {
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+  await prisma.propertySystem.create({
+    data: { propertyId, systemKey: result.data.systemKey, visibility: "public" },
+  });
+  revalidatePath(`/properties/${propertyId}/systems`);
+  return { success: true };
+}
+
+export async function updateSystemAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const systemId = formData.get("systemId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw: Record<string, unknown> = {
+    internalNotes: (formData.get("internalNotes") as string) || null,
+    visibility: (formData.get("visibility") as string) || undefined,
+  };
+  const detailsStr = formData.get("detailsJson") as string | null;
+  const opsStr = formData.get("opsJson") as string | null;
+  if (detailsStr) {
+    try { raw.detailsJson = JSON.parse(detailsStr); } catch { return { success: false, error: "Datos de detalles inválidos" }; }
+  }
+  if (opsStr) {
+    try { raw.opsJson = JSON.parse(opsStr); } catch { return { success: false, error: "Datos de operaciones inválidos" }; }
+  }
+  const result = updateSystemSchema.safeParse(raw);
+  if (!result.success) {
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+  await prisma.propertySystem.update({
+    where: { id: systemId },
+    data: {
+      detailsJson: result.data.detailsJson ?? undefined,
+      opsJson: result.data.opsJson ?? undefined,
+      internalNotes: result.data.internalNotes,
+      visibility: result.data.visibility,
+    },
+  });
+  revalidatePath(`/properties/${propertyId}/systems`);
+  revalidatePath(`/properties/${propertyId}/systems/${systemId}`);
+  return { success: true };
+}
+
+export async function deleteSystemAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const systemId = formData.get("systemId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  await prisma.propertySystem.deleteMany({ where: { id: systemId } });
+  revalidatePath(`/properties/${propertyId}/systems`);
+  return { success: true };
+}
+
+export async function updateSystemCoverageAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const systemId = formData.get("systemId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const raw = {
+    spaceId: formData.get("spaceId") as string,
+    mode: formData.get("mode") as string,
+    note: (formData.get("note") as string) || null,
+  };
+  const result = updateSystemCoverageSchema.safeParse(raw);
+  if (!result.success) {
+    return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
+  }
+  await prisma.propertySystemCoverage.upsert({
+    where: { systemId_spaceId: { systemId, spaceId: result.data.spaceId } },
+    create: { systemId, spaceId: result.data.spaceId, mode: result.data.mode, note: result.data.note },
+    update: { mode: result.data.mode, note: result.data.note },
+  });
+  revalidatePath(`/properties/${propertyId}/systems/${systemId}`);
+  revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
 

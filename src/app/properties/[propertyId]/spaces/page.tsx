@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { SpaceCard } from "./space-card";
 import { CreateSpaceForm } from "./create-space-form";
-import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
+import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export default async function SpacesPage({
@@ -25,6 +25,24 @@ export default async function SpacesPage({
     orderBy: { sortOrder: "asc" },
     include: { beds: { orderBy: { createdAt: "asc" } } },
   });
+
+  // Fetch system coverages for all spaces (inherited = available by default)
+  const systemCoverages = await prisma.propertySystemCoverage.findMany({
+    where: { space: { propertyId } },
+    include: { system: { select: { id: true, systemKey: true } } },
+  });
+
+  // Build map: spaceId → SpaceSystem[] (only systems not explicitly excluded)
+  const systemsBySpace = new Map<string, { id: string; systemKey: string; label: string }[]>();
+  for (const coverage of systemCoverages) {
+    if (coverage.mode === "override_no") continue;
+    const item = findSystemItem(coverage.system.systemKey);
+    if (!item) continue;
+    const spaceId = coverage.spaceId;
+    const existing = systemsBySpace.get(spaceId) ?? [];
+    existing.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
+    systemsBySpace.set(spaceId, existing);
+  }
 
   // Compute available space types from roomType + layoutKey
   // Treat missing roomType as unknown — don't apply entire-place rules to legacy/incomplete properties
@@ -142,6 +160,7 @@ export default async function SpacesPage({
                 quantity: b.quantity,
                 configJson: b.configJson as Record<string, unknown> | null,
               }))}
+              spaceSystems={systemsBySpace.get(space.id) ?? []}
             />
           ))
         )}

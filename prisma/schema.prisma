@@ -98,6 +98,7 @@ model Property {
   workspace             Workspace               @relation(fields: [workspaceId], references: [id])
   wizardSessions        WizardSession[]
   spaces                Space[]
+  systems               PropertySystem[]
   amenities             PropertyAmenity[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
   localPlaces           LocalPlace[]
@@ -215,8 +216,9 @@ model Space {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  beds     BedConfiguration[]
+  property         Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  beds             BedConfiguration[]
+  systemCoverages  PropertySystemCoverage[]
 
   @@index([propertyId])
   @@index([propertyId, visibility])
@@ -235,6 +237,43 @@ model BedConfiguration {
 
   @@index([spaceId])
   @@map("bed_configurations")
+}
+
+model PropertySystem {
+  id            String   @id @default(cuid())
+  propertyId    String   @map("property_id")
+  systemKey     String   @map("system_key")
+  detailsJson   Json?    @map("details_json")
+  opsJson       Json?    @map("ops_json")
+  internalNotes String?  @map("internal_notes")
+  visibility    String   @default("public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  property  Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  coverages PropertySystemCoverage[]
+
+  @@index([propertyId])
+  @@index([propertyId, systemKey])
+  @@map("property_systems")
+}
+
+model PropertySystemCoverage {
+  id         String   @id @default(cuid())
+  systemId   String   @map("system_id")
+  spaceId    String   @map("space_id")
+  mode       String   @default("inherited")
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  system PropertySystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  space  Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([systemId, spaceId])
+  @@index([systemId])
+  @@index([spaceId])
+  @@map("property_system_coverages")
 }
 
 model PropertyAmenity {
