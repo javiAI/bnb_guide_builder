@@ -11,13 +11,14 @@
  * Idempotent: running twice produces byte-identical output.
  *
  * Usage:
- *   npx --yes --package tsx tsx scripts/apply-amenity-destinations.ts
+ *   npm run apply-amenity-destinations
  *
- * Note: `tsx` is fetched on demand by `npx --yes --package tsx` — no need to
- * add it to `package.json`. A direct `tsc && node` pipeline is avoided
- * because this script relies on `import.meta.url` (ESM-only), while the
- * repo's `package.json` does not set `"type": "module"`, so an emitted `.js`
- * would be treated as CommonJS by Node and fail to run.
+ * Note: this runs through the project-pinned `tsx` devDependency so the
+ * version is reproducible across machines and CI. A direct `tsc && node`
+ * pipeline is avoided because this script relies on `import.meta.url`
+ * (ESM-only), while the repo's `package.json` does not set `"type":
+ * "module"`, so an emitted `.js` would be treated as CommonJS and fail
+ * to run.
  *
  * Also emits `taxonomies/amenity_destinations_summary.json` as a
  * lightweight audit snapshot for PR review.
@@ -208,7 +209,12 @@ interface AmenityTaxonomyFile {
  */
 export function applyDestinations(taxonomy: AmenityTaxonomyFile): {
   updated: number;
-  summary: Array<{ id: string; destination: AmenityDestination; target?: string }>;
+  summary: Array<{
+    id: string;
+    destination: AmenityDestination;
+    target?: string;
+    note?: string;
+  }>;
 } {
   const byId = new Map<string, AmenityDestinationEntry>(
     DESTINATIONS.map((d) => [d.id, d]),

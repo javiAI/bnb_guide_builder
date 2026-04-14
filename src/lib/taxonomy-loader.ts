@@ -25,6 +25,7 @@ import type {
   SystemSubtypesTaxonomyFile,
   AmenityScopePolicyEntry,
   AmenityDestination,
+  AmenityItem,
 } from "./types/taxonomy";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
 
@@ -138,12 +139,12 @@ export function getAmenityGroups(taxonomy: AmenityGroupedFile): AmenityGroup[] {
 export function getAmenityGroupItems(
   taxonomy: AmenityGroupedFile,
   groupId: string,
-): TaxonomyItem[] {
+): AmenityItem[] {
   const group = taxonomy.groups.find((g) => g.id === groupId);
   if (!group) return [];
   return group.item_ids
     .map((itemId) => taxonomy.items.find((item) => item.id === itemId))
-    .filter((item): item is TaxonomyItem => item !== undefined);
+    .filter((item): item is AmenityItem => item !== undefined);
 }
 
 // ── Policy group helpers ──
@@ -257,7 +258,7 @@ export function findSystemSubtype(systemKey: string): SystemSubtype | undefined 
 
 // ── Amenity item helpers ──
 
-export function findAmenityItem(amenityId: string): TaxonomyItem | undefined {
+export function findAmenityItem(amenityId: string): AmenityItem | undefined {
   return amenityTaxonomy.items.find((i) => i.id === amenityId);
 }
 

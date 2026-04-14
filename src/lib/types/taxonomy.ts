@@ -237,7 +237,8 @@ export interface ItemTaxonomyFile extends TaxonomyFileBase {
 
 export interface AmenityGroupedFile extends TaxonomyFileBase {
   groups: AmenityGroup[];
-  items: TaxonomyItem[];
+  /** Post-audit 1B: every amenity has a required `destination`. */
+  items: AmenityItem[];
   scopePoliciesMeta?: { comment: string };
   scopePolicies?: Record<string, AmenityScopePolicyEntry>;
 }
