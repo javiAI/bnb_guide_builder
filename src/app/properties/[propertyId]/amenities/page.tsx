@@ -139,13 +139,14 @@ export default async function AmenitiesPage({
   for (const inst of existingInstances) {
     if (!isCanonicalInstanceKey(inst.instanceKey)) continue;
     const derivedSpaceId = spaceIdFromInstanceKey(inst.instanceKey);
-    if (derivedSpaceId === null) {
-      instanceIndex.set(`${inst.amenityKey}|`, indexedFrom(inst, false));
-    } else {
-      for (const p of inst.placements) {
-        instanceIndex.set(`${inst.amenityKey}|${p.spaceId}`, indexedFrom(inst, false));
-      }
-    }
+    // Canonical instances are 1:1 per space by design — the instanceKey
+    // (`default` / `space:<id>`) is the authoritative slot, not the
+    // placements. Using `derivedSpaceId` here keeps the UI stable against
+    // placement drift: a `space:X` instance with a stray placement on Y
+    // surfaces only at X, matching the convention enforced by the
+    // dual-write helpers and the drift script.
+    const slot = derivedSpaceId === null ? `${inst.amenityKey}|` : `${inst.amenityKey}|${derivedSpaceId}`;
+    instanceIndex.set(slot, indexedFrom(inst, false));
   }
   for (const inst of existingInstances) {
     if (isCanonicalInstanceKey(inst.instanceKey)) continue;
