@@ -9,6 +9,7 @@ import {
   mirrorPlacementAddToOld,
   mirrorPlacementRemoveFromOld,
 } from "@/lib/amenity-dual-write";
+import { isCanonicalInstanceKey } from "@/lib/amenity-instance-keys";
 import {
   createAmenityInstanceSchema,
   updateAmenityInstanceSchema,
@@ -203,7 +204,7 @@ export async function addAmenityPlacementAction(
 
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true },
+    select: { propertyId: true, amenityKey: true, instanceKey: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
 
@@ -227,10 +228,15 @@ export async function addAmenityPlacementAction(
       create: { amenityId, spaceId, note },
       update: hasNoteField ? { note } : {},
     });
-    await mirrorPlacementAddToOld(
-      { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
-      tx,
-    );
+    // Skip legacy mirror for non-canonical instanceKeys — those rows
+    // have no 1:1 counterpart in the old model (same rule as
+    // mirrorInstanceToOld).
+    if (isCanonicalInstanceKey(instance.instanceKey)) {
+      await mirrorPlacementAddToOld(
+        { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
+        tx,
+      );
+    }
   });
 
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
@@ -247,16 +253,27 @@ export async function removeAmenityPlacementAction(
 
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true },
+    select: { propertyId: true, amenityKey: true, instanceKey: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
 
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+  if (space.propertyId !== instance.propertyId) {
+    return { success: false, error: "El espacio no pertenece a la propiedad del amenity" };
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.propertyAmenityPlacement.deleteMany({ where: { amenityId, spaceId } });
-    await mirrorPlacementRemoveFromOld(
-      { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
-      tx,
-    );
+    if (isCanonicalInstanceKey(instance.instanceKey)) {
+      await mirrorPlacementRemoveFromOld(
+        { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
+        tx,
+      );
+    }
   });
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };

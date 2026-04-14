@@ -12,27 +12,49 @@
  *   npm run detect-amenity-drift
  *   # or
  *   npx tsx scripts/detect-amenity-drift.ts
+ *
+ * Note: this script imports only the pure key helpers, not the
+ * dual-write module — so it doesn't pull in the app's Prisma singleton.
  */
 
 import { PrismaClient } from "@prisma/client";
-import { instanceKeyFor, spaceIdFromInstanceKey } from "../src/lib/amenity-dual-write";
+import {
+  instanceKeyFor,
+  spaceIdFromInstanceKey,
+  isCanonicalInstanceKey,
+} from "../src/lib/amenity-instance-keys";
 
 const prisma = new PrismaClient();
 
 type Drift = { kind: string; detail: string };
 
+// Compound key helpers for map lookups. Null spaceId → "" sentinel,
+// which is safe because space IDs are cuids (never empty).
+const instanceKey = (propertyId: string, amenityKey: string, instanceKey: string) =>
+  `${propertyId}\0${amenityKey}\0${instanceKey}`;
+const legacyKey = (propertyId: string, amenityKey: string, spaceId: string | null) =>
+  `${propertyId}\0${amenityKey}\0${spaceId ?? ""}`;
+
 async function main() {
   const legacy = await prisma.propertyAmenity.findMany();
   const instances = await prisma.propertyAmenityInstance.findMany({ include: { placements: true } });
+
+  // Build O(1) lookup indexes.
+  const instanceByKey = new Map<string, (typeof instances)[number]>();
+  for (const inst of instances) {
+    instanceByKey.set(instanceKey(inst.propertyId, inst.amenityKey, inst.instanceKey), inst);
+  }
+  const legacyByKey = new Map<string, (typeof legacy)[number]>();
+  for (const row of legacy) {
+    legacyByKey.set(legacyKey(row.propertyId, row.amenityKey, row.spaceId), row);
+  }
 
   const drifts: Drift[] = [];
 
   // 1. Every legacy row must have a corresponding Instance (+ Placement if spaceId).
   for (const row of legacy) {
     const expectedKey = instanceKeyFor(row.spaceId);
-    const match = instances.find(
-      (i) => i.propertyId === row.propertyId && i.amenityKey === row.amenityKey && i.instanceKey === expectedKey,
-    );
+    const match = instanceByKey.get(instanceKey(row.propertyId, row.amenityKey, expectedKey));
     if (!match) {
       drifts.push({
         kind: "missing_instance",
@@ -55,13 +77,9 @@ async function main() {
   //    legacy PropertyAmenity. Custom instanceKeys are excluded — see
   //    amenity-dual-write.ts comment.
   for (const instance of instances) {
-    const isCanonical =
-      instance.instanceKey === "default" || instance.instanceKey.startsWith("space:");
-    if (!isCanonical) continue;
+    if (!isCanonicalInstanceKey(instance.instanceKey)) continue;
     const spaceId = spaceIdFromInstanceKey(instance.instanceKey);
-    const match = legacy.find(
-      (r) => r.propertyId === instance.propertyId && r.amenityKey === instance.amenityKey && r.spaceId === spaceId,
-    );
+    const match = legacyByKey.get(legacyKey(instance.propertyId, instance.amenityKey, spaceId));
     if (!match) {
       drifts.push({
         kind: "missing_legacy",
@@ -71,8 +89,8 @@ async function main() {
 
     // 3. Every Placement must have a legacy PropertyAmenity for its spaceId.
     for (const placement of instance.placements) {
-      const legacyMatch = legacy.find(
-        (r) => r.propertyId === instance.propertyId && r.amenityKey === instance.amenityKey && r.spaceId === placement.spaceId,
+      const legacyMatch = legacyByKey.get(
+        legacyKey(instance.propertyId, instance.amenityKey, placement.spaceId),
       );
       if (!legacyMatch) {
         drifts.push({
