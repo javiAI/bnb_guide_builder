@@ -934,7 +934,8 @@ export async function createSystemAction(
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
   const taxonomyItem = findSystemItem(result.data.systemKey);
-  const defaultVisibility = taxonomyItem?.visibility ?? "public";
+  if (!taxonomyItem) return { success: false, error: "Sistema no reconocido en la taxonomía" };
+  const defaultVisibility = taxonomyItem.visibility;
   try {
     await prisma.propertySystem.create({
       data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },

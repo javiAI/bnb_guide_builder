@@ -60,7 +60,11 @@ export default async function SpacesPage({
     const current = systemsBySpace.get(spaceId) ?? [];
     if (coverage.mode === "override_no") {
       systemsBySpace.set(spaceId, current.filter((s) => s.id !== coverage.system.id));
-    } else if (coverage.mode === "override_yes" && !current.some((s) => s.id === coverage.system.id)) {
+    } else if (
+      coverage.mode === "override_yes" &&
+      item.defaultCoverageRule !== "property_only" &&
+      !current.some((s) => s.id === coverage.system.id)
+    ) {
       current.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
       systemsBySpace.set(spaceId, current);
     }
