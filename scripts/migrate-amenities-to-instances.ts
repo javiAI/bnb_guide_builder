@@ -22,11 +22,12 @@
  * Cleanup of the old table happens in Branch 2C.
  *
  * Usage:
- *   /Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx tsx \
- *     scripts/migrate-amenities-to-instances.ts
+ *   npm run migrate-amenities-to-instances
+ *   # or
+ *   npx tsx scripts/migrate-amenities-to-instances.ts
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -58,7 +59,7 @@ async function main() {
         amenityKey: row.amenityKey,
         instanceKey,
         subtypeKey: row.subtypeKey,
-        detailsJson: row.detailsJson ?? undefined,
+        detailsJson: row.detailsJson ?? Prisma.JsonNull,
         guestInstructions: row.guestInstructions,
         aiInstructions: row.aiInstructions,
         internalNotes: row.internalNotes,
@@ -67,7 +68,7 @@ async function main() {
       },
       update: {
         subtypeKey: row.subtypeKey,
-        detailsJson: row.detailsJson ?? undefined,
+        detailsJson: row.detailsJson ?? Prisma.JsonNull,
         guestInstructions: row.guestInstructions,
         aiInstructions: row.aiInstructions,
         internalNotes: row.internalNotes,

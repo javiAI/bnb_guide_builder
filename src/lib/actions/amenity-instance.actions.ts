@@ -28,7 +28,7 @@ export async function createAmenityInstanceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  if (!propertyId) return { success: false, error: "Falta propertyId" };
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
 
   const raw = {
     amenityKey: (formData.get("amenityKey") as string) || "",
@@ -166,15 +166,11 @@ export async function addAmenityPlacementAction(
 
   const note = (formData.get("note") as string) || null;
 
-  try {
-    await prisma.propertyAmenityPlacement.upsert({
-      where: { amenityId_spaceId: { amenityId, spaceId } },
-      create: { amenityId, spaceId, note },
-      update: { note },
-    });
-  } catch (err) {
-    if ((err as { code?: string }).code !== "P2002") throw err;
-  }
+  await prisma.propertyAmenityPlacement.upsert({
+    where: { amenityId_spaceId: { amenityId, spaceId } },
+    create: { amenityId, spaceId, note },
+    update: { note },
+  });
 
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
