@@ -26,22 +26,41 @@ export default async function SpacesPage({
     include: { beds: { orderBy: { createdAt: "asc" } } },
   });
 
-  // Fetch system coverages for all spaces (inherited = available by default)
+  // All systems installed on this property (inherited by all spaces by default)
+  const propertySystems = await prisma.propertySystem.findMany({
+    where: { propertyId },
+    select: { id: true, systemKey: true },
+  });
+
+  // Explicit per-space coverage overrides
   const systemCoverages = await prisma.propertySystemCoverage.findMany({
     where: { space: { propertyId } },
     include: { system: { select: { id: true, systemKey: true } } },
   });
 
-  // Build map: spaceId → SpaceSystem[] (only systems not explicitly excluded)
+  // Build default set from all property systems (label lookup)
+  const defaultSystems = propertySystems.flatMap((sys) => {
+    const item = findSystemItem(sys.systemKey);
+    if (!item) return [];
+    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label }];
+  });
+
+  // Build map: spaceId → SpaceSystem[], starting from inherited defaults then applying overrides
   const systemsBySpace = new Map<string, { id: string; systemKey: string; label: string }[]>();
+  for (const space of spaces) {
+    systemsBySpace.set(space.id, [...defaultSystems]);
+  }
   for (const coverage of systemCoverages) {
-    if (coverage.mode === "override_no") continue;
     const item = findSystemItem(coverage.system.systemKey);
     if (!item) continue;
     const spaceId = coverage.spaceId;
-    const existing = systemsBySpace.get(spaceId) ?? [];
-    existing.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
-    systemsBySpace.set(spaceId, existing);
+    const current = systemsBySpace.get(spaceId) ?? [];
+    if (coverage.mode === "override_no") {
+      systemsBySpace.set(spaceId, current.filter((s) => s.id !== coverage.system.id));
+    } else if (coverage.mode === "override_yes" && !current.some((s) => s.id === coverage.system.id)) {
+      current.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
+      systemsBySpace.set(spaceId, current);
+    }
   }
 
   // Compute available space types from roomType + layoutKey

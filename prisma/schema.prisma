@@ -253,8 +253,8 @@ model PropertySystem {
   property  Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   coverages PropertySystemCoverage[]
 
+  @@unique([propertyId, systemKey])
   @@index([propertyId])
-  @@index([propertyId, systemKey])
   @@map("property_systems")
 }
 

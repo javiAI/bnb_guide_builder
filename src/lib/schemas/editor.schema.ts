@@ -303,7 +303,7 @@ export const updateSystemSchema = z.object({
   detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   opsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   internalNotes: z.string().nullable().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(["public", "internal"]).optional(),
 });
 
 export const updateSystemCoverageSchema = z.object({

@@ -26,6 +26,9 @@ import {
   findSubtype,
   getRulesForTrigger,
   evaluateRule,
+  findSystemItem,
+  findSystemSubtype,
+  getSystemGroups,
 } from "@/lib/taxonomy-loader";
 
 describe("Taxonomy loaders", () => {
@@ -121,5 +124,40 @@ describe("Taxonomy loaders", () => {
     const smartLockRule = rules.find((r) => r.id === "dfr.access_smart_lock")!;
     expect(evaluateRule(smartLockRule, "am.smart_lock")).toBe(true);
     expect(evaluateRule(smartLockRule, "am.lockbox")).toBe(false);
+  });
+
+  it("getSystemGroups returns system groups", () => {
+    const groups = getSystemGroups();
+    expect(groups.length).toBeGreaterThan(0);
+    expect(groups[0].id).toMatch(/^sgrp\./);
+  });
+
+  it("findSystemItem finds by id", () => {
+    const item = findSystemItem("sys.internet");
+    expect(item).toBeDefined();
+    expect(item!.label).toBeTruthy();
+  });
+
+  it("findSystemItem returns undefined for unknown id", () => {
+    expect(findSystemItem("sys.nonexistent")).toBeUndefined();
+  });
+
+  it("findSystemSubtype finds by systemKey", () => {
+    const subtype = findSystemSubtype("sys.internet");
+    expect(subtype).toBeDefined();
+    expect(subtype!.systemKey).toBe("sys.internet");
+  });
+
+  it("findSystemSubtype finds by id", () => {
+    const subtype = findSystemSubtype("sys.internet");
+    expect(subtype).toBeDefined();
+    // id field should also match
+    const byId = findSystemSubtype(subtype!.id);
+    expect(byId).toBeDefined();
+    expect(byId!.systemKey).toBe("sys.internet");
+  });
+
+  it("findSystemSubtype returns undefined for unknown key", () => {
+    expect(findSystemSubtype("sys.nonexistent")).toBeUndefined();
   });
 });

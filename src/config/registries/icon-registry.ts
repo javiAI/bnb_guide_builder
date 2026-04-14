@@ -21,6 +21,7 @@ export const SECTION_ICONS: Record<string, string> = {
   contacts: "users",
   policies: "shield",
   spaces: "layout",
+  systems: "zap",
   amenities: "coffee",
   troubleshooting: "alert-triangle",
   "local-guide": "map-pin",

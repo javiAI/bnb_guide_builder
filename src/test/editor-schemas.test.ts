@@ -12,6 +12,9 @@ import {
   updateBedSchema,
   toggleAmenitySchema,
   updateAmenitySchema,
+  createSystemSchema,
+  updateSystemSchema,
+  updateSystemCoverageSchema,
 } from "@/lib/schemas/editor.schema";
 
 describe("Property editor schema", () => {
@@ -517,5 +520,71 @@ describe("Policies schema", () => {
       },
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("System schemas", () => {
+  it("createSystemSchema accepts valid systemKey", () => {
+    const result = createSystemSchema.safeParse({ systemKey: "sys.internet" });
+    expect(result.success).toBe(true);
+  });
+
+  it("createSystemSchema rejects empty systemKey", () => {
+    const result = createSystemSchema.safeParse({ systemKey: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateSystemSchema accepts valid public visibility", () => {
+    const result = updateSystemSchema.safeParse({ visibility: "public" });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemSchema accepts valid internal visibility", () => {
+    const result = updateSystemSchema.safeParse({ visibility: "internal" });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemSchema rejects invalid visibility", () => {
+    const result = updateSystemSchema.safeParse({ visibility: "guest" });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateSystemSchema accepts detailsJson with mixed primitives", () => {
+    const result = updateSystemSchema.safeParse({
+      detailsJson: { speed: 100, provider: "Movistar", symmetric: true },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemSchema rejects detailsJson with nested objects", () => {
+    const result = updateSystemSchema.safeParse({
+      detailsJson: { nested: { deep: "value" } },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateSystemCoverageSchema accepts inherited mode", () => {
+    const result = updateSystemCoverageSchema.safeParse({ spaceId: "sp_123", mode: "inherited" });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemCoverageSchema accepts override_yes mode", () => {
+    const result = updateSystemCoverageSchema.safeParse({ spaceId: "sp_123", mode: "override_yes" });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemCoverageSchema accepts override_no mode", () => {
+    const result = updateSystemCoverageSchema.safeParse({ spaceId: "sp_123", mode: "override_no" });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateSystemCoverageSchema rejects invalid mode", () => {
+    const result = updateSystemCoverageSchema.safeParse({ spaceId: "sp_123", mode: "disabled" });
+    expect(result.success).toBe(false);
+  });
+
+  it("updateSystemCoverageSchema rejects missing spaceId", () => {
+    const result = updateSystemCoverageSchema.safeParse({ spaceId: "", mode: "inherited" });
+    expect(result.success).toBe(false);
   });
 });

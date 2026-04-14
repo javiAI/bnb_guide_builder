@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { deleteSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
-import { useEffect } from "react";
 
 interface Props {
   systemId: string;

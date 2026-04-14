@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -470,22 +471,22 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
               <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--color-neutral-50)] px-4 py-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-[var(--color-neutral-600)]">Sistemas en este espacio</p>
-                  <a
+                  <Link
                     href={`/properties/${propertyId}/systems`}
                     className="text-xs text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)]"
                   >
                     Gestionar →
-                  </a>
+                  </Link>
                 </div>
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {spaceSystems.map((sys) => (
                     <li key={sys.id}>
-                      <a
+                      <Link
                         href={`/properties/${propertyId}/systems/${sys.id}`}
                         className="inline-flex items-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
                       >
                         {sys.label}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>

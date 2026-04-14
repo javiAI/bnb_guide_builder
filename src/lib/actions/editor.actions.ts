@@ -931,9 +931,13 @@ export async function createSystemAction(
   if (!result.success) {
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
-  await prisma.propertySystem.create({
-    data: { propertyId, systemKey: result.data.systemKey, visibility: "public" },
-  });
+  try {
+    await prisma.propertySystem.create({
+      data: { propertyId, systemKey: result.data.systemKey, visibility: "public" },
+    });
+  } catch {
+    return { success: false, error: "Este sistema ya está configurado en la propiedad" };
+  }
   revalidatePath(`/properties/${propertyId}/systems`);
   return { success: true };
 }
@@ -943,7 +947,12 @@ export async function updateSystemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  const system = await prisma.propertySystem.findUnique({
+    where: { id: systemId },
+    select: { propertyId: true },
+  });
+  if (!system) return { success: false, error: "Sistema no encontrado" };
+
   const raw: Record<string, unknown> = {
     internalNotes: (formData.get("internalNotes") as string) || null,
     visibility: (formData.get("visibility") as string) || undefined,
@@ -969,8 +978,8 @@ export async function updateSystemAction(
       visibility: result.data.visibility,
     },
   });
-  revalidatePath(`/properties/${propertyId}/systems`);
-  revalidatePath(`/properties/${propertyId}/systems/${systemId}`);
+  revalidatePath(`/properties/${system.propertyId}/systems`);
+  revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
   return { success: true };
 }
 
@@ -979,9 +988,15 @@ export async function deleteSystemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
-  const propertyId = formData.get("propertyId") as string;
-  await prisma.propertySystem.deleteMany({ where: { id: systemId } });
-  revalidatePath(`/properties/${propertyId}/systems`);
+  const system = await prisma.propertySystem.findUnique({
+    where: { id: systemId },
+    select: { propertyId: true },
+  });
+  if (!system) return { success: false, error: "Sistema no encontrado" };
+
+  await prisma.propertySystem.delete({ where: { id: systemId } });
+  revalidatePath(`/properties/${system.propertyId}/systems`);
+  revalidatePath(`/properties/${system.propertyId}/spaces`);
   return { success: true };
 }
 
@@ -990,7 +1005,6 @@ export async function updateSystemCoverageAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
-  const propertyId = formData.get("propertyId") as string;
   const raw = {
     spaceId: formData.get("spaceId") as string,
     mode: formData.get("mode") as string,
@@ -1000,13 +1014,23 @@ export async function updateSystemCoverageAction(
   if (!result.success) {
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
+
+  // Verify both system and space belong to the same property
+  const [system, space] = await Promise.all([
+    prisma.propertySystem.findUnique({ where: { id: systemId }, select: { propertyId: true } }),
+    prisma.space.findUnique({ where: { id: result.data.spaceId }, select: { propertyId: true } }),
+  ]);
+  if (!system || !space || system.propertyId !== space.propertyId) {
+    return { success: false, error: "Acceso denegado" };
+  }
+
   await prisma.propertySystemCoverage.upsert({
     where: { systemId_spaceId: { systemId, spaceId: result.data.spaceId } },
     create: { systemId, spaceId: result.data.spaceId, mode: result.data.mode, note: result.data.note },
     update: { mode: result.data.mode, note: result.data.note },
   });
-  revalidatePath(`/properties/${propertyId}/systems/${systemId}`);
-  revalidatePath(`/properties/${propertyId}/spaces`);
+  revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
+  revalidatePath(`/properties/${system.propertyId}/spaces`);
   return { success: true };
 }
 

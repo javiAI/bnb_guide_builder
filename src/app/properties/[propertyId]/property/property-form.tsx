@@ -396,7 +396,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
           <div className="space-y-4">
             <p className="text-xs text-[var(--color-neutral-500)]">
               Los sistemas de calefacción y refrigeración se gestionan en la sección{" "}
-              <a href={`/properties/${propertyId}/systems`} className="text-[var(--color-primary-500)] hover:underline">Sistemas</a>.
+              <Link href={`/properties/${propertyId}/systems`} className="text-[var(--color-primary-500)] hover:underline">Sistemas</Link>.
             </p>
             <label className="flex cursor-pointer items-center gap-2">
               <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
