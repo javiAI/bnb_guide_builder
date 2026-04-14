@@ -337,10 +337,13 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
           </p>
           <RadioCardGroup
             name="_environment"
-            options={environmentOptions}
-            value={environment || null}
+            options={[
+              { id: "", label: "Sin definir", description: "No establecer entorno por ahora" },
+              ...environmentOptions,
+            ]}
+            value={environment ?? ""}
             onChange={(val) => {
-              setEnvironment(val);
+              setEnvironment(val || "");
               setTimeout(() => setEnvOpen(false), 200);
             }}
             showRecommended={false}

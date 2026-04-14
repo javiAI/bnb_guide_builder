@@ -65,8 +65,10 @@ export default async function AmenitiesPage({
     const scope = getAmenityScopePolicy(item.id);
     if (scope?.isDerived) excludedIds.add(item.id);
     if (item.canonicalOwner) excludedIds.add(item.id);
-    // Environment filtering: if item has relevantEnvironments and property has an environment set, exclude non-matching
-    if (propEnv && scope?.relevantEnvironments?.length && !scope.relevantEnvironments.includes(propEnv)) {
+    // Environment filtering: items with relevantEnvironments only show when property's environment matches.
+    // If the item declares relevantEnvironments but the property hasn't set one yet, exclude it
+    // (avoids showing environment-specific amenities like beach/ski/lake on undefined-environment properties).
+    if (scope?.relevantEnvironments?.length && (!propEnv || !scope.relevantEnvironments.includes(propEnv))) {
       excludedIds.add(item.id);
     }
   }

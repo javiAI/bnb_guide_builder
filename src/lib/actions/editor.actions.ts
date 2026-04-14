@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
-import { findSystemItem } from "@/lib/taxonomy-loader";
+import { findSystemItem, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import {
@@ -163,6 +163,10 @@ export async function saveAccessAction(
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
 
+  // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
+  const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
+  const validAccessibilityIds = new Set(accessibilityFeatures_taxonomy.items.map((i) => i.id));
+
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
     checkInEnd: formData.get("checkInEnd") as string,
@@ -179,6 +183,8 @@ export async function saveAccessAction(
       customLabel: (formData.get("unitCustomLabel") as string) || null,
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
+    parkingTypes: parkingTypes.filter((id) => validParkingIds.has(id)),
+    accessibilityFeatures: accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -200,8 +206,8 @@ export async function saveAccessAction(
       accessMethodsJson: {
         building: d.buildingAccess ?? null,
         unit: d.unitAccess,
-        parking: parkingTypes.length > 0 ? { types: parkingTypes } : null,
-        accessibility: accessibilityFeatures.length > 0 ? { features: accessibilityFeatures } : null,
+        parking: d.parkingTypes.length > 0 ? { types: d.parkingTypes } : null,
+        accessibility: d.accessibilityFeatures.length > 0 ? { features: d.accessibilityFeatures } : null,
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,
