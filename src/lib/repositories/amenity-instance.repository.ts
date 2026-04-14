@@ -51,4 +51,19 @@ export const amenityInstanceRepository = {
       where: { amenityId, spaceId },
     });
   },
+
+  /** Total instance count for a property (post-cutover read for publishing/analytics). */
+  countByProperty(propertyId: string) {
+    return prisma.propertyAmenityInstance.count({ where: { propertyId } });
+  },
+
+  /** Distinct amenityKeys for a property — used by the conditional engine context. */
+  async findKeysByProperty(propertyId: string): Promise<string[]> {
+    const rows = await prisma.propertyAmenityInstance.findMany({
+      where: { propertyId },
+      select: { amenityKey: true },
+      distinct: ["amenityKey"],
+    });
+    return rows.map((r) => r.amenityKey);
+  },
 };
