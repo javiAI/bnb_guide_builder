@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { findSystemItem, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
+import {
+  mirrorEnableToNew,
+  mirrorDisableToNew,
+  mirrorUpdateToNew,
+} from "@/lib/amenity-dual-write";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -678,26 +683,34 @@ export async function toggleAmenityAction(
   }
 
   if (enabled) {
+    // Phase 2 / 2B dual-write: old model + new Instance(+Placement) in a
+    // single transaction so a failure in one rolls back the other.
     try {
-      const existing = await prisma.propertyAmenity.findFirst({
-        where: { propertyId, amenityKey, spaceId },
-      });
-      if (!existing) {
-        await prisma.propertyAmenity.create({
-          data: {
-            amenityKey,
-            property: { connect: { id: propertyId } },
-            ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
-          },
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.propertyAmenity.findFirst({
+          where: { propertyId, amenityKey, spaceId },
         });
-      }
+        if (!existing) {
+          await tx.propertyAmenity.create({
+            data: {
+              amenityKey,
+              property: { connect: { id: propertyId } },
+              ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
+            },
+          });
+        }
+        await mirrorEnableToNew({ propertyId, amenityKey, spaceId }, tx);
+      });
     } catch (err) {
       if ((err as { code?: string }).code !== "P2002") throw err;
       // P2002 = unique constraint violation from concurrent toggle — row already exists, safe to ignore
     }
   } else {
-    await prisma.propertyAmenity.deleteMany({
-      where: { propertyId, amenityKey, spaceId },
+    await prisma.$transaction(async (tx) => {
+      await tx.propertyAmenity.deleteMany({
+        where: { propertyId, amenityKey, spaceId },
+      });
+      await mirrorDisableToNew({ propertyId, amenityKey, spaceId }, tx);
     });
   }
 
@@ -761,9 +774,25 @@ export async function updateAmenityAction(
     data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
   }
 
-  await prisma.propertyAmenity.update({
+  // Look up amenity key + spaceId before mutating so we can mirror to
+  // the new Instance model via composite key.
+  const fullAmenity = await prisma.propertyAmenity.findUnique({
     where: { id: amenityId },
-    data,
+    select: { amenityKey: true, spaceId: true },
+  });
+  if (!fullAmenity) return { success: false, error: "Amenity no encontrado" };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.propertyAmenity.update({ where: { id: amenityId }, data });
+    await mirrorUpdateToNew(
+      {
+        propertyId: amenity.propertyId,
+        amenityKey: fullAmenity.amenityKey,
+        spaceId: fullAmenity.spaceId,
+        data: data as Parameters<typeof mirrorUpdateToNew>[0]["data"],
+      },
+      tx,
+    );
   });
 
   revalidatePath(`/properties/${amenity.propertyId}/amenities`);
