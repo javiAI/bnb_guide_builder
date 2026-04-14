@@ -17,590 +17,732 @@
     {
       "id": "am.air_conditioning",
       "destination": "derived_from_system",
-      "target": "sys.cooling"
+      "target": "sys.cooling",
+      "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
     },
     {
       "id": "am.arcade_games",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.baby_bath",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.baby_monitor",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.baby_safety_gates",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.babysitter_recs",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.backyard",
       "destination": "derived_from_space",
-      "target": "sp.garden"
+      "target": "sp.garden",
+      "note": "Existe si hay espacio exterior (patio/jardín); no es equipamiento."
     },
     {
       "id": "am.baking_sheet",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bathtub",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.batting_cage",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bbq_grill",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bbq_utensils",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.beach_access",
-      "destination": "moved_to_property_attribute"
+      "destination": "moved_to_property_attribute",
+      "note": "Es atributo de ubicación/entorno; debe vivir en Property (y/o propertyEnvironment)."
     },
     {
       "id": "am.beach_essentials",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bed_linens",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bidet",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.bikes",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.blender",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.board_games",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.boat_slip",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.body_soap",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.books_reading",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bowling_alley",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.bread_maker",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.ceiling_fan",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.changing_table",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.childrens_bikes",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.childrens_books_toys",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.childrens_dinnerware",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.childrens_playroom",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.cleaning_products",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.climbing_wall",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.clothing_storage",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.co_alarm",
       "destination": "moved_to_system",
-      "target": "sys.co_detector"
+      "target": "sys.co_detector",
+      "note": "Seguridad/infraestructura. Debe vivir como System para herencia/coverage y playbooks."
     },
     {
       "id": "am.coffee",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.coffee_maker",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.conditioner",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.cooking_basics",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.crib",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.dedicated_workspace",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.dining_table",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.dishes_silverware",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.dishwasher",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.dryer",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.drying_rack",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.elevator",
       "destination": "derived_from_system",
-      "target": "sys.elevator"
+      "target": "sys.elevator",
+      "note": "Debe derivarse del System sys.elevator (infraestructura edificio)."
     },
     {
       "id": "am.essentials",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.ethernet",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.ev_charger",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.exercise_equipment",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.extra_pillows_blankets",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.fire_extinguisher",
       "destination": "moved_to_system",
-      "target": "sys.fire_extinguisher"
+      "target": "sys.fire_extinguisher",
+      "note": "Seguridad/infraestructura. Debe vivir como System para herencia/coverage y playbooks."
     },
     {
       "id": "am.fire_pit",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.fire_screen",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.first_aid_kit",
       "destination": "moved_to_system",
-      "target": "sys.first_aid_kit"
+      "target": "sys.first_aid_kit",
+      "note": "Seguridad/infraestructura. Debe vivir como System para herencia/coverage y playbooks."
     },
     {
       "id": "am.free_parking",
       "destination": "derived_from_access",
-      "target": "parking_options"
+      "target": "parking_options",
+      "note": "Se deriva desde la configuración de parking del módulo Access para export OTA."
     },
     {
       "id": "am.free_parking_premises",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "parking_options",
+      "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.free_street_parking",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "parking_options",
+      "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.freezer",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.game_console",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.gym",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.hair_dryer",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.hammock",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.hangers",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.heating",
       "destination": "derived_from_system",
-      "target": "sys.heating"
+      "target": "sys.heating",
+      "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
     },
     {
       "id": "am.high_chair",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.hockey_rink",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.hot_tub",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.hot_water",
       "destination": "derived_from_system",
-      "target": "sys.hot_water"
+      "target": "sys.hot_water",
+      "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
     },
     {
       "id": "am.indoor_fireplace",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.iron",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.kayak",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.kettle",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.kitchen",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.kitchenette",
       "destination": "derived_from_space",
-      "target": "sp.studio|sp.loft"
+      "target": "sp.studio|sp.loft",
+      "note": "Es tipo/layout de cocina, no inventario; se deriva por spaceType/features."
     },
     {
       "id": "am.lake_access",
-      "destination": "moved_to_property_attribute"
+      "destination": "moved_to_property_attribute",
+      "note": "Es atributo de ubicación/entorno; debe vivir en Property (y/o propertyEnvironment)."
     },
     {
       "id": "am.laser_tag",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.laundromat_nearby",
       "destination": "moved_to_guide_content",
-      "target": "local_guide"
+      "target": "local_guide",
+      "note": "Es recomendación/guía local, no equipamiento."
     },
     {
       "id": "am.life_size_games",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.microwave",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.mini_fridge",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.mini_golf",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.mosquito_net",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.movie_theater",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.outdoor_dining_area",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.outdoor_furniture",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.outdoor_kitchen",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.outdoor_playground",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.outdoor_shower",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.outlet_covers",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.oven",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.pack_n_play",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.paid_parking_off_premises",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "parking_options",
+      "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.paid_parking_on_premises",
       "destination": "moved_to_access",
-      "target": "parking_options"
+      "target": "parking_options",
+      "note": "Se modela como opción de parking en Access (parking_options), no como amenity."
     },
     {
       "id": "am.patio_balcony",
       "destination": "derived_from_space",
-      "target": "sp.balcony|sp.patio"
+      "target": "sp.balcony|sp.patio",
+      "note": "Se deriva de la existencia de balcón/patio; no es un item de inventario."
     },
     {
       "id": "am.piano",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.ping_pong",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.pocket_wifi",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.pool",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.pool_table",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.portable_fans",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.private_entrance",
       "destination": "moved_to_property_attribute",
-      "target": "Property.hasPrivateEntrance"
+      "target": "Property.hasPrivateEntrance",
+      "note": "Es atributo estructural de privacidad/acceso, no equipamiento."
     },
     {
       "id": "am.private_living_room",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.record_player",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.refrigerator",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.resort_access",
-      "destination": "moved_to_property_attribute"
+      "destination": "moved_to_property_attribute",
+      "note": "Es atributo de ubicación/entorno; debe vivir en Property (y/o propertyEnvironment)."
     },
     {
       "id": "am.rice_maker",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.room_darkening_shades",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.safe",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.sauna",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.shampoo",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.shower_gel",
-      "destination": "derived_from_space"
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
     },
     {
       "id": "am.single_level_home",
       "destination": "moved_to_access",
-      "target": "accessibility_features"
+      "target": "accessibility_features",
+      "note": "Es atributo de accesibilidad (no equipamiento)."
     },
     {
       "id": "am.skate_ramp",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.ski_in_out",
-      "destination": "moved_to_property_attribute"
+      "destination": "moved_to_property_attribute",
+      "note": "Es atributo de ubicación/entorno; debe vivir en Property (y/o propertyEnvironment)."
     },
     {
       "id": "am.smoke_alarm",
       "destination": "moved_to_system",
-      "target": "sys.smoke_detector"
+      "target": "sys.smoke_detector",
+      "note": "Seguridad/infraestructura. Debe vivir como System para herencia/coverage y playbooks."
     },
     {
       "id": "am.sound_system",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.stove",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.sun_loungers",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.table_corner_guards",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.theme_room",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.toaster",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.trash_compactor",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.tv",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.washer",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.waterfront",
-      "destination": "moved_to_property_attribute"
+      "destination": "moved_to_property_attribute",
+      "note": "Es atributo de ubicación/entorno; debe vivir en Property (y/o propertyEnvironment)."
     },
     {
       "id": "am.wifi",
       "destination": "derived_from_system",
-      "target": "sys.internet"
+      "target": "sys.internet",
+      "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
     },
     {
       "id": "am.window_guards",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "am.wine_glasses",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "note": "Amenity configurable (inventario/experiencia)."
     },
     {
       "id": "ax.accessible_parking_spot",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.bathroom_entrance_wide_81cm",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.bedroom_entrance_wide_81cm",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.ceiling_mobile_hoist",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.guest_entrance_wide_81cm",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.shower_bath_chair",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.shower_grab_bar",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_bathroom_access",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_bedroom_access",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_guest_entrance",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_path_to_entrance",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.step_free_shower",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     },
     {
       "id": "ax.toilet_grab_bar",
-      "destination": "moved_to_access"
+      "destination": "moved_to_access",
+      "note": "Este item es un accessibility_feature (ax.*) y debe capturarse en Acceso/Accesibilidad, no como amenity."
     }
   ]
 }

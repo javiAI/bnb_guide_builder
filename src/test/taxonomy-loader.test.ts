@@ -40,6 +40,10 @@ import {
   findSystemItem,
   findSystemSubtype,
   getSystemGroups,
+  getAmenityDestination,
+  isAmenityConfigurable,
+  isAmenityDerived,
+  isAmenityMoved,
 } from "@/lib/taxonomy-loader";
 
 describe("Taxonomy loaders", () => {
@@ -182,5 +186,43 @@ describe("Taxonomy loaders", () => {
 
   it("findSystemSubtype returns undefined for unknown key", () => {
     expect(findSystemSubtype("sys.nonexistent")).toBeUndefined();
+  });
+
+  // ── Amenity destination helpers (branch 1B) ──
+
+  it("getAmenityDestination returns the destination for a known amenity", () => {
+    expect(getAmenityDestination("am.wifi")).toBe("derived_from_system");
+    expect(getAmenityDestination("am.washer")).toBe("amenity_configurable");
+  });
+
+  it("getAmenityDestination returns undefined for unknown amenity", () => {
+    expect(getAmenityDestination("am.nonexistent")).toBeUndefined();
+  });
+
+  it("isAmenityConfigurable is true only for amenity_configurable", () => {
+    expect(isAmenityConfigurable("am.washer")).toBe(true);
+    expect(isAmenityConfigurable("am.wifi")).toBe(false); // derived_from_system
+    expect(isAmenityConfigurable("am.nonexistent")).toBe(false);
+  });
+
+  it("isAmenityDerived covers derived_from_{space,system,access}", () => {
+    expect(isAmenityDerived("am.wifi")).toBe(true); // derived_from_system
+    expect(isAmenityDerived("am.kitchen")).toBe(true); // derived_from_space
+    expect(isAmenityDerived("am.free_parking")).toBe(true); // derived_from_access
+    expect(isAmenityDerived("am.washer")).toBe(false); // configurable
+    expect(isAmenityDerived("am.nonexistent")).toBe(false);
+  });
+
+  it("isAmenityMoved covers moved_to_{system,access,property_attribute,guide_content}", () => {
+    // Picks are stable entries from the 1B audit; if the audit changes, adjust.
+    const anyMovedToAccess = amenityTaxonomy.items.find(
+      (i) => i.destination === "moved_to_access",
+    );
+    expect(anyMovedToAccess).toBeDefined();
+    expect(isAmenityMoved(anyMovedToAccess!.id)).toBe(true);
+
+    expect(isAmenityMoved("am.washer")).toBe(false); // configurable
+    expect(isAmenityMoved("am.wifi")).toBe(false); // derived
+    expect(isAmenityMoved("am.nonexistent")).toBe(false);
   });
 });
