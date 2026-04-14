@@ -41,6 +41,7 @@ export default async function AmenitiesPage({
     where: { id: propertyId },
     select: {
       id: true,
+      propertyEnvironment: true,
       spaces: {
         select: { id: true, spaceType: true, name: true, sortOrder: true },
         orderBy: { sortOrder: "asc" },
@@ -57,11 +58,17 @@ export default async function AmenitiesPage({
 
   // ── Build item sets ──
 
+  const propEnv = property.propertyEnvironment;
+
   const excludedIds = new Set<string>();
   for (const item of amenityTaxonomy.items) {
     const scope = getAmenityScopePolicy(item.id);
     if (scope?.isDerived) excludedIds.add(item.id);
     if (item.canonicalOwner) excludedIds.add(item.id);
+    // Environment filtering: if item has relevantEnvironments and property has an environment set, exclude non-matching
+    if (propEnv && scope?.relevantEnvironments?.length && !scope.relevantEnvironments.includes(propEnv)) {
+      excludedIds.add(item.id);
+    }
   }
 
   // Split remaining items into property-wide vs space-bound

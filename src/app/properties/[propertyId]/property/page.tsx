@@ -17,6 +17,7 @@ export default async function PropertyPage({ params }: Props) {
       propertyType: true,
       roomType: true,
       layoutKey: true,
+      propertyEnvironment: true,
       customPropertyTypeLabel: true,
       customPropertyTypeDesc: true,
       customRoomTypeLabel: true,

@@ -103,6 +103,7 @@ export async function savePropertyAction(
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
     layoutKey: (formData.get("layoutKey") as string) || null,
+    propertyEnvironment: (formData.get("propertyEnvironment") as string) || null,
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
@@ -159,6 +160,8 @@ export async function saveAccessAction(
   const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
   const buildingMethods = formData.getAll("buildingMethods") as string[];
   const unitMethods = formData.getAll("unitMethods") as string[];
+  const parkingTypes = formData.getAll("parkingTypes") as string[];
+  const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
 
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
@@ -197,6 +200,8 @@ export async function saveAccessAction(
       accessMethodsJson: {
         building: d.buildingAccess ?? null,
         unit: d.unitAccess,
+        parking: parkingTypes.length > 0 ? { types: parkingTypes } : null,
+        accessibility: accessibilityFeatures.length > 0 ? { features: accessibilityFeatures } : null,
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,

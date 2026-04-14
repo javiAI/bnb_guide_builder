@@ -142,6 +142,7 @@ export interface AmenityScopePolicyEntry {
   scopePolicy: AmenityScopePolicy;
   isDerived: boolean;
   suggestedSpaceTypes: string[];
+  relevantEnvironments?: string[];
 }
 
 // Amenity taxonomy groups: reference items by id

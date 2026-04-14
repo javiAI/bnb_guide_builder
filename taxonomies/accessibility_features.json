@@ -1,0 +1,32 @@
+{
+  "file": "accessibility_features.json",
+  "version": "2026-04-14",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "ax.step_free_guest_entrance",
+      "label": "Entrada de huéspedes sin escalones",
+      "description": "El huésped puede acceder a la entrada principal sin subir ni bajar escalones.",
+      "recommended": false
+    },
+    {
+      "id": "ax.guest_entrance_wide_81cm",
+      "label": "Entrada de huéspedes de más de 81 cm",
+      "description": "La puerta de entrada principal tiene un ancho libre de al menos 81 cm.",
+      "recommended": false
+    },
+    {
+      "id": "ax.step_free_path_to_entrance",
+      "label": "Recorrido sin escalones hasta la entrada",
+      "description": "El camino desde la calle o aparcamiento hasta la entrada no tiene escalones.",
+      "recommended": false
+    },
+    {
+      "id": "ax.accessible_parking_spot",
+      "label": "Plaza de aparcamiento accesible",
+      "description": "Existe una plaza de aparcamiento adaptada para personas con movilidad reducida.",
+      "recommended": false
+    }
+  ]
+}

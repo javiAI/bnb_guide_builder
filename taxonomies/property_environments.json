@@ -1,0 +1,38 @@
+{
+  "file": "property_environments.json",
+  "version": "2026-04-14",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "env.urban",
+      "label": "Urbano",
+      "description": "Propiedad en zona urbana o centro de ciudad."
+    },
+    {
+      "id": "env.beach",
+      "label": "Playa",
+      "description": "Propiedad cercana al mar o zona costera."
+    },
+    {
+      "id": "env.mountain",
+      "label": "Montaña",
+      "description": "Propiedad en zona de montaña o sierra."
+    },
+    {
+      "id": "env.rural",
+      "label": "Rural",
+      "description": "Propiedad en entorno rural o campo."
+    },
+    {
+      "id": "env.ski",
+      "label": "Esquí",
+      "description": "Propiedad cercana a estación de esquí."
+    },
+    {
+      "id": "env.lake",
+      "label": "Lago",
+      "description": "Propiedad junto a un lago o embalse."
+    }
+  ]
+}

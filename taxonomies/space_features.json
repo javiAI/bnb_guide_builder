@@ -336,6 +336,32 @@
       ]
     },
     {
+      "id": "sfg.bedroom_accessibility",
+      "label": "Accesibilidad",
+      "description": "Características de accesibilidad del dormitorio.",
+      "applies_to": ["sp.bedroom", "sp.studio", "sp.loft"],
+      "fields": [
+        {
+          "id": "sf.step_free_bedroom_access",
+          "label": "Acceso al dormitorio sin escalones",
+          "description": "Se puede llegar al dormitorio sin subir ni bajar escalones.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.bedroom_entrance_wide_81cm",
+          "label": "Entrada del dormitorio de más de 81 cm",
+          "description": "La puerta del dormitorio tiene un ancho libre de al menos 81 cm.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.bedroom_accessibility_other_tags",
+          "label": "Otro",
+          "description": "Otros elementos de accesibilidad del dormitorio.",
+          "type": "text_chips"
+        }
+      ]
+    },
+    {
       "id": "sfg.bathroom_type",
       "label": "Tipo y acceso",
       "description": "Privacidad y acceso del baño.",
@@ -612,6 +638,24 @@
           "id": "sf.shower_chair",
           "label": "Silla de ducha",
           "description": "Silla de ducha disponible para personas con movilidad reducida.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.step_free_bathroom_access",
+          "label": "Acceso al baño sin escalones",
+          "description": "Se puede llegar al baño sin subir ni bajar escalones.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.toilet_grab_bar",
+          "label": "Barra de apoyo en inodoro",
+          "description": "Barra de apoyo instalada junto al inodoro.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.ceiling_mobile_hoist",
+          "label": "Grúa fija o móvil",
+          "description": "Grúa de techo o portátil para transferencias.",
           "type": "boolean"
         },
         {

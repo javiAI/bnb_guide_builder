@@ -1,0 +1,38 @@
+{
+  "file": "parking_options.json",
+  "version": "2026-04-14",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "pk.free_on_premises",
+      "label": "Aparcamiento gratuito en la propiedad",
+      "description": "Plaza de aparcamiento gratuita dentro del recinto o garaje de la propiedad.",
+      "recommended": true
+    },
+    {
+      "id": "pk.free_street",
+      "label": "Aparcamiento gratuito en la calle",
+      "description": "Se puede aparcar gratis en la vía pública cercana.",
+      "recommended": false
+    },
+    {
+      "id": "pk.paid_on_premises",
+      "label": "Aparcamiento de pago en la propiedad",
+      "description": "Plaza de aparcamiento de pago dentro del recinto o garaje de la propiedad.",
+      "recommended": false
+    },
+    {
+      "id": "pk.paid_off_premises",
+      "label": "Aparcamiento de pago cercano",
+      "description": "Parking público de pago a poca distancia de la propiedad.",
+      "recommended": false
+    },
+    {
+      "id": "pk.no_parking",
+      "label": "Sin aparcamiento disponible",
+      "description": "No hay opción de aparcamiento viable cerca de la propiedad.",
+      "recommended": false
+    }
+  ]
+}

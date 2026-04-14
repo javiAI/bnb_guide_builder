@@ -8,7 +8,7 @@ import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveAccessAction, type ActionResult } from "@/lib/actions/editor.actions";
-import { accessMethods, buildingAccessMethods, getItems, findItem } from "@/lib/taxonomy-loader";
+import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
 
 const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];
 const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
@@ -50,6 +50,8 @@ interface AccessFormProps {
     hasBuildingAccess: boolean;
     buildingAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
     unitAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
+    parkingTypes: string[];
+    accessibilityFeatures: string[];
   };
 }
 
@@ -58,12 +60,16 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
   const [hasBuildingAccess, setHasBuildingAccess] = useState<string>(p.hasBuildingAccess ? "yes" : "no");
   const [buildingMethods, setBuildingMethods] = useState<string[]>(p.buildingAccess?.methods ?? []);
   const [unitMethods, setUnitMethods] = useState<string[]>(p.unitAccess?.methods ?? []);
+  const [parkingTypes, setParkingTypes] = useState<string[]>(p.parkingTypes);
+  const [axFeatures, setAxFeatures] = useState<string[]>(p.accessibilityFeatures);
   const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
 
   const [hoursOpen, setHoursOpen] = useState(true);
   const [typeOpen, setTypeOpen] = useState(false);
   const [buildingOpen, setBuildingOpen] = useState(false);
   const [unitOpen, setUnitOpen] = useState(false);
+  const [parkingOpen, setParkingOpen] = useState(false);
+  const [axOpen, setAxOpen] = useState(false);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(saveAccessAction, null);
 
@@ -72,6 +78,8 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
     hasBuildingAccess !== (p.hasBuildingAccess ? "yes" : "no") ||
     JSON.stringify(buildingMethods) !== JSON.stringify(p.buildingAccess?.methods ?? []) ||
     JSON.stringify(unitMethods) !== JSON.stringify(p.unitAccess?.methods ?? []) ||
+    JSON.stringify(parkingTypes) !== JSON.stringify(p.parkingTypes) ||
+    JSON.stringify(axFeatures) !== JSON.stringify(p.accessibilityFeatures) ||
     checkInEnd !== (p.checkInEnd ?? "22:00");
 
   const autonomousMode = isAutonomous === "yes";
@@ -88,6 +96,10 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
   const typeLabel = `Autónomo: ${isAutonomous === "yes" ? "Sí" : "No"} · Edificio: ${hasBuildingAccess === "yes" ? "Sí" : "No"}`;
   const buildingLabel = buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir";
   const unitLabel = unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir";
+  const parkingLabel = parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir";
+  const parkingOpts: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
+  const axOpts: CheckboxCardOption[] = getItems(accessibilityFeatures).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
+  const axLabel = axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna";
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -105,6 +117,8 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
         <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
         {buildingMethods.map((m) => <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />)}
         {unitMethods.map((m) => <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />)}
+        {parkingTypes.map((m) => <input key={`pk-${m}`} type="hidden" name="parkingTypes" value={m} />)}
+        {axFeatures.map((m) => <input key={`ax-${m}`} type="hidden" name="accessibilityFeatures" value={m} />)}
 
         {/* Horarios */}
         <CollapsibleSection title="Horarios" selectedLabel={hoursLabel} expanded={hoursOpen} onToggle={() => setHoursOpen(!hoursOpen)}>
@@ -167,6 +181,19 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
               <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="unitCustomDesc" rows={2} defaultValue={p.unitAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
             </div>
           )}
+        </CollapsibleSection>
+
+        {/* Aparcamiento */}
+        <CollapsibleSection title="Aparcamiento" selectedLabel={parkingLabel} expanded={parkingOpen} onToggle={() => setParkingOpen(!parkingOpen)}>
+          <CheckboxCardGroup name="_parkingTypes" options={parkingOpts} value={parkingTypes} onChange={setParkingTypes} />
+        </CollapsibleSection>
+
+        {/* Accesibilidad */}
+        <CollapsibleSection title="Accesibilidad" selectedLabel={axLabel} expanded={axOpen} onToggle={() => setAxOpen(!axOpen)}>
+          <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
+            Selecciona las características de accesibilidad de la entrada y zonas comunes. Las adaptaciones dentro de baños y dormitorios se configuran en cada espacio.
+          </p>
+          <CheckboxCardGroup name="_axFeatures" options={axOpts} value={axFeatures} onChange={setAxFeatures} />
         </CollapsibleSection>
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
