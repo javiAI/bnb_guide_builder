@@ -3,8 +3,9 @@
  *
  * Two entry points:
  *  - evaluateItemAvailability(rules, ctx): catalog filtering vs PropertyContext
- *  - evaluateFieldCondition(condition, formState): shorthand, used by
- *    dynamic_field_rules consumers (field visibility)
+ *  - evaluateFieldCondition(condition, actualValue): shorthand for evaluating
+ *    a single field's current value, used by dynamic_field_rules consumers
+ *    (field visibility)
  */
 
 import { coerceToPredicate, evaluatePredicate } from "./operators";
