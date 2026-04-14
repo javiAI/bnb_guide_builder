@@ -110,12 +110,18 @@ export default async function AmenitiesPage({
   });
 
   // Index by `${amenityKey}|${spaceId ?? ""}` so `enrichItem` can lookup
-  // in O(1) for any (taxonomy item, space) pair. For canonical
-  // `space:<id>` instances we register one entry per placement — this is
-  // what maps 1:1 to the legacy per-space rows and is what the UI chips
-  // need. Instances with no placements (transient state) are ignored for
-  // space-scoped lookup but still counted in the custom bucket if
-  // non-canonical.
+  // in O(1) for any (taxonomy item, space) pair.
+  //
+  // Two passes are used so canonical instances always win a key collision:
+  //   Pass 1: canonical instances ("default" / "space:<id>") — these map
+  //           1:1 to legacy per-space rows and are the UI's source of
+  //           truth. "space:<id>" instances are indexed per placement.
+  //   Pass 2: non-canonical (custom) instances — indexed from their
+  //           placements, or (if placements are empty) under the
+  //           property-wide slot, but ONLY into keys a canonical instance
+  //           didn't already claim. This lets the "Personalizado" badge
+  //           render for the still-to-be-UI-wired custom-instance surface
+  //           without hiding canonical chips.
   type IndexedInstance = {
     id: string;
     amenityKey: string;
@@ -123,25 +129,34 @@ export default async function AmenitiesPage({
     isCustomInstance: boolean;
   };
   const instanceIndex = new Map<string, IndexedInstance>();
+  const indexedFrom = (inst: typeof existingInstances[number], isCustom: boolean): IndexedInstance => ({
+    id: inst.id,
+    amenityKey: inst.amenityKey,
+    detailsJson: inst.detailsJson,
+    isCustomInstance: isCustom,
+  });
+
   for (const inst of existingInstances) {
-    const canonical = isCanonicalInstanceKey(inst.instanceKey);
-    const indexed: IndexedInstance = {
-      id: inst.id,
-      amenityKey: inst.amenityKey,
-      detailsJson: inst.detailsJson,
-      isCustomInstance: !canonical,
-    };
-    if (!canonical) continue;
+    if (!isCanonicalInstanceKey(inst.instanceKey)) continue;
     const derivedSpaceId = spaceIdFromInstanceKey(inst.instanceKey);
     if (derivedSpaceId === null) {
-      instanceIndex.set(`${inst.amenityKey}|`, indexed);
+      instanceIndex.set(`${inst.amenityKey}|`, indexedFrom(inst, false));
     } else {
-      // Canonical "space:<id>" instance — index it under each placement's
-      // spaceId. In the common steady-state there is exactly one
-      // placement (the one matching the key), but if additional
-      // placements exist they are surfaced too.
       for (const p of inst.placements) {
-        instanceIndex.set(`${inst.amenityKey}|${p.spaceId}`, indexed);
+        instanceIndex.set(`${inst.amenityKey}|${p.spaceId}`, indexedFrom(inst, false));
+      }
+    }
+  }
+  for (const inst of existingInstances) {
+    if (isCanonicalInstanceKey(inst.instanceKey)) continue;
+    const custom = indexedFrom(inst, true);
+    if (inst.placements.length === 0) {
+      const slot = `${inst.amenityKey}|`;
+      if (!instanceIndex.has(slot)) instanceIndex.set(slot, custom);
+    } else {
+      for (const p of inst.placements) {
+        const slot = `${inst.amenityKey}|${p.spaceId}`;
+        if (!instanceIndex.has(slot)) instanceIndex.set(slot, custom);
       }
     }
   }

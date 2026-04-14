@@ -34,9 +34,12 @@ function legacyTuples(rows: LegacyRow[]): string[] {
  * Normalize instance rows to the same `amenityKey|spaceId` tuples as legacy,
  * skipping non-canonical instances (custom amenities have no legacy mirror).
  *
- * For canonical "space:X" instances, we derive tuples from placements — each
- * placement corresponds to one legacy row. For "default" instances, we emit
- * a single tuple with empty spaceId.
+ * For canonical "space:X" instances we emit one tuple per placement — this
+ * tests the stronger invariant that placements on a canonical instance
+ * match the spaceId encoded in the instanceKey (dual-write guarantees it,
+ * the drift script verifies it, but wiring the parity here catches a whole
+ * class of placement/key mismatches at unit speed). For "default" instances
+ * we emit a single tuple with an empty spaceId.
  */
 function instanceTuples(rows: InstanceRow[]): string[] {
   const tuples: string[] = [];
@@ -46,7 +49,9 @@ function instanceTuples(rows: InstanceRow[]): string[] {
     if (spaceId === null) {
       tuples.push(`${inst.amenityKey}|`);
     } else {
-      tuples.push(`${inst.amenityKey}|${spaceId}`);
+      for (const p of inst.placements) {
+        tuples.push(`${inst.amenityKey}|${p.spaceId}`);
+      }
     }
   }
   return tuples.sort();
