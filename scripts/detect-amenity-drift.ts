@@ -29,7 +29,7 @@ const prisma = new PrismaClient();
 type Drift = { kind: string; detail: string };
 
 // Compound key helpers for map lookups. Null spaceId → "" sentinel,
-// which is safe because instance IDs are cuids (never empty).
+// which is safe because space IDs are cuids (never empty).
 const instanceKey = (propertyId: string, amenityKey: string, instanceKey: string) =>
   `${propertyId}\0${amenityKey}\0${instanceKey}`;
 const legacyKey = (propertyId: string, amenityKey: string, spaceId: string | null) =>
