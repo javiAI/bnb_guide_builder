@@ -41,6 +41,7 @@ export default async function AmenitiesPage({
     where: { id: propertyId },
     select: {
       id: true,
+      propertyEnvironment: true,
       spaces: {
         select: { id: true, spaceType: true, name: true, sortOrder: true },
         orderBy: { sortOrder: "asc" },
@@ -57,11 +58,19 @@ export default async function AmenitiesPage({
 
   // ── Build item sets ──
 
+  const propEnv = property.propertyEnvironment;
+
   const excludedIds = new Set<string>();
   for (const item of amenityTaxonomy.items) {
     const scope = getAmenityScopePolicy(item.id);
     if (scope?.isDerived) excludedIds.add(item.id);
     if (item.canonicalOwner) excludedIds.add(item.id);
+    // Environment filtering: items with relevantEnvironments only show when property's environment matches.
+    // If the item declares relevantEnvironments but the property hasn't set one yet, exclude it
+    // (avoids showing environment-specific amenities like beach/ski/lake on undefined-environment properties).
+    if (scope?.relevantEnvironments?.length && (!propEnv || !scope.relevantEnvironments.includes(propEnv))) {
+      excludedIds.add(item.id);
+    }
   }
 
   // Split remaining items into property-wide vs space-bound

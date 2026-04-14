@@ -50,6 +50,9 @@ import spaceFeaturesJson from "../../taxonomies/space_features.json";
 import spaceAvailabilityRulesJson from "../../taxonomies/space_availability_rules.json";
 import systemTaxonomyJson from "../../taxonomies/system_taxonomy.json";
 import systemSubtypesJson from "../../taxonomies/system_subtypes.json";
+import parkingOptionsJson from "../../taxonomies/parking_options.json";
+import accessibilityFeaturesJson from "../../taxonomies/accessibility_features.json";
+import propertyEnvironmentsJson from "../../taxonomies/property_environments.json";
 
 // ── Item-based taxonomies ──
 
@@ -68,6 +71,9 @@ export const reviewReasons = reviewReasonsJson as unknown as ItemTaxonomyFile;
 export const bedTypes = bedTypesJson as unknown as ItemTaxonomyFile;
 export const spanishProvinces = spanishProvincesJson as unknown as ItemTaxonomyFile;
 export const buildingAccessMethods = buildingAccessMethodsJson as unknown as ItemTaxonomyFile;
+export const parkingOptions = parkingOptionsJson as unknown as ItemTaxonomyFile;
+export const accessibilityFeatures = accessibilityFeaturesJson as unknown as ItemTaxonomyFile;
+export const propertyEnvironments = propertyEnvironmentsJson as unknown as ItemTaxonomyFile;
 export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
 export const spaceFeatures = spaceFeaturesJson as unknown as SpaceFeaturesFile;
 export const spaceAvailabilityRules = spaceAvailabilityRulesJson as unknown as SpaceAvailabilityRulesFile;

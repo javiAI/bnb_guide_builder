@@ -58,6 +58,7 @@ model Property {
   propertyType     String?  @map("property_type")
   roomType         String?  @map("room_type")
   layoutKey        String?  @map("layout_key")
+  propertyEnvironment String? @map("property_environment")
   country          String?
   city             String?
   region           String?

@@ -3,10 +3,19 @@ import {
   propertyTypes,
   roomTypes,
   spaceTypes,
+  spaceAvailabilityRules,
+  spaceFeatures,
+  bedTypes,
   accessMethods,
+  buildingAccessMethods,
+  parkingOptions,
+  accessibilityFeatures,
+  propertyEnvironments,
   policyTaxonomy,
   amenityTaxonomy,
   amenitySubtypes,
+  systemTaxonomy,
+  systemSubtypes,
   troubleshootingTaxonomy,
   messagingTouchpoints,
   guideOutputs,
@@ -16,6 +25,8 @@ import {
   automationChannels,
   mediaAssetRoles,
   reviewReasons,
+  contactTypes,
+  spanishProvinces,
   getItems,
   findItem,
   getRecommendedItems,
@@ -32,14 +43,23 @@ import {
 } from "@/lib/taxonomy-loader";
 
 describe("Taxonomy loaders", () => {
-  it("loads all 16 taxonomies without error", () => {
+  it("loads every taxonomy exported by taxonomy-loader without error", () => {
     expect(propertyTypes.file).toBe("property_types.json");
     expect(roomTypes.file).toBe("room_types.json");
     expect(spaceTypes.file).toBe("space_types.json");
+    expect(spaceAvailabilityRules.file).toBe("space_availability_rules.json");
+    expect(spaceFeatures.file).toBe("space_features.json");
+    expect(bedTypes.file).toBe("bed_types.json");
     expect(accessMethods.file).toBe("access_methods.json");
+    expect(buildingAccessMethods.file).toBe("building_access_methods.json");
+    expect(parkingOptions.file).toBe("parking_options.json");
+    expect(accessibilityFeatures.file).toBe("accessibility_features.json");
+    expect(propertyEnvironments.file).toBe("property_environments.json");
     expect(policyTaxonomy.file).toBe("policy_taxonomy.json");
     expect(amenityTaxonomy.file).toBe("amenity_taxonomy.json");
     expect(amenitySubtypes.file).toBe("amenity_subtypes.json");
+    expect(systemTaxonomy.file).toBe("system_taxonomy.json");
+    expect(systemSubtypes.file).toBe("system_subtypes.json");
     expect(troubleshootingTaxonomy.file).toBe("troubleshooting_taxonomy.json");
     expect(messagingTouchpoints.file).toBe("messaging_touchpoints.json");
     expect(guideOutputs.file).toBe("guide_outputs.json");
@@ -49,15 +69,18 @@ describe("Taxonomy loaders", () => {
     expect(automationChannels.file).toBe("automation_channels.json");
     expect(mediaAssetRoles.file).toBe("media_asset_roles.json");
     expect(reviewReasons.file).toBe("review_reasons.json");
+    expect(contactTypes.file).toBe("contact_types.json");
+    expect(spanishProvinces.file).toBe("spanish_provinces.json");
   });
 
   it("all taxonomies use es-ES locale", () => {
     const all = [
-      propertyTypes, roomTypes, spaceTypes, accessMethods,
-      policyTaxonomy, amenityTaxonomy, amenitySubtypes,
-      troubleshootingTaxonomy, messagingTouchpoints, guideOutputs,
-      visibilityLevels, mediaRequirements, dynamicFieldRules,
-      automationChannels, mediaAssetRoles, reviewReasons,
+      propertyTypes, roomTypes, spaceTypes, spaceAvailabilityRules, spaceFeatures, bedTypes,
+      accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, propertyEnvironments,
+      policyTaxonomy, amenityTaxonomy, amenitySubtypes, systemTaxonomy, systemSubtypes,
+      troubleshootingTaxonomy, messagingTouchpoints, guideOutputs, visibilityLevels,
+      mediaRequirements, dynamicFieldRules, automationChannels, mediaAssetRoles, reviewReasons,
+      contactTypes, spanishProvinces,
     ];
     all.forEach((t) => expect(t.locale).toBe("es-ES"));
   });

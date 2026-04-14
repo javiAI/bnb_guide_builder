@@ -34,8 +34,8 @@
       ]
     },
     "am.washer": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.laundry",
         "sp.bathroom",
@@ -43,35 +43,35 @@
       ]
     },
     "am.free_parking": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.iron": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.laundry",
         "sp.bedroom"
       ]
     },
     "am.bathtub": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "am.bidet": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "am.body_soap": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
@@ -82,15 +82,15 @@
       "suggestedSpaceTypes": []
     },
     "am.conditioner": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "am.hair_dryer": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
@@ -101,8 +101,8 @@
       "suggestedSpaceTypes": []
     },
     "am.outdoor_shower": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.garden",
         "sp.patio",
@@ -110,22 +110,22 @@
       ]
     },
     "am.shampoo": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "am.shower_gel": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "am.bed_linens": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.studio",
@@ -133,24 +133,24 @@
       ]
     },
     "am.clothing_storage": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.studio"
       ]
     },
     "am.dryer": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.laundry",
         "sp.bathroom"
       ]
     },
     "am.drying_rack": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.laundry",
         "sp.balcony",
@@ -163,8 +163,8 @@
       "suggestedSpaceTypes": []
     },
     "am.extra_pillows_blankets": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.studio",
@@ -172,23 +172,23 @@
       ]
     },
     "am.hangers": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.studio"
       ]
     },
     "am.mosquito_net": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom"
       ]
     },
     "am.room_darkening_shades": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.studio",
@@ -196,15 +196,15 @@
       ]
     },
     "am.safe": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom"
       ]
     },
     "am.tv": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.living_room",
@@ -213,8 +213,8 @@
       ]
     },
     "am.ethernet": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.office",
         "sp.bedroom",
@@ -229,8 +229,8 @@
       ]
     },
     "am.game_console": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.living_room",
         "sp.bedroom",
@@ -238,21 +238,21 @@
       ]
     },
     "am.books_reading": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.sound_system": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.living_room",
         "sp.kitchen"
       ]
     },
     "am.bbq_grill": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.garden",
         "sp.patio",
@@ -260,8 +260,8 @@
       ]
     },
     "am.outdoor_furniture": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.garden",
         "sp.patio",
@@ -284,8 +284,8 @@
       ]
     },
     "am.fire_pit": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.garden",
         "sp.patio"
@@ -302,38 +302,38 @@
       ]
     },
     "am.refrigerator": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.studio"
       ]
     },
     "am.microwave": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.studio"
       ]
     },
     "am.oven": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen"
       ]
     },
     "am.dishwasher": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen"
       ]
     },
     "am.stove": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.studio"
@@ -367,8 +367,8 @@
       "suggestedSpaceTypes": []
     },
     "am.dedicated_workspace": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.office",
         "sp.bedroom"
@@ -387,12 +387,19 @@
     "am.beach_access": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach"
+      ]
     },
     "am.boat_slip": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach",
+        "env.lake"
+      ]
     },
     "am.bowling_alley": {
       "scopePolicy": "property_only",
@@ -405,18 +412,18 @@
       "suggestedSpaceTypes": []
     },
     "am.ev_charger": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.free_parking_premises": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.free_street_parking": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.gym": {
@@ -427,12 +434,18 @@
     "am.hockey_rink": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.ski"
+      ]
     },
     "am.lake_access": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.lake"
+      ]
     },
     "am.laser_tag": {
       "scopePolicy": "property_only",
@@ -460,8 +473,8 @@
       "suggestedSpaceTypes": []
     },
     "am.outdoor_dining_area": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.patio",
         "sp.garden"
@@ -483,13 +496,13 @@
       ]
     },
     "am.paid_parking_off_premises": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.paid_parking_on_premises": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "am.piano": {
@@ -518,7 +531,11 @@
     "am.resort_access": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach",
+        "env.ski"
+      ]
     },
     "am.sauna": {
       "scopePolicy": "property_only",
@@ -540,11 +557,14 @@
     "am.ski_in_out": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.ski"
+      ]
     },
     "am.sun_loungers": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.pool",
         "sp.garden",
@@ -554,7 +574,11 @@
     "am.waterfront": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach",
+        "env.lake"
+      ]
     },
     "am.hammock": {
       "scopePolicy": "property_only",
@@ -562,6 +586,12 @@
       "suggestedSpaceTypes": [
         "sp.garden",
         "sp.patio"
+      ],
+      "relevantEnvironments": [
+        "env.rural",
+        "env.beach",
+        "env.mountain",
+        "env.lake"
       ]
     },
     "am.heating": {
@@ -572,7 +602,10 @@
     "am.beach_essentials": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach"
+      ]
     },
     "am.babysitter_recs": {
       "scopePolicy": "property_only",
@@ -580,8 +613,8 @@
       "suggestedSpaceTypes": []
     },
     "am.ceiling_fan": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.living_room",
@@ -589,8 +622,8 @@
       ]
     },
     "am.indoor_fireplace": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.living_room",
         "sp.open_plan",
@@ -598,8 +631,8 @@
       ]
     },
     "am.portable_fans": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.living_room"
@@ -618,8 +651,8 @@
       ]
     },
     "am.kitchenette": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.studio",
         "sp.loft"
@@ -671,8 +704,8 @@
       ]
     },
     "am.baking_sheet": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -693,8 +726,8 @@
       "suggestedSpaceTypes": []
     },
     "am.blender": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -702,8 +735,8 @@
       ]
     },
     "am.board_games": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.living_room",
         "sp.open_plan"
@@ -765,8 +798,8 @@
       ]
     },
     "am.cooking_basics": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -781,8 +814,8 @@
       ]
     },
     "am.dining_table": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.dining",
         "sp.open_plan",
@@ -790,8 +823,8 @@
       ]
     },
     "am.dishes_silverware": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.dining"
@@ -806,8 +839,8 @@
       ]
     },
     "am.freezer": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -815,8 +848,8 @@
       ]
     },
     "am.high_chair": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.dining"
@@ -825,11 +858,15 @@
     "am.kayak": {
       "scopePolicy": "multi_instance",
       "isDerived": false,
-      "suggestedSpaceTypes": []
+      "suggestedSpaceTypes": [],
+      "relevantEnvironments": [
+        "env.beach",
+        "env.lake"
+      ]
     },
     "am.kettle": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -837,8 +874,8 @@
       ]
     },
     "am.mini_fridge": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom",
         "sp.kitchen"
@@ -860,8 +897,8 @@
       ]
     },
     "am.record_player": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.living_room",
         "sp.open_plan"
@@ -885,8 +922,8 @@
       ]
     },
     "am.toaster": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -908,93 +945,93 @@
       ]
     },
     "am.wine_glasses": {
-      "scopePolicy": "multi_instance",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.dining"
       ]
     },
     "ax.accessible_parking_spot": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "ax.bathroom_entrance_wide_81cm": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "ax.bedroom_entrance_wide_81cm": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom"
       ]
     },
     "ax.ceiling_mobile_hoist": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom",
         "sp.bedroom"
       ]
     },
     "ax.guest_entrance_wide_81cm": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "ax.shower_bath_chair": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "ax.shower_grab_bar": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "ax.step_free_bathroom_access": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "ax.step_free_bedroom_access": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bedroom"
       ]
     },
     "ax.step_free_guest_entrance": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "ax.step_free_path_to_entrance": {
-      "scopePolicy": "property_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": []
     },
     "ax.step_free_shower": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]
     },
     "ax.toilet_grab_bar": {
-      "scopePolicy": "space_only",
-      "isDerived": false,
+      "scopePolicy": "derived",
+      "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.bathroom"
       ]

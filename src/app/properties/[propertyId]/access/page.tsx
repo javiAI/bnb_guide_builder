@@ -27,7 +27,12 @@ export default async function AccessPage({ params }: Props) {
   if (!property) redirect("/");
 
   // Parse structured access from JSON
-  const accessJson = property.accessMethodsJson as { building?: { methods: string[]; customLabel?: string; customDesc?: string }; unit?: { methods: string[]; customLabel?: string; customDesc?: string } } | null;
+  const accessJson = property.accessMethodsJson as {
+    building?: { methods: string[]; customLabel?: string | null; customDesc?: string | null };
+    unit?: { methods: string[]; customLabel?: string | null; customDesc?: string | null };
+    parking?: { types: string[] } | null;
+    accessibility?: { features: string[] } | null;
+  } | null;
 
   return (
     <AccessForm
@@ -40,6 +45,8 @@ export default async function AccessPage({ params }: Props) {
         hasBuildingAccess: property.hasBuildingAccess,
         buildingAccess: accessJson?.building ?? null,
         unitAccess: accessJson?.unit ?? null,
+        parkingTypes: accessJson?.parking?.types ?? [],
+        accessibilityFeatures: accessJson?.accessibility?.features ?? [],
       }}
     />
   );
