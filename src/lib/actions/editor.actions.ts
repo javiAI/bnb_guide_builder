@@ -964,7 +964,9 @@ export async function updateSystemAction(
   if (!system) return { success: false, error: "Sistema no encontrado" };
 
   const raw: Record<string, unknown> = {
-    internalNotes: (formData.get("internalNotes") as string) || null,
+    internalNotes: formData.has("internalNotes")
+      ? ((formData.get("internalNotes") as string) || null)
+      : undefined,
     visibility: (formData.get("visibility") as string) || undefined,
   };
   const detailsStr = formData.get("detailsJson") as string | null;

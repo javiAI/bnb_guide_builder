@@ -25,8 +25,11 @@ const MODE_LABELS: Record<string, string> = {
 export function SystemCoverageTable({ systemId, propertyId, spaces, coverageMap }: Props) {
   const [, startTransition] = useTransition();
   const [localMap, setLocalMap] = useState<Record<string, string>>(coverageMap);
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(spaceId: string, mode: string) {
+    const previousMode = localMap[spaceId] ?? "inherited";
+    setError(null);
     setLocalMap((prev) => ({ ...prev, [spaceId]: mode }));
     const fd = new FormData();
     fd.append("systemId", systemId);
@@ -34,12 +37,28 @@ export function SystemCoverageTable({ systemId, propertyId, spaces, coverageMap 
     fd.append("spaceId", spaceId);
     fd.append("mode", mode);
     startTransition(() => {
-      updateSystemCoverageAction(null, fd);
+      void (async () => {
+        try {
+          const result = await updateSystemCoverageAction(null, fd);
+          if (result && "success" in result && result.success === false) {
+            setLocalMap((prev) => ({ ...prev, [spaceId]: previousMode }));
+            setError("No se pudo guardar la cobertura. Inténtalo de nuevo.");
+          }
+        } catch {
+          setLocalMap((prev) => ({ ...prev, [spaceId]: previousMode }));
+          setError("No se pudo guardar la cobertura. Inténtalo de nuevo.");
+        }
+      })();
     });
   }
 
   return (
     <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)]">
+      {error && (
+        <div className="border-b border-[var(--border)] bg-[var(--color-error-50)] px-4 py-2 text-xs text-[var(--color-error-700)]">
+          {error}
+        </div>
+      )}
       <table className="w-full text-sm">
         <thead className="bg-[var(--color-neutral-50)]">
           <tr>

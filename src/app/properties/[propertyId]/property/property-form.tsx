@@ -244,8 +244,8 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
-        {/* Only send infrastructureJson if already configured in DB or user changed something */}
-        {(p.infrastructureJson != null || infraDirty) && (
+        {/* Only send infrastructureJson when user changed infra fields — avoids overwriting existing JSON keys on unrelated saves */}
+        {infraDirty && (
           <input type="hidden" name="infrastructureJson" value={JSON.stringify({ hasElevator, buildingFloors })} />
         )}
 
