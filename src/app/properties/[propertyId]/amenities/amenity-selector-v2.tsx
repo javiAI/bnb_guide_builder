@@ -51,18 +51,6 @@ function AmenityChip({
     if (item.enabled) onExpand(null);
   }
 
-  function handleClick() {
-    if (!item.enabled) {
-      handleToggle();
-      return;
-    }
-    if (hasDetails) {
-      onExpand(isExpanded ? null : expandKey);
-      return;
-    }
-    handleToggle();
-  }
-
   if (item.enabled) {
     return (
       <Tooltip text={item.description}>

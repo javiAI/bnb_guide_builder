@@ -52,6 +52,7 @@ export default async function AmenitiesPage({
   // All existing amenity rows for this property
   const existingAmenities = await prisma.propertyAmenity.findMany({
     where: { propertyId },
+    select: { id: true, amenityKey: true, spaceId: true, detailsJson: true },
   });
 
   // ── Build item sets ──

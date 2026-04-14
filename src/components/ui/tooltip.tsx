@@ -17,7 +17,7 @@ export function Tooltip({ text, children }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const wrapRef = useRef<HTMLSpanElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);

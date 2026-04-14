@@ -666,17 +666,22 @@ export async function toggleAmenityAction(
   }
 
   if (enabled) {
-    const existing = await prisma.propertyAmenity.findFirst({
-      where: { propertyId, amenityKey, spaceId },
-    });
-    if (!existing) {
-      await prisma.propertyAmenity.create({
-        data: {
-          amenityKey,
-          property: { connect: { id: propertyId } },
-          ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
-        },
+    try {
+      const existing = await prisma.propertyAmenity.findFirst({
+        where: { propertyId, amenityKey, spaceId },
       });
+      if (!existing) {
+        await prisma.propertyAmenity.create({
+          data: {
+            amenityKey,
+            property: { connect: { id: propertyId } },
+            ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
+          },
+        });
+      }
+    } catch (err) {
+      if ((err as { code?: string }).code !== "P2002") throw err;
+      // P2002 = unique constraint violation from concurrent toggle — row already exists, safe to ignore
     }
   } else {
     await prisma.propertyAmenity.deleteMany({
