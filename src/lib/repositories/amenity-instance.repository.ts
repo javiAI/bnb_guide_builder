@@ -1,13 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 
-/**
- * Write owner: amenity instances (+ placements) for a property.
- *
- * See docs/MASTER_PLAN.md Phase 2. Dual-write window is active: callers
- * may still use `amenityRepository` against the legacy `PropertyAmenity`
- * table. Cutover happens in Branch 2C.
- */
+/** Write owner: amenity instances (+ placements) for a property. */
 export const amenityInstanceRepository = {
   findByProperty(propertyId: string) {
     return prisma.propertyAmenityInstance.findMany({

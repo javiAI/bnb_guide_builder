@@ -7,7 +7,7 @@ describe("Repository exports", () => {
     "workspaceRepository",
     "wizardRepository",
     "spaceRepository",
-    "amenityRepository",
+    "amenityInstanceRepository",
     "troubleshootingRepository",
     "localPlaceRepository",
     "opsRepository",
@@ -39,9 +39,10 @@ describe("Write ownership", () => {
     expect(repos.spaceRepository).toHaveProperty("findByProperty");
   });
 
-  it("amenityRepository is write owner for amenities", () => {
-    expect(repos.amenityRepository).toHaveProperty("create");
-    expect(repos.amenityRepository).toHaveProperty("update");
+  it("amenityInstanceRepository is write owner for amenity instances", () => {
+    expect(repos.amenityInstanceRepository).toHaveProperty("create");
+    expect(repos.amenityInstanceRepository).toHaveProperty("update");
+    expect(repos.amenityInstanceRepository).toHaveProperty("addPlacement");
   });
 
   it("auditRepository is append-only (no update/delete)", () => {
