@@ -437,7 +437,7 @@ export async function completeWizardAction(
             spaceType,
             name,
             sortOrder: sortOrder++,
-            featuresJson: { _origin: { source: "wizard", key: `bed_space_${spaceIdx}` } },
+            featuresJson: { "_origin.source": "wizard", "_origin.key": `bed_space_${spaceIdx}` },
           },
         });
         for (const bed of spaceBeds) {
@@ -461,7 +461,7 @@ export async function completeWizardAction(
           spaceType: layoutSpaceType,
           name: getSpaceTypeLabel(layoutSpaceType),
           sortOrder: sortOrder++,
-          featuresJson: { _origin: { source: "wizard", key: `layout_${d.layoutKey}` } },
+          featuresJson: { "_origin.source": "wizard", "_origin.key": `layout_${d.layoutKey}` },
         },
       });
     }
@@ -475,7 +475,7 @@ export async function completeWizardAction(
           spaceType: "sp.bathroom",
           name: bathroomsCount === 1 ? "Baño" : `Baño ${i + 1}`,
           sortOrder: sortOrder++,
-          featuresJson: { _origin: { source: "wizard", key: `bathroom_${i}` } },
+          featuresJson: { "_origin.source": "wizard", "_origin.key": `bathroom_${i}` },
         },
       });
     }
