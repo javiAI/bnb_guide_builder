@@ -219,6 +219,7 @@ model Space {
   property         Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   beds             BedConfiguration[]
   systemCoverages  PropertySystemCoverage[]
+  amenities        PropertyAmenity[]
 
   @@index([propertyId])
   @@index([propertyId, visibility])
@@ -282,6 +283,7 @@ model PropertyAmenity {
   amenityKey           String   @map("amenity_key")
   subtypeKey           String?  @map("subtype_key")
   spaceId              String?  @map("space_id")
+  detailsJson          Json?    @map("details_json")
   guestInstructions    String?  @map("guest_instructions")
   aiInstructions       String?  @map("ai_instructions")
   internalNotes        String?  @map("internal_notes")
@@ -291,8 +293,11 @@ model PropertyAmenity {
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  space   Space?   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
+  @@unique([propertyId, amenityKey, spaceId], map: "property_amenities_property_id_amenity_key_space_id_key")
   @@index([propertyId])
+  @@index([spaceId])
   @@index([propertyId, amenityKey])
   @@map("property_amenities")
 }

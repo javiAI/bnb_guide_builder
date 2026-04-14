@@ -116,7 +116,7 @@
           "label": "Ubicación de café y consumibles",
           "description": "Lugar exacto donde se guardan café, filtros o cápsulas. Solo uso interno.",
           "type": "text_optional",
-          "visibility": "vis.internal"
+          "visibility": "internal"
         }
       ],
       "media_requirements": [
@@ -156,7 +156,7 @@
           "label": "Ubicación del router",
           "description": "Ubicación física del router para operaciones o troubleshooting.",
           "type": "text_optional",
-          "visibility": "vis.internal"
+          "visibility": "internal"
         },
         {
           "id": "wifi.speed_tier",

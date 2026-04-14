@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { findSystemItem } from "@/lib/taxonomy-loader";
+import { stripNulls } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -407,9 +408,8 @@ export async function deleteSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  // Atomic: null out orphaned PropertyAmenity.spaceId, delete space, recompute counts
+  // Atomic: delete space (cascades amenities via FK), recompute counts
   await prisma.$transaction(async (tx) => {
-    await tx.propertyAmenity.updateMany({ where: { spaceId }, data: { spaceId: null } });
     await tx.space.delete({ where: { id: spaceId } });
     await recomputePropertyCounts(tx, space.propertyId);
   });
@@ -655,24 +655,37 @@ export async function toggleAmenityAction(
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
   const amenityKey = formData.get("amenityKey") as string;
+  const spaceId = (formData.get("spaceId") as string) || null;
   const enabled = formData.get("enabled") === "true";
 
+  if (spaceId) {
+    const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { propertyId: true } });
+    if (!space || space.propertyId !== propertyId) {
+      return { success: false, error: "El espacio no pertenece a la propiedad" };
+    }
+  }
+
   if (enabled) {
-    // Check if already exists
-    const existing = await prisma.propertyAmenity.findFirst({
-      where: { propertyId, amenityKey },
-    });
-    if (!existing) {
-      await prisma.propertyAmenity.create({
-        data: {
-          amenityKey,
-          property: { connect: { id: propertyId } },
-        },
+    try {
+      const existing = await prisma.propertyAmenity.findFirst({
+        where: { propertyId, amenityKey, spaceId },
       });
+      if (!existing) {
+        await prisma.propertyAmenity.create({
+          data: {
+            amenityKey,
+            property: { connect: { id: propertyId } },
+            ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
+          },
+        });
+      }
+    } catch (err) {
+      if ((err as { code?: string }).code !== "P2002") throw err;
+      // P2002 = unique constraint violation from concurrent toggle — row already exists, safe to ignore
     }
   } else {
     await prisma.propertyAmenity.deleteMany({
-      where: { propertyId, amenityKey },
+      where: { propertyId, amenityKey, spaceId },
     });
   }
 
@@ -696,8 +709,24 @@ export async function updateAmenityAction(
     return { success: false, error: "El amenity no pertenece a la propiedad indicada" };
   }
 
+  // Parse detailsJson from form (sent as JSON string)
+  let detailsJson: Record<string, unknown> | undefined;
+  const detailsRaw = formData.get("detailsJson") as string | null;
+  if (detailsRaw) {
+    try {
+      const parsed = JSON.parse(detailsRaw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return { success: false, error: "detailsJson inválido" };
+      }
+      detailsJson = stripNulls(parsed) as Record<string, string | number | boolean | string[] | null>;
+    } catch {
+      return { success: false, error: "detailsJson inválido" };
+    }
+  }
+
   const raw = {
     subtypeKey: (formData.get("subtypeKey") as string) || undefined,
+    detailsJson,
     guestInstructions: (formData.get("guestInstructions") as string) || undefined,
     aiInstructions: (formData.get("aiInstructions") as string) || undefined,
     internalNotes: (formData.get("internalNotes") as string) || undefined,
@@ -713,9 +742,16 @@ export async function updateAmenityAction(
     };
   }
 
+  // Persist detailsJson: empty object → null (clear), otherwise store as-is
+  const { detailsJson: validatedDetails, ...rest } = result.data;
+  const data: Record<string, unknown> = { ...rest };
+  if (validatedDetails !== undefined) {
+    data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
+  }
+
   await prisma.propertyAmenity.update({
     where: { id: amenityId },
-    data: result.data,
+    data,
   });
 
   revalidatePath(`/properties/${amenity.propertyId}/amenities`);

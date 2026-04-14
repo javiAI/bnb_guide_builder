@@ -247,6 +247,46 @@ export function findSystemSubtype(systemKey: string): SystemSubtype | undefined 
   return systemSubtypes.subtypes.find((s) => s.systemKey === systemKey || s.id === systemKey);
 }
 
+// ── Amenity item helpers ──
+
+export function findAmenityItem(amenityId: string): TaxonomyItem | undefined {
+  return amenityTaxonomy.items.find((i) => i.id === amenityId);
+}
+
+/**
+ * Returns true if this amenity's primary config lives on a System (canonicalOwner).
+ * These amenities show read-only in the amenities section with a link to Systems.
+ */
+export function isCanonicalOwnerAmenity(amenityId: string): boolean {
+  return !!findAmenityItem(amenityId)?.canonicalOwner;
+}
+
+/**
+ * Partition amenity items by relevance to the given space type IDs.
+ * Items with no suggestedSpaceTypes or at least one matching type → relevant.
+ * Items whose suggestedSpaceTypes don't overlap → irrelevant.
+ * Returns { relevant, irrelevant } so the UI can show irrelevant items in a collapsed section.
+ */
+export function partitionAmenitiesBySpaces(
+  spaceTypeIds: string[],
+): { relevant: TaxonomyItem[]; irrelevant: TaxonomyItem[] } {
+  const spaceSet = new Set(spaceTypeIds);
+  const relevant: TaxonomyItem[] = [];
+  const irrelevant: TaxonomyItem[] = [];
+
+  for (const item of amenityTaxonomy.items) {
+    const scope = amenityTaxonomy.scopePolicies?.[item.id];
+    const suggested = scope?.suggestedSpaceTypes ?? [];
+
+    if (suggested.length === 0 || suggested.some((s) => spaceSet.has(s))) {
+      relevant.push(item);
+    } else {
+      irrelevant.push(item);
+    }
+  }
+  return { relevant, irrelevant };
+}
+
 // ── Amenity scope policy helpers ──
 
 export function getAmenityScopePolicy(amenityId: string): AmenityScopePolicyEntry | undefined {

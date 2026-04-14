@@ -18,6 +18,7 @@ import {
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 import { BedManager, type BedData } from "./bed-manager";
 
 
@@ -282,14 +283,17 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
         {/* Right: progress dot + expand toggle */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {progressDot !== "none" && (
-            <span
-              title={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
-              className={`h-2 w-2 rounded-full ${
-                progressDot === "complete"
-                  ? "bg-[var(--color-success-500,#22c55e)]"
-                  : "bg-[var(--color-warning-400,#facc15)]"
-              }`}
-            />
+            <Tooltip text={progressDot === "complete" ? "Espacio completo" : "Información parcial"}>
+              <span
+                role="img"
+                aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
+                className={`h-2 w-2 rounded-full ${
+                  progressDot === "complete"
+                    ? "bg-[var(--color-success-500,#22c55e)]"
+                    : "bg-[var(--color-warning-400,#facc15)]"
+                }`}
+              />
+            </Tooltip>
           )}
           <button
             type="button"
@@ -343,7 +347,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   <span className="text-[9px]">Vídeo</span>
                 </div>
               </div>
-              <p className="mt-2 text-[11px] text-[var(--color-neutral-400)]">
+              <p className="mt-2 text-[11px] text-[var(--color-neutral-500)]">
                 Disponible próximamente — podrás asociar fotos a cada zona del espacio.
               </p>
             </SpaceSection>
@@ -594,21 +598,21 @@ function FlatFeatureSection({
           {boolFields.map((field) => {
             const active = Boolean(features[field.id]);
             return (
-              <button
-                key={field.id}
-                type="button"
-                aria-pressed={active}
-                title={field.description}
-                onClick={() => onChangeFeature(field.id, !active)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                  active
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
-                    : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
-                }`}
-              >
-                {active && <span className="mr-1">✓</span>}
-                {field.label}
-              </button>
+              <Tooltip key={field.id} text={field.description}>
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => onChangeFeature(field.id, !active)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                    active
+                      ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
+                      : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
+                  }`}
+                >
+                  {active && <span className="mr-1">✓</span>}
+                  {field.label}
+                </button>
+              </Tooltip>
             );
           })}
         </div>
