@@ -295,7 +295,7 @@ model PropertyAmenity {
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   space   Space?   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
-  @@unique([propertyId, amenityKey, spaceId])
+  @@unique([propertyId, amenityKey, spaceId], map: "property_amenities_property_id_amenity_key_space_id_key")
   @@index([propertyId])
   @@index([spaceId])
   @@index([propertyId, amenityKey])

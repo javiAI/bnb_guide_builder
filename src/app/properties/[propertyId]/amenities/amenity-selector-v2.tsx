@@ -186,7 +186,8 @@ function CustomChipInput({
     if (!trimmed) return;
 
     // Custom amenities use "custom." prefix + slugified label
-    const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    const slug = trimmed.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+    if (!slug) return;
     const amenityKey = `custom.${slug}`;
 
     const formData = new FormData();

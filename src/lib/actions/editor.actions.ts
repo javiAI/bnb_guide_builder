@@ -658,6 +658,13 @@ export async function toggleAmenityAction(
   const spaceId = (formData.get("spaceId") as string) || null;
   const enabled = formData.get("enabled") === "true";
 
+  if (spaceId) {
+    const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { propertyId: true } });
+    if (!space || space.propertyId !== propertyId) {
+      return { success: false, error: "El espacio no pertenece a la propiedad" };
+    }
+  }
+
   if (enabled) {
     const existing = await prisma.propertyAmenity.findFirst({
       where: { propertyId, amenityKey, spaceId },
@@ -703,6 +710,9 @@ export async function updateAmenityAction(
   if (detailsRaw) {
     try {
       const parsed = JSON.parse(detailsRaw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return { success: false, error: "detailsJson inválido" };
+      }
       detailsJson = stripNulls(parsed) as Record<string, string | number | boolean | string[] | null>;
     } catch {
       return { success: false, error: "detailsJson inválido" };

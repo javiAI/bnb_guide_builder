@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
+import { useState, useRef, useCallback, useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 interface TooltipProps {
@@ -13,6 +13,7 @@ interface TooltipProps {
  * Wraps any element and shows a styled tooltip on hover/focus.
  */
 export function Tooltip({ text, children }: TooltipProps) {
+  const tooltipId = useId();
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -58,6 +59,7 @@ export function Tooltip({ text, children }: TooltipProps) {
 
   const tooltip = (
     <span
+      id={tooltipId}
       role="tooltip"
       style={{
         position: "absolute",
@@ -84,6 +86,7 @@ export function Tooltip({ text, children }: TooltipProps) {
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
+      aria-describedby={visible ? tooltipId : undefined}
       className="inline-flex"
     >
       {children}

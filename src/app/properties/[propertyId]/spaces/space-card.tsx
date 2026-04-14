@@ -285,6 +285,8 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
           {progressDot !== "none" && (
             <Tooltip text={progressDot === "complete" ? "Espacio completo" : "Información parcial"}>
               <span
+                role="img"
+                aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
                 className={`h-2 w-2 rounded-full ${
                   progressDot === "complete"
                     ? "bg-[var(--color-success-500,#22c55e)]"

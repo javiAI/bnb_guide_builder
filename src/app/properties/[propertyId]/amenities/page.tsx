@@ -54,20 +54,13 @@ export default async function AmenitiesPage({
     where: { propertyId },
   });
 
-  // Existing systems — exclude canonicalOwner amenities
-  const existingSystems = await prisma.propertySystem.findMany({
-    where: { propertyId },
-    select: { systemKey: true },
-  });
-  const systemKeys = new Set(existingSystems.map((s) => s.systemKey));
-
   // ── Build item sets ──
 
   const excludedIds = new Set<string>();
   for (const item of amenityTaxonomy.items) {
     const scope = getAmenityScopePolicy(item.id);
     if (scope?.isDerived) excludedIds.add(item.id);
-    if (item.canonicalOwner && systemKeys.has(item.canonicalOwner)) excludedIds.add(item.id);
+    if (item.canonicalOwner) excludedIds.add(item.id);
   }
 
   // Split remaining items into property-wide vs space-bound

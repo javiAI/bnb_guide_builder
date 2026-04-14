@@ -262,10 +262,9 @@ export function isCanonicalOwnerAmenity(amenityId: string): boolean {
 }
 
 /**
- * Filter amenity items to those relevant for the given space type IDs.
- * - property_only / items without suggestedSpaceTypes → always included
- * - derived items → included only if at least one suggestedSpaceType is present
- * - space_only / multi_instance → included if at least one suggestedSpaceType is present
+ * Partition amenity items by relevance to the given space type IDs.
+ * Items with no suggestedSpaceTypes or at least one matching type → relevant.
+ * Items whose suggestedSpaceTypes don't overlap → irrelevant.
  * Returns { relevant, irrelevant } so the UI can show irrelevant items in a collapsed section.
  */
 export function partitionAmenitiesBySpaces(

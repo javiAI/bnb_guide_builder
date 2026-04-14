@@ -97,7 +97,7 @@ export function SubtypeFieldInput({ field, value, onChange }: SubtypeFieldInputP
           type="time"
           value={from}
           onChange={(e) => {
-            const newVal = e.target.value && to ? `${e.target.value}-${to}` : e.target.value ? e.target.value : null;
+            const newVal = e.target.value && to ? `${e.target.value}-${to}` : null;
             onChange(field.id, newVal);
           }}
           className={inputClass + " flex-1"}
