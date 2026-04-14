@@ -91,6 +91,7 @@ model Property {
   infantsAllowed          Boolean @default(false) @map("infants_allowed")
   isAutonomousCheckin     Boolean @default(false) @map("is_autonomous_checkin")
   hasBuildingAccess       Boolean @default(false) @map("has_building_access")
+  hasPrivateEntrance      Boolean @default(false) @map("has_private_entrance")
   infrastructureJson      Json?   @map("infrastructure_json")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")

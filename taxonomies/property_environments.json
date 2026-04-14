@@ -33,6 +33,16 @@
       "id": "env.lake",
       "label": "Lago",
       "description": "Propiedad junto a un lago o embalse."
+    },
+    {
+      "id": "env.waterfront",
+      "label": "Primera línea de agua",
+      "description": "Propiedad directamente a pie de costa, lago o río (waterfront)."
+    },
+    {
+      "id": "env.resort",
+      "label": "Resort / complejo vacacional",
+      "description": "Propiedad dentro de un resort o complejo vacacional con servicios compartidos."
     }
   ]
 }
