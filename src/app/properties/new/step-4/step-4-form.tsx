@@ -272,6 +272,22 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
               </div>
             </div>
 
+            {/* Wifi */}
+            <div>
+              <h2 className="mb-1 text-sm font-semibold text-[var(--foreground)]">WiFi</h2>
+              <p className="mb-3 text-xs text-[var(--color-neutral-500)]">Opcional. Se creará el equipamiento WiFi con estas credenciales.</p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-sm font-medium text-[var(--foreground)]">Nombre de la red (SSID)</span>
+                  <input name="wifiSsid" type="text" defaultValue={(initialState.wifiSsid as string) ?? ""} placeholder="MiRed_5G" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none" />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-[var(--foreground)]">Contraseña</span>
+                  <input name="wifiPassword" type="password" autoComplete="new-password" defaultValue={(initialState.wifiPassword as string) ?? ""} placeholder="contraseña123" className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none" />
+                </label>
+              </div>
+            </div>
+
             <button type="submit" disabled={pending || !canContinue} className="mt-4 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-primary-600)] disabled:opacity-50">
               {pending ? "Guardando…" : "Continuar a revisión"}
             </button>

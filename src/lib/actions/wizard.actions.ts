@@ -9,7 +9,7 @@ import {
   step4Schema,
   fullWizardSchema,
 } from "@/lib/schemas/wizard.schema";
-import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT } from "@/lib/taxonomy-loader";
+import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 
 export type ActionResult = {
@@ -296,6 +296,8 @@ export async function saveStep4Action(
     },
     hostName: (formData.get("hostName") as string) || undefined,
     hostContactPhone: (formData.get("hostContactPhone") as string) || undefined,
+    wifiSsid: (formData.get("wifiSsid") as string)?.trim() || undefined,
+    wifiPassword: (formData.get("wifiPassword") as string)?.trim() || undefined,
   };
 
   await handleSaveAndExit(formData, sessionId, raw as Record<string, unknown>, 4);
@@ -409,7 +411,8 @@ export async function completeWizardAction(
       });
     }
 
-    // Create spaces with bed configurations
+    // Create spaces with bed configurations (tagged with _origin for idempotent future upserts)
+    let sortOrder = 0;
     if (d.beds && d.beds.length > 0) {
       // Group beds by spaceIndex
       const spaceMap = new Map<number, typeof d.beds>();
@@ -419,8 +422,6 @@ export async function completeWizardAction(
         spaceMap.set(bed.spaceIndex, existing);
       }
 
-
-      let sortOrder = 0;
       for (const [spaceIdx, spaceBeds] of spaceMap) {
         const first = spaceBeds[0];
         const spaceType = first.spaceType ?? "sp.bedroom";
@@ -436,6 +437,7 @@ export async function completeWizardAction(
             spaceType,
             name,
             sortOrder: sortOrder++,
+            featuresJson: { "_origin.source": "wizard", "_origin.key": `bed_space_${spaceIdx}` },
           },
         });
         for (const bed of spaceBeds) {
@@ -448,6 +450,49 @@ export async function completeWizardAction(
           });
         }
       }
+    }
+
+    // Create layout-derived spaces (non-bedroom spaces implied by layoutKey)
+    const layoutSpaceType = d.layoutKey ? LAYOUT_SPACE_MAP[d.layoutKey] : undefined;
+    if (layoutSpaceType) {
+      await tx.space.create({
+        data: {
+          propertyId: prop.id,
+          spaceType: layoutSpaceType,
+          name: getSpaceTypeLabel(layoutSpaceType),
+          sortOrder: sortOrder++,
+          featuresJson: { "_origin.source": "wizard", "_origin.key": `layout_${d.layoutKey}` },
+        },
+      });
+    }
+
+    // Create bathroom space derived from bathroomsCount
+    const bathroomsCount = d.bathroomsCount ?? 0;
+    for (let i = 0; i < bathroomsCount; i++) {
+      await tx.space.create({
+        data: {
+          propertyId: prop.id,
+          spaceType: "sp.bathroom",
+          name: bathroomsCount === 1 ? "Baño" : `Baño ${i + 1}`,
+          sortOrder: sortOrder++,
+          featuresJson: { "_origin.source": "wizard", "_origin.key": `bathroom_${i}` },
+        },
+      });
+    }
+
+    // Create wifi amenity if SSID provided
+    if (d.wifiSsid) {
+      await tx.propertyAmenity.create({
+        data: {
+          propertyId: prop.id,
+          amenityKey: "am.wifi",
+          guestInstructions: [
+            d.wifiSsid ? `Red: ${d.wifiSsid}` : null,
+            d.wifiPassword ? `Contraseña: ${d.wifiPassword}` : null,
+          ].filter(Boolean).join("\n") || null,
+          visibility: "public",
+        },
+      });
     }
 
     // Recompute derived counts from actual Space/Bed rows (overrides wizard form values)

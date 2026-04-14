@@ -75,6 +75,8 @@ export const step4Schema = z.object({
   ),
   hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
+  wifiSsid: z.string().optional(),
+  wifiPassword: z.string().optional(),
 });
 
 export const createDraftSchema = z.object({
@@ -120,6 +122,8 @@ export const fullWizardSchema = z.object({
   ),
   hostName: z.string().optional(),
   hostContactPhone: z.string().optional(),
+  wifiSsid: z.string().optional(),
+  wifiPassword: z.string().optional(),
 }).refine(
   (d) => d.propertyType !== "pt.other" || (d.customPropertyTypeLabel && d.customPropertyTypeLabel.length > 0),
   { message: "El nombre del tipo personalizado es obligatorio", path: ["customPropertyTypeLabel"] },

@@ -214,6 +214,17 @@ export function getAvailableSpaceTypes(
   };
 }
 
+/** Maps layout keys to the non-bedroom space type they imply (derived from taxonomy derivedByLayoutKeys). */
+export const LAYOUT_SPACE_MAP: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  for (const item of spaceTypes.items) {
+    for (const layoutKey of item.derivedByLayoutKeys) {
+      map[layoutKey] = item.id;
+    }
+  }
+  return map;
+})();
+
 // ── System taxonomy helpers ──
 
 export function getSystemGroups(): SystemGroup[] {
