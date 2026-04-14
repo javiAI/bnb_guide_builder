@@ -146,9 +146,16 @@ describe("evaluateFieldCondition (legacy)", () => {
     expect(evaluateFieldCondition({ intersects: ["a", "b"] }, ["c"])).toBe(false);
   });
 
-  it("prefix_contains", () => {
+  it("prefix_contains (array operand)", () => {
     expect(evaluateFieldCondition({ prefix_contains: ["am."] }, ["am.bbq_grill"])).toBe(true);
     expect(evaluateFieldCondition({ prefix_contains: ["sys."] }, ["am.bbq_grill"])).toBe(false);
+  });
+
+  it("prefix_contains (string operand — shape used by dynamic_field_rules.json)", () => {
+    expect(evaluateFieldCondition({ prefix_contains: "am." }, ["am.bbq_grill"])).toBe(true);
+    expect(evaluateFieldCondition({ prefix_contains: "sys." }, ["am.bbq_grill"])).toBe(false);
+    // Scalar string input should work too (not just arrays)
+    expect(evaluateFieldCondition({ prefix_contains: "ax." }, "ax.keybox")).toBe(true);
   });
 
   it("delegates unknown keys to unified operators", () => {

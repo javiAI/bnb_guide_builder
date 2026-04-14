@@ -43,8 +43,13 @@ export type AtomicCondition = {
 };
 
 /**
- * Composable rule.  `allOf` / `anyOf` / `not` can nest freely.
- * Keys not in the combinator set are treated as atomic conditions (AND-joined).
+ * Composable rule.  `allOf` / `anyOf` / `not` can nest freely, and are
+ * AND-joined with the atomic keys declared on the same object. Only the
+ * explicit keys of `AtomicCondition` (`propertyType`, `roomType`,
+ * `layoutKey`, `propertyEnvironment`, `propertyFields`, `requiresSpaces`,
+ * `requiresSystems`, `requiresAmenities`) are understood by the evaluator;
+ * unknown keys are silently ignored — prefer `propertyFields.<name>` for
+ * anything that doesn't fit a dedicated slot.
  */
 export type ItemRules = AtomicCondition & {
   allOf?: ItemRules[];

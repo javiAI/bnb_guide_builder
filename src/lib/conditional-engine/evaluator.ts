@@ -27,7 +27,7 @@ function checkPropertyFields(
   if (!fields) return [];
   const missing: string[] = [];
   for (const [path, raw] of Object.entries(fields)) {
-    const predicate = coerceToPredicate(raw as never);
+    const predicate = coerceToPredicate(raw);
     const actual = ctx.property[path];
     if (!evaluatePredicate(actual, predicate)) missing.push(`propertyFields.${path}`);
   }
@@ -119,16 +119,17 @@ export function evaluateItemAvailability(
 }
 
 /**
- * Field-visibility entry point.  Works on a flat form-state record and a
- * single `condition` map whose keys are form field paths.  This is the
- * unified replacement for the legacy switch (`equals | contains | intersects
- * | prefix_contains`) that used to live in taxonomy-loader.
+ * Field-visibility entry point.  Works on a single field's actual value and
+ * a legacy `condition` object whose KEYS are operator names (`equals`,
+ * `contains`, `intersects`, `prefix_contains`) and whose VALUES are the
+ * corresponding operands. This is the unified replacement for the legacy
+ * switch that used to live in taxonomy-loader.
  *
  * Backwards-compat mapping for legacy condition shapes:
- *   { equals: X }        → predicate applies to the trigger field directly
- *   { contains: X }      → containsAny: [X]
- *   { intersects: [a,b]} → containsAny: [a,b]
- *   { prefix_contains: [p] } → custom (handled here)
+ *   { equals: X }              → strict equality against the trigger value
+ *   { contains: X }            → arrays include X (scalar compared directly)
+ *   { intersects: [a, b] }     → arrays share any element with the operand
+ *   { prefix_contains: "ax." } → string operand; also accepts string[] form
  */
 export function evaluateFieldCondition(
   condition: Record<string, unknown>,

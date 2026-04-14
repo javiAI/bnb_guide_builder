@@ -57,6 +57,10 @@ export async function buildPropertyContext(
 
   return {
     property: {
+      // Spread raw record first so any extra fields are preserved, then
+      // override with normalized canonical fields. Normalization must win
+      // over lightweight stubs that might return `undefined` for these keys.
+      ...property,
       id: propertyId,
       propertyType: (property.propertyType as string | null) ?? null,
       roomType: (property.roomType as string | null) ?? null,
@@ -68,7 +72,6 @@ export async function buildPropertyContext(
       maxAdults: (property.maxAdults as number | null) ?? null,
       maxChildren: (property.maxChildren as number | null) ?? null,
       infantsAllowed: (property.infantsAllowed as boolean | null) ?? null,
-      ...property,
     },
     spaces: spaces.map((s) => ({ id: s.id, spaceType: s.spaceType })),
     systems: systems.map((s) => s.systemKey),
@@ -86,8 +89,10 @@ export function buildSyntheticContext(
   systems: string[] = [],
   amenities: string[] = [],
 ): PropertyContext {
+  // Spread input first, then force a defined id. Otherwise `input.id: undefined`
+  // would silently override the default and produce `property.id === undefined`.
   return {
-    property: { id: input.id ?? "synthetic", ...input },
+    property: { ...input, id: input.id ?? "synthetic" },
     spaces,
     systems,
     amenities,
