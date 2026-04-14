@@ -92,8 +92,6 @@ export function CollapsibleSection({
     };
   }, [expanded]);
 
-  if (!visible && !expanded && !selectedLabel) return null;
-
   return (
     <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--border)] bg-[var(--surface-elevated)]">
       <div className="flex items-center">

@@ -215,6 +215,7 @@ export const toggleAmenitySchema = z.object({
 
 export const updateAmenitySchema = z.object({
   subtypeKey: z.string().optional(),
+  detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()])).optional(),
   guestInstructions: z.string().optional(),
   aiInstructions: z.string().optional(),
   internalNotes: z.string().optional(),

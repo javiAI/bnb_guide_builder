@@ -20,6 +20,9 @@ export interface PolicyItemField {
   options?: TaxonomyOption[];
 }
 
+// Amenity importance classification (maps to OTA categories)
+export type ImportanceLevel = "highlight" | "standard" | "bonus";
+
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
   id: string;
@@ -30,6 +33,9 @@ export interface TaxonomyItem {
   defaults?: Record<string, string | undefined>;
   dependency_hints?: string[];
   source?: string[];
+  // Amenity-specific
+  importanceLevel?: ImportanceLevel;
+  canonicalOwner?: string;
   // Policy items can have extra fields
   type?: string;
   required?: boolean;
@@ -165,6 +171,9 @@ export interface SubtypeField {
   description: string;
   type: string;
   default?: string;
+  visibility?: "public" | "internal" | "sensitive";
+  required?: boolean;
+  shown_if?: { field: string; equals?: unknown; in?: unknown[] };
   options?: TaxonomyOption[];
 }
 
