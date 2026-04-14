@@ -399,6 +399,218 @@
       ]
     },
     {
+      "id": "sys.smoke_detector",
+      "systemKey": "sys.smoke_detector",
+      "label": "Detector de humo",
+      "detailsFields": [
+        {
+          "id": "power_source",
+          "label": "Alimentación",
+          "type": "enum",
+          "visibility": "public",
+          "required": false,
+          "options": [
+            {
+              "id": "battery",
+              "label": "Pila",
+              "description": "Detector alimentado por pila reemplazable."
+            },
+            {
+              "id": "hardwired",
+              "label": "Conectado a red",
+              "description": "Detector conectado al sistema eléctrico."
+            },
+            {
+              "id": "hardwired_battery",
+              "label": "Red con respaldo de pila",
+              "description": "Conectado a red con pila de respaldo."
+            }
+          ]
+        },
+        {
+          "id": "interconnected",
+          "label": "Interconectado con otros detectores",
+          "type": "boolean",
+          "visibility": "public",
+          "required": false
+        }
+      ],
+      "opsFields": [
+        {
+          "id": "last_tested",
+          "label": "Última revisión",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "battery_change_months",
+          "label": "Cambio de pila (meses)",
+          "type": "number",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "sys.co_detector",
+      "systemKey": "sys.co_detector",
+      "label": "Detector de monóxido de carbono",
+      "detailsFields": [
+        {
+          "id": "power_source",
+          "label": "Alimentación",
+          "type": "enum",
+          "visibility": "public",
+          "required": false,
+          "options": [
+            {
+              "id": "battery",
+              "label": "Pila",
+              "description": "Detector alimentado por pila reemplazable."
+            },
+            {
+              "id": "hardwired",
+              "label": "Conectado a red",
+              "description": "Detector conectado al sistema eléctrico."
+            },
+            {
+              "id": "hardwired_battery",
+              "label": "Red con respaldo de pila",
+              "description": "Conectado a red con pila de respaldo."
+            }
+          ]
+        }
+      ],
+      "opsFields": [
+        {
+          "id": "last_tested",
+          "label": "Última revisión",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "battery_change_months",
+          "label": "Cambio de pila (meses)",
+          "type": "number",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "sys.fire_extinguisher",
+      "systemKey": "sys.fire_extinguisher",
+      "label": "Extintor",
+      "detailsFields": [
+        {
+          "id": "extinguisher_type",
+          "label": "Tipo de extintor",
+          "type": "enum",
+          "visibility": "public",
+          "required": false,
+          "options": [
+            {
+              "id": "abc_powder",
+              "label": "Polvo ABC",
+              "description": "Extintor de polvo polivalente para fuegos A, B y C."
+            },
+            {
+              "id": "co2",
+              "label": "CO2",
+              "description": "Extintor de dióxido de carbono, apto para fuegos eléctricos."
+            },
+            {
+              "id": "water",
+              "label": "Agua / espuma",
+              "description": "Extintor de agua o espuma para fuegos sólidos."
+            },
+            {
+              "id": "kitchen_class_f",
+              "label": "Cocina (clase F)",
+              "description": "Extintor específico para aceites y grasas de cocina."
+            }
+          ]
+        },
+        {
+          "id": "capacity_kg",
+          "label": "Capacidad (kg)",
+          "type": "number",
+          "visibility": "public",
+          "required": false
+        }
+      ],
+      "opsFields": [
+        {
+          "id": "last_inspection",
+          "label": "Última revisión",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "next_inspection",
+          "label": "Próxima revisión",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "inspection_company",
+          "label": "Empresa de mantenimiento",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "sys.first_aid_kit",
+      "systemKey": "sys.first_aid_kit",
+      "label": "Botiquín",
+      "detailsFields": [
+        {
+          "id": "location",
+          "label": "Ubicación",
+          "type": "text",
+          "visibility": "public",
+          "required": false
+        },
+        {
+          "id": "kit_type",
+          "label": "Tipo de botiquín",
+          "type": "enum",
+          "visibility": "public",
+          "required": false,
+          "options": [
+            {
+              "id": "basic",
+              "label": "Básico",
+              "description": "Kit básico con vendas, gasas y antisépticos."
+            },
+            {
+              "id": "standard",
+              "label": "Estándar",
+              "description": "Botiquín estándar con material básico ampliado."
+            },
+            {
+              "id": "comprehensive",
+              "label": "Completo",
+              "description": "Botiquín completo con material para emergencias menores."
+            }
+          ]
+        }
+      ],
+      "opsFields": [
+        {
+          "id": "last_restocked",
+          "label": "Última reposición",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "expiration_check",
+          "label": "Próxima revisión de caducidades",
+          "type": "date",
+          "required": false
+        }
+      ]
+    },
+    {
       "id": "sys.elevator",
       "systemKey": "sys.elevator",
       "label": "Ascensor",

@@ -130,6 +130,52 @@
       ]
     },
     {
+      "id": "sgrp.safety",
+      "label": "Seguridad doméstica",
+      "items": [
+        {
+          "id": "sys.smoke_detector",
+          "label": "Detector de humo",
+          "description": "Detector de humo instalado y operativo.",
+          "subtypeKey": "sys.smoke_detector",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:808", "booking:119"]
+        },
+        {
+          "id": "sys.co_detector",
+          "label": "Detector de monóxido de carbono",
+          "description": "Detector de monóxido de carbono instalado y operativo.",
+          "subtypeKey": "sys.co_detector",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:807"]
+        },
+        {
+          "id": "sys.fire_extinguisher",
+          "label": "Extintor",
+          "description": "Extintor accesible dentro de la propiedad.",
+          "subtypeKey": "sys.fire_extinguisher",
+          "defaultCoverageRule": "all_relevant_spaces",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:35", "booking:120"]
+        },
+        {
+          "id": "sys.first_aid_kit",
+          "label": "Botiquín",
+          "description": "Botiquín básico de primeros auxilios.",
+          "subtypeKey": "sys.first_aid_kit",
+          "defaultCoverageRule": "property_only",
+          "visibility": "public",
+          "recommended": true,
+          "source": ["airbnb:36", "booking:118"]
+        }
+      ]
+    },
+    {
       "id": "sgrp.energy",
       "label": "Energía",
       "items": [
