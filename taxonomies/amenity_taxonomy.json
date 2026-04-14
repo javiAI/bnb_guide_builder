@@ -382,8 +382,7 @@
     "am.batting_cage": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.beach_access": {
       "scopePolicy": "property_only",
@@ -405,14 +404,12 @@
     "am.bowling_alley": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.climbing_wall": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.ev_charger": {
       "scopePolicy": "derived",
@@ -453,8 +450,7 @@
     "am.laser_tag": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.laundromat_nearby": {
       "scopePolicy": "property_only",
@@ -464,14 +460,12 @@
     "am.life_size_games": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.mini_golf": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.movie_theater": {
       "scopePolicy": "property_only",
@@ -558,8 +552,7 @@
     "am.skate_ramp": {
       "scopePolicy": "property_only",
       "isDerived": false,
-      "suggestedSpaceTypes": [],
-      "relevantEnvironments": []
+      "suggestedSpaceTypes": []
     },
     "am.ski_in_out": {
       "scopePolicy": "property_only",

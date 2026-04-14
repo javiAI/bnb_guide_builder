@@ -16,6 +16,9 @@ import {
   automationChannels,
   mediaAssetRoles,
   reviewReasons,
+  parkingOptions,
+  accessibilityFeatures,
+  propertyEnvironments,
   getItems,
   findItem,
   getRecommendedItems,
@@ -32,7 +35,7 @@ import {
 } from "@/lib/taxonomy-loader";
 
 describe("Taxonomy loaders", () => {
-  it("loads all 16 taxonomies without error", () => {
+  it("loads all 19 taxonomies without error", () => {
     expect(propertyTypes.file).toBe("property_types.json");
     expect(roomTypes.file).toBe("room_types.json");
     expect(spaceTypes.file).toBe("space_types.json");
@@ -49,6 +52,9 @@ describe("Taxonomy loaders", () => {
     expect(automationChannels.file).toBe("automation_channels.json");
     expect(mediaAssetRoles.file).toBe("media_asset_roles.json");
     expect(reviewReasons.file).toBe("review_reasons.json");
+    expect(parkingOptions.file).toBe("parking_options.json");
+    expect(accessibilityFeatures.file).toBe("accessibility_features.json");
+    expect(propertyEnvironments.file).toBe("property_environments.json");
   });
 
   it("all taxonomies use es-ES locale", () => {
@@ -58,6 +64,7 @@ describe("Taxonomy loaders", () => {
       troubleshootingTaxonomy, messagingTouchpoints, guideOutputs,
       visibilityLevels, mediaRequirements, dynamicFieldRules,
       automationChannels, mediaAssetRoles, reviewReasons,
+      parkingOptions, accessibilityFeatures, propertyEnvironments,
     ];
     all.forEach((t) => expect(t.locale).toBe("es-ES"));
   });

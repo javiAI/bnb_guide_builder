@@ -28,10 +28,10 @@ export default async function AccessPage({ params }: Props) {
 
   // Parse structured access from JSON
   const accessJson = property.accessMethodsJson as {
-    building?: { methods: string[]; customLabel?: string; customDesc?: string };
-    unit?: { methods: string[]; customLabel?: string; customDesc?: string };
-    parking?: { types: string[] };
-    accessibility?: { features: string[] };
+    building?: { methods: string[]; customLabel?: string | null; customDesc?: string | null };
+    unit?: { methods: string[]; customLabel?: string | null; customDesc?: string | null };
+    parking?: { types: string[] } | null;
+    accessibility?: { features: string[] } | null;
   } | null;
 
   return (

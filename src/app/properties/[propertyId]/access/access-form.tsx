@@ -48,8 +48,8 @@ interface AccessFormProps {
     checkOutTime: string | null;
     isAutonomousCheckin: boolean;
     hasBuildingAccess: boolean;
-    buildingAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
-    unitAccess: { methods: string[]; customLabel?: string; customDesc?: string } | null;
+    buildingAccess: { methods: string[]; customLabel?: string | null; customDesc?: string | null } | null;
+    unitAccess: { methods: string[]; customLabel?: string | null; customDesc?: string | null } | null;
     parkingTypes: string[];
     accessibilityFeatures: string[];
   };

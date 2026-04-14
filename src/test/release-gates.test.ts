@@ -86,6 +86,9 @@ describe("Taxonomy JSON files exist", () => {
     "automation_channels.json",
     "media_asset_roles.json",
     "review_reasons.json",
+    "parking_options.json",
+    "accessibility_features.json",
+    "property_environments.json",
   ];
 
   for (const file of requiredFiles) {
