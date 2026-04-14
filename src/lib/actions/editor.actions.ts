@@ -692,7 +692,7 @@ export async function updateAmenityAction(
   });
   if (!amenity) return { success: false, error: "Amenity no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
-  if (formPropertyId && formPropertyId !== amenity.propertyId) {
+  if (!formPropertyId || formPropertyId !== amenity.propertyId) {
     return { success: false, error: "El amenity no pertenece a la propiedad indicada" };
   }
 
@@ -767,7 +767,7 @@ export async function updatePlaybookAction(
   });
   if (!playbook) return { success: false, error: "Playbook no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
-  if (formPropertyId && formPropertyId !== playbook.propertyId) {
+  if (!formPropertyId || formPropertyId !== playbook.propertyId) {
     return { success: false, error: "El playbook no pertenece a la propiedad indicada" };
   }
 
@@ -845,7 +845,7 @@ export async function updateLocalPlaceAction(
   });
   if (!place) return { success: false, error: "Lugar no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
-  if (formPropertyId && formPropertyId !== place.propertyId) {
+  if (!formPropertyId || formPropertyId !== place.propertyId) {
     return { success: false, error: "El lugar no pertenece a la propiedad indicada" };
   }
 
@@ -893,7 +893,7 @@ export async function deleteLocalPlaceAction(
   });
   if (!place) return { success: false, error: "Lugar no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
-  if (formPropertyId && formPropertyId !== place.propertyId) {
+  if (!formPropertyId || formPropertyId !== place.propertyId) {
     return { success: false, error: "El lugar no pertenece a la propiedad indicada" };
   }
 
