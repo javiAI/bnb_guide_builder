@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type FormEvent } from "react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
@@ -163,7 +163,7 @@ export function SystemDetailForm({
     return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== ""));
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData();
     fd.append("systemId", systemId);

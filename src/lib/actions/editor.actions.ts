@@ -952,6 +952,7 @@ export async function updateSystemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
+  if (!systemId) return { success: false, error: "Falta el ID del sistema" };
   const system = await prisma.propertySystem.findUnique({
     where: { id: systemId },
     select: { propertyId: true },
@@ -993,6 +994,7 @@ export async function deleteSystemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
+  if (!systemId) return { success: false, error: "Falta el ID del sistema" };
   const system = await prisma.propertySystem.findUnique({
     where: { id: systemId },
     select: { propertyId: true },
@@ -1010,6 +1012,7 @@ export async function updateSystemCoverageAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const systemId = formData.get("systemId") as string;
+  if (!systemId) return { success: false, error: "Falta el ID del sistema" };
   const raw = {
     spaceId: formData.get("spaceId") as string,
     mode: formData.get("mode") as string,
