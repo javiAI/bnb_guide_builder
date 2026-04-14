@@ -76,18 +76,3 @@ export type EvaluationResult = {
   available: boolean;
   reasons: string[];
 };
-
-/**
- * Legacy shape for dynamic_field_rules.json — preserved so existing taxonomy
- * rules keep working while we standardise the operator layer.
- */
-export type LegacyCondition = Record<string, string | number | boolean | string[]>;
-
-export type LegacyDynamicFieldRule = {
-  id: string;
-  trigger: string;
-  condition: LegacyCondition;
-  shown_fields?: string[];
-  defaults?: Record<string, unknown>;
-  rationale?: string;
-};

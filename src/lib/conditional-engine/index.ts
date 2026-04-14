@@ -2,8 +2,6 @@ export type {
   AtomicCondition,
   EvaluationResult,
   ItemRules,
-  LegacyCondition,
-  LegacyDynamicFieldRule,
   OperatorPredicate,
   Primitive,
   PropertyContext,
