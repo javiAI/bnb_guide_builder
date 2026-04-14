@@ -70,7 +70,7 @@ export default async function PublishingPage({
   const [spacesCount, amenitiesCount, playbooksCount, localPlacesCount, mediaCount, knowledgeCount, guideVersions] =
     await Promise.all([
       prisma.space.count({ where: { propertyId } }),
-      prisma.propertyAmenity.count({ where: { propertyId } }),
+      prisma.propertyAmenityInstance.count({ where: { propertyId } }),
       prisma.troubleshootingPlaybook.count({ where: { propertyId } }),
       prisma.localPlace.count({ where: { propertyId } }),
       prisma.mediaAsset.count({ where: { propertyId } }),

@@ -3,6 +3,14 @@ import type { Prisma } from "@prisma/client";
 
 /**
  * Write owner: amenities for a property.
+ *
+ * @deprecated Phase 2 / Branch 2C — reads have cut over to
+ * `amenityInstanceRepository` (see `src/lib/repositories/amenity-instance.repository.ts`).
+ * The `PropertyAmenity` table is kept behind the dual-write window so legacy
+ * consumers still see a coherent view; new code should target the instance
+ * model. Writes from here still fan into the new model via
+ * `@/lib/amenity-dual-write`. This module will be removed in the drop-legacy
+ * phase.
  */
 export const amenityRepository = {
   findByProperty(propertyId: string) {

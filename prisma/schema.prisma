@@ -281,6 +281,10 @@ model PropertySystemCoverage {
   @@map("property_system_coverages")
 }
 
+/// @deprecated Phase 2 / Branch 2C — reads have cut over to
+/// PropertyAmenityInstance (+ PropertyAmenityPlacement). This table is kept
+/// behind the dual-write window as a safety net during the rollout and will
+/// be dropped in the drop-legacy phase.
 model PropertyAmenity {
   id                   String   @id @default(cuid())
   propertyId           String   @map("property_id")

@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Phase 2 / Branch 2B — dual-write coverage.
+// Phase 2 / Branch 2B/2C — dual-write coverage.
 //
 // These tests exercise the helper module's Prisma call surface against
-// a mocked prisma client so we can verify the 5 spec scenarios without
+// a mocked prisma client so we can verify the spec scenarios without
 // requiring a live database:
 //   1. toggle enable → Instance created (+ Placement if spaceId)
 //   2. toggle disable → Instance deleted (placements cascade via FK)
-//   3. update → Instance updated via composite key
-//   4. PropertyAmenity.spaceId=null → Instance("default"), no Placement
-//   5. PropertyAmenity.spaceId=X → Instance("space:X") + 1 Placement
+//   3. PropertyAmenity.spaceId=null → Instance("default"), no Placement
+//   4. PropertyAmenity.spaceId=X → Instance("space:X") + 1 Placement
+//
+// Update mirroring is now NEW → OLD only (see `mirrorInstanceToOld`): the
+// update action flipped to target the instance model directly in Branch 2C.
 //
 // A live-DB drift check is provided as `scripts/detect-amenity-drift.ts`
 // and must be run after material data changes.
@@ -63,7 +65,6 @@ import {
   spaceIdFromInstanceKey,
   mirrorEnableToNew,
   mirrorDisableToNew,
-  mirrorUpdateToNew,
   mirrorInstanceToOld,
   mirrorInstanceDeleteToOld,
   mirrorPlacementAddToOld,
@@ -137,22 +138,6 @@ describe("mirrorDisableToNew (scenario 2)", () => {
     expect(args.where.instanceKey).toBe("default");
     // No direct placement delete — relies on FK cascade.
     expect(calls.map((c) => c.op)).not.toContain("propertyAmenityPlacement.deleteMany");
-  });
-});
-
-describe("mirrorUpdateToNew (scenario 3)", () => {
-  it("updates matching Instance via updateMany on composite key", async () => {
-    await mirrorUpdateToNew({
-      propertyId: "p1",
-      amenityKey: "am.wifi",
-      spaceId: null,
-      data: { guestInstructions: "Red: X" },
-    });
-    const update = calls.find((c) => c.op === "propertyAmenityInstance.updateMany");
-    expect(update).toBeDefined();
-    const args = update!.args as { where: { instanceKey: string }; data: { guestInstructions: string } };
-    expect(args.where.instanceKey).toBe("default");
-    expect(args.data.guestInstructions).toBe("Red: X");
   });
 });
 
