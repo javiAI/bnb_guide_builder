@@ -33,10 +33,10 @@ export default async function MediaPage({
     orderBy: { createdAt: "desc" },
   });
 
-  // Check for security warnings: public assets that might contain secrets
-  const publicAssets = assets.filter((a) => a.visibility === "guest");
+  // Check for security warnings: guest-visible assets that might contain secrets
+  const guestAssets = assets.filter((a) => a.visibility === "guest");
   const sensitiveRoles = ["lockbox", "keypad", "smart_lock", "access_code"];
-  const securityWarnings = publicAssets.filter((a) =>
+  const securityWarnings = guestAssets.filter((a) =>
     sensitiveRoles.some((role) => a.assetRoleKey.includes(role)),
   );
 

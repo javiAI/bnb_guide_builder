@@ -18,7 +18,7 @@ export default async function AiViewPage({
 
   if (!property) notFound();
 
-  // Get all knowledge items eligible for AI view (exclude secret)
+  // Get all knowledge items eligible for AI view (exclude sensitive)
   const knowledgeItems = await prisma.knowledgeItem.findMany({
     where: {
       propertyId,

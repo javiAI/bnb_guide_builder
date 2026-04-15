@@ -2,12 +2,16 @@ import { prisma } from "@/lib/db";
 import type { RetrievalCandidate } from "@/lib/schemas/assistant.schema";
 import { type VisibilityLevel, VISIBILITY_ORDER } from "@/lib/visibility";
 
+type AssistantAudience = Exclude<VisibilityLevel, "sensitive">;
+
 /**
- * Visibility hierarchy: guest < ai < internal < sensitive.
+ * Visibility hierarchy: guest < ai < internal.
  * An audience sees everything at its own level or below.
- * Sensitive is NEVER returned to guest/ai/internal queries — it requires explicit sensitive audience.
+ * The "sensitive" level is NEVER surfaced through the assistant retrieval
+ * path — callers cannot elevate to it via the public API; it is reserved
+ * for out-of-band authenticated flows.
  */
-function allowedVisibilitiesFor(audience: VisibilityLevel): VisibilityLevel[] {
+function allowedVisibilitiesFor(audience: AssistantAudience): VisibilityLevel[] {
   const audienceOrder = VISIBILITY_ORDER[audience];
   return (Object.keys(VISIBILITY_ORDER) as VisibilityLevel[]).filter(
     (v) => VISIBILITY_ORDER[v] <= audienceOrder && v !== "sensitive",
@@ -18,7 +22,7 @@ export interface RetrievalOptions {
   propertyId: string;
   question: string;
   language: string;
-  audience: VisibilityLevel;
+  audience: AssistantAudience;
   journeyStage?: string;
 }
 
@@ -30,7 +34,7 @@ export interface RetrievalOptions {
  * 2. Optional journey stage filter
  * 3. Keyword matching (simple word overlap for MVP)
  * 4. Rank by relevance score
- * 5. Strict exclusion of secret visibility
+ * 5. Strict exclusion of sensitive visibility
  */
 export async function retrieveCandidates(
   opts: RetrievalOptions,

@@ -1,8 +1,9 @@
 // Single source of truth for visibility levels.
 //
 // Canonical enum: { guest, ai, internal, sensitive } — mirrors Prisma's
-// VisibilityLevel. Order below is semantic: each level can see itself and
-// anything above it in the list (guest is the broadest audience).
+// VisibilityLevel. Order below is semantic: each audience can see content
+// at its own level or below in the list (that is, less restricted content;
+// guest is the broadest audience, sensitive the narrowest).
 
 export const visibilityLevels = ["guest", "ai", "internal", "sensitive"] as const;
 
