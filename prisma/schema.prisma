@@ -103,6 +103,7 @@ model Property {
   systems               PropertySystem[]
   amenityInstances      PropertyAmenityInstance[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
+  incidents             Incident[]
   localPlaces           LocalPlace[]
   opsChecklistItems     OpsChecklistItem[]
   stockItems            StockItem[]
@@ -363,8 +364,9 @@ model TroubleshootingPlaybook {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  space    Space?   @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  space     Space?     @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  incidents Incident[]
 
   @@index([propertyId])
   @@index([propertyId, playbookKey])
@@ -373,6 +375,32 @@ model TroubleshootingPlaybook {
   @@index([spaceId])
   @@index([propertyId, accessMethodKey])
   @@map("troubleshooting_playbooks")
+}
+
+model Incident {
+  id          String    @id @default(cuid())
+  propertyId  String    @map("property_id")
+  title       String
+  severity    String    @default("medium")
+  status      String    @default("open") // open | in_progress | resolved | cancelled
+  targetType  String    @map("target_type") // system | amenity | space | access | property
+  targetId    String?   @map("target_id")
+  playbookId  String?   @map("playbook_id")
+  notes       String?
+  visibility  String    @default("internal")
+  occurredAt  DateTime  @map("occurred_at")
+  resolvedAt  DateTime? @map("resolved_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  property Property                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  playbook TroubleshootingPlaybook? @relation(fields: [playbookId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([propertyId, status])
+  @@index([propertyId, targetType, targetId])
+  @@index([playbookId])
+  @@map("incidents")
 }
 
 model LocalPlace {
