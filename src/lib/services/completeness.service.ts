@@ -19,6 +19,15 @@ import {
 } from "@/lib/taxonomy-loader";
 import type { PropertySnapshot } from "@/lib/services/property-snapshot";
 
+// Module-level Map: amenity_id → list of required field ids. Precomputed once
+// so per-instance completeness checks are O(1) instead of O(subtypes).
+const REQUIRED_SUBTYPE_FIELDS_BY_AMENITY: Map<string, string[]> = new Map(
+  amenitySubtypes.subtypes.map((s) => [
+    s.amenity_id,
+    s.fields.filter((f) => f.required).map((f) => f.id),
+  ]),
+);
+
 export interface SectionScores {
   spaces: number;
   amenities: number;
@@ -116,13 +125,11 @@ function isAmenityDetailsComplete(
   // whether the instance has `subtypeKey` populated. A freshly toggled-on
   // `am.wifi` has `subtypeKey=null` but still needs ssid/password — keying off
   // the instance field here would incorrectly mark it complete.
-  const subtype = amenitySubtypes.subtypes.find((s) => s.amenity_id === amenityKey);
-  if (!subtype) return true;
-  const requiredFields = subtype.fields.filter((f) => f.required);
-  if (requiredFields.length === 0) return true;
+  const requiredFieldIds = REQUIRED_SUBTYPE_FIELDS_BY_AMENITY.get(amenityKey);
+  if (!requiredFieldIds || requiredFieldIds.length === 0) return true;
   const details = (detailsJson ?? {}) as Record<string, unknown>;
-  return requiredFields.every((f) => {
-    const v = details[f.id];
+  return requiredFieldIds.every((id) => {
+    const v = details[id];
     return v !== undefined && v !== null && v !== "";
   });
 }
