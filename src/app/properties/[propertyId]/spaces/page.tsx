@@ -3,7 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { SpaceCard } from "./space-card";
 import { CreateSpaceForm } from "./create-space-form";
-import { spaceTypes, getAvailableSpaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
+import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
+import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export default async function SpacesPage({
@@ -15,7 +16,14 @@ export default async function SpacesPage({
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true, maxGuests: true, roomType: true, layoutKey: true },
+    select: {
+      id: true,
+      maxGuests: true,
+      roomType: true,
+      layoutKey: true,
+      propertyType: true,
+      propertyEnvironment: true,
+    },
   });
 
   if (!property) notFound();
@@ -70,11 +78,15 @@ export default async function SpacesPage({
     }
   }
 
-  // Compute available space types from roomType + layoutKey
-  // Treat missing roomType as unknown — don't apply entire-place rules to legacy/incomplete properties
-  const roomType = property.roomType ?? "";
-  const layoutKey = property.layoutKey ?? null;
-  const { required, recommended, optional, excluded } = getAvailableSpaceTypes(roomType, layoutKey);
+  // Compute available space types from roomType + layoutKey + overlays
+  // (propertyType + propertyEnvironment). Treat missing roomType as unknown —
+  // don't apply entire-place rules to legacy/incomplete properties.
+  const { required, recommended, optional, excluded } = resolveSpaceAvailability({
+    roomType: property.roomType ?? "",
+    layoutKey: property.layoutKey ?? null,
+    propertyType: property.propertyType ?? null,
+    environment: property.propertyEnvironment ?? null,
+  });
 
   const allAvailable = [...required, ...recommended, ...optional];
   const existingTypes = new Set(spaces.map((s) => s.spaceType));

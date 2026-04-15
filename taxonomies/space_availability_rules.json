@@ -3,7 +3,24 @@
   "version": "2026-04-13",
   "locale": "es-ES",
   "units_system": "metric",
-  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos según cada combinación de roomType y layoutKey. Consumido por getAvailableSpaceTypes() en taxonomy-loader.",
+  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos según cada combinación de roomType y layoutKey. Consumido por getAvailableSpaceTypes() en taxonomy-loader. Los overlays por propertyType y propertyEnvironment se aplican sobre el resultado base para sesgar el selector de creación (servicio resolveSpaceAvailability).",
+  "overlaysNote": "Cada overlay sólo puede PROMOVER tipos de 'optional' a 'recommended'. Nunca se altera 'required' ni 'excluded' — el layout sigue mandando sobre el contexto.",
+  "propertyTypeOverlays": [
+    { "propertyType": "pt.house",           "promoteToRecommended": ["sp.garden", "sp.garage", "sp.patio"] },
+    { "propertyType": "pt.apartment",       "promoteToRecommended": ["sp.balcony"] },
+    { "propertyType": "pt.secondary_unit",  "promoteToRecommended": ["sp.garden", "sp.patio"] },
+    { "propertyType": "pt.unique_space",    "promoteToRecommended": ["sp.other"] }
+  ],
+  "environmentOverlays": [
+    { "environment": "env.urban",       "promoteToRecommended": ["sp.balcony"] },
+    { "environment": "env.beach",       "promoteToRecommended": ["sp.pool", "sp.patio", "sp.garden"] },
+    { "environment": "env.mountain",    "promoteToRecommended": ["sp.garden", "sp.patio"] },
+    { "environment": "env.rural",       "promoteToRecommended": ["sp.garden", "sp.patio", "sp.garage"] },
+    { "environment": "env.ski",         "promoteToRecommended": ["sp.storage"] },
+    { "environment": "env.lake",        "promoteToRecommended": ["sp.patio", "sp.garden"] },
+    { "environment": "env.waterfront",  "promoteToRecommended": ["sp.pool", "sp.patio"] },
+    { "environment": "env.resort",      "promoteToRecommended": ["sp.pool"] }
+  ],
   "layoutKeys": [
     { "id": "layout.separate_rooms",          "label": "Habitaciones separadas",          "description": "Dormitorios, salón, cocina y baño en estancias diferenciadas." },
     { "id": "layout.kitchen_living",          "label": "Cocina-salón abierto",            "description": "Cocina y salón integrados en un espacio único." },
