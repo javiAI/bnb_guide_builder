@@ -6,19 +6,18 @@ Implementa exactamente el paquete `version_3`.
 
 1. `README.md`
 2. `AGENTS.md`
-3. `docs/MASTER_IMPLEMENTATION_SPEC.md`
-4. `docs/IMPLEMENTATION_PLAN.md`
-5. `docs/REPOSITORY_APPLICATION_GUIDE.md`
-6. `docs/SYSTEM_ARCHITECTURE.md`
-7. `docs/DATA_MODEL_AND_PERSISTENCE.md`
-8. `docs/API_CONTRACTS.md`
-9. `docs/SECURITY_VISIBILITY_AND_AUDIT.md`
-10. `docs/QA_EVALS_AND_RELEASE.md`
-11. `docs/CONFIG_DRIVEN_ARCHITECTURE.md`
+3. `docs/README.md` (índice)
+4. `docs/ARCHITECTURE_OVERVIEW.md`
+5. `docs/DATA_MODEL.md`
+6. `docs/CONFIG_DRIVEN_SYSTEM.md`
+7. `docs/API_ROUTES.md`
+8. `docs/SECURITY_AND_AUDIT.md`
+9. `docs/QA_AND_RELEASE.md`
+10. `docs/ROADMAP.md` + `docs/MASTER_PLAN_V2.md` (fase activa)
+11. `docs/FEATURES/*.md` (según la fase)
 12. `taxonomies/*.json`
-13. `skills/orchestrator/SKILL.md`
-14. skill de la fase activa
-15. prompt de la fase activa
+13. skill de la fase activa
+14. prompt de la fase activa
 
 ## Reglas
 
