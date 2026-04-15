@@ -5,6 +5,10 @@ import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/actions/editor.actions";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
 import { stripNulls } from "@/lib/utils";
+import {
+  renderFieldInput,
+  fieldTypeWrapsOwnLabel,
+} from "@/config/registries/field-type-renderers";
 
 interface Props {
   systemId: string;
@@ -25,106 +29,23 @@ function FieldInput({
   value: unknown;
   onChange: (val: unknown) => void;
 }) {
-  const strVal = value !== undefined && value !== null ? String(value) : "";
-  const boolVal = typeof value === "boolean" ? value : false;
+  const primitive = renderFieldInput({ field, value, onChange });
 
-  if (field.type === "boolean") {
-    return (
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={boolVal}
-          onChange={(e) => onChange(e.target.checked)}
-          className="h-4 w-4 rounded border-[var(--border)] text-[var(--color-primary-500)]"
-        />
-        <span className="text-sm text-[var(--foreground)]">{field.label}</span>
-        {field.visibility === "sensitive" && (
+  // `boolean` (and any future wrapsOwnLabel type) emits its own <label>
+  // inline — don't wrap again. For sensitive booleans we append the tag
+  // as a sibling inside a shared flex row.
+  if (fieldTypeWrapsOwnLabel(field.type)) {
+    if (field.visibility === "sensitive") {
+      return (
+        <div className="flex items-center gap-2">
+          {primitive}
           <span className="text-xs text-[var(--color-neutral-400)]">(sensible)</span>
-        )}
-      </label>
-    );
+        </div>
+      );
+    }
+    return primitive;
   }
 
-  if (field.type === "textarea") {
-    return (
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">
-          {field.label}
-          {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
-          {field.visibility === "sensitive" && (
-            <span className="ml-1 text-xs font-normal text-[var(--color-neutral-400)]">(sensible)</span>
-          )}
-        </span>
-        <textarea
-          value={strVal}
-          required={field.required}
-          onChange={(e) => onChange(e.target.value || null)}
-          rows={3}
-          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none resize-none"
-        />
-      </label>
-    );
-  }
-
-  if (field.type === "number") {
-    return (
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">
-          {field.label}
-          {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
-        </span>
-        <input
-          type="number"
-          value={strVal}
-          required={field.required}
-          onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
-        />
-      </label>
-    );
-  }
-
-  if ((field.type === "select" || field.type === "enum") && field.options) {
-    return (
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">
-          {field.label}
-          {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
-        </span>
-        <select
-          value={strVal}
-          required={field.required}
-          onChange={(e) => onChange(e.target.value || null)}
-          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
-        >
-          <option value="">—</option>
-          {field.options.map((opt) => (
-            <option key={opt.id} value={opt.id}>{opt.label}</option>
-          ))}
-        </select>
-      </label>
-    );
-  }
-
-  if (field.type === "date") {
-    return (
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--foreground)]">
-          {field.label}
-          {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
-        </span>
-        <input
-          type="date"
-          value={strVal}
-          required={field.required}
-          onChange={(e) => onChange(e.target.value || null)}
-          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
-        />
-      </label>
-    );
-  }
-
-  // text / password (fallback)
   return (
     <label className="block">
       <span className="text-sm font-medium text-[var(--foreground)]">
@@ -134,14 +55,7 @@ function FieldInput({
           <span className="ml-1 text-xs font-normal text-[var(--color-neutral-400)]">(sensible)</span>
         )}
       </span>
-      <input
-        type={field.type === "password" ? "password" : "text"}
-        autoComplete={field.type === "password" ? "new-password" : undefined}
-        value={strVal}
-        required={field.required}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
-      />
+      {primitive}
     </label>
   );
 }
