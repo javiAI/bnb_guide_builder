@@ -63,11 +63,9 @@ export default async function AmenitiesPage({
   });
   if (!property) notFound();
 
-  // Phase 2 / Branch 2C — read from the new model.
-  // We load instances with their placements so that, for each canonical
-  // space-scoped instance (`space:<id>`), we can surface it at each of
-  // its placement spaceIds. Non-canonical (custom) instances are carried
-  // through via `isCustomInstance` so the UI can surface them separately.
+  // Load instances + placements. For each canonical space-scoped
+  // instance (`space:<id>`) we surface it at its placement spaceIds;
+  // non-canonical (custom) instances are tagged via `isCustomInstance`.
   const existingInstances = await prisma.propertyAmenityInstance.findMany({
     where: { propertyId },
     select: {

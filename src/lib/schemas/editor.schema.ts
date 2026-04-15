@@ -237,7 +237,7 @@ export const updateAmenitySchema = z.object({
 export type ToggleAmenityData = z.infer<typeof toggleAmenitySchema>;
 export type UpdateAmenityData = z.infer<typeof updateAmenitySchema>;
 
-// ── Amenity instances (Phase 2 / Branch 2A) ──
+// ── Amenity instances ──
 
 export const createAmenityInstanceSchema = z.object({
   amenityKey: z.string().min(1),

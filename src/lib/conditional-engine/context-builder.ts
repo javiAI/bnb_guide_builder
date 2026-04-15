@@ -48,10 +48,8 @@ export async function buildPropertyContext(
       where: { propertyId },
       select: { systemKey: true },
     }),
-    // Phase 2 / Branch 2C — reads now source from the instance model.
-    // `distinct` collapses duplicate amenityKey rows produced by multiple
-    // space-scoped instances of the same amenity (e.g. "space:s1" +
-    // "space:s2") — the legacy table had separate rows too, but the
+    // `distinct` collapses duplicate amenityKey rows from multiple
+    // space-scoped instances (e.g. "space:s1" + "space:s2"); the
     // downstream context only wants the unique key set.
     prisma.propertyAmenityInstance.findMany({
       where: { propertyId },
