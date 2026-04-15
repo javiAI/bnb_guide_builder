@@ -408,7 +408,7 @@ export async function updateSpaceAction(
 
   await prisma.space.update({
     where: { id: spaceId },
-    data: result.data,
+    data: { ...result.data, createdBy: "user", wizardSeedKey: null },
   });
 
   recomputeAllInBackground(propertyId);
@@ -460,7 +460,10 @@ export async function renameSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  await prisma.space.update({ where: { id: spaceId }, data: { name } });
+  await prisma.space.update({
+    where: { id: spaceId },
+    data: { name, createdBy: "user", wizardSeedKey: null },
+  });
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
@@ -503,6 +506,8 @@ export async function updateSpaceDetailsAction(
     data: {
       guestNotes,
       internalNotes,
+      createdBy: "user",
+      wizardSeedKey: null,
       ...(featuresJson !== null && { featuresJson: featuresJson as Prisma.InputJsonValue }),
     },
   });
@@ -609,7 +614,14 @@ export async function updateBedAction(
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.bedConfiguration.update({ where: { id: bedId }, data: result.data });
+    await tx.bedConfiguration.update({
+      where: { id: bedId },
+      data: { ...result.data, wizardSeedKey: null },
+    });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
@@ -636,6 +648,10 @@ export async function deleteBedAction(
 
   await prisma.$transaction(async (tx) => {
     await tx.bedConfiguration.delete({ where: { id: bedId } });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
@@ -669,9 +685,15 @@ export async function updateBedConfigAction(
     configJson = validated.data as Prisma.InputJsonValue;
   }
 
-  await prisma.bedConfiguration.update({
-    where: { id: bedId },
-    data: { configJson },
+  await prisma.$transaction(async (tx) => {
+    await tx.bedConfiguration.update({
+      where: { id: bedId },
+      data: { configJson, wizardSeedKey: null },
+    });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
   });
 
   recomputeAllInBackground(bed.space.propertyId);
