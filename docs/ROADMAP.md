@@ -38,6 +38,12 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md).
 | 13 | Guía local enriquecida | 3 | Bajo | 1-2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 
+### Progreso Fase 8
+
+- ✅ **8A** `refactor/completeness-to-json` — reglas a `taxonomies/completeness_rules.json` + Zod + helpers (`getCompletenessRule`, `getSpaceTypesWithExpectedBeds`, `amenityRequiresPlacement`)
+- ⏳ **8B** `refactor/field-type-registry`
+- ⏳ **8C** `chore/docs-and-memory-sync`
+
 ### Orden sugerido
 
 1. **Ahora**: Fase 8 (desbloquea todo lo demás barato)

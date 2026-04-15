@@ -327,6 +327,7 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `automation_channels.json`
 - `review_reasons.json`
 - `contact_roles.json`
+- `completeness_rules.json` — pesos/umbrales del scoring de completitud. Parseada con Zod en el loader; reglas accesibles vía `getCompletenessRule(sectionKey)` (throw si la sección no existe).
 
 ---
 

@@ -98,4 +98,4 @@ Añadir un tipo nuevo pasa de tocar 3 archivos a 1 entrada. Este refactor está 
 
 **Estado**: measurement-dependent. Diferido hasta tener ≥10 propiedades reales con datos.
 
-Ajustar pesos y umbrales en `taxonomies/completeness_rules.json` según uso real. No es trabajo técnico — es medición + tuning. Pre-requisito: que las reglas estén extraídas a JSON (rama **8A** en `MASTER_PLAN_V2.md`).
+Ajustar pesos y umbrales en `taxonomies/completeness_rules.json` según uso real. No es trabajo técnico — es medición + tuning. La extracción a JSON ya está hecha (rama **8A** completada): las reglas son editables sin redeploy y validadas con Zod en el loader.

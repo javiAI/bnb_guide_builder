@@ -12,10 +12,12 @@
 
 import { prisma } from "@/lib/db";
 import {
-  amenityTaxonomy,
   amenitySubtypes,
+  amenityRequiresPlacement,
   completenessRules,
   getAvailableSpaceTypes,
+  getCompletenessRule,
+  getSpaceTypesWithExpectedBeds,
 } from "@/lib/taxonomy-loader";
 import type { PropertySnapshot } from "@/lib/services/property-snapshot";
 
@@ -80,10 +82,9 @@ export async function computeSpacesCompleteness(
   const requiredHave = availability.required.filter((t) => presentTypes.has(t)).length;
   const recommendedHave = availability.recommended.filter((t) => presentTypes.has(t)).length;
 
-  // Spaces that *should* have beds (bedrooms / studios / lofts).
-  const bedsExpected = spaces.filter((s) =>
-    ["sp.bedroom", "sp.studio", "sp.loft", "sp.kitchen_living"].includes(s.spaceType),
-  );
+  // Spaces that *should* have beds — derived from space_types.json (expectsBeds flag).
+  const expectsBeds = getSpaceTypesWithExpectedBeds();
+  const bedsExpected = spaces.filter((s) => expectsBeds.has(s.spaceType));
   const bedsHave = bedsExpected.filter((s) => s.beds.length > 0).length;
 
   const amenitiesHave = spaces.filter((s) => s.amenityPlacements.length > 0).length;
@@ -104,7 +105,7 @@ export async function computeSpacesCompleteness(
     }
   }
 
-  const w = completenessRules.sections.spaces.weights;
+  const w = getCompletenessRule("spaces").weights;
   const score =
     w.requiredPresent * ratio(requiredHave, availability.required.length) +
     w.recommendedPresent * ratio(recommendedHave, availability.recommended.length) +
@@ -152,8 +153,9 @@ export async function computeAmenitiesCompleteness(
   // No amenities configured at all → nothing to score against.
   if (instances.length === 0) return 0;
 
-  const w = completenessRules.sections.amenities.weights;
-  const core = completenessRules.sections.amenities.coreAmenityKeys;
+  const amenitiesRule = getCompletenessRule("amenities");
+  const w = amenitiesRule.weights;
+  const core = amenitiesRule.coreAmenityKeys;
 
   const presentKeys = new Set(instances.map((i) => i.amenityKey));
   const coreHave = core.filter((k) => presentKeys.has(k)).length;
@@ -162,14 +164,11 @@ export async function computeAmenitiesCompleteness(
     isAmenityDetailsComplete(i.amenityKey, i.detailsJson),
   ).length;
 
-  const scopePolicies = amenityTaxonomy.scopePolicies ?? {};
-  // An amenity is "placed" when it either has placements or its scopePolicy is
-  // `property_only` (no placement required). Unknown keys default to needing
-  // placement so we don't give free credit to amenities outside taxonomy.
-  const placedHave = instances.filter((i) => {
-    if (i.placements.length > 0) return true;
-    return scopePolicies[i.amenityKey]?.scopePolicy === "property_only";
-  }).length;
+  // An amenity counts as "placed" when it has placements OR its taxonomy
+  // scope policy says no placement is required (property-wide amenities).
+  const placedHave = instances.filter(
+    (i) => i.placements.length > 0 || !amenityRequiresPlacement(i.amenityKey),
+  ).length;
 
   const score =
     w.coreAmenitiesPresent * ratio(coreHave, core.length) +
@@ -194,8 +193,9 @@ export async function computeSystemsCompleteness(
   // No systems configured → 0; section is empty.
   if (systems.length === 0) return 0;
 
-  const w = completenessRules.sections.systems.weights;
-  const recommended = completenessRules.sections.systems.recommendedSystemKeys;
+  const systemsRule = getCompletenessRule("systems");
+  const w = systemsRule.weights;
+  const recommended = systemsRule.recommendedSystemKeys;
 
   const presentKeys = new Set(systems.map((s) => s.systemKey));
   const recommendedHave = recommended.filter((k) => presentKeys.has(k)).length;
@@ -234,7 +234,7 @@ export async function computeArrivalCompleteness(
     }));
   if (!property) return 0;
 
-  const w = completenessRules.sections.arrival.weights;
+  const w = getCompletenessRule("arrival").weights;
   const hasCheckIn = !!(property.checkInStart && property.checkInEnd);
   const hasCheckOut = !!property.checkOutTime;
   const hasPrimary = !!property.primaryAccessMethod;
