@@ -7,7 +7,11 @@
  * docs/CONFIG_DRIVEN_SYSTEM.md "Guide rendering engine — resiliencia"):
  *   1. Zero hardcoded taxonomy IDs in resolvers. Resolvers iterate entities
  *      and enrich from taxonomy — no amenity/space/system/policy ID literals.
- *   2. Labels from taxonomy — not translated inline.
+ *   2. Taxonomy-keyed labels (spaces, amenities, policies, access methods,
+ *      bed types, subtype fields) are resolved from the taxonomy — never
+ *      translated inline per-ID. Generic field captions ("Check-in",
+ *      "Teléfono", "Distancia", boolean "Sí/No") remain inline because they
+ *      are section-shape metadata, not taxonomy values.
  *   3. Field formatting delegates to field-type-registry (rama 8B).
  *   4. Graceful degradation for deprecated taxonomy keys and unknown field
  *      types: emit `GuideItem { deprecated: true, rawKey }` / push warnings,
@@ -275,6 +279,18 @@ function recommendedFirstSort(
   });
 }
 
+// Precomputed once at module load — taxonomies are immutable at runtime.
+const RECOMMENDED_AMENITIES: ReadonlySet<string> = new Set(
+  amenityTaxonomy.items.filter((a) => a.recommended).map((a) => a.id),
+);
+const EMPTY_SET: ReadonlySet<string> = new Set();
+
+const TAXONOMY_ORDER_BY_RESOLVER: Partial<Record<GuideResolverKey, readonly string[]>> = {
+  spaces: spaceTypes.items.map((s) => s.id),
+  amenities: amenityTaxonomy.items.map((a) => a.id),
+  rules: policyTaxonomy.groups.flatMap((g) => g.items.map((i) => i.id)),
+};
+
 function applySort(
   items: GuideItem[],
   sortBy: GuideSortBy,
@@ -286,24 +302,12 @@ function applySort(
     case "explicit_order":
       return items; // resolvers emit in explicit order already
     case "recommended_first": {
-      const recommendedSet = new Set<string>();
-      if (resolverKey === "amenities") {
-        for (const am of amenityTaxonomy.items) {
-          if (am.recommended) recommendedSet.add(am.id);
-        }
-      }
-      return recommendedFirstSort(items, recommendedSet);
+      const set = resolverKey === "amenities" ? RECOMMENDED_AMENITIES : EMPTY_SET;
+      return recommendedFirstSort(items, set as Set<string>);
     }
     case "taxonomy_order": {
-      let order: string[] = [];
-      if (resolverKey === "spaces") {
-        order = spaceTypes.items.map((s) => s.id);
-      } else if (resolverKey === "rules") {
-        order = policyTaxonomy.groups.flatMap((g) => g.items.map((i) => i.id));
-      } else if (resolverKey === "amenities") {
-        order = amenityTaxonomy.items.map((a) => a.id);
-      }
-      return taxonomyOrderSort(items, order);
+      const order = TAXONOMY_ORDER_BY_RESOLVER[resolverKey] ?? [];
+      return taxonomyOrderSort(items, order as string[]);
     }
   }
 }
