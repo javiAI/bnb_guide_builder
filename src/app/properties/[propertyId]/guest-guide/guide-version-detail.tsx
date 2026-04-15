@@ -8,6 +8,7 @@ import {
   deleteGuideSectionItemAction,
   type ActionResult,
 } from "@/lib/actions/knowledge.actions";
+import { VISIBILITY_LABEL, normaliseVisibility } from "@/lib/visibility";
 
 interface SectionItemData {
   id: string;
@@ -35,8 +36,6 @@ interface GuideVersionDetailProps {
   version: VersionData;
   propertyId: string;
 }
-
-import { VISIBILITY_LABEL, normaliseVisibility } from "@/lib/visibility";
 
 export function GuideVersionDetail({ version, propertyId }: GuideVersionDetailProps) {
   const [publishState, publishAction, publishPending] = useActionState<ActionResult | null, FormData>(
