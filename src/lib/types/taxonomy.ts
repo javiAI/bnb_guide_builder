@@ -70,6 +70,10 @@ export interface TaxonomyItem {
 export interface SpaceTypeItem extends TaxonomyItem {
   allowsSleeping: boolean;
   isComposite: boolean;
+  // A bed is expected in this space for it to be considered "complete".
+  // Narrower than `allowsSleeping` (which covers e.g. living rooms that *can*
+  // host a bed but don't require one). Drives `bedsConfigured` in scoring.
+  expectsBeds?: boolean;
   derivedByLayoutKeys: string[];
   mutuallyExclusiveWith: string[];
   applicableRoomTypes: string[];

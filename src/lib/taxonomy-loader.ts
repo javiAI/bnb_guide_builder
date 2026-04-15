@@ -27,6 +27,7 @@ import type {
   AmenityDestination,
   AmenityItem,
 } from "./types/taxonomy";
+import { z } from "zod";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
@@ -84,17 +85,93 @@ export const spaceAvailabilityRules = spaceAvailabilityRulesJson as unknown as S
 export const systemTaxonomy = systemTaxonomyJson as unknown as SystemTaxonomyFile;
 export const systemSubtypes = systemSubtypesJson as unknown as SystemSubtypesTaxonomyFile;
 
-export interface CompletenessRulesFile {
-  version: string;
-  thresholds: { usableMinScore: number; publishableMinScore: number };
-  sections: {
-    spaces: { label: string; weights: Record<string, number> };
-    amenities: { label: string; weights: Record<string, number>; coreAmenityKeys: string[] };
-    systems: { label: string; weights: Record<string, number>; recommendedSystemKeys: string[] };
-    arrival: { label: string; weights: Record<string, number> };
-  };
+// Each section has a fixed, typed shape so downstream consumers can read
+// `rule.weights.requiredPresent` with real inference instead of `Record<string, number>`.
+const SpacesSectionSchema = z.object({
+  label: z.string(),
+  weights: z.object({
+    requiredPresent: z.number(),
+    recommendedPresent: z.number(),
+    bedsConfigured: z.number(),
+    amenitiesPlaced: z.number(),
+    mediaAttached: z.number(),
+  }),
+});
+const AmenitiesSectionSchema = z.object({
+  label: z.string(),
+  weights: z.object({
+    coreAmenitiesPresent: z.number(),
+    subtypeDetailsComplete: z.number(),
+    placementsResolved: z.number(),
+  }),
+  coreAmenityKeys: z.array(z.string()),
+});
+const SystemsSectionSchema = z.object({
+  label: z.string(),
+  weights: z.object({
+    recommendedSystemsPresent: z.number(),
+    systemDetailsComplete: z.number(),
+  }),
+  recommendedSystemKeys: z.array(z.string()),
+});
+const ArrivalSectionSchema = z.object({
+  label: z.string(),
+  weights: z.object({
+    checkInTimes: z.number(),
+    checkOutTime: z.number(),
+    primaryAccessMethod: z.number(),
+    accessMethodsDetail: z.number(),
+  }),
+});
+
+const CompletenessRulesSchema = z.object({
+  version: z.string(),
+  thresholds: z.object({
+    usableMinScore: z.number(),
+    publishableMinScore: z.number(),
+  }),
+  sections: z.object({
+    spaces: SpacesSectionSchema,
+    amenities: AmenitiesSectionSchema,
+    systems: SystemsSectionSchema,
+    arrival: ArrivalSectionSchema,
+  }),
+});
+
+export type CompletenessRulesFile = z.infer<typeof CompletenessRulesSchema>;
+export type CompletenessSectionKey = keyof CompletenessRulesFile["sections"];
+
+function loadCompletenessRules(): CompletenessRulesFile {
+  const parsed = CompletenessRulesSchema.safeParse(completenessRulesJson);
+  if (!parsed.success) {
+    // Fail loud at module load — a malformed rules file would otherwise
+    // produce NaN scores silently at runtime.
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid taxonomies/completeness_rules.json:\n${details}`,
+    );
+  }
+  return parsed.data;
 }
-export const completenessRules = completenessRulesJson as unknown as CompletenessRulesFile;
+
+export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
+
+export function getCompletenessRule<K extends CompletenessSectionKey>(
+  sectionKey: K,
+): CompletenessRulesFile["sections"][K] {
+  const rule = completenessRules.sections[sectionKey];
+  if (!rule) {
+    // Narrow types make this unreachable in TS, but guard anyway so a
+    // stringly-typed caller can't silently get `undefined` → NaN scores.
+    throw new Error(
+      `Unknown completeness section "${String(sectionKey)}". ` +
+        `Expected one of: ${Object.keys(completenessRules.sections).join(", ")}.`,
+    );
+  }
+  return rule;
+}
 
 // ── Grouped taxonomies ──
 
@@ -209,6 +286,18 @@ export function getSpaceTypeItem(id: string): SpaceTypeItem | undefined {
 
 export function getSpaceTypesForRoomType(roomTypeId: string): SpaceTypeItem[] {
   return spaceTypes.items.filter((s) => s.applicableRoomTypes.includes(roomTypeId));
+}
+
+// Space types flagged as needing beds for completeness (expectsBeds=true).
+// Memoized on first call — the taxonomy is immutable at runtime.
+let _spaceTypesWithExpectedBeds: Set<string> | null = null;
+export function getSpaceTypesWithExpectedBeds(): Set<string> {
+  if (_spaceTypesWithExpectedBeds === null) {
+    _spaceTypesWithExpectedBeds = new Set(
+      spaceTypes.items.filter((s) => s.expectsBeds === true).map((s) => s.id),
+    );
+  }
+  return _spaceTypesWithExpectedBeds;
 }
 
 // ── Space availability rule helpers ──
@@ -338,6 +427,13 @@ export function isAmenityMoved(amenityId: string): boolean {
 
 export function getAmenityScopePolicy(amenityId: string): AmenityScopePolicyEntry | undefined {
   return amenityTaxonomy.scopePolicies?.[amenityId];
+}
+
+// Returns false iff the amenity's scopePolicy is "property_only" (the amenity
+// is property-wide and needs no per-space placement). Unknown keys default to
+// requiring placement so amenities outside the taxonomy don't get free credit.
+export function amenityRequiresPlacement(amenityId: string): boolean {
+  return getAmenityScopePolicy(amenityId)?.scopePolicy !== "property_only";
 }
 
 // ── Rule helpers ──
