@@ -421,9 +421,13 @@ export async function archiveSpaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
-  const nextStatus = (formData.get("status") as string) === "active" ? "active" : "archived";
+  const rawStatus = formData.get("status");
 
   if (!spaceId) return { success: false, error: "Espacio no encontrado" };
+  if (rawStatus !== "active" && rawStatus !== "archived") {
+    return { success: false, error: "Estado inválido" };
+  }
+  const nextStatus = rawStatus;
 
   const space = await prisma.space.findUnique({
     where: { id: spaceId },
