@@ -179,16 +179,17 @@ export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
 export function getCompletenessRule<K extends CompletenessSectionKey>(
   sectionKey: K,
 ): CompletenessRulesFile["sections"][K] {
-  const rule = completenessRules.sections[sectionKey];
-  if (!rule) {
-    // Narrow types make this unreachable in TS, but guard anyway so a
-    // stringly-typed caller can't silently get `undefined` → NaN scores.
+  // hasOwn (not `if (!rule)`) because prototype keys like "__proto__" or
+  // "toString" resolve to truthy values through the prototype chain and would
+  // otherwise bypass the guard, returning a non-rule object that silently
+  // produces NaN scores downstream.
+  if (!Object.prototype.hasOwnProperty.call(completenessRules.sections, sectionKey)) {
     throw new Error(
       `Unknown completeness section "${String(sectionKey)}". ` +
         `Expected one of: ${Object.keys(completenessRules.sections).join(", ")}.`,
     );
   }
-  return rule;
+  return completenessRules.sections[sectionKey];
 }
 
 // ── Grouped taxonomies ──

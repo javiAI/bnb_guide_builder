@@ -118,6 +118,17 @@ describe("completeness rules — config-driven", () => {
         getCompletenessRule("bogus" as unknown as CompletenessSectionKey),
       ).toThrow(/spaces, amenities, systems, arrival/);
     });
+
+    it("getCompletenessRule rejects prototype keys (__proto__, toString)", () => {
+      // Prototype-chain keys resolve to truthy values via `[sectionKey]` and
+      // would bypass a naive `if (!rule)` guard. hasOwn closes that door.
+      expect(() =>
+        getCompletenessRule("__proto__" as unknown as CompletenessSectionKey),
+      ).toThrow(/Unknown completeness section/);
+      expect(() =>
+        getCompletenessRule("toString" as unknown as CompletenessSectionKey),
+      ).toThrow(/Unknown completeness section/);
+    });
   });
 
   describe("derived helpers", () => {
