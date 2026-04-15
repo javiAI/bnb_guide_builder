@@ -3,14 +3,8 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { troubleshootingTaxonomy, findItem } from "@/lib/taxonomy-loader";
+import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { CreatePlaybookForm } from "./create-playbook-form";
-
-const SEVERITY_BADGE: Record<string, { label: string; tone: "neutral" | "warning" | "danger" }> = {
-  low: { label: "Baja", tone: "neutral" },
-  medium: { label: "Media", tone: "warning" },
-  high: { label: "Alta", tone: "danger" },
-  critical: { label: "Crítica", tone: "danger" },
-};
 
 export default async function TroubleshootingPage({
   params,

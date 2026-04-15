@@ -35,7 +35,7 @@ export default async function PlaybookDetailPage({
     }),
     prisma.space.findMany({
       where: { propertyId, status: "active" },
-      select: { id: true, name: true, spaceType: true },
+      select: { id: true, name: true },
       orderBy: { sortOrder: "asc" },
     }),
   ]);
@@ -89,6 +89,13 @@ export default async function PlaybookDetailPage({
     if (archived && archived.propertyId === propertyId) {
       spaceOptions.unshift({ value: archived.id, label: `${archived.name} (archivado)` });
     }
+  }
+  if (playbook.accessMethodKey && !accessOptions.some((o) => o.value === playbook.accessMethodKey)) {
+    const item = findItem(accessMethods, playbook.accessMethodKey);
+    accessOptions.unshift({
+      value: playbook.accessMethodKey,
+      label: `${item?.label ?? playbook.accessMethodKey} (ya no disponible)`,
+    });
   }
 
   let initialTargetType: "none" | "system" | "amenity" | "space" | "access" = "none";

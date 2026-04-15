@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
+import { Badge } from "@/components/ui/badge";
+import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { SystemDetailForm } from "./system-detail-form";
 import { SystemCoverageTable } from "./system-coverage-table";
 import { DeleteSystemButton } from "./delete-system-button";
@@ -102,17 +104,20 @@ export default async function SystemDetailPage({
             </p>
           ) : (
             <ul className="space-y-2">
-              {relatedPlaybooks.map((pb) => (
-                <li key={pb.id}>
-                  <Link
-                    href={`/properties/${propertyId}/troubleshooting/${pb.id}`}
-                    className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--color-neutral-50)]"
-                  >
-                    <span className="font-medium text-[var(--foreground)]">{pb.title}</span>
-                    <span className="text-xs text-[var(--color-neutral-500)]">{pb.severity}</span>
-                  </Link>
-                </li>
-              ))}
+              {relatedPlaybooks.map((pb) => {
+                const sev = SEVERITY_BADGE[pb.severity] ?? SEVERITY_BADGE.medium;
+                return (
+                  <li key={pb.id}>
+                    <Link
+                      href={`/properties/${propertyId}/troubleshooting/${pb.id}`}
+                      className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--color-neutral-50)]"
+                    >
+                      <span className="font-medium text-[var(--foreground)]">{pb.title}</span>
+                      <Badge tone={sev.tone} label={sev.label} />
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
