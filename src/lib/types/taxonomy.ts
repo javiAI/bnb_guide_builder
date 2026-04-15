@@ -1,3 +1,5 @@
+import type { SubtypeFieldType } from "@/config/registries/field-type-registry";
+
 // Reusable option shape (used by policy items, subtype fields, etc.)
 export interface TaxonomyOption {
   id: string;
@@ -151,7 +153,7 @@ export type SystemFieldVisibility = "public" | "internal" | "sensitive";
 export interface SystemSubtypeField {
   id: string;
   label: string;
-  type: string;
+  type: SubtypeFieldType;
   visibility?: SystemFieldVisibility;
   required: boolean;
   options?: TaxonomyOption[];
@@ -210,7 +212,7 @@ export interface SubtypeField {
   id: string;
   label: string;
   description: string;
-  type: string;
+  type: SubtypeFieldType;
   default?: string;
   visibility?: "public" | "internal" | "sensitive";
   required?: boolean;

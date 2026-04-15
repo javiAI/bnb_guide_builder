@@ -169,6 +169,8 @@ Editar `taxonomies/amenity_subtypes.json`:
 }
 ```
 
+Los valores válidos para `type` están centralizados en `src/config/registries/field-type-registry.ts` (`SubtypeFieldType`): `boolean`, `text`, `text_optional`, `sensitive_text`, `password`, `markdown_short`, `textarea`, `enum`, `enum_optional`, `number`, `number_optional`, `date`, `time_range_optional`, `number_list_optional`. Un `type` desconocido en taxonomía hace que `getFieldType()` lance en boot (fallo loud, no silent fallback a texto). Añadir un tipo nuevo = una entrada en el registry + su renderer en `field-type-renderers.tsx`; los tests de cobertura y extensión (`src/test/field-type-coverage.test.ts`, `src/test/field-type-renderers.test.tsx`) fuerzan paridad entre ambos mapas.
+
 ### Paso 3: Añadir regla de dependencia (si aplica)
 Editar `taxonomies/dynamic_field_rules.json`:
 ```json

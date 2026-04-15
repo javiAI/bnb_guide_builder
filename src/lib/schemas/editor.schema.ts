@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { SubtypeField } from "@/lib/types/taxonomy";
 import { visibilityLevels } from "@/lib/visibility";
+import { getFieldType } from "@/config/registries/field-type-registry";
 
 // ── Property editor (replaces basics) ──
 
@@ -245,17 +246,11 @@ export type UpdateAmenityData = z.infer<typeof updateAmenitySchema>;
  * server side (the UI enforces shown_if / required, but the action must not
  * trust the client).
  *
- * Field-type mapping mirrors SubtypeFieldInput:
- *   boolean              → z.boolean()
- *   number_optional      → z.number() | null
- *   enum / enum_optional → z.enum(options) | null (optional drops empty)
- *   time_range_optional  → /^HH:MM-HH:MM$/ | null
- *   number_list_optional → comma-separated numbers (string) | null
- *   text / sensitive / markdown → z.string() | null
- *
- * `required: true` fields must be present AND non-null AND (for strings)
- * non-empty. `shown_if` is not evaluated here — an unused field may be
- * present or absent; the UI is the authority on visibility.
+ * Per-field validation is delegated to the field-type registry
+ * (`src/config/registries/field-type-registry.ts`), which owns the mapping
+ * from `type` string to Zod schema. `required: true` semantics are handled
+ * inside each registry entry. `shown_if` is not evaluated here — an unused
+ * field may be present or absent; the UI is the authority on visibility.
  */
 export function buildSubtypeDetailsSchema(
   fields: SubtypeField[],
@@ -270,51 +265,10 @@ export function buildSubtypeDetailsSchema(
 }
 
 function buildSubtypeFieldSchema(field: SubtypeField): z.ZodTypeAny {
-  const required = field.required === true;
-
-  let base: z.ZodTypeAny;
-  switch (field.type) {
-    case "boolean":
-      base = z.boolean();
-      break;
-    case "number_optional":
-      base = z.number().finite();
-      break;
-    case "enum":
-    case "enum_optional": {
-      const values = (field.options ?? []).map((o) => o.id);
-      base = values.length > 0
-        ? z.enum(values as [string, ...string[]])
-        : z.string();
-      break;
-    }
-    case "time_range_optional":
-      base = z.string().regex(
-        /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/,
-        "Formato horario inválido (HH:MM-HH:MM)",
-      );
-      break;
-    case "number_list_optional":
-      base = z.string().regex(
-        /^\s*\d+(\s*,\s*\d+)*\s*$/,
-        "Debe ser una lista de números separados por comas",
-      );
-      break;
-    default: {
-      // text / text_optional / sensitive_text / markdown_short — all free-form strings.
-      // Treated identically at the Zod level; the difference (password input,
-      // textarea, etc.) is a UI concern handled by SubtypeFieldInput.
-      let s = z.string();
-      if (required) s = s.min(1, `${field.label} es obligatorio`);
-      base = s;
-      break;
-    }
-  }
-
-  if (required) {
-    return base;
-  }
-  return base.nullish();
+  // Delegates to the field-type registry — each entry owns its own handling
+  // of `required` vs. optional. Unknown types throw loudly at boot rather
+  // than silently falling back to string.
+  return getFieldType(field.type).validate(field);
 }
 
 // ── Amenity instances ──

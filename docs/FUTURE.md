@@ -75,26 +75,7 @@ Esfuerzo estimado: XL (6-8 semanas en total).
 
 ---
 
-## 3. Field-type registry (tangencial, 1-2h)
-
-**Estado**: pendiente (cheap win, encaja en Fase 8).
-
-Refactorizar `SubtypeFieldInput` + `buildSubtypeFieldSchema` en un registry:
-
-```ts
-// src/config/registries/field-type-registry.ts
-export const FIELD_TYPES = {
-  boolean: { render: BooleanInput, validate: () => z.boolean() },
-  enum:    { render: EnumInput,    validate: (f) => z.enum(f.options.map(o=>o.id)) },
-  // ...
-};
-```
-
-Añadir un tipo nuevo pasa de tocar 3 archivos a 1 entrada. Este refactor está incluido como **rama 8B** en `MASTER_PLAN_V2.md`.
-
----
-
-## 4. Calibración de completeness (7C del plan original)
+## 3. Calibración de completeness (7C del plan original)
 
 **Estado**: measurement-dependent. Diferido hasta tener ≥10 propiedades reales con datos.
 
