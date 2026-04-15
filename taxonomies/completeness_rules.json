@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "thresholds": {
+    "usableMinScore": 70,
+    "publishableMinScore": 85
+  },
+  "sections": {
+    "spaces": {
+      "label": "Espacios",
+      "weights": {
+        "requiredPresent": 40,
+        "recommendedPresent": 30,
+        "bedsConfigured": 10,
+        "amenitiesPlaced": 10,
+        "mediaAttached": 10
+      }
+    },
+    "amenities": {
+      "label": "Equipamiento",
+      "weights": {
+        "coreAmenitiesPresent": 40,
+        "subtypeDetailsComplete": 30,
+        "placementsResolved": 30
+      },
+      "coreAmenityKeys": [
+        "am.wifi",
+        "am.heating",
+        "am.tv",
+        "am.coffee_maker",
+        "am.kitchen_basics"
+      ]
+    },
+    "systems": {
+      "label": "Sistemas",
+      "weights": {
+        "recommendedSystemsPresent": 60,
+        "systemDetailsComplete": 40
+      },
+      "recommendedSystemKeys": [
+        "sys.internet",
+        "sys.heating",
+        "sys.hot_water"
+      ]
+    },
+    "arrival": {
+      "label": "Llegada",
+      "weights": {
+        "checkInTimes": 30,
+        "checkOutTime": 20,
+        "primaryAccessMethod": 30,
+        "accessMethodsDetail": 20
+      }
+    }
+  }
+}

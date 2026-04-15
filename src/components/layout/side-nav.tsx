@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WORKSPACE_NAV, NAV_GROUP_LABELS, type NavItem } from "@/lib/navigation";
+import { SectionProgress } from "@/components/section-progress";
 
 interface SideNavProps {
   propertyId: string;
   propertyNickname: string;
+  sectionScores?: Record<string, number>;
 }
 
-export function SideNav({ propertyId, propertyNickname }: SideNavProps) {
+export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNavProps) {
   const pathname = usePathname();
 
   const groups = (["content", "outputs", "operations"] as const).map((group) => ({
@@ -56,13 +58,16 @@ export function SideNav({ propertyId, propertyNickname }: SideNavProps) {
                   <li key={item.key}>
                     <Link
                       href={item.href(propertyId)}
-                      className={`block rounded-[var(--radius-sm)] px-2 py-1.5 text-sm transition-colors ${
+                      className={`flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-sm transition-colors ${
                         active
                           ? "bg-[var(--color-primary-50)] font-medium text-[var(--color-primary-700)]"
                           : "text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] hover:text-[var(--color-neutral-800)]"
                       }`}
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      {sectionScores?.[item.key] !== undefined && (
+                        <SectionProgress score={sectionScores[item.key]} />
+                      )}
                     </Link>
                   </li>
                 );

@@ -21,6 +21,10 @@ import {
   amenityTaxonomy,
   getAvailableSpaceTypes,
 } from "@/lib/taxonomy-loader";
+import {
+  computeOverallReadiness,
+  type OverallReadiness,
+} from "@/lib/services/completeness.service";
 
 export interface SpaceCapacity {
   spaceId: string;
@@ -67,6 +71,7 @@ export interface DerivedPayload {
   spaceAvailability: SpaceAvailability;
   systemCoverageBySpace: SystemCoverageBySpace;
   amenitiesEffectiveBySpace: AmenitiesEffectiveBySpace;
+  readiness: OverallReadiness;
 }
 
 // ──────────────────────────────────────────────
@@ -251,12 +256,14 @@ async function buildPayload(
     spaceAvailability,
     systemCoverageBySpace,
     amenitiesEffectiveBySpace,
+    readiness,
   ] = await Promise.all([
     computeSleepingCapacity(propertyId),
     computeActualCounts(propertyId),
     computeSpaceAvailability(propertyId),
     computeSystemCoverageBySpace(propertyId),
     computeAmenitiesEffectiveBySpace(propertyId),
+    computeOverallReadiness(propertyId),
   ]);
   return {
     propertyId,
@@ -266,6 +273,7 @@ async function buildPayload(
     spaceAvailability,
     systemCoverageBySpace,
     amenitiesEffectiveBySpace,
+    readiness,
   };
 }
 
