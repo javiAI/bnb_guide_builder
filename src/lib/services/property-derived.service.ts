@@ -1,6 +1,6 @@
 /**
- * PropertyDerivedService — canonical computer of every derived field a
- * property has. The output is a single JSON payload (`DerivedPayload`) that
+ * PropertyDerivedService — canonical compute service for every derived field
+ * a property has. The output is a single JSON payload (`DerivedPayload`) that
  * downstream readers (Overview, Publishing, retrieval) consume instead of
  * recomputing piecemeal.
  *
@@ -14,6 +14,7 @@
  * full recompute.
  */
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 import {
@@ -151,9 +152,10 @@ export async function computeSystemCoverageBySpace(
   });
   const bySpace: Record<string, string[]> = {};
   for (const c of coverages) {
-    // `inherited` rows shouldn't actually be persisted (per project pattern),
-    // but skip them defensively if any slipped through.
-    if (c.mode === "inherited") continue;
+    // Only explicit affirmative overrides mean "this system covers this space".
+    // `inherited` shouldn't be persisted; `override_no` is an explicit negation
+    // and must not be counted as coverage.
+    if (c.mode !== "override_yes") continue;
     if (!bySpace[c.spaceId]) bySpace[c.spaceId] = [];
     bySpace[c.spaceId].push(c.system.systemKey);
   }
@@ -231,7 +233,10 @@ export async function computeAmenitiesEffectiveBySpace(
 // Orchestrator + cache
 // ──────────────────────────────────────────────
 
-async function buildPayload(propertyId: string): Promise<DerivedPayload> {
+async function buildPayload(
+  propertyId: string,
+  now: Date,
+): Promise<DerivedPayload> {
   const [
     sleepingCapacity,
     actualCounts,
@@ -247,7 +252,7 @@ async function buildPayload(propertyId: string): Promise<DerivedPayload> {
   ]);
   return {
     propertyId,
-    recomputedAt: new Date().toISOString(),
+    recomputedAt: now.toISOString(),
     sleepingCapacity,
     actualCounts,
     spaceAvailability,
@@ -262,16 +267,19 @@ async function buildPayload(propertyId: string): Promise<DerivedPayload> {
  * so a recompute glitch never breaks the user-facing mutation.
  */
 export async function recomputeAll(propertyId: string): Promise<DerivedPayload> {
-  const payload = await buildPayload(propertyId);
+  const now = new Date();
+  const payload = await buildPayload(propertyId, now);
+  const derivedJson = payload as unknown as Prisma.InputJsonValue;
   await prisma.propertyDerived.upsert({
     where: { propertyId },
     create: {
       propertyId,
-      derivedJson: payload as unknown as object,
+      derivedJson,
+      recomputedAt: now,
     },
     update: {
-      derivedJson: payload as unknown as object,
-      recomputedAt: new Date(),
+      derivedJson,
+      recomputedAt: now,
     },
   });
   return payload;

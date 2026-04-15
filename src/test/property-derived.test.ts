@@ -75,15 +75,17 @@ describe("computeActualCounts", () => {
 });
 
 describe("computeSystemCoverageBySpace", () => {
-  it("groups system keys by space and skips inherited rows", async () => {
+  it("groups system keys by space and excludes inherited + override_no rows", async () => {
     coverageFindMany.mockResolvedValue([
       { spaceId: "s1", mode: "override_yes", system: { systemKey: "sys.heating" } },
       { spaceId: "s1", mode: "override_yes", system: { systemKey: "sys.ac" } },
+      { spaceId: "s1", mode: "override_no", system: { systemKey: "sys.fan" } },
       { spaceId: "s2", mode: "inherited", system: { systemKey: "sys.heating" } },
       { spaceId: "s2", mode: "override_yes", system: { systemKey: "sys.internet" } },
     ]);
     const out = await computeSystemCoverageBySpace("prop-1");
     expect(out.bySpace.s1).toEqual(["sys.heating", "sys.ac"]);
+    expect(out.bySpace.s1).not.toContain("sys.fan");
     expect(out.bySpace.s2).toEqual(["sys.internet"]);
   });
 });
