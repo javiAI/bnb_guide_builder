@@ -8,6 +8,7 @@ import {
   type IncidentTargetType,
 } from "@/lib/schemas/incident.schema";
 import { zonedLocalToUTC } from "@/lib/property-timezone";
+import { accessMethods, findItem } from "@/lib/taxonomy-loader";
 
 export type ActionResult = {
   success: boolean;
@@ -28,7 +29,11 @@ async function assertTargetBelongsToProperty(
   targetType: IncidentTargetType,
   targetId: string | null,
 ): Promise<string | null> {
-  if (targetType === "property" || targetType === "access" || !targetId) return null;
+  if (targetType === "property" || !targetId) return null;
+  if (targetType === "access") {
+    if (!findItem(accessMethods, targetId)) return "Método de acceso desconocido";
+    return null;
+  }
   if (targetType === "system") {
     const row = await prisma.propertySystem.findUnique({
       where: { id: targetId },
@@ -91,7 +96,7 @@ export async function createIncidentAction(
     playbookId: (formData.get("playbookId") as string) || undefined,
     notes: (formData.get("notes") as string) || undefined,
     visibility: (formData.get("visibility") as string) || undefined,
-    occurredAt: (formData.get("occurredAt") as string) || new Date().toISOString(),
+    occurredAt: (formData.get("occurredAt") as string) || undefined,
   };
 
   const result = createIncidentSchema.safeParse(raw);

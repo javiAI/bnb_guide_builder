@@ -138,7 +138,7 @@ describe("incident CRUD", () => {
         propertyId: "p1",
         title: "Cerradura trabada",
         targetType: "access",
-        targetId: "access.keypad",
+        targetId: "am.keypad",
         occurredAt: "2026-04-15T10:00",
       }),
     );

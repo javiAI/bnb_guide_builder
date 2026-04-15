@@ -47,11 +47,10 @@ export function CreateIncidentForm({
 
   const fieldError = (name: string) => state?.fieldErrors?.[name]?.[0];
 
-  // `datetime-local` expects local-time. Avoid toISOString() which is UTC and
-  // would shift the prefill by the user's offset.
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const localNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // The submitted value is interpreted server-side as *property* wall time.
+  // Prefilling with the operator's browser-local time would shift the saved
+  // timestamp whenever the operator and property are in different timezones,
+  // so leave the field blank and require an explicit entry.
 
   return (
     <form action={formAction} className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
@@ -80,7 +79,6 @@ export function CreateIncidentForm({
             name="occurredAt"
             type="datetime-local"
             required
-            defaultValue={localNow}
             className={inputClass}
           />
           {fieldError("occurredAt") && (

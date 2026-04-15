@@ -10,7 +10,7 @@ function getTZOffsetMs(instant: Date, timeZone: string): number {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false,
+    hourCycle: "h23",
   });
   const parts = dtf.formatToParts(instant).reduce<Record<string, string>>((acc, p) => {
     if (p.type !== "literal") acc[p.type] = p.value;
@@ -20,7 +20,7 @@ function getTZOffsetMs(instant: Date, timeZone: string): number {
     Number(parts.year),
     Number(parts.month) - 1,
     Number(parts.day),
-    Number(parts.hour) === 24 ? 0 : Number(parts.hour),
+    Number(parts.hour),
     Number(parts.minute),
     Number(parts.second),
   );
