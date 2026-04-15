@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { stripNulls } from "@/lib/utils";
 import {
@@ -102,9 +103,12 @@ export async function updateAmenityInstanceAction(
   }
 
   const { detailsJson: validatedDetails, ...rest } = result.data;
-  const data: Record<string, unknown> = { ...rest };
+  const data: Prisma.PropertyAmenityInstanceUpdateInput = { ...rest };
   if (validatedDetails !== undefined) {
-    data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
+    data.detailsJson =
+      Object.keys(validatedDetails).length > 0
+        ? (validatedDetails as Prisma.InputJsonValue)
+        : Prisma.DbNull;
   }
 
   await prisma.propertyAmenityInstance.update({ where: { id: amenityId }, data });
