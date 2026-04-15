@@ -2,10 +2,10 @@
   "file": "amenity_destinations_summary.json",
   "generator": "scripts/apply-amenity-destinations.ts",
   "source": "docs/deep_research_2/amenities_arquitecture.md",
-  "total": 142,
+  "total": 150,
   "countsByDestination": {
     "derived_from_system": 5,
-    "amenity_configurable": 87,
+    "amenity_configurable": 95,
     "derived_from_space": 20,
     "moved_to_property_attribute": 6,
     "moved_to_system": 4,
@@ -19,6 +19,11 @@
       "destination": "derived_from_system",
       "target": "sys.cooling",
       "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
+    },
+    {
+      "id": "am.air_purifier",
+      "destination": "amenity_configurable",
+      "note": "Purificador de aire — configurable según el espacio."
     },
     {
       "id": "am.arcade_games",
@@ -57,9 +62,14 @@
       "note": "Amenity configurable (inventario/experiencia)."
     },
     {
+      "id": "am.basic_spices",
+      "destination": "amenity_configurable",
+      "note": "Especias básicas — desagregado de cooking_basics."
+    },
+    {
       "id": "am.bathtub",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.batting_cage",
@@ -95,7 +105,7 @@
     {
       "id": "am.bidet",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.bikes",
@@ -120,7 +130,7 @@
     {
       "id": "am.body_soap",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.books_reading",
@@ -180,7 +190,7 @@
     {
       "id": "am.clothing_storage",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.co_alarm",
@@ -201,12 +211,17 @@
     {
       "id": "am.conditioner",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.cooking_basics",
       "destination": "amenity_configurable",
       "note": "Amenity configurable (inventario/experiencia)."
+    },
+    {
+      "id": "am.cork_screw",
+      "destination": "amenity_configurable",
+      "note": "Sacacorchos — configurable en cocina."
     },
     {
       "id": "am.crib",
@@ -216,12 +231,22 @@
     {
       "id": "am.dedicated_workspace",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
+    },
+    {
+      "id": "am.dehumidifier",
+      "destination": "amenity_configurable",
+      "note": "Deshumidificador — configurable según el espacio y el entorno (p. ej., costero o montañoso)."
     },
     {
       "id": "am.dining_table",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
+    },
+    {
+      "id": "am.dish_soap",
+      "destination": "amenity_configurable",
+      "note": "Lavavajillas a mano — configurable en cocina."
     },
     {
       "id": "am.dishes_silverware",
@@ -332,7 +357,7 @@
     {
       "id": "am.hair_dryer",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.hammock",
@@ -340,9 +365,14 @@
       "note": "Amenity configurable (inventario/experiencia)."
     },
     {
+      "id": "am.hand_soap",
+      "destination": "amenity_configurable",
+      "note": "Jabón de manos baños/cocina — configurable como amenity."
+    },
+    {
       "id": "am.hangers",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.heating",
@@ -372,6 +402,11 @@
       "note": "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada."
     },
     {
+      "id": "am.humidifier",
+      "destination": "amenity_configurable",
+      "note": "Humidificador — configurable según clima."
+    },
+    {
       "id": "am.indoor_fireplace",
       "destination": "amenity_configurable",
       "note": "Amenity configurable (inventario/experiencia)."
@@ -394,7 +429,7 @@
     {
       "id": "am.kitchen",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.kitchenette",
@@ -420,6 +455,11 @@
       "note": "Es recomendación/guía local, no equipamiento."
     },
     {
+      "id": "am.laundry_detergent",
+      "destination": "amenity_configurable",
+      "note": "Detergente lavadora — configurable cuando hay washer."
+    },
+    {
       "id": "am.life_size_games",
       "destination": "amenity_configurable",
       "note": "Amenity configurable (inventario/experiencia)."
@@ -442,7 +482,7 @@
     {
       "id": "am.mosquito_net",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.movie_theater",
@@ -472,7 +512,7 @@
     {
       "id": "am.outdoor_shower",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.outlet_covers",
@@ -525,7 +565,7 @@
     {
       "id": "am.pool",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.pool_table",
@@ -572,12 +612,12 @@
     {
       "id": "am.room_darkening_shades",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.safe",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.sauna",
@@ -587,12 +627,12 @@
     {
       "id": "am.shampoo",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.shower_gel",
       "destination": "derived_from_space",
-      "note": "Derivado de espacios/features (no se captura en PropertyAmenity)."
+      "note": "Derivado de espacios/features (no se captura en PropertyAmenityInstance)."
     },
     {
       "id": "am.single_level_home",

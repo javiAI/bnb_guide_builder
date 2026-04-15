@@ -4,9 +4,11 @@
  * Source of truth for the amenity audit (branch 1B, see docs/MASTER_PLAN.md).
  *
  * Applies `destination` (+ optional `target`) to every item in
- * `taxonomies/amenity_taxonomy.json`, verbatim from the audit table at
+ * `taxonomies/amenity_taxonomy.json`, seeded from the audit table at
  * `docs/deep_research_2/amenities_arquitecture.md` § "Auditoría completa
- * del catálogo actual (142 items)".
+ * del catálogo actual" (originally 142 items; extended in branch 7B with
+ * 8 additions from the "Propuesta de additions" section of the same doc,
+ * bringing the total to 150).
  *
  * Idempotent: running twice produces byte-identical output.
  *
@@ -39,8 +41,8 @@ export interface AmenityDestinationEntry {
 }
 
 /**
- * The canonical 142-item audit mapping.
- * DO NOT edit by hand — copy-pasted from the research doc. Changes must be
+ * The canonical 150-item audit mapping (142 original + 8 branch 7B additions).
+ * DO NOT edit by hand — sourced from the research doc. Changes must be
  * reflected in `docs/deep_research_2/amenities_arquitecture.md` first.
  */
 export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [
@@ -186,6 +188,14 @@ export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [
   { id: "ax.step_free_shower", destination: "moved_to_access", target: "ax.step_free_shower", note: "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity." },
   { id: "ax.shower_bath_chair", destination: "moved_to_access", target: "ax.shower_bath_chair", note: "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity." },
   { id: "ax.ceiling_mobile_hoist", destination: "moved_to_access", target: "ax.ceiling_mobile_hoist", note: "accessibility_feature (ax.*) capturado en Acceso/Accesibilidad, no como amenity." },
+  { id: "am.hand_soap", destination: "amenity_configurable", note: "Jabón de manos baños/cocina — configurable como amenity." },
+  { id: "am.dish_soap", destination: "amenity_configurable", note: "Lavavajillas a mano — configurable en cocina." },
+  { id: "am.laundry_detergent", destination: "amenity_configurable", note: "Detergente lavadora — configurable cuando hay washer." },
+  { id: "am.air_purifier", destination: "amenity_configurable", note: "Purificador de aire — configurable según el espacio." },
+  { id: "am.humidifier", destination: "amenity_configurable", note: "Humidificador — configurable según clima." },
+  { id: "am.dehumidifier", destination: "amenity_configurable", note: "Deshumidificador — configurable según el espacio y el entorno (p. ej., costero o montañoso)." },
+  { id: "am.cork_screw", destination: "amenity_configurable", note: "Sacacorchos — configurable en cocina." },
+  { id: "am.basic_spices", destination: "amenity_configurable", note: "Especias básicas — desagregado de cooking_basics." },
 ];
 
 interface AmenityItemRaw {
