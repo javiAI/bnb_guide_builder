@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
+import { getAvailableSpaceTypes } from "@/lib/taxonomy-loader";
 
 describe("resolveSpaceAvailability", () => {
   it("returns the base matrix when no overlays apply", () => {
@@ -52,9 +53,9 @@ describe("resolveSpaceAvailability", () => {
   });
 
   it("never moves items across excluded — hard layout constraint wins", () => {
-    // rt.private_room excludes sp.pool / sp.garden / sp.patio.
-    // env.beach tries to promote all three: all three must stay excluded,
-    // and none of them should appear in recommended.
+    // rt.private_room excludes sp.pool and sp.garden.
+    // env.beach tries to promote those items; they must stay excluded
+    // and must not appear in recommended.
     const r = resolveSpaceAvailability({
       roomType: "rt.private_room",
       layoutKey: null,
@@ -79,13 +80,16 @@ describe("resolveSpaceAvailability", () => {
   });
 
   it("is a no-op when neither propertyType nor environment match an overlay", () => {
+    const base = getAvailableSpaceTypes("rt.entire_place", "layout.separate_rooms");
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: "pt.other",
       environment: null,
     });
-    // Should match the base recommended list exactly (unchanged).
-    expect(r.recommended).toEqual(["sp.kitchen", "sp.living_room", "sp.bedroom"]);
+    // No overlay matches → every bucket should equal the base rule as-is.
+    // Derived from the loader so this test doesn't break when the taxonomy
+    // evolves (we're asserting the no-op contract, not the taxonomy content).
+    expect(r).toEqual(base);
   });
 });
