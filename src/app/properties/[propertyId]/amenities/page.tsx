@@ -4,12 +4,19 @@ import {
   amenityTaxonomy,
   findSubtype,
   getAmenityScopePolicy,
+  isAmenityMoved,
+  isAmenityDerived,
 } from "@/lib/taxonomy-loader";
-import type { ImportanceLevel, SubtypeField } from "@/lib/types/taxonomy";
+import type { ImportanceLevel, SubtypeField, AmenityItem } from "@/lib/types/taxonomy";
 import {
   isCanonicalInstanceKey,
   spaceIdFromInstanceKey,
 } from "@/lib/amenity-instance-keys";
+import {
+  resolveDerivation,
+  type DerivationContext,
+  type DerivationStatus,
+} from "@/lib/amenity-derivation-resolver";
 import { AmenitySelectorV2 } from "./amenity-selector-v2";
 
 // ── Serialisable types for client ──
@@ -35,6 +42,14 @@ export interface EnrichedAmenityItem {
   isCustomInstance: boolean;
 }
 
+export interface DerivedAmenityItem {
+  id: string;
+  label: string;
+  description: string;
+  importanceLevel: ImportanceLevel;
+  status: DerivationStatus;
+}
+
 export interface SpaceSection {
   spaceId: string;
   spaceType: string;
@@ -54,6 +69,7 @@ export default async function AmenitiesPage({
     select: {
       id: true,
       propertyEnvironment: true,
+      accessMethodsJson: true,
       spaces: {
         select: { id: true, spaceType: true, name: true, sortOrder: true },
         orderBy: { sortOrder: "asc" },
@@ -65,43 +81,66 @@ export default async function AmenitiesPage({
   // Load instances + placements. For each canonical space-scoped
   // instance (`space:<id>`) we surface it at its placement spaceIds;
   // non-canonical (custom) instances are tagged via `isCustomInstance`.
-  const existingInstances = await prisma.propertyAmenityInstance.findMany({
-    where: { propertyId },
-    select: {
-      id: true,
-      amenityKey: true,
-      instanceKey: true,
-      detailsJson: true,
-      placements: { select: { spaceId: true } },
-    },
-  });
+  const [existingInstances, systems] = await Promise.all([
+    prisma.propertyAmenityInstance.findMany({
+      where: { propertyId },
+      select: {
+        id: true,
+        amenityKey: true,
+        instanceKey: true,
+        detailsJson: true,
+        placements: { select: { spaceId: true } },
+      },
+    }),
+    prisma.propertySystem.findMany({
+      where: { propertyId },
+      select: { systemKey: true, detailsJson: true },
+    }),
+  ]);
 
-  // ── Build item sets ──
+  // ── Build derivation context (shared by all derived items) ──
+
+  const accessShape = property.accessMethodsJson as
+    | { parkingTypes?: string[]; accessibilityFeatures?: string[] }
+    | null;
+
+  const derivationCtx: DerivationContext = {
+    propertyId,
+    systems,
+    spaces: property.spaces.map((s) => ({ spaceType: s.spaceType })),
+    accessMethodsJson: accessShape,
+  };
+
+  // ── Partition taxonomy into configurable vs derived vs excluded ──
 
   const propEnv = property.propertyEnvironment;
 
-  const excludedIds = new Set<string>();
+  const configurableItems: AmenityItem[] = [];
+  const derivedItems: AmenityItem[] = [];
   for (const item of amenityTaxonomy.items) {
+    // Moved items live fully in other modules — hide from Equipamiento.
+    if (isAmenityMoved(item.id)) continue;
+    // Environment-gated items (beach/ski/lake/...) only show when the
+    // property's environment matches. Applies to both configurable and
+    // derived variants.
     const scope = getAmenityScopePolicy(item.id);
-    if (scope?.isDerived) excludedIds.add(item.id);
-    if (item.canonicalOwner) excludedIds.add(item.id);
-    // Environment filtering: items with relevantEnvironments only show when property's environment matches.
-    // If the item declares relevantEnvironments but the property hasn't set one yet, exclude it
-    // (avoids showing environment-specific amenities like beach/ski/lake on undefined-environment properties).
     if (scope?.relevantEnvironments?.length && (!propEnv || !scope.relevantEnvironments.includes(propEnv))) {
-      excludedIds.add(item.id);
+      continue;
+    }
+    if (isAmenityDerived(item.id)) {
+      derivedItems.push(item);
+    } else {
+      configurableItems.push(item);
     }
   }
 
-  // Split remaining items into property-wide vs space-bound
-  const propertyWideItems = amenityTaxonomy.items.filter((item) => {
-    if (excludedIds.has(item.id)) return false;
+  // Split remaining configurable items into property-wide vs space-bound
+  const propertyWideItems = configurableItems.filter((item) => {
     const scope = getAmenityScopePolicy(item.id);
     return scope?.scopePolicy === "property_only";
   });
 
-  const spaceBoundItems = amenityTaxonomy.items.filter((item) => {
-    if (excludedIds.has(item.id)) return false;
+  const spaceBoundItems = configurableItems.filter((item) => {
     const scope = getAmenityScopePolicy(item.id);
     return scope?.scopePolicy === "space_only" || scope?.scopePolicy === "multi_instance";
   });
@@ -154,7 +193,7 @@ export default async function AmenitiesPage({
   }
 
   function enrichItem(
-    item: typeof amenityTaxonomy.items[number],
+    item: AmenityItem,
     spaceId: string | null,
   ): EnrichedAmenityItem {
     const key = `${item.id}|${spaceId ?? ""}`;
@@ -193,6 +232,23 @@ export default async function AmenitiesPage({
     };
   });
 
+  // Derived items are property-wide-only in the UI: showing them once per
+  // space would just duplicate "Configurar en Sistemas →" everywhere. Their
+  // state is global (a system either exists or doesn't).
+  const generalDerived: DerivedAmenityItem[] = derivedItems
+    .map((item) => {
+      const status = resolveDerivation(item, derivationCtx);
+      if (!status) return null;
+      return {
+        id: item.id,
+        label: item.label,
+        description: item.description,
+        importanceLevel: (item.importanceLevel as ImportanceLevel) ?? "standard",
+        status,
+      };
+    })
+    .filter((x): x is DerivedAmenityItem => x !== null);
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-[var(--foreground)]">
@@ -206,6 +262,7 @@ export default async function AmenitiesPage({
         <AmenitySelectorV2
           propertyId={propertyId}
           generalItems={generalItems}
+          generalDerived={generalDerived}
           spaceSections={spaceSections}
         />
       </div>
