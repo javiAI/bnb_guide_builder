@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
+import { Badge } from "@/components/ui/badge";
+import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { SystemDetailForm } from "./system-detail-form";
 import { SystemCoverageTable } from "./system-coverage-table";
 import { DeleteSystemButton } from "./delete-system-button";
@@ -26,6 +28,12 @@ export default async function SystemDetailPage({
   ]);
 
   if (!system || system.propertyId !== propertyId) notFound();
+
+  const relatedPlaybooks = await prisma.troubleshootingPlaybook.findMany({
+    where: { propertyId, systemKey: system.systemKey },
+    select: { id: true, title: true, severity: true },
+    orderBy: { title: "asc" },
+  });
 
   const item = findSystemItem(system.systemKey);
   const subtype = system.systemKey ? findSystemSubtype(system.systemKey) : null;
@@ -81,6 +89,38 @@ export default async function SystemDetailPage({
             />
           </div>
         )}
+
+        {/* Troubleshooting relacionado */}
+        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+          <h2 className="mb-1 text-sm font-semibold text-[var(--foreground)]">
+            Troubleshooting relacionado
+          </h2>
+          <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
+            Playbooks vinculados a este sistema.
+          </p>
+          {relatedPlaybooks.length === 0 ? (
+            <p className="text-xs text-[var(--color-neutral-400)]">
+              No hay playbooks vinculados a este sistema.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {relatedPlaybooks.map((pb) => {
+                const sev = SEVERITY_BADGE[pb.severity] ?? SEVERITY_BADGE.medium;
+                return (
+                  <li key={pb.id}>
+                    <Link
+                      href={`/properties/${propertyId}/troubleshooting/${pb.id}`}
+                      className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--color-neutral-50)]"
+                    >
+                      <span className="font-medium text-[var(--foreground)]">{pb.title}</span>
+                      <Badge tone={sev.tone} label={sev.label} />
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
 
         {/* Coverage table */}
         {spaces.length > 0 && (

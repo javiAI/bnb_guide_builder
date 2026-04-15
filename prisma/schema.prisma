@@ -241,6 +241,7 @@ model Space {
   beds             BedConfiguration[]
   systemCoverages  PropertySystemCoverage[]
   amenityPlacements PropertyAmenityPlacement[]
+  troubleshootingPlaybooks TroubleshootingPlaybook[]
 
   @@unique([propertyId, wizardSeedKey])
   @@index([propertyId])
@@ -355,13 +356,22 @@ model TroubleshootingPlaybook {
   escalationRule  String?  @map("escalation_rule")
   visibility      String   @default("public")
   language        String   @default("es")
+  systemKey       String?  @map("system_key")
+  amenityKey      String?  @map("amenity_key")
+  spaceId         String?  @map("space_id")
+  accessMethodKey String?  @map("access_method_key")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  space    Space?   @relation(fields: [spaceId], references: [id], onDelete: SetNull)
 
   @@index([propertyId])
   @@index([propertyId, playbookKey])
+  @@index([propertyId, systemKey])
+  @@index([propertyId, amenityKey])
+  @@index([spaceId])
+  @@index([propertyId, accessMethodKey])
   @@map("troubleshooting_playbooks")
 }
 

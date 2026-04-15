@@ -346,15 +346,25 @@ export const createPlaybookSchema = z.object({
   severity: z.string().optional(),
 });
 
-export const updatePlaybookSchema = z.object({
-  title: z.string().min(1, "El título es obligatorio"),
-  severity: z.string().optional(),
-  symptomsMd: z.string().optional(),
-  guestStepsMd: z.string().optional(),
-  internalStepsMd: z.string().optional(),
-  escalationRule: z.string().optional(),
-  visibility: z.string().optional(),
-});
+export const updatePlaybookSchema = z
+  .object({
+    title: z.string().min(1, "El título es obligatorio"),
+    severity: z.string().optional(),
+    symptomsMd: z.string().optional(),
+    guestStepsMd: z.string().optional(),
+    internalStepsMd: z.string().optional(),
+    escalationRule: z.string().optional(),
+    visibility: z.string().optional(),
+    targetType: z.enum(["none", "system", "amenity", "space", "access"]).optional(),
+    targetKey: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (!data.targetType || data.targetType === "none") return true;
+      return !!data.targetKey && data.targetKey.length > 0;
+    },
+    { message: "Selecciona un objetivo válido", path: ["targetKey"] },
+  );
 
 export type CreatePlaybookData = z.infer<typeof createPlaybookSchema>;
 export type UpdatePlaybookData = z.infer<typeof updatePlaybookSchema>;
