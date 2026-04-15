@@ -147,7 +147,7 @@ describe("validateInfantsVsCrib", () => {
       baseCtx({
         infantsAllowed: true,
         amenityInstances: [
-          { amenityKey: "am.crib", subtypeKey: null, detailsJson: null, visibility: "public" },
+          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "public" },
         ],
       }),
     );
@@ -159,7 +159,7 @@ describe("validateInfantsVsCrib", () => {
       baseCtx({
         infantsAllowed: false,
         amenityInstances: [
-          { amenityKey: "am.crib", subtypeKey: null, detailsJson: null, visibility: "public" },
+          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "public" },
         ],
       }),
     );
@@ -174,7 +174,7 @@ describe("validateVisibilityLeaks", () => {
     const out = validateVisibilityLeaks(
       baseCtx({
         amenityInstances: [
-          { amenityKey: "am.tv", subtypeKey: null, detailsJson: { foo: "bar" }, visibility: "public" },
+          { amenityKey: "am.tv", instanceKey: "default", subtypeKey: null, detailsJson: { foo: "bar" }, visibility: "public" },
         ],
       }),
     );
@@ -187,6 +187,7 @@ describe("validateVisibilityLeaks", () => {
         amenityInstances: [
           {
             amenityKey: "am.coffee_maker",
+            instanceKey: "default",
             subtypeKey: "am.coffee_maker",
             detailsJson: { "coffee_maker.supplies_location": "armario" },
             visibility: "internal",
@@ -204,6 +205,7 @@ describe("validateVisibilityLeaks", () => {
         amenityInstances: [
           {
             amenityKey: "am.coffee_maker",
+            instanceKey: "default",
             subtypeKey: "am.coffee_maker",
             detailsJson: { "coffee_maker.subtype": "drip" },
             visibility: "public",
@@ -212,5 +214,50 @@ describe("validateVisibilityLeaks", () => {
       }),
     );
     expect(out).toHaveLength(0);
+  });
+
+  it("error when public amenity stores a sensitive_text field (am.wifi.password)", () => {
+    const out = validateVisibilityLeaks(
+      baseCtx({
+        amenityInstances: [
+          {
+            amenityKey: "am.wifi",
+            instanceKey: "default",
+            subtypeKey: "am.wifi",
+            detailsJson: { "wifi.ssid": "MyNet", "wifi.password": "supersecret" },
+            visibility: "public",
+          },
+        ],
+      }),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].severity).toBe("error");
+    expect(out[0].id).toBe("visibility_leak_am.wifi_default");
+    expect(out[0].message).toContain("Contraseña");
+  });
+
+  it("dedupes finding ids per instanceKey when amenity has multiple instances", () => {
+    const out = validateVisibilityLeaks(
+      baseCtx({
+        amenityInstances: [
+          {
+            amenityKey: "am.wifi",
+            instanceKey: "guest",
+            subtypeKey: "am.wifi",
+            detailsJson: { "wifi.password": "a" },
+            visibility: "public",
+          },
+          {
+            amenityKey: "am.wifi",
+            instanceKey: "office",
+            subtypeKey: "am.wifi",
+            detailsJson: { "wifi.password": "b" },
+            visibility: "public",
+          },
+        ],
+      }),
+    );
+    expect(out).toHaveLength(2);
+    expect(new Set(out.map((f) => f.id)).size).toBe(2);
   });
 });
