@@ -215,41 +215,74 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 9A — `feat/guide-rendering-engine`
 
-**Propósito**: servicio `GuideRenderingService.compose(propertyId, audience)` que produce un árbol tipado `GuideTree` desde entidades canónicas, aplicando filtros de visibility por audiencia.
+**Propósito**: función `composeGuide(propertyId, audience)` que produce un árbol tipado `GuideTree` desde entidades canónicas, aplicando filtros de visibility por audiencia. **Resiliente a cambios de taxonomía y entidades** (ver "Principios de resiliencia" abajo).
+
+**Decisiones cerradas en Fase -1 (2026-04-15)**:
+- **Fuente de datos**: `PropertyDerived` para flags/completeness; entidades canónicas (Property, Space, Amenity, etc.) para contenido.
+- **Empty sections**: siempre incluidas en el tree con `items: []` + `emptyCtaDeepLink` al panel del host. El renderer (9B) decide si mostrar CTA o filtrar.
+- **Jerarquía de audiencias**: `guest < ai < internal < sensitive`. Un nivel ve lo suyo + todo lo de niveles por debajo. `sensitive` nunca aparece en `GuideTree` (filtrado en boundary).
+- **Orden dentro de cada sección**: `guide_sections.json` declara `sortBy: "taxonomy_order" | "recommended_first" | "alpha" | "explicit_order"` por sección.
+- **CTA deep-link**: apunta al panel del host (`/properties/[id]/...`), útil para empty-state. No se expone a audience=`guest`.
+- **Scope de la rama**: las 7 secciones (arrival, spaces, amenities, rules, contacts, local, emergency) + stub mínimo `renderMarkdown(tree): string` (~50 LOC) para cerrar loop end-to-end con snapshot testing antes de 9B.
+
+**Principios de resiliencia (compromiso arquitectónico duro)**:
+1. **Cero IDs hardcoded en resolvers**. Ni `am.wifi`, ni `sp.bedroom`, ni `sys.internet` aparecen en `guide-rendering.service.ts`. Todo se itera por entidad y se enriquece leyendo taxonomía.
+2. **Labels y descripciones siempre desde taxonomía**. El servicio no traduce IDs a texto; delega en `taxonomy-loader`.
+3. **Formateo de valores vía `field-type-registry` (rama 8B)**. Reutilización directa: un type nuevo en el registry se renderiza sin tocar el guide engine.
+4. **Graceful degradation para taxonomy keys deprecadas**. Una `AmenityInstance` con `amenityKey` que ya no existe en `amenity_taxonomy.json` produce un `GuideItem` con `deprecated: true` y el raw key como label — el motor no lanza.
 
 **Archivos a crear**:
 - `src/lib/services/guide-rendering.service.ts`:
-  - `composeGuide(propertyId, audience): GuideTree`
-  - `resolveSection(sectionKey, propertyId, audience)` — uno por sección (arrival, spaces, amenities, rules, contacts, local, emergency)
-- `src/lib/types/guide-tree.ts` — tipos `GuideTree`, `GuideSection`, `GuideItem`, `GuideMedia`
-- `taxonomies/guide_sections.json` — declaración de secciones, orden, visibility máxima por sección, CTA deep-link
+  - `composeGuide(propertyId, audience): Promise<GuideTree>`
+  - `resolveSection(sectionKey, ctx)` — uno por sección (arrival, spaces, amenities, rules, contacts, local, emergency)
+  - `filterByAudience(items, audience)` — delega el orden de visibilidad en `src/lib/visibility.ts` (`canAudienceSee` + `VISIBILITY_ORDER`), con la única excepción dura de que `sensitive` nunca aparece en el `GuideTree`
+  - `formatFieldValue(field, value)` — wrapper sobre el registry de 8B
+- `src/lib/types/guide-tree.ts` — tipos `GuideTree`, `GuideSection`, `GuideItem`, `GuideMedia`, `GuideAudience`
+- `taxonomies/guide_sections.json` — declaración de secciones: `id`, `label`, `order`, `maxVisibility`, `sortBy`, `emptyCtaDeepLink`, `resolverKey`
+- `src/lib/renderers/guide-markdown.ts` — stub `renderMarkdown(tree): string` (alt B del Fase -1)
 
 **Archivos a modificar**:
-- `src/lib/taxonomy-loader.ts` — helper `getGuideSectionConfig()`
+- `src/lib/taxonomy-loader.ts` — `getGuideSectionConfig()` + Zod loader para `guide_sections.json`
 
 **Tests**:
 - `src/test/guide-rendering.test.ts`:
-  - `composeGuide` filtra `sensitive` en audience=`guest`
-  - incluye `ai`-level en audience=`ai`
+  - filtra `sensitive` en audience=`guest` (y en todas las audiencias públicas)
+  - `ai` incluye contenido `guest + ai`; `internal` incluye los 3
   - orden de secciones respeta `guide_sections.json`
-  - propiedad sin space.bedroom omite la sección Spaces (no error)
-- `src/test/guide-tree-schema.test.ts` — tipos estrictos, no unknown accidentales
+  - property sin space.bedroom emite section Spaces con `items: []` + `emptyCtaDeepLink` (NO omite ni lanza)
+  - property sin ningún contacto emite section Contacts con empty-state
+- `src/test/guide-tree-schema.test.ts` — tipos estrictos, no `unknown` accidentales
+- `src/test/guide-sections-coverage.test.ts` **(nuevo, integridad)**:
+  - cada sección en `guide_sections.json` tiene un `resolverKey` que mapea a un resolver real
+  - ningún resolver del servicio es huérfano (no declarado en la taxonomía)
+- `src/test/guide-rendering-resilience.test.ts` **(nuevo, resiliencia)**:
+  - una `AmenityInstance` con `amenityKey = "am.does_not_exist"` produce un `GuideItem` con `deprecated: true` y raw key como label, no throw
+  - un `Space` con `spaceTypeKey` deprecado se renderiza igual
+  - un `SubtypeField` con `type` desconocido (taxonomía mal editada) produce warning en tree, no crash
+- `src/test/guide-no-hardcoded-ids.test.ts` **(nuevo, invariante)**:
+  - regex lint sobre `guide-rendering.service.ts`: no admite patrones `=== "am\..*"`, `=== "sp\..*"`, `=== "sys\..*"`, `=== "pol\..*"`
+- `src/test/guide-markdown-snapshot.test.ts` — snapshot determinístico por audiencia (usando el stub de `renderMarkdown`)
 
-**Criterio de done**: servicio puro, 100% cubierto. No UI todavía.
+**Criterio de done**:
+- Servicio puro, 100% cubierto.
+- Stub `renderMarkdown` produce markdown determinístico (snapshot tests verdes).
+- Los 3 tests de integridad/resiliencia/invariante verdes.
+- Diagrama del tree commited en `docs/diagrams/guide-tree.excalidraw`.
 
 **Preparación**:
 - **Contexto a leer**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § 6 "Source-of-truth rules", § 8 "Visibility model", § 13 "Rendering model"
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` (completo)
-  - `prisma/schema.prisma` — modelos `GuideVersion`, `GuideSection`, `GuideSectionItem` (grep `model Guide`)
-  - `src/lib/services/property-derived.service.ts` (para patrón de servicios que componen desde entidades canónicas)
+  - `prisma/schema.prisma` — modelos `GuideVersion`, `GuideSection`, `GuideSectionItem`
+  - `src/lib/services/property-derived.service.ts` (patrón de servicios que componen desde entidades canónicas)
   - `taxonomies/visibility_levels.json`
+  - `src/config/registries/field-type-registry.ts` (reutilización para formateo de valores)
 - **Memoria previa**: **clean**
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § 13 — concretar el renderer con referencia al nuevo servicio
-  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `guide_sections.json`
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `guide_sections.json` y sección de resiliencia del guide engine
 - **Skills/tools específicos**:
-  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del `GuideTree` (secciones → items → media, con flags de visibility por nodo) para alinear antes de tocar código.
+  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del `GuideTree` (secciones → items → media, flags de visibility por nodo, flujo audience-filter). Committed en `docs/diagrams/guide-tree.excalidraw`.
 
 ---
 

@@ -29,6 +29,7 @@ import type {
 } from "./types/taxonomy";
 import { z } from "zod";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
+import { canAudienceSee } from "./visibility";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
 import roomTypesJson from "../../taxonomies/room_types.json";
@@ -58,6 +59,7 @@ import parkingOptionsJson from "../../taxonomies/parking_options.json";
 import accessibilityFeaturesJson from "../../taxonomies/accessibility_features.json";
 import propertyEnvironmentsJson from "../../taxonomies/property_environments.json";
 import completenessRulesJson from "../../taxonomies/completeness_rules.json";
+import guideSectionsJson from "../../taxonomies/guide_sections.json";
 
 // ── Item-based taxonomies ──
 
@@ -176,6 +178,124 @@ function loadCompletenessRules(): CompletenessRulesFile {
 
 export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
 
+// ── Guide sections (rama 9A) ──
+// Resolver keys are declared here (mirror of the resolvers registered in
+// guide-rendering.service.ts). A resolver key used in guide_sections.json that
+// doesn't appear below is rejected at boot. The integrity test
+// `guide-sections-coverage.test.ts` keeps this list and the service resolvers
+// in lockstep.
+export const GUIDE_RESOLVER_KEYS = [
+  "arrival",
+  "spaces",
+  "amenities",
+  "rules",
+  "contacts",
+  "local",
+  "emergency",
+] as const;
+export type GuideResolverKey = (typeof GUIDE_RESOLVER_KEYS)[number];
+
+export const GUIDE_SORT_BY = [
+  "taxonomy_order",
+  "recommended_first",
+  "alpha",
+  "explicit_order",
+] as const;
+export type GuideSortBy = (typeof GUIDE_SORT_BY)[number];
+
+export const GUIDE_AUDIENCES = ["guest", "ai", "internal", "sensitive"] as const;
+export type GuideAudience = (typeof GUIDE_AUDIENCES)[number];
+
+const GuideSectionConfigSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    order: z.number().int().min(0),
+    maxVisibility: z.enum(GUIDE_AUDIENCES),
+    sortBy: z.enum(GUIDE_SORT_BY),
+    resolverKey: z.enum(GUIDE_RESOLVER_KEYS),
+    emptyCtaDeepLink: z.string().min(1),
+  })
+  .strict();
+
+const GuideSectionsFileSchema = z
+  .object({
+    file: z.string(),
+    version: z.string(),
+    locale: z.string(),
+    units_system: z.string(),
+    items: z.array(GuideSectionConfigSchema).min(1),
+  })
+  .strict();
+
+export type GuideSectionConfig = z.infer<typeof GuideSectionConfigSchema>;
+export type GuideSectionsFile = z.infer<typeof GuideSectionsFileSchema>;
+
+function loadGuideSections(): GuideSectionsFile {
+  const parsed = GuideSectionsFileSchema.safeParse(guideSectionsJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid taxonomies/guide_sections.json:\n${details}`);
+  }
+  // Reject duplicate ids / resolverKeys — both must be unique so the tree and
+  // the resolver registry are bijective.
+  const ids = new Set<string>();
+  const resolverKeys = new Set<string>();
+  for (const item of parsed.data.items) {
+    if (ids.has(item.id)) {
+      throw new Error(`Duplicate guide section id: ${item.id}`);
+    }
+    ids.add(item.id);
+    if (resolverKeys.has(item.resolverKey)) {
+      throw new Error(
+        `Duplicate guide section resolverKey: ${item.resolverKey}`,
+      );
+    }
+    resolverKeys.add(item.resolverKey);
+  }
+  return parsed.data;
+}
+
+export const guideSections: GuideSectionsFile = loadGuideSections();
+
+export function getGuideSectionConfigs(): ReadonlyArray<GuideSectionConfig> {
+  return guideSections.items;
+}
+
+export function getGuideSectionConfig(
+  sectionId: string,
+): GuideSectionConfig | undefined {
+  return guideSections.items.find((s) => s.id === sectionId);
+}
+
+export function getGuideSectionByResolverKey(
+  key: GuideResolverKey,
+): GuideSectionConfig {
+  const found = guideSections.items.find((s) => s.resolverKey === key);
+  if (!found) {
+    throw new Error(
+      `No guide section declared for resolverKey "${key}". ` +
+        `Known resolver keys: ${GUIDE_RESOLVER_KEYS.join(", ")}.`,
+    );
+  }
+  return found;
+}
+
+// ── Visibility hierarchy (rama 9A) ──
+// Visibility ordering and `canAudienceSee` live in `src/lib/visibility.ts`
+// as the single source of truth. `isVisibleForAudience` is a thin wrapper
+// that additionally enforces the Rama 9A hard rule: `sensitive` items are
+// never included in a `GuideTree`, regardless of audience.
+export function isVisibleForAudience(
+  itemVisibility: GuideAudience,
+  audience: GuideAudience,
+): boolean {
+  if (itemVisibility === "sensitive") return false;
+  return canAudienceSee(audience, itemVisibility);
+}
+
 export function getCompletenessRule<K extends CompletenessSectionKey>(
   sectionKey: K,
 ): CompletenessRulesFile["sections"][K] {
@@ -283,10 +403,13 @@ export function getPolicyFieldOptions(itemId: string, fieldId: string): Taxonomy
 
 // ── Subtype helpers ──
 
+const _subtypesByAmenityId: ReadonlyMap<string, AmenitySubtype> = new Map(
+  amenitySubtypes.subtypes.map((s) => [s.amenity_id, s]),
+);
 export function findSubtype(
   amenityId: string,
 ): AmenitySubtype | undefined {
-  return amenitySubtypes.subtypes.find((s) => s.amenity_id === amenityId);
+  return _subtypesByAmenityId.get(amenityId);
 }
 
 // ── Space feature helpers ──
@@ -299,8 +422,11 @@ export function getSpaceFeatureGroups(spaceTypeId: string): SpaceFeatureGroup[] 
 
 // ── Space type metadata helpers ──
 
+const _spaceTypesById: ReadonlyMap<string, SpaceTypeItem> = new Map(
+  spaceTypes.items.map((s) => [s.id, s]),
+);
 export function getSpaceTypeItem(id: string): SpaceTypeItem | undefined {
-  return spaceTypes.items.find((s) => s.id === id);
+  return _spaceTypesById.get(id);
 }
 
 export function getSpaceTypesForRoomType(roomTypeId: string): SpaceTypeItem[] {
@@ -370,18 +496,32 @@ export function getAllSystemItems(): ReadonlyArray<SystemItem> {
   return _allSystemItems;
 }
 
+const _systemItemsById: ReadonlyMap<string, SystemItem> = new Map(
+  _allSystemItems.map((s) => [s.id, s]),
+);
 export function findSystemItem(id: string): SystemItem | undefined {
-  return getAllSystemItems().find((s) => s.id === id);
+  return _systemItemsById.get(id);
 }
 
+const _systemSubtypesByKey: ReadonlyMap<string, SystemSubtype> = (() => {
+  const map = new Map<string, SystemSubtype>();
+  for (const s of systemSubtypes.subtypes) {
+    map.set(s.systemKey, s);
+    if (s.id !== s.systemKey) map.set(s.id, s);
+  }
+  return map;
+})();
 export function findSystemSubtype(systemKey: string): SystemSubtype | undefined {
-  return systemSubtypes.subtypes.find((s) => s.systemKey === systemKey || s.id === systemKey);
+  return _systemSubtypesByKey.get(systemKey);
 }
 
 // ── Amenity item helpers ──
 
+const _amenityItemsById: ReadonlyMap<string, AmenityItem> = new Map(
+  amenityTaxonomy.items.map((i) => [i.id, i]),
+);
 export function findAmenityItem(amenityId: string): AmenityItem | undefined {
-  return amenityTaxonomy.items.find((i) => i.id === amenityId);
+  return _amenityItemsById.get(amenityId);
 }
 
 /**

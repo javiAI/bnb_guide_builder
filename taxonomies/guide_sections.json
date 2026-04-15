@@ -1,0 +1,71 @@
+{
+  "file": "guide_sections.json",
+  "version": "2026-04-15",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "gs.arrival",
+      "label": "Llegada",
+      "order": 10,
+      "maxVisibility": "internal",
+      "sortBy": "explicit_order",
+      "resolverKey": "arrival",
+      "emptyCtaDeepLink": "/properties/{propertyId}/access"
+    },
+    {
+      "id": "gs.spaces",
+      "label": "Espacios",
+      "order": 20,
+      "maxVisibility": "internal",
+      "sortBy": "taxonomy_order",
+      "resolverKey": "spaces",
+      "emptyCtaDeepLink": "/properties/{propertyId}/spaces"
+    },
+    {
+      "id": "gs.amenities",
+      "label": "Equipamiento",
+      "order": 30,
+      "maxVisibility": "internal",
+      "sortBy": "recommended_first",
+      "resolverKey": "amenities",
+      "emptyCtaDeepLink": "/properties/{propertyId}/amenities"
+    },
+    {
+      "id": "gs.rules",
+      "label": "Normas de la casa",
+      "order": 40,
+      "maxVisibility": "internal",
+      "sortBy": "taxonomy_order",
+      "resolverKey": "rules",
+      "emptyCtaDeepLink": "/properties/{propertyId}/rules"
+    },
+    {
+      "id": "gs.contacts",
+      "label": "Contactos",
+      "order": 50,
+      "maxVisibility": "internal",
+      "sortBy": "explicit_order",
+      "resolverKey": "contacts",
+      "emptyCtaDeepLink": "/properties/{propertyId}/contacts"
+    },
+    {
+      "id": "gs.local",
+      "label": "Guía local",
+      "order": 60,
+      "maxVisibility": "internal",
+      "sortBy": "alpha",
+      "resolverKey": "local",
+      "emptyCtaDeepLink": "/properties/{propertyId}/local-guide"
+    },
+    {
+      "id": "gs.emergency",
+      "label": "Emergencias",
+      "order": 70,
+      "maxVisibility": "internal",
+      "sortBy": "explicit_order",
+      "resolverKey": "emergency",
+      "emptyCtaDeepLink": "/properties/{propertyId}/contacts"
+    }
+  ]
+}
