@@ -482,9 +482,9 @@ export async function completeWizardAction(
 
     if (d.wifiSsid) {
       const guestInstructions = [
-        d.wifiSsid ? `Red: ${d.wifiSsid}` : null,
+        `Red: ${d.wifiSsid}`,
         d.wifiPassword ? `Contraseña: ${d.wifiPassword}` : null,
-      ].filter(Boolean).join("\n") || null;
+      ].filter(Boolean).join("\n");
 
       await tx.propertyAmenityInstance.create({
         data: {

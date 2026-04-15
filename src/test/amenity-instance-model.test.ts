@@ -6,9 +6,7 @@ import {
 } from "@/lib/schemas/editor.schema";
 import { prisma } from "@/lib/db";
 
-// Phase 2 / Branch 2A — structural tests for the new amenity instance
-// model. These do not hit the DB; the full backfill + actions are
-// exercised manually via `scripts/migrate-amenities-to-instances.ts`.
+// Structural tests for the amenity instance model. No DB access here.
 
 describe("amenityInstanceRepository exports", () => {
   it("is exported from repositories index", () => {
@@ -95,10 +93,9 @@ describe("updateAmenityInstanceSchema", () => {
   });
 });
 
-describe("Backfill key derivation", () => {
-  // The backfill script derives instanceKey as:
+describe("Canonical key derivation", () => {
+  // Canonical instanceKey convention:
   //   spaceId ? `space:${spaceId}` : "default"
-  // Keep this invariant locked so Branch 2B/2C don't drift.
   function instanceKeyFor(spaceId: string | null): string {
     return spaceId ? `space:${spaceId}` : "default";
   }

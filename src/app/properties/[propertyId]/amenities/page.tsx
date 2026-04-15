@@ -28,10 +28,9 @@ export interface EnrichedAmenityItem {
   detailsJson: Record<string, unknown> | null;
   /**
    * True for instances whose `instanceKey` is non-canonical (i.e. not
-   * "default" / "space:<id>"). Currently these are only produced by
-   * `createAmenityInstanceAction`, which isn't UI-wired yet, so this is
-   * forward-looking — it lets the UI badge custom instances when that
-   * surface lands.
+   * "default" / "space:<id>"). No current code path produces these —
+   * forward-looking flag so the UI can badge custom instances once a
+   * creation surface lands.
    */
   isCustomInstance: boolean;
 }
@@ -63,11 +62,9 @@ export default async function AmenitiesPage({
   });
   if (!property) notFound();
 
-  // Phase 2 / Branch 2C — read from the new model.
-  // We load instances with their placements so that, for each canonical
-  // space-scoped instance (`space:<id>`), we can surface it at each of
-  // its placement spaceIds. Non-canonical (custom) instances are carried
-  // through via `isCustomInstance` so the UI can surface them separately.
+  // Load instances + placements. For each canonical space-scoped
+  // instance (`space:<id>`) we surface it at its placement spaceIds;
+  // non-canonical (custom) instances are tagged via `isCustomInstance`.
   const existingInstances = await prisma.propertyAmenityInstance.findMany({
     where: { propertyId },
     select: {
