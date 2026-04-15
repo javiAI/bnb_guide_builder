@@ -569,7 +569,7 @@ export async function addBedAction(
       if (existing) {
         await tx.bedConfiguration.update({
           where: { id: existing.id },
-          data: { quantity: existing.quantity + result.data.quantity },
+          data: { quantity: existing.quantity + result.data.quantity, wizardSeedKey: null },
         });
       } else {
         await tx.bedConfiguration.create({
@@ -577,6 +577,10 @@ export async function addBedAction(
         });
       }
     }
+    await tx.space.update({
+      where: { id: spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, space.propertyId);
   });
 

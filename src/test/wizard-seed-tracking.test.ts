@@ -12,8 +12,10 @@ vi.mock("@/lib/db", () => {
     },
     bedConfiguration: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn().mockResolvedValue({}),
       delete: vi.fn().mockResolvedValue({}),
+      create: vi.fn().mockResolvedValue({}),
     },
     property: {
       update: vi.fn().mockResolvedValue({}),
@@ -27,6 +29,8 @@ vi.mock("@/lib/db", () => {
         bedConfiguration: {
           update: (args: unknown) => prismaMock.bedConfiguration.update(args),
           delete: (args: unknown) => prismaMock.bedConfiguration.delete(args),
+          create: (args: unknown) => prismaMock.bedConfiguration.create(args),
+          findFirst: (args: unknown) => prismaMock.bedConfiguration.findFirst(args),
         },
         property: {
           update: (args: unknown) => prismaMock.property.update(args),
@@ -45,7 +49,9 @@ vi.mock("@/lib/services/property-derived.service", async (importOriginal) => {
 import { prisma } from "@/lib/db";
 import {
   renameSpaceAction,
+  updateSpaceAction,
   updateSpaceDetailsAction,
+  addBedAction,
   updateBedAction,
   deleteBedAction,
   updateBedConfigAction,
@@ -54,15 +60,19 @@ import {
 const spaceFindUnique = prisma.space.findUnique as ReturnType<typeof vi.fn>;
 const spaceUpdate = prisma.space.update as ReturnType<typeof vi.fn>;
 const bedFindUnique = prisma.bedConfiguration.findUnique as ReturnType<typeof vi.fn>;
+const bedFindFirst = prisma.bedConfiguration.findFirst as ReturnType<typeof vi.fn>;
 const bedUpdate = prisma.bedConfiguration.update as ReturnType<typeof vi.fn>;
 const bedDelete = prisma.bedConfiguration.delete as ReturnType<typeof vi.fn>;
+const bedCreate = prisma.bedConfiguration.create as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   spaceFindUnique.mockReset();
   spaceUpdate.mockReset().mockResolvedValue({});
   bedFindUnique.mockReset();
+  bedFindFirst.mockReset();
   bedUpdate.mockReset().mockResolvedValue({});
   bedDelete.mockReset().mockResolvedValue({});
+  bedCreate.mockReset().mockResolvedValue({});
 });
 
 function form(entries: Record<string, string>): FormData {
@@ -72,6 +82,23 @@ function form(entries: Record<string, string>): FormData {
 }
 
 describe("wizard seed tracking — manual edits transfer ownership", () => {
+  it("updateSpaceAction clears wizardSeedKey and promotes to user (visibility edit)", async () => {
+    await updateSpaceAction(
+      null,
+      form({
+        spaceId: "s1",
+        propertyId: "p1",
+        name: "Dormitorio 1",
+        visibility: "internal",
+      }),
+    );
+    const call = spaceUpdate.mock.calls[0][0];
+    expect(call).toMatchObject({
+      where: { id: "s1" },
+      data: expect.objectContaining({ createdBy: "user", wizardSeedKey: null }),
+    });
+  });
+
   it("renameSpaceAction clears wizardSeedKey and promotes to user", async () => {
     spaceFindUnique.mockResolvedValue({ propertyId: "p1" });
     await renameSpaceAction(null, form({ spaceId: "s1", name: "Habitación principal" }));
@@ -89,6 +116,25 @@ describe("wizard seed tracking — manual edits transfer ownership", () => {
     );
     const call = spaceUpdate.mock.calls[0][0];
     expect(call.data).toMatchObject({ createdBy: "user", wizardSeedKey: null });
+  });
+
+  it("addBedAction increments existing bed, clears its seedKey, and promotes parent space", async () => {
+    spaceFindUnique.mockResolvedValue({ propertyId: "p1" });
+    bedFindFirst.mockResolvedValue({ id: "b1", quantity: 1 });
+
+    await addBedAction(
+      null,
+      form({ spaceId: "s1", bedType: "bt.queen", quantity: "1" }),
+    );
+
+    expect(bedUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "b1" },
+        data: expect.objectContaining({ quantity: 2, wizardSeedKey: null }),
+      }),
+    );
+    const spaceCall = spaceUpdate.mock.calls.find((c) => c[0].where.id === "s1");
+    expect(spaceCall?.[0].data).toMatchObject({ createdBy: "user", wizardSeedKey: null });
   });
 
   it("updateBedAction clears seedKey on bed and promotes parent space", async () => {
@@ -147,12 +193,12 @@ describe("wizard seed tracking — schema", () => {
     const { resolve } = await import("node:path");
     const src = readFileSync(resolve(process.cwd(), "prisma/schema.prisma"), "utf-8");
     const spaceModel = src.match(/model Space \{[\s\S]*?^\}/m)?.[0] ?? "";
-    expect(spaceModel).toContain('createdBy     String   @default("user")');
-    expect(spaceModel).toContain("wizardSeedKey String?");
-    expect(spaceModel).toContain("@@unique([propertyId, wizardSeedKey])");
+    expect(spaceModel).toMatch(/createdBy\s+String\s+@default\("user"\)/);
+    expect(spaceModel).toMatch(/wizardSeedKey\s+String\?/);
+    expect(spaceModel).toMatch(/@@unique\(\[\s*propertyId\s*,\s*wizardSeedKey\s*\]\)/);
 
     const bedModel = src.match(/model BedConfiguration \{[\s\S]*?^\}/m)?.[0] ?? "";
-    expect(bedModel).toContain("wizardSeedKey String?");
-    expect(bedModel).toContain("@@unique([spaceId, wizardSeedKey])");
+    expect(bedModel).toMatch(/wizardSeedKey\s+String\?/);
+    expect(bedModel).toMatch(/@@unique\(\[\s*spaceId\s*,\s*wizardSeedKey\s*\]\)/);
   });
 });

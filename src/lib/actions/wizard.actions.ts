@@ -411,7 +411,9 @@ export async function completeWizardAction(
       });
     }
 
-    // Create spaces with bed configurations (tagged with _origin for idempotent future upserts)
+    // Create spaces with bed configurations. Each row carries createdBy="wizard"
+    // and a stable wizardSeedKey so future re-runs can upsert idempotently and
+    // manual edits can detach rows from wizard ownership.
     let sortOrder = 0;
     if (d.beds && d.beds.length > 0) {
       // Group beds by spaceIndex
