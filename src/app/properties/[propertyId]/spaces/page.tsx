@@ -193,7 +193,7 @@ export default async function SpacesPage({
                 guestNotes: space.guestNotes,
                 internalNotes: space.internalNotes,
                 featuresJson: space.featuresJson as Record<string, unknown> | null,
-                status: space.status,
+                status: space.status === "archived" ? "archived" : "active",
               }}
               beds={space.beds.map((b) => ({
                 id: b.id,
@@ -234,7 +234,7 @@ export default async function SpacesPage({
                     guestNotes: space.guestNotes,
                     internalNotes: space.internalNotes,
                     featuresJson: space.featuresJson as Record<string, unknown> | null,
-                    status: space.status,
+                    status: space.status === "archived" ? "archived" : "active",
                   }}
                   beds={space.beds.map((b) => ({
                     id: b.id,

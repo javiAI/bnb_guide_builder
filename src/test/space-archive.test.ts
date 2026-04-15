@@ -3,8 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prismaMock = {
     space: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -17,17 +17,18 @@ vi.mock("@/lib/db", () => ({
     $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
       return fn({
         space: {
-          update: (args: unknown) => (prisma.space.update as ReturnType<typeof vi.fn>)(args),
-          delete: (args: unknown) => (prisma.space.delete as ReturnType<typeof vi.fn>)(args),
-          findMany: (args: unknown) => (prisma.space.findMany as ReturnType<typeof vi.fn>)(args),
+          update: (args: unknown) => prismaMock.space.update(args),
+          delete: (args: unknown) => prismaMock.space.delete(args),
+          findMany: (args: unknown) => prismaMock.space.findMany(args),
         },
         property: {
-          update: (args: unknown) => (prisma.property.update as ReturnType<typeof vi.fn>)(args),
+          update: (args: unknown) => prismaMock.property.update(args),
         },
       });
     }),
-  },
-}));
+  };
+  return { prisma: prismaMock };
+});
 
 vi.mock("@/lib/services/property-derived.service", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/lib/services/property-derived.service")>();

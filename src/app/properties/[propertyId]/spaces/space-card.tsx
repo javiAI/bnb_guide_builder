@@ -22,6 +22,8 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { BedManager, type BedData } from "./bed-manager";
 
 
+export type SpaceStatus = "active" | "archived";
+
 interface SpaceData {
   id: string;
   spaceType: string;
@@ -29,7 +31,7 @@ interface SpaceData {
   guestNotes: string | null;
   internalNotes: string | null;
   featuresJson: Record<string, unknown> | null;
-  status: string;
+  status: SpaceStatus;
 }
 
 interface SpaceSystem {
