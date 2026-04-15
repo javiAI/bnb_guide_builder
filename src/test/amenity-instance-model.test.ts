@@ -39,10 +39,6 @@ describe("Prisma client has the new models", () => {
     expect(typeof prisma.propertyAmenityPlacement.findMany).toBe("function");
   });
 
-  it("keeps the legacy PropertyAmenity delegate during dual-write window", () => {
-    // Cutover happens in Branch 2C — until then both coexist.
-    expect(prisma.propertyAmenity).toBeDefined();
-  });
 });
 
 describe("createAmenityInstanceSchema", () => {

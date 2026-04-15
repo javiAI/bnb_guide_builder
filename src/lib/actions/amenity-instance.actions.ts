@@ -1,15 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { stripNulls } from "@/lib/utils";
-import {
-  mirrorInstanceToOld,
-  mirrorInstanceDeleteToOld,
-  mirrorPlacementAddToOld,
-  mirrorPlacementRemoveFromOld,
-} from "@/lib/amenity-dual-write";
-import { isCanonicalInstanceKey } from "@/lib/amenity-instance-keys";
 import {
   createAmenityInstanceSchema,
   updateAmenityInstanceSchema,
@@ -21,14 +15,7 @@ export type ActionResult = {
   fieldErrors?: Record<string, string[]>;
 };
 
-/**
- * Phase 2 / Branch 2A — server actions for the new amenity instance
- * model (`PropertyAmenityInstance` + `PropertyAmenityPlacement`).
- *
- * These actions are NOT yet wired to the UI. The dual-write cutover is
- * Branch 2C. For now they provide the write surface for the model so it
- * can be exercised by integration tests and future dual-write paths.
- */
+/** Server actions for PropertyAmenityInstance (+ PropertyAmenityPlacement). */
 
 export async function createAmenityInstanceAction(
   _prev: ActionResult | null,
@@ -49,32 +36,14 @@ export async function createAmenityInstanceAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const created = await tx.propertyAmenityInstance.create({
-        data: {
-          amenityKey: result.data.amenityKey,
-          instanceKey: result.data.instanceKey,
-          subtypeKey: result.data.subtypeKey,
-          visibility: result.data.visibility ?? "public",
-          property: { connect: { id: propertyId } },
-        },
-      });
-      await mirrorInstanceToOld(
-        {
-          id: created.id,
-          propertyId: created.propertyId,
-          amenityKey: created.amenityKey,
-          instanceKey: created.instanceKey,
-          subtypeKey: created.subtypeKey,
-          detailsJson: created.detailsJson,
-          guestInstructions: created.guestInstructions,
-          aiInstructions: created.aiInstructions,
-          internalNotes: created.internalNotes,
-          troubleshootingNotes: created.troubleshootingNotes,
-          visibility: created.visibility,
-        },
-        tx,
-      );
+    await prisma.propertyAmenityInstance.create({
+      data: {
+        amenityKey: result.data.amenityKey,
+        instanceKey: result.data.instanceKey,
+        subtypeKey: result.data.subtypeKey,
+        visibility: result.data.visibility ?? "public",
+        property: { connect: { id: propertyId } },
+      },
     });
   } catch (err) {
     if ((err as { code?: string }).code === "P2002") {
@@ -134,30 +103,15 @@ export async function updateAmenityInstanceAction(
   }
 
   const { detailsJson: validatedDetails, ...rest } = result.data;
-  const data: Record<string, unknown> = { ...rest };
+  const data: Prisma.PropertyAmenityInstanceUpdateInput = { ...rest };
   if (validatedDetails !== undefined) {
-    data.detailsJson = Object.keys(validatedDetails).length > 0 ? validatedDetails : null;
+    data.detailsJson =
+      Object.keys(validatedDetails).length > 0
+        ? (validatedDetails as Prisma.InputJsonValue)
+        : Prisma.DbNull;
   }
 
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.propertyAmenityInstance.update({ where: { id: amenityId }, data });
-    await mirrorInstanceToOld(
-      {
-        id: updated.id,
-        propertyId: updated.propertyId,
-        amenityKey: updated.amenityKey,
-        instanceKey: updated.instanceKey,
-        subtypeKey: updated.subtypeKey,
-        detailsJson: updated.detailsJson,
-        guestInstructions: updated.guestInstructions,
-        aiInstructions: updated.aiInstructions,
-        internalNotes: updated.internalNotes,
-        troubleshootingNotes: updated.troubleshootingNotes,
-        visibility: updated.visibility,
-      },
-      tx,
-    );
-  });
+  await prisma.propertyAmenityInstance.update({ where: { id: amenityId }, data });
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }
@@ -171,7 +125,7 @@ export async function deleteAmenityInstanceAction(
 
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true, instanceKey: true },
+    select: { propertyId: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
@@ -179,17 +133,7 @@ export async function deleteAmenityInstanceAction(
     return { success: false, error: "El amenity no pertenece a la propiedad indicada" };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.propertyAmenityInstance.delete({ where: { id: amenityId } });
-    await mirrorInstanceDeleteToOld(
-      {
-        propertyId: instance.propertyId,
-        amenityKey: instance.amenityKey,
-        instanceKey: instance.instanceKey,
-      },
-      tx,
-    );
-  });
+  await prisma.propertyAmenityInstance.delete({ where: { id: amenityId } });
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }
@@ -204,7 +148,7 @@ export async function addAmenityPlacementAction(
 
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true, instanceKey: true },
+    select: { propertyId: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
 
@@ -222,21 +166,10 @@ export async function addAmenityPlacementAction(
   const hasNoteField = formData.has("note");
   const note = hasNoteField ? ((formData.get("note") as string) || null) : null;
 
-  await prisma.$transaction(async (tx) => {
-    await tx.propertyAmenityPlacement.upsert({
-      where: { amenityId_spaceId: { amenityId, spaceId } },
-      create: { amenityId, spaceId, note },
-      update: hasNoteField ? { note } : {},
-    });
-    // Skip legacy mirror for non-canonical instanceKeys — those rows
-    // have no 1:1 counterpart in the old model (same rule as
-    // mirrorInstanceToOld).
-    if (isCanonicalInstanceKey(instance.instanceKey)) {
-      await mirrorPlacementAddToOld(
-        { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
-        tx,
-      );
-    }
+  await prisma.propertyAmenityPlacement.upsert({
+    where: { amenityId_spaceId: { amenityId, spaceId } },
+    create: { amenityId, spaceId, note },
+    update: hasNoteField ? { note } : {},
   });
 
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
@@ -253,7 +186,7 @@ export async function removeAmenityPlacementAction(
 
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true, amenityKey: true, instanceKey: true },
+    select: { propertyId: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
 
@@ -266,15 +199,7 @@ export async function removeAmenityPlacementAction(
     return { success: false, error: "El espacio no pertenece a la propiedad del amenity" };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.propertyAmenityPlacement.deleteMany({ where: { amenityId, spaceId } });
-    if (isCanonicalInstanceKey(instance.instanceKey)) {
-      await mirrorPlacementRemoveFromOld(
-        { propertyId: instance.propertyId, amenityKey: instance.amenityKey, spaceId },
-        tx,
-      );
-    }
-  });
+  await prisma.propertyAmenityPlacement.deleteMany({ where: { amenityId, spaceId } });
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }

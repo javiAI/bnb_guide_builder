@@ -112,16 +112,13 @@ export default async function AmenitiesPage({
   // Index by `${amenityKey}|${spaceId ?? ""}` so `enrichItem` can lookup
   // in O(1) for any (taxonomy item, space) pair.
   //
-  // Two passes are used so canonical instances always win a key collision:
-  //   Pass 1: canonical instances ("default" / "space:<id>") — these map
-  //           1:1 to legacy per-space rows and are the UI's source of
-  //           truth. "space:<id>" instances are indexed per placement.
-  //   Pass 2: non-canonical (custom) instances — indexed from their
-  //           placements, or (if placements are empty) under the
-  //           property-wide slot, but ONLY into keys a canonical instance
-  //           didn't already claim. This lets the "Personalizado" badge
-  //           render for the still-to-be-UI-wired custom-instance surface
-  //           without hiding canonical chips.
+  // Two passes so canonical instances always win a key collision:
+  //   Pass 1: canonical instances ("default" / "space:<id>") — indexed
+  //           by the spaceId encoded in the instanceKey (authoritative
+  //           slot, ignoring any drifted placements).
+  //   Pass 2: custom instances — indexed from their placements (or the
+  //           property-wide slot when empty), but only into keys a
+  //           canonical instance didn't already claim.
   type IndexedInstance = {
     id: string;
     amenityKey: string;
@@ -140,11 +137,8 @@ export default async function AmenitiesPage({
     if (!isCanonicalInstanceKey(inst.instanceKey)) continue;
     const derivedSpaceId = spaceIdFromInstanceKey(inst.instanceKey);
     // Canonical instances are 1:1 per space by design — the instanceKey
-    // (`default` / `space:<id>`) is the authoritative slot, not the
-    // placements. Using `derivedSpaceId` here keeps the UI stable against
-    // placement drift: a `space:X` instance with a stray placement on Y
-    // surfaces only at X, matching the convention enforced by the
-    // dual-write helpers and the drift script.
+    // is the authoritative slot, not the placements. A `space:X` instance
+    // with a stray placement on Y still surfaces only at X.
     const slot = derivedSpaceId === null ? `${inst.amenityKey}|` : `${inst.amenityKey}|${derivedSpaceId}`;
     instanceIndex.set(slot, indexedFrom(inst, false));
   }

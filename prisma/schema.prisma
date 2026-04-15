@@ -101,7 +101,6 @@ model Property {
   wizardSessions        WizardSession[]
   spaces                Space[]
   systems               PropertySystem[]
-  amenities             PropertyAmenity[]
   amenityInstances      PropertyAmenityInstance[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
   localPlaces           LocalPlace[]
@@ -222,7 +221,6 @@ model Space {
   property         Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   beds             BedConfiguration[]
   systemCoverages  PropertySystemCoverage[]
-  amenities        PropertyAmenity[]
   amenityPlacements PropertyAmenityPlacement[]
 
   @@index([propertyId])
@@ -279,35 +277,6 @@ model PropertySystemCoverage {
   @@index([systemId])
   @@index([spaceId])
   @@map("property_system_coverages")
-}
-
-/// @deprecated Phase 2 / Branch 2C — reads have cut over to
-/// PropertyAmenityInstance (+ PropertyAmenityPlacement). This table is kept
-/// behind the dual-write window as a safety net during the rollout and will
-/// be dropped in the drop-legacy phase.
-model PropertyAmenity {
-  id                   String   @id @default(cuid())
-  propertyId           String   @map("property_id")
-  amenityKey           String   @map("amenity_key")
-  subtypeKey           String?  @map("subtype_key")
-  spaceId              String?  @map("space_id")
-  detailsJson          Json?    @map("details_json")
-  guestInstructions    String?  @map("guest_instructions")
-  aiInstructions       String?  @map("ai_instructions")
-  internalNotes        String?  @map("internal_notes")
-  troubleshootingNotes String?  @map("troubleshooting_notes")
-  visibility           String   @default("public")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
-
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  space   Space?   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-
-  @@unique([propertyId, amenityKey, spaceId], map: "property_amenities_property_id_amenity_key_space_id_key")
-  @@index([propertyId])
-  @@index([spaceId])
-  @@index([propertyId, amenityKey])
-  @@map("property_amenities")
 }
 
 model PropertyAmenityInstance {

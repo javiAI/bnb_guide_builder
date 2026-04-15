@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 const ENTITY_LABELS: Record<string, string> = {
   Property: "Propiedad",
   Space: "Espacio",
-  PropertyAmenity: "Amenity",
+  PropertyAmenityInstance: "Amenity",
   TroubleshootingPlaybook: "Playbook",
   LocalPlace: "Lugar local",
   MediaAsset: "Media",

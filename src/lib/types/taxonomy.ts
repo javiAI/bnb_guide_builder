@@ -25,7 +25,7 @@ export type ImportanceLevel = "highlight" | "standard" | "bonus";
 
 // Amenity destination classification (audit 1B). Defines where the concept lives:
 // - `amenity_configurable`: stays as configurable amenity instance
-// - `derived_from_space|system|access`: shown derived, not captured in PropertyAmenity
+// - `derived_from_space|system|access`: shown derived, not captured in PropertyAmenityInstance
 // - `moved_to_*`: relocated out of Amenities (section target indicated by `target`)
 export type AmenityDestination =
   | "amenity_configurable"

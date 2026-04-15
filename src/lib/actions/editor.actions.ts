@@ -6,11 +6,7 @@ import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { findSystemItem, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
-import {
-  mirrorEnableToNew,
-  mirrorDisableToNew,
-  mirrorInstanceToOld,
-} from "@/lib/amenity-dual-write";
+import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
 import {
   propertySchema,
@@ -682,44 +678,32 @@ export async function toggleAmenityAction(
     }
   }
 
+  const instanceKey = instanceKeyFor(spaceId);
+
   if (enabled) {
-    // Phase 2 / 2B dual-write: old model + new Instance(+Placement) in a
-    // single transaction so a failure in one rolls back the other.
-    //
-    // Concurrency: if two toggles race and ours P2002s on the legacy
-    // create, our tx rolls back (including the mirror). No drift,
-    // because every other toggle path ALSO dual-writes — the concurrent
-    // winner mirrors too. Catching P2002 *inside* the tx callback would
-    // be unsafe: Postgres aborts the tx on constraint violation (Prisma
-    // does not wrap statements in savepoints), so subsequent statements
-    // in the callback would fail with "current transaction is aborted".
     try {
       await prisma.$transaction(async (tx) => {
-        const existing = await tx.propertyAmenity.findFirst({
-          where: { propertyId, amenityKey, spaceId },
+        const instance = await tx.propertyAmenityInstance.upsert({
+          where: {
+            propertyId_amenityKey_instanceKey: { propertyId, amenityKey, instanceKey },
+          },
+          create: { propertyId, amenityKey, instanceKey },
+          update: {},
         });
-        if (!existing) {
-          await tx.propertyAmenity.create({
-            data: {
-              amenityKey,
-              property: { connect: { id: propertyId } },
-              ...(spaceId ? { space: { connect: { id: spaceId } } } : {}),
-            },
+        if (spaceId) {
+          await tx.propertyAmenityPlacement.upsert({
+            where: { amenityId_spaceId: { amenityId: instance.id, spaceId } },
+            create: { amenityId: instance.id, spaceId },
+            update: {},
           });
         }
-        await mirrorEnableToNew({ propertyId, amenityKey, spaceId }, tx);
       });
     } catch (err) {
-      // Concurrent toggle already wrote the row AND its own mirror — tx
-      // rolled back; system state is consistent.
       if ((err as { code?: string }).code !== "P2002") throw err;
     }
   } else {
-    await prisma.$transaction(async (tx) => {
-      await tx.propertyAmenity.deleteMany({
-        where: { propertyId, amenityKey, spaceId },
-      });
-      await mirrorDisableToNew({ propertyId, amenityKey, spaceId }, tx);
+    await prisma.propertyAmenityInstance.deleteMany({
+      where: { propertyId, amenityKey, instanceKey },
     });
   }
 
@@ -731,11 +715,6 @@ export async function updateAmenityAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  // Phase 2 / Branch 2C — `amenityId` now points at
-  // `PropertyAmenityInstance.id` (was the legacy `PropertyAmenity.id`
-  // under dual-write). The mirror direction flips: we update the
-  // instance as source of truth and fan the change back to the legacy
-  // row via `mirrorInstanceToOld`.
   const amenityId = formData.get("amenityId") as string;
   if (!amenityId) return { success: false, error: "Falta el ID del amenity" };
   const instance = await prisma.propertyAmenityInstance.findUnique({
@@ -791,27 +770,9 @@ export async function updateAmenityAction(
         : Prisma.DbNull;
   }
 
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.propertyAmenityInstance.update({
-      where: { id: amenityId },
-      data,
-    });
-    await mirrorInstanceToOld(
-      {
-        id: updated.id,
-        propertyId: updated.propertyId,
-        amenityKey: updated.amenityKey,
-        instanceKey: updated.instanceKey,
-        subtypeKey: updated.subtypeKey,
-        detailsJson: updated.detailsJson,
-        guestInstructions: updated.guestInstructions,
-        aiInstructions: updated.aiInstructions,
-        internalNotes: updated.internalNotes,
-        troubleshootingNotes: updated.troubleshootingNotes,
-        visibility: updated.visibility,
-      },
-      tx,
-    );
+  await prisma.propertyAmenityInstance.update({
+    where: { id: amenityId },
+    data,
   });
 
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
