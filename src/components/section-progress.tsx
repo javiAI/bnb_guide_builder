@@ -22,6 +22,8 @@ export function SectionProgress({ score }: SectionProgressProps) {
     <span
       className={`ml-auto inline-flex min-w-[2.25rem] justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${tone}`}
       title={`Completitud: ${score}%`}
+      aria-label={`Completitud: ${score}%`}
+      role="status"
     >
       {score}%
     </span>

@@ -114,6 +114,17 @@ describe("computeAmenitiesCompleteness", () => {
     // 1/5 core present (40 * 0.2 = 8) + 0/1 details (0) + 1/1 placed (30) = 38
     expect(await computeAmenitiesCompleteness("p1")).toBe(38);
   });
+
+  it("penalises missing required fields even when subtypeKey is null", async () => {
+    // Subtype existence is driven by taxonomy, not by whether `subtypeKey` is set.
+    // A freshly toggled-on wifi (subtypeKey=null) must still require ssid+password.
+    amenityFind.mockResolvedValue([
+      { amenityKey: "am.wifi", subtypeKey: null, detailsJson: null,
+        placements: [{ id: "pl1" }] },
+    ]);
+    // 1/5 core (8) + 0/1 details + 1/1 placed (30) = 38
+    expect(await computeAmenitiesCompleteness("p1")).toBe(38);
+  });
 });
 
 describe("computeOverallReadiness", () => {
@@ -138,7 +149,9 @@ describe("computeOverallReadiness", () => {
       { entityId: "s1" }, { entityId: "s2" }, { entityId: "s3" }, { entityId: "s4" },
     ]);
     amenityFind.mockResolvedValue([
-      { amenityKey: "am.wifi", subtypeKey: null, detailsJson: null, placements: [{ id: "pl" }] },
+      { amenityKey: "am.wifi", subtypeKey: null,
+        detailsJson: { "wifi.ssid": "R", "wifi.password": "p" },
+        placements: [{ id: "pl" }] },
       { amenityKey: "am.heating", subtypeKey: null, detailsJson: null, placements: [{ id: "pl" }] },
       { amenityKey: "am.tv", subtypeKey: null, detailsJson: null, placements: [{ id: "pl" }] },
       { amenityKey: "am.coffee_maker", subtypeKey: null, detailsJson: null, placements: [{ id: "pl" }] },

@@ -110,13 +110,13 @@ export async function computeSpacesCompleteness(
 
 function isAmenityDetailsComplete(
   amenityKey: string,
-  subtypeKey: string | null,
   detailsJson: unknown,
 ): boolean {
-  // If the amenity has no subtype, presence alone counts as complete.
-  if (!subtypeKey) return true;
-  // Subtype rows are keyed by `amenity_id`; instance.subtypeKey aligns with it.
-  const subtype = amenitySubtypes.subtypes.find((s) => s.amenity_id === subtypeKey);
+  // Subtype existence is driven by taxonomy (keyed by amenity_id), not by
+  // whether the instance has `subtypeKey` populated. A freshly toggled-on
+  // `am.wifi` has `subtypeKey=null` but still needs ssid/password — keying off
+  // the instance field here would incorrectly mark it complete.
+  const subtype = amenitySubtypes.subtypes.find((s) => s.amenity_id === amenityKey);
   if (!subtype) return true;
   const requiredFields = subtype.fields.filter((f) => f.required);
   if (requiredFields.length === 0) return true;
@@ -152,17 +152,16 @@ export async function computeAmenitiesCompleteness(
   const coreHave = core.filter((k) => presentKeys.has(k)).length;
 
   const detailComplete = instances.filter((i) =>
-    isAmenityDetailsComplete(i.amenityKey, i.subtypeKey, i.detailsJson),
+    isAmenityDetailsComplete(i.amenityKey, i.detailsJson),
   ).length;
 
-  const amenityDestinationById = new Map(
-    amenityTaxonomy.items.map((it) => [it.id, it.destination]),
-  );
-  // An amenity is "placed" when it either has placements or its taxonomy entry
-  // applies globally (no need to attach to a space).
+  const scopePolicies = amenityTaxonomy.scopePolicies ?? {};
+  // An amenity is "placed" when it either has placements or its scopePolicy is
+  // `property_only` (no placement required). Unknown keys default to needing
+  // placement so we don't give free credit to amenities outside taxonomy.
   const placedHave = instances.filter((i) => {
     if (i.placements.length > 0) return true;
-    return amenityDestinationById.get(i.amenityKey) !== "amenity_configurable";
+    return scopePolicies[i.amenityKey]?.scopePolicy === "property_only";
   }).length;
 
   const score =
