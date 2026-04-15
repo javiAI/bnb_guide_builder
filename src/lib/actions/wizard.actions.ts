@@ -481,17 +481,17 @@ export async function completeWizardAction(
     }
 
     if (d.wifiSsid) {
-      const guestInstructions = [
-        `Red: ${d.wifiSsid}`,
-        d.wifiPassword ? `Contraseña: ${d.wifiPassword}` : null,
-      ].filter(Boolean).join("\n");
+      // Post-3B: wifi is a derived amenity (derived_from_system → sys.internet).
+      // Persist credentials on the PropertySystem row so the amenities page
+      // can derive the badge (and surface the SSID summary).
+      const detailsJson: Record<string, string> = { ssid: d.wifiSsid };
+      if (d.wifiPassword) detailsJson.password = d.wifiPassword;
 
-      await tx.propertyAmenityInstance.create({
+      await tx.propertySystem.create({
         data: {
           propertyId: prop.id,
-          amenityKey: "am.wifi",
-          instanceKey: "default",
-          guestInstructions,
+          systemKey: "sys.internet",
+          detailsJson,
           visibility: "public",
         },
       });
