@@ -299,12 +299,15 @@ function buildSubtypeFieldSchema(field: SubtypeField): z.ZodTypeAny {
         "Debe ser una lista de números separados por comas",
       );
       break;
-    default:
-      base = field.type === "sensitive_text" || field.type === "markdown_short"
-        ? z.string()
-        : z.string();
-      if (required) base = (base as z.ZodString).min(1, `${field.label} es obligatorio`);
+    default: {
+      // text / text_optional / sensitive_text / markdown_short — all free-form strings.
+      // Treated identically at the Zod level; the difference (password input,
+      // textarea, etc.) is a UI concern handled by SubtypeFieldInput.
+      let s = z.string();
+      if (required) s = s.min(1, `${field.label} es obligatorio`);
+      base = s;
       break;
+    }
   }
 
   if (required) {

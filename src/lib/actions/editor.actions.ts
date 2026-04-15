@@ -773,6 +773,9 @@ export async function updateAmenityAction(
     if (!detailsResult.success) {
       return {
         success: false,
+        // Generic message so the panel surfaces *something* even when it
+        // doesn't render fieldErrors (which it currently doesn't).
+        error: "Hay errores en los campos del subtipo",
         fieldErrors: detailsResult.error.flatten().fieldErrors as Record<string, string[]>,
       };
     }
