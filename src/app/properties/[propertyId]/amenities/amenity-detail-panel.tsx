@@ -56,6 +56,11 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
     formData.set("amenityId", item.dbId);
     formData.set("propertyId", propertyId);
     formData.set("detailsJson", JSON.stringify(details));
+    // The taxonomy has a 1:1 mapping of amenity → subtype (keyed by amenity_id).
+    // Persisting the subtypeKey makes it explicit which subtype shape produced
+    // this detailsJson, so a later subtype rename/split doesn't silently
+    // mismatch the stored fields.
+    if (item.hasSubtype) formData.set("subtypeKey", item.id);
 
     startTransition(async () => {
       const result = await updateAmenityAction(null, formData);

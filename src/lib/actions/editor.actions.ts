@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
-import { findSystemItem, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
@@ -21,6 +21,7 @@ import {
   updateBedSchema,
   bedConfigSchema,
   updateAmenitySchema,
+  buildSubtypeDetailsSchema,
   createPlaybookSchema,
   updatePlaybookSchema,
   createLocalPlaceSchema,
@@ -719,7 +720,7 @@ export async function updateAmenityAction(
   if (!amenityId) return { success: false, error: "Falta el ID del amenity" };
   const instance = await prisma.propertyAmenityInstance.findUnique({
     where: { id: amenityId },
-    select: { propertyId: true },
+    select: { propertyId: true, amenityKey: true },
   });
   if (!instance) return { success: false, error: "Amenity no encontrado" };
   const formPropertyId = formData.get("propertyId") as string | null;
@@ -760,9 +761,40 @@ export async function updateAmenityAction(
     };
   }
 
-  // Persist detailsJson: empty object → null (clear), otherwise store as-is
-  const { detailsJson: validatedDetails, ...rest } = result.data;
-  const data: Prisma.PropertyAmenityInstanceUpdateInput = { ...rest };
+  // Subtype-specific validation: if the amenity declares a subtype, its
+  // detailsJson fields must match the taxonomy-defined shape (types, enum
+  // values, required-ness). Prevents a malicious/incorrect client from
+  // persisting arbitrary structures that the UI wouldn't produce.
+  const subtype = findSubtype(instance.amenityKey);
+  if (subtype && result.data.detailsJson !== undefined) {
+    const detailsResult = buildSubtypeDetailsSchema(subtype.fields).safeParse(
+      result.data.detailsJson,
+    );
+    if (!detailsResult.success) {
+      return {
+        success: false,
+        // Generic message so the panel surfaces *something* even when it
+        // doesn't render fieldErrors (which it currently doesn't).
+        error: "Hay errores en los campos del subtipo",
+        fieldErrors: detailsResult.error.flatten().fieldErrors as Record<string, string[]>,
+      };
+    }
+    result.data.detailsJson = detailsResult.data as typeof result.data.detailsJson;
+  }
+
+  // Do not trust client-provided subtypeKey — derive it from the authoritative
+  // amenityKey on the instance. Taxonomy maps amenity → subtype 1:1 keyed by
+  // amenity_id, so if a subtype exists we force subtypeKey to that amenityKey;
+  // otherwise we clear it.
+  const {
+    detailsJson: validatedDetails,
+    subtypeKey: _clientSubtypeKey,
+    ...rest
+  } = result.data;
+  const data: Prisma.PropertyAmenityInstanceUpdateInput = {
+    ...rest,
+    subtypeKey: subtype ? instance.amenityKey : null,
+  };
   if (validatedDetails !== undefined) {
     data.detailsJson =
       Object.keys(validatedDetails).length > 0
