@@ -7,7 +7,7 @@
 // checkbox renders its own inline label (marked by `wrapsOwnLabel` in the
 // validator registry).
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { checkboxClass, inputClass, textareaClass } from "./field-styles";
 import {
   FIELD_TYPES,
@@ -27,6 +27,74 @@ function strOf(value: unknown): string {
 }
 
 type Renderer = (props: FieldInputProps) => ReactNode;
+
+/**
+ * Stateful time-range input. Holds `from`/`to` locally so a user can enter
+ * one side before the other without the unentered side (empty string)
+ * triggering `onChange(null)` and wiping the first pick mid-interaction.
+ * Only emits "HH:MM-HH:MM" once both sides are set; emits null when both
+ * are cleared. External `value` updates resync the local state so a reset
+ * from the parent is still honored.
+ */
+function TimeRangeInput({ field, value, onChange }: FieldInputProps) {
+  const parseValue = (v: unknown): [string, string] => {
+    const parts = strOf(v).split("-");
+    return [parts[0] ?? "", parts[1] ?? ""];
+  };
+
+  const [externalFrom, externalTo] = parseValue(value);
+  const [from, setFrom] = useState(externalFrom);
+  const [to, setTo] = useState(externalTo);
+
+  // Resync when the parent swaps in a new value (different field render
+  // or a reset) — compare against the derived pair, not the raw string,
+  // so that local edits that haven't emitted yet don't get clobbered
+  // by a re-render with the same underlying value.
+  useEffect(() => {
+    if (externalFrom !== from && (externalFrom !== "" || externalTo !== "")) {
+      setFrom(externalFrom);
+    }
+    if (externalTo !== to && (externalFrom !== "" || externalTo !== "")) {
+      setTo(externalTo);
+    }
+    // Intentionally exclude from/to from deps: we only resync on external changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalFrom, externalTo]);
+
+  const emit = (nextFrom: string, nextTo: string) => {
+    if (nextFrom && nextTo) onChange(`${nextFrom}-${nextTo}`);
+    else if (!nextFrom && !nextTo) onChange(null);
+    // Partial (only one side filled) — don't emit; local state preserves the pick.
+  };
+
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <input
+        type="time"
+        value={from}
+        required={field.required}
+        onChange={(e) => {
+          const v = e.target.value;
+          setFrom(v);
+          emit(v, to);
+        }}
+        className={inputClass + " flex-1"}
+      />
+      <span className="text-xs text-[var(--color-neutral-400)]">a</span>
+      <input
+        type="time"
+        value={to}
+        required={field.required}
+        onChange={(e) => {
+          const v = e.target.value;
+          setTo(v);
+          emit(from, v);
+        }}
+        className={inputClass + " flex-1"}
+      />
+    </div>
+  );
+}
 
 const RENDERERS: Record<SubtypeFieldType, Renderer> = {
   boolean: ({ field, value, onChange }) => {
@@ -175,34 +243,7 @@ const RENDERERS: Record<SubtypeFieldType, Renderer> = {
     />
   ),
 
-  time_range_optional: ({ field, value, onChange }) => {
-    const parts = strOf(value).split("-");
-    const from = parts[0] ?? "";
-    const to = parts[1] ?? "";
-    return (
-      <div className="mt-1 flex items-center gap-2">
-        <input
-          type="time"
-          value={from}
-          onChange={(e) => {
-            const newVal = e.target.value && to ? `${e.target.value}-${to}` : null;
-            onChange(newVal);
-          }}
-          className={inputClass + " flex-1"}
-        />
-        <span className="text-xs text-[var(--color-neutral-400)]">a</span>
-        <input
-          type="time"
-          value={to}
-          onChange={(e) => {
-            const newVal = from && e.target.value ? `${from}-${e.target.value}` : null;
-            onChange(newVal);
-          }}
-          className={inputClass + " flex-1"}
-        />
-      </div>
-    );
-  },
+  time_range_optional: (props) => <TimeRangeInput {...props} />,
 
   number_list_optional: ({ field, value, onChange }) => (
     <input

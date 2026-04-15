@@ -132,6 +132,54 @@ describe("field-type-renderers — renderInput", () => {
   });
 });
 
+describe("field-type-renderers — time_range_optional", () => {
+  it("preserves the first entered side when the other is still empty (no premature null emit)", () => {
+    const captured: unknown[] = [];
+    const { container } = render(
+      <>{renderFieldInput({
+        field: mk({ type: "time_range_optional" }),
+        value: null,
+        onChange: (v) => {
+          captured.push(v);
+        },
+      })}</>,
+    );
+    const [fromInput, toInput] = container.querySelectorAll("input[type=time]") as NodeListOf<HTMLInputElement>;
+
+    fireEvent.change(fromInput, { target: { value: "09:00" } });
+    // With only the "from" side filled, the component must NOT emit
+    // (neither null, which would wipe the just-entered pick on re-render,
+    // nor a half-complete string). The local state keeps the value visible.
+    expect(captured).toEqual([]);
+    expect(fromInput.value).toBe("09:00");
+
+    fireEvent.change(toInput, { target: { value: "11:30" } });
+    // Both sides now set → a single combined emission.
+    expect(captured).toEqual(["09:00-11:30"]);
+  });
+
+  it("emits null when both sides are cleared from a seeded value", () => {
+    const captured: unknown[] = [];
+    const { container } = render(
+      <>{renderFieldInput({
+        field: mk({ type: "time_range_optional" }),
+        value: "09:00-11:30",
+        onChange: (v) => {
+          captured.push(v);
+        },
+      })}</>,
+    );
+    const [fromInput, toInput] = container.querySelectorAll("input[type=time]") as NodeListOf<HTMLInputElement>;
+
+    fireEvent.change(fromInput, { target: { value: "" } });
+    // One side still has "11:30" → partial, no emit.
+    expect(captured).toEqual([]);
+    fireEvent.change(toInput, { target: { value: "" } });
+    // Now fully cleared → null.
+    expect(captured).toEqual([null]);
+  });
+});
+
 describe("field-type-renderers — wrapsOwnLabel", () => {
   it("boolean wraps its own label; other types do not", () => {
     expect(fieldTypeWrapsOwnLabel("boolean")).toBe(true);
