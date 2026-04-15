@@ -1,3 +1,4 @@
+import { useId } from "react";
 import Link from "next/link";
 import type { DerivationStatus } from "@/lib/amenity-derivation-resolver";
 
@@ -17,15 +18,19 @@ export function AmenityDerivedBadge({
   description,
   status,
 }: AmenityDerivedBadgeProps) {
+  const descId = useId();
   const dotClass = status.isActive
     ? "bg-[var(--color-success-500)]"
     : "bg-[var(--color-neutral-300)]";
 
   return (
     <span
-      title={description}
+      aria-describedby={descId}
       className="inline-flex items-center gap-2 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-3 py-1.5 text-xs text-[var(--color-primary-700)]"
     >
+      <span id={descId} className="sr-only">
+        {description}
+      </span>
       <span className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${dotClass}`} />
       <span className="font-medium">{label}</span>
       {status.sourceSummary && (

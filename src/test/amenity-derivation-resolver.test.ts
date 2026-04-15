@@ -14,14 +14,15 @@ function ctx(overrides: Partial<DerivationContext> = {}): DerivationContext {
   };
 }
 
-function item(overrides: Partial<AmenityItem>): AmenityItem {
-  return {
-    id: "am.test",
-    label: "Test",
-    description: "desc",
-    destination: "amenity_configurable",
-    ...overrides,
-  } as AmenityItem;
+const baseItem = {
+  id: "am.test",
+  label: "Test",
+  description: "desc",
+  destination: "amenity_configurable",
+} satisfies AmenityItem;
+
+function item(overrides: Partial<AmenityItem> = {}): AmenityItem {
+  return { ...baseItem, ...overrides };
 }
 
 describe("resolveDerivation — derived_from_system", () => {

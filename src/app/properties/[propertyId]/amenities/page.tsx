@@ -6,6 +6,7 @@ import {
   getAmenityScopePolicy,
   isAmenityMoved,
   isAmenityDerived,
+  isAmenityConfigurable,
 } from "@/lib/taxonomy-loader";
 import type { ImportanceLevel, SubtypeField, AmenityItem } from "@/lib/types/taxonomy";
 import {
@@ -126,8 +127,15 @@ export default async function AmenitiesPage({
     }
     if (isAmenityDerived(item.id)) {
       derivedItems.push(item);
-    } else {
+    } else if (isAmenityConfigurable(item.id)) {
       configurableItems.push(item);
+    } else {
+      // Defensive: any future/unknown destination value should not silently
+      // surface as configurable — the destination contract is enforced by
+      // tests, and an unmapped item here means the partition is incomplete.
+      throw new Error(
+        `Amenity ${item.id} has unknown destination "${item.destination}" — update partition logic or mark as moved.`,
+      );
     }
   }
 
