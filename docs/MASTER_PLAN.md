@@ -236,7 +236,7 @@ Alcance: 7 fases, 20 ramas, ~20 PRs independientes y revisables
 
 **Archivos a modificar**:
 - `src/app/properties/[propertyId]/amenities/amenity-selector-v2.tsx` — al togglear amenity con subtype → expandir form tipado desde `amenity_subtypes.json`
-- `src/lib/actions/amenity-instance.actions.ts` — `updateInstanceDetailsAction(instanceId, detailsJson)` con validación Zod contra `amenity_subtypes.json`
+- `src/lib/actions/editor.actions.ts` — extender `updateAmenityAction` (o añadir `updateAmenityDetailsAction`) con validación Zod contra `amenity_subtypes.json`
 - `src/lib/schemas/editor.schema.ts` — schema dinámico generado desde subtypes (similar a `spaceFeaturesSchema`)
 
 **Archivos a crear**:
@@ -313,8 +313,7 @@ Alcance: 7 fases, 20 ramas, ~20 PRs independientes y revisables
   - `recomputeAll(propertyId)` — orquestador
 
 **Archivos a modificar**:
-- `src/lib/actions/editor.actions.ts` — al final de cada action mutante, llamar `recomputeAll(propertyId)` (puede ser fire-and-forget)
-- `src/lib/actions/amenity-instance.actions.ts` — idem
+- `src/lib/actions/editor.actions.ts` — al final de cada action mutante (incluye toggle/update/delete de amenity instances), llamar `recomputeAll(propertyId)` (puede ser fire-and-forget)
 
 **`PropertyDerived` cache desde el inicio** (decisión confirmada):
 
