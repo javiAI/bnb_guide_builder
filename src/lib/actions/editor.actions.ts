@@ -920,6 +920,8 @@ export async function updatePlaybookAction(
     internalStepsMd: (formData.get("internalStepsMd") as string) || undefined,
     escalationRule: (formData.get("escalationRule") as string) || undefined,
     visibility: (formData.get("visibility") as string) || undefined,
+    targetType: (formData.get("targetType") as string) || undefined,
+    targetKey: (formData.get("targetKey") as string) || undefined,
   };
 
   const result = updatePlaybookSchema.safeParse(raw);
@@ -930,9 +932,27 @@ export async function updatePlaybookAction(
     };
   }
 
+  const { targetType, targetKey, ...rest } = result.data;
+  const targetUpdate = {
+    systemKey: targetType === "system" ? (targetKey ?? null) : null,
+    amenityKey: targetType === "amenity" ? (targetKey ?? null) : null,
+    spaceId: targetType === "space" ? (targetKey ?? null) : null,
+    accessMethodKey: targetType === "access" ? (targetKey ?? null) : null,
+  };
+
+  if (targetUpdate.spaceId) {
+    const targetSpace = await prisma.space.findUnique({
+      where: { id: targetUpdate.spaceId },
+      select: { propertyId: true },
+    });
+    if (!targetSpace || targetSpace.propertyId !== playbook.propertyId) {
+      return { success: false, error: "El espacio no pertenece a la propiedad" };
+    }
+  }
+
   await prisma.troubleshootingPlaybook.update({
     where: { id: playbookId },
-    data: result.data,
+    data: { ...rest, ...targetUpdate },
   });
 
   revalidatePath(`/properties/${playbook.propertyId}/troubleshooting`);

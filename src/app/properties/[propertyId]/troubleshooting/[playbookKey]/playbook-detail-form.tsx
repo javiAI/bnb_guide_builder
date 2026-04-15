@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updatePlaybookAction, type ActionResult } from "@/lib/actions/editor.actions";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { visibilityLevels, getItems } from "@/lib/taxonomy-loader";
@@ -8,6 +8,13 @@ import { visibilityLevels, getItems } from "@/lib/taxonomy-loader";
 const visibilityOptions = getItems(visibilityLevels).filter(
   (v) => v.id !== "secret",
 );
+
+export type PlaybookTargetType = "none" | "system" | "amenity" | "space" | "access";
+
+interface TargetOption {
+  value: string;
+  label: string;
+}
 
 interface PlaybookDetailFormProps {
   propertyId: string;
@@ -20,13 +27,24 @@ interface PlaybookDetailFormProps {
     internalStepsMd: string;
     escalationRule: string;
     visibility: string;
+    targetType: PlaybookTargetType;
+    targetKey: string;
+  };
+  targetOptions: {
+    system: TargetOption[];
+    amenity: TargetOption[];
+    space: TargetOption[];
+    access: TargetOption[];
   };
 }
 
 export function PlaybookDetailForm({
   propertyId,
   playbook,
+  targetOptions,
 }: PlaybookDetailFormProps) {
+  const [targetType, setTargetType] = useState<PlaybookTargetType>(playbook.targetType);
+  const [targetKey, setTargetKey] = useState<string>(playbook.targetKey);
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     updatePlaybookAction,
     null,
@@ -136,6 +154,61 @@ export function PlaybookDetailForm({
           ))}
         </select>
       </label>
+
+      <fieldset className="rounded-[var(--radius-md)] border border-[var(--border)] p-4">
+        <legend className="px-2 text-sm font-medium text-[var(--foreground)]">
+          Objetivo vinculado
+        </legend>
+        <p className="mt-1 text-xs text-[var(--color-neutral-500)]">
+          Vincula este playbook a un sistema, amenity, espacio o método de acceso para
+          que aparezca en contexto.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-medium text-[var(--foreground)]">Tipo</span>
+            <select
+              name="targetType"
+              value={targetType}
+              onChange={(e) => {
+                setTargetType(e.target.value as PlaybookTargetType);
+                setTargetKey("");
+              }}
+              className={inputClass}
+            >
+              <option value="none">Sin vincular</option>
+              <option value="system" disabled={targetOptions.system.length === 0}>
+                Sistema {targetOptions.system.length === 0 ? "(ninguno configurado)" : ""}
+              </option>
+              <option value="amenity" disabled={targetOptions.amenity.length === 0}>
+                Amenity {targetOptions.amenity.length === 0 ? "(ninguno configurado)" : ""}
+              </option>
+              <option value="space" disabled={targetOptions.space.length === 0}>
+                Espacio {targetOptions.space.length === 0 ? "(ninguno activo)" : ""}
+              </option>
+              <option value="access">Método de acceso</option>
+            </select>
+          </label>
+          {targetType !== "none" && (
+            <label className="block">
+              <span className="text-xs font-medium text-[var(--foreground)]">Objetivo *</span>
+              <select
+                name="targetKey"
+                value={targetKey}
+                onChange={(e) => setTargetKey(e.target.value)}
+                required
+                className={inputClass}
+              >
+                <option value="">Selecciona…</option>
+                {targetOptions[targetType].map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      </fieldset>
 
       <button
         type="submit"
