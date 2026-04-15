@@ -5,7 +5,8 @@ import { toggleAmenityAction } from "@/lib/actions/editor.actions";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AmenityDetailPanel } from "./amenity-detail-panel";
-import type { EnrichedAmenityItem, SpaceSection } from "./page";
+import { AmenityDerivedBadge } from "@/components/amenity-derived-badge";
+import type { EnrichedAmenityItem, SpaceSection, DerivedAmenityItem } from "./page";
 import type { ImportanceLevel } from "@/lib/types/taxonomy";
 
 const TIER_CONFIG: { level: ImportanceLevel; label: string; hint: string }[] = [
@@ -17,7 +18,33 @@ const TIER_CONFIG: { level: ImportanceLevel; label: string; hint: string }[] = [
 interface AmenitySelectorV2Props {
   propertyId: string;
   generalItems: EnrichedAmenityItem[];
+  generalDerived: DerivedAmenityItem[];
   spaceSections: SpaceSection[];
+}
+
+function DerivedSection({ items }: { items: DerivedAmenityItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-neutral-600)] mb-2 flex items-center gap-2">
+        <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary-200)] flex-shrink-0" />
+        Derivados de otros módulos
+        <span className="font-normal normal-case tracking-normal text-[var(--color-neutral-500)]">
+          — Configuración gestionada en Sistemas / Espacios / Acceso
+        </span>
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((item) => (
+          <AmenityDerivedBadge
+            key={item.id}
+            label={item.label}
+            description={item.description}
+            status={item.status}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function AmenityChip({
@@ -227,6 +254,7 @@ function countLabel(enabled: number, total: number): string {
 export function AmenitySelectorV2({
   propertyId,
   generalItems,
+  generalDerived,
   spaceSections,
 }: AmenitySelectorV2Props) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -270,6 +298,7 @@ export function AmenitySelectorV2({
           expandedDetail={expandedDetail}
           onExpand={setExpandedDetail}
         />
+        <DerivedSection items={generalDerived} />
         <CustomChipInput propertyId={propertyId} spaceId={null} />
       </CollapsibleSection>
 
