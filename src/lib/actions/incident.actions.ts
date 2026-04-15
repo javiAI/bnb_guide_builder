@@ -8,11 +8,13 @@ import {
   type IncidentTargetType,
 } from "@/lib/schemas/incident.schema";
 
-export type ActionResult =
-  | { success: true }
-  | { success: false; error?: string; fieldErrors?: Record<string, string[]> };
+export type ActionResult = {
+  success: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+};
 
-function normaliseTarget(
+function normalizeTarget(
   targetType: IncidentTargetType,
   targetId: string | undefined,
 ): { targetType: IncidentTargetType; targetId: string | null } {
@@ -93,7 +95,7 @@ export async function createIncidentAction(
     };
   }
 
-  const { targetType, targetId } = normaliseTarget(result.data.targetType, result.data.targetId);
+  const { targetType, targetId } = normalizeTarget(result.data.targetType, result.data.targetId);
   const targetErr = await assertTargetBelongsToProperty(propertyId, targetType, targetId);
   if (targetErr) return { success: false, error: targetErr };
 
@@ -129,9 +131,18 @@ export async function updateIncidentAction(
 
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
-    select: { propertyId: true, status: true, resolvedAt: true },
+    select: {
+      propertyId: true,
+      status: true,
+      resolvedAt: true,
+      visibility: true,
+      playbookId: true,
+    },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
+
+  const playbookRaw = formData.get("playbookId");
+  const visibilityRaw = formData.get("visibility");
 
   const raw = {
     title: formData.get("title") as string,
@@ -139,9 +150,9 @@ export async function updateIncidentAction(
     status: formData.get("status") as string,
     targetType: formData.get("targetType") as string,
     targetId: (formData.get("targetId") as string) || undefined,
-    playbookId: (formData.get("playbookId") as string) || undefined,
+    playbookId: typeof playbookRaw === "string" ? playbookRaw || undefined : undefined,
     notes: (formData.get("notes") as string) || undefined,
-    visibility: (formData.get("visibility") as string) || undefined,
+    visibility: typeof visibilityRaw === "string" ? visibilityRaw || undefined : undefined,
     occurredAt: formData.get("occurredAt") as string,
     resolvedAt: (formData.get("resolvedAt") as string) || undefined,
   };
@@ -154,13 +165,23 @@ export async function updateIncidentAction(
     };
   }
 
-  const { targetType, targetId } = normaliseTarget(result.data.targetType, result.data.targetId);
+  const { targetType, targetId } = normalizeTarget(result.data.targetType, result.data.targetId);
   const targetErr = await assertTargetBelongsToProperty(incident.propertyId, targetType, targetId);
   if (targetErr) return { success: false, error: targetErr };
 
-  const playbookId = result.data.playbookId || null;
+  // playbookId: preserve existing when field absent; treat empty string as explicit clear.
+  const playbookId =
+    playbookRaw === null
+      ? incident.playbookId
+      : typeof playbookRaw === "string" && playbookRaw.length > 0
+        ? playbookRaw
+        : null;
   const pbErr = await assertPlaybookBelongsToProperty(incident.propertyId, playbookId);
   if (pbErr) return { success: false, error: pbErr };
+
+  // visibility: preserve existing when field absent.
+  const visibility =
+    visibilityRaw === null ? incident.visibility : (result.data.visibility ?? "internal");
 
   // resolvedAt derivation:
   //   - explicit value in form → use it
@@ -188,7 +209,7 @@ export async function updateIncidentAction(
       targetId,
       playbookId,
       notes: result.data.notes,
-      visibility: result.data.visibility ?? "internal",
+      visibility,
       occurredAt: new Date(result.data.occurredAt),
       resolvedAt,
     },

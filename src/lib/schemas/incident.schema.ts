@@ -8,6 +8,16 @@ export type IncidentStatus = (typeof incidentStatuses)[number];
 export type IncidentSeverity = (typeof incidentSeverities)[number];
 export type IncidentTargetType = (typeof incidentTargetTypes)[number];
 
+const dateString = z
+  .string()
+  .min(1, "La fecha es obligatoria")
+  .refine((v) => !Number.isNaN(Date.parse(v)), { message: "Fecha inválida" });
+
+const optionalDateString = z
+  .string()
+  .optional()
+  .refine((v) => !v || !Number.isNaN(Date.parse(v)), { message: "Fecha inválida" });
+
 export const createIncidentSchema = z
   .object({
     title: z.string().min(1, "El título es obligatorio"),
@@ -18,7 +28,7 @@ export const createIncidentSchema = z
     playbookId: z.string().optional(),
     notes: z.string().optional(),
     visibility: z.string().optional(),
-    occurredAt: z.string().min(1, "La fecha es obligatoria"),
+    occurredAt: dateString,
   })
   .refine(
     (data) => data.targetType === "property" || (!!data.targetId && data.targetId.length > 0),
@@ -35,8 +45,8 @@ export const updateIncidentSchema = z
     playbookId: z.string().optional(),
     notes: z.string().optional(),
     visibility: z.string().optional(),
-    occurredAt: z.string().min(1, "La fecha es obligatoria"),
-    resolvedAt: z.string().optional(),
+    occurredAt: dateString,
+    resolvedAt: optionalDateString,
   })
   .refine(
     (data) => data.targetType === "property" || (!!data.targetId && data.targetId.length > 0),

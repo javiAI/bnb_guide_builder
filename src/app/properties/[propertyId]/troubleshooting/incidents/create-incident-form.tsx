@@ -37,7 +37,15 @@ export function CreateIncidentForm({
   const inputClass =
     "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
 
-  const saveStatus = pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : undefined;
+  const saveStatus = pending
+    ? "saving"
+    : state?.success
+      ? "saved"
+      : state && !state.success
+        ? "error"
+        : undefined;
+
+  const fieldError = (name: string) => state?.fieldErrors?.[name]?.[0];
 
   // `datetime-local` expects local-time. Avoid toISOString() which is UTC and
   // would shift the prefill by the user's offset.
@@ -62,6 +70,9 @@ export function CreateIncidentForm({
         <label className="block">
           <span className="text-xs font-medium text-[var(--foreground)]">Título *</span>
           <input name="title" type="text" required className={inputClass} />
+          {fieldError("title") && (
+            <span className="mt-1 block text-xs text-[var(--color-danger-700)]">{fieldError("title")}</span>
+          )}
         </label>
         <label className="block">
           <span className="text-xs font-medium text-[var(--foreground)]">Fecha *</span>
@@ -72,6 +83,9 @@ export function CreateIncidentForm({
             defaultValue={localNow}
             className={inputClass}
           />
+          {fieldError("occurredAt") && (
+            <span className="mt-1 block text-xs text-[var(--color-danger-700)]">{fieldError("occurredAt")}</span>
+          )}
         </label>
         <label className="block">
           <span className="text-xs font-medium text-[var(--foreground)]">Severidad</span>
@@ -137,6 +151,9 @@ export function CreateIncidentForm({
                   </option>
                 ))}
               </select>
+              {fieldError("targetId") && (
+                <span className="mt-1 block text-xs text-[var(--color-danger-700)]">{fieldError("targetId")}</span>
+              )}
             </label>
           )}
         </div>
