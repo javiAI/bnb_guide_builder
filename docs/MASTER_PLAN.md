@@ -605,3 +605,10 @@ Fase 7 (requiere 4B)
 3. **Visibility enum (7A)**: ✅ ahora, no diferir a fase separada.
 4. **Motor condicional (1A)**: ✅ reemplaza `dynamic_field_rules.json`. Durante 1A se migra el contenido existente al nuevo DSL; el JSON se mantiene como fuente de reglas pero ya no se usa el evaluator antiguo.
 5. **Naming amenities (2A)**: ✅ crear `PropertyAmenityInstance` desde cero como modelo nuevo. El antiguo `PropertyAmenity` queda deprecated + se elimina tras cutover estable.
+
+---
+
+## Futuro — fuera del alcance actual
+
+- **Admin UI para editar taxonomías desde dentro de la app**: ver [`FUTURE_ADMIN_UI_PLAN.md`](./FUTURE_ADMIN_UI_PLAN.md). Diferido hasta que alguien no-técnico necesite editar taxonomías en prod, o el volumen de cambios supere ~5 PRs/semana. Primer paso cuando se active: script `pnpm taxonomy:lint` con validación + análisis de impacto (1 día).
+- **Registry de tipos de campo** (1-2h, detallado en el mismo doc): refactor tangencial que reduce añadir un tipo de campo nuevo de 3 archivos a 1 entrada.
