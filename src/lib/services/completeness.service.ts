@@ -64,7 +64,7 @@ export async function computeSpacesCompleteness(
   const spaces =
     snapshot?.spaces ??
     (await prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       select: {
         id: true,
         spaceType: true,

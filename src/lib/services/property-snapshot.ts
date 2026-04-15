@@ -82,7 +82,7 @@ export async function loadPropertySnapshot(
       },
     }),
     prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       select: {
         id: true,

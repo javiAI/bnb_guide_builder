@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
-  deleteSpaceAction,
+  archiveSpaceAction,
   type ActionResult,
 } from "@/lib/actions/editor.actions";
 import {
@@ -29,6 +29,7 @@ interface SpaceData {
   guestNotes: string | null;
   internalNotes: string | null;
   featuresJson: Record<string, unknown> | null;
+  status: string;
 }
 
 interface SpaceSystem {
@@ -176,12 +177,13 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
         ? "error"
         : undefined;
 
-  // ── Delete ──
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleteState, deleteAction, deletePending] = useActionState<ActionResult | null, FormData>(
-    deleteSpaceAction,
+  // ── Archive / Restore ──
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const [archiveState, archiveAction, archivePending] = useActionState<ActionResult | null, FormData>(
+    archiveSpaceAction,
     null,
   );
+  const isArchived = space.status === "archived";
 
   // ── Derived ──
   const typeInfo = findItem(spaceTypes, space.spaceType);
@@ -206,7 +208,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--border)] bg-[var(--surface-elevated)]">
+    <div className={`rounded-[var(--radius-lg)] border-2 transition-colors duration-200 ${isArchived ? "border-dashed border-[var(--border)] bg-[var(--color-neutral-50)] opacity-70" : "border-[var(--border)] bg-[var(--surface-elevated)]"}`}>
       {/* ── Card header ── */}
       <div
         className={`flex items-center gap-3 px-4 py-3 ${!editingName ? "cursor-pointer select-none" : ""}`}
@@ -503,37 +505,53 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                 )}
               </div>
 
-              {confirmDelete ? (
+              {isArchived ? (
+                <form action={archiveAction}>
+                  <input type="hidden" name="spaceId" value={space.id} />
+                  <input type="hidden" name="status" value="active" />
+                  <button
+                    type="submit"
+                    disabled={archivePending}
+                    className="rounded-[var(--radius-md)] border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50"
+                  >
+                    {archivePending ? "Restaurando…" : "Restaurar espacio"}
+                  </button>
+                  {archiveState?.error && (
+                    <span className="ml-2 text-xs text-[var(--color-danger-500)]">{archiveState.error}</span>
+                  )}
+                </form>
+              ) : confirmArchive ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-danger-700)]">¿Eliminar este espacio?</span>
-                  <form action={deleteAction}>
+                  <span className="text-xs text-[var(--color-warning-700)]">¿Archivar este espacio?</span>
+                  <form action={archiveAction}>
                     <input type="hidden" name="spaceId" value={space.id} />
+                    <input type="hidden" name="status" value="archived" />
                     <button
                       type="submit"
-                      disabled={deletePending}
-                      className="rounded-[var(--radius-md)] bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      disabled={archivePending}
+                      className="rounded-[var(--radius-md)] bg-[var(--color-warning-600)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-warning-700)] disabled:opacity-50"
                     >
-                      {deletePending ? "Eliminando…" : "Sí, eliminar"}
+                      {archivePending ? "Archivando…" : "Sí, archivar"}
                     </button>
                   </form>
                   <button
                     type="button"
-                    onClick={() => setConfirmDelete(false)}
+                    onClick={() => setConfirmArchive(false)}
                     className="text-xs text-[var(--color-neutral-500)] hover:text-[var(--foreground)]"
                   >
                     Cancelar
                   </button>
-                  {deleteState?.error && (
-                    <span className="text-xs text-[var(--color-danger-500)]">{deleteState.error}</span>
+                  {archiveState?.error && (
+                    <span className="text-xs text-[var(--color-danger-500)]">{archiveState.error}</span>
                   )}
                 </div>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="text-xs font-medium text-[var(--color-danger-700)] hover:text-[var(--color-danger-900)] transition-colors"
+                  onClick={() => setConfirmArchive(true)}
+                  className="text-xs font-medium text-[var(--color-neutral-600)] hover:text-[var(--foreground)] transition-colors"
                 >
-                  Eliminar espacio
+                  Archivar espacio
                 </button>
               )}
             </div>

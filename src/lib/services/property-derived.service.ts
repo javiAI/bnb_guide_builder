@@ -89,7 +89,7 @@ export async function computeSleepingCapacity(
   const spaces =
     snapshot?.spaces ??
     (await prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -126,7 +126,7 @@ export async function computeActualCounts(
   const spaces =
     snapshot?.spaces ??
     (await prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       select: {
         spaceType: true,
         beds: { select: { quantity: true } },
@@ -227,7 +227,7 @@ export async function computeAmenitiesEffectiveBySpace(
         select: { systemKey: true },
       }),
       prisma.space.findMany({
-        where: { propertyId },
+        where: { propertyId, status: "active" },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
         select: { id: true },
       }),

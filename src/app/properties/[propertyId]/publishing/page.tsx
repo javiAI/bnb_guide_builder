@@ -126,7 +126,7 @@ export default async function PublishingPage({
   // Evaluate which sections are "complete enough" for publishing gates
   const [spacesCount, amenitiesCount, playbooksCount, localPlacesCount, mediaCount, knowledgeCount, guideVersions, validations] =
     await Promise.all([
-      prisma.space.count({ where: { propertyId } }),
+      prisma.space.count({ where: { propertyId, status: "active" } }),
       prisma.propertyAmenityInstance.count({ where: { propertyId } }),
       prisma.troubleshootingPlaybook.count({ where: { propertyId } }),
       prisma.localPlace.count({ where: { propertyId } }),

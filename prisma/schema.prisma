@@ -230,6 +230,7 @@ model Space {
   aiNotes       String?  @map("ai_notes")
   internalNotes String?  @map("internal_notes")
   visibility    String   @default("public")
+  status        String   @default("active")
   featuresJson  Json?    @map("features_json")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -241,6 +242,7 @@ model Space {
 
   @@index([propertyId])
   @@index([propertyId, visibility])
+  @@index([propertyId, status])
   @@map("spaces")
 }
 

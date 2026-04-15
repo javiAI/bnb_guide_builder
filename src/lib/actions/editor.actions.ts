@@ -439,6 +439,31 @@ export async function deleteSpaceAction(
   return { success: true };
 }
 
+export async function archiveSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  const nextStatus = (formData.get("status") as string) === "active" ? "active" : "archived";
+
+  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
+
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.space.update({ where: { id: spaceId }, data: { status: nextStatus } });
+    await recomputePropertyCounts(tx, space.propertyId);
+  });
+
+  recomputeAllInBackground(space.propertyId);
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
 export async function renameSpaceAction(
   _prev: ActionResult | null,
   formData: FormData,
