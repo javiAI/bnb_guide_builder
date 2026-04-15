@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
+import { runAllValidations } from "@/lib/validations/run-all";
+import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
 
 type OutputItem = {
@@ -30,6 +33,57 @@ function evaluateGates(
       missing,
     };
   });
+}
+
+const SEVERITY_LABEL: Record<ValidationSeverity, string> = {
+  blocker: "Bloqueante",
+  error: "Error",
+  warning: "Aviso",
+};
+
+const SEVERITY_TONE: Record<ValidationSeverity, BadgeTone> = {
+  blocker: "danger",
+  error: "danger",
+  warning: "warning",
+};
+
+function ValidationsSection({
+  validations,
+}: {
+  validations: { blockers: ValidationFinding[]; errors: ValidationFinding[]; warnings: ValidationFinding[]; all: ValidationFinding[] };
+}) {
+  if (validations.all.length === 0) return null;
+  const ordered: ValidationFinding[] = [
+    ...validations.blockers,
+    ...validations.errors,
+    ...validations.warnings,
+  ];
+  return (
+    <div className="mt-8 space-y-2">
+      <h2 className="text-sm font-semibold text-[var(--foreground)]">Validaciones</h2>
+      {ordered.map((f) => (
+        <div
+          key={f.id}
+          className="flex items-start justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3"
+        >
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Badge label={SEVERITY_LABEL[f.severity]} tone={SEVERITY_TONE[f.severity]} />
+              <span className="text-sm text-[var(--foreground)]">{f.message}</span>
+            </div>
+          </div>
+          {f.ctaUrl && (
+            <Link
+              href={f.ctaUrl}
+              className="shrink-0 text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+            >
+              {f.ctaLabel ?? "Ir"}
+            </Link>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -67,7 +121,7 @@ export default async function PublishingPage({
   if (!property) notFound();
 
   // Evaluate which sections are "complete enough" for publishing gates
-  const [spacesCount, amenitiesCount, playbooksCount, localPlacesCount, mediaCount, knowledgeCount, guideVersions] =
+  const [spacesCount, amenitiesCount, playbooksCount, localPlacesCount, mediaCount, knowledgeCount, guideVersions, validations] =
     await Promise.all([
       prisma.space.count({ where: { propertyId } }),
       prisma.propertyAmenityInstance.count({ where: { propertyId } }),
@@ -81,6 +135,7 @@ export default async function PublishingPage({
         take: 1,
         select: { id: true, status: true, version: true, publishedAt: true },
       }),
+      runAllValidations(propertyId),
     ]);
 
   const completedSections = new Set<string>();
@@ -139,6 +194,9 @@ export default async function PublishingPage({
         )}
         <Badge label={`${knowledgeCount} items de conocimiento`} tone="neutral" />
       </div>
+
+      {/* Cross-validations: blockers / errors / warnings */}
+      <ValidationsSection validations={validations} />
 
       {/* Gate results */}
       <div className="mt-8 space-y-3">
