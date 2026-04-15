@@ -28,7 +28,7 @@ export interface GuideItem {
   label: string;
   /** Short primary value (when not a full structured entity). */
   value: string | null;
-  /** Most-restrictive visibility of the contents (never `sensitive` in the tree). */
+  /** Visibility as emitted by the resolver (never `sensitive` — sensitive is hard-gated). */
   visibility: GuideAudience;
   /** True when `taxonomyKey` is no longer present in the current taxonomy. */
   deprecated: boolean;
@@ -48,9 +48,17 @@ export interface GuideSection {
   order: number;
   resolverKey: GuideResolverKey;
   sortBy: GuideSortBy;
-  /** Empty-state CTA deep-link to the host panel, resolved with propertyId. */
-  emptyCtaDeepLink: string;
-  /** Never rendered for audience=guest (`internal`/`ai`/`sensitive` sections). */
+  /**
+   * Empty-state CTA deep-link to the host panel, resolved with propertyId.
+   * `null` when the audience is `guest` — host-panel links are never exposed
+   * to guests (see docs/MASTER_PLAN_V2.md §9A).
+   */
+  emptyCtaDeepLink: string | null;
+  /**
+   * Visibility metadata describing the highest-visibility content this
+   * section can carry. Sections always appear in the tree; the real
+   * filtering happens per item/field in `filterByAudience`.
+   */
   maxVisibility: GuideAudience;
   items: GuideItem[];
 }

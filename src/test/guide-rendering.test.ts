@@ -5,7 +5,6 @@ vi.mock("@/lib/db", () => ({
     property: { findUnique: vi.fn() },
     space: { findMany: vi.fn() },
     propertyAmenityInstance: { findMany: vi.fn() },
-    propertySystem: { findMany: vi.fn() },
     contact: { findMany: vi.fn() },
     localPlace: { findMany: vi.fn() },
   },
@@ -23,7 +22,6 @@ beforeEach(() => {
   fn("property", "findUnique").mockReset();
   fn("space", "findMany").mockReset();
   fn("propertyAmenityInstance", "findMany").mockReset();
-  fn("propertySystem", "findMany").mockReset();
   fn("contact", "findMany").mockReset();
   fn("localPlace", "findMany").mockReset();
   // Default: empty property with no entities.
@@ -38,7 +36,6 @@ beforeEach(() => {
   });
   fn("space", "findMany").mockResolvedValue([]);
   fn("propertyAmenityInstance", "findMany").mockResolvedValue([]);
-  fn("propertySystem", "findMany").mockResolvedValue([]);
   fn("contact", "findMany").mockResolvedValue([]);
   fn("localPlace", "findMany").mockResolvedValue([]);
 });
@@ -60,10 +57,17 @@ describe("composeGuide — basic shape", () => {
     expect(tree.audience).toBe("guest");
   });
 
-  it("empty property emits all sections with items: [] + emptyCtaDeepLink", async () => {
+  it("empty property emits all sections with items: [] + null deep-link for guest", async () => {
     const tree = await composeGuide("p1", "guest");
     for (const section of tree.sections) {
       expect(section.items).toHaveLength(0);
+      expect(section.emptyCtaDeepLink).toBeNull();
+    }
+  });
+
+  it("internal audience emits resolved emptyCtaDeepLink with propertyId", async () => {
+    const tree = await composeGuide("p1", "internal");
+    for (const section of tree.sections) {
       expect(section.emptyCtaDeepLink).toContain("p1");
     }
   });

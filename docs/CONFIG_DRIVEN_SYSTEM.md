@@ -330,7 +330,7 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `review_reasons.json`
 - `contact_roles.json`
 - `completeness_rules.json` — pesos/umbrales del scoring de completitud. Parseada con Zod en el loader; reglas accesibles vía `getCompletenessRule(sectionKey)` (throw si la sección no existe).
-- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`. Parseada con Zod; `getGuideSectionConfig()` throw en boot si un `resolverKey` no existe.
+- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`. Parseada y validada con Zod en el loader; `loadGuideSections()` falla en boot si un `resolverKey` no está en `GUIDE_RESOLVER_KEYS` o si hay `id`/`resolverKey` duplicados. Los getters `getGuideSectionConfig(sectionId)` y `getGuideSectionByResolverKey(key)` devuelven `undefined` si la clave no existe.
 
 ---
 

@@ -235,7 +235,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - `src/lib/services/guide-rendering.service.ts`:
   - `composeGuide(propertyId, audience): Promise<GuideTree>`
   - `resolveSection(sectionKey, ctx)` — uno por sección (arrival, spaces, amenities, rules, contacts, local, emergency)
-  - `filterByAudience(items, audience)` — lee jerarquía de `visibility_levels.json`
+  - `filterByAudience(items, audience)` — delega el orden de visibilidad en `src/lib/visibility.ts` (`canAudienceSee` + `VISIBILITY_ORDER`), con la única excepción dura de que `sensitive` nunca aparece en el `GuideTree`
   - `formatFieldValue(field, value)` — wrapper sobre el registry de 8B
 - `src/lib/types/guide-tree.ts` — tipos `GuideTree`, `GuideSection`, `GuideItem`, `GuideMedia`, `GuideAudience`
 - `taxonomies/guide_sections.json` — declaración de secciones: `id`, `label`, `order`, `maxVisibility`, `sortBy`, `emptyCtaDeepLink`, `resolverKey`

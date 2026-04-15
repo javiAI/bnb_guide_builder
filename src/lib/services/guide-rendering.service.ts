@@ -29,6 +29,7 @@ import {
   findSubtype,
   findItem,
   accessMethods as accessMethodsTaxonomy,
+  bedTypes,
   getGuideSectionConfigs,
   getSpaceTypeItem,
   isVisibleForAudience,
@@ -77,14 +78,6 @@ interface GuideContext {
     visibility: GuideAudience;
     placements: Array<{ spaceId: string }>;
   }>;
-  systems: Array<{
-    id: string;
-    systemKey: string;
-    detailsJson: unknown;
-    opsJson: unknown;
-    internalNotes: string | null;
-    visibility: GuideAudience;
-  }>;
   contacts: Array<{
     id: string;
     roleKey: string;
@@ -110,7 +103,7 @@ interface GuideContext {
 }
 
 async function loadGuideContext(propertyId: string): Promise<GuideContext> {
-  const [property, spaces, amenityInstances, systems, contacts, localPlaces] =
+  const [property, spaces, amenityInstances, contacts, localPlaces] =
     await Promise.all([
       prisma.property.findUnique({
         where: { id: propertyId },
@@ -154,17 +147,6 @@ async function loadGuideContext(propertyId: string): Promise<GuideContext> {
           placements: { select: { spaceId: true } },
         },
       }),
-      prisma.propertySystem.findMany({
-        where: { propertyId },
-        select: {
-          id: true,
-          systemKey: true,
-          detailsJson: true,
-          opsJson: true,
-          internalNotes: true,
-          visibility: true,
-        },
-      }),
       prisma.contact.findMany({
         where: { propertyId },
         orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
@@ -201,7 +183,6 @@ async function loadGuideContext(propertyId: string): Promise<GuideContext> {
     property,
     spaces,
     amenityInstances,
-    systems,
     contacts,
     localPlaces,
   };
@@ -412,11 +393,14 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
 function resolveSpaces(ctx: GuideContext): GuideItem[] {
   return ctx.spaces.map((space) => {
     const typeItem = getSpaceTypeItem(space.spaceType);
-    const bedFields: GuideItemField[] = space.beds.map((b) => ({
-      label: `Cama ${b.bedType}`,
-      value: String(b.quantity),
-      visibility: "guest",
-    }));
+    const bedFields: GuideItemField[] = space.beds.map((b) => {
+      const bedTypeItem = findItem(bedTypes, b.bedType);
+      return {
+        label: bedTypeItem?.label ?? b.bedType,
+        value: String(b.quantity),
+        visibility: "guest",
+      };
+    });
     return {
       id: space.id,
       taxonomyKey: space.spaceType,
@@ -665,13 +649,14 @@ export async function composeGuide(
     const rawItems = resolver(ctx);
     const sorted = applySort(rawItems, cfg.sortBy, cfg.resolverKey);
     const items = filterByAudience(sorted, audience);
-    const emptyCtaDeepLink = cfg.emptyCtaDeepLink.replace(
-      "{propertyId}",
-      propertyId,
-    );
-    // `maxVisibility` is informational — it describes the highest-visibility
-    // content this section can carry. Content-level filtering is done per
-    // item/field in `filterByAudience`, so sections always render.
+    // Host-panel deep links are not exposed to guest audiences (see
+    // docs/MASTER_PLAN_V2.md §9A "CTA deep-link"). `maxVisibility` is
+    // informational — sections always render and item/field visibility
+    // does the real filtering in `filterByAudience`.
+    const emptyCtaDeepLink =
+      audience === "guest"
+        ? null
+        : cfg.emptyCtaDeepLink.replace("{propertyId}", propertyId);
     sections.push({
       id: cfg.id,
       label: cfg.label,

@@ -29,6 +29,7 @@ import type {
 } from "./types/taxonomy";
 import { z } from "zod";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
+import { canAudienceSee } from "./visibility";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
 import roomTypesJson from "../../taxonomies/room_types.json";
@@ -283,27 +284,16 @@ export function getGuideSectionByResolverKey(
 }
 
 // ── Visibility hierarchy (rama 9A) ──
-// Order from least to most restricted. An audience sees its own level and
-// everything below it (guest < ai < internal). `sensitive` is a hard gate:
-// it's never included in GuideTree output — filtered at the boundary.
-const AUDIENCE_TIER: Record<GuideAudience, number> = {
-  guest: 0,
-  ai: 1,
-  internal: 2,
-  sensitive: 99,
-};
-
-/**
- * True iff `itemVisibility` should be exposed to viewers at `audience` level.
- * - Sensitive items: never (always filtered out at the boundary).
- * - Otherwise: audience tier must be >= item's own tier.
- */
+// Visibility ordering and `canAudienceSee` live in `src/lib/visibility.ts`
+// as the single source of truth. `isVisibleForAudience` is a thin wrapper
+// that additionally enforces the Rama 9A hard rule: `sensitive` items are
+// never included in a `GuideTree`, regardless of audience.
 export function isVisibleForAudience(
   itemVisibility: GuideAudience,
   audience: GuideAudience,
 ): boolean {
   if (itemVisibility === "sensitive") return false;
-  return AUDIENCE_TIER[audience] >= AUDIENCE_TIER[itemVisibility];
+  return canAudienceSee(audience, itemVisibility);
 }
 
 export function getCompletenessRule<K extends CompletenessSectionKey>(

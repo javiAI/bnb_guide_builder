@@ -5,7 +5,6 @@ vi.mock("@/lib/db", () => ({
     property: { findUnique: vi.fn() },
     space: { findMany: vi.fn() },
     propertyAmenityInstance: { findMany: vi.fn() },
-    propertySystem: { findMany: vi.fn() },
     contact: { findMany: vi.fn() },
     localPlace: { findMany: vi.fn() },
   },
@@ -43,7 +42,6 @@ beforeEach(() => {
     },
   ]);
   fn("propertyAmenityInstance", "findMany").mockResolvedValue([]);
-  fn("propertySystem", "findMany").mockResolvedValue([]);
   fn("contact", "findMany").mockResolvedValue([
     {
       id: "c1",
@@ -78,23 +76,23 @@ describe("renderMarkdown — snapshot by audience", () => {
       ## Espacios
       - **Dormitorio principal**: Dormitorio
         - Notas: Vistas al patio
-        - Cama bt.double: 1
+        - Cama doble: 1
 
       ## Equipamiento
-      _Sin elementos. /properties/p1/amenities_
+      _Sin elementos._
 
       ## Normas de la casa
-      _Sin elementos. /properties/p1/rules_
+      _Sin elementos._
 
       ## Contactos
       - **Ana**: contact.host
         - Teléfono: 600000000
 
       ## Guía local
-      _Sin elementos. /properties/p1/local-guide_
+      _Sin elementos._
 
       ## Emergencias
-      _Sin elementos. /properties/p1/contacts_
+      _Sin elementos._
       "
     `);
   });

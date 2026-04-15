@@ -5,7 +5,6 @@ vi.mock("@/lib/db", () => ({
     property: { findUnique: vi.fn() },
     space: { findMany: vi.fn() },
     propertyAmenityInstance: { findMany: vi.fn() },
-    propertySystem: { findMany: vi.fn() },
     contact: { findMany: vi.fn() },
     localPlace: { findMany: vi.fn() },
   },
@@ -32,7 +31,6 @@ beforeEach(() => {
   });
   fn("space", "findMany").mockResolvedValue([]);
   fn("propertyAmenityInstance", "findMany").mockResolvedValue([]);
-  fn("propertySystem", "findMany").mockResolvedValue([]);
   fn("contact", "findMany").mockResolvedValue([]);
   fn("localPlace", "findMany").mockResolvedValue([]);
 });

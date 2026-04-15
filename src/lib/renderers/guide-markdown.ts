@@ -20,7 +20,11 @@ export function renderMarkdown(tree: GuideTree): string {
   for (const section of tree.sections) {
     out.push(`## ${section.label}`);
     if (section.items.length === 0) {
-      out.push(`_Sin elementos. ${section.emptyCtaDeepLink}_`);
+      out.push(
+        section.emptyCtaDeepLink
+          ? `_Sin elementos. ${section.emptyCtaDeepLink}_`
+          : "_Sin elementos._",
+      );
       out.push("");
       continue;
     }
