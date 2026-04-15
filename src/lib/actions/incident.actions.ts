@@ -39,7 +39,7 @@ async function assertTargetBelongsToProperty(
       where: { id: targetId },
       select: { propertyId: true },
     });
-    if (!row || row.propertyId !== propertyId) return "La amenity no pertenece a la propiedad";
+    if (!row || row.propertyId !== propertyId) return "La amenidad no pertenece a la propiedad";
     return null;
   }
   if (targetType === "space") {
@@ -129,14 +129,14 @@ export async function updateIncidentAction(
 
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
-    select: { propertyId: true },
+    select: { propertyId: true, status: true, resolvedAt: true },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
 
   const raw = {
     title: formData.get("title") as string,
-    severity: (formData.get("severity") as string) || undefined,
-    status: (formData.get("status") as string) || undefined,
+    severity: formData.get("severity") as string,
+    status: formData.get("status") as string,
     targetType: formData.get("targetType") as string,
     targetId: (formData.get("targetId") as string) || undefined,
     playbookId: (formData.get("playbookId") as string) || undefined,
@@ -162,20 +162,28 @@ export async function updateIncidentAction(
   const pbErr = await assertPlaybookBelongsToProperty(incident.propertyId, playbookId);
   if (pbErr) return { success: false, error: pbErr };
 
-  // Auto-stamp resolvedAt when transitioning to resolved without explicit value
-  let resolvedAt: Date | null = null;
+  // resolvedAt derivation:
+  //   - explicit value in form → use it
+  //   - transitioning into "resolved" → stamp now
+  //   - transitioning out of "resolved" → clear
+  //   - otherwise → preserve existing value
+  let resolvedAt: Date | null;
   if (result.data.resolvedAt) {
     resolvedAt = new Date(result.data.resolvedAt);
-  } else if (result.data.status === "resolved") {
+  } else if (result.data.status === "resolved" && incident.status !== "resolved") {
     resolvedAt = new Date();
+  } else if (result.data.status !== "resolved" && incident.status === "resolved") {
+    resolvedAt = null;
+  } else {
+    resolvedAt = incident.resolvedAt;
   }
 
   await prisma.incident.update({
     where: { id: incidentId },
     data: {
       title: result.data.title,
-      severity: result.data.severity ?? "medium",
-      status: result.data.status ?? "open",
+      severity: result.data.severity,
+      status: result.data.status,
       targetType,
       targetId,
       playbookId,

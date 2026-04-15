@@ -160,8 +160,12 @@ describe("incident CRUD", () => {
     expect(incidentCreate).not.toHaveBeenCalled();
   });
 
-  it("updates incident, auto-stamps resolvedAt on status=resolved", async () => {
-    incidentFindUnique.mockResolvedValue({ propertyId: "p1" });
+  it("updates incident, auto-stamps resolvedAt on status=resolved from open", async () => {
+    incidentFindUnique.mockResolvedValue({
+      propertyId: "p1",
+      status: "open",
+      resolvedAt: null,
+    });
     await updateIncidentAction(
       null,
       form({
@@ -169,6 +173,7 @@ describe("incident CRUD", () => {
         title: "Corte",
         targetType: "property",
         status: "resolved",
+        severity: "medium",
         occurredAt: "2026-04-15T10:00",
       }),
     );
@@ -176,6 +181,50 @@ describe("incident CRUD", () => {
     expect(call.where).toEqual({ id: "i1" });
     expect(call.data.status).toBe("resolved");
     expect(call.data.resolvedAt).toBeInstanceOf(Date);
+  });
+
+  it("updates incident, preserves existing resolvedAt when status unchanged", async () => {
+    const existingResolvedAt = new Date("2026-04-10T12:00:00Z");
+    incidentFindUnique.mockResolvedValue({
+      propertyId: "p1",
+      status: "resolved",
+      resolvedAt: existingResolvedAt,
+    });
+    await updateIncidentAction(
+      null,
+      form({
+        incidentId: "i1",
+        title: "Corte (retitled)",
+        targetType: "property",
+        status: "resolved",
+        severity: "medium",
+        occurredAt: "2026-04-15T10:00",
+      }),
+    );
+    const call = incidentUpdate.mock.calls[0][0];
+    expect(call.data.resolvedAt).toBe(existingResolvedAt);
+  });
+
+  it("updates incident, clears resolvedAt when reopening", async () => {
+    incidentFindUnique.mockResolvedValue({
+      propertyId: "p1",
+      status: "resolved",
+      resolvedAt: new Date("2026-04-10T12:00:00Z"),
+    });
+    await updateIncidentAction(
+      null,
+      form({
+        incidentId: "i1",
+        title: "Reabierta",
+        targetType: "property",
+        status: "open",
+        severity: "medium",
+        occurredAt: "2026-04-15T10:00",
+      }),
+    );
+    const call = incidentUpdate.mock.calls[0][0];
+    expect(call.data.status).toBe("open");
+    expect(call.data.resolvedAt).toBeNull();
   });
 
   it("resolveIncidentAction flips status and stamps resolvedAt", async () => {

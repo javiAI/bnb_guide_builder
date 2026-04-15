@@ -39,6 +39,12 @@ export function CreateIncidentForm({
 
   const saveStatus = pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : undefined;
 
+  // `datetime-local` expects local-time. Avoid toISOString() which is UTC and
+  // would shift the prefill by the user's offset.
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const localNow = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
   return (
     <form action={formAction} className="space-y-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
       <input type="hidden" name="propertyId" value={propertyId} />
@@ -63,7 +69,7 @@ export function CreateIncidentForm({
             name="occurredAt"
             type="datetime-local"
             required
-            defaultValue={new Date().toISOString().slice(0, 16)}
+            defaultValue={localNow}
             className={inputClass}
           />
         </label>

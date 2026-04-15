@@ -1,9 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   resolveIncidentAction,
   deleteIncidentAction,
+  type ActionResult,
 } from "@/lib/actions/incident.actions";
 
 interface IncidentRowActionsProps {
@@ -13,18 +14,28 @@ interface IncidentRowActionsProps {
 
 export function IncidentRowActions({ incidentId, canResolve }: IncidentRowActionsProps) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
-  function handle(action: (prev: null, fd: FormData) => Promise<unknown>, confirmMsg?: string) {
+  function handle(
+    action: (prev: null, fd: FormData) => Promise<ActionResult>,
+    confirmMsg?: string,
+  ) {
     if (confirmMsg && !window.confirm(confirmMsg)) return;
     const fd = new FormData();
     fd.set("incidentId", incidentId);
-    startTransition(() => {
-      action(null, fd);
+    setError(null);
+    startTransition(async () => {
+      const result = await action(null, fd);
+      if (!result.success) setError(result.error ?? "Error");
     });
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col items-end gap-1">
+      {error && (
+        <span className="text-xs text-[var(--color-danger-700)]">{error}</span>
+      )}
+      <div className="flex gap-2">
       {canResolve && (
         <button
           type="button"
@@ -45,6 +56,7 @@ export function IncidentRowActions({ incidentId, canResolve }: IncidentRowAction
       >
         Eliminar
       </button>
+      </div>
     </div>
   );
 }

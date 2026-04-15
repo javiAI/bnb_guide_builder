@@ -28,8 +28,8 @@ export const createIncidentSchema = z
 export const updateIncidentSchema = z
   .object({
     title: z.string().min(1, "El título es obligatorio"),
-    severity: z.enum(incidentSeverities).optional(),
-    status: z.enum(incidentStatuses).optional(),
+    severity: z.enum(incidentSeverities),
+    status: z.enum(incidentStatuses),
     targetType: z.enum(incidentTargetTypes),
     targetId: z.string().optional(),
     playbookId: z.string().optional(),
