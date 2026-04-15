@@ -389,7 +389,7 @@ export async function updateSpaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
   const raw = {
     name: formData.get("name") as string,
     guestNotes: (formData.get("guestNotes") as string) || undefined,
@@ -406,13 +406,19 @@ export async function updateSpaceAction(
     };
   }
 
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
   await prisma.space.update({
     where: { id: spaceId },
     data: { ...result.data, createdBy: "user", wizardSeedKey: null },
   });
 
-  recomputeAllInBackground(propertyId);
-  revalidatePath(`/properties/${propertyId}/spaces`);
+  recomputeAllInBackground(space.propertyId);
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
 

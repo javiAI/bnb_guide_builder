@@ -83,6 +83,7 @@ function form(entries: Record<string, string>): FormData {
 
 describe("wizard seed tracking — manual edits transfer ownership", () => {
   it("updateSpaceAction clears wizardSeedKey and promotes to user (visibility edit)", async () => {
+    spaceFindUnique.mockResolvedValue({ propertyId: "p1" });
     await updateSpaceAction(
       null,
       form({
