@@ -32,6 +32,23 @@ Implementa exactamente el paquete `version_3`.
 - arquitectura config-driven: taxonomías, campos, dependencias, media y renderizado viven en configuración centralizada (`src/config/` y `taxonomies/`), no hardcodeados en componentes React
 - añadir amenity, policy, access method o sección = editar config/taxonomía, no tocar UI
 
+## Flujo de ramas (MASTER_PLAN_V2)
+
+- **Antes de crear cualquier rama del plan** (8A en adelante), leer `docs/MASTER_PLAN_V2.md` § correspondiente **entera** y ejecutar su **Fase -1 — Revisión pre-rama** (§2.1): resumen técnico + resumen conceptual + ambigüedades + alternativas, iterar hasta aprobación explícita del usuario. No crear rama sin ese gate.
+- Seguir el resto del protocolo §2 (Fase 0 → Fase 6) sin saltos.
+- **Al terminar la rama**: actualizar los docs listados en "Docs a actualizar al terminar" de la rama. **No crear docs nuevos** si cabe en uno existente. Marcar la rama en `docs/ROADMAP.md`.
+- Cambios al plan descubiertos en ejecución: PR aparte `chore/plan-update-<tema>` (ver §2.9), nunca editar `MASTER_PLAN_V2.md` silenciosamente.
+
+## Skills y herramientas activas
+
+- `/pre-commit-review` — hook recuerda antes de cada commit (Fase 3)
+- `/review-pr-comments` — triage por valor/esfuerzo de comentarios de PR (Fase 5)
+- `/simplify` — tras volumen significativo de código, antes de abrir PR (Fase 4)
+- `/revise-claude-md` — post-merge si la rama introduce patrones reutilizables (Fase 6)
+- `/feature-dev`, `/playwright-cli`, `/excalidraw-diagram`, `/firecrawl-search` — opcionales según rama (ver Preparación)
+- Context7 (MCP) — auto, verifica APIs de librerías durante implementación
+- Agents `Explore`, `Plan`, `code-explorer`, `code-architect` — según complejidad de la rama
+
 ## Entorno y comandos
 
 - `npx` falla en sandbox de tools — usar siempre `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx`
