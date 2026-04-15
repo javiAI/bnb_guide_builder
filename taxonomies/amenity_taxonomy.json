@@ -1064,6 +1064,7 @@
         "am.cleaning_products",
         "am.conditioner",
         "am.hair_dryer",
+        "am.hand_soap",
         "am.hot_water",
         "am.outdoor_shower",
         "am.shampoo",
@@ -1083,6 +1084,7 @@
         "am.essentials",
         "am.extra_pillows_blankets",
         "am.hangers",
+        "am.laundry_detergent",
         "am.mosquito_net",
         "am.room_darkening_shades",
         "am.safe"
@@ -1148,8 +1150,11 @@
       "description": "Sistemas de calefacción, ventilación y enfriamiento.",
       "parent_id": null,
       "item_ids": [
+        "am.air_purifier",
         "am.ceiling_fan",
+        "am.dehumidifier",
         "am.heating",
+        "am.humidifier",
         "am.indoor_fireplace",
         "am.portable_fans"
       ]
@@ -1183,13 +1188,16 @@
       "parent_id": null,
       "item_ids": [
         "am.baking_sheet",
+        "am.basic_spices",
         "am.bbq_utensils",
         "am.blender",
         "am.bread_maker",
         "am.coffee",
         "am.coffee_maker",
         "am.cooking_basics",
+        "am.cork_screw",
         "am.dining_table",
+        "am.dish_soap",
         "am.dishes_silverware",
         "am.dishwasher",
         "am.freezer",
@@ -3397,6 +3405,102 @@
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.ceiling_mobile_hoist"
+    },
+    {
+      "id": "am.hand_soap",
+      "label": "Jabón de manos",
+      "description": "Jabón específico para lavado de manos disponible en baños y cocina.",
+      "parent_id": "ag.bathroom",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.dish_soap",
+      "label": "Lavavajillas a mano",
+      "description": "Detergente para lavar vajilla a mano.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.laundry_detergent",
+      "label": "Detergente de lavadora",
+      "description": "Detergente disponible para usar la lavadora.",
+      "parent_id": "ag.bedroom_laundry",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.air_purifier",
+      "label": "Purificador de aire",
+      "description": "Purificador de aire para entornos urbanos o con alérgenos.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.humidifier",
+      "label": "Humidificador",
+      "description": "Humidificador para mantener niveles de humedad cómodos.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.dehumidifier",
+      "label": "Deshumidificador",
+      "description": "Deshumidificador para reducir humedad en entornos montañosos o costeros.",
+      "parent_id": "ag.heating_cooling",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.cork_screw",
+      "label": "Sacacorchos",
+      "description": "Sacacorchos disponible en cocina; reduce tickets de soporte.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
+    },
+    {
+      "id": "am.basic_spices",
+      "label": "Especias básicas",
+      "description": "Especias esenciales (sal, pimienta y similares) desagregadas de cooking_basics.",
+      "parent_id": "ag.kitchen_dining",
+      "recommended": false,
+      "defaults": {},
+      "dependency_hints": [],
+      "source": [],
+      "importanceLevel": "standard",
+      "destination": "amenity_configurable"
     }
   ],
   "source_refs": {

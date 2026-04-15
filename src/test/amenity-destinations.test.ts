@@ -20,14 +20,14 @@ const PENDING_SYSTEM_TARGETS = new Set<string>([
 ]);
 
 describe("amenity audit destinations (branch 1B)", () => {
-  it("has exactly 142 amenity items", () => {
-    expect(amenityTaxonomy.items).toHaveLength(142);
+  it("has exactly 150 amenity items", () => {
+    expect(amenityTaxonomy.items).toHaveLength(150);
   });
 
-  it("mapping has exactly 142 entries with no duplicate ids", () => {
-    expect(DESTINATIONS).toHaveLength(142);
+  it("mapping has exactly 150 entries with no duplicate ids", () => {
+    expect(DESTINATIONS).toHaveLength(150);
     const ids = new Set(DESTINATIONS.map((d) => d.id));
-    expect(ids.size).toBe(142);
+    expect(ids.size).toBe(150);
   });
 
   it("every taxonomy item has a destination set", () => {
@@ -93,14 +93,14 @@ describe("amenity audit destinations (branch 1B)", () => {
     }
   });
 
-  it("counts per destination match the audit (87 / 20 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
+  it("counts per destination match the audit (95 / 20 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
     const counts: Record<string, number> = {};
     for (const item of amenityTaxonomy.items) {
       const d = item.destination as string;
       counts[d] = (counts[d] ?? 0) + 1;
     }
     expect(counts).toEqual({
-      amenity_configurable: 87,
+      amenity_configurable: 95,
       derived_from_space: 20,
       moved_to_access: 18,
       moved_to_property_attribute: 6,
