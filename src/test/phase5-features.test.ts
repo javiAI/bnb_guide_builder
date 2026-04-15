@@ -156,7 +156,7 @@ describe("Troubleshooting schemas", () => {
       guestStepsMd: "1. Intentar de nuevo\n2. Llamar",
       internalStepsMd: "1. Reset remoto",
       escalationRule: "Técnico en 30 min",
-      visibility: "booked_guest",
+      visibility: "ai",
     });
     expect(result.success).toBe(true);
   });
@@ -190,7 +190,7 @@ describe("Local guide schemas", () => {
       guestDescription: "A 5 minutos andando",
       bestFor: "Paseo y baño",
       seasonalNotes: "Mejor en verano",
-      visibility: "public",
+      visibility: "guest",
     });
     expect(result.success).toBe(true);
   });

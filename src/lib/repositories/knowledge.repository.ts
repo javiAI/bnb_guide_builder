@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
+import type { VisibilityLevel } from "@/lib/visibility";
 
 /**
  * Write owner: knowledge sources, items, and citations.
  */
 export const knowledgeRepository = {
-  findItemsByProperty(propertyId: string, visibility?: string) {
+  findItemsByProperty(propertyId: string, visibility?: VisibilityLevel) {
     return prisma.knowledgeItem.findMany({
       where: {
         propertyId,

@@ -205,11 +205,11 @@ describe("Renderer registry", () => {
     expect(getRenderConfig("amenities")).toBeDefined();
   });
 
-  it("guest_guide target includes public content", () => {
+  it("guest_guide target includes guest content", () => {
     const guideConfigs = getRenderConfigsForTarget("guest_guide");
     expect(guideConfigs.length).toBeGreaterThan(0);
     const property = guideConfigs.find((c) => c.sectionKey === "property");
-    expect(property?.maxVisibility).toBe("public");
+    expect(property?.maxVisibility).toBe("guest");
   });
 
   it("ai_view target includes more sections than guest_guide", () => {

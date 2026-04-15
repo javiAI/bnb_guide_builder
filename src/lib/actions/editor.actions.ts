@@ -7,6 +7,7 @@ import { recomputePropertyCounts } from "@/lib/property-counts";
 import { recomputeAllInBackground } from "@/lib/services/property-derived.service";
 import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
+import { normaliseVisibility } from "@/lib/visibility";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
 import {
@@ -1097,7 +1098,7 @@ export async function createMediaAssetAction(
       ...result.data,
       storageKey: `placeholder_${Date.now()}`,
       mimeType: result.data.mediaType === "photo" ? "image/jpeg" : "video/mp4",
-      visibility: result.data.visibility ?? "public",
+      visibility: result.data.visibility ?? "guest",
       status: "pending",
       property: { connect: { id: propertyId } },
     },
@@ -1122,7 +1123,7 @@ export async function createSystemAction(
   }
   const taxonomyItem = findSystemItem(result.data.systemKey);
   if (!taxonomyItem) return { success: false, error: "Sistema no reconocido en la taxonomía" };
-  const defaultVisibility = taxonomyItem.visibility;
+  const defaultVisibility = normaliseVisibility(taxonomyItem.visibility);
   try {
     await prisma.propertySystem.create({
       data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },

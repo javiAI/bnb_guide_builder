@@ -166,17 +166,17 @@ export function validateInfantsVsCrib(
 }
 
 /**
- * Visibility leak: an amenity instance marked `visibility="public"` (or
- * `booked_guest`) must not contain detailsJson values for fields whose taxonomy
+ * Visibility leak: an amenity instance marked `visibility="guest"` (or
+ * `"ai"`) must not contain detailsJson values for fields whose taxonomy
  * declaration says `visibility: "sensitive"`. If it does, the field would be
- * served to guests / the AI via the public retrieval path.
+ * served to guests / the AI via the guest-facing retrieval path.
  */
 export function validateVisibilityLeaks(
   ctx: ValidationContext,
 ): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   for (const inst of ctx.amenityInstances) {
-    if (inst.visibility !== "public" && inst.visibility !== "booked_guest") continue;
+    if (inst.visibility !== "guest" && inst.visibility !== "ai") continue;
     const subtype = inst.subtypeKey ? findSubtype(inst.subtypeKey) : undefined;
     if (!subtype) continue;
     const details = (inst.detailsJson ?? {}) as Record<string, unknown>;

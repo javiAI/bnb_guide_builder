@@ -3,11 +3,11 @@
 import { useActionState, useState } from "react";
 import { updatePlaybookAction, type ActionResult } from "@/lib/actions/editor.actions";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
-import { visibilityLevels, getItems } from "@/lib/taxonomy-loader";
+import { visibilityLevelsTaxonomy, getItems } from "@/lib/taxonomy-loader";
 
-const visibilityOptions = getItems(visibilityLevels).filter(
-  (v) => v.id !== "secret",
-);
+const visibilityOptions = getItems(visibilityLevelsTaxonomy)
+  .filter((v) => v.id !== "vis.sensitive")
+  .map((v) => ({ value: v.id.replace(/^vis\./, ""), label: v.label }));
 
 export type PlaybookTargetType = "none" | "system" | "amenity" | "space" | "access";
 
@@ -150,7 +150,7 @@ export function PlaybookDetailForm({
         <span className="text-sm font-medium text-[var(--foreground)]">Visibilidad</span>
         <select name="visibility" defaultValue={playbook.visibility} className={inputClass}>
           {visibilityOptions.map((v) => (
-            <option key={v.id} value={v.id}>{v.label}</option>
+            <option key={v.value} value={v.value}>{v.label}</option>
           ))}
         </select>
       </label>

@@ -1,13 +1,16 @@
 import { z } from "zod";
 
+// Assistant API audiences exclude "sensitive" on purpose — callers must not
+// be able to elevate to sensitive via a request body; that level is reserved
+// for server-derived authenticated contexts (not yet wired up).
+const ASSISTANT_AUDIENCES = ["guest", "ai", "internal"] as const;
+
 // ── Ask endpoint ──
 
 export const askRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
   journeyStage: z.string().optional(),
   conversationId: z.string().optional(),
 });
@@ -39,9 +42,7 @@ export type AskResponse = z.infer<typeof askResponseSchema>;
 export const debugRetrieveRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
   journeyStage: z.string().optional(),
 });
 
@@ -63,9 +64,7 @@ export type RetrievalCandidate = z.infer<typeof retrievalCandidateSchema>;
 
 export const createConversationSchema = z.object({
   actorType: z.enum(["guest", "operator", "system"]),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
   language: z.string().default("es"),
 });
 

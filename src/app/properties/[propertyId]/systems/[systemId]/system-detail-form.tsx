@@ -234,7 +234,7 @@ export function SystemDetailForm({
               onChange={(e) => setVis(e.target.value)}
               className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
             >
-              <option value="public">Público</option>
+              <option value="guest">Huésped</option>
               <option value="internal">Solo interno</option>
             </select>
           </label>

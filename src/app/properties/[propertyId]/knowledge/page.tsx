@@ -1,14 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { Badge } from "@/components/ui/badge";
 import { CreateKnowledgeItemForm } from "./create-knowledge-form";
 import { KnowledgeItemCard } from "./knowledge-item-card";
-
-const VISIBILITY_LABEL: Record<string, { label: string; tone: "neutral" | "success" | "warning" }> = {
-  public: { label: "Público", tone: "success" },
-  booked_guest: { label: "Huésped confirmado", tone: "neutral" },
-  internal: { label: "Interno", tone: "warning" },
-};
+import { VISIBILITY_LABEL, VISIBILITY_TONE } from "@/lib/visibility";
 
 const JOURNEY_LABEL: Record<string, string> = {
   pre_booking: "Pre-reserva",
@@ -59,7 +53,8 @@ export default async function KnowledgePage({
         ) : (
           <div className="space-y-3">
             {items.map((item) => {
-              const vis = VISIBILITY_LABEL[item.visibility] ?? VISIBILITY_LABEL.public;
+              const visLabel = VISIBILITY_LABEL[item.visibility];
+              const visTone = VISIBILITY_TONE[item.visibility];
               const journey = item.journeyStage ? JOURNEY_LABEL[item.journeyStage] : null;
               return (
                 <KnowledgeItemCard
@@ -74,8 +69,8 @@ export default async function KnowledgePage({
                     lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
                   }}
                   propertyId={propertyId}
-                  visibilityLabel={vis.label}
-                  visibilityTone={vis.tone}
+                  visibilityLabel={visLabel}
+                  visibilityTone={visTone}
                   journeyLabel={journey}
                 />
               );

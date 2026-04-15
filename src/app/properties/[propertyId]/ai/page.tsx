@@ -2,12 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getRenderConfigsForTarget } from "@/config/registries/renderer-registry";
 import { Badge } from "@/components/ui/badge";
-
-const VISIBILITY_ORDER: Record<string, number> = {
-  public: 0,
-  booked_guest: 1,
-  internal: 2,
-};
+import { VISIBILITY_ORDER, VISIBILITY_LABEL, VISIBILITY_TONE } from "@/lib/visibility";
 
 export default async function AiViewPage({
   params,
@@ -23,11 +18,11 @@ export default async function AiViewPage({
 
   if (!property) notFound();
 
-  // Get all knowledge items eligible for AI view (exclude secret)
+  // Get all knowledge items eligible for AI view (exclude sensitive)
   const knowledgeItems = await prisma.knowledgeItem.findMany({
     where: {
       propertyId,
-      visibility: { in: ["public", "booked_guest", "internal"] },
+      visibility: { in: ["guest", "ai", "internal"] },
     },
     orderBy: { topic: "asc" },
   });
@@ -129,20 +124,8 @@ export default async function AiViewPage({
                 )}
               </div>
               <Badge
-                label={
-                  item.visibility === "public"
-                    ? "Público"
-                    : item.visibility === "booked_guest"
-                      ? "Huésped"
-                      : "Interno"
-                }
-                tone={
-                  item.visibility === "public"
-                    ? "success"
-                    : item.visibility === "internal"
-                      ? "warning"
-                      : "neutral"
-                }
+                label={VISIBILITY_LABEL[item.visibility]}
+                tone={VISIBILITY_TONE[item.visibility]}
               />
             </div>
           ))}

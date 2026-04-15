@@ -30,7 +30,7 @@ describe("validateWifiComplete", () => {
     const out = validateWifiComplete(
       baseCtx({
         systems: [
-          { systemKey: "sys.internet", detailsJson: { password: "x" }, visibility: "public" },
+          { systemKey: "sys.internet", detailsJson: { password: "x" }, visibility: "guest" },
         ],
       }),
     );
@@ -43,7 +43,7 @@ describe("validateWifiComplete", () => {
     const out = validateWifiComplete(
       baseCtx({
         systems: [
-          { systemKey: "sys.internet", detailsJson: { ssid: "R", password: "   " }, visibility: "public" },
+          { systemKey: "sys.internet", detailsJson: { ssid: "R", password: "   " }, visibility: "guest" },
         ],
       }),
     );
@@ -54,7 +54,7 @@ describe("validateWifiComplete", () => {
     const out = validateWifiComplete(
       baseCtx({
         systems: [
-          { systemKey: "sys.internet", detailsJson: { ssid: "R", password: "p" }, visibility: "public" },
+          { systemKey: "sys.internet", detailsJson: { ssid: "R", password: "p" }, visibility: "guest" },
         ],
       }),
     );
@@ -147,7 +147,7 @@ describe("validateInfantsVsCrib", () => {
       baseCtx({
         infantsAllowed: true,
         amenityInstances: [
-          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "public" },
+          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "guest" },
         ],
       }),
     );
@@ -159,7 +159,7 @@ describe("validateInfantsVsCrib", () => {
       baseCtx({
         infantsAllowed: false,
         amenityInstances: [
-          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "public" },
+          { amenityKey: "am.crib", instanceKey: "default", subtypeKey: null, detailsJson: null, visibility: "guest" },
         ],
       }),
     );
@@ -174,7 +174,7 @@ describe("validateVisibilityLeaks", () => {
     const out = validateVisibilityLeaks(
       baseCtx({
         amenityInstances: [
-          { amenityKey: "am.tv", instanceKey: "default", subtypeKey: null, detailsJson: { foo: "bar" }, visibility: "public" },
+          { amenityKey: "am.tv", instanceKey: "default", subtypeKey: null, detailsJson: { foo: "bar" }, visibility: "guest" },
         ],
       }),
     );
@@ -208,7 +208,7 @@ describe("validateVisibilityLeaks", () => {
             instanceKey: "default",
             subtypeKey: "am.coffee_maker",
             detailsJson: { "coffee_maker.subtype": "drip" },
-            visibility: "public",
+            visibility: "guest",
           },
         ],
       }),
@@ -225,7 +225,7 @@ describe("validateVisibilityLeaks", () => {
             instanceKey: "default",
             subtypeKey: "am.wifi",
             detailsJson: { "wifi.ssid": "MyNet", "wifi.password": "supersecret" },
-            visibility: "public",
+            visibility: "guest",
           },
         ],
       }),
@@ -245,14 +245,14 @@ describe("validateVisibilityLeaks", () => {
             instanceKey: "guest",
             subtypeKey: "am.wifi",
             detailsJson: { "wifi.password": "a" },
-            visibility: "public",
+            visibility: "guest",
           },
           {
             amenityKey: "am.wifi",
             instanceKey: "office",
             subtypeKey: "am.wifi",
             detailsJson: { "wifi.password": "b" },
-            visibility: "public",
+            visibility: "guest",
           },
         ],
       }),

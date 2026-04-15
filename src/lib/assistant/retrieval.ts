@@ -1,23 +1,28 @@
 import { prisma } from "@/lib/db";
 import type { RetrievalCandidate } from "@/lib/schemas/assistant.schema";
+import { type VisibilityLevel, VISIBILITY_ORDER } from "@/lib/visibility";
+
+type AssistantAudience = Exclude<VisibilityLevel, "sensitive">;
 
 /**
- * Visibility hierarchy: public < booked_guest < internal.
- * A query for audience "booked_guest" can see public + booked_guest.
- * A query for "internal" can see all three.
- * Secret is NEVER included.
+ * Visibility hierarchy: guest < ai < internal.
+ * An audience sees everything at its own level or below.
+ * The "sensitive" level is NEVER surfaced through the assistant retrieval
+ * path — callers cannot elevate to it via the public API; it is reserved
+ * for out-of-band authenticated flows.
  */
-const VISIBILITY_HIERARCHY: Record<string, string[]> = {
-  public: ["public"],
-  booked_guest: ["public", "booked_guest"],
-  internal: ["public", "booked_guest", "internal"],
-};
+function allowedVisibilitiesFor(audience: AssistantAudience): VisibilityLevel[] {
+  const audienceOrder = VISIBILITY_ORDER[audience];
+  return (Object.keys(VISIBILITY_ORDER) as VisibilityLevel[]).filter(
+    (v) => VISIBILITY_ORDER[v] <= audienceOrder && v !== "sensitive",
+  );
+}
 
 export interface RetrievalOptions {
   propertyId: string;
   question: string;
   language: string;
-  audience: string;
+  audience: AssistantAudience;
   journeyStage?: string;
 }
 
@@ -29,12 +34,12 @@ export interface RetrievalOptions {
  * 2. Optional journey stage filter
  * 3. Keyword matching (simple word overlap for MVP)
  * 4. Rank by relevance score
- * 5. Strict exclusion of secret visibility
+ * 5. Strict exclusion of sensitive visibility
  */
 export async function retrieveCandidates(
   opts: RetrievalOptions,
 ): Promise<RetrievalCandidate[]> {
-  const allowedVisibilities = VISIBILITY_HIERARCHY[opts.audience] ?? ["public"];
+  const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
   // Step 1-2: DB query with visibility and language filters
   const where: Record<string, unknown> = {
@@ -147,8 +152,7 @@ export async function buildAnswer(
   }
 
   // Build answer from relevant items
-  const allowedVisibilities =
-    VISIBILITY_HIERARCHY[opts.audience] ?? ["public"];
+  const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
   const relevantItems = await prisma.knowledgeItem.findMany({
     where: {

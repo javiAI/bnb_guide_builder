@@ -38,15 +38,15 @@ export async function createKnowledgeItemAction(
     };
   }
 
-  // Enforce: secret visibility not allowed in knowledge items
-  if (result.data.visibility === "secret") {
-    return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'secret'." };
+  // Enforce: sensitive visibility not allowed in knowledge items
+  if (result.data.visibility === "sensitive") {
+    return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'sensible'." };
   }
 
   await prisma.knowledgeItem.create({
     data: {
       ...result.data,
-      visibility: result.data.visibility ?? "public",
+      visibility: result.data.visibility ?? "guest",
       property: { connect: { id: propertyId } },
     },
   });
@@ -76,8 +76,8 @@ export async function updateKnowledgeItemAction(
     };
   }
 
-  if (result.data.visibility === "secret") {
-    return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'secret'." };
+  if (result.data.visibility === "sensitive") {
+    return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'sensible'." };
   }
 
   await prisma.knowledgeItem.update({
@@ -224,15 +224,15 @@ export async function createGuideSectionItemAction(
     };
   }
 
-  // Enforce: secret visibility not allowed in guide items
-  if (result.data.visibility === "secret") {
-    return { success: false, error: "Los items de guía no pueden tener visibilidad 'secret'." };
+  // Enforce: sensitive visibility not allowed in guide items
+  if (result.data.visibility === "sensitive") {
+    return { success: false, error: "Los items de guía no pueden tener visibilidad 'sensible'." };
   }
 
   await prisma.guideSectionItem.create({
     data: {
       ...result.data,
-      visibility: result.data.visibility ?? "public",
+      visibility: result.data.visibility ?? "guest",
       guideSection: { connect: { id: sectionId } },
     },
   });

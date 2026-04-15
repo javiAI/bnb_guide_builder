@@ -27,7 +27,7 @@ describe("Knowledge schemas", () => {
     const result = createKnowledgeItemSchema.safeParse({
       topic: "WiFi",
       bodyMd: "La contraseña WiFi es...",
-      visibility: "public",
+      visibility: "guest",
       journeyStage: "during_stay",
     });
     expect(result.success).toBe(true);
@@ -69,7 +69,7 @@ describe("Guide section schemas", () => {
   it("accepts valid section item", () => {
     const result = createGuideSectionItemSchema.safeParse({
       contentMd: "Bienvenido a tu alojamiento...",
-      visibility: "public",
+      visibility: "guest",
       sortOrder: 0,
     });
     expect(result.success).toBe(true);
@@ -91,9 +91,9 @@ describe("Renderer registry for guide/AI", () => {
     expect(configs.length).toBeGreaterThanOrEqual(7);
   });
 
-  it("no section has secret as maxVisibility", () => {
+  it("no section has sensitive as maxVisibility", () => {
     for (const config of RENDER_CONFIGS) {
-      expect(config.maxVisibility).not.toBe("secret");
+      expect(config.maxVisibility).not.toBe("sensitive");
     }
   });
 

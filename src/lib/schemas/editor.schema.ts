@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { SubtypeField } from "@/lib/types/taxonomy";
+import { visibilityLevels } from "@/lib/visibility";
 
 // ── Property editor (replaces basics) ──
 
@@ -81,7 +82,7 @@ export const createContactSchema = z.object({
   hasPropertyAccess: z.boolean().optional(),
   internalNotes: z.string().nullable().optional(),
   guestVisibleNotes: z.string().nullable().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(visibilityLevels).optional(),
   isPrimary: z.boolean().optional(),
 });
 
@@ -186,7 +187,7 @@ export const updateSpaceSchema = z.object({
   guestNotes: z.string().optional(),
   aiNotes: z.string().optional(),
   internalNotes: z.string().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(visibilityLevels).optional(),
   sortOrder: z.number().int().optional(),
 });
 
@@ -232,7 +233,7 @@ export const updateAmenitySchema = z.object({
   aiInstructions: z.string().optional(),
   internalNotes: z.string().optional(),
   troubleshootingNotes: z.string().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export type ToggleAmenityData = z.infer<typeof toggleAmenitySchema>;
@@ -322,7 +323,7 @@ export const createAmenityInstanceSchema = z.object({
   amenityKey: z.string().min(1),
   instanceKey: z.string().min(1).default("default"),
   subtypeKey: z.string().optional(),
-  visibility: z.enum(["public", "internal", "sensitive"]).optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export const updateAmenityInstanceSchema = z.object({
@@ -332,7 +333,7 @@ export const updateAmenityInstanceSchema = z.object({
   aiInstructions: z.string().optional(),
   internalNotes: z.string().optional(),
   troubleshootingNotes: z.string().optional(),
-  visibility: z.enum(["public", "internal", "sensitive"]).optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export type CreateAmenityInstanceData = z.infer<typeof createAmenityInstanceSchema>;
@@ -354,7 +355,7 @@ export const updatePlaybookSchema = z
     guestStepsMd: z.string().optional(),
     internalStepsMd: z.string().optional(),
     escalationRule: z.string().optional(),
-    visibility: z.string().optional(),
+    visibility: z.enum(visibilityLevels).optional(),
     targetType: z.enum(["none", "system", "amenity", "space", "access"]).optional(),
     targetKey: z.string().optional(),
   })
@@ -388,7 +389,7 @@ export const updateLocalPlaceSchema = z.object({
   linkUrl: z.string().optional(),
   bestFor: z.string().optional(),
   seasonalNotes: z.string().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export type CreateLocalPlaceData = z.infer<typeof createLocalPlaceSchema>;
@@ -400,7 +401,7 @@ export const createMediaAssetSchema = z.object({
   assetRoleKey: z.string().min(1, "El rol del asset es obligatorio"),
   mediaType: z.string().min(1, "El tipo de media es obligatorio"),
   caption: z.string().optional(),
-  visibility: z.string().optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export const assignMediaSchema = z.object({
@@ -423,7 +424,7 @@ export const updateSystemSchema = z.object({
   detailsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   opsJson: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   internalNotes: z.string().nullable().optional(),
-  visibility: z.enum(["public", "internal"]).optional(),
+  visibility: z.enum(visibilityLevels).optional(),
 });
 
 export const updateSystemCoverageSchema = z.object({
