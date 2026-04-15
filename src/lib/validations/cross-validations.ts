@@ -40,6 +40,7 @@ export interface ValidationContext {
   }>;
   amenityInstances: Array<{
     amenityKey: string;
+    instanceKey: string;
     subtypeKey: string | null;
     detailsJson: unknown;
     visibility: string;
@@ -52,11 +53,16 @@ export interface ValidationContext {
   }>;
 }
 
-const SMART_LOCK_KEYS = new Set([
-  "am.smart_lock",
-  "am.keypad",
-  "am.digital_key",
-]);
+const SMART_LOCK_KEYS = new Set(["am.smart_lock", "am.keypad"]);
+
+/**
+ * A subtype field is "sensitive" if it explicitly declares
+ * `visibility: "sensitive"`, or if its type is `sensitive_text` (the taxonomy
+ * uses the type to imply visibility for free-text secrets like wifi passwords).
+ */
+function isSensitiveField(field: { type: string; visibility?: string }): boolean {
+  return field.visibility === "sensitive" || field.type === "sensitive_text";
+}
 
 /**
  * Wifi is a derived amenity: activated by PropertySystem(sys.internet). If the
@@ -175,7 +181,7 @@ export function validateVisibilityLeaks(
     if (!subtype) continue;
     const details = (inst.detailsJson ?? {}) as Record<string, unknown>;
     const leaked = subtype.fields
-      .filter((f) => f.visibility === "sensitive")
+      .filter(isSensitiveField)
       .filter((f) => {
         const v = details[f.id];
         return v !== undefined && v !== null && v !== "";
@@ -184,9 +190,9 @@ export function validateVisibilityLeaks(
     if (leaked.length === 0) continue;
 
     findings.push({
-      id: `visibility_leak_${inst.amenityKey}`,
+      id: `visibility_leak_${inst.amenityKey}_${inst.instanceKey}`,
       severity: "error",
-      message: `"${inst.amenityKey}" expone datos sensibles (${leaked.join(", ")}) con visibilidad ${inst.visibility}. Súbele la visibilidad o elimina esos campos.`,
+      message: `"${inst.amenityKey}" (${inst.instanceKey}) expone datos sensibles (${leaked.join(", ")}) con visibilidad ${inst.visibility}. Súbele la visibilidad o elimina esos campos.`,
       ctaUrl: `/properties/${ctx.propertyId}/amenities`,
       ctaLabel: "Revisar visibilidad",
     });

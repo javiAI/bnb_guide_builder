@@ -115,6 +115,9 @@ export default async function PublishingPage({
       country: true,
       checkInStart: true,
       primaryAccessMethod: true,
+      maxGuests: true,
+      infantsAllowed: true,
+      accessMethodsJson: true,
     },
   });
 
@@ -135,7 +138,11 @@ export default async function PublishingPage({
         take: 1,
         select: { id: true, status: true, version: true, publishedAt: true },
       }),
-      runAllValidations(propertyId),
+      runAllValidations(propertyId, {
+        maxGuests: property.maxGuests,
+        infantsAllowed: property.infantsAllowed,
+        accessMethodsJson: property.accessMethodsJson,
+      }),
     ]);
 
   const completedSections = new Set<string>();
