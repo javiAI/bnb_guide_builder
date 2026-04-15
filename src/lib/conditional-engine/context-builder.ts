@@ -15,7 +15,7 @@ type MinimalPrisma = {
   };
   space: {
     findMany: (args: {
-      where: { propertyId: string };
+      where: { propertyId: string; status?: string };
       select: { id: true; spaceType: true };
     }) => Promise<Array<{ id: string; spaceType: string }>>;
   };
@@ -41,7 +41,7 @@ export async function buildPropertyContext(
   const [property, spaces, systems, amenities] = await Promise.all([
     prisma.property.findUnique({ where: { id: propertyId } }),
     prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       select: { id: true, spaceType: true },
     }),
     prisma.propertySystem.findMany({

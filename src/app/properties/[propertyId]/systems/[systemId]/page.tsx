@@ -19,7 +19,7 @@ export default async function SystemDetailPage({
       include: { coverages: true },
     }),
     prisma.space.findMany({
-      where: { propertyId },
+      where: { propertyId, status: "active" },
       orderBy: { sortOrder: "asc" },
       select: { id: true, name: true, spaceType: true },
     }),

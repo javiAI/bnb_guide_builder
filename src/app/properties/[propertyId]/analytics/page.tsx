@@ -51,7 +51,7 @@ export default async function AnalyticsPage({
         updatedAt: true,
       },
     }),
-    prisma.space.count({ where: { propertyId } }),
+    prisma.space.count({ where: { propertyId, status: "active" } }),
     prisma.propertyAmenityInstance.count({ where: { propertyId } }),
     prisma.mediaAsset.count({ where: { propertyId } }),
     prisma.troubleshootingPlaybook.count({ where: { propertyId } }),

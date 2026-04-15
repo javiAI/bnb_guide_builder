@@ -5,9 +5,9 @@ import type { Prisma } from "@prisma/client";
  * Write owner: spaces within a property.
  */
 export const spaceRepository = {
-  findByProperty(propertyId: string) {
+  findByProperty(propertyId: string, options?: { includeArchived?: boolean }) {
     return prisma.space.findMany({
-      where: { propertyId },
+      where: options?.includeArchived ? { propertyId } : { propertyId, status: "active" },
       orderBy: { sortOrder: "asc" },
     });
   },

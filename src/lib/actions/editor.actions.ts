@@ -416,11 +416,18 @@ export async function updateSpaceAction(
   return { success: true };
 }
 
-export async function deleteSpaceAction(
+export async function archiveSpaceAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
+  const rawStatus = formData.get("status");
+
+  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
+  if (rawStatus !== "active" && rawStatus !== "archived") {
+    return { success: false, error: "Estado inválido" };
+  }
+  const nextStatus = rawStatus;
 
   const space = await prisma.space.findUnique({
     where: { id: spaceId },
@@ -428,9 +435,8 @@ export async function deleteSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  // Atomic: delete space (cascades amenities via FK), recompute counts
   await prisma.$transaction(async (tx) => {
-    await tx.space.delete({ where: { id: spaceId } });
+    await tx.space.update({ where: { id: spaceId }, data: { status: nextStatus } });
     await recomputePropertyCounts(tx, space.propertyId);
   });
 

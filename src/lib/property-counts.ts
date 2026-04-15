@@ -31,7 +31,7 @@ export async function recomputePropertyCounts(
   propertyId: string,
 ): Promise<void> {
   const spaces = await tx.space.findMany({
-    where: { propertyId },
+    where: { propertyId, status: "active" },
     select: {
       spaceType: true,
       beds: { select: { quantity: true } },

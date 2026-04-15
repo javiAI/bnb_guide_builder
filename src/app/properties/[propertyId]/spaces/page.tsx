@@ -28,11 +28,13 @@ export default async function SpacesPage({
 
   if (!property) notFound();
 
-  const spaces = await prisma.space.findMany({
+  const allSpaces = await prisma.space.findMany({
     where: { propertyId },
     orderBy: { sortOrder: "asc" },
     include: { beds: { orderBy: { createdAt: "asc" } } },
   });
+  const spaces = allSpaces.filter((s) => s.status !== "archived");
+  const archivedSpaces = allSpaces.filter((s) => s.status === "archived");
 
   // All systems installed on this property (inherited by all spaces by default)
   const propertySystems = await prisma.propertySystem.findMany({
@@ -191,6 +193,7 @@ export default async function SpacesPage({
                 guestNotes: space.guestNotes,
                 internalNotes: space.internalNotes,
                 featuresJson: space.featuresJson as Record<string, unknown> | null,
+                status: space.status === "archived" ? "archived" : "active",
               }}
               beds={space.beds.map((b) => ({
                 id: b.id,
@@ -208,6 +211,44 @@ export default async function SpacesPage({
         <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">Añadir espacio</h2>
         <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
       </div>
+
+      {archivedSpaces.length > 0 && (
+        <div className="mt-10">
+          <details>
+            <summary className="cursor-pointer text-sm font-semibold text-[var(--color-neutral-600)] hover:text-[var(--foreground)]">
+              Archivados ({archivedSpaces.length})
+            </summary>
+            <p className="mt-2 text-xs text-[var(--color-neutral-500)]">
+              Los espacios archivados no cuentan en capacidad ni aparecen en la guía del huésped. Puedes restaurarlos en cualquier momento.
+            </p>
+            <div className="mt-4 space-y-3">
+              {archivedSpaces.map((space) => (
+                <SpaceCard
+                  key={space.id}
+                  propertyId={propertyId}
+                  maxGuests={property.maxGuests}
+                  space={{
+                    id: space.id,
+                    spaceType: space.spaceType,
+                    name: space.name,
+                    guestNotes: space.guestNotes,
+                    internalNotes: space.internalNotes,
+                    featuresJson: space.featuresJson as Record<string, unknown> | null,
+                    status: space.status === "archived" ? "archived" : "active",
+                  }}
+                  beds={space.beds.map((b) => ({
+                    id: b.id,
+                    bedType: b.bedType,
+                    quantity: b.quantity,
+                    configJson: b.configJson as Record<string, unknown> | null,
+                  }))}
+                  spaceSystems={[]}
+                />
+              ))}
+            </div>
+          </details>
+        </div>
+      )}
     </div>
   );
 }
