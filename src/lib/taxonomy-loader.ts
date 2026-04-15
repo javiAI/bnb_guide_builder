@@ -87,56 +87,74 @@ export const systemSubtypes = systemSubtypesJson as unknown as SystemSubtypesTax
 
 // Each section has a fixed, typed shape so downstream consumers can read
 // `rule.weights.requiredPresent` with real inference instead of `Record<string, number>`.
+// Weights/thresholds are constrained to non-negative integers (thresholds capped at
+// 100) and objects are `.strict()` so unknown keys in the JSON fail loudly at boot
+// instead of being silently dropped.
+const WeightSchema = z.number().int().min(0).finite();
+const ThresholdSchema = z.number().int().min(0).max(100).finite();
+
 const SpacesSectionSchema = z.object({
   label: z.string(),
-  weights: z.object({
-    requiredPresent: z.number(),
-    recommendedPresent: z.number(),
-    bedsConfigured: z.number(),
-    amenitiesPlaced: z.number(),
-    mediaAttached: z.number(),
-  }),
-});
+  weights: z
+    .object({
+      requiredPresent: WeightSchema,
+      recommendedPresent: WeightSchema,
+      bedsConfigured: WeightSchema,
+      amenitiesPlaced: WeightSchema,
+      mediaAttached: WeightSchema,
+    })
+    .strict(),
+}).strict();
 const AmenitiesSectionSchema = z.object({
   label: z.string(),
-  weights: z.object({
-    coreAmenitiesPresent: z.number(),
-    subtypeDetailsComplete: z.number(),
-    placementsResolved: z.number(),
-  }),
+  weights: z
+    .object({
+      coreAmenitiesPresent: WeightSchema,
+      subtypeDetailsComplete: WeightSchema,
+      placementsResolved: WeightSchema,
+    })
+    .strict(),
   coreAmenityKeys: z.array(z.string()),
-});
+}).strict();
 const SystemsSectionSchema = z.object({
   label: z.string(),
-  weights: z.object({
-    recommendedSystemsPresent: z.number(),
-    systemDetailsComplete: z.number(),
-  }),
+  weights: z
+    .object({
+      recommendedSystemsPresent: WeightSchema,
+      systemDetailsComplete: WeightSchema,
+    })
+    .strict(),
   recommendedSystemKeys: z.array(z.string()),
-});
+}).strict();
 const ArrivalSectionSchema = z.object({
   label: z.string(),
-  weights: z.object({
-    checkInTimes: z.number(),
-    checkOutTime: z.number(),
-    primaryAccessMethod: z.number(),
-    accessMethodsDetail: z.number(),
-  }),
-});
+  weights: z
+    .object({
+      checkInTimes: WeightSchema,
+      checkOutTime: WeightSchema,
+      primaryAccessMethod: WeightSchema,
+      accessMethodsDetail: WeightSchema,
+    })
+    .strict(),
+}).strict();
 
 const CompletenessRulesSchema = z.object({
   version: z.string(),
-  thresholds: z.object({
-    usableMinScore: z.number(),
-    publishableMinScore: z.number(),
-  }),
-  sections: z.object({
-    spaces: SpacesSectionSchema,
-    amenities: AmenitiesSectionSchema,
-    systems: SystemsSectionSchema,
-    arrival: ArrivalSectionSchema,
-  }),
-});
+  thresholds: z
+    .object({
+      usableMinScore: ThresholdSchema,
+      publishableMinScore: ThresholdSchema,
+    })
+    .strict(),
+  sections: z
+    .object({
+      spaces: SpacesSectionSchema,
+      amenities: AmenitiesSectionSchema,
+      systems: SystemsSectionSchema,
+      arrival: ArrivalSectionSchema,
+    })
+    .strict(),
+}).strict();
 
 export type CompletenessRulesFile = z.infer<typeof CompletenessRulesSchema>;
 export type CompletenessSectionKey = keyof CompletenessRulesFile["sections"];
@@ -289,9 +307,10 @@ export function getSpaceTypesForRoomType(roomTypeId: string): SpaceTypeItem[] {
 }
 
 // Space types flagged as needing beds for completeness (expectsBeds=true).
-// Memoized on first call — the taxonomy is immutable at runtime.
+// Memoized on first call — the taxonomy is immutable at runtime. Return type
+// is `ReadonlySet` so callers can't mutate the shared cached instance.
 let _spaceTypesWithExpectedBeds: Set<string> | null = null;
-export function getSpaceTypesWithExpectedBeds(): Set<string> {
+export function getSpaceTypesWithExpectedBeds(): ReadonlySet<string> {
   if (_spaceTypesWithExpectedBeds === null) {
     _spaceTypesWithExpectedBeds = new Set(
       spaceTypes.items.filter((s) => s.expectsBeds === true).map((s) => s.id),

@@ -47,7 +47,7 @@ describe("completeness rules — config-driven", () => {
       expect(await computeArrivalCompleteness("p1")).toBe(100);
     });
 
-    it("spaces scenario → deterministic score given fixed JSON weights", async () => {
+    it("spaces scenario → exact score from fixed JSON weights", async () => {
       propFind.mockResolvedValue({ roomType: "rt.entire_place", layoutKey: null });
       spaceFind.mockResolvedValue([
         { id: "s1", spaceType: "sp.bedroom", beds: [{ id: "b1" }], amenityPlacements: [{ id: "pl1" }] },
@@ -57,14 +57,12 @@ describe("completeness rules — config-driven", () => {
       ]);
       mediaGroupBy.mockResolvedValue([{ entityId: "s1" }, { entityId: "s2" }, { entityId: "s3" }, { entityId: "s4" }]);
 
-      // Weights currently in taxonomies/completeness_rules.json:
-      //   requiredPresent 40, recommendedPresent 30, bedsConfigured 10,
-      //   amenitiesPlaced 10, mediaAttached 10. This assertion traps any
-      //   silent drift between JSON and service output.
-      const score = await computeSpacesCompleteness("p1");
-      expect(score).toBeGreaterThan(0);
-      expect(score).toBeLessThanOrEqual(100);
-      expect(Number.isInteger(score)).toBe(true);
+      // Weights in taxonomies/completeness_rules.json: requiredPresent 40,
+      // recommendedPresent 30, bedsConfigured 10, amenitiesPlaced 10,
+      // mediaAttached 10. With all required+recommended present, 1/1 beds,
+      // 4/4 amenities placed, 4/4 media → 100. Asserting the exact number
+      // so any silent drift between JSON and service fails this test.
+      expect(await computeSpacesCompleteness("p1")).toBe(100);
     });
   });
 
@@ -136,6 +134,8 @@ describe("completeness rules — config-driven", () => {
     });
 
     it("amenityRequiresPlacement returns false for property_only amenities and true for unknown keys", () => {
+      // am.wifi is declared scopePolicy=property_only in amenity_taxonomy.json.
+      expect(amenityRequiresPlacement("am.wifi")).toBe(false);
       // Unknown amenity keys default to requiring placement (no free credit).
       expect(amenityRequiresPlacement("am.definitely_not_a_real_key")).toBe(true);
     });
