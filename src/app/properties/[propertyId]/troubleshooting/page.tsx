@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { troubleshootingTaxonomy, findItem } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { CreatePlaybookForm } from "./create-playbook-form";
+import { TroubleshootingTabs } from "./troubleshooting-tabs";
 
 export default async function TroubleshootingPage({
   params,
@@ -33,6 +34,8 @@ export default async function TroubleshootingPage({
       <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
         Playbooks de resolución de incidencias frecuentes.
       </p>
+
+      <TroubleshootingTabs propertyId={propertyId} active="playbooks" />
 
       <div className="mt-8">
         {playbooks.length === 0 ? (
