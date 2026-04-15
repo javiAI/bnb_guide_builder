@@ -1,4 +1,6 @@
-# CONFIG_DRIVEN_ARCHITECTURE
+# CONFIG_DRIVEN_SYSTEM
+
+Consolida la arquitectura config-driven y el runtime de taxonomías. Las taxonomías no son material de diseño: son runtime configuration versionada.
 
 ## Principio rector
 
@@ -260,3 +262,81 @@ Todas en `taxonomies/dynamic_field_rules.json`. El motor en `src/config/schemas/
 | Messaging integration | | | Fase 6 |
 
 **Regla para fases futuras:** Cada editor, renderer y integración **debe** consumir la configuración centralizada. No se permite hardcodear opciones, campos o dependencias en componentes React.
+
+---
+
+## Loader contract
+
+Cada taxonomía debe:
+
+- Incluir `file`, `version`, `locale` (es-ES), `units_system` (metric)
+- Exponer `items` o `groups` (según aplique)
+- Usar IDs estables prefijados (`am.*`, `pt.*`, `sys.*`, `sp.*`, `ax.*`, …)
+- Mostrar labels en español
+
+El loader (`src/lib/taxonomy-loader.ts`) devuelve helpers tipados: `getAmenityDestination`, `isAmenityConfigurable`, `getAmenityScopePolicy`, `findAmenityItem`, etc.
+
+---
+
+## Dynamic field rule contract
+
+Cada regla en `dynamic_field_rules.json` tiene:
+
+- `id`
+- `trigger` — campo o path que dispara
+- `condition` — operadores `equals`, `in`, `gt`, `exists`, `containsAny`, `allOf`, `anyOf`, `not`
+- `shown_fields` — qué campos mostrar
+- `defaults` — valores por defecto cuando aplica
+- `rationale` — por qué existe la regla
+
+El motor declarativo (`src/lib/conditional-engine/`):
+
+- No duplica lógica en componentes
+- Evalúa condiciones
+- Aplica defaults
+- Limpia campos ocultos que ya no aplican
+- Detecta ciclos en `requiresAmenities` / `requiresSystems` a build-time
+
+---
+
+## Mandatory taxonomies
+
+El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado en el repo):
+
+- `property_types.json`
+- `property_environments.json`
+- `room_types.json` / `space_types.json`
+- `space_features.json`
+- `space_availability_rules.json`
+- `access_methods.json`
+- `accessibility_features.json`
+- `parking_options.json`
+- `amenity_taxonomy.json`
+- `amenity_subtypes.json`
+- `amenity_destinations_summary.json` (generado)
+- `system_taxonomy.json`
+- `system_subtypes.json`
+- `policy_taxonomy.json`
+- `troubleshooting_taxonomy.json`
+- `messaging_touchpoints.json`
+- `guide_outputs.json`
+- `visibility_levels.json`
+- `media_requirements.json`
+- `media_asset_roles.json`
+- `dynamic_field_rules.json`
+- `automation_channels.json`
+- `review_reasons.json`
+- `contact_roles.json`
+
+---
+
+## UI rule
+
+Si existe taxonomía, la UI debe ofrecer:
+
+- select-only
+- radio cards
+- chip multi-select
+- `Other / custom` **solo** si la taxonomía lo incluye
+
+Nunca un input de texto libre cuando hay taxonomía aplicable.
