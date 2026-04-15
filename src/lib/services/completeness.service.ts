@@ -5,6 +5,9 @@
  * Scores are 0–100 integers. Each `compute*Completeness` is self-contained so
  * call-sites can read one without paying for all four. `computeOverallReadiness`
  * fans out and returns per-section scores plus `usable` / `publishable` gates.
+ *
+ * Every helper accepts an optional `PropertySnapshot` — when the orchestrator
+ * has already fetched it, pass it through to avoid redundant queries.
  */
 
 import { prisma } from "@/lib/db";
@@ -14,6 +17,7 @@ import {
   completenessRules,
   getAvailableSpaceTypes,
 } from "@/lib/taxonomy-loader";
+import type { PropertySnapshot } from "@/lib/services/property-snapshot";
 
 export interface SectionScores {
   spaces: number;
@@ -34,24 +38,34 @@ const ratio = (have: number, need: number) => (need <= 0 ? 1 : have / need);
 
 // ── Spaces ──
 
-export async function computeSpacesCompleteness(propertyId: string): Promise<number> {
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { roomType: true, layoutKey: true },
-  });
+export async function computeSpacesCompleteness(
+  propertyId: string,
+  snapshot?: PropertySnapshot,
+): Promise<number> {
+  const property =
+    snapshot?.property ??
+    (await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { roomType: true, layoutKey: true },
+    }));
   if (!property?.roomType) return 0;
 
   const availability = getAvailableSpaceTypes(property.roomType, property.layoutKey ?? null);
 
-  const spaces = await prisma.space.findMany({
-    where: { propertyId },
-    select: {
-      id: true,
-      spaceType: true,
-      beds: { select: { id: true } },
-      amenityPlacements: { select: { id: true } },
-    },
-  });
+  const spaces =
+    snapshot?.spaces ??
+    (await prisma.space.findMany({
+      where: { propertyId },
+      select: {
+        id: true,
+        spaceType: true,
+        beds: { select: { id: true } },
+        amenityPlacements: { select: { id: true } },
+      },
+    }));
+  // Empty section → 0; avoids `ratio(0,0)=1` giving full credit on facets
+  // whose denominators depend on spaces.length / bedsExpected.length.
+  if (spaces.length === 0) return 0;
 
   const presentTypes = new Set(spaces.map((s) => s.spaceType));
   const requiredHave = availability.required.filter((t) => presentTypes.has(t)).length;
@@ -65,16 +79,20 @@ export async function computeSpacesCompleteness(propertyId: string): Promise<num
 
   const amenitiesHave = spaces.filter((s) => s.amenityPlacements.length > 0).length;
 
-  // Media: count assignments where entityType="space" and entityId in our spaces.
-  const spaceIds = spaces.map((s) => s.id);
+  // Media: count distinct space entities that have at least one assignment.
   let mediaHave = 0;
-  if (spaceIds.length > 0) {
-    const grouped = await prisma.mediaAssignment.groupBy({
-      by: ["entityId"],
-      where: { entityType: "space", entityId: { in: spaceIds } },
-      _count: { _all: true },
-    });
-    mediaHave = grouped.length;
+  if (snapshot) {
+    mediaHave = snapshot.mediaSpaceEntityIds.length;
+  } else {
+    const spaceIds = spaces.map((s) => s.id);
+    if (spaceIds.length > 0) {
+      const grouped = await prisma.mediaAssignment.groupBy({
+        by: ["entityId"],
+        where: { entityType: "space", entityId: { in: spaceIds } },
+        _count: { _all: true },
+      });
+      mediaHave = grouped.length;
+    }
   }
 
   const w = completenessRules.sections.spaces.weights;
@@ -109,16 +127,21 @@ function isAmenityDetailsComplete(
   });
 }
 
-export async function computeAmenitiesCompleteness(propertyId: string): Promise<number> {
-  const instances = await prisma.propertyAmenityInstance.findMany({
-    where: { propertyId },
-    select: {
-      amenityKey: true,
-      subtypeKey: true,
-      detailsJson: true,
-      placements: { select: { id: true } },
-    },
-  });
+export async function computeAmenitiesCompleteness(
+  propertyId: string,
+  snapshot?: PropertySnapshot,
+): Promise<number> {
+  const instances =
+    snapshot?.amenityInstances ??
+    (await prisma.propertyAmenityInstance.findMany({
+      where: { propertyId },
+      select: {
+        amenityKey: true,
+        subtypeKey: true,
+        detailsJson: true,
+        placements: { select: { id: true } },
+      },
+    }));
   // No amenities configured at all → nothing to score against.
   if (instances.length === 0) return 0;
 
@@ -132,12 +155,14 @@ export async function computeAmenitiesCompleteness(propertyId: string): Promise<
     isAmenityDetailsComplete(i.amenityKey, i.subtypeKey, i.detailsJson),
   ).length;
 
+  const amenityDestinationById = new Map(
+    amenityTaxonomy.items.map((it) => [it.id, it.destination]),
+  );
   // An amenity is "placed" when it either has placements or its taxonomy entry
   // applies globally (no need to attach to a space).
   const placedHave = instances.filter((i) => {
     if (i.placements.length > 0) return true;
-    const item = amenityTaxonomy.items.find((it) => it.id === i.amenityKey);
-    return item?.destination !== "amenity_configurable";
+    return amenityDestinationById.get(i.amenityKey) !== "amenity_configurable";
   }).length;
 
   const score =
@@ -150,11 +175,16 @@ export async function computeAmenitiesCompleteness(propertyId: string): Promise<
 
 // ── Systems ──
 
-export async function computeSystemsCompleteness(propertyId: string): Promise<number> {
-  const systems = await prisma.propertySystem.findMany({
-    where: { propertyId },
-    select: { systemKey: true, detailsJson: true },
-  });
+export async function computeSystemsCompleteness(
+  propertyId: string,
+  snapshot?: PropertySnapshot,
+): Promise<number> {
+  const systems =
+    snapshot?.systems ??
+    (await prisma.propertySystem.findMany({
+      where: { propertyId },
+      select: { systemKey: true, detailsJson: true },
+    }));
   // No systems configured → 0; section is empty.
   if (systems.length === 0) return 0;
 
@@ -180,17 +210,22 @@ export async function computeSystemsCompleteness(propertyId: string): Promise<nu
 
 // ── Arrival ──
 
-export async function computeArrivalCompleteness(propertyId: string): Promise<number> {
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: {
-      checkInStart: true,
-      checkInEnd: true,
-      checkOutTime: true,
-      primaryAccessMethod: true,
-      accessMethodsJson: true,
-    },
-  });
+export async function computeArrivalCompleteness(
+  propertyId: string,
+  snapshot?: PropertySnapshot,
+): Promise<number> {
+  const property =
+    snapshot?.property ??
+    (await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        checkInStart: true,
+        checkInEnd: true,
+        checkOutTime: true,
+        primaryAccessMethod: true,
+        accessMethodsJson: true,
+      },
+    }));
   if (!property) return 0;
 
   const w = completenessRules.sections.arrival.weights;
@@ -219,12 +254,13 @@ export async function computeArrivalCompleteness(propertyId: string): Promise<nu
 
 export async function computeOverallReadiness(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<OverallReadiness> {
   const [spaces, amenities, systems, arrival] = await Promise.all([
-    computeSpacesCompleteness(propertyId),
-    computeAmenitiesCompleteness(propertyId),
-    computeSystemsCompleteness(propertyId),
-    computeArrivalCompleteness(propertyId),
+    computeSpacesCompleteness(propertyId, snapshot),
+    computeAmenitiesCompleteness(propertyId, snapshot),
+    computeSystemsCompleteness(propertyId, snapshot),
+    computeArrivalCompleteness(propertyId, snapshot),
   ]);
   const scores: SectionScores = { spaces, amenities, systems, arrival };
   const overall = clampPct((spaces + amenities + systems + arrival) / 4);

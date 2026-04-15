@@ -8,10 +8,10 @@
  * `PropertyDerived` table. Reads should go through `getDerived(propertyId)`,
  * which returns the cache row (recomputing on miss).
  *
- * All compute* helpers are split per concern so they can be unit-tested in
- * isolation. They each take `propertyId` and run their own queries — keep
- * them self-contained so call-sites can reach for one without paying for the
- * full recompute.
+ * All compute* helpers accept an optional `PropertySnapshot` — when the
+ * orchestrator has already loaded it, pass it through so the helpers don't
+ * re-query. They stay self-contained: calling without a snapshot runs the
+ * necessary queries and still works on its own (single-section reads + tests).
  */
 
 import { Prisma } from "@prisma/client";
@@ -25,6 +25,10 @@ import {
   computeOverallReadiness,
   type OverallReadiness,
 } from "@/lib/services/completeness.service";
+import {
+  loadPropertySnapshot,
+  type PropertySnapshot,
+} from "@/lib/services/property-snapshot";
 
 export interface SpaceCapacity {
   spaceId: string;
@@ -80,17 +84,20 @@ export interface DerivedPayload {
 
 export async function computeSleepingCapacity(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<SleepingCapacity> {
-  const spaces = await prisma.space.findMany({
-    where: { propertyId },
-    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      spaceType: true,
-      name: true,
-      beds: { select: { bedType: true, quantity: true, configJson: true } },
-    },
-  });
+  const spaces =
+    snapshot?.spaces ??
+    (await prisma.space.findMany({
+      where: { propertyId },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        spaceType: true,
+        name: true,
+        beds: { select: { bedType: true, quantity: true, configJson: true } },
+      },
+    }));
   const bySpace: SpaceCapacity[] = spaces.map((s) => ({
     spaceId: s.id,
     spaceType: s.spaceType,
@@ -114,14 +121,17 @@ export async function computeSleepingCapacity(
 
 export async function computeActualCounts(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<ActualCounts> {
-  const spaces = await prisma.space.findMany({
-    where: { propertyId },
-    select: {
-      spaceType: true,
-      beds: { select: { quantity: true } },
-    },
-  });
+  const spaces =
+    snapshot?.spaces ??
+    (await prisma.space.findMany({
+      where: { propertyId },
+      select: {
+        spaceType: true,
+        beds: { select: { quantity: true } },
+      },
+    }));
   return {
     actualBedroomsCount: spaces.filter((s) => s.spaceType === "sp.bedroom").length,
     actualBathroomsCount: spaces.filter((s) => s.spaceType === "sp.bathroom").length,
@@ -134,11 +144,14 @@ export async function computeActualCounts(
 
 export async function computeSpaceAvailability(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<SpaceAvailability> {
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { roomType: true, layoutKey: true },
-  });
+  const property =
+    snapshot?.property ??
+    (await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { roomType: true, layoutKey: true },
+    }));
   if (!property?.roomType) {
     return { required: [], recommended: [], optional: [], excluded: [] };
   }
@@ -147,22 +160,27 @@ export async function computeSpaceAvailability(
 
 export async function computeSystemCoverageBySpace(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<SystemCoverageBySpace> {
   // Only explicit affirmative overrides mean "this system covers this space".
   // `inherited` shouldn't be persisted; `override_no` is an explicit negation.
   // Filter at the DB and order results so the cached JSON is deterministic.
-  const coverages = await prisma.propertySystemCoverage.findMany({
-    where: { system: { propertyId }, mode: "override_yes" },
-    orderBy: [{ spaceId: "asc" }, { system: { systemKey: "asc" } }],
-    select: {
-      spaceId: true,
-      system: { select: { systemKey: true } },
-    },
-  });
+  const coverages =
+    snapshot?.coverages ??
+    (
+      await prisma.propertySystemCoverage.findMany({
+        where: { system: { propertyId }, mode: "override_yes" },
+        orderBy: [{ spaceId: "asc" }, { system: { systemKey: "asc" } }],
+        select: {
+          spaceId: true,
+          system: { select: { systemKey: true } },
+        },
+      })
+    ).map((c) => ({ spaceId: c.spaceId, systemKey: c.system.systemKey }));
   const bySpace: Record<string, string[]> = {};
   for (const c of coverages) {
     if (!bySpace[c.spaceId]) bySpace[c.spaceId] = [];
-    bySpace[c.spaceId].push(c.system.systemKey);
+    bySpace[c.spaceId].push(c.systemKey);
   }
   for (const spaceId of Object.keys(bySpace)) {
     bySpace[spaceId] = Array.from(new Set(bySpace[spaceId])).sort();
@@ -183,25 +201,38 @@ export async function computeSystemCoverageBySpace(
  */
 export async function computeAmenitiesEffectiveBySpace(
   propertyId: string,
+  snapshot?: PropertySnapshot,
 ): Promise<AmenitiesEffectiveBySpace> {
-  const [instances, systems, spaces] = await Promise.all([
-    prisma.propertyAmenityInstance.findMany({
-      where: { propertyId },
-      select: {
-        amenityKey: true,
-        placements: { select: { spaceId: true } },
-      },
-    }),
-    prisma.propertySystem.findMany({
-      where: { propertyId },
-      select: { systemKey: true },
-    }),
-    prisma.space.findMany({
-      where: { propertyId },
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-      select: { id: true },
-    }),
-  ]);
+  let instances: { amenityKey: string; placements: { spaceId: string }[] }[];
+  let systems: { systemKey: string }[];
+  let spaces: { id: string }[];
+  if (snapshot) {
+    instances = snapshot.amenityInstances.map((i) => ({
+      amenityKey: i.amenityKey,
+      placements: i.placements.map((p) => ({ spaceId: p.spaceId })),
+    }));
+    systems = snapshot.systems.map((s) => ({ systemKey: s.systemKey }));
+    spaces = snapshot.spaces.map((s) => ({ id: s.id }));
+  } else {
+    [instances, systems, spaces] = await Promise.all([
+      prisma.propertyAmenityInstance.findMany({
+        where: { propertyId },
+        select: {
+          amenityKey: true,
+          placements: { select: { spaceId: true } },
+        },
+      }),
+      prisma.propertySystem.findMany({
+        where: { propertyId },
+        select: { systemKey: true },
+      }),
+      prisma.space.findMany({
+        where: { propertyId },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        select: { id: true },
+      }),
+    ]);
+  }
 
   const bySpaceSets: Record<string, Set<string>> = {};
   const globalSet = new Set<string>();
@@ -250,6 +281,9 @@ async function buildPayload(
   propertyId: string,
   now: Date,
 ): Promise<DerivedPayload> {
+  // One fetch → reused across derived + completeness helpers. Without this
+  // every recompute fans out ~9 queries with heavy overlap on the same rows.
+  const snapshot = await loadPropertySnapshot(propertyId);
   const [
     sleepingCapacity,
     actualCounts,
@@ -258,12 +292,12 @@ async function buildPayload(
     amenitiesEffectiveBySpace,
     readiness,
   ] = await Promise.all([
-    computeSleepingCapacity(propertyId),
-    computeActualCounts(propertyId),
-    computeSpaceAvailability(propertyId),
-    computeSystemCoverageBySpace(propertyId),
-    computeAmenitiesEffectiveBySpace(propertyId),
-    computeOverallReadiness(propertyId),
+    computeSleepingCapacity(propertyId, snapshot),
+    computeActualCounts(propertyId, snapshot),
+    computeSpaceAvailability(propertyId, snapshot),
+    computeSystemCoverageBySpace(propertyId, snapshot),
+    computeAmenitiesEffectiveBySpace(propertyId, snapshot),
+    computeOverallReadiness(propertyId, snapshot),
   ]);
   return {
     propertyId,

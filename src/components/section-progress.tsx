@@ -1,12 +1,11 @@
-import { completenessRules } from "@/lib/taxonomy-loader";
+import completenessRules from "../../taxonomies/completeness_rules.json";
 
 interface SectionProgressProps {
   score: number;
 }
 
 /**
- * Tiny circular progress badge for sidebar nav items. Renders nothing when
- * `score` is undefined so sections without rules stay visually clean.
+ * Tiny circular progress badge for sidebar nav items.
  *
  * Color thresholds come from completeness_rules.json:
  *   ≥ publishable → green, ≥ usable → amber, otherwise red.

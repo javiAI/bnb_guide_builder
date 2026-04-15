@@ -13,12 +13,23 @@ export async function AppShell({ propertyId, propertyNickname, children }: AppSh
   let sectionScores: Record<string, number> | undefined;
   try {
     const derived = await getDerived(propertyId);
-    sectionScores = {
-      spaces: derived.readiness.scores.spaces,
-      amenities: derived.readiness.scores.amenities,
-      systems: derived.readiness.scores.systems,
-      access: derived.readiness.scores.arrival,
-    };
+    // Guard against older cached payloads that predate the readiness field —
+    // they would throw TypeError and silently drop all sidebar progress.
+    const scores = derived?.readiness?.scores;
+    if (
+      scores &&
+      typeof scores.spaces === "number" &&
+      typeof scores.amenities === "number" &&
+      typeof scores.systems === "number" &&
+      typeof scores.arrival === "number"
+    ) {
+      sectionScores = {
+        spaces: scores.spaces,
+        amenities: scores.amenities,
+        systems: scores.systems,
+        access: scores.arrival,
+      };
+    }
   } catch {
     sectionScores = undefined;
   }
