@@ -28,10 +28,9 @@ export interface EnrichedAmenityItem {
   detailsJson: Record<string, unknown> | null;
   /**
    * True for instances whose `instanceKey` is non-canonical (i.e. not
-   * "default" / "space:<id>"). Currently these are only produced by
-   * `createAmenityInstanceAction`, which isn't UI-wired yet, so this is
-   * forward-looking — it lets the UI badge custom instances when that
-   * surface lands.
+   * "default" / "space:<id>"). No current code path produces these —
+   * forward-looking flag so the UI can badge custom instances once a
+   * creation surface lands.
    */
   isCustomInstance: boolean;
 }
