@@ -65,6 +65,32 @@ export default async function PlaybookDetailPage({
     label: a.label,
   }));
 
+  // Ensure the currently-linked target is always selectable, even if the
+  // referenced system/amenity was removed or the space archived.
+  if (playbook.systemKey && !systemOptions.some((o) => o.value === playbook.systemKey)) {
+    const item = findSystemItem(playbook.systemKey);
+    systemOptions.unshift({
+      value: playbook.systemKey,
+      label: `${item?.label ?? playbook.systemKey} (ya no configurado)`,
+    });
+  }
+  if (playbook.amenityKey && !amenityOptions.some((o) => o.value === playbook.amenityKey)) {
+    const item = findAmenityItem(playbook.amenityKey);
+    amenityOptions.unshift({
+      value: playbook.amenityKey,
+      label: `${item?.label ?? playbook.amenityKey} (ya no configurado)`,
+    });
+  }
+  if (playbook.spaceId && !spaceOptions.some((o) => o.value === playbook.spaceId)) {
+    const archived = await prisma.space.findUnique({
+      where: { id: playbook.spaceId },
+      select: { id: true, name: true, propertyId: true },
+    });
+    if (archived && archived.propertyId === propertyId) {
+      spaceOptions.unshift({ value: archived.id, label: `${archived.name} (archivado)` });
+    }
+  }
+
   let initialTargetType: "none" | "system" | "amenity" | "space" | "access" = "none";
   let initialTargetKey = "";
   if (playbook.systemKey) {

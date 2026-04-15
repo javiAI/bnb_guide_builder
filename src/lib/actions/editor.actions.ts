@@ -933,14 +933,20 @@ export async function updatePlaybookAction(
   }
 
   const { targetType, targetKey, ...rest } = result.data;
-  const targetUpdate = {
-    systemKey: targetType === "system" ? (targetKey ?? null) : null,
-    amenityKey: targetType === "amenity" ? (targetKey ?? null) : null,
-    spaceId: targetType === "space" ? (targetKey ?? null) : null,
-    accessMethodKey: targetType === "access" ? (targetKey ?? null) : null,
-  };
 
-  if (targetUpdate.spaceId) {
+  // Only rewrite target columns when the caller explicitly sent targetType.
+  // Omitting the field leaves existing links untouched; targetType="none" clears them.
+  const targetUpdate =
+    targetType === undefined
+      ? {}
+      : {
+          systemKey: targetType === "system" ? (targetKey ?? null) : null,
+          amenityKey: targetType === "amenity" ? (targetKey ?? null) : null,
+          spaceId: targetType === "space" ? (targetKey ?? null) : null,
+          accessMethodKey: targetType === "access" ? (targetKey ?? null) : null,
+        };
+
+  if ("spaceId" in targetUpdate && targetUpdate.spaceId) {
     const targetSpace = await prisma.space.findUnique({
       where: { id: targetUpdate.spaceId },
       select: { propertyId: true },
