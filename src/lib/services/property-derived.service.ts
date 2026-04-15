@@ -78,6 +78,7 @@ export async function computeSleepingCapacity(
 ): Promise<SleepingCapacity> {
   const spaces = await prisma.space.findMany({
     where: { propertyId },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
     select: {
       id: true,
       spaceType: true,
@@ -142,22 +143,24 @@ export async function computeSpaceAvailability(
 export async function computeSystemCoverageBySpace(
   propertyId: string,
 ): Promise<SystemCoverageBySpace> {
+  // Only explicit affirmative overrides mean "this system covers this space".
+  // `inherited` shouldn't be persisted; `override_no` is an explicit negation.
+  // Filter at the DB and order results so the cached JSON is deterministic.
   const coverages = await prisma.propertySystemCoverage.findMany({
-    where: { system: { propertyId } },
+    where: { system: { propertyId }, mode: "override_yes" },
+    orderBy: [{ spaceId: "asc" }, { system: { systemKey: "asc" } }],
     select: {
       spaceId: true,
-      mode: true,
       system: { select: { systemKey: true } },
     },
   });
   const bySpace: Record<string, string[]> = {};
   for (const c of coverages) {
-    // Only explicit affirmative overrides mean "this system covers this space".
-    // `inherited` shouldn't be persisted; `override_no` is an explicit negation
-    // and must not be counted as coverage.
-    if (c.mode !== "override_yes") continue;
     if (!bySpace[c.spaceId]) bySpace[c.spaceId] = [];
     bySpace[c.spaceId].push(c.system.systemKey);
+  }
+  for (const spaceId of Object.keys(bySpace)) {
+    bySpace[spaceId] = Array.from(new Set(bySpace[spaceId])).sort();
   }
   return { bySpace };
 }
@@ -167,10 +170,11 @@ export async function computeSystemCoverageBySpace(
  * derived amenities whose source applies (e.g. `am.wifi` is effective in every
  * space when `sys.internet` exists).
  *
- * For now the derived-from-system case is the only one that fans out globally;
- * derived-from-space and derived-from-access remain space-local / property-wide.
- * This keeps the merge cheap and predictable; expand as more derivation kinds
- * land.
+ * Today this merge includes explicit amenity placements plus the
+ * derived-from-system case that fans out globally across all spaces.
+ * Other derivation kinds (derived-from-space, derived-from-access) are not
+ * included in this "effective by space" result yet and should be added here
+ * when that behavior is implemented.
  */
 export async function computeAmenitiesEffectiveBySpace(
   propertyId: string,
@@ -189,26 +193,26 @@ export async function computeAmenitiesEffectiveBySpace(
     }),
     prisma.space.findMany({
       where: { propertyId },
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       select: { id: true },
     }),
   ]);
 
-  const bySpace: Record<string, string[]> = {};
-  const global: string[] = [];
+  const bySpaceSets: Record<string, Set<string>> = {};
+  const globalSet = new Set<string>();
   const ensure = (spaceId: string) => {
-    if (!bySpace[spaceId]) bySpace[spaceId] = [];
-    return bySpace[spaceId];
+    if (!bySpaceSets[spaceId]) bySpaceSets[spaceId] = new Set();
+    return bySpaceSets[spaceId];
   };
 
   // 1. Configurable amenities — by placement, or global if none.
   for (const inst of instances) {
     if (inst.placements.length === 0) {
-      if (!global.includes(inst.amenityKey)) global.push(inst.amenityKey);
+      globalSet.add(inst.amenityKey);
       continue;
     }
     for (const p of inst.placements) {
-      const list = ensure(p.spaceId);
-      if (!list.includes(inst.amenityKey)) list.push(inst.amenityKey);
+      ensure(p.spaceId).add(inst.amenityKey);
     }
   }
 
@@ -217,15 +221,19 @@ export async function computeAmenitiesEffectiveBySpace(
   for (const item of amenityTaxonomy.items) {
     if (item.destination !== "derived_from_system") continue;
     if (!item.target || !systemKeys.has(item.target)) continue;
-    if (!global.includes(item.id)) global.push(item.id);
+    globalSet.add(item.id);
     // Also expose globally-derived items per-space so consumers can flatten
     // without re-merging the global list.
     for (const sp of spaces) {
-      const list = ensure(sp.id);
-      if (!list.includes(item.id)) list.push(item.id);
+      ensure(sp.id).add(item.id);
     }
   }
 
+  const bySpace: Record<string, string[]> = {};
+  for (const spaceId of Object.keys(bySpaceSets)) {
+    bySpace[spaceId] = Array.from(bySpaceSets[spaceId]).sort();
+  }
+  const global = Array.from(globalSet).sort();
   return { bySpace, global };
 }
 

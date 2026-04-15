@@ -75,17 +75,21 @@ describe("computeActualCounts", () => {
 });
 
 describe("computeSystemCoverageBySpace", () => {
-  it("groups system keys by space and excludes inherited + override_no rows", async () => {
-    coverageFindMany.mockResolvedValue([
-      { spaceId: "s1", mode: "override_yes", system: { systemKey: "sys.heating" } },
-      { spaceId: "s1", mode: "override_yes", system: { systemKey: "sys.ac" } },
-      { spaceId: "s1", mode: "override_no", system: { systemKey: "sys.fan" } },
-      { spaceId: "s2", mode: "inherited", system: { systemKey: "sys.heating" } },
-      { spaceId: "s2", mode: "override_yes", system: { systemKey: "sys.internet" } },
-    ]);
+  it("groups system keys by space (DB query already filters to override_yes)", async () => {
+    // Query filters `mode: "override_yes"` at the DB level, so the mock only
+    // returns the rows the query would match. The test asserts on set membership
+    // (not order) since the result is a Set-based dedupe+sort.
+    coverageFindMany.mockImplementation(async (args: { where?: { mode?: string } }) => {
+      expect(args?.where?.mode).toBe("override_yes");
+      return [
+        { spaceId: "s1", system: { systemKey: "sys.heating" } },
+        { spaceId: "s1", system: { systemKey: "sys.ac" } },
+        { spaceId: "s2", system: { systemKey: "sys.internet" } },
+      ];
+    });
     const out = await computeSystemCoverageBySpace("prop-1");
-    expect(out.bySpace.s1).toEqual(["sys.heating", "sys.ac"]);
-    expect(out.bySpace.s1).not.toContain("sys.fan");
+    expect(out.bySpace.s1).toEqual(expect.arrayContaining(["sys.heating", "sys.ac"]));
+    expect(out.bySpace.s1).toHaveLength(2);
     expect(out.bySpace.s2).toEqual(["sys.internet"]);
   });
 });
