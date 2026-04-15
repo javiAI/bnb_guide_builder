@@ -191,9 +191,9 @@ export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [
   { id: "am.hand_soap", destination: "amenity_configurable", note: "Jabón de manos baños/cocina — configurable como amenity." },
   { id: "am.dish_soap", destination: "amenity_configurable", note: "Lavavajillas a mano — configurable en cocina." },
   { id: "am.laundry_detergent", destination: "amenity_configurable", note: "Detergente lavadora — configurable cuando hay washer." },
-  { id: "am.air_purifier", destination: "amenity_configurable", note: "Purificador de aire — configurable por propiedad." },
+  { id: "am.air_purifier", destination: "amenity_configurable", note: "Purificador de aire — configurable según el espacio." },
   { id: "am.humidifier", destination: "amenity_configurable", note: "Humidificador — configurable según clima." },
-  { id: "am.dehumidifier", destination: "amenity_configurable", note: "Deshumidificador — configurable en entornos costeros/montañosos." },
+  { id: "am.dehumidifier", destination: "amenity_configurable", note: "Deshumidificador — configurable según el espacio y el entorno (p. ej., costero o montañoso)." },
   { id: "am.cork_screw", destination: "amenity_configurable", note: "Sacacorchos — configurable en cocina." },
   { id: "am.basic_spices", destination: "amenity_configurable", note: "Especias básicas — desagregado de cooking_basics." },
 ];

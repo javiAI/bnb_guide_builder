@@ -1609,7 +1609,7 @@
     {
       "id": "am.hand_soap",
       "label": "Jabón de manos",
-      "description": "Jabón específico para lavado de manos disponible en baños y cocina.",
+      "description": "Jabón específico para lavado de manos disponible en el baño.",
       "parent_id": "ag.bathroom",
       "recommended": false,
       "defaults": {},

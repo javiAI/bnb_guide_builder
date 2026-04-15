@@ -19,7 +19,7 @@ const PENDING_SYSTEM_TARGETS = new Set<string>([
   "sys.first_aid_kit",
 ]);
 
-describe("amenity audit destinations (branch 1B)", () => {
+describe("amenity audit destinations (branch 1B+7B)", () => {
   it("has exactly 150 amenity items", () => {
     expect(amenityTaxonomy.items).toHaveLength(150);
   });
