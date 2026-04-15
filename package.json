@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@react-pdf/renderer": "^4.5.0",
     "geo-tz": "^8.1.6",
     "maplibre-gl": "^5.22.0",
     "next": "15.5.14",

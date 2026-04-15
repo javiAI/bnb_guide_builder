@@ -288,22 +288,24 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 9B — `feat/guide-markdown-output`
 
-**Propósito**: renderer que convierte `GuideTree` a markdown + HTML estructurado. Soporta audience toggle (guest/ai/internal).
+**Propósito**: renderers que convierten `GuideTree` a markdown, HTML estructurado y PDF. Soporta audience toggle (guest/ai/internal). Todos los formatos incluyen `generatedAt` para auditoría.
 
 **Archivos a crear**:
-- `src/lib/renderers/guide-markdown.ts` — `renderMarkdown(tree): string`
-- `src/lib/renderers/guide-html.ts` — `renderHtml(tree): string` con sanitización
-- `src/app/api/properties/[propertyId]/guide/route.ts` — `GET ?audience=guest|ai|internal&format=md|html|json`
+- `src/lib/renderers/guide-html.ts` — `renderHtml(tree): string` con escape manual (`&<>"'`) — zero-dep, nunca emite HTML arbitrario desde values
+- `src/lib/renderers/guide-pdf.ts` — `renderPdf(tree): Promise<Buffer>` vía `@react-pdf/renderer` (server-side, sin headless browser)
+- `src/app/api/properties/[propertyId]/guide/route.ts` — `GET ?audience=guest|ai|internal&format=md|html|json|pdf`. Sesión requerida para `audience=internal|ai`; `audience=guest` público.
+- `src/components/guide-preview.tsx` — client component con selector audience (3) + format (md/html/json); PDF se expone como link de descarga directa
 
 **Archivos a modificar**:
-- `src/app/properties/[propertyId]/guest-guide/page.tsx` — reemplazar shell por preview real con selector de audiencia
-- `src/components/guide-preview.tsx` (nuevo) — muestra markdown con highlighting de secciones
+- `src/lib/renderers/guide-markdown.ts` — expandir stub de 9A: media como `![caption](url)`, children de items, header con `generatedAt`. Preservar estructura base (snapshots de 9A siguen válidos salvo header).
+- `src/app/properties/[propertyId]/guest-guide/page.tsx` — añadir `<GuidePreview />` encima del bloque draft/published (coexistencia con versionado; 9C rediseña)
 
 **Tests**:
-- `src/test/guide-markdown.test.ts` — markdown determinístico, snapshot testing por audiencia
-- `src/test/guide-html-sanitization.test.ts` — HTML escapado correctamente, no inyección desde campos free-text
+- `src/test/guide-markdown.test.ts` — expansión: media, children, generatedAt
+- `src/test/guide-html-sanitization.test.ts` — HTML escapado correctamente, `<script>` y atributos event se neutralizan
+- `src/test/guide-api-route.test.ts` — smoke del endpoint: 200 con cada format, 400 con audience/format inválido, Content-Type correcto
 
-**Criterio de done**: el endpoint `GET /api/properties/:id/guide?audience=guest&format=md` devuelve markdown sanitizado listo para publicar.
+**Criterio de done**: el endpoint `GET /api/properties/:id/guide?audience=guest&format=md` devuelve markdown sanitizado listo para publicar. PDF descargable desde el preview.
 
 **Preparación**:
 - **Contexto a leer**:

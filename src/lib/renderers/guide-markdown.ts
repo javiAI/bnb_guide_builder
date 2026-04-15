@@ -1,21 +1,43 @@
 /**
- * Stub markdown renderer for `GuideTree`. Produces a deterministic string
- * that end-to-end tests can snapshot before 9B ships the full renderer.
+ * Markdown renderer for `GuideTree` — deterministic, snapshot-friendly output.
  *
- * Output contract (9A only, 9B will expand):
+ * Output contract:
  *   # <propertyId> — audiencia: <audience>
+ *   _Generado: <generatedAt ISO>_
  *
  *   ## <section.label>
  *   - **<item.label>**: <item.value>
  *     - <field.label>: <field.value>
+ *     - ![caption](url)
+ *     - **<child.label>**: <child.value>
+ *       - <childField.label>: <childField.value>
  *   _Sin elementos. <emptyCtaDeepLink>_
  */
 
-import type { GuideTree } from "@/lib/types/guide-tree";
+import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
+
+function renderItem(item: GuideItem, depth: number, out: string[]): void {
+  const indent = "  ".repeat(depth);
+  const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
+  const value = item.value ? `: ${item.value}` : "";
+  out.push(`${indent}- **${item.label}**${deprecatedMark}${value}`);
+  const nestedIndent = "  ".repeat(depth + 1);
+  for (const f of item.fields) {
+    out.push(`${nestedIndent}- ${f.label}: ${f.value}`);
+  }
+  for (const m of item.media) {
+    const caption = m.caption ?? "";
+    out.push(`${nestedIndent}- ![${caption}](${m.url})`);
+  }
+  for (const child of item.children) {
+    renderItem(child, depth + 1, out);
+  }
+}
 
 export function renderMarkdown(tree: GuideTree): string {
   const out: string[] = [];
   out.push(`# ${tree.propertyId} — audiencia: ${tree.audience}`);
+  out.push(`_Generado: ${tree.generatedAt}_`);
   out.push("");
   for (const section of tree.sections) {
     out.push(`## ${section.label}`);
@@ -29,12 +51,7 @@ export function renderMarkdown(tree: GuideTree): string {
       continue;
     }
     for (const item of section.items) {
-      const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
-      const value = item.value ? `: ${item.value}` : "";
-      out.push(`- **${item.label}**${deprecatedMark}${value}`);
-      for (const f of item.fields) {
-        out.push(`  - ${f.label}: ${f.value}`);
-      }
+      renderItem(item, 0, out);
     }
     out.push("");
   }

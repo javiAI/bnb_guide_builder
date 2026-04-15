@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
+import { GuidePreview } from "@/components/guide-preview";
 import { CreateGuideVersionButton } from "./create-guide-version-button";
 import { GuideVersionDetail } from "./guide-version-detail";
 
@@ -44,6 +45,10 @@ export default async function GuestGuidePage({
       <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
         Previsualización y versionado de la guía publicable.
       </p>
+
+      <div className="mt-8">
+        <GuidePreview propertyId={propertyId} />
+      </div>
 
       <div className="mt-8">
         {/* Draft section */}
