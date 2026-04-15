@@ -80,6 +80,18 @@ describe("buildSubtypeDetailsSchema — real taxonomy", () => {
     expect(result.success).toBe(true);
   });
 
+  it("strips unknown keys from detailsJson (server-side hardening)", () => {
+    const subtype = findSubtype("am.coffee_maker")!;
+    const schema = buildSubtypeDetailsSchema(subtype.fields);
+    const result = schema.safeParse({
+      "coffee_maker.subtype": "drip",
+      "coffee_maker.instructions": "x",
+      "attacker.rogue_key": "DROP TABLE users;",
+    });
+    expect(result.success).toBe(true);
+    expect(result.data).not.toHaveProperty("attacker.rogue_key");
+  });
+
   it("rejects unknown enum values on am.coffee_maker", () => {
     const subtype = findSubtype("am.coffee_maker")!;
     const schema = buildSubtypeDetailsSchema(subtype.fields);

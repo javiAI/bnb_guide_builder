@@ -263,7 +263,9 @@ export function buildSubtypeDetailsSchema(
   for (const f of fields) {
     shape[f.id] = buildSubtypeFieldSchema(f);
   }
-  return z.object(shape).passthrough();
+  // .strip() drops keys not declared in the subtype taxonomy so a client
+  // can't persist arbitrary extra fields in detailsJson.
+  return z.object(shape).strip();
 }
 
 function buildSubtypeFieldSchema(field: SubtypeField): z.ZodTypeAny {

@@ -779,9 +779,19 @@ export async function updateAmenityAction(
     result.data.detailsJson = detailsResult.data as typeof result.data.detailsJson;
   }
 
-  // Persist detailsJson: empty object → null (clear), otherwise store as-is
-  const { detailsJson: validatedDetails, ...rest } = result.data;
-  const data: Prisma.PropertyAmenityInstanceUpdateInput = { ...rest };
+  // Do not trust client-provided subtypeKey — derive it from the authoritative
+  // amenityKey on the instance. Taxonomy maps amenity → subtype 1:1 keyed by
+  // amenity_id, so if a subtype exists we force subtypeKey to that amenityKey;
+  // otherwise we clear it.
+  const {
+    detailsJson: validatedDetails,
+    subtypeKey: _clientSubtypeKey,
+    ...rest
+  } = result.data;
+  const data: Prisma.PropertyAmenityInstanceUpdateInput = {
+    ...rest,
+    subtypeKey: subtype ? instance.amenityKey : null,
+  };
   if (validatedDetails !== undefined) {
     data.detailsJson =
       Object.keys(validatedDetails).length > 0
