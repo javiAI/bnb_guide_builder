@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
+import { recomputeAllInBackground } from "@/lib/services/property-derived.service";
 import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls } from "@/lib/utils";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
@@ -149,6 +150,7 @@ export async function savePropertyAction(
     data: result.data,
   });
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -217,6 +219,7 @@ export async function saveAccessAction(
     },
   });
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -339,6 +342,7 @@ export async function savePoliciesAction(
     data: { policiesJson: result.data },
   });
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -375,6 +379,7 @@ export async function createSpaceAction(
     await recomputePropertyCounts(tx, propertyId);
   });
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
@@ -406,6 +411,7 @@ export async function updateSpaceAction(
     data: result.data,
   });
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
@@ -428,6 +434,7 @@ export async function deleteSpaceAction(
     await recomputePropertyCounts(tx, space.propertyId);
   });
 
+  recomputeAllInBackground(space.propertyId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -494,6 +501,7 @@ export async function updateSpaceDetailsAction(
     },
   });
 
+  recomputeAllInBackground(space.propertyId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -561,6 +569,7 @@ export async function addBedAction(
     await recomputePropertyCounts(tx, space.propertyId);
   });
 
+  recomputeAllInBackground(space.propertyId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -598,6 +607,7 @@ export async function updateBedAction(
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
+  recomputeAllInBackground(bed.space.propertyId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -623,6 +633,7 @@ export async function deleteBedAction(
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
+  recomputeAllInBackground(bed.space.propertyId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -657,6 +668,7 @@ export async function updateBedConfigAction(
     data: { configJson },
   });
 
+  recomputeAllInBackground(bed.space.propertyId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -708,6 +720,7 @@ export async function toggleAmenityAction(
     });
   }
 
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}/amenities`);
   return { success: true };
 }
@@ -807,6 +820,7 @@ export async function updateAmenityAction(
     data,
   });
 
+  recomputeAllInBackground(instance.propertyId);
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }
@@ -1056,6 +1070,7 @@ export async function createSystemAction(
     }
     throw err;
   }
+  recomputeAllInBackground(propertyId);
   revalidatePath(`/properties/${propertyId}/systems`);
   return { success: true };
 }
@@ -1099,6 +1114,7 @@ export async function updateSystemAction(
       visibility: result.data.visibility,
     },
   });
+  recomputeAllInBackground(system.propertyId);
   revalidatePath(`/properties/${system.propertyId}/systems`);
   revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
   return { success: true };
@@ -1117,6 +1133,7 @@ export async function deleteSystemAction(
   if (!system) return { success: false, error: "Sistema no encontrado" };
 
   await prisma.propertySystem.delete({ where: { id: systemId } });
+  recomputeAllInBackground(system.propertyId);
   revalidatePath(`/properties/${system.propertyId}/systems`);
   revalidatePath(`/properties/${system.propertyId}/spaces`);
   return { success: true };
@@ -1158,6 +1175,7 @@ export async function updateSystemCoverageAction(
       update: { mode: result.data.mode, note: result.data.note },
     });
   }
+  recomputeAllInBackground(system.propertyId);
   revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
   revalidatePath(`/properties/${system.propertyId}/spaces`);
   return { success: true };
