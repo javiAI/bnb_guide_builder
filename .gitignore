@@ -54,3 +54,6 @@ __pycache__/
 
 # Misc
 *.log
+
+# Personal Claude notes
+docs/SKILLS_MCP_PLUGINS_GUIDE.md

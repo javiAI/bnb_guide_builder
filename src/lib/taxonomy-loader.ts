@@ -56,6 +56,7 @@ import systemSubtypesJson from "../../taxonomies/system_subtypes.json";
 import parkingOptionsJson from "../../taxonomies/parking_options.json";
 import accessibilityFeaturesJson from "../../taxonomies/accessibility_features.json";
 import propertyEnvironmentsJson from "../../taxonomies/property_environments.json";
+import completenessRulesJson from "../../taxonomies/completeness_rules.json";
 
 // ── Item-based taxonomies ──
 
@@ -82,6 +83,18 @@ export const spaceFeatures = spaceFeaturesJson as unknown as SpaceFeaturesFile;
 export const spaceAvailabilityRules = spaceAvailabilityRulesJson as unknown as SpaceAvailabilityRulesFile;
 export const systemTaxonomy = systemTaxonomyJson as unknown as SystemTaxonomyFile;
 export const systemSubtypes = systemSubtypesJson as unknown as SystemSubtypesTaxonomyFile;
+
+export interface CompletenessRulesFile {
+  version: string;
+  thresholds: { usableMinScore: number; publishableMinScore: number };
+  sections: {
+    spaces: { label: string; weights: Record<string, number> };
+    amenities: { label: string; weights: Record<string, number>; coreAmenityKeys: string[] };
+    systems: { label: string; weights: Record<string, number>; recommendedSystemKeys: string[] };
+    arrival: { label: string; weights: Record<string, number> };
+  };
+}
+export const completenessRules = completenessRulesJson as unknown as CompletenessRulesFile;
 
 // ── Grouped taxonomies ──
 
