@@ -16,6 +16,7 @@ import {
   resolveDerivation,
   type DerivationContext,
   type DerivationStatus,
+  type AccessMethodsShape,
 } from "@/lib/amenity-derivation-resolver";
 import { AmenitySelectorV2 } from "./amenity-selector-v2";
 
@@ -100,15 +101,11 @@ export default async function AmenitiesPage({
 
   // ── Build derivation context (shared by all derived items) ──
 
-  const accessShape = property.accessMethodsJson as
-    | { parkingTypes?: string[]; accessibilityFeatures?: string[] }
-    | null;
-
   const derivationCtx: DerivationContext = {
     propertyId,
     systems,
     spaces: property.spaces.map((s) => ({ spaceType: s.spaceType })),
-    accessMethodsJson: accessShape,
+    accessMethodsJson: (property.accessMethodsJson as AccessMethodsShape | null) ?? null,
   };
 
   // ── Partition taxonomy into configurable vs derived vs excluded ──

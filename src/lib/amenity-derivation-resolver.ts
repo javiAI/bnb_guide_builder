@@ -12,6 +12,18 @@ import {
 } from "./taxonomy-loader";
 import type { AmenityItem } from "./types/taxonomy";
 
+/**
+ * Shape of `Property.accessMethodsJson` as persisted by the Access page
+ * (see editor.actions.ts saveAccessAction). Tolerant — every level is
+ * optional because legacy / in-progress rows may be partial.
+ */
+export interface AccessMethodsShape {
+  building?: { methods?: string[] } | null;
+  unit?: { methods?: string[] } | null;
+  parking?: { types?: string[] } | null;
+  accessibility?: { features?: string[] } | null;
+}
+
 export interface DerivationContext {
   propertyId: string;
   systems: Array<{
@@ -19,11 +31,7 @@ export interface DerivationContext {
     detailsJson: unknown;
   }>;
   spaces: Array<{ spaceType: string }>;
-  /** Flat snapshot of `Property.accessMethodsJson` — tolerant shape. */
-  accessMethodsJson: {
-    parkingTypes?: string[];
-    accessibilityFeatures?: string[];
-  } | null;
+  accessMethodsJson: AccessMethodsShape | null;
 }
 
 export interface DerivationStatus {
@@ -45,6 +53,12 @@ function firstStringField(
     if (typeof v === "string" && v.trim().length > 0) return v;
   }
   return null;
+}
+
+/** `|`-separated target ids, e.g. "sp.studio|sp.loft". Returns [] when empty. */
+function splitTarget(target: string | undefined): string[] {
+  if (!target) return [];
+  return target.split("|").map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
 export function resolveDerivation(
@@ -74,14 +88,21 @@ export function resolveDerivation(
     }
 
     case "derived_from_space": {
-      // Presence is implied by a suitable space existing. Taxonomy uses
-      // `suggestedSpaceTypes` in the scope policy to hint which space types
-      // the amenity belongs to; if unset, any space counts.
+      // Active when the property has a space whose type is one of the
+      // relevant space types. Priority:
+      //   1. scopePolicy.suggestedSpaceTypes (fine-grained)
+      //   2. item.target (may encode "sp.a|sp.b" — taxonomy convention for
+      //      amenities like am.backyard → sp.garden, am.kitchenette →
+      //      sp.studio|sp.loft)
+      //   3. no constraint → any space counts (only for items where
+      //      suggestedSpaceTypes and target are both empty)
       const scope = getAmenityScopePolicy(item.id);
       const suggested = scope?.suggestedSpaceTypes ?? [];
-      const isActive = suggested.length === 0
+      const targetSpaceTypes = splitTarget(item.target);
+      const relevantTypes = suggested.length > 0 ? suggested : targetSpaceTypes;
+      const isActive = relevantTypes.length === 0
         ? ctx.spaces.length > 0
-        : ctx.spaces.some((s) => suggested.includes(s.spaceType));
+        : ctx.spaces.some((s) => relevantTypes.includes(s.spaceType));
       return {
         isActive,
         sourceLabel: "Espacios",
@@ -92,13 +113,22 @@ export function resolveDerivation(
 
     case "derived_from_access": {
       const target = item.target;
-      // Parking and accessibility keys live in distinct arrays; the `target`
-      // field disambiguates. Fall back to `false` when target missing.
-      const parking = ctx.accessMethodsJson?.parkingTypes ?? [];
-      const access = ctx.accessMethodsJson?.accessibilityFeatures ?? [];
-      const isActive = target
-        ? parking.includes(target) || access.includes(target)
-        : false;
+      const parkingTypes = ctx.accessMethodsJson?.parking?.types ?? [];
+      const accessibilityFeatures = ctx.accessMethodsJson?.accessibility?.features ?? [];
+      // Target semantics:
+      //   - "parking_options" → active when ANY parking type is configured
+      //     (matches the taxonomy convention used by am.free_parking)
+      //   - "accessibility_features" → active when ANY a11y feature is set
+      //   - concrete "pk.*" / "ax.*" id → exact inclusion check
+      //   - empty → inactive (no way to resolve)
+      let isActive = false;
+      if (target === "parking_options") {
+        isActive = parkingTypes.length > 0;
+      } else if (target === "accessibility_features") {
+        isActive = accessibilityFeatures.length > 0;
+      } else if (target) {
+        isActive = parkingTypes.includes(target) || accessibilityFeatures.includes(target);
+      }
       return {
         isActive,
         sourceLabel: "Acceso",

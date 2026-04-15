@@ -73,8 +73,7 @@ describe("resolveDerivation — derived_from_system", () => {
 });
 
 describe("resolveDerivation — derived_from_space", () => {
-  it("is active when any space exists (no suggestedSpaceTypes constraint)", () => {
-    // am.desk has no suggestedSpaceTypes — any space counts.
+  it("is active when any space exists (no constraint)", () => {
     const status = resolveDerivation(
       item({ id: "am.custom_space_item", destination: "derived_from_space" }),
       ctx({ spaces: [{ spaceType: "sp.bedroom" }] }),
@@ -90,39 +89,133 @@ describe("resolveDerivation — derived_from_space", () => {
     );
     expect(status!.isActive).toBe(false);
   });
+
+  it("uses target when suggestedSpaceTypes is empty (am.backyard → sp.garden)", () => {
+    // am.backyard is a real taxonomy item with target "sp.garden" and
+    // empty suggestedSpaceTypes — its badge must only activate when the
+    // property has a garden space.
+    const backyard = item({
+      id: "am.backyard",
+      destination: "derived_from_space",
+      target: "sp.garden",
+    });
+
+    const withGarden = resolveDerivation(
+      backyard,
+      ctx({ spaces: [{ spaceType: "sp.garden" }] }),
+    );
+    expect(withGarden!.isActive).toBe(true);
+
+    const withoutGarden = resolveDerivation(
+      backyard,
+      ctx({ spaces: [{ spaceType: "sp.bedroom" }] }),
+    );
+    expect(withoutGarden!.isActive).toBe(false);
+  });
+
+  it("parses |-separated target (am.patio_balcony → sp.balcony|sp.patio)", () => {
+    const patioBalcony = item({
+      id: "am.patio_balcony",
+      destination: "derived_from_space",
+      target: "sp.balcony|sp.patio",
+    });
+
+    const withBalcony = resolveDerivation(
+      patioBalcony,
+      ctx({ spaces: [{ spaceType: "sp.balcony" }] }),
+    );
+    expect(withBalcony!.isActive).toBe(true);
+
+    const withPatio = resolveDerivation(
+      patioBalcony,
+      ctx({ spaces: [{ spaceType: "sp.patio" }] }),
+    );
+    expect(withPatio!.isActive).toBe(true);
+
+    const withNeither = resolveDerivation(
+      patioBalcony,
+      ctx({ spaces: [{ spaceType: "sp.bedroom" }] }),
+    );
+    expect(withNeither!.isActive).toBe(false);
+  });
 });
 
 describe("resolveDerivation — derived_from_access", () => {
-  it("is active when parking target matches", () => {
-    const status = resolveDerivation(
-      item({ destination: "derived_from_access", target: "pk.free_on_premises" }),
-      ctx({ accessMethodsJson: { parkingTypes: ["pk.free_on_premises"] } }),
+  it("'parking_options' target is active when any parking type is configured", () => {
+    const freeParking = item({
+      id: "am.free_parking",
+      destination: "derived_from_access",
+      target: "parking_options",
+    });
+
+    const active = resolveDerivation(
+      freeParking,
+      ctx({ accessMethodsJson: { parking: { types: ["pk.free_on_premises"] } } }),
     );
-    expect(status!.isActive).toBe(true);
-    expect(status!.sourceUrl).toBe(`/properties/${propertyId}/access`);
-    expect(status!.sourceLabel).toBe("Acceso");
+    expect(active!.isActive).toBe(true);
+    expect(active!.sourceLabel).toBe("Acceso");
+    expect(active!.sourceUrl).toBe(`/properties/${propertyId}/access`);
+
+    const inactive = resolveDerivation(
+      freeParking,
+      ctx({ accessMethodsJson: { parking: { types: [] } } }),
+    );
+    expect(inactive!.isActive).toBe(false);
   });
 
-  it("is active when accessibility target matches", () => {
+  it("'accessibility_features' target is active when any a11y feature is set", () => {
+    const a11y = item({
+      destination: "derived_from_access",
+      target: "accessibility_features",
+    });
+
+    const active = resolveDerivation(
+      a11y,
+      ctx({
+        accessMethodsJson: { accessibility: { features: ["ax.step_free_entry"] } },
+      }),
+    );
+    expect(active!.isActive).toBe(true);
+
+    const inactive = resolveDerivation(
+      a11y,
+      ctx({ accessMethodsJson: { accessibility: { features: [] } } }),
+    );
+    expect(inactive!.isActive).toBe(false);
+  });
+
+  it("concrete pk.* target matches when included in parking.types", () => {
+    const status = resolveDerivation(
+      item({ destination: "derived_from_access", target: "pk.free_on_premises" }),
+      ctx({
+        accessMethodsJson: { parking: { types: ["pk.free_on_premises"] } },
+      }),
+    );
+    expect(status!.isActive).toBe(true);
+  });
+
+  it("concrete ax.* target matches when included in accessibility.features", () => {
     const status = resolveDerivation(
       item({ destination: "derived_from_access", target: "ax.step_free_entry" }),
-      ctx({ accessMethodsJson: { accessibilityFeatures: ["ax.step_free_entry"] } }),
+      ctx({
+        accessMethodsJson: { accessibility: { features: ["ax.step_free_entry"] } },
+      }),
     );
     expect(status!.isActive).toBe(true);
-  });
-
-  it("is inactive when target is not in either array", () => {
-    const status = resolveDerivation(
-      item({ destination: "derived_from_access", target: "pk.free_on_premises" }),
-      ctx({ accessMethodsJson: { parkingTypes: ["pk.paid_on_premises"] } }),
-    );
-    expect(status!.isActive).toBe(false);
   });
 
   it("tolerates null accessMethodsJson", () => {
     const status = resolveDerivation(
-      item({ destination: "derived_from_access", target: "pk.free_on_premises" }),
+      item({ destination: "derived_from_access", target: "parking_options" }),
       ctx({ accessMethodsJson: null }),
+    );
+    expect(status!.isActive).toBe(false);
+  });
+
+  it("tolerates missing parking/accessibility sub-keys", () => {
+    const status = resolveDerivation(
+      item({ destination: "derived_from_access", target: "parking_options" }),
+      ctx({ accessMethodsJson: { building: { methods: ["lockbox"] } } }),
     );
     expect(status!.isActive).toBe(false);
   });
@@ -130,7 +223,7 @@ describe("resolveDerivation — derived_from_access", () => {
   it("is inactive when target missing", () => {
     const status = resolveDerivation(
       item({ destination: "derived_from_access", target: undefined }),
-      ctx({ accessMethodsJson: { parkingTypes: ["pk.free_on_premises"] } }),
+      ctx({ accessMethodsJson: { parking: { types: ["pk.free_on_premises"] } } }),
     );
     expect(status!.isActive).toBe(false);
   });

@@ -22,13 +22,16 @@ describe("amenities page partitioning (3B)", () => {
     }
   });
 
-  it("moved items never appear in the configurable+derived union", () => {
-    const shown = amenityTaxonomy.items.filter(
-      (it) => !isAmenityMoved(it.id),
-    );
-    for (const it of shown) {
-      expect(isAmenityMoved(it.id)).toBe(false);
-    }
+  it("shown items equal the configurable+derived union", () => {
+    const shownIds = amenityTaxonomy.items
+      .filter((it) => !isAmenityMoved(it.id))
+      .map((it) => it.id)
+      .sort();
+    const configurableOrDerivedIds = amenityTaxonomy.items
+      .filter((it) => isAmenityConfigurable(it.id) || isAmenityDerived(it.id))
+      .map((it) => it.id)
+      .sort();
+    expect(shownIds).toEqual(configurableOrDerivedIds);
   });
 
   it("known moved samples are classified correctly", () => {
