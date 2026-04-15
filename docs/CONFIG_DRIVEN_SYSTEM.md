@@ -347,7 +347,7 @@ El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce u
 | Cambiar `type` de un campo | No | El registry resuelve el nuevo formatter |
 | Nueva sección del guide | Sí (1 entrada + 1 resolver) | Añadir a `guide_sections.json` + handler en el servicio; `guide-sections-coverage.test.ts` falla si desemparejados |
 | Quitar sección entera | No (borrar entrada) | El test de cobertura detecta resolvers huérfanos |
-| Nuevo `VisibilityLevel` en `visibility_levels.json` | No | `filterByAudience` lee la jerarquía dinámicamente |
+| Nuevo `VisibilityLevel` en `visibility_levels.json` | Sí (1 entrada en `src/lib/visibility.ts`) | `filterByAudience` delega en `canAudienceSee` de `visibility.ts`; añadir un nivel requiere actualizar `VISIBILITY_ORDER` allí |
 | Reordenar secciones | No | Campo `order` en `guide_sections.json` |
 
 **Invariantes garantizadas por tests**:

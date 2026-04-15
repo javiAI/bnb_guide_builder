@@ -215,7 +215,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 9A — `feat/guide-rendering-engine`
 
-**Propósito**: servicio `GuideRenderingService.compose(propertyId, audience)` que produce un árbol tipado `GuideTree` desde entidades canónicas, aplicando filtros de visibility por audiencia. **Resiliente a cambios de taxonomía y entidades** (ver "Principios de resiliencia" abajo).
+**Propósito**: función `composeGuide(propertyId, audience)` que produce un árbol tipado `GuideTree` desde entidades canónicas, aplicando filtros de visibility por audiencia. **Resiliente a cambios de taxonomía y entidades** (ver "Principios de resiliencia" abajo).
 
 **Decisiones cerradas en Fase -1 (2026-04-15)**:
 - **Fuente de datos**: `PropertyDerived` para flags/completeness; entidades canónicas (Property, Space, Amenity, etc.) para contenido.

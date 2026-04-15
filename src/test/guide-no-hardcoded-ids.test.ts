@@ -41,7 +41,7 @@ describe("guide-rendering.service — zero hardcoded IDs", () => {
     ).toEqual([]);
   });
 
-  it("does not include lowercase taxonomy IDs in switch or ternary branches", () => {
+  it("does not include lowercase taxonomy IDs in switch case branches", () => {
     const source = readFileSync(SERVICE_PATH, "utf8");
     // Rough secondary check: "case \"am.\"", "case \"sp.\"" etc.
     const caseRegex = /case\s+["`']([a-z]+)\.[a-z_][a-z0-9_]*["`']/g;
