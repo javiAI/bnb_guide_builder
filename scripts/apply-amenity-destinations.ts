@@ -4,9 +4,11 @@
  * Source of truth for the amenity audit (branch 1B, see docs/MASTER_PLAN.md).
  *
  * Applies `destination` (+ optional `target`) to every item in
- * `taxonomies/amenity_taxonomy.json`, verbatim from the audit table at
+ * `taxonomies/amenity_taxonomy.json`, seeded from the audit table at
  * `docs/deep_research_2/amenities_arquitecture.md` § "Auditoría completa
- * del catálogo actual (142 items)".
+ * del catálogo actual" (originally 142 items; extended in branch 7B with
+ * 8 additions from the "Propuesta de additions" section of the same doc,
+ * bringing the total to 150).
  *
  * Idempotent: running twice produces byte-identical output.
  *
@@ -39,8 +41,8 @@ export interface AmenityDestinationEntry {
 }
 
 /**
- * The canonical 142-item audit mapping.
- * DO NOT edit by hand — copy-pasted from the research doc. Changes must be
+ * The canonical 150-item audit mapping (142 original + 8 branch 7B additions).
+ * DO NOT edit by hand — sourced from the research doc. Changes must be
  * reflected in `docs/deep_research_2/amenities_arquitecture.md` first.
  */
 export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [

@@ -4,20 +4,21 @@ import {
   amenityTaxonomy,
   findAmenityItem,
   getAmenityGroupItems,
+  getAmenityScopePolicy,
   isAmenityConfigurable,
 } from "@/lib/taxonomy-loader";
 
 // Branch 7B — new configurable amenity items proposed in
 // docs/deep_research_2/amenities_arquitecture.md.
 const NEW_ITEMS = [
-  { id: "am.hand_soap", group: "ag.bathroom" },
-  { id: "am.dish_soap", group: "ag.kitchen_dining" },
-  { id: "am.laundry_detergent", group: "ag.bedroom_laundry" },
-  { id: "am.air_purifier", group: "ag.heating_cooling" },
-  { id: "am.humidifier", group: "ag.heating_cooling" },
-  { id: "am.dehumidifier", group: "ag.heating_cooling" },
-  { id: "am.cork_screw", group: "ag.kitchen_dining" },
-  { id: "am.basic_spices", group: "ag.kitchen_dining" },
+  { id: "am.hand_soap", group: "ag.bathroom", scopePolicy: "property_only" },
+  { id: "am.dish_soap", group: "ag.kitchen_dining", scopePolicy: "property_only" },
+  { id: "am.laundry_detergent", group: "ag.bedroom_laundry", scopePolicy: "property_only" },
+  { id: "am.air_purifier", group: "ag.heating_cooling", scopePolicy: "multi_instance" },
+  { id: "am.humidifier", group: "ag.heating_cooling", scopePolicy: "multi_instance" },
+  { id: "am.dehumidifier", group: "ag.heating_cooling", scopePolicy: "multi_instance" },
+  { id: "am.cork_screw", group: "ag.kitchen_dining", scopePolicy: "property_only" },
+  { id: "am.basic_spices", group: "ag.kitchen_dining", scopePolicy: "property_only" },
 ] as const;
 
 describe("amenity additions (branch 7B)", () => {
@@ -54,11 +55,19 @@ describe("amenity additions (branch 7B)", () => {
     expect(bathroom).toContain("am.hand_soap");
   });
 
-  it("every new item has Spanish label and description", () => {
+  it("every new item has a non-empty label and description", () => {
     for (const { id } of NEW_ITEMS) {
       const item = findAmenityItem(id);
       expect(item?.label).toBeTruthy();
       expect(item?.description).toBeTruthy();
+    }
+  });
+
+  it("every new item has the expected scopePolicy (required for UI surfacing)", () => {
+    for (const { id, scopePolicy } of NEW_ITEMS) {
+      const entry = getAmenityScopePolicy(id);
+      expect(entry, `${id} must have a scopePolicies entry`).toBeDefined();
+      expect(entry?.scopePolicy, `${id} scopePolicy`).toBe(scopePolicy);
     }
   });
 });
