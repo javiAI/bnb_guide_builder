@@ -57,9 +57,9 @@ export function CreateKnowledgeItemForm({ propertyId }: CreateKnowledgeItemFormP
 
         <label className="block">
           <span className="text-xs text-[var(--color-neutral-500)]">Visibilidad</span>
-          <select name="visibility" defaultValue="public" className={inputClass}>
-            <option value="public">Público</option>
-            <option value="booked_guest">Huésped confirmado</option>
+          <select name="visibility" defaultValue="guest" className={inputClass}>
+            <option value="guest">Huésped</option>
+            <option value="ai">AI</option>
             <option value="internal">Interno</option>
           </select>
         </label>

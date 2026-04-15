@@ -8,6 +8,20 @@ generator client {
 }
 
 // ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+// Visibility level for any property-scoped content. Ordered from broadest
+// audience (guest) to most restricted (sensitive). Consumers compare via
+// src/lib/visibility.ts VISIBILITY_ORDER.
+enum VisibilityLevel {
+  guest
+  ai
+  internal
+  sensitive
+}
+
+// ──────────────────────────────────────────────
 // Core context
 // ──────────────────────────────────────────────
 
@@ -203,7 +217,7 @@ model Contact {
   hasPropertyAccess      Boolean  @default(false) @map("has_property_access")
   internalNotes          String?  @map("internal_notes")
   guestVisibleNotes      String?  @map("guest_visible_notes")
-  visibility             String   @default("internal")
+  visibility             VisibilityLevel @default(internal)
   isPrimary              Boolean  @default(false) @map("is_primary")
   sortOrder              Int      @default(0) @map("sort_order")
   metadataJson           Json?    @map("metadata_json")
@@ -230,7 +244,7 @@ model Space {
   guestNotes    String?  @map("guest_notes")
   aiNotes       String?  @map("ai_notes")
   internalNotes String?  @map("internal_notes")
-  visibility    String   @default("public")
+  visibility    VisibilityLevel @default(guest)
   status        String   @default("active")
   createdBy     String   @default("user") @map("created_by")
   wizardSeedKey String?  @map("wizard_seed_key")
@@ -274,7 +288,7 @@ model PropertySystem {
   detailsJson   Json?    @map("details_json")
   opsJson       Json?    @map("ops_json")
   internalNotes String?  @map("internal_notes")
-  visibility    String   @default("public")
+  visibility    VisibilityLevel @default(guest)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -315,7 +329,7 @@ model PropertyAmenityInstance {
   aiInstructions       String?  @map("ai_instructions")
   internalNotes        String?  @map("internal_notes")
   troubleshootingNotes String?  @map("troubleshooting_notes")
-  visibility           String   @default("public")
+  visibility           VisibilityLevel @default(guest)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -355,7 +369,7 @@ model TroubleshootingPlaybook {
   guestStepsMd    String?  @map("guest_steps_md")
   internalStepsMd String?  @map("internal_steps_md")
   escalationRule  String?  @map("escalation_rule")
-  visibility      String   @default("public")
+  visibility      VisibilityLevel @default(guest)
   language        String   @default("es")
   systemKey       String?  @map("system_key")
   amenityKey      String?  @map("amenity_key")
@@ -387,7 +401,7 @@ model Incident {
   targetId    String?   @map("target_id")
   playbookId  String?   @map("playbook_id")
   notes       String?
-  visibility  String    @default("internal")
+  visibility  VisibilityLevel @default(internal)
   occurredAt  DateTime  @map("occurred_at")
   resolvedAt  DateTime? @map("resolved_at")
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -417,7 +431,7 @@ model LocalPlace {
   bestFor          String?   @map("best_for")
   seasonalNotes    String?   @map("seasonal_notes")
   verifiedAt       DateTime? @map("verified_at")
-  visibility       String    @default("public")
+  visibility       VisibilityLevel @default(guest)
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -494,7 +508,7 @@ model MediaAsset {
   mimeType         String   @map("mime_type")
   language         String   @default("es")
   caption          String?
-  visibility       String   @default("public")
+  visibility       VisibilityLevel @default(guest)
   status           String   @default("pending")
   uploadedByUserId String?  @map("uploaded_by_user_id")
   createdAt        DateTime @default(now()) @map("created_at")
@@ -552,7 +566,7 @@ model KnowledgeItem {
   topic           String
   bodyMd          String   @map("body_md")
   language        String   @default("es")
-  visibility      String   @default("public")
+  visibility      VisibilityLevel @default(guest)
   confidenceScore Float?   @map("confidence_score")
   journeyStage    String?  @map("journey_stage")
   lastVerifiedAt  DateTime? @map("last_verified_at")
@@ -631,7 +645,7 @@ model GuideSectionItem {
   id             String   @id @default(cuid())
   guideSectionId String   @map("guide_section_id")
   contentMd      String   @map("content_md")
-  visibility     String   @default("public")
+  visibility     VisibilityLevel @default(guest)
   sortOrder      Int      @default(0) @map("sort_order")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")

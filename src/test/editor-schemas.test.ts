@@ -196,7 +196,7 @@ describe("Space schemas", () => {
   it("updateSpaceSchema accepts visibility field", () => {
     const result = updateSpaceSchema.safeParse({
       name: "Salón reformado",
-      visibility: "booked_guest",
+      visibility: "ai",
     });
     expect(result.success).toBe(true);
   });
@@ -290,7 +290,7 @@ describe("Amenity schemas", () => {
     const result = updateAmenitySchema.safeParse({
       subtypeKey: "drip",
       guestInstructions: "Presionar el botón rojo",
-      visibility: "public",
+      visibility: "guest",
     });
     expect(result.success).toBe(true);
   });
@@ -534,8 +534,8 @@ describe("System schemas", () => {
     expect(result.success).toBe(false);
   });
 
-  it("updateSystemSchema accepts valid public visibility", () => {
-    const result = updateSystemSchema.safeParse({ visibility: "public" });
+  it("updateSystemSchema accepts valid guest visibility", () => {
+    const result = updateSystemSchema.safeParse({ visibility: "guest" });
     expect(result.success).toBe(true);
   });
 
@@ -545,7 +545,7 @@ describe("System schemas", () => {
   });
 
   it("updateSystemSchema rejects invalid visibility", () => {
-    const result = updateSystemSchema.safeParse({ visibility: "guest" });
+    const result = updateSystemSchema.safeParse({ visibility: "public" });
     expect(result.success).toBe(false);
   });
 

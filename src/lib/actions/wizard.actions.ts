@@ -499,7 +499,7 @@ export async function completeWizardAction(
           propertyId: prop.id,
           systemKey: "sys.internet",
           detailsJson,
-          visibility: "public",
+          visibility: "guest",
         },
       });
     }

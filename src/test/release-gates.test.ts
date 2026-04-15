@@ -54,7 +54,7 @@ describe("Canonical screens exist", () => {
 describe("No secret in render configs", () => {
   it("no render config allows secret visibility", () => {
     for (const config of RENDER_CONFIGS) {
-      expect(config.maxVisibility).not.toBe("secret");
+      expect(config.maxVisibility).not.toBe("sensitive");
     }
   });
 });

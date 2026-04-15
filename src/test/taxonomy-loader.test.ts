@@ -19,7 +19,7 @@ import {
   troubleshootingTaxonomy,
   messagingTouchpoints,
   guideOutputs,
-  visibilityLevels,
+  visibilityLevelsTaxonomy,
   mediaRequirements,
   dynamicFieldRules,
   automationChannels,
@@ -67,7 +67,7 @@ describe("Taxonomy loaders", () => {
     expect(troubleshootingTaxonomy.file).toBe("troubleshooting_taxonomy.json");
     expect(messagingTouchpoints.file).toBe("messaging_touchpoints.json");
     expect(guideOutputs.file).toBe("guide_outputs.json");
-    expect(visibilityLevels.file).toBe("visibility_levels.json");
+    expect(visibilityLevelsTaxonomy.file).toBe("visibility_levels.json");
     expect(mediaRequirements.file).toBe("media_requirements.json");
     expect(dynamicFieldRules.file).toBe("dynamic_field_rules.json");
     expect(automationChannels.file).toBe("automation_channels.json");
@@ -82,7 +82,7 @@ describe("Taxonomy loaders", () => {
       propertyTypes, roomTypes, spaceTypes, spaceAvailabilityRules, spaceFeatures, bedTypes,
       accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, propertyEnvironments,
       policyTaxonomy, amenityTaxonomy, amenitySubtypes, systemTaxonomy, systemSubtypes,
-      troubleshootingTaxonomy, messagingTouchpoints, guideOutputs, visibilityLevels,
+      troubleshootingTaxonomy, messagingTouchpoints, guideOutputs, visibilityLevelsTaxonomy,
       mediaRequirements, dynamicFieldRules, automationChannels, mediaAssetRoles, reviewReasons,
       contactTypes, spanishProvinces,
     ];

@@ -140,13 +140,13 @@ export default async function AnalyticsPage({
 
   // Visibility mismatches — knowledge items with no visibility set (shouldn't happen but check)
   for (const ki of knowledgeItems) {
-    if (ki.visibility === "secret") {
+    if (ki.visibility === "sensitive") {
       reviewQueue.push({
         reasonId: "visibility_mismatch",
         reasonLabel: "Visibilidad incorrecta",
         entityType: "KnowledgeItem",
         entityId: ki.id,
-        entityLabel: `"${ki.topic}" tiene visibilidad 'secret' (no permitido)`,
+        entityLabel: `"${ki.topic}" tiene visibilidad 'sensible' (no permitido)`,
         tone: "danger",
       });
     }

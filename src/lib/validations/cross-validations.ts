@@ -176,7 +176,7 @@ export function validateVisibilityLeaks(
 ): ValidationFinding[] {
   const findings: ValidationFinding[] = [];
   for (const inst of ctx.amenityInstances) {
-    if (inst.visibility !== "public" && inst.visibility !== "booked_guest") continue;
+    if (inst.visibility !== "guest" && inst.visibility !== "ai") continue;
     const subtype = inst.subtypeKey ? findSubtype(inst.subtypeKey) : undefined;
     if (!subtype) continue;
     const details = (inst.detailsJson ?? {}) as Record<string, unknown>;

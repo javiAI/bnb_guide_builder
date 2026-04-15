@@ -12,6 +12,8 @@
  * ensuring consistency across all output surfaces.
  */
 
+import type { VisibilityLevel } from "@/lib/visibility";
+
 export type OutputTarget = "guest_guide" | "ai_view" | "internal" | "messaging";
 
 export interface RenderConfig {
@@ -20,7 +22,7 @@ export interface RenderConfig {
   /** Which output targets include this section */
   targets: OutputTarget[];
   /** Visibility level constraint */
-  maxVisibility: "public" | "booked_guest" | "internal";
+  maxVisibility: VisibilityLevel;
   /** Whether to include media assets in output */
   includeMedia: boolean;
   /** Guide section type for composition */
@@ -33,7 +35,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "property",
     targets: ["guest_guide", "ai_view", "internal"],
-    maxVisibility: "public",
+    maxVisibility: "guest",
     includeMedia: true,
     guideSectionType: "property_overview",
     knowledgeCategory: "property_info",
@@ -41,7 +43,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "access",
     targets: ["guest_guide", "ai_view", "internal", "messaging"],
-    maxVisibility: "booked_guest",
+    maxVisibility: "ai",
     includeMedia: true,
     guideSectionType: "arrival",
     knowledgeCategory: "check_in",
@@ -56,7 +58,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "policies",
     targets: ["guest_guide", "ai_view", "internal", "messaging"],
-    maxVisibility: "booked_guest",
+    maxVisibility: "ai",
     includeMedia: false,
     guideSectionType: "house_rules",
     knowledgeCategory: "policies",
@@ -64,7 +66,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "spaces",
     targets: ["guest_guide", "ai_view", "internal"],
-    maxVisibility: "public",
+    maxVisibility: "guest",
     includeMedia: true,
     guideSectionType: "spaces",
     knowledgeCategory: "spaces",
@@ -72,7 +74,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "systems",
     targets: ["guest_guide", "ai_view", "internal"],
-    maxVisibility: "public",
+    maxVisibility: "guest",
     includeMedia: false,
     guideSectionType: "systems",
     knowledgeCategory: "systems",
@@ -80,7 +82,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "amenities",
     targets: ["guest_guide", "ai_view", "internal"],
-    maxVisibility: "public",
+    maxVisibility: "guest",
     includeMedia: true,
     guideSectionType: "amenities",
     knowledgeCategory: "amenities",
@@ -88,7 +90,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "troubleshooting",
     targets: ["ai_view", "internal", "messaging"],
-    maxVisibility: "booked_guest",
+    maxVisibility: "ai",
     includeMedia: true,
     guideSectionType: "troubleshooting",
     knowledgeCategory: "troubleshooting",
@@ -96,7 +98,7 @@ export const RENDER_CONFIGS: RenderConfig[] = [
   {
     sectionKey: "local-guide",
     targets: ["guest_guide", "ai_view"],
-    maxVisibility: "public",
+    maxVisibility: "guest",
     includeMedia: true,
     guideSectionType: "local_recommendations",
     knowledgeCategory: "local_guide",

@@ -92,8 +92,8 @@ export function KnowledgeItemCard({
             <label className="block">
               <span className="text-xs text-[var(--color-neutral-500)]">Visibilidad</span>
               <select name="visibility" defaultValue={item.visibility} className={inputClass}>
-                <option value="public">Público</option>
-                <option value="booked_guest">Huésped confirmado</option>
+                <option value="guest">Huésped</option>
+                <option value="ai">AI</option>
                 <option value="internal">Interno</option>
               </select>
             </label>

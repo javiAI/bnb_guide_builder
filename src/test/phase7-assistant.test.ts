@@ -17,22 +17,22 @@ describe("Assistant ask schema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.language).toBe("es");
-      expect(result.data.audience).toBe("public");
+      expect(result.data.audience).toBe("guest");
     }
   });
 
-  it("accepts audience booked_guest", () => {
+  it("accepts audience ai", () => {
     const result = askRequestSchema.safeParse({
       question: "¿Código de la puerta?",
-      audience: "booked_guest",
+      audience: "ai",
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects secret audience", () => {
+  it("rejects invalid audience", () => {
     const result = askRequestSchema.safeParse({
       question: "test",
-      audience: "secret",
+      audience: "unknown",
     });
     expect(result.success).toBe(false);
   });
@@ -75,7 +75,7 @@ describe("Conversation schema", () => {
   it("accepts valid conversation", () => {
     const result = createConversationSchema.safeParse({
       actorType: "guest",
-      audience: "public",
+      audience: "guest",
       language: "es",
     });
     expect(result.success).toBe(true);
@@ -87,7 +87,7 @@ describe("Conversation schema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.audience).toBe("public");
+      expect(result.data.audience).toBe("guest");
       expect(result.data.language).toBe("es");
     }
   });

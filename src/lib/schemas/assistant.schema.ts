@@ -1,13 +1,12 @@
 import { z } from "zod";
+import { visibilityLevels } from "@/lib/visibility";
 
 // ── Ask endpoint ──
 
 export const askRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(visibilityLevels).default("guest"),
   journeyStage: z.string().optional(),
   conversationId: z.string().optional(),
 });
@@ -39,9 +38,7 @@ export type AskResponse = z.infer<typeof askResponseSchema>;
 export const debugRetrieveRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(visibilityLevels).default("guest"),
   journeyStage: z.string().optional(),
 });
 
@@ -63,9 +60,7 @@ export type RetrievalCandidate = z.infer<typeof retrievalCandidateSchema>;
 
 export const createConversationSchema = z.object({
   actorType: z.enum(["guest", "operator", "system"]),
-  audience: z
-    .enum(["public", "booked_guest", "internal"])
-    .default("public"),
+  audience: z.enum(visibilityLevels).default("guest"),
   language: z.string().default("es"),
 });
 

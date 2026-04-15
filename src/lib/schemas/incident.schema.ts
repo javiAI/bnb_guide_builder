@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { visibilityLevels } from "@/lib/visibility";
 
 export const incidentStatuses = ["open", "in_progress", "resolved", "cancelled"] as const;
 export const incidentSeverities = ["low", "medium", "high", "critical"] as const;
@@ -27,7 +28,7 @@ export const createIncidentSchema = z
     targetId: z.string().optional(),
     playbookId: z.string().optional(),
     notes: z.string().optional(),
-    visibility: z.string().optional(),
+    visibility: z.enum(visibilityLevels).optional(),
     occurredAt: dateString,
   })
   .refine(
@@ -44,7 +45,7 @@ export const updateIncidentSchema = z
     targetId: z.string().optional(),
     playbookId: z.string().optional(),
     notes: z.string().optional(),
-    visibility: z.string().optional(),
+    visibility: z.enum(visibilityLevels).optional(),
     occurredAt: dateString,
     resolvedAt: optionalDateString,
   })

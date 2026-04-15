@@ -36,11 +36,7 @@ interface GuideVersionDetailProps {
   propertyId: string;
 }
 
-const VISIBILITY_LABEL: Record<string, string> = {
-  public: "Público",
-  booked_guest: "Huésped confirmado",
-  internal: "Interno",
-};
+import { VISIBILITY_LABEL, normaliseVisibility } from "@/lib/visibility";
 
 export function GuideVersionDetail({ version, propertyId }: GuideVersionDetailProps) {
   const [publishState, publishAction, publishPending] = useActionState<ActionResult | null, FormData>(
@@ -155,9 +151,9 @@ function GuideSectionBlock({
         <div className="mt-2 flex items-end gap-3">
           <label className="block">
             <span className="text-xs text-[var(--color-neutral-500)]">Visibilidad</span>
-            <select name="visibility" defaultValue="public" className={inputClass}>
-              <option value="public">Público</option>
-              <option value="booked_guest">Huésped confirmado</option>
+            <select name="visibility" defaultValue="guest" className={inputClass}>
+              <option value="guest">Huésped</option>
+              <option value="ai">AI</option>
               <option value="internal">Interno</option>
             </select>
           </label>
@@ -192,7 +188,7 @@ function SectionItemRow({
       <div className="min-w-0 flex-1">
         <p className="text-sm text-[var(--foreground)]">{item.contentMd}</p>
         <span className="mt-1 text-xs text-[var(--color-neutral-400)]">
-          {VISIBILITY_LABEL[item.visibility] ?? item.visibility}
+          {VISIBILITY_LABEL[normaliseVisibility(item.visibility)]}
         </span>
       </div>
       <form action={deleteAction} className="ml-3 shrink-0">

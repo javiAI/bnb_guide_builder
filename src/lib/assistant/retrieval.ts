@@ -1,23 +1,24 @@
 import { prisma } from "@/lib/db";
 import type { RetrievalCandidate } from "@/lib/schemas/assistant.schema";
+import { type VisibilityLevel, VISIBILITY_ORDER } from "@/lib/visibility";
 
 /**
- * Visibility hierarchy: public < booked_guest < internal.
- * A query for audience "booked_guest" can see public + booked_guest.
- * A query for "internal" can see all three.
- * Secret is NEVER included.
+ * Visibility hierarchy: guest < ai < internal < sensitive.
+ * An audience sees everything at its own level or below.
+ * Sensitive is NEVER returned to guest/ai/internal queries — it requires explicit sensitive audience.
  */
-const VISIBILITY_HIERARCHY: Record<string, string[]> = {
-  public: ["public"],
-  booked_guest: ["public", "booked_guest"],
-  internal: ["public", "booked_guest", "internal"],
-};
+function allowedVisibilitiesFor(audience: VisibilityLevel): VisibilityLevel[] {
+  const audienceOrder = VISIBILITY_ORDER[audience];
+  return (Object.keys(VISIBILITY_ORDER) as VisibilityLevel[]).filter(
+    (v) => VISIBILITY_ORDER[v] <= audienceOrder && v !== "sensitive",
+  );
+}
 
 export interface RetrievalOptions {
   propertyId: string;
   question: string;
   language: string;
-  audience: string;
+  audience: VisibilityLevel;
   journeyStage?: string;
 }
 
@@ -34,7 +35,7 @@ export interface RetrievalOptions {
 export async function retrieveCandidates(
   opts: RetrievalOptions,
 ): Promise<RetrievalCandidate[]> {
-  const allowedVisibilities = VISIBILITY_HIERARCHY[opts.audience] ?? ["public"];
+  const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
   // Step 1-2: DB query with visibility and language filters
   const where: Record<string, unknown> = {
@@ -147,8 +148,7 @@ export async function buildAnswer(
   }
 
   // Build answer from relevant items
-  const allowedVisibilities =
-    VISIBILITY_HIERARCHY[opts.audience] ?? ["public"];
+  const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
   const relevantItems = await prisma.knowledgeItem.findMany({
     where: {

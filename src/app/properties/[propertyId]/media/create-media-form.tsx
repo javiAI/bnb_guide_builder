@@ -2,12 +2,12 @@
 
 import { useActionState } from "react";
 import { createMediaAssetAction, type ActionResult } from "@/lib/actions/editor.actions";
-import { mediaAssetRoles, getItems, visibilityLevels } from "@/lib/taxonomy-loader";
+import { mediaAssetRoles, getItems, visibilityLevelsTaxonomy } from "@/lib/taxonomy-loader";
 
 const roles = getItems(mediaAssetRoles);
-const visibilityOptions = getItems(visibilityLevels).filter(
-  (v) => v.id !== "secret",
-);
+const visibilityOptions = getItems(visibilityLevelsTaxonomy)
+  .filter((v) => v.id !== "vis.sensitive")
+  .map((v) => ({ value: v.id.replace(/^vis\./, ""), label: v.label }));
 
 interface CreateMediaFormProps {
   propertyId: string;
@@ -71,9 +71,9 @@ export function CreateMediaForm({ propertyId }: CreateMediaFormProps) {
 
         <label className="block">
           <span className="text-xs text-[var(--color-neutral-500)]">Visibilidad</span>
-          <select name="visibility" defaultValue="public" className={inputClass}>
+          <select name="visibility" defaultValue="guest" className={inputClass}>
             {visibilityOptions.map((v) => (
-              <option key={v.id} value={v.id}>{v.label}</option>
+              <option key={v.value} value={v.value}>{v.label}</option>
             ))}
           </select>
         </label>
