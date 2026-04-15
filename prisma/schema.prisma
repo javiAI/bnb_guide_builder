@@ -118,11 +118,27 @@ model Property {
   secretReferences      SecretReference[]
   auditLogs             AuditLog[]
   contacts              Contact[]
+  derived               PropertyDerived?
 
   @@unique([workspaceId, propertyNickname])
   @@index([workspaceId])
   @@index([status])
   @@map("properties")
+}
+
+// ──────────────────────────────────────────────
+// Derived state cache (Phase 4A)
+// ──────────────────────────────────────────────
+
+model PropertyDerived {
+  propertyId   String   @id @map("property_id")
+  derivedJson  Json     @map("derived_json")
+  recomputedAt DateTime @default(now()) @map("recomputed_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_derived")
 }
 
 // ──────────────────────────────────────────────
