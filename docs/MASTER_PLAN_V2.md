@@ -1,12 +1,14 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-15
+Versión: 2026-04-15 (rev. 2)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
 Alcance: 7 fases, 24 ramas, ~24 PRs independientes y revisables
 
+Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.9).
+
 ---
 
-## Principios de ejecución
+## 1. Principios de ejecución
 
 Heredados del v1 y reconfirmados:
 
@@ -17,10 +19,90 @@ Heredados del v1 y reconfirmados:
 5. **Revisión Copilot en cada PR** (`/review-pr-comments`).
 6. **No backward-compat silencioso**. Tras una migración validada, el código legacy se borra en la misma rama o en la siguiente.
 7. **Visibility first**: cualquier feature que toque output (guide/messaging/assistant) pasa por el filtro de visibility antes de considerarse feature-complete.
+8. **Actualizar docs existentes, no crear docs nuevos**. Si algo cabe en un doc operativo actual, va ahí. Solo crear doc nuevo si no hay hueco razonable.
 
 ---
 
-## Resumen de fases
+## 2. Protocolo de ejecución por rama
+
+Cada una de las 24 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
+
+### 2.1 Fase -1 — Revisión pre-rama (gate de aprobación)
+
+**Obligatorio**. Antes de crear la rama — antes incluso de correr `git checkout -b` — Claude debe producir y esperar aprobación explícita del usuario sobre:
+
+1. **Resumen técnico**: qué archivos se crean/modifican, qué modelos Prisma cambian, qué tests se añaden, qué riesgos concretos (migraciones, breaking APIs, nuevas deps). Nivel de detalle suficiente para revisar arquitectura sin abrir código.
+2. **Resumen conceptual**: qué cambia para el usuario final (lo que nota al usar la app), cómo mejora el producto, qué feature nueva introduce, qué problema real resuelve. En lenguaje de producto, no técnico.
+3. **Ambigüedades detectadas**: listar preguntas concretas que el plan no resuelve (ej. "¿copy del empty state?", "¿mostrar X solo a hosts o también a co-anfitriones?", "¿qué pasa si el usuario borra Y mientras Z está activo?"). Si no hay ambigüedades, decirlo explícitamente.
+4. **Alternativas y mejoras sugeridas**: Claude propone activamente 1-3 alternativas o mejoras al plan original (scope ampliado/reducido, enfoque distinto, dependencias que conviene sacar a rama separada, etc.) y pregunta cuáles incluir.
+5. **Iteración**: el usuario puede pedir ajustes. Repetir el ciclo (nuevo resumen técnico/conceptual + nuevas preguntas) hasta aprobación.
+6. **Actualización de documentación si hay cambios acordados**: si la iteración modifica el alcance, actualizar `MASTER_PLAN_V2.md` de la rama (y otros docs relevantes) **antes** de crear la rama. Si el cambio es grande, seguir §2.8 (PR de plan aparte antes de empezar).
+7. **Aprobación explícita del usuario** ("ok, adelante", "procede", equivalente). Sin ella, no se pasa a Fase 0.
+
+Este gate no se salta nunca, ni siquiera en ramas "triviales". Si la rama es realmente trivial, el resumen será corto — pero existe.
+
+### 2.2 Fase 0 — Antes de crear la rama
+
+1. Leer la sección **entera** correspondiente de este documento (`MASTER_PLAN_V2.md § Rama XY`).
+2. Leer los archivos/rangos listados en **"Contexto a leer"** de esa rama.
+3. Si la rama indica `Memoria previa: requires X`, cargar ese contexto explícitamente antes de empezar.
+4. **Opcional** — `/firecrawl-search "<tema>"` si la rama implica decisiones de UX/dominio donde hay best practices externas relevantes.
+5. **Opcional** — `/excalidraw-diagram` si la rama requiere diseño visual previo (ej: 9A rendering tree, 11B pipeline assistant).
+6. **Opcional** — `Agent Plan` si la arquitectura interna de la rama tiene múltiples caminos razonables.
+
+### 2.3 Fase 1 — Al crear la rama
+
+```bash
+git checkout main && git pull origin main
+git checkout -b <rama-name>
+```
+
+### 2.4 Fase 2 — Durante implementación
+
+- **Context7** (MCP, auto) — verificar APIs de librerías (Prisma, Next.js, React, Zod, pgvector). Se activa solo; no hay que invocar nada.
+- **Agent Explore** — búsquedas cross-archivo que superen 3 queries o necesiten síntesis.
+- **Agent code-explorer** — trazar flujos complejos en el código existente.
+- **Agent code-architect** — diseñar subsistemas con múltiples puntos de integración.
+- **`/playwright-cli`** — si la rama toca UI y necesitas verificar estado visual en `localhost:3000`.
+
+### 2.5 Fase 3 — Antes de cada commit
+
+- **`/pre-commit-review`** (hook `PreToolUse:Bash` lo recuerda automático).
+- `npx prisma generate && npx tsc --noEmit` — la fuente de verdad TS.
+- `npx vitest run <affected-tests>`.
+
+### 2.6 Fase 4 — Antes de abrir PR
+
+- **`/simplify`** — si se escribió volumen significativo de código nuevo. Detecta duplicación y oportunidades de reutilización antes de que lo haga Copilot.
+- Verificar que el push llegó al remote: `git ls-remote origin <rama>` (el proxy rtk a veces falla silente, ver CLAUDE.md).
+
+### 2.7 Fase 5 — Con la PR abierta
+
+- **`/review-pr-comments`** tras feedback de Copilot (u otros reviewers). Triage por valor/esfuerzo antes de aplicar.
+
+### 2.8 Fase 6 — Post-merge
+
+1. `git checkout main && git pull origin main --ff-only`.
+2. **Actualizar los docs listados en "Docs a actualizar al terminar"** de la rama. **Nunca crear docs nuevos si se puede actualizar uno existente**.
+3. **`/revise-claude-md`** si la rama introduce patrones nuevos reutilizables (nuevos gotchas de entorno, convenciones de código, patrones de UI).
+4. Actualizar `docs/ROADMAP.md`: marcar la rama como hecha y apuntar a la siguiente.
+5. Si durante la rama se descubrieron gaps del plan, seguir §2.9.
+
+### 2.9 Actualización auditada del plan
+
+Si durante la ejecución de una rama descubrimos que el plan necesita cambios (gaps, supuestos incorrectos, mejor secuenciación detectada):
+
+1. **No editar MASTER_PLAN_V2.md silenciosamente**. Abrir PR aparte `chore/plan-update-<tema>`.
+2. Editar este documento con el cambio.
+3. En la descripción de esa PR, explicar: qué rama encontró el gap, qué cambia, por qué.
+4. Ref cruzada: la PR de la rama afectada linkea a la PR del plan.
+5. Merge del plan **antes o junto** al merge de la rama afectada.
+
+Esto mantiene el plan como fuente de verdad viva y auditable.
+
+---
+
+## 3. Resumen de fases
 
 | Fase | Título | Ramas | Riesgo | Valor | Breaking? |
 |---|---|---:|---|---|---|
@@ -57,6 +139,18 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: el service es puro wrapper del JSON. 7C se puede ejecutar editando solo la taxonomía.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `src/lib/services/completeness.service.ts` (archivo completo)
+  - `src/lib/taxonomy-loader.ts` — sección de helpers de taxonomía (buscar `export function get*`)
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Loader contract" y § "Mandatory taxonomies"
+  - `docs/FUTURE.md` § "Calibración de completeness (7C del plan original)"
+- **Memoria previa**: **clean** — suficiente con leer lo anterior
+- **Docs a actualizar al terminar**:
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `completeness_rules.json`
+  - `docs/FUTURE.md` § "Calibración de completeness" — quitar nota "pre-requisito: que las reglas estén extraídas a JSON"
+- **Skills/tools específicos**: ninguno extra al protocolo general
+
 ---
 
 ### Rama 8B — `refactor/field-type-registry`
@@ -77,18 +171,41 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: añadir `color_picker` es una entrada de 5 líneas en el registry.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `src/components/amenity-subtype-field.tsx` (completo)
+  - `src/lib/schemas/editor.schema.ts` — función `buildSubtypeFieldSchema` y su entorno inmediato
+  - `src/lib/types/taxonomy.ts` — union `SubtypeFieldType`
+  - `src/config/registries/` — listar para ver patrones de registry existentes (`icon-registry.ts`, `renderer-registry.ts`)
+  - `docs/FUTURE.md` § "Field-type registry (tangencial, 1-2h)"
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Tipos de campo soportados" — referenciar el registry como fuente de verdad
+  - `docs/FUTURE.md` § 3 — quitar (completado)
+  - `CLAUDE.md` § "Patrones de Sistemas" — añadir nota "añadir tipo de campo = 1 entrada en field-type-registry"
+- **Skills/tools específicos**: ninguno extra
+
 ---
 
 ### Rama 8C — `chore/docs-and-memory-sync`
 
-**Propósito**: sincronizar memoria auto (`MEMORY.md` + archivos) con el estado post-consolidación de docs. Retirar referencias obsoletas (`project_roadmap.md` apunta a secciones ya hechas, etc.).
+**Propósito**: sincronizar memoria auto (`MEMORY.md` + archivos) con el estado post-consolidación de docs. Retirar referencias obsoletas.
 
 **Archivos a modificar**:
-- `.claude/projects/.../memory/MEMORY.md` — quitar entradas rotas o duplicadas
-- `.claude/projects/.../memory/project_roadmap.md` — reemplazar con puntero a `docs/ROADMAP.md`
-- `.claude/projects/.../memory/project_implementation_plan.md` — archivar (plan v1 cerrado)
+- `~/.claude/projects/-Users-javierabrilibanez-Dev-guide-builder-claude/memory/MEMORY.md` — quitar entradas rotas o duplicadas
+- `~/.claude/projects/.../memory/project_roadmap.md` — reemplazar contenido por puntero a `docs/ROADMAP.md`
+- `~/.claude/projects/.../memory/project_implementation_plan.md` — archivar (plan v1 cerrado)
 
 **Criterio de done**: memoria refleja realidad actual; docs operativos son la fuente de verdad.
+
+**Preparación**:
+- **Contexto a leer**:
+  - `~/.claude/projects/-Users-javierabrilibanez-Dev-guide-builder-claude/memory/MEMORY.md`
+  - Todos los archivos referenciados desde ese índice
+  - `docs/ROADMAP.md` (para saber a qué puntero reemplazar)
+- **Memoria previa**: **requires** — es precisamente sincronizar la memoria
+- **Docs a actualizar al terminar**: los ficheros de memoria citados arriba (no hay docs de repo que tocar)
+- **Skills/tools específicos**: ninguno extra
 
 ---
 
@@ -120,6 +237,20 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: servicio puro, 100% cubierto. No UI todavía.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 6 "Source-of-truth rules", § 8 "Visibility model", § 13 "Rendering model"
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` (completo)
+  - `prisma/schema.prisma` — modelos `GuideVersion`, `GuideSection`, `GuideSectionItem` (grep `model Guide`)
+  - `src/lib/services/property-derived.service.ts` (para patrón de servicios que componen desde entidades canónicas)
+  - `taxonomies/visibility_levels.json`
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 13 — concretar el renderer con referencia al nuevo servicio
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `guide_sections.json`
+- **Skills/tools específicos**:
+  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del `GuideTree` (secciones → items → media, con flags de visibility por nodo) para alinear antes de tocar código.
+
 ---
 
 ### Rama 9B — `feat/guide-markdown-output`
@@ -141,6 +272,18 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: el endpoint `GET /api/properties/:id/guide?audience=guest&format=md` devuelve markdown sanitizado listo para publicar.
 
+**Preparación**:
+- **Contexto a leer**:
+  - El servicio creado en 9A (`src/lib/services/guide-rendering.service.ts`) y sus tipos
+  - `src/app/properties/[propertyId]/guest-guide/page.tsx` actual (shell)
+  - `docs/API_ROUTES.md` (patrón de rutas y error shape)
+- **Memoria previa**: **requires 9A merged** — este trabajo depende del servicio de composición
+- **Docs a actualizar al terminar**:
+  - `docs/API_ROUTES.md` — añadir endpoint `GET /api/properties/[id]/guide`
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Guide generation" — concretar formatos de output
+- **Skills/tools específicos**:
+  - **`/playwright-cli`** al final: screenshot del preview con los 3 toggles de audiencia para verificar visualmente el filtrado de visibility.
+
 ---
 
 ### Rama 9C — `feat/guide-publish-workflow`
@@ -161,6 +304,19 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: host puede publicar, ver historial, comparar versiones, rollback. Cada publicación es un snapshot inmutable.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `prisma/schema.prisma` modelos `GuideVersion`, `GuideSection`, `GuideSectionItem`
+  - `src/app/properties/[propertyId]/publishing/page.tsx` actual (266 LOC, workflow incompleto)
+  - Servicios de 9A y renderers de 9B
+  - `docs/DATA_MODEL.md` § canonical persisted entities
+- **Memoria previa**: **requires 9A + 9B merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Publishing workflow"
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 6 "Derived layers" — citar `GuideVersion.treeJson` como snapshot inmutable
+- **Skills/tools específicos**:
+  - **Agent code-architect** si hay duda sobre esquema del diff (granularidad sección vs item).
+
 ---
 
 ### Rama 9D — `feat/guide-shareable-link`
@@ -180,6 +336,18 @@ Heredados del v1 y reconfirmados:
 - `src/test/guide-slug-collision.test.ts` — generación retry-safe
 
 **Criterio de done**: host copia un link, se lo manda al huésped, el huésped ve la guía sin cuenta.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Configuración de rutas públicas en Next.js — si hay otras rutas sin auth en el repo, ver el patrón (`src/app/` buscar `layout.tsx` con auth guard para ver dónde aplica)
+  - `docs/SECURITY_AND_AUDIT.md` (completo)
+  - Código de 9B y 9C
+- **Memoria previa**: **requires 9C merged**
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 5 "Route map" — añadir `/g/:versionSlug` como ruta pública
+  - `docs/SECURITY_AND_AUDIT.md` — concretar regla de que `/g/*` siempre fuerza audience=guest
+- **Skills/tools específicos**:
+  - **`/playwright-cli`** al final: verificar que el link público abre correctamente sin sesión y que los campos `sensitive`/`internal` no aparecen en el DOM.
 
 ---
 
@@ -206,7 +374,21 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: subir foto funciona end-to-end; el archivo queda en S3; la URL firmada caduca.
 
-**⚠ Nota infra**: definir bucket + IAM policy antes de merge. Documentar en `docs/FEATURES/MEDIA_ASSETS.md`.
+**⚠ Decisión previa requerida**: S3 vs Cloudflare R2 vs Supabase storage. Confirmar antes de empezar.
+
+**Preparación**:
+- **Contexto a leer**:
+  - `docs/FEATURES/MEDIA_ASSETS.md` (completo)
+  - `prisma/schema.prisma` — modelos `MediaAsset`, `MediaAssignment`
+  - `src/app/properties/[propertyId]/media/page.tsx` y `create-media-form.tsx` actuales
+  - `.env.example` si existe (para ver convención de env vars)
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MEDIA_ASSETS.md` — añadir sección "Storage provider" con provider elegido, bucket, IAM policy de referencia
+  - `CLAUDE.md` § "Entorno y comandos" — añadir env vars requeridas para dev local
+- **Skills/tools específicos**:
+  - **Context7** (auto) — imprescindible para ver API actual de `@aws-sdk/client-s3` o `@aws-sdk/s3-presigned-post`.
+  - **`/firecrawl-search`** antes: comparar costes S3 vs R2 vs Supabase si no está decidido.
 
 ---
 
@@ -229,6 +411,17 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: cada entidad relevante tiene gallery propia; cover photo seleccionable.
 
+**Preparación**:
+- **Contexto a leer**:
+  - Código de 10A (service + action)
+  - `prisma/schema.prisma` — `MediaAssignment` (polimorfismo por entityType+entityId)
+  - Componentes a modificar listados arriba (leer los actuales antes de modificar)
+- **Memoria previa**: **requires 10A merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MEDIA_ASSETS.md` § "Assignments" — confirmar convención polimórfica
+- **Skills/tools específicos**:
+  - **`/simplify`** tras implementar: `media-gallery` se usa en 4+ sitios, conviene revisar duplicación.
+
 ---
 
 ### Rama 10C — `feat/media-in-guide`
@@ -244,6 +437,16 @@ Heredados del v1 y reconfirmados:
 - `src/test/guide-with-media.test.ts` — guide publicada incluye URLs firmadas válidas; `sensitive` media excluido
 
 **Criterio de done**: la guía publicada tiene fotos visibles vía URL firmada de S3.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Servicios de 9A, 9B; storage de 10A
+  - `taxonomies/guide_sections.json` (creado en 9A)
+- **Memoria previa**: **requires 9B + 10A + 10B merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MEDIA_ASSETS.md` § "In guide rendering"
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` — citar que media es parte del árbol rendered
+- **Skills/tools específicos**: ninguno extra
 
 ---
 
@@ -271,6 +474,20 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: página `/knowledge` muestra hechos extraídos auto + editables manualmente. Rebuild determinístico.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` (completo)
+  - `prisma/schema.prisma` — modelos `KnowledgeItem`, `KnowledgeSource`, `KnowledgeCitation`
+  - `src/app/properties/[propertyId]/knowledge/page.tsx` (shell actual)
+  - Patrón de recomputación en `src/lib/services/property-derived.service.ts`
+  - `src/lib/actions/editor.actions.ts` — hook points donde ya se llama `recomputeAll`
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Knowledge extraction" — describir extractores y templates
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `knowledge_templates.json`
+- **Skills/tools específicos**:
+  - **Agent code-explorer** para trazar qué mutaciones tocan qué entidades (necesario para cablear extractors).
+
 ---
 
 ### Rama 11B — `feat/assistant-retrieval-pipeline`
@@ -282,9 +499,9 @@ Heredados del v1 y reconfirmados:
 - `src/lib/services/assistant/retriever.ts` — vector search (pgvector o similar) + filtro visibility + idioma
 - `src/lib/services/assistant/synthesizer.ts` — llama a LLM con contexto + instrucciones de cita
 - `src/lib/services/assistant/pipeline.ts` — orquestador
-- `src/app/api/properties/[propertyId]/ask/route.ts` — endpoint POST con audience
 
 **Archivos a modificar**:
+- `src/app/api/properties/[propertyId]/assistant/ask/route.ts` — cablear con el nuevo pipeline (ruta **ya existe** en el repo; no crear una nueva bajo `/ask/`)
 - `prisma/schema.prisma` — `KnowledgeItem.embedding Vector?` (si pgvector), índice vectorial
 - `src/app/properties/[propertyId]/ai/page.tsx` — chat UI real
 
@@ -294,7 +511,24 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: huésped puede preguntar "¿cómo abro la puerta?" y recibe respuesta con cita al `KnowledgeItem` de access-method.
 
-**⚠ Decisión previa requerida**: modelo LLM (Claude Sonnet 4.6 por defecto), proveedor de embeddings, storage vectorial. Documentar en spec antes de PR.
+**⚠ Decisión previa requerida**: modelo LLM (default Claude Sonnet 4.6), proveedor de embeddings (Voyage, OpenAI, Cohere), storage vectorial (pgvector integrado vs servicio aparte). Documentar en spec antes de PR.
+
+**Preparación**:
+- **Contexto a leer**:
+  - **`src/app/api/properties/[propertyId]/assistant/` (árbol completo)** — la ruta `ask/route.ts`, `conversations/`, `debug/` ya existen. El plan original decía crear `src/app/api/properties/[propertyId]/ask/route.ts`; eso fue un error, usar el árbol existente.
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant retrieval"
+  - `prisma/schema.prisma` — modelos `AssistantConversation`, `AssistantMessage`, `KnowledgeItem`
+  - `src/app/properties/[propertyId]/ai/page.tsx` actual
+  - Código de 11A (extractores ya generando items)
+- **Memoria previa**: **requires 11A merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant pipeline" — provider elegido + diagrama del flujo
+  - `docs/API_ROUTES.md` — documentar `POST /api/properties/:id/assistant/ask`
+  - `CLAUDE.md` § "Entorno y comandos" — env vars del LLM provider
+- **Skills/tools específicos**:
+  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del pipeline (intent → retriever → synthesizer → citation). Imprescindible para alinear antes de tocar código.
+  - **Context7** (auto) — docs actualizadas del SDK de Anthropic/OpenAI y pgvector.
+  - **`/firecrawl-search`** antes: comparar providers de embeddings si no está decidido.
 
 ---
 
@@ -315,6 +549,16 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: preguntas fuera de cobertura se resuelven con contacto estructurado, no con alucinación.
 
+**Preparación**:
+- **Contexto a leer**:
+  - Pipeline de 11B
+  - `prisma/schema.prisma` — modelo `Contact` y `taxonomies/contact_roles.json`
+- **Memoria previa**: **requires 11B merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Escalation"
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `escalation_rules.json`
+- **Skills/tools específicos**: ninguno extra
+
 ---
 
 ### Rama 11D — `feat/assistant-evals`
@@ -327,6 +571,16 @@ Heredados del v1 y reconfirmados:
 - `src/test/assistant-evals/release-gate.test.ts` — falla si accuracy < umbral
 
 **Criterio de done**: CI falla si una PR del assistant baja la accuracy. Dashboard de metrics por intent.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Pipeline de 11B + escalación de 11C
+  - `docs/QA_AND_RELEASE.md` (patrón de release gates)
+- **Memoria previa**: **requires 11B + 11C merged**
+- **Docs a actualizar al terminar**:
+  - `docs/QA_AND_RELEASE.md` § "Release gates" — añadir gate de accuracy del assistant con umbral concreto
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Evals"
+- **Skills/tools específicos**: ninguno extra
 
 ---
 
@@ -352,6 +606,18 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: host escribe "Hola {{guest_name}}, el wifi es {{wifi_password}}" y el preview muestra valores reales.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `docs/FEATURES/MESSAGING_AUTOMATION.md` (completo)
+  - `src/app/properties/[propertyId]/messaging/[touchpointKey]/` (árbol actual)
+  - `prisma/schema.prisma` — `MessageTemplate`, `MessageAutomation`, `MessageDraft`
+  - Conocimiento generado por 11A (algunas variables provendrán de `KnowledgeItem`)
+- **Memoria previa**: **requires 11A merged** (para variables derivadas de knowledge)
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Variables"
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `messaging_variables.json`
+- **Skills/tools específicos**: ninguno extra
+
 ---
 
 ### Rama 12B — `feat/messaging-automations`
@@ -373,6 +639,21 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: automations generan drafts revisables; host aprueba y envía o edita.
 
+**⚠ Decisión previa requerida**: Vercel Cron vs BullMQ/Redis queue. Depende de volumen esperado.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Servicio de 12A
+  - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Automations"
+  - `docs/SECURITY_AND_AUDIT.md` (para regla de no-sensitive en drafts)
+- **Memoria previa**: **requires 12A merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Automations" + § "Scheduler contract"
+  - `docs/API_ROUTES.md` — endpoints de scheduler si aplica
+  - `CLAUDE.md` § "Entorno y comandos" — env vars del scheduler
+- **Skills/tools específicos**:
+  - **Context7** para API de `node-cron`, `bullmq` o `@vercel/cron` según decisión.
+
 ---
 
 ### Rama 12C — `feat/messaging-starter-packs`
@@ -390,6 +671,17 @@ Heredados del v1 y reconfirmados:
 - `src/test/messaging-starter-packs.test.ts` — aplicar pack crea N templates; edición post-seed no rompe idempotencia
 
 **Criterio de done**: nuevo host tiene 10+ templates útiles desde el día 1.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Servicios 12A + 12B
+  - `taxonomies/property_types.json`, `taxonomies/messaging_touchpoints.json`
+- **Memoria previa**: **requires 12A + 12B merged**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Starter packs"
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `messaging_starter_packs.json` + `messaging_triggers.json` (de 12B)
+- **Skills/tools específicos**:
+  - **`/firecrawl-search`** antes para capturar tonos típicos en distintos idiomas (benchmarks: Airbnb, Booking, Vrbo).
 
 ---
 
@@ -415,6 +707,17 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: host abre Guía local, ve 30+ sugerencias relevantes por categoría, acepta con un clic.
 
+**Preparación**:
+- **Contexto a leer**:
+  - `src/app/properties/[propertyId]/local-guide/` actual
+  - `prisma/schema.prisma` — modelo `LocalPlace`
+  - MapTiler ya está en el repo para mapas (ver wizard step-2) — revisar integración existente
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/` — crear **solo si no hay espacio** en un doc existente. Candidato: añadir sección "Local guide" a `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o crear `docs/FEATURES/LOCAL_GUIDE.md` si el contenido es denso.
+- **Skills/tools específicos**:
+  - **Context7** para API actual de MapTiler Places.
+
 ---
 
 ### Rama 13B — `feat/local-events-sync`
@@ -430,6 +733,17 @@ Heredados del v1 y reconfirmados:
 - `src/test/local-events-sync.test.ts` — mock provider, eventos guardados sin duplicar
 
 **Criterio de done**: guía local muestra eventos próximos relevantes.
+
+**⚠ Decisión previa requerida**: Eventbrite vs Ticketmaster vs scraping con Firecrawl.
+
+**Preparación**:
+- **Contexto a leer**:
+  - 13A (patrón de sugerencias revisables si aplica)
+  - Scheduler decidido en 12B (reutilizar contrato)
+- **Memoria previa**: **requires 12B merged** (para reutilizar scheduler)
+- **Docs a actualizar al terminar**: mismo doc de local-guide creado/extendido en 13A
+- **Skills/tools específicos**:
+  - **`/firecrawl-search`** antes: comparar cobertura y coste de providers por ciudad.
 
 ---
 
@@ -450,6 +764,17 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: huésped ve mapa con pins de lugares recomendados; ubicación exacta de la property solo post-checkin.
 
+**Preparación**:
+- **Contexto a leer**:
+  - Integración MapLibre existente en wizard step-2 (`src/app/properties/new/step-2/`)
+  - Renderer HTML de 9B/10C
+- **Memoria previa**: **requires 9B + 10C + 13A merged**
+- **Docs a actualizar al terminar**:
+  - `docs/SECURITY_AND_AUDIT.md` — añadir regla de obfuscation de coordenadas en audience=guest
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o `LOCAL_GUIDE.md` — documentar el comportamiento
+- **Skills/tools específicos**:
+  - **`/playwright-cli`** al final: screenshot del mapa en los 3 audiences para verificar que el pin exacto solo aparece en internal.
+
 ---
 
 ## FASE 14 — Platform integrations
@@ -469,6 +794,17 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: 100% cobertura de mappings o exclusión explícita.
 
+**Preparación**:
+- **Contexto a leer**:
+  - Todas las taxonomías listadas arriba (ver sus tamaños: `amenity_taxonomy.json` es el grande ~150 items)
+  - `docs/FUTURE.md` § "Platform integrations" (contexto de decisión estratégica)
+- **Memoria previa**: **clean**
+- **Docs a actualizar al terminar**:
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — anotar que mappings son obligatorios
+  - `docs/FUTURE.md` § "Platform integrations" — actualizar estado
+- **Skills/tools específicos**:
+  - **Agent Explore** para auditar cobertura de mappings en las 5+ taxonomías (no es manual).
+
 ---
 
 ### Rama 14B — `feat/airbnb-export`
@@ -485,6 +821,17 @@ Heredados del v1 y reconfirmados:
 
 **Criterio de done**: payload pasa validación; amenities/spaces/policies mapeadas; warnings para campos sin mapping.
 
+**Preparación**:
+- **Contexto a leer**:
+  - 14A (helpers de mappings)
+  - Docs oficiales Airbnb API (fetch o Context7 si disponible)
+- **Memoria previa**: **requires 14A merged**
+- **Docs a actualizar al terminar**:
+  - `docs/API_ROUTES.md` — endpoint de export
+  - Crear `docs/FEATURES/PLATFORM_INTEGRATIONS.md` (doc nuevo justificado por densidad)
+- **Skills/tools específicos**:
+  - **`/firecrawl-scrape`** sobre la doc pública de Airbnb API si hace falta para schema.
+
 ---
 
 ### Rama 14C — `feat/booking-export`
@@ -499,6 +846,12 @@ Heredados del v1 y reconfirmados:
 **Tests**: idem 14B.
 
 **Criterio de done**: idem 14B.
+
+**Preparación**:
+- **Contexto a leer**: 14A + 14B (mismo patrón)
+- **Memoria previa**: **requires 14A merged** (14B es recomendado pero no bloqueante)
+- **Docs a actualizar al terminar**: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § Booking
+- **Skills/tools específicos**: idem 14B
 
 ---
 
@@ -520,26 +873,39 @@ Heredados del v1 y reconfirmados:
 
 **⚠ Decisión requerida**: credenciales API reales o mocks para MVP.
 
+**Preparación**:
+- **Contexto a leer**:
+  - Exports de 14B + 14C (simetría del mapping)
+  - Patrón de audit log en `docs/SECURITY_AND_AUDIT.md`
+- **Memoria previa**: **requires 14B + 14C merged**
+- **Docs a actualizar al terminar**: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § Import + reconciliation
+- **Skills/tools específicos**:
+  - **Agent code-architect** para diseñar la estrategia de reconciliación (overwrite vs merge vs skip) antes de codear.
+
 ---
 
-## Checklist de ejecución por PR
+## 4. Checklist de ejecución por PR
 
-Idéntico al v1:
+Complementa el Protocolo (§2). Antes de merge:
 
 1. [ ] Branch creada desde `main` actualizada
-2. [ ] Cambios implementados
-3. [ ] Tests nuevos pasan (`npx vitest run`)
-4. [ ] `npx prisma generate && npx tsc --noEmit` sin errores
-5. [ ] `/pre-commit-review` sin issues críticos
-6. [ ] Commit con mensaje descriptivo
-7. [ ] Push + PR con description + test plan
-8. [ ] `/review-pr-comments` para aplicar feedback Copilot
-9. [ ] Merge squash + delete branch
-10. [ ] `git pull origin main --ff-only`
+2. [ ] Cambios implementados siguiendo la sección de la rama en este doc
+3. [ ] Contexto a leer consultado al iniciar (§2.1)
+4. [ ] Tests nuevos pasan (`npx vitest run`)
+5. [ ] `npx prisma generate && npx tsc --noEmit` sin errores
+6. [ ] `/pre-commit-review` sin issues críticos
+7. [ ] Commit con mensaje descriptivo
+8. [ ] Push + PR con description + test plan
+9. [ ] `/review-pr-comments` para aplicar feedback Copilot
+10. [ ] Merge squash + delete branch
+11. [ ] `git pull origin main --ff-only`
+12. [ ] **Docs listados en "Docs a actualizar al terminar" actualizados**
+13. [ ] `/revise-claude-md` si hubo patrones nuevos reutilizables
+14. [ ] `docs/ROADMAP.md` actualizado marcando la rama hecha
 
 ---
 
-## Dependencias entre fases
+## 5. Dependencias entre fases
 
 ```
 Fase 8 (independiente, cheap) ─────────────────────────────┐
@@ -568,7 +934,7 @@ Fase 10 (paralelo con 9)                     9C Publish workflow
 Fase 12 (requiere 11A mínimo para resolver variables con knowledge)
   12A Variables ──► 12B Automations ──► 12C Starter packs
 
-Fase 13 (independiente post-10)
+Fase 13 (independiente post-10, 13B reusa scheduler de 12B)
   13A POIs ──► 13B Events ──► 13C Maps
 
 Fase 14 (requiere estabilidad de 9-11)
@@ -580,7 +946,7 @@ Fase 14 (requiere estabilidad de 9-11)
 
 ---
 
-## Riesgos identificados
+## 6. Riesgos identificados
 
 | Riesgo | Mitigación |
 |---|---|
@@ -593,7 +959,7 @@ Fase 14 (requiere estabilidad de 9-11)
 
 ---
 
-## Timeline estimado (sin comprometer fechas)
+## 7. Timeline estimado (sin comprometer fechas)
 
 - Fase 8: 3 PRs paralelizables → 2-3 días
 - Fase 9: secuencial (9A→9B→9C→9D) → 2-3 semanas
@@ -607,17 +973,17 @@ Fase 14 (requiere estabilidad de 9-11)
 
 ---
 
-## Decisiones abiertas (confirmar antes de empezar cada fase)
+## 8. Decisiones abiertas (confirmar antes de empezar cada fase)
 
 1. **Provider de storage para media (Fase 10)**: S3 vs Cloudflare R2 vs Supabase storage. Decidir antes de 10A.
 2. **Provider LLM + embeddings (Fase 11B)**: default Claude Sonnet 4.6 + Voyage embeddings, salvo preferencia distinta.
-3. **Scheduler para messaging automations (Fase 12B)**: cron simple (vercel cron) vs queue (BullMQ). Depende de volumen esperado.
+3. **Scheduler para messaging automations (Fase 12B)**: cron simple (Vercel cron) vs queue (BullMQ). Depende de volumen esperado.
 4. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
 5. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
 
 ---
 
-## Futuro — fuera del alcance de este plan
+## 9. Futuro — fuera del alcance de este plan
 
 Ver [FUTURE.md](FUTURE.md):
 
