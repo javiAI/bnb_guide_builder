@@ -389,7 +389,7 @@ export async function updateSpaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
-  const propertyId = formData.get("propertyId") as string;
+  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
   const raw = {
     name: formData.get("name") as string,
     guestNotes: (formData.get("guestNotes") as string) || undefined,
@@ -406,13 +406,19 @@ export async function updateSpaceAction(
     };
   }
 
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
   await prisma.space.update({
     where: { id: spaceId },
-    data: result.data,
+    data: { ...result.data, createdBy: "user", wizardSeedKey: null },
   });
 
-  recomputeAllInBackground(propertyId);
-  revalidatePath(`/properties/${propertyId}/spaces`);
+  recomputeAllInBackground(space.propertyId);
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
 
@@ -460,7 +466,10 @@ export async function renameSpaceAction(
   });
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
-  await prisma.space.update({ where: { id: spaceId }, data: { name } });
+  await prisma.space.update({
+    where: { id: spaceId },
+    data: { name, createdBy: "user", wizardSeedKey: null },
+  });
 
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
@@ -503,6 +512,8 @@ export async function updateSpaceDetailsAction(
     data: {
       guestNotes,
       internalNotes,
+      createdBy: "user",
+      wizardSeedKey: null,
       ...(featuresJson !== null && { featuresJson: featuresJson as Prisma.InputJsonValue }),
     },
   });
@@ -564,7 +575,7 @@ export async function addBedAction(
       if (existing) {
         await tx.bedConfiguration.update({
           where: { id: existing.id },
-          data: { quantity: existing.quantity + result.data.quantity },
+          data: { quantity: existing.quantity + result.data.quantity, wizardSeedKey: null },
         });
       } else {
         await tx.bedConfiguration.create({
@@ -572,6 +583,10 @@ export async function addBedAction(
         });
       }
     }
+    await tx.space.update({
+      where: { id: spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, space.propertyId);
   });
 
@@ -609,7 +624,14 @@ export async function updateBedAction(
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.bedConfiguration.update({ where: { id: bedId }, data: result.data });
+    await tx.bedConfiguration.update({
+      where: { id: bedId },
+      data: { ...result.data, wizardSeedKey: null },
+    });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
@@ -636,6 +658,10 @@ export async function deleteBedAction(
 
   await prisma.$transaction(async (tx) => {
     await tx.bedConfiguration.delete({ where: { id: bedId } });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
     await recomputePropertyCounts(tx, bed.space.propertyId);
   });
 
@@ -669,9 +695,15 @@ export async function updateBedConfigAction(
     configJson = validated.data as Prisma.InputJsonValue;
   }
 
-  await prisma.bedConfiguration.update({
-    where: { id: bedId },
-    data: { configJson },
+  await prisma.$transaction(async (tx) => {
+    await tx.bedConfiguration.update({
+      where: { id: bedId },
+      data: { configJson, wizardSeedKey: null },
+    });
+    await tx.space.update({
+      where: { id: bed.spaceId },
+      data: { createdBy: "user", wizardSeedKey: null },
+    });
   });
 
   recomputeAllInBackground(bed.space.propertyId);

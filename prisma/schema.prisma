@@ -231,6 +231,8 @@ model Space {
   internalNotes String?  @map("internal_notes")
   visibility    String   @default("public")
   status        String   @default("active")
+  createdBy     String   @default("user") @map("created_by")
+  wizardSeedKey String?  @map("wizard_seed_key")
   featuresJson  Json?    @map("features_json")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -240,6 +242,7 @@ model Space {
   systemCoverages  PropertySystemCoverage[]
   amenityPlacements PropertyAmenityPlacement[]
 
+  @@unique([propertyId, wizardSeedKey])
   @@index([propertyId])
   @@index([propertyId, visibility])
   @@index([propertyId, status])
@@ -247,15 +250,17 @@ model Space {
 }
 
 model BedConfiguration {
-  id         String   @id @default(cuid())
-  spaceId    String   @map("space_id")
-  bedType    String   @map("bed_type")
-  quantity   Int      @default(1)
-  configJson Json?    @map("config_json")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  spaceId       String   @map("space_id")
+  bedType       String   @map("bed_type")
+  quantity      Int      @default(1)
+  configJson    Json?    @map("config_json")
+  wizardSeedKey String?  @map("wizard_seed_key")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
+  @@unique([spaceId, wizardSeedKey])
   @@index([spaceId])
   @@map("bed_configurations")
 }

@@ -411,7 +411,9 @@ export async function completeWizardAction(
       });
     }
 
-    // Create spaces with bed configurations (tagged with _origin for idempotent future upserts)
+    // Create spaces with bed configurations. Each row carries createdBy="wizard"
+    // and a stable wizardSeedKey so future re-runs can upsert idempotently and
+    // manual edits can detach rows from wizard ownership.
     let sortOrder = 0;
     if (d.beds && d.beds.length > 0) {
       // Group beds by spaceIndex
@@ -437,15 +439,18 @@ export async function completeWizardAction(
             spaceType,
             name,
             sortOrder: sortOrder++,
-            featuresJson: { "_origin.source": "wizard", "_origin.key": `bed_space_${spaceIdx}` },
+            createdBy: "wizard",
+            wizardSeedKey: `bed_space_${spaceIdx}`,
           },
         });
-        for (const bed of spaceBeds) {
+        for (let bedIdx = 0; bedIdx < spaceBeds.length; bedIdx++) {
+          const bed = spaceBeds[bedIdx];
           await tx.bedConfiguration.create({
             data: {
               spaceId: space.id,
               bedType: bed.bedType,
               quantity: bed.quantity,
+              wizardSeedKey: `bed_space_${spaceIdx}_${bedIdx}`,
             },
           });
         }
@@ -461,7 +466,8 @@ export async function completeWizardAction(
           spaceType: layoutSpaceType,
           name: getSpaceTypeLabel(layoutSpaceType),
           sortOrder: sortOrder++,
-          featuresJson: { "_origin.source": "wizard", "_origin.key": `layout_${d.layoutKey}` },
+          createdBy: "wizard",
+          wizardSeedKey: `layout_${d.layoutKey}`,
         },
       });
     }
@@ -475,7 +481,8 @@ export async function completeWizardAction(
           spaceType: "sp.bathroom",
           name: bathroomsCount === 1 ? "Baño" : `Baño ${i + 1}`,
           sortOrder: sortOrder++,
-          featuresJson: { "_origin.source": "wizard", "_origin.key": `bathroom_${i}` },
+          createdBy: "wizard",
+          wizardSeedKey: `bathroom_${i}`,
         },
       });
     }
