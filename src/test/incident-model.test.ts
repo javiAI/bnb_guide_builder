@@ -11,6 +11,7 @@ vi.mock("@/lib/db", () => {
       update: vi.fn().mockResolvedValue({}),
       delete: vi.fn().mockResolvedValue({}),
     },
+    property: { findUnique: vi.fn() },
     propertySystem: { findUnique: vi.fn() },
     propertyAmenityInstance: { findUnique: vi.fn() },
     space: { findUnique: vi.fn() },
@@ -27,6 +28,7 @@ import {
   resolveIncidentAction,
 } from "@/lib/actions/incident.actions";
 
+const propertyFindUnique = prisma.property.findUnique as ReturnType<typeof vi.fn>;
 const incidentFindUnique = prisma.incident.findUnique as ReturnType<typeof vi.fn>;
 const incidentCreate = prisma.incident.create as ReturnType<typeof vi.fn>;
 const incidentUpdate = prisma.incident.update as ReturnType<typeof vi.fn>;
@@ -37,6 +39,7 @@ const spaceFindUnique = prisma.space.findUnique as ReturnType<typeof vi.fn>;
 const playbookFindUnique = prisma.troubleshootingPlaybook.findUnique as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  propertyFindUnique.mockReset().mockResolvedValue({ id: "p1", timezone: null });
   incidentFindUnique.mockReset();
   incidentCreate.mockReset().mockResolvedValue({});
   incidentUpdate.mockReset().mockResolvedValue({});
@@ -165,6 +168,9 @@ describe("incident CRUD", () => {
       propertyId: "p1",
       status: "open",
       resolvedAt: null,
+      visibility: "internal",
+      playbookId: null,
+      property: { timezone: null },
     });
     await updateIncidentAction(
       null,
@@ -189,6 +195,9 @@ describe("incident CRUD", () => {
       propertyId: "p1",
       status: "resolved",
       resolvedAt: existingResolvedAt,
+      visibility: "internal",
+      playbookId: null,
+      property: { timezone: null },
     });
     await updateIncidentAction(
       null,
@@ -210,6 +219,9 @@ describe("incident CRUD", () => {
       propertyId: "p1",
       status: "resolved",
       resolvedAt: new Date("2026-04-10T12:00:00Z"),
+      visibility: "internal",
+      playbookId: null,
+      property: { timezone: null },
     });
     await updateIncidentAction(
       null,

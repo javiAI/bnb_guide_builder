@@ -9,6 +9,7 @@ import {
   getItems,
 } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
+import { formatInPropertyTZ } from "@/lib/property-timezone";
 import { TroubleshootingTabs } from "../troubleshooting-tabs";
 import { CreateIncidentForm } from "./create-incident-form";
 import { IncidentRowActions } from "./incident-row-actions";
@@ -62,7 +63,7 @@ export default async function IncidentsPage({
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, timezone: true },
   });
   if (!property) notFound();
 
@@ -125,29 +126,37 @@ export default async function IncidentsPage({
 
       <div className="mt-6 flex flex-wrap gap-2 text-xs">
         <form className="flex gap-2">
-          <select
-            name="targetType"
-            defaultValue={filterType ?? ""}
-            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1"
-          >
-            <option value="">Todos los objetivos</option>
-            <option value="property">Propiedad</option>
-            <option value="system">Sistema</option>
-            <option value="amenity">Amenity</option>
-            <option value="space">Espacio</option>
-            <option value="access">Acceso</option>
-          </select>
-          <select
-            name="status"
-            defaultValue={filterStatus ?? ""}
-            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1"
-          >
-            <option value="">Todos los estados</option>
-            <option value="open">Abiertas</option>
-            <option value="in_progress">En curso</option>
-            <option value="resolved">Resueltas</option>
-            <option value="cancelled">Canceladas</option>
-          </select>
+          <label htmlFor="filter-targetType">
+            <span className="sr-only">Objetivo</span>
+            <select
+              id="filter-targetType"
+              name="targetType"
+              defaultValue={filterType ?? ""}
+              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1"
+            >
+              <option value="">Todos los objetivos</option>
+              <option value="property">Propiedad</option>
+              <option value="system">Sistema</option>
+              <option value="amenity">Amenity</option>
+              <option value="space">Espacio</option>
+              <option value="access">Acceso</option>
+            </select>
+          </label>
+          <label htmlFor="filter-status">
+            <span className="sr-only">Estado</span>
+            <select
+              id="filter-status"
+              name="status"
+              defaultValue={filterStatus ?? ""}
+              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1"
+            >
+              <option value="">Todos los estados</option>
+              <option value="open">Abiertas</option>
+              <option value="in_progress">En curso</option>
+              <option value="resolved">Resueltas</option>
+              <option value="cancelled">Canceladas</option>
+            </select>
+          </label>
           <button
             type="submit"
             className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-3 py-1 text-white hover:bg-[var(--color-primary-600)]"
@@ -187,7 +196,7 @@ export default async function IncidentsPage({
                         spaces: spaceLabel,
                       })}
                       {" · "}
-                      {new Date(inc.occurredAt).toLocaleString("es-ES")}
+                      {formatInPropertyTZ(inc.occurredAt, property.timezone)}
                       {inc.playbook && (
                         <>
                           {" · Playbook: "}

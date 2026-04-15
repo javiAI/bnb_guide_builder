@@ -7,6 +7,7 @@ import {
   updateIncidentSchema,
   type IncidentTargetType,
 } from "@/lib/schemas/incident.schema";
+import { zonedLocalToUTC } from "@/lib/property-timezone";
 
 export type ActionResult = {
   success: boolean;
@@ -75,6 +76,12 @@ export async function createIncidentAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "Falta propertyId" };
 
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, timezone: true },
+  });
+  if (!property) return { success: false, error: "Propiedad no encontrada" };
+
   const raw = {
     title: formData.get("title") as string,
     severity: (formData.get("severity") as string) || undefined,
@@ -114,7 +121,7 @@ export async function createIncidentAction(
       playbookId,
       notes: result.data.notes,
       visibility: result.data.visibility ?? "internal",
-      occurredAt: new Date(result.data.occurredAt),
+      occurredAt: zonedLocalToUTC(result.data.occurredAt, property.timezone),
     },
   });
 
@@ -137,9 +144,11 @@ export async function updateIncidentAction(
       resolvedAt: true,
       visibility: true,
       playbookId: true,
+      property: { select: { timezone: true } },
     },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
+  const propertyTimezone = incident.property.timezone;
 
   const playbookRaw = formData.get("playbookId");
   const visibilityRaw = formData.get("visibility");
@@ -190,7 +199,7 @@ export async function updateIncidentAction(
   //   - otherwise → preserve existing value
   let resolvedAt: Date | null;
   if (result.data.resolvedAt) {
-    resolvedAt = new Date(result.data.resolvedAt);
+    resolvedAt = zonedLocalToUTC(result.data.resolvedAt, propertyTimezone);
   } else if (result.data.status === "resolved" && incident.status !== "resolved") {
     resolvedAt = new Date();
   } else if (result.data.status !== "resolved" && incident.status === "resolved") {
@@ -210,7 +219,7 @@ export async function updateIncidentAction(
       playbookId,
       notes: result.data.notes,
       visibility,
-      occurredAt: new Date(result.data.occurredAt),
+      occurredAt: zonedLocalToUTC(result.data.occurredAt, propertyTimezone),
       resolvedAt,
     },
   });
