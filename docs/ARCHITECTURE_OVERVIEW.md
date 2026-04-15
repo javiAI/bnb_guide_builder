@@ -248,8 +248,12 @@ No se considera estable una fase si falta cualquiera de:
 
 ### Guest guide
 
-- Consume `GuideVersion`, `GuideSection`, `GuideSectionItem`
-- Incluye solo items con visibility `guest` según audiencia
+- Servicio: `composeGuide(propertyId, audience)` en `src/lib/services/guide-rendering.service.ts` devuelve un `GuideTree` tipado (`src/lib/types/guide-tree.ts`): `sections[] → items[] → fields[] / media[] / children[]`.
+- Secciones declaradas en `taxonomies/guide_sections.json` (7 secciones: arrival, spaces, amenities, rules, contacts, local, emergency) + resolvers registrados por `resolverKey` — añadir sección = editar taxonomía + registrar resolver, nunca tocar componentes.
+- Empty sections siempre presentes en el tree con `items: []`; `emptyCtaDeepLink` es `null` para `audience === "guest"` (host-panel links nunca expuestos al huésped) y la ruta resuelta con `propertyId` para audiences internas.
+- Filtrado por audiencia delega en `canAudienceSee` (`src/lib/visibility.ts`) — aplicado a nivel item y a nivel field. `sensitive` nunca emitido por el resolver.
+- Resiliencia: taxonomy keys desconocidas no rompen el render — el item se emite con `deprecated: true`, `label` = raw key, y un warning. Invariante enforced por `src/test/guide-no-hardcoded-ids.test.ts`.
+- Output estable: `renderMarkdown(tree)` en `src/lib/renderers/guide-markdown.ts` (stub ~50 LOC hasta 9B) con snapshot test por audience.
 
 ### AI view
 
