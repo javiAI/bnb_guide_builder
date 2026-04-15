@@ -25,6 +25,10 @@ export function PublishReadinessCard({
   errors,
 }: PublishReadinessCardProps) {
   const issues = [...blockers, ...errors];
+  // `publishable` (from completeness) + zero validation issues. Both must hold
+  // for the badge to say "Publicable" — otherwise the card would contradict
+  // itself by listing gating issues under a green badge.
+  const canPublish = publishable && issues.length === 0;
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
@@ -42,8 +46,8 @@ export function PublishReadinessCard({
           tone={usable ? "success" : "warning"}
         />
         <Badge
-          label={publishable ? "Publicable" : "No publicable"}
-          tone={publishable ? "success" : "danger"}
+          label={canPublish ? "Publicable" : "No publicable"}
+          tone={canPublish ? "success" : "danger"}
         />
       </div>
       {issues.length > 0 ? (
@@ -67,7 +71,7 @@ export function PublishReadinessCard({
         </ul>
       ) : (
         <p className="mt-4 text-xs text-[var(--color-neutral-500)]">
-          Sin bloqueantes. Revisa la página de publicación para ver los outputs
+          Sin incidencias. Revisa la página de publicación para ver los outputs
           disponibles.
         </p>
       )}

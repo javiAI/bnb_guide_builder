@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
 import { SECTION_META_BY_KEY } from "./section-map";
+import completenessRules from "../../../taxonomies/completeness_rules.json";
 
 interface NextActionCardProps {
   propertyId: string;
@@ -31,7 +32,10 @@ function pickNextAction(
   const topIssue = blockers[0] ?? errors[0];
   if (topIssue) {
     return {
-      title: "Resuelve un bloqueante",
+      title:
+        topIssue.severity === "blocker"
+          ? "Resuelve un bloqueante"
+          : "Resuelve un error",
       description: topIssue.message,
       ctaUrl: topIssue.ctaUrl ?? `/properties/${propertyId}/publishing`,
       ctaLabel: topIssue.ctaLabel ?? "Ir",
@@ -40,7 +44,9 @@ function pickNextAction(
 
   const keys = Object.keys(scores) as (keyof SectionScores)[];
   const lowest = keys.reduce((a, b) => (scores[a] <= scores[b] ? a : b));
-  if (scores[lowest] >= 85) return null;
+  if (scores[lowest] >= completenessRules.thresholds.publishableMinScore) {
+    return null;
+  }
 
   const meta = SECTION_META_BY_KEY[lowest];
   return {

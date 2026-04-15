@@ -83,7 +83,7 @@ describe("PublishReadinessCard", () => {
     );
     expect(screen.getByText("Publicable")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
-    expect(screen.getByText(/Sin bloqueantes/)).toBeInTheDocument();
+    expect(screen.getByText(/Sin incidencias/)).toBeInTheDocument();
   });
 
   it("lists blockers with their CTA when present", () => {
@@ -123,6 +123,28 @@ describe("NextActionCard", () => {
     );
     expect(screen.getByText("Resuelve un bloqueante")).toBeInTheDocument();
     expect(screen.getByText("Wifi configurado sin SSID")).toBeInTheDocument();
+  });
+
+  it("labels errors-only path with 'Resuelve un error'", () => {
+    const err: ValidationFinding = {
+      id: "visibility_leak_wifi",
+      severity: "error",
+      message: "Wifi expone contraseña con visibilidad public",
+      ctaUrl: "/properties/p1/amenities",
+      ctaLabel: "Revisar visibilidad",
+    };
+    render(
+      <NextActionCard
+        propertyId="p1"
+        scores={{ spaces: 10, amenities: 20, systems: 30, arrival: 40 }}
+        blockers={[]}
+        errors={[err]}
+      />,
+    );
+    expect(screen.getByText("Resuelve un error")).toBeInTheDocument();
+    expect(
+      screen.getByText("Wifi expone contraseña con visibilidad public"),
+    ).toBeInTheDocument();
   });
 
   it("falls back to lowest section score when no blockers/errors", () => {
