@@ -330,6 +330,33 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `review_reasons.json`
 - `contact_roles.json`
 - `completeness_rules.json` — pesos/umbrales del scoring de completitud. Parseada con Zod en el loader; reglas accesibles vía `getCompletenessRule(sectionKey)` (throw si la sección no existe).
+- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`. Parseada con Zod; `getGuideSectionConfig()` throw en boot si un `resolverKey` no existe.
+
+---
+
+## Guide rendering engine — resiliencia (rama 9A)
+
+El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce un `GuideTree` tipado desde entidades canónicas. El compromiso arquitectónico es que **cambios en taxonomías y entidades no requieren tocar el motor**:
+
+| Cambio | ¿Requiere código? | Mecanismo |
+|---|---|---|
+| Añadir/borrar `Space`, `AmenityInstance`, `Contact`, etc. | No | Iteración sobre colecciones de la entidad |
+| Nuevo tipo en taxonomía (`am.X`, `sp.Y`, `sys.Z`) | No | Labels y metadata desde `taxonomy-loader` |
+| Deprecar una taxonomy key con instancias vivas | No | Fallback: `GuideItem { deprecated: true, rawKey }` — no throw |
+| Nuevo campo en un subtype | No | Iteración sobre `subtype.fields[]` + formateo vía `field-type-registry` |
+| Cambiar `type` de un campo | No | El registry resuelve el nuevo formatter |
+| Nueva sección del guide | Sí (1 entrada + 1 resolver) | Añadir a `guide_sections.json` + handler en el servicio; `guide-sections-coverage.test.ts` falla si desemparejados |
+| Quitar sección entera | No (borrar entrada) | El test de cobertura detecta resolvers huérfanos |
+| Nuevo `VisibilityLevel` en `visibility_levels.json` | No | `filterByAudience` lee la jerarquía dinámicamente |
+| Reordenar secciones | No | Campo `order` en `guide_sections.json` |
+
+**Invariantes garantizadas por tests**:
+
+- `guide-no-hardcoded-ids.test.ts`: el servicio no contiene comparaciones `=== "am.*"`, `=== "sp.*"`, `=== "sys.*"`, `=== "pol.*"`. Cero IDs hardcoded.
+- `guide-sections-coverage.test.ts`: toda sección declarada tiene resolver; todo resolver está declarado.
+- `guide-rendering-resilience.test.ts`: keys deprecadas, types desconocidos y entidades ausentes degradan a `GuideItem` marcado, nunca lanzan.
+
+**Regla dura para futuras ramas**: cualquier feature que añada lógica de dominio al guide engine debe apoyarse en taxonomía y registry, no en switch statements sobre IDs.
 
 ---
 
