@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
+import { SECTION_META_BY_KEY } from "./section-map";
 
 interface NextActionCardProps {
   propertyId: string;
@@ -15,20 +16,6 @@ interface NextAction {
   ctaUrl: string;
   ctaLabel: string;
 }
-
-const SECTION_LABELS: Record<keyof SectionScores, string> = {
-  spaces: "Espacios",
-  amenities: "Equipamiento",
-  systems: "Sistemas",
-  arrival: "Acceso y llegada",
-};
-
-const SECTION_HREFS: Record<keyof SectionScores, string> = {
-  spaces: "spaces",
-  amenities: "amenities",
-  systems: "systems",
-  arrival: "access",
-};
 
 /**
  * Picks the single most impactful next action. Blockers/errors come first
@@ -55,11 +42,12 @@ function pickNextAction(
   const lowest = keys.reduce((a, b) => (scores[a] <= scores[b] ? a : b));
   if (scores[lowest] >= 85) return null;
 
+  const meta = SECTION_META_BY_KEY[lowest];
   return {
-    title: `Mejora ${SECTION_LABELS[lowest]}`,
+    title: `Mejora ${meta.label}`,
     description: `Score actual: ${scores[lowest]}%. Completa los campos pendientes para desbloquear outputs.`,
-    ctaUrl: `/properties/${propertyId}/${SECTION_HREFS[lowest]}`,
-    ctaLabel: `Ir a ${SECTION_LABELS[lowest].toLowerCase()}`,
+    ctaUrl: `/properties/${propertyId}/${meta.href}`,
+    ctaLabel: `Ir a ${meta.label.toLowerCase()}`,
   };
 }
 

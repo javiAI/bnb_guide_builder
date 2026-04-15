@@ -1,24 +1,12 @@
 import Link from "next/link";
 import type { SectionScores } from "@/lib/services/completeness.service";
+import { OVERVIEW_SECTIONS } from "./section-map";
 import completenessRules from "../../../taxonomies/completeness_rules.json";
 
 interface GapsCardProps {
   propertyId: string;
   scores: SectionScores;
 }
-
-interface Row {
-  key: keyof SectionScores;
-  label: string;
-  href: string;
-}
-
-const ROWS: Row[] = [
-  { key: "spaces", label: "Espacios", href: "spaces" },
-  { key: "amenities", label: "Equipamiento", href: "amenities" },
-  { key: "systems", label: "Sistemas", href: "systems" },
-  { key: "arrival", label: "Acceso y llegada", href: "access" },
-];
 
 function toneClass(score: number): string {
   const { usableMinScore, publishableMinScore } = completenessRules.thresholds;
@@ -33,7 +21,9 @@ function toneClass(score: number): string {
  * task list rather than a static grid.
  */
 export function GapsCard({ propertyId, scores }: GapsCardProps) {
-  const sorted = [...ROWS].sort((a, b) => scores[a.key] - scores[b.key]);
+  const sorted = [...OVERVIEW_SECTIONS].sort(
+    (a, b) => scores[a.key] - scores[b.key],
+  );
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
