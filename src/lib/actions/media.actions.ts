@@ -20,7 +20,7 @@ export type ActionResult<T = void> = {
 // ── Helpers ─────────────────────────────────────────────
 
 function isAllowedMimeType(mime: string): boolean {
-  return mime in ALLOWED_MEDIA;
+  return Object.hasOwn(ALLOWED_MEDIA, mime);
 }
 
 function maxSizeForMime(mime: string): number {
@@ -65,6 +65,10 @@ export async function requestUploadAction(
   mimeType: string,
   assetRoleKey: string = "general",
 ): Promise<ActionResult<{ uploadUrl: string; assetId: string }>> {
+  if (!fileName.trim()) {
+    return { success: false, error: "Nombre de archivo requerido" };
+  }
+
   if (!isAllowedMimeType(mimeType)) {
     return {
       success: false,
@@ -148,7 +152,7 @@ export async function confirmUploadAction(
 
   // Validate content type — strict match required
   if (head.contentType !== asset.mimeType) {
-    await deleteObject(asset.storageKey);
+    try { await deleteObject(asset.storageKey); } catch { /* best-effort */ }
     await prisma.mediaAsset.delete({ where: { id: assetId } });
     return {
       success: false,
@@ -159,7 +163,7 @@ export async function confirmUploadAction(
   // Validate size using the verified content type
   const maxSize = maxSizeForMime(head.contentType);
   if (head.contentLength > maxSize) {
-    await deleteObject(asset.storageKey);
+    try { await deleteObject(asset.storageKey); } catch { /* best-effort */ }
     await prisma.mediaAsset.delete({ where: { id: assetId } });
     return {
       success: false,
@@ -235,6 +239,13 @@ export async function getMediaDownloadUrlAction(
     return { success: false, error: "Asset no está listo" };
   }
 
-  const url = await getDownloadUrl(asset.storageKey);
-  return { success: true, data: { url } };
+  try {
+    const url = await getDownloadUrl(asset.storageKey);
+    return { success: true, data: { url } };
+  } catch {
+    return {
+      success: false,
+      error: "No se pudo generar el enlace de descarga",
+    };
+  }
 }
