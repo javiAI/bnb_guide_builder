@@ -50,9 +50,12 @@ function renderItem(item: GuideItem, depth: number, out: string[]): void {
 
 export function renderMarkdown(tree: GuideTree): string {
   const out: string[] = [];
-  out.push(`# ${escapeMd(tree.propertyId)} — audiencia: ${escapeMd(tree.audience)}`);
-  out.push(`_Generado: ${tree.generatedAt}_`);
-  out.push("");
+  // Debug header with propertyId/audience only for non-guest audiences
+  if (tree.audience !== "guest") {
+    out.push(`# ${escapeMd(tree.propertyId)} — audiencia: ${escapeMd(tree.audience)}`);
+    out.push(`_Generado: ${tree.generatedAt}_`);
+    out.push("");
+  }
   for (const section of tree.sections) {
     out.push(`## ${escapeMd(section.label)}`);
     if (section.items.length === 0) {

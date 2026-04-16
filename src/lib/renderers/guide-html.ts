@@ -58,13 +58,16 @@ function renderItem(item: GuideItem, out: string[]): void {
 export function renderHtml(tree: GuideTree): string {
   const out: string[] = [];
   out.push("<article class=\"guide-tree\">");
-  out.push(
-    `<header><h1>${escapeHtml(tree.propertyId)} — audiencia: ${escapeHtml(
-      tree.audience,
-    )}</h1><p class="gt-generated">Generado: ${escapeHtml(
-      tree.generatedAt,
-    )}</p></header>`,
-  );
+  // Debug header with propertyId/audience only for non-guest audiences
+  if (tree.audience !== "guest") {
+    out.push(
+      `<header><h1>${escapeHtml(tree.propertyId)} — audiencia: ${escapeHtml(
+        tree.audience,
+      )}</h1><p class="gt-generated">Generado: ${escapeHtml(
+        tree.generatedAt,
+      )}</p></header>`,
+    );
+  }
   for (const section of tree.sections) {
     out.push(`<section><h2>${escapeHtml(section.label)}</h2>`);
     if (section.items.length === 0) {

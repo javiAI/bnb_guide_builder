@@ -13,9 +13,15 @@ function makeTree(overrides: Partial<GuideTree> = {}): GuideTree {
 }
 
 describe("renderMarkdown — header", () => {
-  it("includes propertyId, audience and generatedAt", () => {
+  it("omits debug header for guest audience", () => {
     const md = renderMarkdown(makeTree());
-    expect(md).toContain("# p1 — audiencia: guest");
+    expect(md).not.toContain("# p1");
+    expect(md).not.toContain("audiencia");
+  });
+
+  it("includes propertyId, audience and generatedAt for internal audience", () => {
+    const md = renderMarkdown(makeTree({ audience: "internal" }));
+    expect(md).toContain("# p1 — audiencia: internal");
     expect(md).toContain("_Generado: 2026-04-16T12:00:00.000Z_");
   });
 });
