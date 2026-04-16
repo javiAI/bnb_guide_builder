@@ -219,9 +219,14 @@ export default async function PublishingPage({
   const publicUrl = property.publicSlug
     ? `${baseUrl}/g/${property.publicSlug}`
     : null;
-  const qrSvg = publicUrl
-    ? await QRCode.toString(publicUrl, { type: "svg", margin: 1, width: 200 })
-    : null;
+  let qrSvg: string | null = null;
+  if (publicUrl) {
+    try {
+      qrSvg = await QRCode.toString(publicUrl, { type: "svg", margin: 1, width: 200 });
+    } catch {
+      // QR generation is non-critical — page still works without it
+    }
+  }
 
   // Only compose live tree + diff when there's a published version to compare against
   const publishedTree = publishedWithTree?.treeJson

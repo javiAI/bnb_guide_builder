@@ -503,8 +503,8 @@ const POLICY_TAXONOMY_TO_DB: Record<string, string | { parent: string; child: st
   "pol.pets": "pets",
   "pol.commercial_photography": "commercialPhotography",
   "pol.services_in_home": "services",
-  "pol.max_guests": "maxGuests",
-  "pol.checkin_checkout": "checkinCheckout",
+  // pol.max_guests → top-level Property.maxGuests column, not in policiesJson
+  // pol.checkin_checkout → type:"ref" in taxonomy, not stored
   "fee.cleaning": { parent: "supplements", child: "cleaning" },
   "fee.extra_guest": { parent: "supplements", child: "extraGuest" },
   // fee.pet is type:"ref" in taxonomy (points to pol.pets fee fields), not a stored value
