@@ -13,8 +13,11 @@
     "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.967.0",
+    "@aws-sdk/s3-request-presigner": "^3.967.0",
     "@prisma/client": "^6.19.3",
     "@react-pdf/renderer": "^4.5.0",
+    "blurhash": "^2.0.5",
     "geo-tz": "^8.1.6",
     "maplibre-gl": "^5.22.0",
     "next": "15.5.14",
@@ -22,6 +25,7 @@
     "qrcode": "^1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sharp": "^0.34.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -33,6 +37,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sharp": "^0.31.1",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",

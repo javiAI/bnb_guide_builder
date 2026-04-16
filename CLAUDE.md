@@ -94,6 +94,7 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - `next dev` salta a 3001/3002/3003 si 3000 está ocupado — `lsof -i -P | grep node` confirma el puerto real
 - `main` no tiene upstream tracking → usar `git pull origin main` (no `git pull` a secas)
 - Cambios de esquema en dev: `prisma db push --accept-data-loss`, no `migrate deploy` (el historial se re-aplica sucio contra una DB ya sincronizada)
+- Media storage (Cloudflare R2): requiere `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` en `.env`. Ver `.env.example` para valores de referencia
 
 ## Patrones de Sistemas
 

@@ -510,6 +510,8 @@ model MediaAsset {
   language         String   @default("es")
   caption          String?
   visibility       VisibilityLevel @default(guest)
+  sizeBytes        Int?     @map("size_bytes")
+  blurhash         String?
   status           String   @default("pending")
   uploadedByUserId String?  @map("uploaded_by_user_id")
   createdAt        DateTime @default(now()) @map("created_at")
