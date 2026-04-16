@@ -67,3 +67,4 @@ Trabajo con trigger condicional — ver [FUTURE.md](FUTURE.md):
 
 - Admin UI para taxonomías (4 niveles)
 - Calibración de completeness (post-uso real)
+- Image resize/optimization on upload (Sharp o Cloudflare Image Resizing) — rama separada post-10A
