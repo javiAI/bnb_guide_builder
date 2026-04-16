@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   createMaintenanceTaskAction,
   deleteMaintenanceTaskAction,
-  type ActionResult,
 } from "@/lib/actions/ops.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 const TASK_TYPES = [
   { id: "plumbing", label: "Fontanería" },

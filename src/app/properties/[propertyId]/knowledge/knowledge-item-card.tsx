@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   updateKnowledgeItemAction,
   deleteKnowledgeItemAction,
-  type ActionResult,
 } from "@/lib/actions/knowledge.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import type { BadgeTone } from "@/lib/types";
 
 interface KnowledgeItemData {

@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import {
   resolveIncidentAction,
   deleteIncidentAction,
-  type ActionResult,
 } from "@/lib/actions/incident.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface IncidentRowActionsProps {
   incidentId: string;

@@ -2,7 +2,8 @@
 
 import { useActionState, useState, useRef, useEffect } from "react";
 import { WizardShell } from "@/components/wizard/wizard-shell";
-import { saveStep2Action, type ActionResult } from "@/lib/actions/wizard.actions";
+import { saveStep2Action } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { spanishProvinces, getItems } from "@/lib/taxonomy-loader";
 import type { StepFormProps } from "@/lib/types/wizard";
 import { COMMON_TIMEZONES } from "@/lib/timezones";

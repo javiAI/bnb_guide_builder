@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { updatePlaybookAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { updatePlaybookAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { visibilityLevelsTaxonomy, getItems } from "@/lib/taxonomy-loader";
 

@@ -4,7 +4,8 @@ import { useActionState, useState, useCallback } from "react";
 import { WizardShell } from "@/components/wizard/wizard-shell";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { saveStep3Action, type ActionResult } from "@/lib/actions/wizard.actions";
+import { saveStep3Action } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { bedTypes, getItems } from "@/lib/taxonomy-loader";
 import type { StepFormProps } from "@/lib/types/wizard";
 

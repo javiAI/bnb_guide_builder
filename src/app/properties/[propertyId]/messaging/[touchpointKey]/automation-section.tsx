@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   createMessageAutomationAction,
   deleteMessageAutomationAction,
-  type ActionResult,
 } from "@/lib/actions/messaging.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { automationChannels, getItems } from "@/lib/taxonomy-loader";
 
 const channels = getItems(automationChannels);

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createSpaceAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { createSpaceAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface SpaceTypeOption {
   id: string;

@@ -10,12 +10,7 @@ import {
   createMaintenanceTaskSchema,
   updateMaintenanceTaskSchema,
 } from "@/lib/schemas/ops.schema";
-
-export type ActionResult = {
-  success: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string[]>;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Checklist Items ──
 

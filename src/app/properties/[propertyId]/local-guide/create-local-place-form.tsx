@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createLocalPlaceAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { createLocalPlaceAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 const CATEGORIES = [
   { value: "restaurant", label: "Restaurante" },

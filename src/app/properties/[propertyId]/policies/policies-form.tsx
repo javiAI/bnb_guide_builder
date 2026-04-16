@@ -8,7 +8,8 @@ import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { savePoliciesAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { savePoliciesAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { getPolicyOptions, getPolicyFieldOptions } from "@/lib/taxonomy-loader";
 import type { PoliciesData } from "@/lib/schemas/editor.schema";
 

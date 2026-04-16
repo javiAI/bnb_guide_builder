@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
-import { createContactAction, updateContactAction, deleteContactAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { createContactAction, updateContactAction, deleteContactAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { contactTypes } from "@/lib/contact-types-loader";
 
 interface Contact {

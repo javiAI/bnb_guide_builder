@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   createStockItemAction,
   deleteStockItemAction,
-  type ActionResult,
 } from "@/lib/actions/ops.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 const STOCK_CATEGORIES = [
   { id: "toiletries", label: "Artículos de baño" },

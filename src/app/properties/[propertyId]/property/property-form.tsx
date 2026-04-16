@@ -7,7 +7,8 @@ import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
-import { savePropertyAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { savePropertyAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { propertyTypes, roomTypes, spanishProvinces, spaceAvailabilityRules, propertyEnvironments, getItems, findItem } from "@/lib/taxonomy-loader";
 import { COMMON_TIMEZONES } from "@/lib/timezones";
 import dynamic from "next/dynamic";

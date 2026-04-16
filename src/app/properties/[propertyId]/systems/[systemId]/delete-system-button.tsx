@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteSystemAction } from "@/lib/actions/editor.actions";
-import type { ActionResult } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface Props {
   systemId: string;

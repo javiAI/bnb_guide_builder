@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveSettingsAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { saveSettingsAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface SettingsFormProps {
   propertyId: string;

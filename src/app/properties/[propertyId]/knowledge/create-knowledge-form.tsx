@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createKnowledgeItemAction, type ActionResult } from "@/lib/actions/knowledge.actions";
+import { createKnowledgeItemAction } from "@/lib/actions/knowledge.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface CreateKnowledgeItemFormProps {
   propertyId: string;

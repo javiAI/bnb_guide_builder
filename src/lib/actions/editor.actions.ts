@@ -32,12 +32,7 @@ import {
   updateSystemSchema,
   updateSystemCoverageSchema,
 } from "@/lib/schemas/editor.schema";
-
-export type ActionResult = {
-  success: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string[]>;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Shared helpers ──
 

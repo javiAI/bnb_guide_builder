@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createSystemAction } from "@/lib/actions/editor.actions";
 import { getSystemGroups } from "@/lib/taxonomy-loader";
-import type { ActionResult } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface Props {
   propertyId: string;
