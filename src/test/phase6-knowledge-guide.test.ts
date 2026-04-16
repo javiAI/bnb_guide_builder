@@ -1,10 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { z } from "zod";
 import {
   createKnowledgeItemSchema,
   updateKnowledgeItemSchema,
-  createGuideSectionItemSchema,
-  updateGuideSectionSchema,
 } from "@/lib/schemas/knowledge.schema";
 import {
   getRenderConfigsForTarget,
@@ -55,26 +52,6 @@ describe("Knowledge schemas", () => {
   });
 });
 
-describe("Guide section schemas", () => {
-  it("rejects empty section title", () => {
-    const result = updateGuideSectionSchema.safeParse({ title: "" });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects empty content in section item", () => {
-    const result = createGuideSectionItemSchema.safeParse({ contentMd: "" });
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts valid section item", () => {
-    const result = createGuideSectionItemSchema.safeParse({
-      contentMd: "Bienvenido a tu alojamiento...",
-      visibility: "guest",
-      sortOrder: 0,
-    });
-    expect(result.success).toBe(true);
-  });
-});
 
 describe("Renderer registry for guide/AI", () => {
   it("guest_guide target returns at least 5 sections", () => {

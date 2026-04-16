@@ -2,20 +2,41 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 
 /**
- * Write owner: guide versions, sections, and section items.
+ * Write owner: guide versions (snapshot-based, 9C).
+ * GuideSection/GuideSectionItem tables removed — treeJson is the single source.
  */
 export const guideRepository = {
   findVersionsByProperty(propertyId: string) {
     return prisma.guideVersion.findMany({
       where: { propertyId },
       orderBy: { version: "desc" },
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+      },
     });
   },
 
   findVersionById(id: string) {
     return prisma.guideVersion.findUnique({
       where: { id },
-      include: { sections: { include: { items: true }, orderBy: { sortOrder: "asc" } } },
+    });
+  },
+
+  findPublishedVersion(propertyId: string) {
+    return prisma.guideVersion.findFirst({
+      where: { propertyId, status: "published" },
+      orderBy: { version: "desc" },
+    });
+  },
+
+  findLatestVersion(propertyId: string) {
+    return prisma.guideVersion.findFirst({
+      where: { propertyId },
+      orderBy: { version: "desc" },
     });
   },
 
@@ -25,21 +46,5 @@ export const guideRepository = {
 
   updateVersion(id: string, data: Prisma.GuideVersionUpdateInput) {
     return prisma.guideVersion.update({ where: { id }, data });
-  },
-
-  createSection(data: Prisma.GuideSectionCreateInput) {
-    return prisma.guideSection.create({ data });
-  },
-
-  updateSection(id: string, data: Prisma.GuideSectionUpdateInput) {
-    return prisma.guideSection.update({ where: { id }, data });
-  },
-
-  createSectionItem(data: Prisma.GuideSectionItemCreateInput) {
-    return prisma.guideSectionItem.create({ data });
-  },
-
-  updateSectionItem(id: string, data: Prisma.GuideSectionItemUpdateInput) {
-    return prisma.guideSectionItem.update({ where: { id }, data });
   },
 };

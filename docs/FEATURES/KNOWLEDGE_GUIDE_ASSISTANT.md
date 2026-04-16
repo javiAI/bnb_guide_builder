@@ -28,6 +28,17 @@ Reglas:
 - secciones ordenadas por key y sortOrder
 - publish crea snapshot, no overwrite destructivo
 
+### Publishing workflow (Rama 9C)
+
+Publicar congela el `GuideTree` live en un `GuideVersion.treeJson` inmutable:
+
+- **Publish**: `composeGuide(propertyId, "internal")` → serializa como `treeJson` en nueva `GuideVersion` con `status="published"`. Versiones previas se archivan (`status="archived"`).
+- **Unpublish**: marca la versión publicada como `archived`.
+- **Rollback**: crea una nueva versión (N+1) con el `treeJson` de una versión archivada anterior. Historial lineal, nunca se reescribe.
+- **Diff**: `computeGuideDiff(oldTree, newTree)` calcula diferencias on-the-fly entre la versión publicada y el árbol live (secciones/items añadidos, eliminados, modificados).
+- **Snapshot único**: audience=internal captura todo; el filtrado por audience aplica al renderizar, no al publicar.
+- Los modelos `GuideSection` y `GuideSectionItem` fueron deprecados — `treeJson` es la única fuente de verdad para versiones publicadas.
+
 ### Output formats (Rama 9B)
 
 El `GuideTree` devuelto por `composeGuide(propertyId, audience)` (ver `src/lib/services/guide-rendering.service.ts`) se expone en cuatro formatos vía `GET /api/properties/:id/guide?audience&format`:
