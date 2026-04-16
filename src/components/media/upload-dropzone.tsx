@@ -5,6 +5,7 @@ import {
   requestUploadAction,
   confirmUploadAction,
   assignMediaAction,
+  deleteMediaAction,
 } from "@/lib/actions/media.actions";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
@@ -45,21 +46,25 @@ export function UploadDropzone({
     [],
   );
 
+  /** Returns true if the file was uploaded and assigned successfully. */
   const processFile = useCallback(
-    async (file: File) => {
+    async (file: File): Promise<boolean> => {
       const jobId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const job: UploadJob = { id: jobId, fileName: file.name, progress: "requesting" };
       setJobs((prev) => [...prev, job]);
+
+      let assetId: string | null = null;
 
       try {
         // 1. Request presigned upload URL
         const reqResult = await requestUploadAction(propertyId, file.name, file.type);
         if (!reqResult.success || !reqResult.data) {
           updateJob(jobId, { progress: "error", error: reqResult.error });
-          return;
+          return false;
         }
 
-        const { uploadUrl, assetId } = reqResult.data;
+        const { uploadUrl } = reqResult.data;
+        assetId = reqResult.data.assetId;
 
         // 2. Upload file directly to R2
         updateJob(jobId, { progress: "uploading" });
@@ -71,7 +76,8 @@ export function UploadDropzone({
 
         if (!uploadResponse.ok) {
           updateJob(jobId, { progress: "error", error: `Upload falló: ${uploadResponse.status}` });
-          return;
+          deleteMediaAction(assetId).catch(() => {});
+          return false;
         }
 
         // 3. Confirm upload (validates in R2, generates blurhash)
@@ -79,7 +85,7 @@ export function UploadDropzone({
         const confirmResult = await confirmUploadAction(assetId);
         if (!confirmResult.success) {
           updateJob(jobId, { progress: "error", error: confirmResult.error });
-          return;
+          return false;
         }
 
         // 4. Assign to entity
@@ -87,31 +93,36 @@ export function UploadDropzone({
         const assignResult = await assignMediaAction(assetId, entityType, entityId);
         if (!assignResult.success) {
           updateJob(jobId, { progress: "error", error: assignResult.error });
-          return;
+          return false;
         }
 
         setJobs((prev) => prev.filter((j) => j.id !== jobId));
-        onUploadComplete?.();
+        return true;
       } catch (err) {
         updateJob(jobId, {
           progress: "error",
           error: err instanceof Error ? err.message : "Error desconocido",
         });
+        if (assetId) deleteMediaAction(assetId).catch(() => {});
+        return false;
       }
     },
-    [propertyId, entityType, entityId, onUploadComplete, updateJob],
+    [propertyId, entityType, entityId, updateJob],
   );
 
   const handleFiles = useCallback(
     async (files: FileList | File[]) => {
       const fileArray = Array.from(files);
       const MAX_CONCURRENT = 3;
+      let anySuccess = false;
       for (let i = 0; i < fileArray.length; i += MAX_CONCURRENT) {
         const batch = fileArray.slice(i, i + MAX_CONCURRENT);
-        await Promise.all(batch.map((file) => processFile(file)));
+        const results = await Promise.all(batch.map((file) => processFile(file)));
+        if (results.some(Boolean)) anySuccess = true;
       }
+      if (anySuccess) onUploadComplete?.();
     },
-    [processFile],
+    [processFile, onUploadComplete],
   );
 
   const handleDrop = useCallback(

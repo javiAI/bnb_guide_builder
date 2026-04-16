@@ -98,8 +98,9 @@ export function EntityGallery({
 
   // ── Drag & drop reorder ──
 
-  const handleDragStart = useCallback((index: number) => {
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
     dragItemRef.current = index;
+    e.dataTransfer.setData("text/plain", String(index));
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -169,7 +170,7 @@ export function EntityGallery({
                   onRemove={optimisticRemove}
                   onSetCover={optimisticSetCover}
                   draggable
-                  onDragStart={() => handleDragStart(index)}
+                  onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={handleDragOver}
                   onDrop={() => handleDrop(index)}
                 />

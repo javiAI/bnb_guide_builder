@@ -106,8 +106,10 @@ import {
   deleteMediaAction,
   getMediaDownloadUrlAction,
   assignMediaAction,
+  unassignMediaAction,
   reorderMediaAction,
   setCoverAction,
+  getEntityMediaAction,
 } from "@/lib/actions/media.actions";
 
 const mockFetch = vi.fn();
@@ -433,5 +435,94 @@ describe("setCoverAction", () => {
         data: { usageKey: null },
       }),
     );
+  });
+});
+
+describe("unassignMediaAction", () => {
+  it("returns error if assignment not found", async () => {
+    mockAssignmentFindUnique.mockResolvedValue(null);
+
+    const result = await unassignMediaAction("nonexistent");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no encontrada");
+  });
+
+  it("deletes the assignment and revalidates", async () => {
+    mockAssignmentFindUnique.mockResolvedValue({
+      id: "assign_1",
+      mediaAsset: { propertyId: "p1" },
+    });
+    mockAssignmentDelete.mockResolvedValue({});
+
+    const result = await unassignMediaAction("assign_1");
+    expect(result.success).toBe(true);
+    expect(mockAssignmentDelete).toHaveBeenCalledWith({ where: { id: "assign_1" } });
+  });
+});
+
+describe("getEntityMediaAction", () => {
+  it("rejects invalid entityType", async () => {
+    const result = await getEntityMediaAction("invalid" as never, "e1");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no válido");
+  });
+
+  it("returns assignments with download URLs for ready assets", async () => {
+    mockAssignmentFindMany.mockResolvedValue([
+      {
+        id: "assign_1",
+        mediaAssetId: "a1",
+        entityType: "space",
+        entityId: "s1",
+        sortOrder: 0,
+        usageKey: null,
+        mediaAsset: {
+          id: "a1",
+          storageKey: "p1/a1/photo.jpg",
+          mimeType: "image/jpeg",
+          mediaType: "image",
+          caption: null,
+          blurhash: null,
+          status: "ready",
+          visibility: "guest",
+        },
+      },
+    ]);
+    mockGetDownloadUrl.mockResolvedValue("https://r2.example.com/signed");
+
+    const result = await getEntityMediaAction("space", "s1");
+    expect(result.success).toBe(true);
+    expect(result.data?.assignments).toHaveLength(1);
+    expect(result.data?.assignments[0].downloadUrl).toBe("https://r2.example.com/signed");
+    // storageKey must not be exposed to client
+    expect(result.data?.assignments[0].mediaAsset).not.toHaveProperty("storageKey");
+  });
+
+  it("returns null URL for non-ready assets", async () => {
+    mockAssignmentFindMany.mockResolvedValue([
+      {
+        id: "assign_2",
+        mediaAssetId: "a2",
+        entityType: "space",
+        entityId: "s1",
+        sortOrder: 0,
+        usageKey: null,
+        mediaAsset: {
+          id: "a2",
+          storageKey: "p1/a2/photo.jpg",
+          mimeType: "image/jpeg",
+          mediaType: "image",
+          caption: null,
+          blurhash: null,
+          status: "pending",
+          visibility: "guest",
+        },
+      },
+    ]);
+
+    const result = await getEntityMediaAction("space", "s1");
+    expect(result.success).toBe(true);
+    expect(result.data?.assignments[0].downloadUrl).toBeNull();
+    expect(mockGetDownloadUrl).not.toHaveBeenCalled();
   });
 });

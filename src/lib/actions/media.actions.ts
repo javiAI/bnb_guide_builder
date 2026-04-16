@@ -270,7 +270,6 @@ export type MediaAssignmentWithAsset = {
   usageKey: string | null;
   mediaAsset: {
     id: string;
-    storageKey: string;
     mimeType: string;
     mediaType: string;
     caption: string | null;
@@ -492,7 +491,8 @@ export async function getEntityMediaAction(
           // URL generation failed — return null, client handles gracefully
         }
       }
-      return { ...a, downloadUrl };
+      const { storageKey: _, ...assetWithoutKey } = a.mediaAsset;
+      return { ...a, mediaAsset: assetWithoutKey, downloadUrl };
     }),
   );
 

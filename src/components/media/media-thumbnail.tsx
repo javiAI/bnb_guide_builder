@@ -41,7 +41,7 @@ export function MediaThumbnail({
   const imgRetryRef = useRef(0);
 
   const isCover = data.usageKey === "cover";
-  const isImage = data.mediaType === "image";
+  const isImage = data.mediaType === "image" || data.mediaType === "photo";
   const isReady = data.status === "ready";
 
   async function handleOpenFullSize() {
