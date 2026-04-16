@@ -491,16 +491,53 @@ function resolveAmenities(ctx: GuideContext): GuideItem[] {
   });
 }
 
+/**
+ * Maps taxonomy IDs (pol.*, fee.*) to the camelCase keys stored in policiesJson.
+ * The form saves with camelCase keys directly; fee.* items are nested under
+ * `supplements`.
+ */
+const POLICY_TAXONOMY_TO_DB: Record<string, string | { parent: string; child: string }> = {
+  "pol.quiet_hours": "quietHours",
+  "pol.smoking": "smoking",
+  "pol.events": "events",
+  "pol.pets": "pets",
+  "pol.commercial_photography": "commercialPhotography",
+  "pol.services_in_home": "services",
+  "pol.max_guests": "maxGuests",
+  "pol.checkin_checkout": "checkinCheckout",
+  "fee.cleaning": { parent: "supplements", child: "cleaning" },
+  "fee.extra_guest": { parent: "supplements", child: "extraGuest" },
+  "fee.pet": { parent: "supplements", child: "pet" },
+};
+
+function lookupPolicyValue(
+  parsed: Record<string, unknown>,
+  taxonomyId: string,
+): unknown {
+  const mapping = POLICY_TAXONOMY_TO_DB[taxonomyId];
+  if (!mapping) return undefined;
+  if (typeof mapping === "string") return parsed[mapping];
+  // Nested key (fee.* → supplements.child)
+  const parentObj = parsed[mapping.parent];
+  if (typeof parentObj !== "object" || parentObj === null) return undefined;
+  return (parentObj as Record<string, unknown>)[mapping.child];
+}
+
 function resolveRules(ctx: GuideContext): GuideItem[] {
   const parsed = ctx.property?.policiesJson as Record<string, unknown> | null | undefined;
   if (!parsed) return [];
 
   const items: GuideItem[] = [];
-  const knownIds = new Set<string>();
+  // Track which DB keys are covered by the taxonomy so the deprecated pass
+  // doesn't duplicate them.
+  const coveredDbKeys = new Set<string>();
   for (const group of policyTaxonomy.groups) {
     for (const policyItem of group.items) {
-      knownIds.add(policyItem.id);
-      const rawValue = parsed[policyItem.id];
+      const mapping = POLICY_TAXONOMY_TO_DB[policyItem.id];
+      if (mapping) {
+        coveredDbKeys.add(typeof mapping === "string" ? mapping : mapping.parent);
+      }
+      const rawValue = lookupPolicyValue(parsed, policyItem.id);
       if (rawValue === undefined || rawValue === null) continue;
       const valueStr =
         typeof rawValue === "object"
@@ -521,10 +558,10 @@ function resolveRules(ctx: GuideContext): GuideItem[] {
       });
     }
   }
-  // Keys not in the taxonomy surface as deprecated so renamed policies never
-  // swallow persisted data.
+  // Keys not covered by the taxonomy surface as deprecated so renamed policies
+  // never swallow persisted data.
   for (const [key, value] of Object.entries(parsed)) {
-    if (knownIds.has(key)) continue;
+    if (coveredDbKeys.has(key)) continue;
     if (value === undefined || value === null) continue;
     const valueStr =
       typeof value === "object" ? JSON.stringify(value) : String(value);
