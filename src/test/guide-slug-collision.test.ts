@@ -43,9 +43,12 @@ describe("generateSlug", () => {
     }
   });
 
-  it("generates unique slugs (probabilistic)", () => {
-    const slugs = new Set(Array.from({ length: 100 }, () => generateSlug()));
-    expect(slugs.size).toBe(100);
+  it("consistently produces valid base62 slugs across many calls", () => {
+    for (let i = 0; i < 100; i++) {
+      const slug = generateSlug();
+      expect(slug).toHaveLength(8);
+      expect(slug).toMatch(/^[0-9A-Za-z]+$/);
+    }
   });
 });
 

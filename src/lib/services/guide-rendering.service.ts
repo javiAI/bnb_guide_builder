@@ -507,7 +507,7 @@ const POLICY_TAXONOMY_TO_DB: Record<string, string | { parent: string; child: st
   "pol.checkin_checkout": "checkinCheckout",
   "fee.cleaning": { parent: "supplements", child: "cleaning" },
   "fee.extra_guest": { parent: "supplements", child: "extraGuest" },
-  "fee.pet": { parent: "supplements", child: "pet" },
+  // fee.pet is type:"ref" in taxonomy (points to pol.pets fee fields), not a stored value
 };
 
 function lookupPolicyValue(
@@ -524,8 +524,17 @@ function lookupPolicyValue(
 }
 
 function resolveRules(ctx: GuideContext): GuideItem[] {
-  const parsed = ctx.property?.policiesJson as Record<string, unknown> | null | undefined;
-  if (!parsed) return [];
+  const raw = ctx.property?.policiesJson;
+  if (!raw) return [];
+  // Guard against legacy string-encoded JSON
+  let parsed: Record<string, unknown>;
+  if (typeof raw === "string") {
+    try { parsed = JSON.parse(raw); } catch { return []; }
+  } else if (typeof raw === "object" && !Array.isArray(raw)) {
+    parsed = raw as Record<string, unknown>;
+  } else {
+    return [];
+  }
 
   const items: GuideItem[] = [];
   // Track which DB keys are covered by the taxonomy so the deprecated pass
