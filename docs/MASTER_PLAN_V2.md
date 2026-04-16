@@ -525,6 +525,51 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
+### Rama 10D — `feat/guide-react-renderer`
+
+**Propósito**: reemplazar `renderHtml()` + `dangerouslySetInnerHTML` en la ruta pública `/g/:slug` con un **renderer React** que recorre `GuideTree` con componentes styled. Esto desbloquea multimedia, mapas, interactividad y un diseño visualmente profesional.
+
+**Motivación**: la guía pública actual es HTML plano sin estilos. Un renderer React:
+- Permite iconos por sección (taxonomía ya tiene `icon` por section/amenity)
+- Cards por espacio con galería de fotos (consume `GuideMedia[]` de 10C)
+- Mapas embebidos para guía local (Leaflet/Mapbox, `latitude`/`longitude` ya disponibles)
+- Navegación lateral/TOC sticky para scroll rápido
+- Soporte futuro para animaciones, video embebido, contenido interactivo
+- Escalable: cada nueva sección/amenity se renderiza automáticamente por la uniformidad del `GuideTree`
+
+**Archivos a crear**:
+- `src/components/public-guide/guide-renderer.tsx` — componente raíz que itera `GuideTree.sections`
+- `src/components/public-guide/section-card.tsx` — card por sección con icono y header styled
+- `src/components/public-guide/guide-item.tsx` — item con fields, media, children
+- `src/components/public-guide/guide-toc.tsx` — tabla de contenidos sticky con scroll-to-section
+- `src/components/public-guide/guide-media-gallery.tsx` — galería de fotos/video dentro de items (consume `GuideMedia[]`)
+- `src/components/public-guide/guide-map.tsx` — mapa embebido para guía local (lazy-loaded)
+
+**Archivos a modificar**:
+- `src/app/g/[slug]/page.tsx` — reemplazar `renderHtml()` + `dangerouslySetInnerHTML` con `<GuideRenderer tree={guestTree} />`
+- `src/app/g/[slug]/guide.css` — estilos dedicados para la guía pública (responsive, mobile-first)
+
+**Tests**:
+- `src/test/guide-react-renderer.test.tsx` — cada sección tipo se renderiza; media muestra galería; TOC contiene secciones no vacías; items deprecated se marcan visualmente
+
+**Criterio de done**: la guía pública en `/g/:slug` se ve profesional, mobile-first, con TOC navegable, iconos, cards, y slots listos para media/mapas. Añadir una nueva sección a la taxonomía la renderiza automáticamente sin tocar componentes.
+
+**Preparación**:
+- **Contexto a leer**:
+  - Código de 9D (public page), 10C (media in guide), 9A (GuideTree types)
+  - `taxonomies/guide_sections.json` — campos `icon`, `maxVisibility`
+  - `src/config/registries/icon-registry.ts` — patrón de iconos por sección
+  - Diseño de guías de referencia (Airbnb guidebooks, Hostfully, Touch Stay) para UX benchmarking
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — documentar patrón renderer React
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` — añadir sección sobre cómo se extiende el renderer público
+- **Skills/tools específicos**:
+  - **`/firecrawl-search`** antes: benchmarking visual de guías de huésped existentes (Airbnb, Hostfully, Touch Stay).
+  - **`/excalidraw-diagram`** antes: diseño de layout y componentes del renderer.
+  - **`/playwright-cli`** al final: verificar responsive (mobile, tablet, desktop), TOC, galería.
+
+---
+
 ## FASE 11 — Knowledge + Assistant
 
 **Objetivo**: knowledge base viva y assistant con retrieval real. Diferenciador del producto.
@@ -652,6 +697,41 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `docs/QA_AND_RELEASE.md` § "Release gates" — añadir gate de accuracy del assistant con umbral concreto
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Evals"
 - **Skills/tools específicos**: ninguno extra
+
+---
+
+### Rama 11E — `feat/guide-semantic-search`
+
+**Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings de 11B.
+
+**Motivación**: una guía con 7+ secciones y decenas de items necesita búsqueda eficiente. El huésped escribe "cómo llego" y el buscador lo lleva a la sección de Llegada; escribe "mascota" y ve la política de mascotas. No solo busca en títulos sino en contenido completo + comprende sinónimos e intención.
+
+**Archivos a crear**:
+- `src/components/public-guide/guide-search.tsx` — componente de búsqueda con input + resultados instant (client component)
+- `src/app/api/g/[slug]/search/route.ts` — endpoint público: recibe query, ejecuta vector search sobre `KnowledgeItem` embeddings filtrados por propertyId + audience=guest, retorna items rankeados con sectionId para scroll-to
+- `src/lib/services/guide-search.service.ts` — lógica de búsqueda: embed query → cosine similarity → mapeo a secciones del GuideTree
+
+**Archivos a modificar**:
+- `src/components/public-guide/guide-renderer.tsx` (de 10D) — integrar `<GuideSearch>` en el header, conectar resultado con scroll-to-section
+- `src/app/g/[slug]/page.tsx` — pasar propertyId al search component
+
+**Tests**:
+- `src/test/guide-search.test.ts` — query "wifi" retorna sección de amenities con wifi; query "llegar" retorna arrival; query con typo funciona por similitud semántica; nunca retorna items `internal`/`sensitive`
+
+**Criterio de done**: huésped puede buscar en la guía pública con lenguaje natural y navegar directamente al contenido relevante. Búsqueda funciona por significado, no solo por keyword.
+
+**Dependencias**: 11A (knowledge items), 11B (embeddings + retriever), 10D (React renderer con TOC scroll-to)
+
+**Preparación**:
+- **Contexto a leer**:
+  - Pipeline de 11B (retriever + vector search)
+  - Renderer de 10D (guide-renderer, guide-toc, scroll-to-section)
+  - `src/lib/services/guide-search.service.ts` — reutilizar retriever.ts adaptado a contexto público
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Public guide search"
+  - `docs/API_ROUTES.md` — documentar `GET /api/g/:slug/search?q=`
+- **Skills/tools específicos**:
+  - **Context7** (auto) — docs de pgvector para cosine similarity queries.
 
 ---
 
@@ -982,6 +1062,8 @@ Fase 10 (paralelo con 9)                     9C Publish workflow
   10A S3 storage ──► 10B Gallery                ▼
            ▼                                  9D Shareable link
       10C Media in guide ◄─────────────────────┘
+           ▼
+      10D React renderer (guía visual, TOC, media, mapas)
                        ▼
                   Fase 11 (requiere 9 + 10)
                     11A Knowledge autoextract
@@ -991,6 +1073,8 @@ Fase 10 (paralelo con 9)                     9C Publish workflow
                     11C Escalation
                         ▼
                     11D Evals
+                        ▼
+                    11E Semantic search (guía pública)
 
 Fase 12 (requiere 11A mínimo para resolver variables con knowledge)
   12A Variables ──► 12B Automations ──► 12C Starter packs
@@ -1024,8 +1108,8 @@ Fase 14 (requiere estabilidad de 9-11)
 
 - Fase 8: 3 PRs paralelizables → 2-3 días
 - Fase 9: secuencial (9A→9B→9C→9D) → 2-3 semanas
-- Fase 10: 10A→10B→10C, paralelizable parcial con 9B+
-- Fase 11: 11A→11B→11C→11D secuencial → 3-4 semanas
+- Fase 10: 10A→10B→10C→10D secuencial, paralelizable parcial con 9B+
+- Fase 11: 11A→11B→11C→11D→11E secuencial → 4-5 semanas
 - Fase 12: paralelizable 12A independiente, 12B→12C secuencial → 1-2 semanas
 - Fase 13: 3 PRs paralelizables → 1-2 semanas
 - Fase 14: depende de decisión estratégica; 4 PRs secuenciales → 6-8 semanas
