@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface ShareableLinkProps {
   url: string;
@@ -9,6 +9,7 @@ interface ShareableLinkProps {
 
 export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleCopy() {
     try {
@@ -17,12 +18,9 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback: select the input text for manual copy
-      const input = document.querySelector<HTMLInputElement>(
-        'input[data-shareable-url]',
-      );
-      if (input) {
-        input.select();
-        input.setSelectionRange(0, input.value.length);
+      if (inputRef.current) {
+        inputRef.current.select();
+        inputRef.current.setSelectionRange(0, inputRef.current.value.length);
       }
     }
   }
@@ -41,8 +39,8 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
           type="text"
           readOnly
           value={url}
+          ref={inputRef}
           aria-label="URL de la guía compartible"
-          data-shareable-url
           className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none"
         />
         <a

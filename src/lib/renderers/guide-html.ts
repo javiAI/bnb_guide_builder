@@ -58,7 +58,6 @@ function renderItem(item: GuideItem, out: string[]): void {
 export function renderHtml(tree: GuideTree): string {
   const out: string[] = [];
   out.push("<article class=\"guide-tree\">");
-  // Debug header with propertyId/audience only for non-guest audiences
   if (tree.audience !== "guest") {
     out.push(
       `<header><h1>${escapeHtml(tree.propertyId)} — audiencia: ${escapeHtml(

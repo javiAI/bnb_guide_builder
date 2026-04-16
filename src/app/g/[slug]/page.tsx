@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
@@ -9,10 +10,11 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-async function resolveGuide(slug: string): Promise<{
+// cache() deduplicates across generateMetadata + page within a single render pass
+const resolveGuide = cache(async (slug: string): Promise<{
   property: { propertyNickname: string } | null;
   tree: GuideTree | null;
-}> {
+}> => {
   const property = await prisma.property.findUnique({
     where: { publicSlug: slug },
     select: {
@@ -45,7 +47,7 @@ async function resolveGuide(slug: string): Promise<{
   };
 
   return { property, tree: guestTree };
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

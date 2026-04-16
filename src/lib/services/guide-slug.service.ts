@@ -7,6 +7,7 @@
 
 import crypto from "crypto";
 import { prisma } from "@/lib/db";
+import { isPrismaUniqueViolation } from "@/lib/utils";
 
 const SLUG_LENGTH = 8;
 const SLUG_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -56,13 +57,7 @@ export async function ensurePropertySlug(propertyId: string): Promise<string> {
       });
       return result;
     } catch (err) {
-      const isCollision =
-        typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code?: string }).code === "P2002";
-      if (!isCollision) throw err;
-      // Slug collision on unique index — retry with a new slug
+      if (!isPrismaUniqueViolation(err)) throw err;
     }
   }
   throw new Error(`Failed to generate unique slug after ${MAX_RETRIES} attempts`);

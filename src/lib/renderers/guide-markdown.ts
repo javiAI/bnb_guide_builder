@@ -1,9 +1,9 @@
 /**
  * Markdown renderer for `GuideTree` — deterministic, snapshot-friendly output.
  *
- * Output contract:
- *   # <propertyId> — audiencia: <audience>
- *   _Generado: <generatedAt ISO>_
+ * Output contract (non-guest audiences include a debug header):
+ *   # <propertyId> — audiencia: <audience>    ← omitted for guest
+ *   _Generado: <generatedAt ISO>_             ← omitted for guest
  *
  *   ## <section.label>
  *   - **<item.label>**: <item.value>
@@ -50,7 +50,6 @@ function renderItem(item: GuideItem, depth: number, out: string[]): void {
 
 export function renderMarkdown(tree: GuideTree): string {
   const out: string[] = [];
-  // Debug header with propertyId/audience only for non-guest audiences
   if (tree.audience !== "guest") {
     out.push(`# ${escapeMd(tree.propertyId)} — audiencia: ${escapeMd(tree.audience)}`);
     out.push(`_Generado: ${tree.generatedAt}_`);
