@@ -1,6 +1,40 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 Implementa exactamente el paquete `version_3`.
+
+## Architecture
+
+Next.js 15 App Router + Prisma + PostgreSQL + Tailwind CSS.
+
+- `src/app/` — pages and API routes (App Router, server components by default)
+- `src/app/api/` — REST endpoints (assistant-conversations, geo, properties)
+- `src/lib/actions/` — server actions grouped by domain (editor, wizard, guide, incident, messaging, ops, knowledge)
+- `src/lib/services/` — business logic (completeness scoring, guide rendering/diff, space availability, property derivation)
+- `src/lib/repositories/` — data access layer
+- `src/config/` — config-driven system: schemas (wizard-steps, section-editors, field-dependencies) + registries (icons, renderers, media)
+- `src/lib/types/` — shared TypeScript types
+- `src/components/` — React components (layout, overview, ui, wizard)
+- `taxonomies/` — 30 JSON files defining all domain catalogs (amenities, spaces, systems, policies, etc.)
+- `src/lib/taxonomy-loader.ts` — runtime loader for taxonomy JSON files
+- `src/lib/conditional-engine/` — rule engine for dynamic field visibility
+- `prisma/schema.prisma` — data model (~30KB, canonical source of truth)
+- `src/test/` — 53 test files, Vitest + jsdom
+
+Config-driven pattern: taxonomy JSON → loader → config registry → UI renderer. Adding a new amenity/policy/space type = edit JSON + possibly registry, never touch React components.
+
+## Build & Test Commands
+
+```bash
+npm run dev          # Dev server (localhost:3000)
+npm run build        # Production build
+npm run lint         # ESLint
+npm run typecheck    # tsc --noEmit (run prisma generate first!)
+npm run test         # Vitest (all tests)
+npm run test:watch   # Vitest watch mode
+vitest run src/test/config-driven.test.ts  # Single test file
+```
 
 ## Orden de lectura
 
@@ -73,6 +107,8 @@ Implementa exactamente el paquete `version_3`.
 - `FormEvent<HTMLFormElement>` (not `React.FormEvent`): importar `type FormEvent` de `"react"` en archivos que no importan el namespace React
 - Antes de crear una server action nueva, grep por el nombre de cada export planeado para verificar que no existe ya un consumidor del módulo existente — este repo arrastró un archivo de 125 LOC sin consumidores durante tres branches
 - Añadir un tipo de campo nuevo para subtypes (amenity/system) = 1 entrada en `src/config/registries/field-type-registry.ts` (`FIELD_TYPES` + `validate`) + 1 entrada en `field-type-renderers.tsx` (`RENDERERS`). El test `field-type-coverage.test.ts` falla si algún `type` en `amenity_subtypes.json` o `system_subtypes.json` no está registrado; `getFieldType()` lanza en boot para tipos desconocidos (no fallback silencioso a texto)
+- Prisma `Json?` null semantics: `Prisma.JsonNull` (campo = JSON null), `Prisma.DbNull` (campo = SQL NULL), `Prisma.AnyNull` (cualquiera de los dos). Filtrar "tiene contenido": `where: { campo: { not: Prisma.AnyNull } }`
+- Campos `Json?` grandes (e.g. `treeJson`): no incluir en queries de listado — fetch selectivo solo cuando se necesita el contenido
 
 ## Patrones de UI — Espacios
 

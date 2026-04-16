@@ -185,6 +185,7 @@ Son derivadas, no write owners:
 - Completeness scores
 - AI export payloads
 - Guest guide render trees
+- `GuideVersion.treeJson` — snapshot inmutable del `GuideTree` al momento de publicar (audience=internal, se filtra al renderizar)
 
 ## 7. Synchronization rules
 

@@ -21,22 +21,3 @@ export const updateKnowledgeItemSchema = z.object({
 export type CreateKnowledgeItemData = z.infer<typeof createKnowledgeItemSchema>;
 export type UpdateKnowledgeItemData = z.infer<typeof updateKnowledgeItemSchema>;
 
-// ── Guide Versions ──
-
-export const createGuideVersionSchema = z.object({
-  // version number is auto-incremented
-});
-
-export const updateGuideSectionSchema = z.object({
-  title: z.string().min(1, "El título es obligatorio"),
-  sortOrder: z.number().int().optional(),
-});
-
-export const createGuideSectionItemSchema = z.object({
-  contentMd: z.string().min(1, "El contenido es obligatorio"),
-  visibility: z.enum(visibilityLevels).optional(),
-  sortOrder: z.number().int().optional(),
-});
-
-export type UpdateGuideSectionData = z.infer<typeof updateGuideSectionSchema>;
-export type CreateGuideSectionItemData = z.infer<typeof createGuideSectionItemSchema>;

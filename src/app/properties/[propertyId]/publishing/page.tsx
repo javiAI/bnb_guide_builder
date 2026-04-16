@@ -4,8 +4,14 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
 import { runAllValidations } from "@/lib/validations/run-all";
+import { composeGuide } from "@/lib/services/guide-rendering.service";
+import { computeGuideDiff } from "@/lib/services/guide-diff.service";
+import { Prisma } from "@prisma/client";
+import type { GuideTree } from "@/lib/types/guide-tree";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
+import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
+import { GuideDiffViewer } from "./guide-diff-viewer";
 
 type OutputItem = {
   id: string;
@@ -123,46 +129,54 @@ export default async function PublishingPage({
 
   if (!property) notFound();
 
-  // Evaluate which sections are "complete enough" for publishing gates
-  const [spacesCount, amenitiesCount, playbooksCount, localPlacesCount, mediaCount, knowledgeCount, guideVersions, validations] =
-    await Promise.all([
-      prisma.space.count({ where: { propertyId, status: "active" } }),
-      prisma.propertyAmenityInstance.count({ where: { propertyId } }),
-      prisma.troubleshootingPlaybook.count({ where: { propertyId } }),
-      prisma.localPlace.count({ where: { propertyId } }),
-      prisma.mediaAsset.count({ where: { propertyId } }),
-      prisma.knowledgeItem.count({ where: { propertyId } }),
-      prisma.guideVersion.findMany({
-        where: { propertyId },
-        orderBy: { version: "desc" },
-        take: 1,
-        select: { id: true, status: true, version: true, publishedAt: true },
-      }),
-      runAllValidations(propertyId, {
-        maxGuests: property.maxGuests,
-        infantsAllowed: property.infantsAllowed,
-        accessMethodsJson: property.accessMethodsJson,
-      }),
-    ]);
+  // Load data in parallel — versions fetched without treeJson (large blob);
+  // published version's treeJson is fetched separately only if needed.
+  const [
+    spacesCount,
+    amenitiesCount,
+    playbooksCount,
+    localPlacesCount,
+    mediaCount,
+    knowledgeCount,
+    versions,
+    validations,
+    publishedWithTree,
+  ] = await Promise.all([
+    prisma.space.count({ where: { propertyId, status: "active" } }),
+    prisma.propertyAmenityInstance.count({ where: { propertyId } }),
+    prisma.troubleshootingPlaybook.count({ where: { propertyId } }),
+    prisma.localPlace.count({ where: { propertyId } }),
+    prisma.mediaAsset.count({ where: { propertyId } }),
+    prisma.knowledgeItem.count({ where: { propertyId } }),
+    prisma.guideVersion.findMany({
+      where: { propertyId },
+      orderBy: { version: "desc" },
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        publishedAt: true,
+        createdAt: true,
+      },
+    }),
+    runAllValidations(propertyId, {
+      maxGuests: property.maxGuests,
+      infantsAllowed: property.infantsAllowed,
+      accessMethodsJson: property.accessMethodsJson,
+    }),
+    // Only fetch treeJson for the published version
+    prisma.guideVersion.findFirst({
+      where: { propertyId, status: "published" },
+      orderBy: { version: "desc" },
+      select: { id: true, version: true, status: true, treeJson: true, publishedAt: true, createdAt: true },
+    }),
+  ]);
 
   const completedSections = new Set<string>();
 
-  // Basics gate: need propertyType and country
-  if (property.propertyType && property.country) {
-    completedSections.add("basics");
-  }
-
-  // Arrival gate: need checkInStart and access method
-  if (property.checkInStart && property.primaryAccessMethod) {
-    completedSections.add("arrival");
-  }
-
-  // Policies: consider present if basics is (policies are optional with defaults)
-  if (property.propertyType) {
-    completedSections.add("policies");
-  }
-
-  // Others based on count
+  if (property.propertyType && property.country) completedSections.add("basics");
+  if (property.checkInStart && property.primaryAccessMethod) completedSections.add("arrival");
+  if (property.propertyType) completedSections.add("policies");
   if (spacesCount > 0) completedSections.add("spaces");
   if (amenitiesCount > 0) completedSections.add("amenities");
   if (playbooksCount > 0) completedSections.add("troubleshooting");
@@ -174,9 +188,31 @@ export default async function PublishingPage({
 
   const outputs = getItems(guideOutputs) as OutputItem[];
   const gates = evaluateGates(outputs, completedSections);
-
   const readyCount = gates.filter((g) => g.ready).length;
-  const latestVersion = guideVersions[0] ?? null;
+
+  const publishedVersion = publishedWithTree ?? versions.find((v) => v.status === "published") ?? null;
+  const publishedHasSnapshot = Boolean(publishedWithTree?.treeJson);
+  // For archived versions, check which ones have snapshots (for rollback eligibility).
+  // This is a lightweight query — only IDs, no large treeJson payloads.
+  const archivedIds = versions.filter((v) => v.status === "archived").map((v) => v.id);
+  const snapshotIds = archivedIds.length > 0
+    ? new Set(
+        (await prisma.guideVersion.findMany({
+          where: { id: { in: archivedIds }, treeJson: { not: Prisma.AnyNull } },
+          select: { id: true },
+        })).map((v) => v.id),
+      )
+    : new Set<string>();
+  const archivedVersions = versions
+    .filter((v) => v.status === "archived")
+    .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
+
+  // Only compose live tree + diff when there's a published version to compare against
+  const publishedTree = publishedWithTree?.treeJson
+    ? (publishedWithTree.treeJson as unknown as GuideTree)
+    : null;
+  const liveTree = publishedTree ? await composeGuide(propertyId, "internal") : null;
+  const diff = computeGuideDiff(publishedTree, liveTree);
 
   return (
     <div>
@@ -184,29 +220,119 @@ export default async function PublishingPage({
         Publicación
       </h1>
       <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Estado de los outputs y acciones de publicación.
+        Publica una versión inmutable de la guía. Cada publicación congela el estado actual.
       </p>
 
-      {/* Summary */}
-      <div className="mt-6 flex items-center gap-3">
+      {/* Summary badges */}
+      <div className="mt-6 flex flex-wrap items-center gap-3">
         <Badge
           label={`${readyCount}/${gates.length} outputs listos`}
           tone={readyCount === gates.length ? "success" : "warning"}
         />
-        {latestVersion && (
+        {publishedVersion && (
           <Badge
-            label={`Guía v${latestVersion.version} — ${latestVersion.status === "published" ? "publicada" : "borrador"}`}
-            tone={latestVersion.status === "published" ? "success" : "warning"}
+            label={`v${publishedVersion.version} publicada`}
+            tone="success"
           />
+        )}
+        {!publishedVersion && (
+          <Badge label="Sin versión publicada" tone="neutral" />
         )}
         <Badge label={`${knowledgeCount} items de conocimiento`} tone="neutral" />
       </div>
 
-      {/* Cross-validations: blockers / errors / warnings */}
+      {/* ── Publish action ── */}
+      <div className="mt-8 rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface-elevated)] p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">
+              {publishedVersion ? "Publicar nueva versión" : "Primera publicación"}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+              {publishedVersion
+                ? "Se creará una nueva versión con el estado actual de la propiedad."
+                : "Congela el estado actual de la guía en una versión inmutable."}
+            </p>
+          </div>
+          <PublishButton propertyId={propertyId} />
+        </div>
+      </div>
+
+      {/* ── Diff vs published ── */}
+      {publishedVersion && publishedHasSnapshot && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
+            Cambios desde v{publishedVersion.version}
+          </h2>
+          <GuideDiffViewer diff={diff} />
+        </div>
+      )}
+      {publishedVersion && !publishedHasSnapshot && (
+        <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] p-4">
+          <p className="text-sm text-[var(--color-warning-700)]">
+            La versión publicada v{publishedVersion.version} no tiene snapshot (anterior a 9C). Publica una nueva versión para habilitar comparación y rollback.
+          </p>
+        </div>
+      )}
+
+      {/* ── Published version ── */}
+      {publishedVersion && (
+        <div className="mt-8 rounded-[var(--radius-xl)] border border-[var(--color-success-200)] bg-[var(--color-success-50)] p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-[var(--foreground)]">
+                  Versión {publishedVersion.version}
+                </h2>
+                <Badge label="Publicada" tone="success" />
+              </div>
+              <p className="mt-1 text-xs text-[var(--color-neutral-500)]">
+                Publicada: {publishedVersion.publishedAt?.toLocaleString("es-ES", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) ?? "—"}
+              </p>
+            </div>
+            <UnpublishButton versionId={publishedVersion.id} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Version history ── */}
+      {archivedVersions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
+            Historial de versiones
+          </h2>
+          <div className="space-y-2">
+            {archivedVersions.map((v) => (
+              <div
+                key={v.id}
+                className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[var(--foreground)]">
+                    Versión {v.version}
+                  </span>
+                  <span className="text-xs text-[var(--color-neutral-500)]">
+                    {v.publishedAt?.toLocaleDateString("es-ES", { year: "numeric", month: "short", day: "numeric" }) ?? v.createdAt.toLocaleDateString("es-ES")}
+                  </span>
+                  <Badge label="Archivada" tone="neutral" />
+                </div>
+                {v.hasSnapshot && (
+                  <RollbackButton sourceVersionId={v.id} version={v.version} />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cross-validations */}
       <ValidationsSection validations={validations} />
 
       {/* Gate results */}
       <div className="mt-8 space-y-3">
+        <h2 className="mb-2 text-sm font-semibold text-[var(--foreground)]">
+          Requisitos por output
+        </h2>
         {gates.map((gate) => {
           const tone: BadgeTone = gate.ready ? "success" : "danger";
           return (

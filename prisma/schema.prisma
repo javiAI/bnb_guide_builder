@@ -609,51 +609,20 @@ model Intent {
 }
 
 model GuideVersion {
-  id         String    @id @default(cuid())
-  propertyId String    @map("property_id")
-  version    Int       @default(1)
-  status     String    @default("draft")
+  id          String    @id @default(cuid())
+  propertyId  String    @map("property_id")
+  version     Int       @default(1)
+  status      String    @default("draft")
+  treeJson    Json?     @map("tree_json")
   publishedAt DateTime? @map("published_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  sections GuideSection[]
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  @@index([propertyId])
+  @@unique([propertyId, version])
   @@index([propertyId, status])
   @@map("guide_versions")
-}
-
-model GuideSection {
-  id             String   @id @default(cuid())
-  guideVersionId String   @map("guide_version_id")
-  sectionKey     String   @map("section_key")
-  title          String
-  sortOrder      Int      @default(0) @map("sort_order")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  guideVersion GuideVersion     @relation(fields: [guideVersionId], references: [id], onDelete: Cascade)
-  items        GuideSectionItem[]
-
-  @@index([guideVersionId])
-  @@map("guide_sections")
-}
-
-model GuideSectionItem {
-  id             String   @id @default(cuid())
-  guideSectionId String   @map("guide_section_id")
-  contentMd      String   @map("content_md")
-  visibility     VisibilityLevel @default(guest)
-  sortOrder      Int      @default(0) @map("sort_order")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  guideSection GuideSection @relation(fields: [guideSectionId], references: [id], onDelete: Cascade)
-
-  @@index([guideSectionId])
-  @@map("guide_section_items")
 }
 
 // ──────────────────────────────────────────────

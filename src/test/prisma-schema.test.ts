@@ -30,8 +30,6 @@ describe("Prisma schema completeness", () => {
     "KnowledgeCitation",
     "Intent",
     "GuideVersion",
-    "GuideSection",
-    "GuideSectionItem",
     "MessageTemplate",
     "MessageAutomation",
     "MessageDraft",
