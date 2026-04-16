@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +11,10 @@ import { Prisma } from "@prisma/client";
 import type { GuideTree } from "@/lib/types/guide-tree";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
+import QRCode from "qrcode";
 import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
 import { GuideDiffViewer } from "./guide-diff-viewer";
+import { ShareableLink } from "./shareable-link";
 
 type OutputItem = {
   id: string;
@@ -124,6 +127,7 @@ export default async function PublishingPage({
       maxGuests: true,
       infantsAllowed: true,
       accessMethodsJson: true,
+      publicSlug: true,
     },
   });
 
@@ -206,6 +210,23 @@ export default async function PublishingPage({
   const archivedVersions = versions
     .filter((v) => v.status === "archived")
     .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
+
+  // Shareable link — generate QR SVG server-side when slug exists
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${proto}://${host}`;
+  const publicUrl = property.publicSlug
+    ? `${baseUrl}/g/${property.publicSlug}`
+    : null;
+  let qrSvg: string | null = null;
+  if (publicUrl) {
+    try {
+      qrSvg = await QRCode.toString(publicUrl, { type: "svg", margin: 1, width: 200 });
+    } catch {
+      // QR generation is non-critical — page still works without it
+    }
+  }
 
   // Only compose live tree + diff when there's a published version to compare against
   const publishedTree = publishedWithTree?.treeJson
@@ -293,6 +314,11 @@ export default async function PublishingPage({
             <UnpublishButton versionId={publishedVersion.id} />
           </div>
         </div>
+      )}
+
+      {/* ── Shareable link ── */}
+      {publishedVersion && publicUrl && qrSvg && (
+        <ShareableLink url={publicUrl} qrSvg={qrSvg} />
       )}
 
       {/* ── Version history ── */}

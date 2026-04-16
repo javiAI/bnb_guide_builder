@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { recomputeAllInBackground } from "@/lib/services/property-derived.service";
 import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
-import { stripNulls } from "@/lib/utils";
+import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
@@ -751,7 +751,7 @@ export async function toggleAmenityAction(
         }
       });
     } catch (err) {
-      if ((err as { code?: string }).code !== "P2002") throw err;
+      if (!isPrismaUniqueViolation(err)) throw err;
     }
   } else {
     await prisma.propertyAmenityInstance.deleteMany({
@@ -1129,8 +1129,7 @@ export async function createSystemAction(
       data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },
     });
   } catch (err) {
-    // P2002 = unique constraint violation (duplicate systemKey for this property)
-    if ((err as { code?: string }).code === "P2002") {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este sistema ya está configurado en la propiedad" };
     }
     throw err;

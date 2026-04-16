@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
+import { ensurePropertySlug } from "@/lib/services/guide-slug.service";
+import { isPrismaUniqueViolation } from "@/lib/utils";
 import type { GuideTree } from "@/lib/types/guide-tree";
 
 export type ActionResult = {
@@ -11,13 +13,22 @@ export type ActionResult = {
   error?: string;
 };
 
-function isP2002(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: string }).code === "P2002"
-  );
+async function revalidatePublishingPaths(
+  propertyId: string,
+  publicSlug?: string | null,
+): Promise<void> {
+  revalidatePath(`/properties/${propertyId}/publishing`);
+  revalidatePath(`/properties/${propertyId}/guest-guide`);
+  if (publicSlug) {
+    revalidatePath(`/g/${publicSlug}`);
+    return;
+  }
+  // Slug not provided — fetch from DB as fallback
+  const prop = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { publicSlug: true },
+  });
+  if (prop?.publicSlug) revalidatePath(`/g/${prop.publicSlug}`);
 }
 
 // ──────────────────────────────────────────────
@@ -31,14 +42,12 @@ export async function publishGuideVersionAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "propertyId requerido" };
 
-  // Verify property exists
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
     select: { id: true },
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
 
-  // Compose the live tree with audience=internal (max detail)
   const tree: GuideTree = await composeGuide(propertyId, "internal");
 
   try {
@@ -66,14 +75,24 @@ export async function publishGuideVersionAction(
       });
     });
   } catch (err) {
-    if (isP2002(err)) {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Conflicto de versión — reintenta" };
     }
     throw err;
   }
 
-  revalidatePath(`/properties/${propertyId}/publishing`);
-  revalidatePath(`/properties/${propertyId}/guest-guide`);
+  // Best-effort slug generation — publishing already committed
+  let publicSlug: string | null = null;
+  try {
+    publicSlug = await ensurePropertySlug(propertyId);
+  } catch (err) {
+    console.error(
+      `Property ${propertyId} was published, but slug generation failed.`,
+      err,
+    );
+  }
+
+  await revalidatePublishingPaths(propertyId, publicSlug);
   return { success: true };
 }
 
@@ -104,8 +123,7 @@ export async function unpublishVersionAction(
     data: { status: "archived" },
   });
 
-  revalidatePath(`/properties/${version.propertyId}/publishing`);
-  revalidatePath(`/properties/${version.propertyId}/guest-guide`);
+  await revalidatePublishingPaths(version.propertyId);
   return { success: true };
 }
 
@@ -155,13 +173,12 @@ export async function rollbackToVersionAction(
       });
     });
   } catch (err) {
-    if (isP2002(err)) {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Conflicto de versión — reintenta" };
     }
     throw err;
   }
 
-  revalidatePath(`/properties/${source.propertyId}/publishing`);
-  revalidatePath(`/properties/${source.propertyId}/guest-guide`);
+  await revalidatePublishingPaths(source.propertyId);
   return { success: true };
 }

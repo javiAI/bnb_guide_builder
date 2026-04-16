@@ -105,7 +105,10 @@ describe("GET /api/properties/[propertyId]/guide", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/markdown");
     const text = await res.text();
-    expect(text).toContain("# p1");
+    // Default audience is guest — debug header is omitted for guest
+    expect(text).not.toContain("# p1");
+    // Should still contain markdown content (section headers)
+    expect(text).toContain("##");
   });
 
   it("html format returns escaped HTML", async () => {

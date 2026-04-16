@@ -73,10 +73,7 @@ describe("renderMarkdown — snapshot by audience", () => {
     const tree = await composeGuide("p1", "guest");
     const md = renderMarkdown(tree);
     expect(md).toMatchInlineSnapshot(`
-      "# p1 — audiencia: guest
-      _Generado: 2026-04-16T12:00:00.000Z_
-
-      ## Llegada
+      "## Llegada
       - **Check-in**: 15:00 – 20:00
       - **Check-out**: 11:00
 
