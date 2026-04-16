@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
@@ -211,7 +212,10 @@ export default async function PublishingPage({
     .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
 
   // Shareable link — generate QR SVG server-side when slug exists
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${proto}://${host}`;
   const publicUrl = property.publicSlug
     ? `${baseUrl}/g/${property.publicSlug}`
     : null;
