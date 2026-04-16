@@ -16,17 +16,26 @@
 
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 
+function escapeMd(text: string): string {
+  return text.replace(/([[\]()\\*_~`>#|!])/g, "\\$1");
+}
+
+function isSafeMdUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
 function renderItem(item: GuideItem, depth: number, out: string[]): void {
   const indent = "  ".repeat(depth);
   const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
-  const value = item.value ? `: ${item.value}` : "";
-  out.push(`${indent}- **${item.label}**${deprecatedMark}${value}`);
+  const value = item.value ? `: ${escapeMd(item.value)}` : "";
+  out.push(`${indent}- **${escapeMd(item.label)}**${deprecatedMark}${value}`);
   const nestedIndent = "  ".repeat(depth + 1);
   for (const f of item.fields) {
-    out.push(`${nestedIndent}- ${f.label}: ${f.value}`);
+    out.push(`${nestedIndent}- ${escapeMd(f.label)}: ${escapeMd(f.value)}`);
   }
   for (const m of item.media) {
-    const caption = m.caption ?? "";
+    if (!isSafeMdUrl(m.url)) continue;
+    const caption = escapeMd(m.caption ?? "");
     out.push(`${nestedIndent}- ![${caption}](${m.url})`);
   }
   for (const child of item.children) {

@@ -49,7 +49,7 @@ function ItemView({ item, depth }: { item: GuideItem; depth: number }) {
         </Text>
       ))}
       {item.media
-        .filter((m) => /^(https?:\/\/|data:image\/)/i.test(m.url))
+        .filter((m) => /^https?:\/\//i.test(m.url))
         .map((m, i) => (
           <Image key={i} src={m.url} style={styles.image} />
         ))}
@@ -71,7 +71,7 @@ function GuideDocument({ tree }: { tree: GuideTree }) {
           <Text style={styles.subtitle}>Generado: {tree.generatedAt}</Text>
         </View>
         {tree.sections.map((section) => (
-          <View key={section.id} wrap={false}>
+          <View key={section.id}>
             <Text style={styles.sectionTitle}>{section.label}</Text>
             {section.items.length === 0 ? (
               <Text style={styles.empty}>Sin elementos.</Text>

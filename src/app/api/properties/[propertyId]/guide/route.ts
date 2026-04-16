@@ -69,7 +69,7 @@ export async function GET(
           status: 200,
           headers: {
             "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="guide-${propertyId}-${audience}.pdf"`,
+            "Content-Disposition": `attachment; filename="guide-${propertyId.replace(/[^a-zA-Z0-9._-]/g, "_")}-${audience}.pdf"`,
           },
         });
       }

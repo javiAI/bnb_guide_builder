@@ -21,7 +21,7 @@ export function escapeHtml(value: string): string {
 }
 
 function isSafeUrl(url: string): boolean {
-  return /^(https?:\/\/|data:image\/)/i.test(url);
+  return /^(https?:\/\/|data:image\/(png|jpe?g|gif|webp|avif);)/i.test(url);
 }
 
 function renderItem(item: GuideItem, out: string[]): void {

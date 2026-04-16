@@ -292,7 +292,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 **Archivos a crear**:
 - `src/lib/renderers/guide-html.ts` — `renderHtml(tree): string` con escape manual (`&<>"'`) — zero-dep, nunca emite HTML arbitrario desde values
-- `src/lib/renderers/guide-pdf.ts` — `renderPdf(tree): Promise<Buffer>` vía `@react-pdf/renderer` (server-side, sin headless browser)
+- `src/lib/renderers/guide-pdf.tsx` — `renderPdf(tree): Promise<Buffer>` vía `@react-pdf/renderer` (server-side, sin headless browser)
 - `src/app/api/properties/[propertyId]/guide/route.ts` — `GET ?audience=guest|ai|internal&format=md|html|json|pdf`. Sesión requerida para `audience=internal|ai`; `audience=guest` público.
 - `src/components/guide-preview.tsx` — client component con selector audience (3) + format (md/html/json); PDF se expone como link de descarga directa
 

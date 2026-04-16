@@ -37,16 +37,18 @@ export function GuidePreview({ propertyId }: GuidePreviewProps) {
       { signal: controller.signal },
     )
       .then(async (res) => {
+        if (controller.signal.aborted) return;
         if (!res.ok) {
           setError(`Error ${res.status}`);
           setContent("");
           return;
         }
         const text = await res.text();
+        if (controller.signal.aborted) return;
         setContent(format === "json" ? JSON.stringify(JSON.parse(text), null, 2) : text);
       })
       .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : "Unknown error");
         setContent("");
       })
