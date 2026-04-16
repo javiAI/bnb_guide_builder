@@ -65,8 +65,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// The markdown output contains nothing time-dependent (propertyId + audience
-// header is deterministic), so we can snapshot the full thing.
+// The markdown output includes a generated timestamp in the header, but the
+// snapshot remains deterministic because fake timers pin system time.
 
 describe("renderMarkdown — snapshot by audience", () => {
   it("guest snapshot", async () => {

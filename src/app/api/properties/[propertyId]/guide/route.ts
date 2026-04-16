@@ -75,9 +75,9 @@ export async function GET(
       }
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Failed to render property guide", { propertyId, audience, format, error: err });
     return NextResponse.json(
-      { error: { code: "RENDER_ERROR", message } },
+      { error: { code: "RENDER_ERROR", message: "Failed to render guide" } },
       { status: 500 },
     );
   }

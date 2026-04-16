@@ -84,6 +84,7 @@ export function GuidePreview({ propertyId }: GuidePreviewProps) {
               <button
                 key={a.id}
                 type="button"
+                aria-pressed={audience === a.id}
                 onClick={() => setAudience(a.id)}
                 className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
                   audience === a.id
@@ -106,6 +107,7 @@ export function GuidePreview({ propertyId }: GuidePreviewProps) {
               <button
                 key={f.id}
                 type="button"
+                aria-pressed={format === f.id}
                 onClick={() => setFormat(f.id)}
                 className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors ${
                   format === f.id

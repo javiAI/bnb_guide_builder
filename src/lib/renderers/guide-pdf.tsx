@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
 
 function ItemView({ item, depth }: { item: GuideItem; depth: number }) {
   return (
-    <View style={depth === 0 ? styles.item : styles.nested} wrap={false}>
+    <View style={depth === 0 ? styles.item : styles.nested}>
       <Text>
         <Text style={styles.itemLabel}>{item.label}</Text>
         {item.deprecated ? <Text style={styles.deprecated}> (deprecated)</Text> : null}
@@ -88,7 +88,10 @@ function GuideDocument({ tree }: { tree: GuideTree }) {
 }
 
 export async function renderPdf(tree: GuideTree): Promise<Buffer> {
-  const blob = await pdf(<GuideDocument tree={tree} />).toBlob();
-  const arrayBuffer = await blob.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  const stream = await pdf(<GuideDocument tree={tree} />).toBuffer();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as unknown as Uint8Array));
+  }
+  return Buffer.concat(chunks);
 }

@@ -68,7 +68,7 @@ export function renderHtml(tree: GuideTree): string {
   for (const section of tree.sections) {
     out.push(`<section><h2>${escapeHtml(section.label)}</h2>`);
     if (section.items.length === 0) {
-      if (section.emptyCtaDeepLink) {
+      if (section.emptyCtaDeepLink && /^(\/|https?:\/\/)/i.test(section.emptyCtaDeepLink)) {
         out.push(
           `<p class="gt-empty">Sin elementos. <a href="${escapeHtml(
             section.emptyCtaDeepLink,

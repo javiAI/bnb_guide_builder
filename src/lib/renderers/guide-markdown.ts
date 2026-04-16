@@ -36,7 +36,8 @@ function renderItem(item: GuideItem, depth: number, out: string[]): void {
   for (const m of item.media) {
     if (!isSafeMdUrl(m.url)) continue;
     const caption = escapeMd(m.caption ?? "");
-    out.push(`${nestedIndent}- ![${caption}](${m.url})`);
+    const safeUrl = m.url.replace(/[() ]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`);
+    out.push(`${nestedIndent}- ![${caption}](${safeUrl})`);
   }
   for (const child of item.children) {
     renderItem(child, depth + 1, out);
@@ -45,11 +46,11 @@ function renderItem(item: GuideItem, depth: number, out: string[]): void {
 
 export function renderMarkdown(tree: GuideTree): string {
   const out: string[] = [];
-  out.push(`# ${tree.propertyId} — audiencia: ${tree.audience}`);
+  out.push(`# ${escapeMd(tree.propertyId)} — audiencia: ${escapeMd(tree.audience)}`);
   out.push(`_Generado: ${tree.generatedAt}_`);
   out.push("");
   for (const section of tree.sections) {
-    out.push(`## ${section.label}`);
+    out.push(`## ${escapeMd(section.label)}`);
     if (section.items.length === 0) {
       out.push(
         section.emptyCtaDeepLink
