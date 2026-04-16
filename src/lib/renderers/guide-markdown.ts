@@ -17,7 +17,11 @@
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 
 function escapeMd(text: string): string {
-  return text.replace(/([[\]()\\*_~`>#|!])/g, "\\$1");
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/([[\]()\\*_~`#|!])/g, "\\$1");
 }
 
 function isSafeMdUrl(url: string): boolean {

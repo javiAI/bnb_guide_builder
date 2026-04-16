@@ -33,7 +33,7 @@ export function GuidePreview({ propertyId }: GuidePreviewProps) {
     setLoading(true);
     setError(null);
     fetch(
-      `/api/properties/${propertyId}/guide?audience=${audience}&format=${format}`,
+      `/api/properties/${encodeURIComponent(propertyId)}/guide?audience=${audience}&format=${format}`,
       { signal: controller.signal },
     )
       .then(async (res) => {
@@ -58,7 +58,7 @@ export function GuidePreview({ propertyId }: GuidePreviewProps) {
     return () => controller.abort();
   }, [propertyId, audience, format]);
 
-  const pdfHref = `/api/properties/${propertyId}/guide?audience=${audience}&format=pdf`;
+  const pdfHref = `/api/properties/${encodeURIComponent(propertyId)}/guide?audience=${audience}&format=pdf`;
 
   return (
     <div className="rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface-elevated)] p-6">
