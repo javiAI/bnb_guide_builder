@@ -107,17 +107,8 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - `FormEvent<HTMLFormElement>` (not `React.FormEvent`): importar `type FormEvent` de `"react"` en archivos que no importan el namespace React
 - Antes de crear una server action nueva, grep por el nombre de cada export planeado para verificar que no existe ya un consumidor del módulo existente — este repo arrastró un archivo de 125 LOC sin consumidores durante tres branches
 - Añadir un tipo de campo nuevo para subtypes (amenity/system) = 1 entrada en `src/config/registries/field-type-registry.ts` (`FIELD_TYPES` + `validate`) + 1 entrada en `field-type-renderers.tsx` (`RENDERERS`). El test `field-type-coverage.test.ts` falla si algún `type` en `amenity_subtypes.json` o `system_subtypes.json` no está registrado; `getFieldType()` lanza en boot para tipos desconocidos (no fallback silencioso a texto)
-
-## Patrones de Guide Publishing
-
-- `GuideVersion.treeJson` es la única fuente de verdad para versiones publicadas — `GuideSection`/`GuideSectionItem` fueron eliminados del schema
-- Publicar = `composeGuide(propertyId, "internal")` → snapshot en `treeJson`. Siempre `audience="internal"` (máximo detalle); filtrar al renderizar
-- Operaciones de write concurrente (publish, rollback) van en `prisma.$transaction` con `@@unique([propertyId, version])` + catch P2002
-- Rollback = nueva versión (N+1) con `treeJson` copiado del snapshot fuente — historial lineal, nunca reescribir
-- Diff on-the-fly: `computeGuideDiff(oldTree, newTree)` en `src/lib/services/guide-diff.service.ts` — no persistir, es derivado
-- Publishing page (`publishing/page.tsx`) es dueña de toda la gestión de versiones; `guest-guide/page.tsx` es solo preview
-- `treeJson` es un blob grande (~50-200KB) — no incluir en queries de listado; fetch solo para la versión publicada cuando se necesita el diff
-- Prisma `Json?` con `not: null` requiere `Prisma.JsonNull` (no `null` literal): `where: { treeJson: { not: Prisma.JsonNull } }`
+- Prisma `Json?` con filtro `not: null` requiere `Prisma.JsonNull` (no `null` literal): `where: { campo: { not: Prisma.JsonNull } }`
+- Campos `Json?` grandes (e.g. `treeJson`): no incluir en queries de listado — fetch selectivo solo cuando se necesita el contenido
 
 ## Patrones de UI — Espacios
 
