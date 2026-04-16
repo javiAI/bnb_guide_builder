@@ -1,8 +1,4 @@
-/**
- * Unified result type for all server actions.
- *
- * @template T — optional payload type (default `void`).
- */
+/** Unified result type for all server actions. */
 export type ActionResult<T = void> = {
   success: boolean;
   error?: string;
