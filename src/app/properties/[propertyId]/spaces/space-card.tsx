@@ -20,6 +20,7 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BedManager, type BedData } from "./bed-manager";
+import { EntityGallery } from "@/components/media/entity-gallery";
 
 
 export type SpaceStatus = "active" | "archived";
@@ -326,37 +327,6 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
         {bodyVisible && (
           <div className="border-t border-[var(--border)] px-4 pb-6 pt-4 space-y-1">
 
-            {/* Photos first */}
-            <SpaceSection label="Fotos y vídeo">
-              <div className="flex flex-wrap gap-2">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-16 w-24 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--surface)] flex flex-col items-center justify-center gap-0.5 text-[var(--color-neutral-400)] cursor-not-allowed"
-                    title="Subida de fotos — próximamente"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                      <path fillRule="evenodd" d="M1 8a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 018.07 3h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0016.07 6H17a2 2 0 012 2v7a2 2 0 01-2 2H3a2 2 0 01-2-2V8zm13.5 3a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM10 14a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-[9px]">{i === 0 ? "Principal" : `Foto ${i + 1}`}</span>
-                  </div>
-                ))}
-                <div
-                  className="h-16 w-24 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--surface)] flex flex-col items-center justify-center gap-0.5 text-[var(--color-neutral-400)] cursor-not-allowed"
-                  title="Vídeo — próximamente"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                    <path d="M3.25 4A2.25 2.25 0 001 6.25v7.5A2.25 2.25 0 003.25 16h7.5A2.25 2.25 0 0013 13.75v-7.5A2.25 2.25 0 0010.75 4h-7.5zM19 4.75a.75.75 0 00-1.28-.53l-3 3a.75.75 0 00-.22.53v4.5c0 .199.079.39.22.53l3 3a.75.75 0 001.28-.53V4.75z" />
-                  </svg>
-                  <span className="text-[9px]">Vídeo</span>
-                </div>
-              </div>
-              <p className="mt-2 text-[11px] text-[var(--color-neutral-500)]">
-                Disponible próximamente — podrás asociar fotos a cada zona del espacio.
-              </p>
-            </SpaceSection>
-
-            {/* Beds — pass maxGuests for inline capacity warning */}
             {/* Dimensions */}
             <SpaceSection label="Dimensiones">
               {(() => {
@@ -487,6 +457,20 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {/* Media gallery — only mount when expanded to avoid N server calls on page load */}
+            {expanded && (
+              <div className="mt-4">
+                <EntityGallery
+                  propertyId={propertyId}
+                  entityType="space"
+                  entityId={space.id}
+                  label="Fotos"
+                  defaultCollapsed
+                  compact
+                />
               </div>
             )}
 

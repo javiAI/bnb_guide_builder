@@ -54,7 +54,7 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md).
 ### Progreso Fase 10
 
 - ✅ **10A** `feat/media-storage` — Cloudflare R2 storage service + presigned uploads + blurhash + server actions (request/confirm/delete/download). PR #53 merged.
-- ⏳ **10B** `feat/media-per-entity` — Gallery por entidad + upload UI
+- ⏳ **10B** `feat/media-per-entity` — EntityGallery reutilizable + UploadDropzone (drag&drop multi-archivo, presigned → R2) + reorder + cover photo + integrado en spaces/access/amenities + Mediateca refactorizada
 
 ### Orden sugerido
 

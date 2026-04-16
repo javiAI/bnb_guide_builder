@@ -22,7 +22,6 @@ import {
   updatePlaybookSchema,
   createLocalPlaceSchema,
   updateLocalPlaceSchema,
-  createMediaAssetSchema,
   assignMediaSchema,
 } from "@/lib/schemas/editor.schema";
 
@@ -199,14 +198,6 @@ describe("Local guide schemas", () => {
 // ── Media schemas and registry ──
 
 describe("Media asset schemas", () => {
-  it("createMediaAssetSchema validates required fields", () => {
-    const valid = createMediaAssetSchema.safeParse({
-      assetRoleKey: "mar.property_cover",
-      mediaType: "photo",
-    });
-    expect(valid.success).toBe(true);
-  });
-
   it("assignMediaSchema validates assignment data", () => {
     const valid = assignMediaSchema.safeParse({
       mediaAssetId: "asset_123",
@@ -214,6 +205,15 @@ describe("Media asset schemas", () => {
       entityId: "space_456",
     });
     expect(valid.success).toBe(true);
+  });
+
+  it("assignMediaSchema rejects unknown entityType", () => {
+    const invalid = assignMediaSchema.safeParse({
+      mediaAssetId: "asset_123",
+      entityType: "unknown_entity",
+      entityId: "id_456",
+    });
+    expect(invalid.success).toBe(false);
   });
 });
 

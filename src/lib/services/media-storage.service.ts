@@ -27,6 +27,38 @@ function getR2Config() {
 
 const UPLOAD_EXPIRES_SECONDS = 15 * 60; // 15 min
 const DOWNLOAD_EXPIRES_SECONDS = 60 * 60; // 1 hour
+const DOWNLOAD_CACHE_TTL_MS = 55 * 60 * 1000; // 55 min (5 min buffer before URL expires)
+
+// ── Download URL cache ─────────────────────────────────
+
+interface CachedUrl {
+  url: string;
+  expiresAt: number;
+}
+
+const _downloadUrlCache = new Map<string, CachedUrl>();
+
+function getCachedDownloadUrl(storageKey: string): string | null {
+  const entry = _downloadUrlCache.get(storageKey);
+  if (!entry) return null;
+  if (Date.now() >= entry.expiresAt) {
+    _downloadUrlCache.delete(storageKey);
+    return null;
+  }
+  return entry.url;
+}
+
+function setCachedDownloadUrl(storageKey: string, url: string): void {
+  _downloadUrlCache.set(storageKey, {
+    url,
+    expiresAt: Date.now() + DOWNLOAD_CACHE_TTL_MS,
+  });
+}
+
+/** Invalidate a cached URL (e.g. after object deletion). */
+export function invalidateDownloadUrlCache(storageKey: string): void {
+  _downloadUrlCache.delete(storageKey);
+}
 
 /** Allowed MIME types and their max size in bytes. */
 export const ALLOWED_MEDIA: Record<string, number> = {
@@ -102,13 +134,19 @@ export async function getUploadUrl(
 }
 
 export async function getDownloadUrl(storageKey: string): Promise<string> {
+  const cached = getCachedDownloadUrl(storageKey);
+  if (cached) return cached;
+
   const command = new GetObjectCommand({
     Bucket: getR2Config().bucket,
     Key: storageKey,
   });
-  return getSignedUrl(getS3Client(), command, {
+  const url = await getSignedUrl(getS3Client(), command, {
     expiresIn: DOWNLOAD_EXPIRES_SECONDS,
   });
+
+  setCachedDownloadUrl(storageKey, url);
+  return url;
 }
 
 // ── Object operations ───────────────────────────────────

@@ -26,15 +26,42 @@ Gestionar fotos y vídeos como assets reutilizables, no como notas sueltas del w
 
 ## 4. Assignment model
 
-Un asset puede usarse en varias entidades:
+`MediaAssignment` usa polimorfismo: `entityType` + `entityId` apuntan a cualquier entidad.
 
-- property cover
-- arrival path
-- lockbox or smart lock
+### entityTypes soportados
+
+| entityType | Entidad | entityId |
+| --- | --- | --- |
+| `property` | Propiedad (portada, fotos generales) | propertyId |
+| `space` | Espacio (dormitorio, baño, cocina...) | space.id |
+| `access_method` | Acceso (lockbox, portal, camino...) | propertyId |
+| `amenity_instance` | Equipamiento específico | amenityInstance.id |
+| `system` | Sistema (calefacción, WiFi...) | system.id |
+
+`local_place` se añadirá en fase 13 cuando exista la entidad.
+
+### Constraint de unicidad
+
+`@@unique([mediaAssetId, entityType, entityId])` — un asset no puede asignarse dos veces a la misma entidad.
+
+### Cover photo
+
+`usageKey = "cover"` marca un assignment como portada de su entidad. Máximo 1 cover por entidad (validado en `setCoverAction`, que limpia el anterior antes de asignar).
+
+### Reordenación
+
+`sortOrder` (int, 0-based) define el orden visual. `reorderMediaAction` recibe la lista completa de IDs ordenada y actualiza en transacción.
+
+### Uso directo
+
+Un asset se asigna a entidades específicas:
+
+- property cover / fotos generales
+- arrival path, lockbox, smart lock
 - space overview
 - amenity instruction
-- troubleshooting reference
-- ops reference
+- system reference
+- troubleshooting / ops reference (futuro)
 
 ## 5. Storage provider
 

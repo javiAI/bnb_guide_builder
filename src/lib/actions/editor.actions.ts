@@ -28,7 +28,6 @@ import {
   updatePlaybookSchema,
   createLocalPlaceSchema,
   updateLocalPlaceSchema,
-  createMediaAssetSchema,
   createSystemSchema,
   updateSystemSchema,
   updateSystemCoverageSchema,
@@ -1068,43 +1067,6 @@ export async function deleteLocalPlaceAction(
   await prisma.localPlace.delete({ where: { id: placeId } });
 
   revalidatePath(`/properties/${place.propertyId}/local-guide`);
-  return { success: true };
-}
-
-// ── Media ──
-
-export async function createMediaAssetAction(
-  _prev: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const propertyId = formData.get("propertyId") as string;
-  const raw = {
-    assetRoleKey: formData.get("assetRoleKey") as string,
-    mediaType: formData.get("mediaType") as string,
-    caption: (formData.get("caption") as string) || undefined,
-    visibility: (formData.get("visibility") as string) || undefined,
-  };
-
-  const result = createMediaAssetSchema.safeParse(raw);
-  if (!result.success) {
-    return {
-      success: false,
-      fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  await prisma.mediaAsset.create({
-    data: {
-      ...result.data,
-      storageKey: `placeholder_${Date.now()}`,
-      mimeType: result.data.mediaType === "photo" ? "image/jpeg" : "video/mp4",
-      visibility: result.data.visibility ?? "guest",
-      status: "pending",
-      property: { connect: { id: propertyId } },
-    },
-  });
-
-  revalidatePath(`/properties/${propertyId}/media`);
   return { success: true };
 }
 
