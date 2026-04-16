@@ -119,12 +119,19 @@ function describeChanges(oldItem: GuideItem, newItem: GuideItem): string[] {
   if (addedFields.length > 0) changes.push(`campos añadidos: ${addedFields.join(", ")}`);
   if (removedFields.length > 0) changes.push(`campos eliminados: ${removedFields.join(", ")}`);
 
-  // Check for value changes in shared fields
-  const oldFieldMap = new Map(oldItem.fields.map((f) => [f.label, f]));
-  for (const f of newItem.fields) {
-    const old = oldFieldMap.get(f.label);
-    if (old && (old.value !== f.value || old.visibility !== f.visibility)) {
-      changes.push(`campo "${f.label}" modificado`);
+  // Check for value changes in shared fields — use index-based comparison
+  // because labels are not unique (e.g. multiple bed types with same label).
+  const minLen = Math.min(oldItem.fields.length, newItem.fields.length);
+  for (let i = 0; i < minLen; i++) {
+    const oldF = oldItem.fields[i];
+    const newF = newItem.fields[i];
+    if (
+      oldF.label === newF.label &&
+      (oldF.value !== newF.value || oldF.visibility !== newF.visibility)
+    ) {
+      changes.push(`campo "${newF.label}" modificado`);
+    } else if (oldF.label !== newF.label) {
+      changes.push(`campo[${i}]: "${oldF.label}" → "${newF.label}"`);
     }
   }
 

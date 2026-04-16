@@ -131,7 +131,7 @@ describe("GuideVersion snapshot contract", () => {
     expect(rollbackVersion).toBeGreaterThan(3);
   });
 
-  it("treeJson with audience=internal includes all visibility levels", () => {
+  it("treeJson with audience=internal includes guest, ai, and internal — never sensitive", () => {
     const tree: GuideTree = {
       propertyId: "prop-1",
       audience: "internal",
@@ -156,6 +156,7 @@ describe("GuideVersion snapshot contract", () => {
               warnings: [],
               fields: [
                 { label: "Teléfono", value: "+34 600", visibility: "guest" },
+                { label: "Notas AI", value: "Contexto IA", visibility: "ai" },
                 { label: "Notas internas", value: "Prefiere WhatsApp", visibility: "internal" },
               ],
               media: [],
@@ -166,15 +167,14 @@ describe("GuideVersion snapshot contract", () => {
       ],
     };
 
-    // Internal audience snapshot includes both guest and internal fields
-    const guestFields = tree.sections[0].items[0].fields.filter(
-      (f) => f.visibility === "guest",
-    );
-    const internalFields = tree.sections[0].items[0].fields.filter(
-      (f) => f.visibility === "internal",
-    );
+    const fields = tree.sections[0].items[0].fields;
+    const visibilities = new Set(fields.map((f) => f.visibility));
 
-    expect(guestFields.length).toBeGreaterThan(0);
-    expect(internalFields.length).toBeGreaterThan(0);
+    // Internal snapshot includes guest, ai, and internal
+    expect(visibilities.has("guest")).toBe(true);
+    expect(visibilities.has("ai")).toBe(true);
+    expect(visibilities.has("internal")).toBe(true);
+    // Sensitive is never included in any tree output
+    expect(visibilities.has("sensitive")).toBe(false);
   });
 });

@@ -134,7 +134,10 @@ async function loadGuideContext(propertyId: string): Promise<GuideContext> {
           internalNotes: true,
           featuresJson: true,
           sortOrder: true,
-          beds: { select: { id: true, bedType: true, quantity: true } },
+          beds: {
+            select: { id: true, bedType: true, quantity: true },
+            orderBy: [{ bedType: "asc" }, { id: "asc" }],
+          },
         },
       }),
       prisma.propertyAmenityInstance.findMany({

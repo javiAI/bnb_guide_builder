@@ -97,8 +97,10 @@ export async function unpublishVersionAction(
     return { success: false, error: "Solo se pueden despublicar versiones publicadas" };
   }
 
-  await prisma.guideVersion.update({
-    where: { id: versionId },
+  // Archive ALL published versions for this property (not just the clicked one)
+  // to ensure no stale published version remains if data is inconsistent.
+  await prisma.guideVersion.updateMany({
+    where: { propertyId: version.propertyId, status: "published" },
     data: { status: "archived" },
   });
 
