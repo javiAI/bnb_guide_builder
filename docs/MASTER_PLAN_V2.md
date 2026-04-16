@@ -435,24 +435,31 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 10A — `feat/media-storage`
 
-**Propósito**: integración con S3 (o Cloudflare R2) + presigned URLs.
+**Propósito**: integración con Cloudflare R2 (S3-compatible) + presigned URLs + blurhash.
+
+**Decisiones cerradas en Fase -1 (2026-04-16)**:
+- **Provider**: Cloudflare R2 (egress gratis, S3-compatible API via `@aws-sdk/*`).
+- **mimeTypes permitidos**: `image/jpeg`, `image/png`, `image/webp`, `image/avif`, `image/gif`, `video/mp4`.
+- **Tamaño máximo**: 10MB imágenes, 100MB vídeo.
+- **Key structure**: `{propertyId}/{assetId}/{originalFileName}`.
+- **Upload**: presigned PUT URL (browser → R2 directo, sin pasar por server).
+- **Blurhash**: generar en `confirmUploadAction` para lazy-loading en guía pública.
+- **Resize/optimization**: diferido a rama separada post-10A (ver ROADMAP.md § Futuro diferido).
 
 **Archivos a crear**:
 - `src/lib/services/media-storage.service.ts` — `getUploadUrl`, `getDownloadUrl`, `deleteObject`
 - `src/lib/actions/media.actions.ts` — server actions wrapping presigned URLs
-- Variables de entorno: `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`
+- Variables de entorno: `R2_BUCKET`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
 
 **Archivos a modificar**:
-- `prisma/schema.prisma` — `MediaAsset.storageKey String`, `MediaAsset.mimeType String`, `MediaAsset.sizeBytes Int`
-- `src/app/properties/[propertyId]/media/create-media-form.tsx` — upload real con presigned URL
+- `prisma/schema.prisma` — `MediaAsset` + `sizeBytes Int?` + `blurhash String?`
+- No hay UI de upload en esta rama (viene en 10B)
 
 **Tests**:
 - `src/test/media-storage.test.ts` — mock S3 client, verificar flujo presigned
 - `src/test/media-upload-action.test.ts` — action retorna URL válida; error si mimeType no permitido
 
-**Criterio de done**: subir foto funciona end-to-end; el archivo queda en S3; la URL firmada caduca.
-
-**⚠ Decisión previa requerida**: S3 vs Cloudflare R2 vs Supabase storage. Confirmar antes de empezar.
+**Criterio de done**: server actions crean asset + presigned URL; confirmar upload genera blurhash; delete limpia R2 + DB. Tests pasan.
 
 **Preparación**:
 - **Contexto a leer**:
