@@ -28,7 +28,7 @@ function renderItem(item: GuideItem, out: string[]): void {
   const deprecated = item.deprecated
     ? ' <em class="gt-deprecated">(deprecated)</em>'
     : "";
-  const value = item.value ? `: ${escapeHtml(item.value)}` : "";
+  const value = item.value !== null ? `: ${escapeHtml(item.value)}` : "";
   out.push(
     `<li><strong>${escapeHtml(item.label)}</strong>${deprecated}${value}`,
   );

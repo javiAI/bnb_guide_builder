@@ -31,7 +31,7 @@ function isSafeMdUrl(url: string): boolean {
 function renderItem(item: GuideItem, depth: number, out: string[]): void {
   const indent = "  ".repeat(depth);
   const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
-  const value = item.value ? `: ${escapeMd(item.value)}` : "";
+  const value = item.value !== null ? `: ${escapeMd(item.value)}` : "";
   out.push(`${indent}- **${escapeMd(item.label)}**${deprecatedMark}${value}`);
   const nestedIndent = "  ".repeat(depth + 1);
   for (const f of item.fields) {
