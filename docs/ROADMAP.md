@@ -51,6 +51,11 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md).
 - ✅ **9C** `feat/guide-publish-workflow` — Snapshot versionado (`GuideVersion.treeJson`), publish/unpublish/rollback, diff visual (multiset field diff), depreca `GuideSection`/`GuideSectionItem`. PR #51 merged.
 - ✅ **9D** `feat/guide-shareable-link` — URL pública shareable + QR + slug service + ruta `/g/:slug` guest-only. PR #52 merged.
 
+### Progreso Fase 10
+
+- ✅ **10A** `feat/media-storage` — Cloudflare R2 storage service + presigned uploads + blurhash + server actions (request/confirm/delete/download). PR #53 merged.
+- ⏳ **10B** `feat/media-per-entity` — Gallery por entidad + upload UI
+
 ### Orden sugerido
 
 1. **Ahora**: Fase 8 (desbloquea todo lo demás barato)
