@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createIncidentAction, type ActionResult } from "@/lib/actions/incident.actions";
+import { createIncidentAction } from "@/lib/actions/incident.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 
 interface TargetOption {

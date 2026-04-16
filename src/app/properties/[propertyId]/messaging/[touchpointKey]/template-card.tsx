@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   updateMessageTemplateAction,
   deleteMessageTemplateAction,
-  type ActionResult,
 } from "@/lib/actions/messaging.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { validateVariables } from "@/lib/schemas/messaging.schema";
 import { automationChannels, getItems } from "@/lib/taxonomy-loader";
 import type { BadgeTone } from "@/lib/types";

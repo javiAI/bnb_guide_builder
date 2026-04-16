@@ -5,8 +5,8 @@ import {
   publishGuideVersionAction,
   unpublishVersionAction,
   rollbackToVersionAction,
-  type ActionResult,
 } from "@/lib/actions/guide.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 // ──────────────────────────────────────────────
 // Publish current live tree

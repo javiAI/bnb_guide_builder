@@ -17,12 +17,7 @@ import {
   VALID_ENTITY_TYPES,
 } from "@/lib/schemas/editor.schema";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
-
-export type ActionResult<T = void> = {
-  success: boolean;
-  error?: string;
-  data?: T;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Helpers ─────────────────────────────────────────────
 

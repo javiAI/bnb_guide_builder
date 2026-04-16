@@ -11,12 +11,7 @@ import {
 } from "@/lib/schemas/wizard.schema";
 import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { recomputePropertyCounts } from "@/lib/property-counts";
-
-export type ActionResult = {
-  success: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string[]>;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Helpers ──
 

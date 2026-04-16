@@ -9,12 +9,7 @@ import {
 } from "@/lib/schemas/incident.schema";
 import { zonedLocalToUTC } from "@/lib/property-timezone";
 import { accessMethods, findItem } from "@/lib/taxonomy-loader";
-
-export type ActionResult = {
-  success: boolean;
-  error?: string;
-  fieldErrors?: Record<string, string[]>;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 function normalizeTarget(
   targetType: IncidentTargetType,

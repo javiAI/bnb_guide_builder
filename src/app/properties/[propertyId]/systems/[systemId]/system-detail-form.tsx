@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition, type FormEvent } from "react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
-import type { ActionResult } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
 import { stripNulls } from "@/lib/utils";
 import {

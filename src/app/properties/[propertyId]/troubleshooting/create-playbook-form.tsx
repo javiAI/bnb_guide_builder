@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createPlaybookAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { createPlaybookAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { troubleshootingTaxonomy, getItems } from "@/lib/taxonomy-loader";
 
 const troubleshootingTypes = getItems(troubleshootingTaxonomy);

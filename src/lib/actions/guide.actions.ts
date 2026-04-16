@@ -7,11 +7,7 @@ import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { ensurePropertySlug } from "@/lib/services/guide-slug.service";
 import { isPrismaUniqueViolation } from "@/lib/utils";
 import type { GuideTree } from "@/lib/types/guide-tree";
-
-export type ActionResult = {
-  success: boolean;
-  error?: string;
-};
+import type { ActionResult } from "@/lib/types/action-result";
 
 async function revalidatePublishingPaths(
   propertyId: string,

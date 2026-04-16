@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   createChecklistItemAction,
   deleteChecklistItemAction,
-  type ActionResult,
 } from "@/lib/actions/ops.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 const SCOPE_OPTIONS = [
   { id: "turnover", label: "Entre huéspedes" },

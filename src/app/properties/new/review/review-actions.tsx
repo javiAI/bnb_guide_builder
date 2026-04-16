@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { completeWizardAction, type ActionResult } from "@/lib/actions/wizard.actions";
+import { completeWizardAction } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface ReviewActionsProps {
   sessionId: string;

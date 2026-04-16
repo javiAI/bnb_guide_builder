@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateAmenityAction, toggleAmenityAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { updateAmenityAction, toggleAmenityAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { SubtypeFieldInput } from "./subtype-field-input";
 import type { EnrichedAmenityItem } from "./page";

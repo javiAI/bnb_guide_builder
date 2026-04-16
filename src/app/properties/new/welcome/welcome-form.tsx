@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState, useEffect, useRef } from "react";
-import { startWizardAction, checkDuplicateNameAction, type ActionResult } from "@/lib/actions/wizard.actions";
+import { startWizardAction, checkDuplicateNameAction } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface WelcomeFormProps {
   initialNickname: string;

@@ -4,7 +4,8 @@ import { useActionState, useState, useCallback } from "react";
 import { WizardShell } from "@/components/wizard/wizard-shell";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { saveStep1Action, type ActionResult } from "@/lib/actions/wizard.actions";
+import { saveStep1Action } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { propertyTypes, roomTypes, spaceAvailabilityRules, getItems, findItem } from "@/lib/taxonomy-loader";
 import type { StepFormProps } from "@/lib/types/wizard";
 

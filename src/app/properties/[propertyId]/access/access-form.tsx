@@ -7,7 +7,8 @@ import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/chec
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { saveAccessAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { saveAccessAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
 import { EntityGallery } from "@/components/media/entity-gallery";
 

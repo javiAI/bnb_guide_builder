@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { createMessageTemplateAction, type ActionResult } from "@/lib/actions/messaging.actions";
+import { createMessageTemplateAction } from "@/lib/actions/messaging.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { automationChannels, getItems } from "@/lib/taxonomy-loader";
 
 const channels = getItems(automationChannels);

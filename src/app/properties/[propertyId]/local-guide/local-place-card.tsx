@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { deleteLocalPlaceAction, type ActionResult } from "@/lib/actions/editor.actions";
+import { deleteLocalPlaceAction } from "@/lib/actions/editor.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface LocalPlaceCardProps {
   propertyId: string;

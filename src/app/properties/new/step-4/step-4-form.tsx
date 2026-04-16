@@ -6,7 +6,8 @@ import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/chec
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { saveStep4Action, type ActionResult } from "@/lib/actions/wizard.actions";
+import { saveStep4Action } from "@/lib/actions/wizard.actions";
+import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods, buildingAccessMethods, getItems, findItem } from "@/lib/taxonomy-loader";
 import type { StepFormProps } from "@/lib/types/wizard";
 
