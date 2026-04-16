@@ -36,11 +36,25 @@ export async function ensurePropertySlug(propertyId: string): Promise<string> {
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const slug = generateSlug();
     try {
-      await prisma.property.update({
-        where: { id: propertyId },
-        data: { publicSlug: slug },
+      const result = await prisma.$transaction(async (tx) => {
+        // Atomic: only set slug when currently NULL — prevents race where two
+        // callers both read null and each write a different slug.
+        const updated = await tx.property.updateMany({
+          where: { id: propertyId, publicSlug: null },
+          data: { publicSlug: slug },
+        });
+        if (updated.count === 1) return slug;
+
+        // Another caller won the race — return their slug
+        const current = await tx.property.findUnique({
+          where: { id: propertyId },
+          select: { publicSlug: true },
+        });
+        if (current?.publicSlug) return current.publicSlug;
+
+        throw new Error(`Property ${propertyId} not found`);
       });
-      return slug;
+      return result;
     } catch (err) {
       const isCollision =
         typeof err === "object" &&
@@ -48,7 +62,7 @@ export async function ensurePropertySlug(propertyId: string): Promise<string> {
         "code" in err &&
         (err as { code?: string }).code === "P2002";
       if (!isCollision) throw err;
-      // Retry with a new slug
+      // Slug collision on unique index — retry with a new slug
     }
   }
   throw new Error(`Failed to generate unique slug after ${MAX_RETRIES} attempts`);

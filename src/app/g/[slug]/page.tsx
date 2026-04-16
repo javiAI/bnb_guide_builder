@@ -59,7 +59,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: property
       ? `Guía del huésped para ${property.propertyNickname}`
       : undefined,
-    openGraph: { title },
+    openGraph: {
+      title,
+      description: property
+        ? `Guía del huésped para ${property.propertyNickname}`
+        : undefined,
+    },
   };
 }
 

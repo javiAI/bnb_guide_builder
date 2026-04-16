@@ -11,9 +11,20 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: select the input text for manual copy
+      const input = document.querySelector<HTMLInputElement>(
+        'input[data-shareable-url]',
+      );
+      if (input) {
+        input.select();
+        input.setSelectionRange(0, input.value.length);
+      }
+    }
   }
 
   return (
@@ -30,6 +41,8 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
           type="text"
           readOnly
           value={url}
+          aria-label="URL de la guía compartible"
+          data-shareable-url
           className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none"
         />
         <button
@@ -46,10 +59,14 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
           Mostrar código QR
         </summary>
         <div className="mt-3 flex justify-center">
-          <div
-            className="inline-block rounded-[var(--radius-lg)] border border-[var(--border)] bg-white p-4"
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-          />
+          <div className="inline-block rounded-[var(--radius-lg)] border border-[var(--border)] bg-white p-4">
+            <img
+              src={`data:image/svg+xml;base64,${btoa(qrSvg)}`}
+              alt="Código QR del link compartible"
+              width={200}
+              height={200}
+            />
+          </div>
         </div>
       </details>
     </div>

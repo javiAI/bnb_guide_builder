@@ -73,11 +73,22 @@ export async function publishGuideVersionAction(
     throw err;
   }
 
-  // Ensure the property has a public slug for the shareable link
-  await ensurePropertySlug(propertyId);
+  // Ensure the property has a public slug for the shareable link.
+  // Best-effort: publishing already committed, so slug failure should not
+  // report a failed action for a successfully published version.
+  let publicSlug: string | null = null;
+  try {
+    publicSlug = await ensurePropertySlug(propertyId);
+  } catch (err) {
+    console.error(
+      `Property ${propertyId} was published, but slug generation failed.`,
+      err,
+    );
+  }
 
   revalidatePath(`/properties/${propertyId}/publishing`);
   revalidatePath(`/properties/${propertyId}/guest-guide`);
+  if (publicSlug) revalidatePath(`/g/${publicSlug}`);
   return { success: true };
 }
 
@@ -103,6 +114,10 @@ export async function unpublishVersionAction(
 
   // Archive ALL published versions for this property (not just the clicked one)
   // to ensure no stale published version remains if data is inconsistent.
+  const property = await prisma.property.findUnique({
+    where: { id: version.propertyId },
+    select: { publicSlug: true },
+  });
   await prisma.guideVersion.updateMany({
     where: { propertyId: version.propertyId, status: "published" },
     data: { status: "archived" },
@@ -110,6 +125,7 @@ export async function unpublishVersionAction(
 
   revalidatePath(`/properties/${version.propertyId}/publishing`);
   revalidatePath(`/properties/${version.propertyId}/guest-guide`);
+  if (property?.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
   return { success: true };
 }
 
@@ -165,7 +181,12 @@ export async function rollbackToVersionAction(
     throw err;
   }
 
+  const rollbackProperty = await prisma.property.findUnique({
+    where: { id: source.propertyId },
+    select: { publicSlug: true },
+  });
   revalidatePath(`/properties/${source.propertyId}/publishing`);
   revalidatePath(`/properties/${source.propertyId}/guest-guide`);
+  if (rollbackProperty?.publicSlug) revalidatePath(`/g/${rollbackProperty.publicSlug}`);
   return { success: true };
 }
