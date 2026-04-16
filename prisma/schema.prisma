@@ -537,6 +537,7 @@ model MediaAssignment {
 
   mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
 
+  @@unique([mediaAssetId, entityType, entityId])
   @@index([entityType, entityId])
   @@map("media_assignments")
 }

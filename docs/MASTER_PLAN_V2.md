@@ -478,22 +478,43 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 10B — `feat/media-per-entity`
 
-**Propósito**: gallery por entidad (property portada, space, access-method, amenity, system, local-place). Consume `MediaAssignment` ya modelado.
+**Propósito**: gallery por entidad con upload real (drag & drop, multi-archivo, presigned URL → R2). Consume `MediaAssignment` ya modelado. Soporta reordenación drag & drop y cover photo por entidad.
+
+**Decisiones acordadas en Fase -1**:
+
+- **entityTypes soportados**: `property`, `space`, `access_method`, `amenity_instance`, `system`. `local_place` se añade en fase 13 cuando exista la entidad.
+- **Cover photo**: vía `usageKey = "cover"` en `MediaAssignment` (max 1 por entidad, validado en action).
+- **Legacy cleanup**: eliminar `createMediaAssetAction` de `editor.actions.ts`; migrar `create-media-form.tsx` al flujo `requestUploadAction` → presigned PUT → `confirmUploadAction` de `media.actions.ts`.
+- **Gallery como componente portátil**: diseñado para reubicarse fácilmente (e.g. futuro guide builder interactivo).
+- **Reorder incluido**: drag & drop para reordenar thumbnails en la gallery.
+- **Upload múltiple**: batch upload (arrastrar N archivos, subida en paralelo).
+
+**Schema** (Prisma):
+
+- Añadir `@@unique([mediaAssetId, entityType, entityId])` a `MediaAssignment`
 
 **Archivos a modificar**:
-- `src/app/properties/[propertyId]/media/page.tsx` — vista global con filtro por entity
-- `src/app/properties/[propertyId]/spaces/space-card.tsx` — sección de fotos por espacio
-- `src/app/properties/[propertyId]/access/access-form.tsx` — foto por método de acceso
-- `src/app/properties/[propertyId]/amenities/` — foto opcional por amenity instance
+
+- `prisma/schema.prisma` — unique constraint en `MediaAssignment`
+- `src/lib/actions/media.actions.ts` — nuevas actions: `assignMediaAction`, `unassignMediaAction`, `reorderMediaAction`, `setCoverAction`, `getEntityMediaAction`
+- `src/lib/actions/editor.actions.ts` — eliminar `createMediaAssetAction` (legacy)
+- `src/app/properties/[propertyId]/media/page.tsx` — vista global agrupada por entidad + upload real
+- `src/app/properties/[propertyId]/media/create-media-form.tsx` — reemplazar con `UploadDropzone` real
+- `src/app/properties/[propertyId]/spaces/space-card.tsx` — sección "Fotos (N)" colapsable con `EntityGallery`
+- `src/app/properties/[propertyId]/access/access-form.tsx` — `EntityGallery` por método de acceso
+- `src/app/properties/[propertyId]/amenities/amenity-detail-panel.tsx` — `EntityGallery` por amenity instance
 
 **Archivos a crear**:
-- `src/components/media-gallery.tsx` — gallery reutilizable con upload inline
-- `src/components/media-thumbnail.tsx` — thumbnail con acciones (delete, set cover)
+
+- `src/components/media/entity-gallery.tsx` — gallery reutilizable (portátil) con upload inline, reorder, cover
+- `src/components/media/media-thumbnail.tsx` — thumbnail con blurhash placeholder, acciones (delete, set cover)
+- `src/components/media/upload-dropzone.tsx` — drag & drop multi-archivo, presigned flow completo
 
 **Tests**:
-- `src/test/media-per-entity.test.ts` — asignar foto a space; leer fotos por entityId+entityType
 
-**Criterio de done**: cada entidad relevante tiene gallery propia; cover photo seleccionable.
+- `src/test/media-per-entity.test.ts` — CRUD assignments: assign, unassign, reorder, set cover, unicidad, entityType validation
+
+**Criterio de done**: cada entidad relevante tiene gallery propia con upload real; cover photo seleccionable; reordenación funcional; upload múltiple; vista global agrupada.
 
 **Preparación**:
 - **Contexto a leer**:
@@ -501,9 +522,9 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `prisma/schema.prisma` — `MediaAssignment` (polimorfismo por entityType+entityId)
   - Componentes a modificar listados arriba (leer los actuales antes de modificar)
 - **Docs a actualizar al terminar**:
-  - `docs/FEATURES/MEDIA_ASSETS.md` § "Assignments" — confirmar convención polimórfica
+  - `docs/FEATURES/MEDIA_ASSETS.md` § "Assignments" — confirmar convención polimórfica + entityTypes + cover
 - **Skills/tools específicos**:
-  - **`/simplify`** tras implementar: `media-gallery` se usa en 4+ sitios, conviene revisar duplicación.
+  - **`/simplify`** tras implementar: `entity-gallery` se usa en 4+ sitios, conviene revisar duplicación.
 
 ---
 

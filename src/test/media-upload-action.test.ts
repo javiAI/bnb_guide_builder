@@ -29,6 +29,7 @@ const mockGetUploadUrl = vi.fn();
 const mockGetDownloadUrl = vi.fn();
 const mockDeleteObject = vi.fn();
 const mockHeadObject = vi.fn();
+const mockInvalidateCache = vi.fn();
 
 vi.mock("@/lib/services/media-storage.service", () => ({
   ALLOWED_MEDIA: {
@@ -44,6 +45,7 @@ vi.mock("@/lib/services/media-storage.service", () => ({
   getDownloadUrl: (...args: unknown[]) => mockGetDownloadUrl(...args),
   deleteObject: (...args: unknown[]) => mockDeleteObject(...args),
   headObject: (...args: unknown[]) => mockHeadObject(...args),
+  invalidateDownloadUrlCache: (...args: unknown[]) => mockInvalidateCache(...args),
 }));
 
 // ── Mock next/cache ─────────────────────────────────────

@@ -20,6 +20,7 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { BedManager, type BedData } from "./bed-manager";
+import { EntityGallery } from "@/components/media/entity-gallery";
 
 
 export type SpaceStatus = "active" | "archived";
@@ -487,6 +488,20 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {/* Media gallery — only mount when expanded to avoid N server calls on page load */}
+            {expanded && (
+              <div className="mt-4">
+                <EntityGallery
+                  propertyId={propertyId}
+                  entityType="space"
+                  entityId={space.id}
+                  label="Fotos"
+                  defaultCollapsed
+                  compact
+                />
               </div>
             )}
 

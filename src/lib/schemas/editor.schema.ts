@@ -351,22 +351,39 @@ export type UpdateLocalPlaceData = z.infer<typeof updateLocalPlaceSchema>;
 
 // ── Media (upload flow) ──
 
-export const createMediaAssetSchema = z.object({
-  assetRoleKey: z.string().min(1, "El rol del asset es obligatorio"),
-  mediaType: z.string().min(1, "El tipo de media es obligatorio"),
-  caption: z.string().optional(),
-  visibility: z.enum(visibilityLevels).optional(),
-});
+export const VALID_ENTITY_TYPES = [
+  "property",
+  "space",
+  "access_method",
+  "amenity_instance",
+  "system",
+] as const;
+
+export type MediaEntityType = (typeof VALID_ENTITY_TYPES)[number];
+
+export const ENTITY_TYPE_LABELS: Record<MediaEntityType, string> = {
+  property: "Propiedad",
+  space: "Espacio",
+  access_method: "Acceso",
+  amenity_instance: "Equipamiento",
+  system: "Sistema",
+};
 
 export const assignMediaSchema = z.object({
   mediaAssetId: z.string().min(1),
-  entityType: z.string().min(1),
+  entityType: z.enum(VALID_ENTITY_TYPES),
   entityId: z.string().min(1),
   usageKey: z.string().optional(),
 });
 
-export type CreateMediaAssetData = z.infer<typeof createMediaAssetSchema>;
+export const reorderMediaSchema = z.object({
+  entityType: z.enum(VALID_ENTITY_TYPES),
+  entityId: z.string().min(1),
+  orderedAssignmentIds: z.array(z.string().min(1)).min(1),
+});
+
 export type AssignMediaData = z.infer<typeof assignMediaSchema>;
+export type ReorderMediaData = z.infer<typeof reorderMediaSchema>;
 
 // ── Systems (Branch 5) ──
 

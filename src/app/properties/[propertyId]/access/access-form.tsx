@@ -9,6 +9,7 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveAccessAction, type ActionResult } from "@/lib/actions/editor.actions";
 import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
+import { EntityGallery } from "@/components/media/entity-gallery";
 
 const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];
 const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
@@ -202,6 +203,20 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
           {pending ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>
+
+      {/* Access photos (lockbox, entrance, path, etc.) */}
+      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+        <EntityGallery
+          propertyId={propertyId}
+          entityType="access_method"
+          entityId={propertyId}
+          label="Fotos del acceso"
+          defaultCollapsed={false}
+        />
+        <p className="mt-2 text-xs text-[var(--color-neutral-400)]">
+          Fotos del portal, cerradura, caja de llaves, camino de entrada, etc.
+        </p>
+      </div>
     </div>
   );
 }

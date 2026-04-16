@@ -6,6 +6,7 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { SubtypeFieldInput } from "./subtype-field-input";
 import type { EnrichedAmenityItem } from "./page";
 import type { SubtypeField } from "@/lib/types/taxonomy";
+import { EntityGallery } from "@/components/media/entity-gallery";
 
 interface AmenityDetailPanelProps {
   propertyId: string;
@@ -139,6 +140,20 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
           {isPending ? "Guardando…" : "Guardar"}
         </button>
       </div>
+
+      {/* Photos for this amenity instance */}
+      {item.dbId && (
+        <div className="mt-4 border-t border-[var(--color-neutral-200)] pt-3">
+          <EntityGallery
+            propertyId={propertyId}
+            entityType="amenity_instance"
+            entityId={item.dbId}
+            label="Fotos"
+            defaultCollapsed
+            compact
+          />
+        </div>
+      )}
     </div>
   );
 }
