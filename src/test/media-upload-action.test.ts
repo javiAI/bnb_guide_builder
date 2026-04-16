@@ -7,18 +7,46 @@ const mockUpdate = vi.fn();
 const mockFindUnique = vi.fn();
 const mockDelete = vi.fn();
 
+// Assignment-specific mocks
+const mockAssignmentCreate = vi.fn();
+const mockAssignmentFindUnique = vi.fn();
+const mockAssignmentFindMany = vi.fn();
+const mockAssignmentDelete = vi.fn();
+const mockAssignmentUpdate = vi.fn();
+const mockAssignmentUpdateMany = vi.fn();
+const mockAssignmentAggregate = vi.fn();
+const mockSpaceFindUnique = vi.fn();
+
 vi.mock("@/lib/db", () => {
-  const methods = {
+  const assetMethods = {
     create: (...args: unknown[]) => mockCreate(...args),
     update: (...args: unknown[]) => mockUpdate(...args),
     findUnique: (...args: unknown[]) => mockFindUnique(...args),
     delete: (...args: unknown[]) => mockDelete(...args),
   };
+  const assignmentMethods = {
+    create: (...args: unknown[]) => mockAssignmentCreate(...args),
+    findUnique: (...args: unknown[]) => mockAssignmentFindUnique(...args),
+    findMany: (...args: unknown[]) => mockAssignmentFindMany(...args),
+    delete: (...args: unknown[]) => mockAssignmentDelete(...args),
+    update: (...args: unknown[]) => mockAssignmentUpdate(...args),
+    updateMany: (...args: unknown[]) => mockAssignmentUpdateMany(...args),
+    aggregate: (...args: unknown[]) => mockAssignmentAggregate(...args),
+  };
   return {
     prisma: {
-      mediaAsset: methods,
-      $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
-        fn({ mediaAsset: methods }),
+      mediaAsset: assetMethods,
+      mediaAssignment: assignmentMethods,
+      space: { findUnique: (...args: unknown[]) => mockSpaceFindUnique(...args) },
+      propertyAmenityInstance: { findUnique: vi.fn().mockResolvedValue(null) },
+      propertySystem: { findUnique: vi.fn().mockResolvedValue(null) },
+      $transaction: (fnOrArr: unknown) => {
+        if (typeof fnOrArr === "function") {
+          return (fnOrArr as (tx: unknown) => Promise<unknown>)({ mediaAsset: assetMethods });
+        }
+        // Array of promises (used by reorder/setCover)
+        return Promise.all(fnOrArr as Promise<unknown>[]);
+      },
     },
   };
 });
@@ -77,6 +105,9 @@ import {
   confirmUploadAction,
   deleteMediaAction,
   getMediaDownloadUrlAction,
+  assignMediaAction,
+  reorderMediaAction,
+  setCoverAction,
 } from "@/lib/actions/media.actions";
 
 const mockFetch = vi.fn();
@@ -93,6 +124,14 @@ beforeEach(() => {
   mockDeleteObject.mockReset();
   mockHeadObject.mockReset();
   mockInvalidateCache.mockReset();
+  mockAssignmentCreate.mockReset();
+  mockAssignmentFindUnique.mockReset();
+  mockAssignmentFindMany.mockReset();
+  mockAssignmentDelete.mockReset();
+  mockAssignmentUpdate.mockReset();
+  mockAssignmentUpdateMany.mockReset();
+  mockAssignmentAggregate.mockReset();
+  mockSpaceFindUnique.mockReset();
 });
 
 describe("requestUploadAction", () => {
@@ -289,5 +328,110 @@ describe("getMediaDownloadUrlAction", () => {
     const result = await getMediaDownloadUrlAction("a1");
     expect(result.success).toBe(true);
     expect(result.data?.url).toBe("https://r2.example.com/signed");
+  });
+});
+
+// ── Assignment actions ─────────────────────────────────
+
+describe("assignMediaAction", () => {
+  it("rejects cross-property assignment for space entity", async () => {
+    mockFindUnique.mockResolvedValue({ id: "a1", propertyId: "p1", status: "ready" });
+    mockSpaceFindUnique.mockResolvedValue({ propertyId: "p2" }); // different property
+
+    const result = await assignMediaAction("a1", "space", "space_1");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no pertenece");
+  });
+
+  it("rejects cross-property assignment for property/access_method entity", async () => {
+    mockFindUnique.mockResolvedValue({ id: "a1", propertyId: "p1", status: "ready" });
+
+    const result = await assignMediaAction("a1", "property", "p2");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no pertenece");
+  });
+
+  it("returns error for non-ready asset", async () => {
+    mockFindUnique.mockResolvedValue({ id: "a1", propertyId: "p1", status: "pending" });
+
+    const result = await assignMediaAction("a1", "property", "p1");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no está listo");
+  });
+
+  it("handles P2002 duplicate assignment gracefully", async () => {
+    mockFindUnique.mockResolvedValue({ id: "a1", propertyId: "p1", status: "ready" });
+    mockAssignmentAggregate.mockResolvedValue({ _max: { sortOrder: 0 } });
+    mockAssignmentCreate.mockRejectedValue({ code: "P2002" });
+
+    const result = await assignMediaAction("a1", "property", "p1");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("ya está asignado");
+  });
+
+  it("assigns with auto-incremented sortOrder", async () => {
+    mockFindUnique.mockResolvedValue({ id: "a1", propertyId: "p1", status: "ready" });
+    mockAssignmentAggregate.mockResolvedValue({ _max: { sortOrder: 2 } });
+    mockAssignmentCreate.mockResolvedValue({ id: "assign_1" });
+
+    const result = await assignMediaAction("a1", "property", "p1");
+    expect(result.success).toBe(true);
+    expect(result.data?.assignmentId).toBe("assign_1");
+    expect(mockAssignmentCreate.mock.calls[0][0].data.sortOrder).toBe(3);
+  });
+});
+
+describe("reorderMediaAction", () => {
+  it("rejects duplicate IDs in orderedAssignmentIds", async () => {
+    mockAssignmentFindMany.mockResolvedValue([
+      { id: "a1", mediaAsset: { propertyId: "p1" } },
+      { id: "a2", mediaAsset: { propertyId: "p1" } },
+    ]);
+
+    const result = await reorderMediaAction("space", "s1", ["a1", "a1"]);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no coinciden");
+  });
+
+  it("rejects if IDs don't match entity assignments", async () => {
+    mockAssignmentFindMany.mockResolvedValue([
+      { id: "a1", mediaAsset: { propertyId: "p1" } },
+      { id: "a2", mediaAsset: { propertyId: "p1" } },
+    ]);
+
+    const result = await reorderMediaAction("space", "s1", ["a1", "a3"]);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no coinciden");
+  });
+});
+
+describe("setCoverAction", () => {
+  it("returns error if assignment not found", async () => {
+    mockAssignmentFindUnique.mockResolvedValue(null);
+
+    const result = await setCoverAction("nonexistent");
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("no encontrada");
+  });
+
+  it("clears previous cover and sets new one", async () => {
+    mockAssignmentFindUnique.mockResolvedValue({
+      id: "assign_2",
+      entityType: "space",
+      entityId: "s1",
+      mediaAsset: { propertyId: "p1" },
+    });
+    mockAssignmentUpdateMany.mockResolvedValue({ count: 1 });
+    mockAssignmentUpdate.mockResolvedValue({});
+
+    const result = await setCoverAction("assign_2");
+    expect(result.success).toBe(true);
+    // Verify updateMany clears previous cover
+    expect(mockAssignmentUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ usageKey: "cover" }),
+        data: { usageKey: null },
+      }),
+    );
   });
 });

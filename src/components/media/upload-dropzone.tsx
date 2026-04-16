@@ -15,7 +15,7 @@ const ACCEPTED_TYPES =
 interface UploadJob {
   id: string;
   fileName: string;
-  progress: "requesting" | "uploading" | "confirming" | "assigning" | "done" | "error";
+  progress: "requesting" | "uploading" | "confirming" | "assigning" | "error";
   error?: string;
 }
 
@@ -90,7 +90,7 @@ export function UploadDropzone({
           return;
         }
 
-        updateJob(jobId, { progress: "done" });
+        setJobs((prev) => prev.filter((j) => j.id !== jobId));
         onUploadComplete?.();
       } catch (err) {
         updateJob(jobId, {
@@ -145,12 +145,11 @@ export function UploadDropzone({
     [handleFiles],
   );
 
-  const activeJobs = jobs.filter((j) => j.progress !== "done");
   const hasErrors = jobs.some((j) => j.progress === "error");
 
-  // Clear completed/errored jobs
+  // Clear errored jobs
   const clearFinished = () => {
-    setJobs((prev) => prev.filter((j) => j.progress !== "done" && j.progress !== "error"));
+    setJobs((prev) => prev.filter((j) => j.progress !== "error"));
   };
 
   return (
@@ -191,9 +190,9 @@ export function UploadDropzone({
       </div>
 
       {/* Upload progress */}
-      {activeJobs.length > 0 && (
+      {jobs.length > 0 && (
         <div className="mt-2 space-y-1">
-          {activeJobs.map((job) => (
+          {jobs.map((job) => (
               <div
                 key={job.id}
                 className={`flex items-center gap-2 rounded-[var(--radius-sm)] px-2 py-1 text-xs ${

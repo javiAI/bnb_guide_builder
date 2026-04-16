@@ -507,7 +507,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 **Archivos a crear**:
 
 - `src/components/media/entity-gallery.tsx` — gallery reutilizable (portátil) con upload inline, reorder, cover
-- `src/components/media/media-thumbnail.tsx` — thumbnail con blurhash placeholder, acciones (delete, set cover)
+- `src/components/media/media-thumbnail.tsx` — thumbnail con fallback visual, acciones (delete, set cover)
 - `src/components/media/upload-dropzone.tsx` — drag & drop multi-archivo, presigned flow completo
 
 **Tests**:
