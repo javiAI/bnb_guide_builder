@@ -191,13 +191,14 @@ export default async function PublishingPage({
   const readyCount = gates.filter((g) => g.ready).length;
 
   const publishedVersion = publishedWithTree ?? versions.find((v) => v.status === "published") ?? null;
+  const publishedHasSnapshot = Boolean(publishedWithTree?.treeJson);
   // For archived versions, check which ones have snapshots (for rollback eligibility).
   // This is a lightweight query — only IDs, no large treeJson payloads.
   const archivedIds = versions.filter((v) => v.status === "archived").map((v) => v.id);
   const snapshotIds = archivedIds.length > 0
     ? new Set(
         (await prisma.guideVersion.findMany({
-          where: { id: { in: archivedIds }, treeJson: { not: Prisma.JsonNull } },
+          where: { id: { in: archivedIds }, treeJson: { not: Prisma.AnyNull } },
           select: { id: true },
         })).map((v) => v.id),
       )
@@ -258,12 +259,19 @@ export default async function PublishingPage({
       </div>
 
       {/* ── Diff vs published ── */}
-      {publishedVersion && (
+      {publishedVersion && publishedHasSnapshot && (
         <div className="mt-8">
           <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
             Cambios desde v{publishedVersion.version}
           </h2>
           <GuideDiffViewer diff={diff} />
+        </div>
+      )}
+      {publishedVersion && !publishedHasSnapshot && (
+        <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] p-4">
+          <p className="text-sm text-[var(--color-warning-700)]">
+            La versión publicada v{publishedVersion.version} no tiene snapshot (anterior a 9C). Publica una nueva versión para habilitar comparación y rollback.
+          </p>
         </div>
       )}
 

@@ -128,6 +128,28 @@ function describeChanges(oldItem: GuideItem, newItem: GuideItem): string[] {
     }
   }
 
+  // Warnings
+  const oldWarnings = oldItem.warnings.join(",");
+  const newWarnings = newItem.warnings.join(",");
+  if (oldWarnings !== newWarnings) changes.push("warnings modificados");
+
+  // Media
+  const oldMediaFp = oldItem.media.map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
+  const newMediaFp = newItem.media.map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
+  if (oldMediaFp !== newMediaFp) {
+    const diff = newItem.media.length - oldItem.media.length;
+    changes.push(diff > 0 ? `+${diff} media` : diff < 0 ? `${diff} media` : "media modificados");
+  }
+
+  // Children (recursive count)
+  if (oldItem.children.length !== newItem.children.length) {
+    changes.push(`hijos: ${oldItem.children.length} → ${newItem.children.length}`);
+  } else if (oldItem.children.length > 0) {
+    const oldChildFp = oldItem.children.map((c) => itemFingerprint(c)).join("|");
+    const newChildFp = newItem.children.map((c) => itemFingerprint(c)).join("|");
+    if (oldChildFp !== newChildFp) changes.push("hijos modificados");
+  }
+
   return changes;
 }
 

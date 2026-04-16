@@ -120,9 +120,12 @@ export async function rollbackToVersionAction(
 
   const source = await prisma.guideVersion.findUnique({
     where: { id: sourceVersionId },
-    select: { id: true, propertyId: true, treeJson: true },
+    select: { id: true, propertyId: true, status: true, treeJson: true },
   });
   if (!source) return { success: false, error: "Versión fuente no encontrada" };
+  if (source.status !== "archived") {
+    return { success: false, error: "Solo se puede restaurar una versión archivada" };
+  }
   if (!source.treeJson) return { success: false, error: "La versión fuente no tiene snapshot" };
 
   try {
