@@ -4,7 +4,7 @@ Versión: 2026-04-15 (rev. 2)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
 Alcance: 7 fases, 24 ramas, ~24 PRs independientes y revisables
 
-Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.9).
+Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.10).
 
 ---
 
@@ -43,12 +43,13 @@ Este gate no se salta nunca, ni siquiera en ramas "triviales". Si la rama es rea
 
 ### 2.2 Fase 0 — Antes de crear la rama
 
-1. Leer la sección **entera** correspondiente de este documento (`MASTER_PLAN_V2.md § Rama XY`).
-2. Leer los archivos/rangos listados en **"Contexto a leer"** de esa rama.
-3. Si la rama indica `Memoria previa: requires X`, cargar ese contexto explícitamente antes de empezar.
-4. **Opcional** — `/firecrawl-search "<tema>"` si la rama implica decisiones de UX/dominio donde hay best practices externas relevantes.
-5. **Opcional** — `/excalidraw-diagram` si la rama requiere diseño visual previo (ej: 9A rendering tree, 11B pipeline assistant).
-6. **Opcional** — `Agent Plan` si la arquitectura interna de la rama tiene múltiples caminos razonables.
+1. **Gestión de contexto**: ejecutar la acción indicada en el campo **"Gestión de contexto"** de la rama (ver §2.9). Por defecto: `/clear` para conversación limpia.
+2. Leer la sección **entera** correspondiente de este documento (`MASTER_PLAN_V2.md § Rama XY`).
+3. Leer los archivos/rangos listados en **"Contexto a leer"** de esa rama.
+4. Si la rama indica `verificar: [entries]` en su gestión de contexto, comprobar que esas memorias siguen vigentes.
+5. **Opcional** — `/firecrawl-search "<tema>"` si la rama implica decisiones de UX/dominio donde hay best practices externas relevantes.
+6. **Opcional** — `/excalidraw-diagram` si la rama requiere diseño visual previo (ej: 9A rendering tree, 11B pipeline assistant).
+7. **Opcional** — `Agent Plan` si la arquitectura interna de la rama tiene múltiples caminos razonables.
 
 ### 2.3 Fase 1 — Al crear la rama
 
@@ -86,9 +87,49 @@ git checkout -b <rama-name>
 2. **Actualizar los docs listados en "Docs a actualizar al terminar"** de la rama. **Nunca crear docs nuevos si se puede actualizar uno existente**.
 3. **`/revise-claude-md`** si la rama introduce patrones nuevos reutilizables (nuevos gotchas de entorno, convenciones de código, patrones de UI).
 4. Actualizar `docs/ROADMAP.md`: marcar la rama como hecha y apuntar a la siguiente.
-5. Si durante la rama se descubrieron gaps del plan, seguir §2.9.
+5. Si durante la rama se descubrieron gaps del plan, seguir §2.10.
+6. **Gestión de memoria** — seguir §2.9.
+7. **Prompt de continuación** — seguir §2.9, paso 4.
 
-### 2.9 Actualización auditada del plan
+### 2.9 Gestión de memoria y transición entre ramas
+
+**Principio**: cada rama = conversación nueva con contexto limpio. El ruido acumulado de una rama (reviews, fixes, debugging) es contraproducente para la siguiente.
+
+#### Estrategia de MEMORY.md
+
+MEMORY.md se **actualiza incrementalmente**, nunca se borra y recrea. Las memorias tienen distinta vida útil:
+
+| Tipo | Vida útil | Cuándo actualizar |
+| --- | --- | --- |
+| `user` | Larga — preferencias y perfil del usuario | Rara vez; solo si cambia el rol o preferencias |
+| `feedback` | Larga — guía de comportamiento validada | Solo si se invalida por cambio de convención |
+| `project` | Corta — estado de trabajo en curso | **Cada merge**: marcar rama completada, eliminar WIP |
+| `reference` | Media — punteros a sistemas externos | Cuando el sistema externo cambia |
+
+#### Protocolo post-merge (antes de cerrar la conversación)
+
+1. **Actualizar memorias `project`**: marcar la rama como completada en `project_master_plan_v2_progress.md`. Eliminar entradas de trabajo en curso que ya no apliquen.
+2. **Guardar descubrimientos no obvios**: si la rama reveló patrones, gotchas o decisiones que NO quedaron en CLAUDE.md ni en docs, guardarlos como memoria `feedback` o `project`.
+3. **No guardar lo derivable**: si ya está en el código, git log, CLAUDE.md o docs del repo, no duplicar en memoria.
+4. **Generar prompt de continuación**: Claude debe producir un bloque de texto listo para copiar-pegar que el usuario usará para arrancar la siguiente conversación. El prompt debe incluir:
+
+```text
+Continúa con docs/MASTER_PLAN_V2.md.
+Acabamos de mergear: ✅ [rama completada] (PR #N).
+La siguiente es Rama XY `nombre-de-rama`.
+[/clear o /compact según lo indicado en "Gestión de contexto" de la rama]
+Ejecuta el protocolo §2.1 Fase -1 completo.
+```
+
+#### Gestión de contexto por rama
+
+Cada rama especifica una de estas estrategias en su campo **"Gestión de contexto"**:
+
+- **`/clear`** (default) → conversación completamente nueva. MEMORY.md + CLAUDE.md se cargan automáticamente y proveen contexto persistente. Ideal cuando la rama anterior no tiene relación directa o todo el contexto relevante ya está persistido en memoria/docs.
+- **`/compact`** → comprimir la conversación actual en lugar de borrarla. Usar solo cuando la conversación contiene contexto crítico que aún no está en memoria ni docs (ej: acabamos de hacer la Fase -1 de la siguiente rama en esta misma conversación). El prompt de continuación debe indicar `/compact` y explicar qué contexto se preserva.
+- **`verificar: [entries]`** → `/clear` + al arrancar la nueva conversación, verificar que las entradas de memoria listadas están actualizadas antes de actuar sobre ellas (pueden estar stale tras el merge).
+
+### 2.10 Actualización auditada del plan
 
 Si durante la ejecución de una rama descubrimos que el plan necesita cambios (gaps, supuestos incorrectos, mejor secuenciación detectada):
 
@@ -145,7 +186,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/lib/taxonomy-loader.ts` — sección de helpers de taxonomía (buscar `export function get*`)
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Loader contract" y § "Mandatory taxonomies"
   - `docs/FUTURE.md` § "Calibración de completeness (7C del plan original)"
-- **Memoria previa**: **clean** — suficiente con leer lo anterior
+- **Gestión de contexto**: `/clear` — contexto limpio, MEMORY.md + CLAUDE.md bastan
 - **Docs a actualizar al terminar**:
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `completeness_rules.json`
   - `docs/FUTURE.md` § "Calibración de completeness" — quitar nota "pre-requisito: que las reglas estén extraídas a JSON"
@@ -178,7 +219,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/lib/types/taxonomy.ts` — union `SubtypeFieldType`
   - `src/config/registries/` — listar para ver patrones de registry existentes (`icon-registry.ts`, `renderer-registry.ts`)
   - `docs/FUTURE.md` § "Field-type registry (tangencial, 1-2h)"
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Tipos de campo soportados" — referenciar el registry como fuente de verdad
   - `docs/FUTURE.md` § 3 — quitar (completado)
@@ -203,7 +244,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `~/.claude/projects/-Users-javierabrilibanez-Dev-guide-builder-claude/memory/MEMORY.md`
   - Todos los archivos referenciados desde ese índice
   - `docs/ROADMAP.md` (para saber a qué puntero reemplazar)
-- **Memoria previa**: **requires** — es precisamente sincronizar la memoria
+- **Gestión de contexto**: `/clear` + verificar: [`project_master_plan_v2_progress.md`] — esta rama sincroniza la memoria, necesita leer su estado actual
 - **Docs a actualizar al terminar**: los ficheros de memoria citados arriba (no hay docs de repo que tocar)
 - **Skills/tools específicos**: ninguno extra
 
@@ -277,7 +318,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/lib/services/property-derived.service.ts` (patrón de servicios que componen desde entidades canónicas)
   - `taxonomies/visibility_levels.json`
   - `src/config/registries/field-type-registry.ts` (reutilización para formateo de valores)
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § 13 — concretar el renderer con referencia al nuevo servicio
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `guide_sections.json` y sección de resiliencia del guide engine
@@ -312,7 +353,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - El servicio creado en 9A (`src/lib/services/guide-rendering.service.ts`) y sus tipos
   - `src/app/properties/[propertyId]/guest-guide/page.tsx` actual (shell)
   - `docs/API_ROUTES.md` (patrón de rutas y error shape)
-- **Memoria previa**: **requires 9A merged** — este trabajo depende del servicio de composición
+- **Gestión de contexto**: `/clear` — el servicio de 9A está en el código, se lee vía "Contexto a leer"
 - **Docs a actualizar al terminar**:
   - `docs/API_ROUTES.md` — añadir endpoint `GET /api/properties/[id]/guide`
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Guide generation" — concretar formatos de output
@@ -345,7 +386,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/app/properties/[propertyId]/publishing/page.tsx` actual (266 LOC, workflow incompleto)
   - Servicios de 9A y renderers de 9B
   - `docs/DATA_MODEL.md` § canonical persisted entities
-- **Memoria previa**: **requires 9A + 9B merged**
+- **Gestión de contexto**: `/clear` — los servicios de 9A/9B están en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Publishing workflow"
   - `docs/ARCHITECTURE_OVERVIEW.md` § 6 "Derived layers" — citar `GuideVersion.treeJson` como snapshot inmutable
@@ -377,7 +418,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - Configuración de rutas públicas en Next.js — si hay otras rutas sin auth en el repo, ver el patrón (`src/app/` buscar `layout.tsx` con auth guard para ver dónde aplica)
   - `docs/SECURITY_AND_AUDIT.md` (completo)
   - Código de 9B y 9C
-- **Memoria previa**: **requires 9C merged**
+- **Gestión de contexto**: `/clear` — publish workflow de 9C está en el código
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § 5 "Route map" — añadir `/g/:versionSlug` como ruta pública
   - `docs/SECURITY_AND_AUDIT.md` — concretar regla de que `/g/*` siempre fuerza audience=guest
@@ -417,7 +458,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `prisma/schema.prisma` — modelos `MediaAsset`, `MediaAssignment`
   - `src/app/properties/[propertyId]/media/page.tsx` y `create-media-form.tsx` actuales
   - `.env.example` si existe (para ver convención de env vars)
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MEDIA_ASSETS.md` — añadir sección "Storage provider" con provider elegido, bucket, IAM policy de referencia
   - `CLAUDE.md` § "Entorno y comandos" — añadir env vars requeridas para dev local
@@ -451,7 +492,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - Código de 10A (service + action)
   - `prisma/schema.prisma` — `MediaAssignment` (polimorfismo por entityType+entityId)
   - Componentes a modificar listados arriba (leer los actuales antes de modificar)
-- **Memoria previa**: **requires 10A merged**
+- **Gestión de contexto**: `/clear` — service de 10A está en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MEDIA_ASSETS.md` § "Assignments" — confirmar convención polimórfica
 - **Skills/tools específicos**:
@@ -477,7 +518,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Servicios de 9A, 9B; storage de 10A
   - `taxonomies/guide_sections.json` (creado en 9A)
-- **Memoria previa**: **requires 9B + 10A + 10B merged**
+- **Gestión de contexto**: `/clear` — servicios de 9B/10A/10B están en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MEDIA_ASSETS.md` § "In guide rendering"
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` — citar que media es parte del árbol rendered
@@ -516,7 +557,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/app/properties/[propertyId]/knowledge/page.tsx` (shell actual)
   - Patrón de recomputación en `src/lib/services/property-derived.service.ts`
   - `src/lib/actions/editor.actions.ts` — hook points donde ya se llama `recomputeAll`
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Knowledge extraction" — describir extractores y templates
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `knowledge_templates.json`
@@ -555,7 +596,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `prisma/schema.prisma` — modelos `AssistantConversation`, `AssistantMessage`, `KnowledgeItem`
   - `src/app/properties/[propertyId]/ai/page.tsx` actual
   - Código de 11A (extractores ya generando items)
-- **Memoria previa**: **requires 11A merged**
+- **Gestión de contexto**: `/clear` + verificar: [`project_master_plan_v2_progress.md`] — confirmar que 11A está completada y que el patrón de extractores quedó documentado
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant pipeline" — provider elegido + diagrama del flujo
   - `docs/API_ROUTES.md` — documentar `POST /api/properties/:id/assistant/ask`
@@ -588,7 +629,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Pipeline de 11B
   - `prisma/schema.prisma` — modelo `Contact` y `taxonomies/contact_roles.json`
-- **Memoria previa**: **requires 11B merged**
+- **Gestión de contexto**: `/clear` — pipeline de 11B está en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Escalation"
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `escalation_rules.json`
@@ -611,7 +652,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Pipeline de 11B + escalación de 11C
   - `docs/QA_AND_RELEASE.md` (patrón de release gates)
-- **Memoria previa**: **requires 11B + 11C merged**
+- **Gestión de contexto**: `/clear` — pipeline + escalation de 11B/11C están en el código
 - **Docs a actualizar al terminar**:
   - `docs/QA_AND_RELEASE.md` § "Release gates" — añadir gate de accuracy del assistant con umbral concreto
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Evals"
@@ -647,7 +688,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/app/properties/[propertyId]/messaging/[touchpointKey]/` (árbol actual)
   - `prisma/schema.prisma` — `MessageTemplate`, `MessageAutomation`, `MessageDraft`
   - Conocimiento generado por 11A (algunas variables provendrán de `KnowledgeItem`)
-- **Memoria previa**: **requires 11A merged** (para variables derivadas de knowledge)
+- **Gestión de contexto**: `/clear` — extractores de 11A están en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Variables"
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `messaging_variables.json`
@@ -681,7 +722,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - Servicio de 12A
   - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Automations"
   - `docs/SECURITY_AND_AUDIT.md` (para regla de no-sensitive en drafts)
-- **Memoria previa**: **requires 12A merged**
+- **Gestión de contexto**: `/clear` — variables service de 12A está en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Automations" + § "Scheduler contract"
   - `docs/API_ROUTES.md` — endpoints de scheduler si aplica
@@ -711,7 +752,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Servicios 12A + 12B
   - `taxonomies/property_types.json`, `taxonomies/messaging_touchpoints.json`
-- **Memoria previa**: **requires 12A + 12B merged**
+- **Gestión de contexto**: `/clear` — servicios de 12A/12B están en el código
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/MESSAGING_AUTOMATION.md` § "Starter packs"
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `messaging_starter_packs.json` + `messaging_triggers.json` (de 12B)
@@ -747,7 +788,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `src/app/properties/[propertyId]/local-guide/` actual
   - `prisma/schema.prisma` — modelo `LocalPlace`
   - MapTiler ya está en el repo para mapas (ver wizard step-2) — revisar integración existente
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/` — crear **solo si no hay espacio** en un doc existente. Candidato: añadir sección "Local guide" a `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o crear `docs/FEATURES/LOCAL_GUIDE.md` si el contenido es denso.
 - **Skills/tools específicos**:
@@ -775,7 +816,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - 13A (patrón de sugerencias revisables si aplica)
   - Scheduler decidido en 12B (reutilizar contrato)
-- **Memoria previa**: **requires 12B merged** (para reutilizar scheduler)
+- **Gestión de contexto**: `/clear` — scheduler de 12B está en el código
 - **Docs a actualizar al terminar**: mismo doc de local-guide creado/extendido en 13A
 - **Skills/tools específicos**:
   - **`/firecrawl-search`** antes: comparar cobertura y coste de providers por ciudad.
@@ -803,7 +844,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Integración MapLibre existente en wizard step-2 (`src/app/properties/new/step-2/`)
   - Renderer HTML de 9B/10C
-- **Memoria previa**: **requires 9B + 10C + 13A merged**
+- **Gestión de contexto**: `/clear` — servicios de 9B/10C/13A están en el código
 - **Docs a actualizar al terminar**:
   - `docs/SECURITY_AND_AUDIT.md` — añadir regla de obfuscation de coordenadas en audience=guest
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o `LOCAL_GUIDE.md` — documentar el comportamiento
@@ -833,7 +874,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Todas las taxonomías listadas arriba (ver sus tamaños: `amenity_taxonomy.json` es el grande ~150 items)
   - `docs/FUTURE.md` § "Platform integrations" (contexto de decisión estratégica)
-- **Memoria previa**: **clean**
+- **Gestión de contexto**: `/clear` — contexto limpio
 - **Docs a actualizar al terminar**:
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — anotar que mappings son obligatorios
   - `docs/FUTURE.md` § "Platform integrations" — actualizar estado
@@ -860,7 +901,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - 14A (helpers de mappings)
   - Docs oficiales Airbnb API (fetch o Context7 si disponible)
-- **Memoria previa**: **requires 14A merged**
+- **Gestión de contexto**: `/clear` — mappings de 14A están en el código
 - **Docs a actualizar al terminar**:
   - `docs/API_ROUTES.md` — endpoint de export
   - Crear `docs/FEATURES/PLATFORM_INTEGRATIONS.md` (doc nuevo justificado por densidad)
@@ -884,7 +925,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 **Preparación**:
 - **Contexto a leer**: 14A + 14B (mismo patrón)
-- **Memoria previa**: **requires 14A merged** (14B es recomendado pero no bloqueante)
+- **Gestión de contexto**: `/clear` — mappings de 14A están en el código
 - **Docs a actualizar al terminar**: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § Booking
 - **Skills/tools específicos**: idem 14B
 
@@ -912,7 +953,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Contexto a leer**:
   - Exports de 14B + 14C (simetría del mapping)
   - Patrón de audit log en `docs/SECURITY_AND_AUDIT.md`
-- **Memoria previa**: **requires 14B + 14C merged**
+- **Gestión de contexto**: `/clear` + verificar: [`project_master_plan_v2_progress.md`] — confirmar que 14B y 14C están completadas y que los exports son simétricos para diseñar reconciliación
 - **Docs a actualizar al terminar**: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § Import + reconciliation
 - **Skills/tools específicos**:
   - **Agent code-architect** para diseñar la estrategia de reconciliación (overwrite vs merge vs skip) antes de codear.
