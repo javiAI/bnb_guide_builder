@@ -27,7 +27,7 @@ export function PublishButton({ propertyId }: { propertyId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-success-600)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-success-700)] disabled:opacity-50"
+        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
       >
         {pending ? "Publicando..." : "Publicar versión actual"}
       </button>

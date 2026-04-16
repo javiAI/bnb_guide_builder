@@ -45,6 +45,14 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
           data-shareable-url
           className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none"
         />
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 rounded-[var(--radius-md)] border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--color-primary-600)] transition-colors hover:bg-[var(--color-primary-50)]"
+        >
+          Abrir guía
+        </a>
         <button
           type="button"
           onClick={handleCopy}
