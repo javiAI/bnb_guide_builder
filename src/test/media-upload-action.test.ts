@@ -7,16 +7,21 @@ const mockUpdate = vi.fn();
 const mockFindUnique = vi.fn();
 const mockDelete = vi.fn();
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
-    mediaAsset: {
-      create: (...args: unknown[]) => mockCreate(...args),
-      update: (...args: unknown[]) => mockUpdate(...args),
-      findUnique: (...args: unknown[]) => mockFindUnique(...args),
-      delete: (...args: unknown[]) => mockDelete(...args),
+vi.mock("@/lib/db", () => {
+  const methods = {
+    create: (...args: unknown[]) => mockCreate(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
+    findUnique: (...args: unknown[]) => mockFindUnique(...args),
+    delete: (...args: unknown[]) => mockDelete(...args),
+  };
+  return {
+    prisma: {
+      mediaAsset: methods,
+      $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({ mediaAsset: methods }),
     },
-  },
-}));
+  };
+});
 
 // ── Mock storage service ────────────────────────────────
 

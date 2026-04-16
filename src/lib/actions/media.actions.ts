@@ -74,30 +74,41 @@ export async function requestUploadAction(
 
   const mediaType = isVideoMime(mimeType) ? "video" : "image";
 
-  const asset = await prisma.mediaAsset.create({
-    data: {
-      propertyId,
-      assetRoleKey,
-      mediaType,
-      storageKey: "", // placeholder — set after we know the assetId
-      mimeType,
-      status: "pending",
-    },
+  const { assetId, storageKey } = await prisma.$transaction(async (tx) => {
+    const asset = await tx.mediaAsset.create({
+      data: {
+        propertyId,
+        assetRoleKey,
+        mediaType,
+        storageKey: "", // placeholder — set after we know the assetId
+        mimeType,
+        status: "pending",
+      },
+    });
+
+    const key = buildStorageKey(propertyId, asset.id, fileName);
+
+    await tx.mediaAsset.update({
+      where: { id: asset.id },
+      data: { storageKey: key },
+    });
+
+    return { assetId: asset.id, storageKey: key };
   });
 
-  const storageKey = buildStorageKey(propertyId, asset.id, fileName);
-
-  await prisma.mediaAsset.update({
-    where: { id: asset.id },
-    data: { storageKey },
-  });
-
-  const uploadUrl = await getUploadUrl(storageKey, mimeType);
-
-  return {
-    success: true,
-    data: { uploadUrl, assetId: asset.id },
-  };
+  try {
+    const uploadUrl = await getUploadUrl(storageKey, mimeType);
+    return {
+      success: true,
+      data: { uploadUrl, assetId },
+    };
+  } catch {
+    await prisma.mediaAsset.delete({ where: { id: assetId } });
+    return {
+      success: false,
+      error: "No se pudo generar la URL de subida",
+    };
+  }
 }
 
 /**
@@ -135,11 +146,8 @@ export async function confirmUploadAction(
     };
   }
 
-  // Validate content type matches what was declared
-  if (
-    head.contentType !== asset.mimeType &&
-    !isAllowedMimeType(head.contentType)
-  ) {
+  // Validate content type — strict match required
+  if (head.contentType !== asset.mimeType) {
     await deleteObject(asset.storageKey);
     await prisma.mediaAsset.delete({ where: { id: assetId } });
     return {
@@ -148,8 +156,8 @@ export async function confirmUploadAction(
     };
   }
 
-  // Validate size
-  const maxSize = maxSizeForMime(asset.mimeType);
+  // Validate size using the verified content type
+  const maxSize = maxSizeForMime(head.contentType);
   if (head.contentLength > maxSize) {
     await deleteObject(asset.storageKey);
     await prisma.mediaAsset.delete({ where: { id: assetId } });
