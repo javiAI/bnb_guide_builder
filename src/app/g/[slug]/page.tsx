@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
@@ -9,7 +10,7 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-async function resolveGuide(slug: string): Promise<{
+const resolveGuide = cache(async function resolveGuide(slug: string): Promise<{
   property: { propertyNickname: string } | null;
   tree: GuideTree | null;
 }> {
@@ -45,7 +46,7 @@ async function resolveGuide(slug: string): Promise<{
   };
 
   return { property, tree: guestTree };
-}
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
