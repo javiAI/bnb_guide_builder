@@ -319,7 +319,7 @@ function applySort(
 // Audience filtering — sensitive is never included in tree output
 // ──────────────────────────────────────────────
 
-function filterByAudience(
+export function filterByAudience(
   items: GuideItem[],
   audience: GuideAudience,
 ): GuideItem[] {

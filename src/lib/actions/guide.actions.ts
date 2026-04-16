@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
+import { ensurePropertySlug } from "@/lib/services/guide-slug.service";
 import type { GuideTree } from "@/lib/types/guide-tree";
 
 export type ActionResult = {
@@ -71,6 +72,9 @@ export async function publishGuideVersionAction(
     }
     throw err;
   }
+
+  // Ensure the property has a public slug for the shareable link
+  await ensurePropertySlug(propertyId);
 
   revalidatePath(`/properties/${propertyId}/publishing`);
   revalidatePath(`/properties/${propertyId}/guest-guide`);

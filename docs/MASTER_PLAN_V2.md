@@ -391,15 +391,24 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 9D — `feat/guide-shareable-link`
 
-**Propósito**: cada `GuideVersion` publicada tiene URL shareable pública (sin auth) con filtro `guest`-only.
+**Propósito**: link público compartible por propiedad (sin auth) con filtro `guest`-only. El host envía un solo link estable que siempre apunta a la última versión publicada.
+
+**Decisiones cerradas en Fase -1 (2026-04-16)**:
+- Slug en `Property` (no en `GuideVersion`) — un link estable por propiedad, siempre resuelve a la versión publicada activa.
+- Si no hay versión publicada → página amigable ("guía no disponible"), no 404.
+- QR incluido en esta rama (lib ligera `qrcode`, SVG output).
+- `NEXT_PUBLIC_BASE_URL` env var para construir link completo copiable.
+- Renderizado server-side con `renderHtml()` embebido — permite og:title/og:description para previews en WhatsApp/iMessage.
 
 **Archivos a crear**:
-- `src/app/g/[versionSlug]/page.tsx` — ruta pública, audience=guest forzado
-- `src/lib/services/guide-slug.service.ts` — slug corto único (tipo bit.ly)
+- `src/app/g/[slug]/page.tsx` — ruta pública, fuera de AppShell, audience=guest forzado sobre treeJson
+- `src/app/g/[slug]/not-available.tsx` — componente "guía no disponible" (sin versión publicada)
+- `src/lib/services/guide-slug.service.ts` — `generateSlug(): string`, `ensurePropertySlug(propertyId): string` (retry en colisión P2002)
 
 **Archivos a modificar**:
-- `prisma/schema.prisma` — `GuideVersion.publicSlug String? @unique`
-- `src/app/properties/[propertyId]/publishing/page.tsx` — mostrar link compartible + QR
+- `prisma/schema.prisma` — `Property.publicSlug String? @unique`
+- `src/app/properties/[propertyId]/publishing/page.tsx` — sección con link compartible + botón copiar + QR
+- `src/lib/actions/guide.actions.ts` — `publishGuideVersionAction` llama a `ensurePropertySlug` al publicar
 
 **Tests**:
 - `src/test/guide-public-render.test.ts` — versión publicada accesible sin auth; `sensitive` nunca aparece; `internal` tampoco
@@ -413,7 +422,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - `docs/SECURITY_AND_AUDIT.md` (completo)
   - Código de 9B y 9C
 - **Docs a actualizar al terminar**:
-  - `docs/ARCHITECTURE_OVERVIEW.md` § 5 "Route map" — añadir `/g/:versionSlug` como ruta pública
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 5 "Route map" — añadir `/g/:slug` como ruta pública
   - `docs/SECURITY_AND_AUDIT.md` — concretar regla de que `/g/*` siempre fuerza audience=guest
 - **Skills/tools específicos**:
   - **`/playwright-cli`** al final: verificar que el link público abre correctamente sin sesión y que los campos `sensitive`/`internal` no aparecen en el DOM.

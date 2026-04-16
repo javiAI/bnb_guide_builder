@@ -107,6 +107,7 @@ model Property {
   hasBuildingAccess       Boolean @default(false) @map("has_building_access")
   hasPrivateEntrance      Boolean @default(false) @map("has_private_entrance")
   infrastructureJson      Json?   @map("infrastructure_json")
+  publicSlug       String?  @unique @map("public_slug")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

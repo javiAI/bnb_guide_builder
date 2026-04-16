@@ -10,8 +10,10 @@ import { Prisma } from "@prisma/client";
 import type { GuideTree } from "@/lib/types/guide-tree";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
+import QRCode from "qrcode";
 import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
 import { GuideDiffViewer } from "./guide-diff-viewer";
+import { ShareableLink } from "./shareable-link";
 
 type OutputItem = {
   id: string;
@@ -124,6 +126,7 @@ export default async function PublishingPage({
       maxGuests: true,
       infantsAllowed: true,
       accessMethodsJson: true,
+      publicSlug: true,
     },
   });
 
@@ -206,6 +209,15 @@ export default async function PublishingPage({
   const archivedVersions = versions
     .filter((v) => v.status === "archived")
     .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
+
+  // Shareable link — generate QR SVG server-side when slug exists
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const publicUrl = property.publicSlug
+    ? `${baseUrl}/g/${property.publicSlug}`
+    : null;
+  const qrSvg = publicUrl
+    ? await QRCode.toString(publicUrl, { type: "svg", margin: 1, width: 200 })
+    : null;
 
   // Only compose live tree + diff when there's a published version to compare against
   const publishedTree = publishedWithTree?.treeJson
@@ -293,6 +305,11 @@ export default async function PublishingPage({
             <UnpublishButton versionId={publishedVersion.id} />
           </div>
         </div>
+      )}
+
+      {/* ── Shareable link ── */}
+      {publishedVersion && publicUrl && qrSvg && (
+        <ShareableLink url={publicUrl} qrSvg={qrSvg} />
       )}
 
       {/* ── Version history ── */}
