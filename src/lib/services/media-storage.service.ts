@@ -16,10 +16,14 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // ── Config ──────────────────────────────────────────────
 
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "";
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID ?? "";
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "";
-const R2_BUCKET = process.env.R2_BUCKET ?? "";
+function getR2Config() {
+  return {
+    accountId: process.env.R2_ACCOUNT_ID ?? "",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
+    bucket: process.env.R2_BUCKET ?? "",
+  };
+}
 
 const UPLOAD_EXPIRES_SECONDS = 15 * 60; // 15 min
 const DOWNLOAD_EXPIRES_SECONDS = 60 * 60; // 1 hour
@@ -40,12 +44,18 @@ let _client: S3Client | null = null;
 
 export function getS3Client(): S3Client {
   if (_client) return _client;
+  const cfg = getR2Config();
+  if (!cfg.accountId || !cfg.accessKeyId || !cfg.secretAccessKey || !cfg.bucket) {
+    throw new Error(
+      "Missing R2 env vars. Required: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET",
+    );
+  }
   _client = new S3Client({
     region: "auto",
-    endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,
     credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
+      accessKeyId: cfg.accessKeyId,
+      secretAccessKey: cfg.secretAccessKey,
     },
   });
   return _client;
@@ -80,13 +90,11 @@ export function buildStorageKey(
 export async function getUploadUrl(
   storageKey: string,
   contentType: string,
-  maxSizeBytes: number,
 ): Promise<string> {
   const command = new PutObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: getR2Config().bucket,
     Key: storageKey,
     ContentType: contentType,
-    ContentLength: maxSizeBytes,
   });
   return getSignedUrl(getS3Client(), command, {
     expiresIn: UPLOAD_EXPIRES_SECONDS,
@@ -95,7 +103,7 @@ export async function getUploadUrl(
 
 export async function getDownloadUrl(storageKey: string): Promise<string> {
   const command = new GetObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: getR2Config().bucket,
     Key: storageKey,
   });
   return getSignedUrl(getS3Client(), command, {
@@ -107,7 +115,7 @@ export async function getDownloadUrl(storageKey: string): Promise<string> {
 
 export async function deleteObject(storageKey: string): Promise<void> {
   const command = new DeleteObjectCommand({
-    Bucket: R2_BUCKET,
+    Bucket: getR2Config().bucket,
     Key: storageKey,
   });
   await getS3Client().send(command);
@@ -118,7 +126,7 @@ export async function headObject(
 ): Promise<{ contentLength: number; contentType: string } | null> {
   try {
     const command = new HeadObjectCommand({
-      Bucket: R2_BUCKET,
+      Bucket: getR2Config().bucket,
       Key: storageKey,
     });
     const result = await getS3Client().send(command);

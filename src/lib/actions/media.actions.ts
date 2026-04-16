@@ -73,7 +73,6 @@ export async function requestUploadAction(
   }
 
   const mediaType = isVideoMime(mimeType) ? "video" : "image";
-  const maxSize = maxSizeForMime(mimeType);
 
   const asset = await prisma.mediaAsset.create({
     data: {
@@ -93,7 +92,7 @@ export async function requestUploadAction(
     data: { storageKey },
   });
 
-  const uploadUrl = await getUploadUrl(storageKey, mimeType, maxSize);
+  const uploadUrl = await getUploadUrl(storageKey, mimeType);
 
   return {
     success: true,
@@ -133,6 +132,19 @@ export async function confirmUploadAction(
     return {
       success: false,
       error: "Archivo no encontrado en storage. ¿Se completó el upload?",
+    };
+  }
+
+  // Validate content type matches what was declared
+  if (
+    head.contentType !== asset.mimeType &&
+    !isAllowedMimeType(head.contentType)
+  ) {
+    await deleteObject(asset.storageKey);
+    await prisma.mediaAsset.delete({ where: { id: assetId } });
+    return {
+      success: false,
+      error: `Tipo de archivo no coincide: esperado ${asset.mimeType}, recibido ${head.contentType}`,
     };
   }
 

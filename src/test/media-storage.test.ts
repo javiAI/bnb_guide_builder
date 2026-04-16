@@ -28,13 +28,16 @@ import {
   deleteObject,
   headObject,
   ALLOWED_MEDIA,
-  _setS3ClientForTest,
-  getS3Client,
 } from "@/lib/services/media-storage.service";
 
 beforeEach(() => {
   mockSend.mockReset();
   mockGetSignedUrl.mockReset();
+  // Set env vars so getS3Client() doesn't throw
+  process.env.R2_ACCOUNT_ID = "test-account";
+  process.env.R2_ACCESS_KEY_ID = "test-key";
+  process.env.R2_SECRET_ACCESS_KEY = "test-secret";
+  process.env.R2_BUCKET = "test-bucket";
 });
 
 describe("buildStorageKey", () => {
@@ -82,7 +85,7 @@ describe("getUploadUrl", () => {
   it("returns a presigned URL from the S3 SDK", async () => {
     mockGetSignedUrl.mockResolvedValue("https://r2.example.com/signed-put");
 
-    const url = await getUploadUrl("p/a/file.jpg", "image/jpeg", 10 * 1024 * 1024);
+    const url = await getUploadUrl("p/a/file.jpg", "image/jpeg");
 
     expect(url).toBe("https://r2.example.com/signed-put");
     expect(mockGetSignedUrl).toHaveBeenCalledTimes(1);
