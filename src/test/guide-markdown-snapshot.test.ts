@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -18,6 +18,8 @@ const fn = <K extends keyof typeof prisma>(table: K, method: "findUnique" | "fin
   (prisma[table] as unknown as Record<string, ReturnType<typeof vi.fn>>)[method];
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-04-16T12:00:00.000Z"));
   fn("property", "findUnique").mockResolvedValue({
     id: "p1",
     checkInStart: "15:00",
@@ -59,8 +61,12 @@ beforeEach(() => {
   fn("localPlace", "findMany").mockResolvedValue([]);
 });
 
-// The markdown output contains nothing time-dependent (propertyId + audience
-// header is deterministic), so we can snapshot the full thing.
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// The markdown output includes a generated timestamp in the header, but the
+// snapshot remains deterministic because fake timers pin system time.
 
 describe("renderMarkdown — snapshot by audience", () => {
   it("guest snapshot", async () => {
@@ -68,6 +74,7 @@ describe("renderMarkdown — snapshot by audience", () => {
     const md = renderMarkdown(tree);
     expect(md).toMatchInlineSnapshot(`
       "# p1 — audiencia: guest
+      _Generado: 2026-04-16T12:00:00.000Z_
 
       ## Llegada
       - **Check-in**: 15:00 – 20:00

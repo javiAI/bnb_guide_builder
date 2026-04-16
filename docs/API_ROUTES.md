@@ -76,6 +76,7 @@
 - `PATCH /api/knowledge-items/:knowledgeItemId`
 - `GET /api/knowledge-items/:knowledgeItemId`
 
+- `GET /api/properties/:propertyId/guide?audience=guest|ai|internal&format=md|html|json|pdf` — renderiza en vivo el `GuideTree` compuesto por `composeGuide`. `audience` default `guest`, `format` default `json`. Devuelve `text/markdown`, `text/html`, `application/json` o `application/pdf` según `format`. El formato `pdf` fuerza `Content-Disposition: attachment`. Todos los outputs incluyen `generatedAt` (ISO).
 - `GET /api/properties/:propertyId/guide-versions`
 - `POST /api/properties/:propertyId/guide-versions`
 - `GET /api/guide-versions/:guideVersionId`
