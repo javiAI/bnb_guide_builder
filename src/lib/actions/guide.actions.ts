@@ -11,6 +11,15 @@ export type ActionResult = {
   error?: string;
 };
 
+function isP2002(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: string }).code === "P2002"
+  );
+}
+
 // ──────────────────────────────────────────────
 // Publish — snapshot the live GuideTree as a new version
 // ──────────────────────────────────────────────
@@ -32,30 +41,36 @@ export async function publishGuideVersionAction(
   // Compose the live tree with audience=internal (max detail)
   const tree: GuideTree = await composeGuide(propertyId, "internal");
 
-  // Determine next version number
-  const latest = await prisma.guideVersion.findFirst({
-    where: { propertyId },
-    orderBy: { version: "desc" },
-    select: { version: true },
-  });
-  const nextVersion = (latest?.version ?? 0) + 1;
+  try {
+    await prisma.$transaction(async (tx) => {
+      const latest = await tx.guideVersion.findFirst({
+        where: { propertyId },
+        orderBy: { version: "desc" },
+        select: { version: true },
+      });
+      const nextVersion = (latest?.version ?? 0) + 1;
 
-  // Unpublish any currently-published version
-  await prisma.guideVersion.updateMany({
-    where: { propertyId, status: "published" },
-    data: { status: "archived" },
-  });
+      await tx.guideVersion.updateMany({
+        where: { propertyId, status: "published" },
+        data: { status: "archived" },
+      });
 
-  // Create new published version with snapshot
-  await prisma.guideVersion.create({
-    data: {
-      version: nextVersion,
-      status: "published",
-      treeJson: tree as unknown as Prisma.InputJsonValue,
-      publishedAt: new Date(),
-      property: { connect: { id: propertyId } },
-    },
-  });
+      await tx.guideVersion.create({
+        data: {
+          version: nextVersion,
+          status: "published",
+          treeJson: tree as unknown as Prisma.InputJsonValue,
+          publishedAt: new Date(),
+          property: { connect: { id: propertyId } },
+        },
+      });
+    });
+  } catch (err) {
+    if (isP2002(err)) {
+      return { success: false, error: "Conflicto de versión — reintenta" };
+    }
+    throw err;
+  }
 
   revalidatePath(`/properties/${propertyId}/publishing`);
   revalidatePath(`/properties/${propertyId}/guest-guide`);
@@ -110,30 +125,36 @@ export async function rollbackToVersionAction(
   if (!source) return { success: false, error: "Versión fuente no encontrada" };
   if (!source.treeJson) return { success: false, error: "La versión fuente no tiene snapshot" };
 
-  // Determine next version number
-  const latest = await prisma.guideVersion.findFirst({
-    where: { propertyId: source.propertyId },
-    orderBy: { version: "desc" },
-    select: { version: true },
-  });
-  const nextVersion = (latest?.version ?? 0) + 1;
+  try {
+    await prisma.$transaction(async (tx) => {
+      const latest = await tx.guideVersion.findFirst({
+        where: { propertyId: source.propertyId },
+        orderBy: { version: "desc" },
+        select: { version: true },
+      });
+      const nextVersion = (latest?.version ?? 0) + 1;
 
-  // Archive current published
-  await prisma.guideVersion.updateMany({
-    where: { propertyId: source.propertyId, status: "published" },
-    data: { status: "archived" },
-  });
+      await tx.guideVersion.updateMany({
+        where: { propertyId: source.propertyId, status: "published" },
+        data: { status: "archived" },
+      });
 
-  // Create new version from old snapshot
-  await prisma.guideVersion.create({
-    data: {
-      version: nextVersion,
-      status: "published",
-      treeJson: source.treeJson as Prisma.InputJsonValue,
-      publishedAt: new Date(),
-      property: { connect: { id: source.propertyId } },
-    },
-  });
+      await tx.guideVersion.create({
+        data: {
+          version: nextVersion,
+          status: "published",
+          treeJson: source.treeJson as Prisma.InputJsonValue,
+          publishedAt: new Date(),
+          property: { connect: { id: source.propertyId } },
+        },
+      });
+    });
+  } catch (err) {
+    if (isP2002(err)) {
+      return { success: false, error: "Conflicto de versión — reintenta" };
+    }
+    throw err;
+  }
 
   revalidatePath(`/properties/${source.propertyId}/publishing`);
   revalidatePath(`/properties/${source.propertyId}/guest-guide`);

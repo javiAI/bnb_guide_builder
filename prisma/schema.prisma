@@ -620,7 +620,7 @@ model GuideVersion {
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  @@index([propertyId])
+  @@unique([propertyId, version])
   @@index([propertyId, status])
   @@map("guide_versions")
 }

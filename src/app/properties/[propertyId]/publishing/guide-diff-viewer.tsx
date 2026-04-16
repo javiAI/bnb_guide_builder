@@ -94,6 +94,14 @@ function DiffSectionBlock({
         <Badge label={STATUS_LABEL[section.status]} tone={STATUS_TONE[section.status]} />
       </div>
 
+      {section.metadataChanges && section.metadataChanges.length > 0 && (
+        <ul className="mt-2 list-inside list-disc text-xs text-[var(--color-warning-700)]">
+          {section.metadataChanges.map((c, i) => (
+            <li key={i}>{c}</li>
+          ))}
+        </ul>
+      )}
+
       {items.length > 0 && (
         <div className="mt-3 space-y-1.5">
           {items.map((item) => (

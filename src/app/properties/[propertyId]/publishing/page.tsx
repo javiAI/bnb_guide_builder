@@ -6,6 +6,7 @@ import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
 import { runAllValidations } from "@/lib/validations/run-all";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { computeGuideDiff } from "@/lib/services/guide-diff.service";
+import { Prisma } from "@prisma/client";
 import type { GuideTree } from "@/lib/types/guide-tree";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
@@ -128,7 +129,8 @@ export default async function PublishingPage({
 
   if (!property) notFound();
 
-  // Load data in parallel
+  // Load data in parallel — versions fetched without treeJson (large blob);
+  // published version's treeJson is fetched separately only if needed.
   const [
     spacesCount,
     amenitiesCount,
@@ -138,7 +140,7 @@ export default async function PublishingPage({
     knowledgeCount,
     versions,
     validations,
-    liveTree,
+    publishedWithTree,
   ] = await Promise.all([
     prisma.space.count({ where: { propertyId, status: "active" } }),
     prisma.propertyAmenityInstance.count({ where: { propertyId } }),
@@ -153,7 +155,6 @@ export default async function PublishingPage({
         id: true,
         version: true,
         status: true,
-        treeJson: true,
         publishedAt: true,
         createdAt: true,
       },
@@ -163,7 +164,12 @@ export default async function PublishingPage({
       infantsAllowed: property.infantsAllowed,
       accessMethodsJson: property.accessMethodsJson,
     }),
-    composeGuide(propertyId, "internal"),
+    // Only fetch treeJson for the published version
+    prisma.guideVersion.findFirst({
+      where: { propertyId, status: "published" },
+      orderBy: { version: "desc" },
+      select: { id: true, version: true, status: true, treeJson: true, publishedAt: true, createdAt: true },
+    }),
   ]);
 
   const completedSections = new Set<string>();
@@ -184,13 +190,27 @@ export default async function PublishingPage({
   const gates = evaluateGates(outputs, completedSections);
   const readyCount = gates.filter((g) => g.ready).length;
 
-  const publishedVersion = versions.find((v) => v.status === "published") ?? null;
-  const archivedVersions = versions.filter((v) => v.status === "archived");
+  const publishedVersion = publishedWithTree ?? versions.find((v) => v.status === "published") ?? null;
+  // For archived versions, check which ones have snapshots (for rollback eligibility).
+  // This is a lightweight query — only IDs, no large treeJson payloads.
+  const archivedIds = versions.filter((v) => v.status === "archived").map((v) => v.id);
+  const snapshotIds = archivedIds.length > 0
+    ? new Set(
+        (await prisma.guideVersion.findMany({
+          where: { id: { in: archivedIds }, treeJson: { not: Prisma.JsonNull } },
+          select: { id: true },
+        })).map((v) => v.id),
+      )
+    : new Set<string>();
+  const archivedVersions = versions
+    .filter((v) => v.status === "archived")
+    .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
 
-  // Compute diff between published snapshot and live tree
-  const publishedTree = publishedVersion?.treeJson
-    ? (publishedVersion.treeJson as unknown as GuideTree)
+  // Only compose live tree + diff when there's a published version to compare against
+  const publishedTree = publishedWithTree?.treeJson
+    ? (publishedWithTree.treeJson as unknown as GuideTree)
     : null;
+  const liveTree = publishedTree ? await composeGuide(propertyId, "internal") : null;
   const diff = computeGuideDiff(publishedTree, liveTree);
 
   return (
@@ -259,7 +279,7 @@ export default async function PublishingPage({
                 <Badge label="Publicada" tone="success" />
               </div>
               <p className="mt-1 text-xs text-[var(--color-neutral-500)]">
-                Publicada: {publishedVersion.publishedAt?.toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) ?? "—"}
+                Publicada: {publishedVersion.publishedAt?.toLocaleString("es-ES", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) ?? "—"}
               </p>
             </div>
             <UnpublishButton versionId={publishedVersion.id} />
@@ -288,7 +308,7 @@ export default async function PublishingPage({
                   </span>
                   <Badge label="Archivada" tone="neutral" />
                 </div>
-                {v.treeJson && (
+                {v.hasSnapshot && (
                   <RollbackButton sourceVersionId={v.id} version={v.version} />
                 )}
               </div>

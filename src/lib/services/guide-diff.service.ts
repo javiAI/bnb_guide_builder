@@ -24,6 +24,8 @@ export interface SectionDiff {
   id: string;
   label: string;
   status: DiffStatus;
+  /** Metadata-level changes on the section itself (label, order, etc). */
+  metadataChanges?: string[];
   items: ItemDiff[];
 }
 
@@ -46,7 +48,21 @@ function itemFingerprint(item: GuideItem): string {
   const fieldParts = item.fields
     .map((f) => `${f.label}:${f.value}:${f.visibility}`)
     .join("|");
-  return `${item.label}::${item.value ?? ""}::${item.visibility}::${fieldParts}`;
+  const mediaParts = item.media
+    .map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`)
+    .join("|");
+  const childParts = item.children.map((c) => itemFingerprint(c)).join("|");
+  return [
+    item.label,
+    item.value ?? "",
+    item.visibility,
+    item.taxonomyKey ?? "",
+    String(item.deprecated),
+    item.warnings.join(","),
+    fieldParts,
+    mediaParts,
+    childParts,
+  ].join("::");
 }
 
 function diffItems(
@@ -115,6 +131,26 @@ function describeChanges(oldItem: GuideItem, newItem: GuideItem): string[] {
   return changes;
 }
 
+function describeSectionMetadataChanges(
+  oldSec: GuideSection,
+  newSec: GuideSection,
+): string[] {
+  const changes: string[] = [];
+  if (oldSec.label !== newSec.label) {
+    changes.push(`label: "${oldSec.label}" → "${newSec.label}"`);
+  }
+  if (oldSec.order !== newSec.order) {
+    changes.push(`order: ${oldSec.order} → ${newSec.order}`);
+  }
+  if (oldSec.maxVisibility !== newSec.maxVisibility) {
+    changes.push(`maxVisibility: ${oldSec.maxVisibility} → ${newSec.maxVisibility}`);
+  }
+  if (oldSec.sortBy !== newSec.sortBy) {
+    changes.push(`sortBy: ${oldSec.sortBy} → ${newSec.sortBy}`);
+  }
+  return changes;
+}
+
 // ──────────────────────────────────────────────
 // Public API
 // ──────────────────────────────────────────────
@@ -160,11 +196,17 @@ export function computeGuideDiff(
       itemsAdded += sectionItemsAdded;
       itemsRemoved += sectionItemsRemoved;
       itemsChanged += sectionItemsChanged;
-      const hasChanges = sectionItemsAdded + sectionItemsRemoved + sectionItemsChanged > 0;
+
+      // Detect section metadata changes
+      const metadataChanges = describeSectionMetadataChanges(oldSec, newSec);
+      const hasChanges =
+        sectionItemsAdded + sectionItemsRemoved + sectionItemsChanged > 0 ||
+        metadataChanges.length > 0;
       sections.push({
         id,
         label: newSec.label,
         status: hasChanges ? "changed" : "unchanged",
+        ...(metadataChanges.length > 0 && { metadataChanges }),
         items,
       });
     }
