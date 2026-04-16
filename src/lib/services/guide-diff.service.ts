@@ -112,27 +112,47 @@ function describeChanges(oldItem: GuideItem, newItem: GuideItem): string[] {
     changes.push(`visibility: ${oldItem.visibility} → ${newItem.visibility}`);
   }
 
-  const oldFieldIds = new Set(oldItem.fields.map((f) => f.label));
-  const newFieldIds = new Set(newItem.fields.map((f) => f.label));
-  const addedFields = [...newFieldIds].filter((f) => !oldFieldIds.has(f));
-  const removedFields = [...oldFieldIds].filter((f) => !newFieldIds.has(f));
-  if (addedFields.length > 0) changes.push(`campos añadidos: ${addedFields.join(", ")}`);
-  if (removedFields.length > 0) changes.push(`campos eliminados: ${removedFields.join(", ")}`);
-
-  // Check for value changes in shared fields — use index-based comparison
-  // because labels are not unique (e.g. multiple bed types with same label).
-  const minLen = Math.min(oldItem.fields.length, newItem.fields.length);
-  for (let i = 0; i < minLen; i++) {
-    const oldF = oldItem.fields[i];
-    const newF = newItem.fields[i];
-    if (
-      oldF.label === newF.label &&
-      (oldF.value !== newF.value || oldF.visibility !== newF.visibility)
-    ) {
-      changes.push(`campo "${newF.label}" modificado`);
-    } else if (oldF.label !== newF.label) {
-      changes.push(`campo[${i}]: "${oldF.label}" → "${newF.label}"`);
+  // Diff fields as a multiset of (label, value, visibility) to handle
+  // duplicate labels correctly (e.g. multiple bed types with same label).
+  const fieldFp = (f: { label: string; value: string; visibility: string }) =>
+    `${f.label}\0${f.value}\0${f.visibility}`;
+  const oldCounts = new Map<string, number>();
+  for (const f of oldItem.fields) {
+    const k = fieldFp(f);
+    oldCounts.set(k, (oldCounts.get(k) ?? 0) + 1);
+  }
+  const newCounts = new Map<string, number>();
+  for (const f of newItem.fields) {
+    const k = fieldFp(f);
+    newCounts.set(k, (newCounts.get(k) ?? 0) + 1);
+  }
+  const allKeys = new Set([...oldCounts.keys(), ...newCounts.keys()]);
+  const addedLabels: string[] = [];
+  const removedLabels: string[] = [];
+  const modifiedLabels: string[] = [];
+  for (const k of allKeys) {
+    const oc = oldCounts.get(k) ?? 0;
+    const nc = newCounts.get(k) ?? 0;
+    const label = k.split("\0")[0];
+    if (oc === 0) for (let i = 0; i < nc; i++) addedLabels.push(label);
+    else if (nc === 0) for (let i = 0; i < oc; i++) removedLabels.push(label);
+    else if (oc !== nc) modifiedLabels.push(label);
+  }
+  // Labels appearing in both added and removed = value/visibility changed (not truly added+removed)
+  const addedSet = new Set(addedLabels);
+  const removedSet = new Set(removedLabels);
+  for (const label of addedSet) {
+    if (removedSet.has(label)) {
+      modifiedLabels.push(label);
+      // Remove from added/removed arrays
+      addedLabels.splice(addedLabels.indexOf(label), 1);
+      removedLabels.splice(removedLabels.indexOf(label), 1);
     }
+  }
+  if (addedLabels.length > 0) changes.push(`campos añadidos: ${addedLabels.join(", ")}`);
+  if (removedLabels.length > 0) changes.push(`campos eliminados: ${removedLabels.join(", ")}`);
+  if (modifiedLabels.length > 0) {
+    for (const l of new Set(modifiedLabels)) changes.push(`campo "${l}" modificado`);
   }
 
   // Warnings

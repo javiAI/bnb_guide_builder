@@ -43,7 +43,7 @@ export default async function GuestGuidePage({
       <div className="mt-4">
         {publishedVersion ? (
           <Badge
-            label={`v${publishedVersion.version} publicada — ${publishedVersion.publishedAt?.toLocaleDateString("es-ES") ?? ""}`}
+            label={`v${publishedVersion.version} publicada${publishedVersion.publishedAt ? ` — ${publishedVersion.publishedAt.toLocaleDateString("es-ES")}` : ""}`}
             tone="success"
           />
         ) : (
