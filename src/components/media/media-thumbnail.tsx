@@ -45,9 +45,12 @@ export function MediaThumbnail({
   const isReady = data.status === "ready";
 
   async function handleOpenFullSize() {
+    const newTab = window.open("", "_blank", "noopener,noreferrer");
     const result = await getMediaDownloadUrlAction(data.assetId);
-    if (result.success && result.data) {
-      window.open(result.data.url, "_blank");
+    if (result.success && result.data && newTab) {
+      newTab.location.href = result.data.url;
+    } else {
+      newTab?.close();
     }
   }
 
@@ -122,6 +125,7 @@ export function MediaThumbnail({
             onClick={handleOpenFullSize}
             className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-neutral-700)] shadow hover:bg-white"
             title="Ver"
+            aria-label="Ver imagen completa"
           >
             &#128269;
           </button>
@@ -131,6 +135,7 @@ export function MediaThumbnail({
               onClick={() => onSetCover?.(data.assignmentId)}
               className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-primary-600)] shadow hover:bg-white"
               title="Marcar como portada"
+              aria-label="Marcar como portada"
             >
               &#9733;
             </button>
@@ -140,6 +145,7 @@ export function MediaThumbnail({
             onClick={() => onRemove?.(data.assignmentId)}
             className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-danger-600)] shadow hover:bg-white"
             title="Quitar"
+            aria-label="Quitar imagen"
           >
             &#10005;
           </button>

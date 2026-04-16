@@ -302,6 +302,28 @@ export async function assignMediaAction(
   if (!asset) return { success: false, error: "Asset no encontrado" };
   if (asset.status !== "ready") return { success: false, error: "Asset no está listo para asignar" };
 
+  // Validate entity belongs to same property as asset
+  if (entityType === "property" || entityType === "access_method") {
+    if (entityId !== asset.propertyId) {
+      return { success: false, error: "La entidad no pertenece a esta propiedad" };
+    }
+  } else if (entityType === "space") {
+    const space = await prisma.space.findUnique({ where: { id: entityId }, select: { propertyId: true } });
+    if (!space || space.propertyId !== asset.propertyId) {
+      return { success: false, error: "La entidad no pertenece a esta propiedad" };
+    }
+  } else if (entityType === "amenity_instance") {
+    const amenity = await prisma.propertyAmenityInstance.findUnique({ where: { id: entityId }, select: { propertyId: true } });
+    if (!amenity || amenity.propertyId !== asset.propertyId) {
+      return { success: false, error: "La entidad no pertenece a esta propiedad" };
+    }
+  } else if (entityType === "system") {
+    const system = await prisma.propertySystem.findUnique({ where: { id: entityId }, select: { propertyId: true } });
+    if (!system || system.propertyId !== asset.propertyId) {
+      return { success: false, error: "La entidad no pertenece a esta propiedad" };
+    }
+  }
+
   // Get next sortOrder for this entity
   const maxOrder = await prisma.mediaAssignment.aggregate({
     where: { entityType, entityId },
@@ -320,7 +342,7 @@ export async function assignMediaAction(
       },
     });
 
-    revalidatePath(`/properties/${asset.propertyId}`);
+    revalidatePath(`/properties/${asset.propertyId}`, "layout");
     return { success: true, data: { assignmentId: assignment.id } };
   } catch (err) {
     if ((err as { code?: string }).code === "P2002") {
@@ -345,7 +367,7 @@ export async function unassignMediaAction(
 
   await prisma.mediaAssignment.delete({ where: { id: assignmentId } });
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
   return { success: true };
 }
 
@@ -369,8 +391,9 @@ export async function reorderMediaAction(
   });
 
   const existingIds = new Set(assignments.map((a) => a.id));
+  const uniqueIds = new Set(orderedAssignmentIds);
   const allMatch = orderedAssignmentIds.every((id) => existingIds.has(id));
-  if (!allMatch || orderedAssignmentIds.length !== assignments.length) {
+  if (!allMatch || uniqueIds.size !== assignments.length || orderedAssignmentIds.length !== assignments.length) {
     return { success: false, error: "Los IDs de asignación no coinciden con esta entidad" };
   }
 
@@ -384,7 +407,7 @@ export async function reorderMediaAction(
   );
 
   const propertyId = assignments[0]?.mediaAsset.propertyId;
-  if (propertyId) revalidatePath(`/properties/${propertyId}`);
+  if (propertyId) revalidatePath(`/properties/${propertyId}`, "layout");
 
   return { success: true };
 }
@@ -424,7 +447,7 @@ export async function setCoverAction(
     }),
   ]);
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
   return { success: true };
 }
 

@@ -117,16 +117,17 @@ export function EntityGallery({
       setAssignments(reordered);
 
       startTransition(async () => {
-        await reorderMediaAction(
+        const result = await reorderMediaAction(
           entityType,
           entityId,
           reordered.map((a) => a.id),
         );
+        if (!result.success) loadMedia();
       });
 
       dragItemRef.current = null;
     },
-    [assignments, entityType, entityId, startTransition],
+    [assignments, entityType, entityId, loadMedia, startTransition],
   );
 
   const count = assignments.length;

@@ -157,10 +157,13 @@ export function UploadDropzone({
     <div>
       {/* Drop zone */}
       <div
+        role="button"
+        tabIndex={0}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
         className={`cursor-pointer rounded-[var(--radius-md)] border-2 border-dashed transition-colors ${
           isDragOver
             ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
@@ -177,7 +180,7 @@ export function UploadDropzone({
         />
         <div className={`text-center ${compact ? "text-xs" : "text-sm"}`}>
           <p className="font-medium text-[var(--color-neutral-600)]">
-            {isDragOver ? "Soltar aquí" : compact ? "+ Añadir fotos" : "Arrastra fotos o haz click para seleccionar"}
+            {isDragOver ? "Soltar aquí" : compact ? "+ Añadir fotos" : "Arrastra fotos o haz clic para seleccionar"}
           </p>
           {!compact && (
             <p className="mt-1 text-xs text-[var(--color-neutral-400)]">

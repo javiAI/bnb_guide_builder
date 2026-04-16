@@ -92,6 +92,7 @@ beforeEach(() => {
   mockGetDownloadUrl.mockReset();
   mockDeleteObject.mockReset();
   mockHeadObject.mockReset();
+  mockInvalidateCache.mockReset();
 });
 
 describe("requestUploadAction", () => {
