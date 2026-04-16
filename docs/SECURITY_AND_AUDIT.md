@@ -13,6 +13,7 @@
 - Zod en inputs
 - filtrado de retrieval y render en backend
 - activity log para mutaciones relevantes
+- `/g/*` rutas públicas **siempre** fuerzan `audience=guest` server-side: `filterByAudience(items, "guest")` se aplica sobre el `treeJson` almacenado (que contiene audience=internal). `emptyCtaDeepLink` se anula para no exponer links del panel de host. Los niveles `internal` y `sensitive` nunca llegan al HTML renderizado.
 
 ## 3. Secret policy
 

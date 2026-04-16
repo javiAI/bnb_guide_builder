@@ -144,6 +144,10 @@ Módulos canónicos (18):
 - `/properties/:propertyId/settings`
 - `/properties/:propertyId/activity`
 
+### Public routes (no auth)
+
+- `/g/:slug` — Guest guide (read-only, audience=guest forced). Resolves `Property.publicSlug` → latest published `GuideVersion.treeJson`, re-filtered to guest audience. `sensitive` and `internal` items are stripped server-side before render. Shows "guía no disponible" if no published version exists.
+
 ## 6. Source-of-truth rules
 
 ### Runtime taxonomies
