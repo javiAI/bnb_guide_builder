@@ -548,7 +548,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Caption**: `MediaAsset.caption` como fuente única; sin fallback (figcaption omitido si está vacío).
 - **`alt` derivado** (mejora C): si `caption` está vacío, se computa `alt` a partir de `assetRoleKey` + entity label ("Cover de Cocina") para no romper accesibilidad WCAG.
 - **`variants`** (mejora B): `GuideMedia` incluye `variants: { thumb, md, full }` en todas las URLs desde 10C. Coste en `treeJson` (~3× tamaño del bloque media), pero 10E/10H (PWA) y cualquier consumidor srcset lo reutilizan sin recomputar.
-- **Flag `includesMedia` en secciones**: `arrival`, `spaces`, `amenities`, `local` → `true`; `rules`, `contacts`, `emergency` → `false`. El batch loader omite las secciones con `includesMedia:false` para evitar cargar assignments que no se van a renderizar.
+- **Flag `includesMedia` en secciones**: `arrival`, `spaces`, `amenities` → `true`; `local`, `rules`, `contacts`, `emergency` → `false`. `local` flipea a `true` cuando llegue la rama 13D. El batch loader omite las secciones con `includesMedia:false` para evitar cargar assignments que no se van a renderizar.
 
 **Archivos a crear**:
 - `src/lib/services/guide-media.service.ts` — `loadEntityMedia(publicSlug, audience, refs)` → `Map<entityKey, GuideMedia[]>`. Si `publicSlug` es `null`, retorna temprano sin consultar. Una sola query batch `findMany` sobre `MediaAssignment` con `IN` (entityIds), filtra por `visibility`, `status="ready"` y `mimeType startsWith "image/"`, ordena por `sortOrder`. Construye las URLs con `buildMediaProxyUrl()` para las tres variantes.

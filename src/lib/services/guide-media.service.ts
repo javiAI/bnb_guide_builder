@@ -128,7 +128,11 @@ export async function loadEntityMedia(
     if (!isVisibleForAudience(asset.visibility, audience)) continue;
     const key = mediaKey(row.entityType as MediaEntityType, row.entityId);
     const entityLabel = labels.get(key) ?? "";
-    const caption = asset.caption;
+    // Normalise whitespace-only captions once so `alt` derivation and the
+    // emitted `caption` stay in sync (renderers would otherwise emit an empty
+    // <figcaption> while alt falls back to the role).
+    const trimmedCaption = asset.caption?.trim() ?? "";
+    const caption = trimmedCaption.length > 0 ? trimmedCaption : null;
     const role = row.usageKey ?? asset.assetRoleKey;
     const media: GuideMedia = {
       assetId: asset.id,
