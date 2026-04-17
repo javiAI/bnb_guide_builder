@@ -1,10 +1,17 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-15 (rev. 2)
+Versión: 2026-04-17 (rev. 3 — research integration: Fase 10 expandida a 8 ramas, Fase 11 expandida a 6 ramas, Fase 13 añade issue-reporting)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
-Alcance: 7 fases, 24 ramas, ~24 PRs independientes y revisables
+Alcance: 7 fases, 32 ramas, ~32 PRs independientes y revisables
 
 Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.10).
+
+**Fuentes de investigación que alimentan este plan (commit-frozen para poder referenciar por línea):**
+- [docs/research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) — journey map, arquitectura de información, UX patterns, design system, interactividad, métricas.
+- [docs/research/AI_KNOWLEDGE_BASE_SPEC.md](research/AI_KNOWLEDGE_BASE_SPEC.md) — esquema AI context, chunking RAG, contextual retrieval, prompt templates, campos críticos del modelo.
+- [docs/research/IMPLEMENTATION_PLAN.md](research/IMPLEMENTATION_PLAN.md) — benchmark competitivo, stack recomendado, caching, media URL strategy, roadmap por impacto/esfuerzo.
+
+Para arranque rápido de sesión ver [HANDOFF.md](HANDOFF.md).
 
 ---
 
@@ -25,7 +32,7 @@ Heredados del v1 y reconfirmados:
 
 ## 2. Protocolo de ejecución por rama
 
-Cada una de las 24 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
+Cada una de las 32 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
 
 ### 2.1 Fase -1 — Revisión pre-rama (gate de aprobación)
 
@@ -149,11 +156,13 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 |---|---|---:|---|---|---|
 | 8 | Deuda técnica pre-output | 3 | Bajo | Medio | No |
 | 9 | Guest Guide v2 | 4 | Medio | Alto | No |
-| 10 | Media real (S3) | 3 | Bajo | Alto | Sí (storage) |
-| 11 | Knowledge + Assistant | 4 | Alto | Alto | No |
+| 10 | Media + Guide Renderer + PWA | 8 | Medio | Alto | Sí (storage, media URLs) |
+| 11 | Knowledge + Assistant + i18n | 6 | Alto | Alto | No |
 | 12 | Messaging con variables | 3 | Medio | Alto | No |
-| 13 | Guía local enriquecida | 3 | Bajo | Medio | No |
+| 13 | Guía local + issue reporting | 4 | Bajo | Medio | No |
 | 14 | Platform integrations | 4 | Alto | Alto | Posible |
+
+**Total**: 32 ramas (8 ✅ completadas hasta 10B + refactor/shared-action-result; 24 pendientes).
 
 ---
 
@@ -553,213 +562,584 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
-### Rama 10D — `feat/guide-react-renderer`
+### Rama 10D — `feat/guide-media-proxy`
 
-**Propósito**: reemplazar `renderHtml()` + `dangerouslySetInnerHTML` en la ruta pública `/g/:slug` con un **renderer React** que recorre `GuideTree` con componentes styled. Esto desbloquea multimedia, mapas, interactividad y un diseño visualmente profesional.
+**Propósito**: introducir una ruta estable `/g/:slug/media/:assetId/:variant` que desacopla el HTML cacheado del ciclo de vida de las URLs presignadas de R2. Sin esto, cualquier guía renderizada por ISR/CDN explotará al caducar la firma (típicamente 1h). Es **pre-requisito arquitectónico** de 10E (renderer) y de 10H (PWA cache offline).
 
-**Motivación**: la guía pública actual es HTML plano sin estilos. Un renderer React:
-- Permite iconos por sección (taxonomía ya tiene `icon` por section/amenity)
-- Cards por espacio con galería de fotos (consume `GuideMedia[]` de 10C)
-- Mapas embebidos para guía local (Leaflet/Mapbox, `latitude`/`longitude` ya disponibles)
-- Navegación lateral/TOC sticky para scroll rápido
-- Soporte futuro para animaciones, video embebido, contenido interactivo
-- Escalable: cada nueva sección/amenity se renderiza automáticamente por la uniformidad del `GuideTree`
+**Motivación** (research):
+- [IMPLEMENTATION_PLAN.md:L68-L92](research/IMPLEMENTATION_PLAN.md) — "No incrustes URLs presignadas de S3/R2 de 1 hora directamente en HTML prerenderizado si ese HTML va a vivir días o semanas en caché. Te explotará en la cara justo cuando el huésped abra la guía desde el tren."
+- [GUEST_GUIDE_SPEC.md:L94-L102](research/GUEST_GUIDE_SPEC.md) — reglas de seguridad: no publicar contenido sensible en HTML estático.
+- La deuda latente existe hoy en 9D/10C: el resolver de media produce URLs firmadas que se serializan en `GuideVersion.treeJson`.
+
+**Decisiones a cerrar en Fase -1**:
+- Variantes soportadas: mínimo `thumb` (256px), `md` (800px), `full` (original). ¿`avif` on-the-fly o pre-generado en 10A/10B?
+- Estrategia de transformación: Sharp en-Node (server action) vs Cloudflare Image Resizing vs diferido a rama separada post-10H.
+- Cache header: `Cache-Control: public, max-age=31536000, immutable` + ETag por `contentHash` de `MediaAsset`.
+- Autorización: asset público si el `MediaAssignment` pertenece a una `Property` con `publicSlug` y hay `GuideVersion.status = published`; de lo contrario 404.
+- Fallback cuando la variante no existe: stream del original con warning de log, no 404.
 
 **Archivos a crear**:
-- `src/components/public-guide/guide-renderer.tsx` — componente raíz que itera `GuideTree.sections`
-- `src/components/public-guide/section-card.tsx` — card por sección con icono y header styled
-- `src/components/public-guide/guide-item.tsx` — item con fields, media, children
-- `src/components/public-guide/guide-toc.tsx` — tabla de contenidos sticky con scroll-to-section
-- `src/components/public-guide/guide-media-gallery.tsx` — galería de fotos/video dentro de items (consume `GuideMedia[]`)
-- `src/components/public-guide/guide-map.tsx` — mapa embebido para guía local (lazy-loaded)
+- `src/app/g/[slug]/media/[assetId]/[variant]/route.ts` — GET handler, valida slug+asset, resuelve object key, stream del binario con cache headers.
+- `src/lib/services/media-proxy.service.ts` — `resolvePublicAsset(slug, assetId)`, `getVariantStream(asset, variant)`, `buildCacheHeaders(contentHash, variant)`.
+- `src/lib/services/media-variants.service.ts` — generación on-demand o retrieval de variante pre-generada.
+- `src/lib/types/media-variant.ts` — enum `MediaVariantKey` + mapeo a dimensiones.
 
 **Archivos a modificar**:
-- `src/app/g/[slug]/page.tsx` — reemplazar `renderHtml()` + `dangerouslySetInnerHTML` con `<GuideRenderer tree={guestTree} />`
-- `src/app/g/[slug]/guide.css` — estilos dedicados para la guía pública (responsive, mobile-first)
+- `src/lib/services/guide-rendering.service.ts` — emitir rutas proxy relativas (`/g/{slug}/media/{assetId}/{variant}`), **nunca** URLs firmadas.
+- `src/lib/renderers/guide-markdown.ts` + `guide-html.ts` — consumir las nuevas rutas estables.
+- `prisma/schema.prisma` — `MediaAsset.contentHash String?` si no existe aún (para ETag y cache busting).
+- `src/app/g/[slug]/page.tsx` — pasar `slug` al renderer para que pueda construir URLs relativas.
 
 **Tests**:
-- `src/test/guide-react-renderer.test.tsx` — cada sección tipo se renderiza; media muestra galería; TOC contiene secciones no vacías; items deprecated se marcan visualmente
+- `src/test/media-proxy-route.test.ts` — 200 con variantes válidas, 404 si slug no publicado, 404 si asset no asignado a esa property, Content-Type correcto, ETag presente.
+- `src/test/media-proxy-cache.test.ts` — headers `Cache-Control immutable` + ETag estable para contentHash.
+- `src/test/media-proxy-auth.test.ts` — asset de property sin `publicSlug` nunca sirve.
+- `src/test/guide-rendering-proxy-urls.test.ts` — `composeGuide` nunca emite `https://*.r2.cloudflarestorage.com` ni `X-Amz-*`.
 
-**Criterio de done**: la guía pública en `/g/:slug` se ve profesional, mobile-first, con TOC navegable, iconos, cards, y slots listos para media/mapas. Añadir una nueva sección a la taxonomía la renderiza automáticamente sin tocar componentes.
+**Criterio de done**: guía publicada sirve media por ruta estable; las URLs presignadas de R2 no aparecen nunca en HTML/markdown cacheado; cache hit por CDN verificado con un ciclo de 25h simulado (sin romperse al caducar firma original).
 
 **Preparación**:
 - **Contexto a leer**:
-  - Código de 9D (public page), 10C (media in guide), 9A (GuideTree types)
-  - `taxonomies/guide_sections.json` — campos `icon`, `maxVisibility`
-  - `src/config/registries/icon-registry.ts` — patrón de iconos por sección
-  - Diseño de guías de referencia (Airbnb guidebooks, Hostfully, Touch Stay) para UX benchmarking
+  - [docs/research/IMPLEMENTATION_PLAN.md:L68-L106](research/IMPLEMENTATION_PLAN.md) — media caching strategy + offline tiers.
+  - [docs/research/GUEST_GUIDE_SPEC.md:L94-L102](research/GUEST_GUIDE_SPEC.md) — seguridad de accesos y datos sensibles.
+  - `src/lib/services/media-storage.service.ts` (10A) y `src/lib/services/guide-rendering.service.ts` (9A).
+  - `src/app/g/[slug]/page.tsx` (9D).
+  - `prisma/schema.prisma` — `MediaAsset`, `MediaAssignment`, `GuideVersion`.
+  - `docs/FEATURES/MEDIA_ASSETS.md` (completo).
 - **Docs a actualizar al terminar**:
-  - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — documentar patrón renderer React
-  - `docs/CONFIG_DRIVEN_SYSTEM.md` — añadir sección sobre cómo se extiende el renderer público
+  - `docs/FEATURES/MEDIA_ASSETS.md` § "Public media proxy" — ruta, variantes, cache policy.
+  - `docs/ARCHITECTURE_OVERVIEW.md` § 5 "Route map" — añadir `/g/:slug/media/:assetId/:variant`.
+  - `docs/SECURITY_AND_AUDIT.md` — regla "never embed presigned URLs in cacheable HTML".
+  - `CLAUDE.md` § "Patrones de Sistemas" — nota sobre media proxy.
 - **Skills/tools específicos**:
-  - **`/firecrawl-search`** antes: benchmarking visual de guías de huésped existentes (Airbnb, Hostfully, Touch Stay).
-  - **`/excalidraw-diagram`** antes: diseño de layout y componentes del renderer.
-  - **`/playwright-cli`** al final: verificar responsive (mobile, tablet, desktop), TOC, galería.
+  - Defaults §2: `/pre-commit-review`, `/simplify`, `/review-pr-comments`, `/revise-claude-md`.
+  - **Context7** (auto) — `@aws-sdk/client-s3` (`GetObjectCommand` streaming), `next/cache` (cache headers en App Router), `next/server` (`NextResponse` streaming).
+  - **`/firecrawl-search`** antes — "image proxy stable url presigned S3 caching", "next.js app router stream response".
+  - **`/playwright-cli`** al final — verificar que `<img>` en `/g/:slug` carga sin 403 tras 2h.
+  - **Agent code-architect** — decidir entre Sharp in-Node vs Cloudflare Image Resizing si la decisión no quedó cerrada en Fase -1.
 
 ---
 
-## FASE 11 — Knowledge + Assistant
+### Rama 10E — `feat/guide-react-renderer`
 
-**Objetivo**: knowledge base viva y assistant con retrieval real. Diferenciador del producto.
+**Propósito**: reemplazar `renderHtml()` + `dangerouslySetInnerHTML` en la ruta pública `/g/:slug` con un **renderer React** config-driven que recorre `GuideTree` con componentes styled, galería con lightbox, TOC sticky, empty states, brand theming por property y WCAG 2.2 AA. Incluye la **reestructuración de `guide_sections.json`** por journey del huésped (añade Esenciales aggregator, Cómo usar la casa, Salida; fusiona contacts en Ayuda y emergencias).
 
-### Rama 11A — `feat/knowledge-autoextract`
+**Motivación** (research):
+- [GUEST_GUIDE_SPEC.md:L33-L81](research/GUEST_GUIDE_SPEC.md) — arquitectura de información por journey del huésped, no por taxonomía interna.
+- [GUEST_GUIDE_SPEC.md:L104-L132](research/GUEST_GUIDE_SPEC.md) — layout single-column, TOC sticky, cards/accordions/chips/galerías.
+- [GUEST_GUIDE_SPEC.md:L146-L160](research/GUEST_GUIDE_SPEC.md) — WCAG 2.2 AA, multilenguaje (hook), empty states explícitos.
+- [GUEST_GUIDE_SPEC.md:L162-L210](research/GUEST_GUIDE_SPEC.md) — design tokens (escala, spacing, radius, targets).
+- [IMPLEMENTATION_PLAN.md:L29-L49](research/IMPLEMENTATION_PLAN.md) — stack front-end (`yet-another-react-lightbox`, `react-leaflet`, `IntersectionObserver` puro para TOC).
+- [IMPLEMENTATION_PLAN.md:L171-L183](research/IMPLEMENTATION_PLAN.md) — lo que NO implementar (no PDF largo, no tabs en móvil, no hero gigante).
 
-**Propósito**: extraer hechos estructurados desde Rules, Access, Contacts, Amenities, Spaces, Systems hacia `KnowledgeItem`. Recomputable determinístico, como `PropertyDerived`.
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- Design tokens: adoptar **principios** (escala tipográfica Inter 13/14/15/16/20/28, spacing 4/8/12/16/24/32/48, radius 12/10, targets 44×44, contraste AA, sombras mínimas) **mapeados a los tokens existentes del repo** (`--color-primary-500` indigo, no el teal `#0F766E` del research).
+- Brand theming por property: `Property.brandLogoUrl?` + `brandPrimaryColor?` (validado a HEX AA). No fonts personalizados en este scope.
+- Lightbox: `yet-another-react-lightbox` con plugin video habilitado.
+- Mapas: componente stub con interfaz `GuideMap`; Leaflet se cablea en 13C.
+- Secciones nuevas en `guide_sections.json`:
+  - `gs.essentials` — aggregator, `sourceResolverKeys: ["arrival", "amenities", "rules", "contacts"]`, filtros `journeyTags: ["essential"]` en items.
+  - `gs.howto` — nueva, renderiza `SpaceFeature` + `AmenityInstance.runbookJson` cuando exista.
+  - `gs.checkout` — nueva, items desde `policy_taxonomy` con `journeyStage: "checkout"`.
+  - `gs.emergency` — absorbe `contacts` con rol `emergency_service` / `host_primary` / `host_backup`.
+- Hooks tipados para `sensitiveAccessAllowed` y `journeyStage` quedan apagados por defecto (activación en FUTURE cuando exista reservation context).
+- ISR para shell pública (no datos sensibles): `revalidate` + `revalidateTag('guide-' + slug)`.
 
 **Archivos a crear**:
-- `src/lib/services/knowledge-extract.service.ts`:
-  - `extractFromProperty(propertyId)` — genera `KnowledgeItem[]` desde entidades canónicas
-  - Un extractor por fuente: `extractFromRules`, `extractFromAccess`, `extractFromContacts`, `extractFromAmenities`, `extractFromSpaces`, `extractFromSystems`
-- `taxonomies/knowledge_templates.json` — plantillas versionadas (ej: "El check-in es a las {{checkInTime}}")
+- `src/components/public-guide/guide-renderer.tsx` — root server component, itera `GuideTree.sections`.
+- `src/components/public-guide/section-card.tsx` — card con icono + header + empty state por sección.
+- `src/components/public-guide/guide-item.tsx` — item con fields (labeled pairs), media, children, `deprecated` visual.
+- `src/components/public-guide/guide-toc.tsx` — client island con `IntersectionObserver`, scroll-to-section.
+- `src/components/public-guide/guide-media-gallery.tsx` — galería con `yet-another-react-lightbox` (imágenes + video).
+- `src/components/public-guide/guide-map.tsx` — stub con contract `GuideMap`, lazy-loaded.
+- `src/components/public-guide/guide-empty-state.tsx` — "no hay X, usa Y" explícito.
+- `src/components/public-guide/guide-brand-header.tsx` — logo + nombre + color primario por property.
+- `src/config/registries/public-guide-section-registry.ts` — mapa `sectionKey → Component` (config-driven, extensible vía taxonomía).
+- `src/app/g/[slug]/guide.css` — estilos mobile-first + breakpoints.
+- `src/lib/services/guide-sections/essentials-aggregator.ts` — resuelve Esenciales desde múltiples `sourceResolverKeys`.
 
 **Archivos a modificar**:
-- `src/lib/actions/editor.actions.ts` — al final de mutaciones canónicas, llamar `extractFromProperty` (fire-and-forget o cola)
-- `prisma/schema.prisma` — `KnowledgeItem.sourceType` y `sourceId` para rastrear origen y permitir invalidación
+- `taxonomies/guide_sections.json` — reestructuración completa (Esenciales, Cómo usar, Salida, fusión contacts→Emergency) + nuevos flags (`journeyStage`, `isHero`, `isAggregator`, `sourceResolverKeys`, `journeyTags`).
+- `src/lib/services/guide-rendering.service.ts` — resolvers nuevos (`howto`, `checkout`) + soporte aggregator + graceful degradation.
+- `src/lib/types/guide-tree.ts` — añadir `journeyStage?`, `journeyTags?`, `runbookJson?` en `GuideItem`; `isHero?`, `isAggregator?` en `GuideSection`. Hooks tipados para `sensitiveAccessAllowed`.
+- `src/lib/taxonomy-loader.ts` — actualizar Zod schema de `guide_sections.json`.
+- `prisma/schema.prisma` — `Property.brandLogoUrl String?`, `Property.brandPrimaryColor String?`.
+- `src/app/g/[slug]/page.tsx` — sustituir `renderHtml()` + `dangerouslySetInnerHTML` con `<GuideRenderer tree={guestTree} slug={slug} />`.
 
 **Tests**:
-- `src/test/knowledge-extract.test.ts` — una property con 3 spaces + 5 amenities + 1 access-method genera N KnowledgeItems esperados
-- `src/test/knowledge-invalidation.test.ts` — editar una regla invalida solo los items afectados
+- `src/test/guide-react-renderer.test.tsx` — cada sección se renderiza; media en galería; TOC contiene secciones no vacías; deprecated marcado visualmente.
+- `src/test/guide-sections-journey.test.ts` — `gs.essentials` agrega desde múltiples resolvers; `gs.howto` incluye items con `runbookJson`; `gs.checkout` filtra por `journeyStage`.
+- `src/test/guide-brand-theming.test.ts` — property sin branding cae a tokens default; con branding inyecta CSS vars.
+- `src/test/guide-accessibility.test.ts` — axe-core smoke: sin violations WCAG 2.2 AA en fixture renderizada.
+- `src/test/guide-empty-states.test.ts` — cada sección emite empty state explícito en audience=guest.
+- `src/test/guide-sections-coverage.test.ts` (actualizar de 9A) — cubre las nuevas secciones.
 
-**Criterio de done**: página `/knowledge` muestra hechos extraídos auto + editables manualmente. Rebuild determinístico.
+**Criterio de done**: `/g/:slug` se ve profesional, mobile-first, con TOC navegable, iconos, cards, galería lightbox (imagen+video), empty states explícitos, brand theming aplicado. Añadir una sección nueva a `guide_sections.json` la renderiza automáticamente sin tocar componentes. Axe-core sin violations AA. Lighthouse mobile Performance ≥85.
 
 **Preparación**:
 - **Contexto a leer**:
+  - [docs/research/GUEST_GUIDE_SPEC.md:L33-L210](research/GUEST_GUIDE_SPEC.md) — IA, layout, patterns, tokens.
+  - [docs/research/IMPLEMENTATION_PLAN.md:L29-L67](research/IMPLEMENTATION_PLAN.md) — stack frontend + RAG store context.
+  - Código de 10D (media proxy — URLs ya estables), 10C (media en guide), 9A (GuideTree types).
+  - `taxonomies/guide_sections.json` actual.
+  - `src/config/registries/icon-registry.ts`, `renderer-registry.ts` (patrones existentes).
+  - `src/lib/types/guide-tree.ts`.
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — patrón renderer React.
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Public guide renderer" — cómo se extiende (taxonomía + registry).
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Sections journey" — documentar nueva IA.
+  - `CLAUDE.md` § "Patrones de UI" — añadir tokens public-guide + brand theming.
+- **Skills/tools específicos**:
+  - Defaults §2.
+  - **Context7** (auto) — `yet-another-react-lightbox` (v3.x), `react-leaflet`, Next.js 15 Server Components + ISR.
+  - **`/firecrawl-search`** antes — "airbnb guidebook UX", "touch stay digital guidebook mobile", "hostfully guest app layout". Benchmark visual.
+  - **`/excalidraw-diagram`** antes — layout mobile/tablet/desktop + jerarquía visual del renderer.
+  - **Agent code-architect** — decidir organización de `public-guide-section-registry` vs resolver-per-section.
+  - **Agent code-explorer** — mapear consumidores actuales de `renderHtml()` antes de reemplazar.
+  - **`/playwright-cli`** al final — responsive (375/768/1280), TOC, lightbox, empty states, brand theming.
+  - **`/simplify`** tras implementar — 9 componentes nuevos, buscar duplicación.
+
+---
+
+### Rama 10F — `feat/guide-hero-quick-actions`
+
+**Propósito**: bloque hero "Inicio de estancia" — panel operativo NO decorativo — arriba del pliegue, con 4 respuestas inmediatas (entrar / aparcar / Wi-Fi / ayuda) + quick actions universales click-to-call, click-to-WhatsApp, copy Wi-Fi password, abrir-en-Maps. Toast de feedback al copiar. Instrumentación ligera de clicks para métricas futuras.
+
+**Motivación** (research):
+- [GUEST_GUIDE_SPEC.md:L39-L46](research/GUEST_GUIDE_SPEC.md) — "Inicio de estancia: no es una portada decorativa; es un panel operativo".
+- [GUEST_GUIDE_SPEC.md:L113-L121](research/GUEST_GUIDE_SPEC.md) — "Quick actions siempre visibles para lo urgente".
+- [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) — copiar WiFi con un toque, click-to-call, abrir en Maps (interacciones valiosas).
+- [IMPLEMENTATION_PLAN.md:L113-L115](research/IMPLEMENTATION_PLAN.md) — "Copy Wi-Fi / copy code / abrir en Maps / click-to-call" marcado Alto impacto / Bajo esfuerzo.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- Quick actions declarativas en `guide_sections.json` vía array `quickActionKeys: ["wifi_copy", "call_host", "whatsapp_host", "maps_open", "access_how"]` en la sección hero.
+- Registry `quick-action-registry.ts`: cada action = `{ id, label, icon, handler, visibilityAudience, resolveValue(tree) }`. Handlers: `copy`, `tel:`, `wa.me/`, `geo:`/`https://maps.apple.com/`.
+- Instrumentación: evento `quickActionClick` a `localStorage` + `navigator.sendBeacon` a endpoint `/api/g/:slug/_track` (no-op hasta que exista dashboard; sólo registra en Vercel logs).
+- Feedback UX: `<Toast>` visible 2s, tecla Escape cierra, role="status" para lectores de pantalla.
+- Añadir action nueva = 1 entrada en registry + declararla en la taxonomía. NO se tocan componentes.
+
+**Archivos a crear**:
+- `src/components/public-guide/guide-hero.tsx` — server component, lee sección `isHero` de la taxonomía y resuelve 4 quick answers (access/parking/wifi/help).
+- `src/components/public-guide/quick-action-button.tsx` — client island, handler despachado por registry.
+- `src/components/public-guide/toast.tsx` — primitive a11y-compliant.
+- `src/config/registries/quick-action-registry.ts` — registry + validador Zod.
+- `src/app/api/g/[slug]/_track/route.ts` — POST no-op, guarda evento en logs.
+- `src/lib/client/quick-action-tracker.ts` — sendBeacon helper.
+
+**Archivos a modificar**:
+- `taxonomies/guide_sections.json` — marcar `gs.essentials` con `isHero: true` + `quickActionKeys: [...]`.
+- `src/components/public-guide/guide-renderer.tsx` (de 10E) — renderiza `<GuideHero>` cuando `section.isHero`.
+- `src/lib/taxonomy-loader.ts` — Zod actualizado para `isHero`, `quickActionKeys`.
+
+**Tests**:
+- `src/test/guide-hero.test.tsx` — hero aparece encima de TOC, resuelve 4 answers desde fixture.
+- `src/test/quick-action-registry.test.ts` — cada action válida resuelve valor correcto; action desconocida en taxonomía lanza en boot.
+- `src/test/quick-action-handlers.test.ts` — `copy` usa `navigator.clipboard`, `tel:` construye URI correcta, `wa.me` respeta E.164, `maps_open` genera URL universal (iOS+Android).
+- `src/test/guide-track-endpoint.test.ts` — POST con body válido responde 204; payload malformado 400.
+
+**Criterio de done**: huésped abre `/g/:slug`, el hero muestra las 4 respuestas críticas arriba, un tap copia el WiFi con toast confirmando, otro abre Maps a la dirección, otro llama/WhatsAppea al contacto principal. Sin acciones hardcoded — todo desde taxonomía + registry.
+
+**Preparación**:
+- **Contexto a leer**:
+  - [docs/research/GUEST_GUIDE_SPEC.md:L39-L50](research/GUEST_GUIDE_SPEC.md), [L113-L121](research/GUEST_GUIDE_SPEC.md), [L211-L234](research/GUEST_GUIDE_SPEC.md).
+  - [docs/research/IMPLEMENTATION_PLAN.md:L109-L127](research/IMPLEMENTATION_PLAN.md) — roadmap por impacto/esfuerzo.
+  - Renderer de 10E + registries existentes (`icon-registry`, `field-type-registry`).
+- **Docs a actualizar al terminar**:
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Quick actions" — cómo se añade una action nueva.
+  - `docs/API_ROUTES.md` — documentar `POST /api/g/:slug/_track` (no-op por ahora).
+- **Skills/tools específicos**:
+  - Defaults §2.
+  - **Context7** (auto) — Clipboard API spec, URI schemes `tel:`/`wa.me`/`geo:`/universal Maps links.
+  - **`/playwright-cli`** — verificar copy-to-clipboard en chromium + webkit, comportamiento `tel:` en mobile emulation.
+  - **`/simplify`** tras implementar — validar que 10E+10F no duplican lógica de resolución.
+
+---
+
+### Rama 10G — `feat/guide-client-search`
+
+**Propósito**: buscador client-side con Fuse.js en el header de la guía pública. Index construido desde `GuideTree` guest filtrado (nunca incluye `internal`/`sensitive`), fuzzy + weighted keys, resultados instant con scroll-to-section. Coexiste con 11F (semantic search) como capa instant/offline; Fuse.js responde en <20ms sin red, 11F responde con comprensión semántica cuando hay conexión.
+
+**Motivación** (research):
+- [GUEST_GUIDE_SPEC.md:L113-L116](research/GUEST_GUIDE_SPEC.md) — "Búsqueda universal como primer mecanismo de recuperación. Si el huésped piensa 'Wi-Fi' y tarda más de un segundo en deducir dónde está, ya has perdido".
+- [GUEST_GUIDE_SPEC.md:L248-L251](research/GUEST_GUIDE_SPEC.md) — métrica "Search success rate".
+- [IMPLEMENTATION_PLAN.md:L46-L48](research/IMPLEMENTATION_PLAN.md) — Fuse.js por defecto, FlexSearch como upgrade para datasets grandes.
+- [IMPLEMENTATION_PLAN.md:L113-L114](research/IMPLEMENTATION_PLAN.md) — roadmap marca "Búsqueda universal con Fuse.js" como Alto/Bajo.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- Index embebido en RSC y pasado al client island como JSON minificado — evita round-trip extra al montar.
+- Fuse options: `threshold: 0.35`, `keys: [{name: "label", weight: 2}, {name: "fields.value", weight: 1.5}, {name: "keywords", weight: 1}]`.
+- Resultados cap 8; si 0 resultados, mensaje "nada coincide — prueba 'wifi', 'parking', 'checkout'..." + log de query fallida vía `_track`.
+- Keyboard: `/` abre search, `Escape` cierra, `Enter` navega al primero.
+- No interactúa con 11F todavía (esa rama lo integrará como fallback semántico).
+
+**Archivos a crear**:
+- `src/components/public-guide/guide-search.tsx` — client island, usa `useDeferredValue` para queries.
+- `src/lib/client/guide-search-index.ts` — builder de index desde `GuideTree` guest, cliente-side.
+- `src/lib/services/guide-search-index.service.ts` — server-side builder (mismo shape) para SSR inicial.
+- `src/lib/types/guide-search-hit.ts` — shape de hit + ref al sectionId para scroll.
+
+**Archivos a modificar**:
+- `src/components/public-guide/guide-renderer.tsx` (de 10E) — monta `<GuideSearch>` en el shell header.
+- `src/app/g/[slug]/page.tsx` — serializa index minificado como prop.
+- `taxonomies/guide_sections.json` — campo opcional `searchableKeywords[]` por sección (hint manual cuando el label no basta).
+
+**Tests**:
+- `src/test/guide-search-index.test.ts` — build desde fixture; "wifi" match amenity de wifi; "parking" match amenity/rule parking; item `sensitive` **nunca** aparece en index.
+- `src/test/guide-search.test.tsx` — componente filtra en vivo; teclado `/` abre; `Enter` navega; 0 resultados muestra hint.
+- `src/test/guide-search-performance.test.ts` — p95 <20ms en fixture realista (200 items).
+
+**Criterio de done**: huésped tipea "wifi" y ve resultado en <1 frame, scroll lleva al item. Search funciona sin red. Analítica básica de queries sin resultado.
+
+**Preparación**:
+- **Contexto a leer**:
+  - [docs/research/IMPLEMENTATION_PLAN.md:L44-L49](research/IMPLEMENTATION_PLAN.md).
+  - Renderer de 10E, hero de 10F.
+  - `GuideTree` types (9A) y filtrado guest (9A `filterByAudience`).
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — añadir capa search.
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Client search" — separación con 11F semantic.
+- **Skills/tools específicos**:
+  - Defaults §2.
+  - **Context7** (auto) — `fuse.js` v7.x (`threshold`, `keys`, `includeMatches`), `React.useDeferredValue`.
+  - **`/playwright-cli`** — verificar `/` shortcut + screen reader labels.
+  - **`/firecrawl-search`** opcional — "guidebook search UX zero-result hint".
+
+---
+
+### Rama 10H — `feat/guide-pwa-offline`
+
+**Propósito**: convertir la guía pública en PWA instalable con caché crítica offline en 3 niveles. Sin red, el huésped sigue viendo Llegada, Wi-Fi, Ayuda y Salida. Add-to-Home-Screen nudge aparece después de la primera visita útil, no en el primer segundo.
+
+**Motivación** (research):
+- [GUEST_GUIDE_SPEC.md:L227-L232](research/GUEST_GUIDE_SPEC.md) — "Modo offline / conexión lenta... la guía debe mantener funcional el shell, el bloque esencial, los textos críticos y miniaturas de acceso".
+- [GUEST_GUIDE_SPEC.md:L230-L232](research/GUEST_GUIDE_SPEC.md) — Add to Home Screen "solo después del primer valor real".
+- [IMPLEMENTATION_PLAN.md:L49](research/IMPLEMENTATION_PLAN.md) — "enfoque manual alineado con docs oficiales de Next.js", NO `next-pwa` (poco mantenido + problemas con App Router).
+- [IMPLEMENTATION_PLAN.md:L95-L106](research/IMPLEMENTATION_PLAN.md) — 3 niveles de caché (shell/CSS/íconos → predictive image → lazy noncritical).
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- Service worker **manual**, no `next-pwa`.
+- Cache strategy:
+  - **Nivel 1 (cache-first)**: shell HTML, CSS, fuentes Inter subset, íconos, JSON crítico de secciones hero/essentials/checkout/emergency.
+  - **Nivel 2 (stale-while-revalidate)**: thumbnails de fachada/acceso/parking/hero + 1 imagen por espacio (vía `/g/:slug/media/:id/thumb` de 10D).
+  - **Nivel 3 (network-first con fallback timeout 2s)**: galerías completas, vídeo, mapas.
+- A2HS nudge: disparado tras 2 visitas o tiempo acumulado >90s; dismissable permanente vía `localStorage`.
+- Versionado del SW por `contentHash` del bundle de secciones críticas; skipWaiting + clientsClaim on activate para forzar refresh sin tab reload.
+- Fallback page `/g/[slug]/offline` con mensaje y lista de secciones cacheadas.
+
+**Archivos a crear**:
+- `public/manifest.json` — nombre, íconos 192/512, theme_color (usa brand primary de la property vía server render de `/g/:slug/manifest.webmanifest` con query param).
+- `public/sw.js` — service worker manual (plantilla ES modules).
+- `src/app/g/[slug]/manifest.webmanifest/route.ts` — manifest dinámico por property.
+- `src/lib/client/service-worker-register.ts` — registro + update detection.
+- `src/components/public-guide/install-nudge.tsx` — client island con trigger condicional.
+- `src/app/g/[slug]/offline/page.tsx` — fallback offline page.
+- `scripts/build-sw-manifest.mjs` — genera lista de assets críticos en build time.
+
+**Archivos a modificar**:
+- `next.config.ts` — headers para `/sw.js` (no-cache), CSP si aplica.
+- `src/app/g/[slug]/layout.tsx` (crear si no existe) — mete `<ServiceWorkerRegister />` + `<InstallNudge />`.
+- `src/components/public-guide/guide-renderer.tsx` (de 10E) — marca secciones `critical: true` para precache.
+- `taxonomies/guide_sections.json` — flag `offlineCacheTier: 1|2|3` por sección.
+
+**Tests**:
+- `src/test/guide-pwa-manifest.test.ts` — manifest valida schema, ícono 512x512 requerido.
+- `src/test/guide-sw-cache-tiers.test.ts` — simulated install, cache populated correctamente por tier.
+- `src/test/guide-install-nudge.test.tsx` — no aparece en primera visita; aparece tras trigger.
+- `src/test/guide-offline-fallback.test.ts` — fetch con network-off retorna offline page con lista de cacheadas.
+
+**Criterio de done**: Lighthouse PWA ≥90. Airplane mode mostrando secciones Nivel 1 sin degradación. A2HS nudge verificado en iOS Safari + Chrome Android. No cache corruption al deploy siguiente (SW versioning funciona).
+
+**Preparación**:
+- **Contexto a leer**:
+  - [docs/research/GUEST_GUIDE_SPEC.md:L225-L234](research/GUEST_GUIDE_SPEC.md).
+  - [docs/research/IMPLEMENTATION_PLAN.md:L49-L50](research/IMPLEMENTATION_PLAN.md), [L94-L106](research/IMPLEMENTATION_PLAN.md).
+  - Media proxy de 10D (rutas estables imprescindibles para cache).
+  - Renderer de 10E, hero de 10F, search de 10G.
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — añadir PWA section.
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Offline strategy".
+  - `CLAUDE.md` § "Entorno y comandos" — nota sobre SW en dev (http vs https, chrome://serviceworker-internals).
+- **Skills/tools específicos**:
+  - Defaults §2.
+  - **Context7** (auto) — Service Worker API, Next.js 15 manifest + dynamic headers, MDN cache storage strategies.
+  - **`/firecrawl-search`** antes — "next.js 15 app router pwa service worker manual", "touch stay offline guest guide".
+  - **`/playwright-cli`** — test airplane mode (`browserContext.setOffline(true)`), A2HS trigger en chromium-mobile emulation.
+  - **Agent code-architect** — diseñar versionado del SW + strategy de invalidación si la decisión no quedó cerrada.
+
+---
+
+## FASE 11 — Knowledge + Assistant + i18n
+
+**Objetivo**: knowledge base viva, retrieval de calidad production-grade (hybrid BM25+vector + Cohere Rerank + contextual prefix) y assistant con visibility hermética. Diferenciador del producto.
+
+### Rama 11A — `feat/knowledge-autoextract`
+
+**Propósito**: extraer hechos estructurados desde Rules, Access, Contacts, Amenities, Spaces, Systems, Policies hacia `KnowledgeItem` con los **campos AI completos** que espera el retrieval pipeline. Recomputable determinístico, como `PropertyDerived`.
+
+**Motivación**: el modelo actual de `KnowledgeItem` es minimalista. El retriever hybrid + rerank necesita, por cada item, los campos de [AI_KNOWLEDGE_BASE_SPEC.md:L40-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) (contextual payload) y [AI_KNOWLEDGE_BASE_SPEC.md:L370-L425](research/AI_KNOWLEDGE_BASE_SPEC.md) (campos del modelo). Sin estos campos tipificados — `chunkType`, `locale`, `audience`, `journeyStage`, `entityType`, `entityId`, `contextPrefix`, `bm25Text`, `embedding`, `tokens`, `lastModified`, `sourceFields[]`, `confidenceScore`, `tags[]` — no hay filtros duros en retrieval ni trazabilidad de citas.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **Taxonomía de chunks**: `fact | procedure | policy | place | troubleshooting | summary | template` ([AI_KNOWLEDGE_BASE_SPEC.md:L149-L192](research/AI_KNOWLEDGE_BASE_SPEC.md)). Cada extractor produce 1 o N items con `chunkType` explícito.
+- **Generación de embeddings**: diferida a 11C (aquí solo se persiste el texto + metadata). 11A deja `embedding: null` + `bm25Text` listo; 11C puebla embeddings en batch post-i18n.
+- **Invalidación**: `sourceType` + `sourceId` + `sourceFields[]` (campos de la entidad que el item referencia). Editar `Property.checkInTime` invalida solo items cuyo `sourceFields` incluye `checkInTime`.
+- **`journeyStage`**: enum `pre_arrival | arrival | stay | checkout | post_checkout | any`, mapeado desde la sección de origen (arrival→arrival, rules→stay, etc.) + override manual editable.
+- **`confidenceScore` inicial**: 1.0 para autoextract determinístico; 0.5 para items creados a mano; editable.
+
+**Archivos a crear**:
+- `src/lib/services/knowledge-extract.service.ts`:
+  - `extractFromProperty(propertyId, locale = 'es')` — genera `KnowledgeItem[]` con campos AI completos
+  - Un extractor por fuente con chunking semántico: `extractFromRules`, `extractFromAccess`, `extractFromContacts`, `extractFromAmenities`, `extractFromSpaces`, `extractFromSystems`, `extractFromPolicies`
+  - `buildBm25Text(item)` — texto normalizado para BM25 (diacrítica plegada + lowercase + stopwords fuera)
+  - `buildContextPrefix(item)` — prefijo contextual à la Contextual Retrieval ([AI_KNOWLEDGE_BASE_SPEC.md:L194-L206](research/AI_KNOWLEDGE_BASE_SPEC.md)): `"En [propertyName], sección [section], sobre [entityLabel]: …"`
+- `taxonomies/knowledge_templates.json` — plantillas versionadas por `sourceType × chunkType × locale` (ej: `{"check_in_time": "El check-in es a las {{value}} en {{propertyName}}."}`)
+- `taxonomies/chunk_types.json` — catálogo de `chunkType` con descripción y rules de uso (validado con Zod en el loader)
+
+**Archivos a modificar**:
+- `prisma/schema.prisma` — `KnowledgeItem` expandido con todos los campos AI (ver Motivación). Campos nuevos: `chunkType String`, `locale String`, `audience String`, `journeyStage String`, `entityType String`, `entityId String?`, `contextPrefix String`, `bm25Text String`, `embedding Unsupported("vector(1536)")?` (pgvector), `tokens Int`, `sourceFields String[]`, `confidenceScore Float @default(1.0)`, `tags String[]`. Índices: `@@index([propertyId, audience, locale, journeyStage])`, `@@index([propertyId, chunkType])`. **Migración**: `prisma db push --accept-data-loss` en dev (no hay KnowledgeItem en prod).
+- `src/lib/actions/editor.actions.ts` — invalidar KnowledgeItems por `sourceFields` tras mutación canónica; fire-and-forget llamada a `extractFromProperty`
+- `src/lib/types/knowledge.ts` (nuevo) — tipos TS derivados del schema + Zod para validación de extractors
+
+**Tests**:
+- `src/test/knowledge-extract.test.ts` — property fixture (3 spaces + 5 amenities + 1 access + 3 rules) genera N items con `chunkType`, `journeyStage` y `audience` correctos
+- `src/test/knowledge-extract-context-prefix.test.ts` — prefix correcto en los 7 chunkTypes; no-hardcoded de IDs (fail si aparece `am.wifi` literal)
+- `src/test/knowledge-invalidation.test.ts` — editar `Property.checkInTime` invalida solo items con `sourceFields` incluye `checkInTime`; no toca el resto
+- `src/test/knowledge-visibility-boundary.test.ts` — items con `audience = sensitive` nunca salen de un extractor cuyo origen es `Property.houseRules` público (fail-loud)
+
+**Criterio de done**: página `/knowledge` muestra hechos extraídos + editables. Rebuild determinístico (mismo input → mismo output). Schema tiene todos los campos AI listos para retrieval hybrid.
+
+**Preparación**:
+- **Contexto a leer**:
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L7-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) — casos de uso + AI context schema completo
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L141-L206](research/AI_KNOWLEDGE_BASE_SPEC.md) — chunk fields + chunking + contextual retrieval
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L370-L425](research/AI_KNOWLEDGE_BASE_SPEC.md) — campos del modelo `KnowledgeItem`
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` (completo)
-  - `prisma/schema.prisma` — modelos `KnowledgeItem`, `KnowledgeSource`, `KnowledgeCitation`
+  - `prisma/schema.prisma` — modelos actuales `KnowledgeItem`, `KnowledgeSource`, `KnowledgeCitation`
   - `src/app/properties/[propertyId]/knowledge/page.tsx` (shell actual)
   - Patrón de recomputación en `src/lib/services/property-derived.service.ts`
   - `src/lib/actions/editor.actions.ts` — hook points donde ya se llama `recomputeAll`
 - **Docs a actualizar al terminar**:
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Knowledge extraction" — describir extractores y templates
-  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `knowledge_templates.json`
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Knowledge extraction" — describir extractores + templates + contextPrefix
+  - `docs/DATA_MODEL.md` § `KnowledgeItem` — reflejar schema expandido
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `knowledge_templates.json` + `chunk_types.json`
 - **Skills/tools específicos**:
-  - **Agent code-explorer** para trazar qué mutaciones tocan qué entidades (necesario para cablear extractors).
+  - **Agent code-explorer** — trazar qué mutaciones tocan qué entidades (necesario para mapear `sourceFields` correctos).
+  - **Agent code-architect** — diseñar el contrato de extractors para que los 7 sean simétricos (factory pattern).
+  - **Context7** (auto) — pgvector schema + Prisma `Unsupported` type.
 
 ---
 
-### Rama 11B — `feat/assistant-retrieval-pipeline`
+### Rama 11B — `feat/knowledge-i18n`
 
-**Propósito**: RAG con filtros de visibility. Intent → retrieve → filter → synthesize con citas.
+**Propósito**: soporte i18n en `KnowledgeItem` como **filtro duro** del retriever (no fallback silencioso cross-locale). Un item se indexa por `(propertyId, locale)`; el retriever filtra por locale del huésped antes de vector search.
+
+**Motivación**: ubicada entre 11A y el retrieval pipeline (11C) por decisión arquitectónica: el retriever necesita `locale` como filtro duro desde el día 1 para evitar que embeddings mezclen idiomas (degrada rerank). Introducirlo después de tener embeddings es costoso (re-indexar todo el corpus). [AI_KNOWLEDGE_BASE_SPEC.md:L40-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) exige `locale` explícito en cada chunk; [IMPLEMENTATION_PLAN.md:L129-L169](research/IMPLEMENTATION_PLAN.md) marca multi-idioma como decisión crítica temprana.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **Idiomas MVP**: `es`, `en`. `fr`, `de`, `it`, `pt` planificados como "add one more taxonomy entry + regenerar templates"; no requieren cambios de código.
+- **Fallback policy**: si no hay item en `locale` del huésped, responder en `defaultLocale` de la property con nota visible (`"Disponible en Español, traducción automática a English no ofrecida"`). **No hay auto-translate en MVP** — es un deferido (FUTURE.md).
+- **Fuente de traducción**: templates i18n en `knowledge_templates.json` tienen variantes por locale (`"check_in_time": { "es": "…", "en": "…" }`). Items libres (editados a mano) requieren traducción manual explícita por el host en UI.
+- **UI de traducción**: `/knowledge/[itemId]` muestra selector de locale + estado por locale (`draft | published | missing`). Al menos `defaultLocale` obligatorio.
 
 **Archivos a crear**:
-- `src/lib/services/assistant/intent-resolver.ts` — normaliza pregunta → intent + entities
-- `src/lib/services/assistant/retriever.ts` — vector search (pgvector o similar) + filtro visibility + idioma
-- `src/lib/services/assistant/synthesizer.ts` — llama a LLM con contexto + instrucciones de cita
-- `src/lib/services/assistant/pipeline.ts` — orquestador
+- `src/lib/services/knowledge-i18n.service.ts`:
+  - `getItemForLocale(itemId, locale, fallback): KnowledgeItem` — aplica fallback policy
+  - `listMissingTranslations(propertyId): { itemId, missingLocales[] }[]` — para dashboard
+  - `extractI18n(propertyId, locale)` — wrapper de `extractFromProperty` que genera items para un locale concreto reusando templates
+- `src/components/knowledge/locale-switcher.tsx` — tabs por locale con estado (draft/published/missing)
 
 **Archivos a modificar**:
-- `src/app/api/properties/[propertyId]/assistant/ask/route.ts` — cablear con el nuevo pipeline (ruta **ya existe** en el repo; no crear una nueva bajo `/ask/`)
-- `prisma/schema.prisma` — `KnowledgeItem.embedding Vector?` (si pgvector), índice vectorial
-- `src/app/properties/[propertyId]/ai/page.tsx` — chat UI real
+- `taxonomies/knowledge_templates.json` — migrar a estructura `{ templateId: { [locale]: string } }`
+- `prisma/schema.prisma` — añadir `KnowledgeItem.defaultLocale String @default("es")` y `@@unique([propertyId, sourceType, sourceId, chunkType, locale])`
+- `src/app/properties/[propertyId]/knowledge/page.tsx` — panel de missing translations + acción "Duplicar y traducir manualmente"
+- `src/lib/services/knowledge-extract.service.ts` (de 11A) — aceptar `locale` + elegir template variant
 
 **Tests**:
-- `src/test/assistant-retrieval.test.ts` — 20 preguntas fixture → respuestas con citas correctas
-- `src/test/assistant-visibility-leak.test.ts` — pregunta que intenta sonsacar secreto → responder denegando, no filtrarlo
+- `src/test/knowledge-i18n-extract.test.ts` — property con default `es`, regenerar para `en` produce items con textos en inglés usando templates i18n
+- `src/test/knowledge-i18n-fallback.test.ts` — pedir item en `fr` cuando solo existe `es` → retorna `es` con `_fallbackFrom: 'es'`
+- `src/test/knowledge-i18n-unique-key.test.ts` — insertar dos items con misma `(propertyId, sourceType, sourceId, chunkType, locale)` → error P2002
 
-**Criterio de done**: huésped puede preguntar "¿cómo abro la puerta?" y recibe respuesta con cita al `KnowledgeItem` de access-method.
+**Criterio de done**: host puede activar `en` como idioma secundario, ver gaps de traducción, completarlos manualmente; items quedan indexados por locale listos para 11C.
 
-**⚠ Decisión previa requerida**: modelo LLM (default Claude Sonnet 4.6), proveedor de embeddings (Voyage, OpenAI, Cohere), storage vectorial (pgvector integrado vs servicio aparte). Documentar en spec antes de PR.
+**Dependencias**: 11A (schema expandido).
 
 **Preparación**:
 - **Contexto a leer**:
-  - **`src/app/api/properties/[propertyId]/assistant/` (árbol completo)** — la ruta `ask/route.ts`, `conversations/`, `debug/` ya existen. El plan original decía crear `src/app/api/properties/[propertyId]/ask/route.ts`; eso fue un error, usar el árbol existente.
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant retrieval"
-  - `prisma/schema.prisma` — modelos `AssistantConversation`, `AssistantMessage`, `KnowledgeItem`
-  - `src/app/properties/[propertyId]/ai/page.tsx` actual
-  - Código de 11A (extractores ya generando items)
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L40-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) — `locale` como campo AI
+  - [IMPLEMENTATION_PLAN.md:L129-L169](research/IMPLEMENTATION_PLAN.md) — decisión crítica multi-idioma
+  - Schema de 11A
 - **Docs a actualizar al terminar**:
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant pipeline" — provider elegido + diagrama del flujo
-  - `docs/API_ROUTES.md` — documentar `POST /api/properties/:id/assistant/ask`
-  - `CLAUDE.md` § "Entorno y comandos" — env vars del LLM provider
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "i18n" — política de fallback + workflow de traducción
+  - `docs/FUTURE.md` — añadir "Auto-translate con LLM (DeepL / Claude Sonnet) post-validación"
 - **Skills/tools específicos**:
-  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del pipeline (intent → retriever → synthesizer → citation). Imprescindible para alinear antes de tocar código.
-  - **Context7** (auto) — docs actualizadas del SDK de Anthropic/OpenAI y pgvector.
-  - **`/firecrawl-search`** antes: comparar providers de embeddings si no está decidido.
+  - **Context7** (auto) — Prisma `@@unique` composite con Json nullable.
 
 ---
 
-### Rama 11C — `feat/assistant-escalation`
+### Rama 11C — `feat/assistant-retrieval-pipeline`
 
-**Propósito**: si `confidenceScore < threshold`, el assistant escala a un contacto estructurado en vez de inventar respuesta.
+**Propósito**: pipeline RAG production-grade: hybrid BM25+vector retrieval + Cohere Rerank + contextual prefix + filtros duros (visibility, locale, journeyStage). Intent → retrieve → rerank → filter → synthesize con citas.
+
+**Motivación**: la literatura ([AI_KNOWLEDGE_BASE_SPEC.md:L149-L215](research/AI_KNOWLEDGE_BASE_SPEC.md) + [IMPLEMENTATION_PLAN.md:L51-L66](research/IMPLEMENTATION_PLAN.md)) coincide en que vector search solo rinde ~70% accuracy en corpora pequeños y heterogéneos como una property (decenas a cientos de items). Hybrid (BM25 + vector) + rerank con Cohere Rerank 3 sube a 90%+ en evals. Contextual Retrieval reduce "lost context" en chunks al enriquecer el embedding con prefix.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **Embeddings**: Voyage `voyage-3-lite` (1536 dim) — mejor coste/quality que OpenAI `text-embedding-3-small` en benchmarks de RAG small-domain. OpenAI `text-embedding-3-small` como backup configurable.
+- **Vector storage**: pgvector en la misma Postgres (simplicidad operativa). Índice `ivfflat (embedding vector_cosine_ops) WITH (lists = 100)`.
+- **BM25**: Postgres FTS (`tsvector` + `ts_rank_cd`) sobre `bm25Text` normalizado de 11A. No se añade dependencia nueva (Elasticsearch/Meilisearch).
+- **Reranker**: Cohere Rerank 3 (`rerank-multilingual-v3.0`). Fallback a `CohereClient` mock en dev sin API key (retorna identity para tests).
+- **LLM síntesis**: Claude Sonnet 4.6 (default). Configurable por env `ASSISTANT_LLM_MODEL`.
+- **Filtros duros** (no soft filters): `audience` según requester role, `locale`, `journeyStage` si la pregunta tiene intent-stage detectado. Se aplican **antes** del vector search en el `WHERE` de pgvector.
+- **Top-K**: retrieve 20 con hybrid → rerank a 5 → synthesis con estos 5.
+- **Citations**: cada respuesta incluye `citations[]` con `knowledgeItemId`, `score`, `sourceType`, `entityLabel`. Si `citations.length === 0`, el pipeline escala a 11D (no inventa respuesta).
 
 **Archivos a crear**:
-- `src/lib/services/assistant/escalation.service.ts` — decide contacto por intent (lockout→cerrajero, emergencia→host, etc.)
-- `taxonomies/escalation_rules.json` — mapeo intent → contactRole
+- `src/lib/services/assistant/intent-resolver.ts` — LLM ligero (Haiku 4.5) para `{ intent, entities, journeyStage?, requestedLocale? }`
+- `src/lib/services/assistant/retriever.ts`:
+  - `hybridRetrieve(query, filters): Promise<KnowledgeItem[]>` — paralelo BM25 + vector, reciprocal rank fusion (RRF)
+  - `applyHardFilters(query, context): Filter` — visibility + locale + journeyStage
+- `src/lib/services/assistant/reranker.ts` — Cohere Rerank wrapper + mock provider para dev/test
+- `src/lib/services/assistant/synthesizer.ts` — llama LLM con system prompt de [AI_KNOWLEDGE_BASE_SPEC.md:L237-L368](research/AI_KNOWLEDGE_BASE_SPEC.md) + contexto + instrucciones de cita obligatoria
+- `src/lib/services/assistant/pipeline.ts` — orquestador `ask(query, context): { answer, citations[], confidenceScore }`
+- `src/lib/services/assistant/embeddings.service.ts` — Voyage client + helper `embedBatch(texts[]): number[][]`
+- `src/lib/jobs/knowledge-embed-backfill.ts` — job one-shot que embeba todos los KnowledgeItems sin `embedding`. Ejecutable manualmente en dev (`npm run embed:backfill`), scheduled en prod.
+- `taxonomies/intent_catalog.json` — catálogo de intents conocidos (wifi, checkin_time, pet_policy, parking, emergency, etc.) con `expectedJourneyStage` para filter hints
 
 **Archivos a modificar**:
-- `src/lib/services/assistant/pipeline.ts` — branch escalation cuando confidence baja
-- `src/app/properties/[propertyId]/ai/page.tsx` — UI de "Te pongo en contacto con…"
+- `src/app/api/properties/[propertyId]/assistant/ask/route.ts` — cablear con el nuevo pipeline (ruta **ya existe** en el repo)
+- `src/app/properties/[propertyId]/ai/page.tsx` — chat UI real: pregunta → respuesta con citas clicables (linkan al `/knowledge/[itemId]` o a la sección del renderer de 10E)
+- `prisma/schema.prisma` — ya tiene `embedding` de 11A; aquí se añade el índice ivfflat via migración SQL manual (`prisma db execute` con `CREATE INDEX CONCURRENTLY …`)
+- `package.json` — deps: `voyageai`, `cohere-ai`; scripts: `"embed:backfill": "tsx src/lib/jobs/knowledge-embed-backfill.ts"`
+
+**Tests**:
+- `src/test/assistant-retrieval-hybrid.test.ts` — 20 preguntas fixture; hybrid > BM25-only y > vector-only en accuracy
+- `src/test/assistant-retrieval-visibility-leak.test.ts` — pregunta que intenta sonsacar secreto (`guestWifiPassword` vs `ownerWifiPassword`) → respuesta audience-safe, citation nunca referencia item `sensitive`
+- `src/test/assistant-retrieval-locale-hard-filter.test.ts` — query en `en` nunca retorna items `es` (incluso si tienen embedding similar)
+- `src/test/assistant-retrieval-contextual-prefix.test.ts` — embeddings con prefix outperforman embeddings sin prefix en recall@5
+- `src/test/assistant-reranker-fallback.test.ts` — sin COHERE_API_KEY, mock provider retorna top-K identity y el pipeline no crashea
+- `src/test/assistant-pipeline-no-citations.test.ts` — si rerank top-K tiene scores < threshold, pipeline devuelve `{ escalate: true }` (hook para 11D)
+
+**Criterio de done**: huésped pregunta "¿cómo abro la puerta?" y recibe respuesta con cita al `KnowledgeItem` de access-method; respuesta en su locale; nunca incluye campos sensitive; accuracy ≥ 85% en banco de evals (gate de 11E).
+
+**Dependencias**: 11A (schema + items), 11B (locale filter).
+
+**Preparación**:
+- **Contexto a leer**:
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L149-L215](research/AI_KNOWLEDGE_BASE_SPEC.md) — chunking + contextual retrieval + flujo retrieval completo
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L237-L368](research/AI_KNOWLEDGE_BASE_SPEC.md) — prompt templates de synthesizer
+  - [IMPLEMENTATION_PLAN.md:L51-L66](research/IMPLEMENTATION_PLAN.md) — stack back-end + RAG
+  - `src/app/api/properties/[propertyId]/assistant/` (árbol completo)
+  - Schema de 11A + i18n de 11B
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Assistant pipeline" — diagrama hybrid → rerank → synth + providers elegidos
+  - `docs/API_ROUTES.md` — documentar `POST /api/properties/:id/assistant/ask`
+  - `CLAUDE.md` § "Entorno y comandos" — env vars `VOYAGE_API_KEY`, `COHERE_API_KEY`, `ASSISTANT_LLM_MODEL`
+  - `docs/DATA_MODEL.md` — migración pgvector ivfflat index
+- **Skills/tools específicos**:
+  - **`/excalidraw-diagram`** **antes** de codificar: diagrama del pipeline (intent → hybrid retrieve → filter → rerank → synth → cite). Imprescindible.
+  - **Agent code-architect** — diseñar el contrato de `hybridRetrieve` + RRF (reciprocal rank fusion) + estrategia de filter pushdown a pgvector.
+  - **Context7** (auto) — SDK de Voyage, Cohere Rerank, pgvector ivfflat tuning, Anthropic SDK.
+  - **`/firecrawl-search`** antes: "Cohere Rerank 3 multilingual vs Voyage rerank benchmarks 2026", "pgvector ivfflat lists parameter tuning small corpus".
+
+---
+
+### Rama 11D — `feat/assistant-escalation`
+
+**Propósito**: si `confidenceScore < threshold` o `citations.length === 0`, el assistant escala a un contacto estructurado en vez de inventar respuesta.
+
+**Archivos a crear**:
+- `src/lib/services/assistant/escalation.service.ts` — decide contacto por intent (lockout→cerrajero, emergencia→host, fuera-de-dominio→concierge) usando `taxonomies/escalation_rules.json`
+- `taxonomies/escalation_rules.json` — mapeo `intent → contactRole` + fallback `general_host`
+
+**Archivos a modificar**:
+- `src/lib/services/assistant/pipeline.ts` (de 11C) — branch escalation cuando confidence baja o sin citations
+- `src/app/properties/[propertyId]/ai/page.tsx` — UI de "Te pongo en contacto con…" con tap-to-call/whatsapp (reusa componentes de 10F)
 
 **Tests**:
 - `src/test/assistant-escalation.test.ts` — low-confidence intent de "emergencia médica" → escala al contacto con rol `emergency_service`
+- `src/test/assistant-escalation-no-match.test.ts` — intent fuera de catálogo → fallback `general_host`, nunca null
 
 **Criterio de done**: preguntas fuera de cobertura se resuelven con contacto estructurado, no con alucinación.
 
+**Dependencias**: 11C (pipeline con hook escalate).
+
 **Preparación**:
 - **Contexto a leer**:
-  - Pipeline de 11B
+  - Pipeline de 11C
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L217-L235](research/AI_KNOWLEDGE_BASE_SPEC.md) — qué necesita la IA para escalar bien
   - `prisma/schema.prisma` — modelo `Contact` y `taxonomies/contact_roles.json`
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Escalation"
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `escalation_rules.json`
-- **Skills/tools específicos**: ninguno extra
+- **Skills/tools específicos**: ninguno extra.
 
 ---
 
-### Rama 11D — `feat/assistant-evals`
+### Rama 11E — `feat/assistant-evals`
 
-**Propósito**: banco de evals + release gate. Sin esto, el assistant no es production-ready.
+**Propósito**: banco de evals + release gate. Sin esto, el assistant no es production-ready y cambios silenciosos de modelo pueden degradar calidad.
 
 **Archivos a crear**:
-- `src/test/assistant-evals/fixtures.json` — ≥50 pares (pregunta, intent esperado, respuesta mínima aceptable)
-- `src/test/assistant-evals/runner.ts` — corre fixtures contra pipeline real
-- `src/test/assistant-evals/release-gate.test.ts` — falla si accuracy < umbral
+- `src/test/assistant-evals/fixtures.json` — ≥50 pares `(pregunta, locale, intent esperado, citas mínimas esperadas, respuesta mínima aceptable)` cubriendo los 7 chunkTypes + los 5 journeyStages
+- `src/test/assistant-evals/runner.ts` — corre fixtures contra pipeline real (con embedding API real cacheada en fixture)
+- `src/test/assistant-evals/release-gate.test.ts` — falla si accuracy < 85% o si recall@5 de citations < 0.9
+- `src/test/assistant-evals/metrics.ts` — métricas por intent + journeyStage + locale para dashboard
 
-**Criterio de done**: CI falla si una PR del assistant baja la accuracy. Dashboard de metrics por intent.
+**Criterio de done**: CI falla si una PR del assistant baja accuracy o recall de citations. Dashboard con breakdown por dimensión.
+
+**Dependencias**: 11C + 11D.
 
 **Preparación**:
 - **Contexto a leer**:
-  - Pipeline de 11B + escalación de 11C
+  - Pipeline de 11C + escalación de 11D
+  - [AI_KNOWLEDGE_BASE_SPEC.md:L237-L368](research/AI_KNOWLEDGE_BASE_SPEC.md) — prompt templates (necesario para construir fixtures fieles al comportamiento esperado)
   - `docs/QA_AND_RELEASE.md` (patrón de release gates)
 - **Docs a actualizar al terminar**:
-  - `docs/QA_AND_RELEASE.md` § "Release gates" — añadir gate de accuracy del assistant con umbral concreto
+  - `docs/QA_AND_RELEASE.md` § "Release gates" — gate de accuracy + recall@5 con umbrales concretos
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Evals"
-- **Skills/tools específicos**: ninguno extra
+- **Skills/tools específicos**:
+  - **Agent code-architect** — diseñar estructura de fixtures para que cubran la matriz `intent × chunkType × journeyStage × locale` sin explosión combinatoria.
 
 ---
 
-### Rama 11E — `feat/guide-semantic-search`
+### Rama 11F — `feat/guide-semantic-search`
 
-**Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings de 11B.
+**Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings + retriever de 11C; coexiste con el Fuse.js client search de 10G como capa complementaria (Fuse para instant/offline, este para lenguaje natural).
 
-**Motivación**: una guía con 7+ secciones y decenas de items necesita búsqueda eficiente. El huésped escribe "cómo llego" y el buscador lo lleva a la sección de Llegada; escribe "mascota" y ve la política de mascotas. No solo busca en títulos sino en contenido completo + comprende sinónimos e intención.
+**Motivación**: Fuse.js (10G) resuelve búsqueda léxica fuzzy en cliente (rápido, offline, <20ms). Pero no entiende "cómo llego" → arrival, o "mascota" → pet_policy. [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) marca búsqueda semántica como feature diferencial post-MVP. Este es el componente de capa 2: cuando Fuse no encuentra match o el huésped usa lenguaje natural largo, se ofrece "Búsqueda inteligente" que llama al backend.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **UX**: Fuse es default (instant como se tecla); si el input supera 4 palabras o Fuse retorna < 3 resultados, aparece CTA "Búsqueda inteligente" que hace request al endpoint semántico.
+- **Endpoint público**: `/api/g/[slug]/search` — resuelve slug → propertyId + forza `audience = guest` + `locale = slug.guideVersion.locale`. Nunca expone items `internal`/`sensitive`.
+- **Scroll-to-section**: usa el `sectionId` del `GuideTree` serializado en 9C + el TOC de 10E. El resultado trae `{ itemId, sectionId, scrollToAnchor }`.
 
 **Archivos a crear**:
-- `src/components/public-guide/guide-search.tsx` — componente de búsqueda con input + resultados instant (client component)
-- `src/app/api/g/[slug]/search/route.ts` — endpoint público: recibe query, ejecuta vector search sobre `KnowledgeItem` embeddings filtrados por propertyId + audience=guest, retorna items rankeados con sectionId para scroll-to
-- `src/lib/services/guide-search.service.ts` — lógica de búsqueda: embed query → cosine similarity → mapeo a secciones del GuideTree
+- `src/components/public-guide/guide-search.tsx` — input + resultados instant (Fuse) + CTA "Búsqueda inteligente" (cliente)
+- `src/app/api/g/[slug]/search/route.ts` — endpoint público: slug → propertyId → `retriever.hybridRetrieve(query, { audience: 'guest', locale: versionLocale })` → top-5 con `sectionId` resuelto desde `KnowledgeItem.sourceType` + mapa `sourceType → guideSectionId`
+- `src/lib/services/guide-search.service.ts` — wrapper sobre retriever de 11C con mapeo a secciones del GuideTree + rate limit por slug (10 req/min)
 
 **Archivos a modificar**:
-- `src/components/public-guide/guide-renderer.tsx` (de 10D) — integrar `<GuideSearch>` en el header, conectar resultado con scroll-to-section
-- `src/app/g/[slug]/page.tsx` — pasar propertyId al search component
+- `src/components/public-guide/guide-renderer.tsx` (de 10E) — integrar `<GuideSearch>` en el header sticky, conectar resultado con scroll-to-section
+- `src/app/g/[slug]/page.tsx` — pasar propertyId + locale al search component
 
 **Tests**:
-- `src/test/guide-search.test.ts` — query "wifi" retorna sección de amenities con wifi; query "llegar" retorna arrival; query con typo funciona por similitud semántica; nunca retorna items `internal`/`sensitive`
+- `src/test/guide-search.test.ts` — query "cómo llego" retorna sección arrival; query "mascota" retorna pet_policy; query con typo funciona por similitud semántica
+- `src/test/guide-search-visibility.test.ts` — nunca retorna items `internal`/`sensitive` aunque el embedding coincida
+- `src/test/guide-search-rate-limit.test.ts` — >10 req/min al mismo slug → 429
 
-**Criterio de done**: huésped puede buscar en la guía pública con lenguaje natural y navegar directamente al contenido relevante. Búsqueda funciona por significado, no solo por keyword.
+**Criterio de done**: huésped puede buscar con lenguaje natural y navegar directamente al contenido relevante en la guía pública.
 
-**Dependencias**: 11A (knowledge items), 11B (embeddings + retriever), 10D (React renderer con TOC scroll-to)
+**Dependencias**: 11C (retriever + embeddings), 10E (renderer con TOC scroll-to), 10G (Fuse como capa 1).
 
 **Preparación**:
 - **Contexto a leer**:
-  - Pipeline de 11B (retriever + vector search)
-  - Renderer de 10D (guide-renderer, guide-toc, scroll-to-section)
-  - `src/lib/services/guide-search.service.ts` — reutilizar retriever.ts adaptado a contexto público
+  - [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) — interactividad + búsqueda
+  - Pipeline de 11C (retriever hybrid)
+  - Renderer de 10E (guide-renderer, TOC, scroll-to-section)
+  - Fuse search de 10G (para coexistencia)
 - **Docs a actualizar al terminar**:
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Public guide search"
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Public guide search" — arquitectura de dos capas
   - `docs/API_ROUTES.md` — documentar `GET /api/g/:slug/search?q=`
 - **Skills/tools específicos**:
-  - **Context7** (auto) — docs de pgvector para cosine similarity queries.
+  - **Context7** (auto) — Next.js rate limiting por ruta pública.
 
 ---
 
@@ -941,12 +1321,70 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 **Preparación**:
 - **Contexto a leer**:
   - Integración MapLibre existente en wizard step-2 (`src/app/properties/new/step-2/`)
-  - Renderer HTML de 9B/10C
+  - Renderer HTML de 9B/10C + renderer React de 10E (donde el `<GuideMap>` se monta como client island)
 - **Docs a actualizar al terminar**:
   - `docs/SECURITY_AND_AUDIT.md` — añadir regla de obfuscation de coordenadas en audience=guest
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o `LOCAL_GUIDE.md` — documentar el comportamiento
 - **Skills/tools específicos**:
   - **`/playwright-cli`** al final: screenshot del mapa en los 3 audiences para verificar que el pin exacto solo aparece en internal.
+
+---
+
+### Rama 13D — `feat/guide-issue-reporting`
+
+**Propósito**: el huésped reporta problemas desde la guía pública (`/g/:slug`) en cualquier sección — el reporte abre un `Incident` estructurado, notifica al host y cierra el loop con estado visible. Patrón Breezeway aplicado al stack propio.
+
+**Motivación**: [GUEST_GUIDE_SPEC.md:L236-L262](research/GUEST_GUIDE_SPEC.md) identifica "reporte de incidencias" como feature post-MVP de alto valor (reduce llamadas al host + feedback loop para mejorar la guía). El modelo `Incident` ya existe (creado en fases v1); lo que falta es el punto de entrada desde la guía pública + cableado con visibility (el huésped solo puede reportar; el host ve + resuelve).
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **Punto de entrada**: botón flotante "¿Algo no funciona?" visible en todas las secciones del renderer de 10E + CTA contextual en items con `troubleshooting` attached. Abre drawer/modal con form estructurado.
+- **Campos del form**: categoría (chips desde `taxonomies/incident_categories.json` — wifi, electrodoméstico, limpieza, ruido, acceso, otro) + descripción libre (max 500 char) + opcional foto (reusa UploadDropzone de 10B) + auto-captura de `spaceId`/`amenityId` si el reporte se lanza desde un item concreto.
+- **Autenticación**: guest-only sin login, identificado por `GuideVersion.slug` + cookie temporal firmada; el host recibe notificación al email registrado + badge en `/properties/[id]/incidents`.
+- **Notificación al host**: email (reusa sistema de 12B si existe; si no, fire-and-forget con Resend/Postmark decidido en Fase -1) + optional webhook/SMS en FUTURE.md.
+- **Estado visible al huésped**: tras enviar, el huésped ve "Reporte enviado" + opcional "track status" con `incidentId` en URL (`/g/:slug/incidents/:id`). El host puede marcar `in_progress | resolved`, estado reflejado al huésped.
+
+**Archivos a crear**:
+- `src/components/public-guide/issue-reporter.tsx` — botón flotante + drawer con form (client island)
+- `src/app/api/g/[slug]/incidents/route.ts` — POST crea Incident (audience=guest), retorna `incidentId`
+- `src/app/api/g/[slug]/incidents/[id]/route.ts` — GET estado del incident (visibility=guest-safe)
+- `src/app/g/[slug]/incidents/[id]/page.tsx` — página pública read-only de estado del reporte
+- `src/lib/services/incident-from-guest.service.ts` — crea Incident con `origin: 'guest_guide'`, `reporterType: 'guest'`, link opcional a `Space`/`Amenity`/`System`
+- `taxonomies/incident_categories.json` — categorías editables
+- `src/lib/services/incident-notification.service.ts` — wrapper del provider de email (no crear si 12B ya lo tiene)
+
+**Archivos a modificar**:
+- `prisma/schema.prisma` — `Incident` existe; añadir `origin String @default("internal")`, `reporterType String @default("host")`, `guestContactOptional String?` (opt-in email/whatsapp del huésped para seguimiento)
+- `src/components/public-guide/guide-renderer.tsx` (de 10E) — montar `<IssueReporter>` como overlay + prop `attachedItemId` contextual
+- `src/app/properties/[propertyId]/incidents/page.tsx` — filtro por `origin: 'guest_guide'`, badge nuevo si hay reportes sin ver
+- `src/lib/visibility.ts` — regla: un Incident con `origin: 'guest_guide'` es visible al reporter (guest) solo sobre campos `{ status, createdAt, resolvedAt, category }`, nunca sobre notas internas del host
+
+**Tests**:
+- `src/test/guest-incident-create.test.ts` — POST desde slug guest crea Incident con origin correcto, enlaza a space si `spaceId` en body
+- `src/test/guest-incident-visibility.test.ts` — GET `/api/g/:slug/incidents/:id` nunca retorna `internalNotes` aunque el huésped las pida
+- `src/test/guest-incident-rate-limit.test.ts` — >5 reportes/hora desde mismo slug → 429 (spam guard)
+- `src/test/incident-notification.test.ts` — crear incident desde guest dispara email al host (mock provider)
+
+**Criterio de done**: huésped puede reportar "wifi no funciona en salón" en <30 seg, adjuntar foto, recibir confirmación con track URL. Host recibe notificación + ve reporte en panel con contexto (space, timestamp, foto).
+
+**Dependencias**: 10B (UploadDropzone), 10E (renderer para montar el overlay), ideal 12B (scheduler/email provider estabilizado, aunque no obligatorio).
+
+**Preparación**:
+- **Contexto a leer**:
+  - [GUEST_GUIDE_SPEC.md:L236-L262](research/GUEST_GUIDE_SPEC.md) — métricas + issue reporting
+  - `prisma/schema.prisma` — modelo `Incident` actual
+  - `src/app/properties/[propertyId]/incidents/` — UI existente del host
+  - `src/lib/visibility.ts` — patrón de filtrado por audiencia
+  - Renderer de 10E (para montaje del overlay)
+  - UploadDropzone de 10B (reutilización)
+- **Docs a actualizar al terminar**:
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` o `LOCAL_GUIDE.md` § "Issue reporting"
+  - `docs/API_ROUTES.md` — `POST /api/g/:slug/incidents` + `GET /api/g/:slug/incidents/:id`
+  - `docs/SECURITY_AND_AUDIT.md` § "Guest-originated writes" — rate limit + visibility del Incident
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `incident_categories.json`
+- **Skills/tools específicos**:
+  - **`/firecrawl-search`** antes: "Breezeway guest reporting flow UX 2026", benchmarks Hostfully/Guesty de issue-reporting para huéspedes.
+  - **Agent code-architect** — decidir provider de email (Resend vs Postmark vs reutilizar lo de 12B) si no está cerrado en Fase -1.
+  - **`/playwright-cli`** al final: flujo completo guest reporta → host ve → marca resolved → guest ve "resuelto".
 
 ---
 
@@ -1077,38 +1515,46 @@ Complementa el Protocolo (§2). Antes de merge:
 ## 5. Dependencias entre fases
 
 ```
-Fase 8 (independiente, cheap) ─────────────────────────────┐
-  8A Completeness to JSON                                  │
-  8B Field-type registry                                   │
-  8C Docs/memory sync                                      ▼
-                                           Fase 9 (independiente una vez 8 hecho)
-                                             9A Rendering engine
-                                                 ▼
-                                             9B Markdown/HTML output
-                                                 ▼
-Fase 10 (paralelo con 9)                     9C Publish workflow
-  10A S3 storage ──► 10B Gallery                ▼
-           ▼                                  9D Shareable link
-      10C Media in guide ◄─────────────────────┘
-           ▼
-      10D React renderer (guía visual, TOC, media, mapas)
-                       ▼
-                  Fase 11 (requiere 9 + 10)
-                    11A Knowledge autoextract
-                        ▼
-                    11B Retrieval pipeline
-                        ▼
-                    11C Escalation
-                        ▼
-                    11D Evals
-                        ▼
-                    11E Semantic search (guía pública)
+Fase 8 ✅ (independiente, cheap)
+  8A Completeness to JSON
+  8B Field-type registry
+  8C Docs/memory sync
+
+Fase 9 ✅ (independiente una vez 8 hecho)
+  9A Rendering engine → 9B Markdown/HTML → 9C Publish workflow → 9D Shareable link
+
+Fase 10 (paralelo con 9 en 10A/B/C; secuencial desde 10D)
+  10A ✅ R2 storage → 10B ✅ Per-entity gallery → 10C Media in guide
+                                                    ▼
+                                        10D Media proxy (/g/:slug/media/:assetId/:variant)
+                                                    ▼
+                                        10E React renderer (journey IA + brand theming + WCAG 2.2 AA)
+                                                    ▼
+                                        10F Hero + quick-actions (copy-wifi/call/whatsapp/maps)
+                                                    ▼
+                                        10G Client search (Fuse.js, <20ms p95)
+                                                    ▼
+                                        10H PWA (manual SW + 3-tier offline cache)
+
+Fase 11 (requiere 10E para montar UI y 9D para embeddings consistentes)
+  11A Knowledge autoextract (schema AI completo)
+      ▼
+  11B Knowledge i18n (locale hard filter)
+      ▼
+  11C Retrieval pipeline (hybrid BM25+vector + Cohere Rerank + contextual prefix)
+      ▼
+  11D Escalation ─┐
+  11E Evals ◄─────┤ (11E depende de 11C + 11D)
+      ▼
+  11F Semantic search en guía pública (capa 2 de Fuse 10G)
 
 Fase 12 (requiere 11A mínimo para resolver variables con knowledge)
-  12A Variables ──► 12B Automations ──► 12C Starter packs
+  12A Variables → 12B Automations → 12C Starter packs
 
-Fase 13 (independiente post-10, 13B reusa scheduler de 12B)
-  13A POIs ──► 13B Events ──► 13C Maps
+Fase 13 (independiente post-10E; 13B reusa scheduler de 12B; 13D reusa 10B + 10E)
+  13A POIs → 13B Events → 13C Maps
+                            ▼
+                          13D Issue reporting
 
 Fase 14 (requiere estabilidad de 9-11)
   14A Mappings audit ──► 14B Airbnb export
@@ -1134,25 +1580,29 @@ Fase 14 (requiere estabilidad de 9-11)
 
 ## 7. Timeline estimado (sin comprometer fechas)
 
-- Fase 8: 3 PRs paralelizables → 2-3 días
-- Fase 9: secuencial (9A→9B→9C→9D) → 2-3 semanas
-- Fase 10: 10A→10B→10C→10D secuencial, paralelizable parcial con 9B+
-- Fase 11: 11A→11B→11C→11D→11E secuencial → 4-5 semanas
-- Fase 12: paralelizable 12A independiente, 12B→12C secuencial → 1-2 semanas
-- Fase 13: 3 PRs paralelizables → 1-2 semanas
+- Fase 8 ✅: 3 PRs → completada
+- Fase 9 ✅: 4 PRs → completada
+- Fase 10: 8 PRs. 10A/B ✅ (merged). 10C paralelo con 9; 10D→10E→10F→10G→10H secuencial. Resto de la fase: 2-3 semanas
+- Fase 11: 6 PRs secuenciales (11A→11B→11C→{11D,11E}→11F) → 4-5 semanas. 11C es la rama más costosa (providers, tuning, evals iniciales)
+- Fase 12: 12A independiente, 12B→12C secuencial → 1-2 semanas
+- Fase 13: 4 PRs; 13A/B/C paralelizables, 13D depende de 10E → 2 semanas
 - Fase 14: depende de decisión estratégica; 4 PRs secuenciales → 6-8 semanas
 
-**Total**: ~24 PRs. Orden óptimo: 8 primero (desbloquea todo), luego 9+10 en paralelo, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda.
+**Total plan**: 32 ramas (8 ✅ completadas, 24 pendientes). Orden óptimo: terminar 10 (renderer desbloquea 11F + 13D), 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica.
 
 ---
 
 ## 8. Decisiones abiertas (confirmar antes de empezar cada fase)
 
-1. **Provider de storage para media (Fase 10)**: S3 vs Cloudflare R2 vs Supabase storage. Decidir antes de 10A.
-2. **Provider LLM + embeddings (Fase 11B)**: default Claude Sonnet 4.6 + Voyage embeddings, salvo preferencia distinta.
-3. **Scheduler para messaging automations (Fase 12B)**: cron simple (Vercel cron) vs queue (BullMQ). Depende de volumen esperado.
-4. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
-5. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
+1. ~~**Provider de storage para media (Fase 10)**~~: ✅ Cloudflare R2 (decidido en 10A).
+2. **Service Worker strategy (Fase 10H)**: SW manual propio (decidido en Fase -1 de 10H) vs `next-pwa`. Confirmar versionado del SW (single bumped version vs per-asset hash) antes de 10H.
+3. **Reranker provider (Fase 11C)**: Cohere Rerank 3 `rerank-multilingual-v3.0` (default Fase -1) vs Voyage Rerank. Confirmar antes de 11C según pricing actual + latencia p95.
+4. **Embeddings provider (Fase 11C)**: Voyage `voyage-3-lite` (default) vs OpenAI `text-embedding-3-small`. Decidir antes de 11C.
+5. **i18n fallback policy (Fase 11B)**: locale missing → mostrar en `defaultLocale` con nota visible (default) vs auto-translate con LLM (diferido a FUTURE). Confirmar.
+6. **Scheduler para messaging automations (Fase 12B)**: cron simple (Vercel cron) vs queue (BullMQ). Depende de volumen esperado.
+7. **Email provider para issue-reporting (Fase 13D)**: reusar lo de 12B si existe vs Resend vs Postmark. Decidir antes de 13D.
+8. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
+9. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
 
 ---
 

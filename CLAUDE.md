@@ -47,7 +47,7 @@ vitest run src/test/config-driven.test.ts  # Single test file
 7. `docs/API_ROUTES.md`
 8. `docs/SECURITY_AND_AUDIT.md`
 9. `docs/QA_AND_RELEASE.md`
-10. `docs/ROADMAP.md` + `docs/MASTER_PLAN_V2.md` (fase activa)
+10. `docs/HANDOFF.md` (quickref de sesión — leer primero al arrancar) + `docs/ROADMAP.md` + `docs/MASTER_PLAN_V2.md` (fase activa)
 11. `docs/FEATURES/*.md` (según la fase)
 12. `taxonomies/*.json`
 13. skill de la fase activa
@@ -65,6 +65,14 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - no saltar de fase sin validación explícita
 - arquitectura config-driven: taxonomías, campos, dependencias, media y renderizado viven en configuración centralizada (`src/config/` y `taxonomies/`), no hardcodeados en componentes React
 - añadir amenity, policy, access method o sección = editar config/taxonomía, no tocar UI
+
+## Protocolo de Acción:
+
+- Analizar: Lee la solicitud y desglosa los requisitos.
+- Evaluar certeza: ¿Entiendo el 90% o más de lo que se debe hacer?
+- Si es < 90%: Plantea preguntas sobre las partes ambiguas. NO IMPLEMENTES.
+- Si es >= 90%: Procede con la implementación.
+
 
 ## Flujo de ramas (MASTER_PLAN_V2)
 
