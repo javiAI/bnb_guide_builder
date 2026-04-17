@@ -39,6 +39,12 @@ export type AmenityDestination =
   | "moved_to_property_attribute"
   | "moved_to_guide_content";
 
+/** Guest journey stage (Rama 10E). Declared on amenity/policy/access items so
+ * resolvers can route them to the matching guide section (Llegada / Estancia /
+ * Salida / Ayuda). Only `essential` journeyTag items are cloned into the
+ * `gs.essentials` aggregator. */
+export type TaxonomyJourneyStage = "arrival" | "stay" | "checkout" | "help";
+
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
   id: string;
@@ -66,6 +72,9 @@ export interface TaxonomyItem {
   // Bed types
   sleepingCapacity?: number;
   widthCm?: number;
+  // Guest journey routing (Rama 10E)
+  journeyStage?: TaxonomyJourneyStage;
+  journeyTags?: string[];
 }
 
 // Space type item — extends TaxonomyItem with space-specific metadata

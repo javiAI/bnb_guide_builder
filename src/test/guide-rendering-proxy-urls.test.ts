@@ -94,7 +94,7 @@ describe("composeGuide — media URL invariants", () => {
   it("composeGuide accepts null slug — callers without a published slug", async () => {
     // Internal previews and API callers for unpublished properties pass null.
     const tree = await composeGuide("p1", "internal", null);
-    expect(tree.sections).toHaveLength(7);
+    expect(tree.sections).toHaveLength(9);
   });
 });
 

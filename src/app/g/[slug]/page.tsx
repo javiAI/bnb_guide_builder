@@ -2,13 +2,22 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
-import { renderHtml } from "@/lib/renderers/guide-html";
-import type { GuideTree } from "@/lib/types/guide-tree";
+import {
+  GUIDE_TREE_SCHEMA_VERSION,
+  type GuideTree,
+} from "@/lib/types/guide-tree";
+import { GuideRenderer } from "@/components/public-guide/guide-renderer";
 import { GuideNotAvailable } from "./not-available";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
+
+// Disable ISR revalidation timer; cache invalidation happens via
+// `revalidateTag(guideCacheTag(slug))` from `publishGuideVersionAction` /
+// `unpublishVersionAction` / `rollbackToVersionAction`. Time-based revalidation
+// would mask stale-after-publish UX bugs instead of surfacing them.
+export const revalidate = false;
 
 // cache() deduplicates across generateMetadata + page within a single render pass
 const resolveGuide = cache(async (slug: string): Promise<{
@@ -27,9 +36,20 @@ const resolveGuide = cache(async (slug: string): Promise<{
   const published = await prisma.guideVersion.findFirst({
     where: { propertyId: property.id, status: "published" },
     orderBy: { version: "desc" },
-    select: { treeJson: true },
+    select: { treeJson: true, treeSchemaVersion: true },
   });
   if (!published?.treeJson) return { property, tree: null };
+
+  // Log once per request when rendering a pre-v2 snapshot. The React renderer
+  // tolerates the older shape (all new fields are optional on `GuideSection`/
+  // `GuideItem`), but the log lets us spot properties that haven't been
+  // re-published since the 10E schema bump and nudge them before shipping
+  // journey-dependent features that *do* require v2.
+  if (published.treeSchemaVersion < GUIDE_TREE_SCHEMA_VERSION) {
+    console.info(
+      `[public-guide] slug=${slug} treeSchemaVersion=${published.treeSchemaVersion} (< ${GUIDE_TREE_SCHEMA_VERSION}) — snapshot outdated, re-publish to adopt new shape.`,
+    );
+  }
 
   const fullTree = published.treeJson as unknown as GuideTree;
 
@@ -77,22 +97,5 @@ export default async function PublicGuidePage({ params }: Props) {
     return <GuideNotAvailable />;
   }
 
-  const html = renderHtml(tree);
-
-  return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <header className="mb-8 border-b border-[var(--border)] pb-4">
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">
-          {property.propertyNickname}
-        </h1>
-        <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
-          Guía del huésped
-        </p>
-      </header>
-      <article
-        className="guide-html-output prose max-w-none"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    </div>
-  );
+  return <GuideRenderer tree={tree} propertyTitle={property.propertyNickname} />;
 }

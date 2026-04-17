@@ -47,7 +47,7 @@ beforeEach(() => {
   fn("contact", "findMany").mockResolvedValue([
     {
       id: "c1",
-      roleKey: "contact.host",
+      roleKey: "ct.host",
       displayName: "Ana",
       phone: "600000000",
       email: null,
@@ -73,14 +73,19 @@ describe("renderMarkdown — snapshot by audience", () => {
     const tree = await composeGuide("p1", "guest", null);
     const md = renderMarkdown(tree);
     expect(md).toMatchInlineSnapshot(`
-      "## Llegada
+      "## Esenciales
       - **Check-in**: 15:00 – 20:00
-      - **Check-out**: 11:00
+
+      ## Llegada
+      - **Check-in**: 15:00 – 20:00
 
       ## Espacios
       - **Dormitorio principal**: Dormitorio
         - Notas: Vistas al patio
         - Cama doble: 1
+
+      ## Cómo usar
+      _Sin elementos._
 
       ## Equipamiento
       _Sin elementos._
@@ -88,15 +93,15 @@ describe("renderMarkdown — snapshot by audience", () => {
       ## Normas de la casa
       _Sin elementos._
 
-      ## Contactos
-      - **Ana**: contact.host
-        - Teléfono: 600000000
+      ## Salida
+      - **Hora de check-out**: 11:00
 
       ## Guía local
       _Sin elementos._
 
-      ## Emergencias
-      _Sin elementos._
+      ## Ayuda y emergencias
+      - **Ana**: ct.host
+        - Teléfono: 600000000
       "
     `);
   });

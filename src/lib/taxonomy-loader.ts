@@ -185,11 +185,13 @@ export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
 // `guide-sections-coverage.test.ts` keeps this list and the service resolvers
 // in lockstep.
 export const GUIDE_RESOLVER_KEYS = [
+  "essentials",
   "arrival",
   "spaces",
+  "howto",
   "amenities",
   "rules",
-  "contacts",
+  "checkout",
   "local",
   "emergency",
 ] as const;
@@ -206,6 +208,14 @@ export type GuideSortBy = (typeof GUIDE_SORT_BY)[number];
 export const GUIDE_AUDIENCES = ["guest", "ai", "internal", "sensitive"] as const;
 export type GuideAudience = (typeof GUIDE_AUDIENCES)[number];
 
+export const GUIDE_JOURNEY_STAGES = [
+  "arrival",
+  "stay",
+  "checkout",
+  "help",
+] as const;
+export type GuideJourneyStage = (typeof GUIDE_JOURNEY_STAGES)[number];
+
 const GuideSectionConfigSchema = z
   .object({
     id: z.string().min(1),
@@ -214,10 +224,23 @@ const GuideSectionConfigSchema = z
     maxVisibility: z.enum(GUIDE_AUDIENCES),
     sortBy: z.enum(GUIDE_SORT_BY),
     resolverKey: z.enum(GUIDE_RESOLVER_KEYS),
-    emptyCtaDeepLink: z.string().min(1),
+    emptyCtaDeepLink: z.string().min(1).nullable(),
     includesMedia: z.boolean(),
+    journeyStage: z.enum(GUIDE_JOURNEY_STAGES).optional(),
+    isHero: z.boolean().optional(),
+    isAggregator: z.boolean().optional(),
+    sourceResolverKeys: z.array(z.enum(GUIDE_RESOLVER_KEYS)).optional(),
+    emptyCopy: z.string().min(1).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (s) => !s.isAggregator || (s.sourceResolverKeys?.length ?? 0) > 0,
+    {
+      message:
+        "Aggregator sections must declare `sourceResolverKeys` with at least one resolver key.",
+      path: ["sourceResolverKeys"],
+    },
+  );
 
 const GuideSectionsFileSchema = z
   .object({

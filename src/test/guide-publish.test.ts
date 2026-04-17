@@ -138,10 +138,10 @@ describe("GuideVersion snapshot contract", () => {
       generatedAt: "2026-04-16T10:00:00.000Z",
       sections: [
         {
-          id: "contacts",
-          label: "Contactos",
+          id: "emergency",
+          label: "Ayuda y emergencias",
           order: 5,
-          resolverKey: "contacts",
+          resolverKey: "emergency",
           sortBy: "explicit_order",
           emptyCtaDeepLink: "/properties/prop-1/contacts",
           maxVisibility: "internal",
