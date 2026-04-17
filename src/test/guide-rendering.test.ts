@@ -11,8 +11,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { composeGuide, __test__ } from "@/lib/services/guide-rendering.service";
-const { filterByAudience } = __test__;
+import {
+  composeGuide,
+  filterByAudience,
+} from "@/lib/services/guide-rendering.service";
 import type { GuideItem } from "@/lib/types/guide-tree";
 
 const fn = <K extends keyof typeof prisma>(table: K, method: "findUnique" | "findMany") =>

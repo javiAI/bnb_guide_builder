@@ -2,17 +2,12 @@ import type { FC } from "react";
 import type { GuideResolverKey, GuideSection } from "@/lib/types/guide-tree";
 import { SectionCard } from "./section-card";
 import { GuideEmergencySection } from "./guide-emergency-section";
-import { GuideLocalSection } from "./guide-local-section";
 
 export type PublicSectionComponent = FC<{ section: GuideSection }>;
 
-/**
- * Maps a section's `resolverKey` to the component that should render it on
- * `/g/:slug`. Add a new resolver key → register its component here.
- * The default `SectionCard` covers standard "list of items + empty state".
- * Specialized renderers only exist where the UX needs more than a list
- * (emergency = tappable phone/email, local = map surface in 13D).
- */
+/** Maps a section's `resolverKey` to its renderer. The default `SectionCard`
+ * covers "list of items + empty state"; specialized entries only exist when
+ * the UX needs more (emergency = tappable phone/email). */
 export const PUBLIC_GUIDE_SECTION_REGISTRY: Record<
   GuideResolverKey,
   PublicSectionComponent
@@ -24,7 +19,7 @@ export const PUBLIC_GUIDE_SECTION_REGISTRY: Record<
   amenities: SectionCard,
   rules: SectionCard,
   checkout: SectionCard,
-  local: GuideLocalSection,
+  local: SectionCard,
   emergency: GuideEmergencySection,
 };
 

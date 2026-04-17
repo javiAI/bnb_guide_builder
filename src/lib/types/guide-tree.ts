@@ -39,6 +39,16 @@ export interface GuideItemField {
   visibility: GuideAudience;
 }
 
+/** Field labels for contact/emergency items. The resolver emits these as
+ * GuideItemField labels and `GuideEmergencySection` matches on them to promote
+ * phone/email to `tel:` / `mailto:` links. Keep in one place so the two sides
+ * can't drift apart silently. */
+export const EMERGENCY_FIELD_LABELS = {
+  phone: "Teléfono",
+  email: "Email",
+  notes: "Notas",
+} as const;
+
 export interface GuideItem {
   /** Stable id — DB row id for entity-backed items, synthetic for derived ones. */
   id: string;

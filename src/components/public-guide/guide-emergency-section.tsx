@@ -1,4 +1,5 @@
 import type { GuideSection } from "@/lib/types/guide-tree";
+import { EMERGENCY_FIELD_LABELS } from "@/lib/types/guide-tree";
 import { GuideEmptyState } from "./guide-empty-state";
 
 interface Props {
@@ -26,9 +27,9 @@ export function GuideEmergencySection({ section }: Props) {
       ) : (
         <div className="guide-items">
           {section.items.map((item) => {
-            const phone = item.fields.find((f) => f.label === "Teléfono")?.value;
-            const email = item.fields.find((f) => f.label === "Email")?.value;
-            const notes = item.fields.find((f) => f.label === "Notas")?.value;
+            const phone = item.fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.phone)?.value;
+            const email = item.fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.email)?.value;
+            const notes = item.fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.notes)?.value;
             return (
               <article key={item.id} className="guide-item" id={`item-${item.id}`}>
                 <h3 className="guide-item__label">{item.label}</h3>
@@ -46,7 +47,7 @@ export function GuideEmergencySection({ section }: Props) {
                       {email}
                     </a>
                   )}
-                  {notes && <p style={{ margin: 0 }}>{notes}</p>}
+                  {notes && <p className="guide-contact__notes">{notes}</p>}
                 </div>
               </article>
             );

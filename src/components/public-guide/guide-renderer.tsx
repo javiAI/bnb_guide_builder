@@ -10,20 +10,11 @@ interface Props {
   propertyTitle: string;
 }
 
-/**
- * Top-level React server component for `/g/:slug`. Consumes a filtered
- * `GuideTree` and delegates each section to the registered component. Brand
- * palette resolves from `tree.brandPaletteKey` (curated set in
- * `src/config/brand-palette.ts`) and is injected as CSS custom properties
- * scoped to `.guide-root` — avoids the FOUC of a client-side theme script.
- *
- * Sections flagged `isAggregator` (currently only `gs.essentials`) are
- * excluded from the TOC: they clone items from other sections, so linking
- * both would double-count navigation entries.
- */
 export function GuideRenderer({ tree, propertyTitle }: Props) {
   const pair = getBrandPair(tree.brandPaletteKey ?? null);
 
+  // Aggregator sections clone items from other sections — listing both in the
+  // TOC would double-count navigation entries to the same content.
   const tocEntries: GuideTocEntry[] = tree.sections
     .filter((s) => !s.isAggregator)
     .map((s) => ({ id: s.id, label: s.label }));

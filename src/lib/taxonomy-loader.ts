@@ -216,6 +216,28 @@ export const GUIDE_JOURNEY_STAGES = [
 ] as const;
 export type GuideJourneyStage = (typeof GUIDE_JOURNEY_STAGES)[number];
 
+const GUIDE_JOURNEY_STAGE_LABELS: Record<GuideJourneyStage, string> = {
+  arrival: "Llegada",
+  stay: "Estancia",
+  checkout: "Salida",
+  help: "Ayuda",
+};
+
+export function getJourneyStageLabel(stage: GuideJourneyStage): string {
+  return GUIDE_JOURNEY_STAGE_LABELS[stage];
+}
+
+/** Contact role keys that represent the host / co-host. Used by the help
+ * section to promote host contacts alongside emergency-flagged ones. */
+const HOST_CONTACT_ROLE_KEYS: ReadonlySet<string> = new Set([
+  "ct.host",
+  "ct.cohost",
+]);
+
+export function isHostRole(roleKey: string): boolean {
+  return HOST_CONTACT_ROLE_KEYS.has(roleKey);
+}
+
 const GuideSectionConfigSchema = z
   .object({
     id: z.string().min(1),

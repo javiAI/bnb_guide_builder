@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@prisma/client";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { ensurePropertySlug } from "@/lib/services/guide-slug.service";
 import { isPrismaUniqueViolation } from "@/lib/utils";
@@ -11,13 +11,6 @@ import {
   type GuideTree,
 } from "@/lib/types/guide-tree";
 import type { ActionResult } from "@/lib/types/action-result";
-
-/** Cache tag used by `app/g/[slug]/page.tsx` (via `unstable_cache` or
- * `fetch({ next: { tags: [...] }})`) so publishing flows can invalidate the
- * ISR-cached public page without path-guessing. */
-export function guideCacheTag(publicSlug: string): string {
-  return `guide-${publicSlug}`;
-}
 
 async function revalidatePublishingPaths(
   propertyId: string,
@@ -35,7 +28,6 @@ async function revalidatePublishingPaths(
   }
   if (slug) {
     revalidatePath(`/g/${slug}`);
-    revalidateTag(guideCacheTag(slug));
   }
 }
 

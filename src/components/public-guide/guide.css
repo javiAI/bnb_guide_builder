@@ -206,6 +206,11 @@
   color: var(--foreground);
 }
 
+.guide-item__field-value {
+  margin: 0;
+  display: inline;
+}
+
 .guide-item__children {
   margin: 0.75rem 0 0;
   padding: 0 0 0 1.25rem;
@@ -224,6 +229,14 @@
   list-style: none;
 }
 
+.guide-gallery__thumb-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: block;
+  width: 100%;
+}
+
 .guide-gallery__thumb {
   display: block;
   width: 100%;
@@ -235,7 +248,7 @@
   background: var(--color-neutral-100);
 }
 
-.guide-gallery__thumb:focus-visible {
+.guide-gallery__thumb-btn:focus-visible .guide-gallery__thumb {
   outline: 2px solid var(--guide-brand);
   outline-offset: 2px;
 }
@@ -250,6 +263,10 @@
   color: var(--guide-brand);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.guide-contact__notes {
+  margin: 0;
 }
 
 .guide-deprecated {

@@ -5,9 +5,6 @@ interface Props {
   item: GuideItemType;
 }
 
-/** Generic GuideItem renderer: label, value, fields, media gallery, and nested
- * children (used by the howto resolver for runbook steps). Specialized
- * section components (emergency, essentials) can wrap or compose this. */
 export function GuideItem({ item }: Props) {
   return (
     <article className="guide-item" id={`item-${item.id}`}>
@@ -25,7 +22,7 @@ export function GuideItem({ item }: Props) {
           {item.fields.map((f, i) => (
             <div key={`${item.id}-f-${i}`}>
               <dt className="guide-item__field-label">{f.label}</dt>
-              <dd style={{ margin: 0, display: "inline" }}>{f.value}</dd>
+              <dd className="guide-item__field-value">{f.value}</dd>
             </div>
           ))}
         </dl>

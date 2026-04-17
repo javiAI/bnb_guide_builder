@@ -1,17 +1,11 @@
 import type { GuideSection } from "@/lib/types/guide-tree";
+import { getJourneyStageLabel } from "@/lib/taxonomy-loader";
 import { GuideItem } from "./guide-item";
 import { GuideEmptyState } from "./guide-empty-state";
 
 interface Props {
   section: GuideSection;
 }
-
-const STAGE_LABEL: Record<NonNullable<GuideSection["journeyStage"]>, string> = {
-  arrival: "Llegada",
-  stay: "Estancia",
-  checkout: "Salida",
-  help: "Ayuda",
-};
 
 /**
  * Default section renderer. Specialized renderers (essentials, emergency,
@@ -32,7 +26,7 @@ export function SectionCard({ section }: Props) {
         </h2>
         {section.journeyStage && (
           <span className="guide-section__stage">
-            {STAGE_LABEL[section.journeyStage]}
+            {getJourneyStageLabel(section.journeyStage)}
           </span>
         )}
       </header>

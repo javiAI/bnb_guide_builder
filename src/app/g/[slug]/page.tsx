@@ -13,10 +13,9 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// Disable ISR revalidation timer; cache invalidation happens via
-// `revalidateTag(guideCacheTag(slug))` from `publishGuideVersionAction` /
-// `unpublishVersionAction` / `rollbackToVersionAction`. Time-based revalidation
-// would mask stale-after-publish UX bugs instead of surfacing them.
+// Disable ISR revalidation timer; publish/unpublish/rollback call
+// `revalidatePath(/g/${slug})`. A time-based revalidate would mask
+// stale-after-publish UX bugs instead of surfacing them.
 export const revalidate = false;
 
 // cache() deduplicates across generateMetadata + page within a single render pass

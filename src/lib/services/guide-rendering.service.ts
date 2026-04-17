@@ -29,7 +29,10 @@ import type {
   GuideSortBy,
   GuideTree,
 } from "@/lib/types/guide-tree";
-import { GUIDE_TREE_SCHEMA_VERSION } from "@/lib/types/guide-tree";
+import {
+  GUIDE_TREE_SCHEMA_VERSION,
+  EMERGENCY_FIELD_LABELS,
+} from "@/lib/types/guide-tree";
 import {
   findAmenityItem,
   findSubtype,
@@ -38,6 +41,7 @@ import {
   bedTypes,
   getGuideSectionConfigs,
   getSpaceTypeItem,
+  isHostRole,
   isVisibleForAudience,
   policyTaxonomy,
   spaceTypes,
@@ -845,21 +849,13 @@ function resolveCheckout(ctx: GuideContext): GuideItem[] {
   return items;
 }
 
-/** Host / cohost contacts that are guest-visible feed the help section
- * alongside emergency-flagged contacts. Items with `emergencyAvailable=true`
- * rank first; within each group, contacts preserve their `sortOrder`.
- *
- * Rama 10E fused the old `gs.contacts` section into `gs.emergency` (now
- * "Ayuda y emergencias") so guests see one coherent help block instead of two
- * siblings competing for attention. */
-const HOST_ROLE_KEYS: ReadonlySet<string> = new Set([
-  "ct.host",
-  "ct.cohost",
-]);
-
+/** Rama 10E fused the old `gs.contacts` section into `gs.emergency` (now
+ * "Ayuda y emergencias"). Host/cohost contacts feed the help section
+ * alongside emergency-flagged ones, with `emergencyAvailable=true` ranked
+ * first. */
 function resolveEmergency(ctx: GuideContext): GuideItem[] {
   const relevant = ctx.contacts.filter(
-    (c) => c.emergencyAvailable || HOST_ROLE_KEYS.has(c.roleKey),
+    (c) => c.emergencyAvailable || isHostRole(c.roleKey),
   );
   return relevant
     .sort((a, b) => {
@@ -875,10 +871,12 @@ function contactToGuideItem(
   c: GuideContext["contacts"][number],
 ): GuideItem {
   const fields: GuideItemField[] = [];
-  if (c.phone) fields.push({ label: "Teléfono", value: c.phone, visibility: "guest" });
-  if (c.email) fields.push({ label: "Email", value: c.email, visibility: "guest" });
+  if (c.phone)
+    fields.push({ label: EMERGENCY_FIELD_LABELS.phone, value: c.phone, visibility: "guest" });
+  if (c.email)
+    fields.push({ label: EMERGENCY_FIELD_LABELS.email, value: c.email, visibility: "guest" });
   if (c.guestVisibleNotes)
-    fields.push({ label: "Notas", value: c.guestVisibleNotes, visibility: "guest" });
+    fields.push({ label: EMERGENCY_FIELD_LABELS.notes, value: c.guestVisibleNotes, visibility: "guest" });
   if (c.internalNotes)
     fields.push({
       label: "Notas internas",
@@ -1016,24 +1014,15 @@ export async function composeGuide(
     leafItemsByKey.set(cfg.resolverKey, resolver(ctx));
   }
 
-  // Pass 2 — aggregators, after all leaves resolved so they can read items
-  // from multiple sources.
-  const aggregatorItemsByKey = new Map<GuideResolverKey, GuideItem[]>();
-  for (const cfg of SORTED_SECTION_CONFIGS) {
-    const aggregator = AGGREGATOR_RESOLVERS[cfg.resolverKey];
-    if (!aggregator) continue;
-    aggregatorItemsByKey.set(
-      cfg.resolverKey,
-      aggregator(ctx, leafItemsByKey, cfg.sourceResolverKeys ?? []),
-    );
-  }
-
+  // Pass 2 — assemble sections. Aggregators run inline here (they only need
+  // `leafItemsByKey`, fully populated by pass 1) so we avoid a second
+  // temporary map just to thread the items into the section struct.
   const sections: GuideSection[] = [];
   for (const cfg of SORTED_SECTION_CONFIGS) {
-    const rawItems =
-      leafItemsByKey.get(cfg.resolverKey) ??
-      aggregatorItemsByKey.get(cfg.resolverKey) ??
-      [];
+    const aggregator = AGGREGATOR_RESOLVERS[cfg.resolverKey];
+    const rawItems = aggregator
+      ? aggregator(ctx, leafItemsByKey, cfg.sourceResolverKeys ?? [])
+      : leafItemsByKey.get(cfg.resolverKey) ?? [];
     const sorted = applySort(rawItems, cfg.sortBy, cfg.resolverKey);
     const items = filterByAudience(sorted, audience);
     // Host-panel deep links are not exposed to guest audiences (see
@@ -1079,5 +1068,4 @@ export const __test__ = {
   LEAF_RESOLVERS,
   AGGREGATOR_RESOLVERS,
   loadGuideContext,
-  filterByAudience,
 };
