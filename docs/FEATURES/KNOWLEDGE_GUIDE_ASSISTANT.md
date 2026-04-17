@@ -39,9 +39,24 @@ Publicar congela el `GuideTree` live en un `GuideVersion.treeJson` inmutable:
 - **Snapshot único**: audience=internal captura todo; el filtrado por audience aplica al renderizar, no al publicar.
 - Los modelos `GuideSection` y `GuideSectionItem` fueron deprecados — `treeJson` es la única fuente de verdad para versiones publicadas.
 
+### Presentation layer (Rama 10F)
+
+A partir de 10F, el pipeline canónico de composición es:
+
+```text
+composeGuide(propertyId, audience, publicSlug)
+  → filterByAudience(tree, audience)
+  → normalizeGuideForPresentation(tree, audience)
+  → render (json | md | html | pdf | React)
+```
+
+`normalizeGuideForPresentation` es un paso **terminal y puro**: convierte el modelo interno (`value`, `fields`, enums, JSON crudo) en shape de presentación (`displayValue`, `displayFields`, `presentationType`) aplicando `presenter-registry.ts`. Los renderers (markdown, HTML, PDF, React) consumen `displayValue` / `displayFields`; no conocen taxonomías. Sin este paso, raw JSON o enums internos pueden cruzar a `audience=guest`. Ver [ARCHITECTURE_OVERVIEW.md §13](../ARCHITECTURE_OVERVIEW.md) y [CONFIG_DRIVEN_SYSTEM.md §8](../CONFIG_DRIVEN_SYSTEM.md).
+
+`GUIDE_TREE_SCHEMA_VERSION = 3` a partir de 10F. Snapshots pre-v3 se normalizan al servir con log `snapshotPreV3`; no hay rewrite masivo.
+
 ### Output formats (Rama 9B)
 
-El `GuideTree` devuelto por `composeGuide(propertyId, audience)` (ver `src/lib/services/guide-rendering.service.ts`) se expone en cuatro formatos vía `GET /api/properties/:id/guide?audience&format`:
+El `GuideTree` devuelto por `composeGuide(propertyId, audience, publicSlug)` (ver `src/lib/services/guide-rendering.service.ts`) se expone en cuatro formatos vía `GET /api/properties/:id/guide?audience&format`:
 
 | Format | Content-Type | Renderer | Uso |
 |---|---|---|---|

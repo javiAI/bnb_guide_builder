@@ -129,6 +129,18 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - Media en `GuideTree` (Rama 10C): `GuideMedia` lleva `variants: { thumb, md, full }` — nunca `url` singular. Renderers inline consumen `variants.md` con `INLINE_MEDIA_CAP = 3` por item (markdown, HTML); galería completa con thumb/full queda para 10E. Fingerprints de diff usan `assetId`, no URL — evita invalidar diffs cuando cambia el slug. El ETag del media proxy depende de `contentHash + variant`, no de `assetId`. `loadEntityMedia` es una sola query `mediaAssignment.findMany` con `OR` por entityType y filtro `mimeType startsWith "image/"` — añadir un nuevo `entityType` al scope de guide = extender la ref list en `loadGuideContext` + `MediaEntityType` en `guide-media.service.ts`, no tocar el resolver
 - `taxonomies/guide_sections.json` tiene flag `includesMedia: boolean` por sección. Secciones con `includesMedia:false` (rules, contacts, emergency, local) nunca contribuyen refs al batch loader — mantiene la query pequeña incluso en propiedades grandes. Flip a `true` solo cuando la sección tenga entidad propia con assignments y el resolver la propague (ej: local places en rama 13D)
 
+## Patrones — Guía pública (audience=guest)
+
+**Regla dura: `audience=guest` nunca ve el modelo interno.** Enums, JSON, claves de taxonomía (`rm.*`, `ct.*`, `am.*`), copy editorial del host ("Añade...", "Completa..."), labels internos ("Slot", "Propiedad", "Config JSON") son **bugs** si llegan al huésped.
+
+- Pipeline canónico (rama 10F): `composeGuide → filterByAudience → normalizeGuideForPresentation → render`. El normalizador es terminal y puro. El renderer consume `displayValue` / `displayFields`, **nunca** `value` / `fields` raw.
+- Humanización = presenter registry (`src/config/registries/presenter-registry.ts`). Añadir soporte al huésped para una nueva clave taxonómica = (1) `guestLabel`/`guestDescription`/`icon` en la taxonomía, (2) presenter registrado por clave o prefijo, (3) `presenter-coverage.test.ts` verde.
+- Empty states: nunca se muestra `section.emptyCopy` al huésped; usar `emptyCopyGuest` (neutro, no imperativo) o `hideWhenEmptyForGuest: true`. Si no hay dato, la tendencia es ocultar antes que explicar que falta.
+- `GuideItem` en audience guest lleva `presentationType`, `displayValue`, `displayFields`, `presentationWarnings`. El renderer que consuma `value` o `fields` directamente está mal — el normalizador es la única fuente de verdad de presentación.
+- Invariantes enforced por `src/test/guest-leak-invariants.test.ts` (no raw JSON, no enum leaks, no copy editorial de host en guest, no labels internos, no `presentationType: "raw"` visible). Antes de abrir PR que toque el renderer público o resolvers, estos tests deben pasar.
+- UI guest sigue las reglas de [docs/FEATURES/GUEST_GUIDE_UX.md](docs/FEATURES/GUEST_GUIDE_UX.md) — tipografía Inter 28/20/16/14/12, spacing 4/8/12/16/24/32/48, radii 8/10/12/20, cards `HeroCard`/`EssentialCard`/`StandardCard`/`WarningCard` (CVA), targets 44×44, contraste AA, axe-core 0 violations serias.
+- Stack obligatorio en UI guest: Radix UI primitives, lucide-react, CVA, tailwind-merge/clsx, fuse.js, yet-another-react-lightbox (lazy), date-fns, react-hook-form+zod solo en forms. **Prohibido** en guest: MUI, Ant Design, Chakra, `next-pwa`.
+
 ## Patrones de UI — Espacios
 
 - Botones de feature activos: estilo sólido `bg-[var(--color-primary-500)] text-white` — **no** `bg-primary-50 text-primary-700` (bajo contraste sobre surface-elevated)

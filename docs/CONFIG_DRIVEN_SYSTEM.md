@@ -137,6 +137,17 @@ Todos los targets consumen el **mismo modelo de dominio normalizado** (Knowledge
 
 API tipada sobre `media_requirements.json`. Los formularios, validaciones, previews y publishing checks usan la misma fuente.
 
+### 8. Presenter registry (`src/config/registries/presenter-registry.ts`, rama 10F)
+
+Frontera **modelo ↔ huésped**. Traduce `GuideItem` (modelo interno: enums, JSON, claves taxonómicas) a un shape de presentación consumible directamente por el renderer (`displayValue`, `displayFields`, `presentationType`, `presentationWarnings`).
+
+- Forma: `Map<taxonomyKey | presentationType, Presenter>`.
+- Fallback obligatorio: `generic-text` (escapa HTML, deja texto plano, emite warning `missing-presenter`).
+- Coverage mandatory: `taxonomies/policy_taxonomy.json`, `taxonomies/contact_roles.json`, `taxonomies/amenity_taxonomy.json` — `src/test/presenter-coverage.test.ts` falla si una key declarada no tiene presenter (y no está en allowlist explícita).
+- Un presenter jamás consulta DB ni muta input. Toma `(item, context)` → `{ displayValue, displayFields, presentationType, warnings[] }`.
+- Añadir soporte para una nueva taxonomía visible al huésped = (1) ampliar entries en la taxonomía con `guestLabel` / `guestDescription` / `icon`, (2) registrar presenter por `taxonomyKey` o por prefijo (`rm.*`, `ct.*`, `am.*`), (3) actualizar coverage allowlist si aplica.
+- El renderer consume **siempre** `displayValue` / `displayFields`, nunca `value` / `fields` raw. El normalizador (`normalizeGuideForPresentation`) es la única fuente de verdad de presentación.
+
 ---
 
 ## Guía: Cómo añadir un nuevo amenity
@@ -330,7 +341,8 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `review_reasons.json`
 - `contact_roles.json`
 - `completeness_rules.json` — pesos/umbrales del scoring de completitud. Parseada con Zod en el loader; reglas accesibles vía `getCompletenessRule(sectionKey)` (throw si la sección no existe).
-- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`. Parseada y validada con Zod en el loader; `loadGuideSections()` falla en boot si un `resolverKey` no está en `GUIDE_RESOLVER_KEYS` o si hay `id`/`resolverKey` duplicados. Los getters `getGuideSectionConfig(sectionId)` y `getGuideSectionByResolverKey(key)` devuelven `undefined` si la clave no existe.
+- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`, `includesMedia`, `isHero?`, `isAggregator?`, `sourceResolverKeys?`, `journeyStage?`, `emptyCopy?` (audience **internal**), `emptyCopyGuest?` (audience **guest**; añadido en 10F), `hideWhenEmptyForGuest?` (añadido en 10F). Parseada y validada con Zod en el loader; `loadGuideSections()` falla en boot si un `resolverKey` no está en `GUIDE_RESOLVER_KEYS` o si hay `id`/`resolverKey` duplicados. Los getters `getGuideSectionConfig(sectionId)` y `getGuideSectionByResolverKey(key)` devuelven `undefined` si la clave no existe.
+- `policy_taxonomy.json`, `contact_roles.json`, `amenity_taxonomy.json` — a partir de 10F cada entry **debe** declarar `guestLabel`, `guestDescription`, `icon`, `heroEligible`, `quickActionEligible`, `guestCriticality` (valores concretos — defaults Zod `heroEligible: false`, `guestCriticality: "normal"`). `src/test/presenter-coverage.test.ts` falla si una clave no tiene presenter registrado.
 
 ---
 
@@ -349,12 +361,17 @@ El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce u
 | Quitar sección entera | No (borrar entrada) | El test de cobertura detecta resolvers huérfanos |
 | Nuevo `VisibilityLevel` en `visibility_levels.json` | Sí (1 entrada en `src/lib/visibility.ts`) | `filterByAudience` delega en `canAudienceSee` de `visibility.ts`; añadir un nivel requiere actualizar `VISIBILITY_ORDER` allí |
 | Reordenar secciones | No | Campo `order` en `guide_sections.json` |
+| Humanizar una key taxonómica al huésped (rama 10F) | No código, sí config | Añadir `guestLabel`/`guestDescription`/`icon` en la taxonomía; registrar presenter por key o prefijo en `presenter-registry.ts`; `presenter-coverage.test.ts` falla si falta |
+| Añadir sección con empty state humano al huésped (10F) | No | `emptyCopyGuest` en `guide_sections.json`; `hideWhenEmptyForGuest: true` oculta en audience guest cuando vacía |
+| Subir `GUIDE_TREE_SCHEMA_VERSION` (10F pasa v2 → v3) | Sí (bump constante) | Renderer acepta snapshots pre-v3 con log `snapshotPreV3` + normalización al servir |
 
 **Invariantes garantizadas por tests**:
 
 - `guide-no-hardcoded-ids.test.ts`: el servicio no contiene comparaciones `=== "am.*"`, `=== "sp.*"`, `=== "sys.*"`, `=== "pol.*"`. Cero IDs hardcoded.
 - `guide-sections-coverage.test.ts`: toda sección declarada tiene resolver; todo resolver está declarado.
 - `guide-rendering-resilience.test.ts`: keys deprecadas, types desconocidos y entidades ausentes degradan a `GuideItem` marcado, nunca lanzan.
+- `guest-leak-invariants.test.ts` (10F): en `audience=guest`, enforce el set canónico de 5 invariantes documentado en [QA_AND_RELEASE.md §3 "Anti-leak gates"](QA_AND_RELEASE.md) — (1) no JSON crudo (no `{` / `[` / `"json":`), (2) no claves taxonómicas (regex `^[a-z]+(_[a-z]+)*\.[a-z_]+$`), (3) no `emptyCopy` editorial del host, (4) no labels de la deny-list (`"Slot"`, `"Propiedad"`, `"Config JSON"`...), (5) no items con `presentationType: "raw"` renderizados.
+- `presenter-coverage.test.ts` (10F): para cada key de `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` existe un presenter registrado o está en allowlist explícita.
 
 **Regla dura para futuras ramas**: cualquier feature que añada lógica de dominio al guide engine debe apoyarse en taxonomía y registry, no en switch statements sobre IDs.
 
