@@ -47,7 +47,11 @@ import type { SubtypeField } from "@/lib/types/taxonomy";
 import {
   type EntityMediaRef,
   loadEntityMedia,
+  mediaKey,
 } from "@/lib/services/guide-media.service";
+import type { MediaEntityType } from "@/lib/schemas/editor.schema";
+
+const PROPERTY_COVER_LABEL = "La casa";
 
 // ──────────────────────────────────────────────
 // Context — entities loaded once per compose()
@@ -56,9 +60,8 @@ import {
 interface GuideContext {
   propertyId: string;
   /**
-   * Public slug — required to build `/g/:slug/media/...` proxy URLs (10D).
+   * Public slug — required to build `/g/:slug/media/...` proxy URLs.
    * `null` when composing for internal/preview flows that never emit media URLs.
-   * Always `null` for resolvers that don't attach media; never hardcoded.
    */
   publicSlug: string | null;
   property: {
@@ -116,156 +119,164 @@ interface GuideContext {
     visibility: GuideAudience;
   }>;
   /**
-   * Media indexed by `{entityType}:{entityId}`. Populated by
-   * `loadEntityMedia` (10C) — always empty when `publicSlug` is null.
+   * Media indexed by `{entityType}:{entityId}`. Always empty when
+   * `publicSlug` is null.
    */
   mediaByEntity: Map<string, GuideMedia[]>;
 }
 
-function mediaKeyFor(entityType: string, entityId: string): string {
-  return `${entityType}:${entityId}`;
-}
-
 function takeMedia(
   ctx: GuideContext,
-  entityType: string,
+  entityType: MediaEntityType,
   entityId: string,
 ): GuideMedia[] {
-  return ctx.mediaByEntity.get(mediaKeyFor(entityType, entityId)) ?? [];
+  return ctx.mediaByEntity.get(mediaKey(entityType, entityId)) ?? [];
 }
+
+// Resolver keys whose sections flag `includesMedia:true`. Taxonomy is loaded
+// at module init, so this is safe to compute once.
+const MEDIA_RESOLVER_KEYS: ReadonlySet<GuideResolverKey> = new Set(
+  getGuideSectionConfigs()
+    .filter((s) => s.includesMedia)
+    .map((s) => s.resolverKey),
+);
+
+// Section configs sorted by `order`, computed once at module load.
+const SORTED_SECTION_CONFIGS: ReadonlyArray<ReturnType<typeof getGuideSectionConfigs>[number]> =
+  [...getGuideSectionConfigs()].sort((a, b) => a.order - b.order);
 
 async function loadGuideContext(
   propertyId: string,
-  publicSlug: string | null,
   audience: GuideAudience,
+  publicSlug: string | null,
 ): Promise<GuideContext> {
-  const [property, spaces, amenityInstances, contacts, localPlaces] =
-    await Promise.all([
-      prisma.property.findUnique({
-        where: { id: propertyId },
-        select: {
-          id: true,
-          checkInStart: true,
-          checkInEnd: true,
-          checkOutTime: true,
-          primaryAccessMethod: true,
-          accessMethodsJson: true,
-          policiesJson: true,
-        },
-      }),
-      prisma.space.findMany({
-        where: { propertyId, status: "active" },
-        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          spaceType: true,
-          name: true,
-          visibility: true,
-          guestNotes: true,
-          aiNotes: true,
-          internalNotes: true,
-          featuresJson: true,
-          sortOrder: true,
-          beds: {
-            select: { id: true, bedType: true, quantity: true },
-            orderBy: [{ bedType: "asc" }, { id: "asc" }],
-          },
-        },
-      }),
-      prisma.propertyAmenityInstance.findMany({
-        where: { propertyId },
-        select: {
-          id: true,
-          amenityKey: true,
-          subtypeKey: true,
-          detailsJson: true,
-          guestInstructions: true,
-          aiInstructions: true,
-          internalNotes: true,
-          visibility: true,
-          placements: { select: { spaceId: true } },
-        },
-      }),
-      prisma.contact.findMany({
-        where: { propertyId },
-        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          roleKey: true,
-          displayName: true,
-          phone: true,
-          email: true,
-          guestVisibleNotes: true,
-          internalNotes: true,
-          emergencyAvailable: true,
-          sortOrder: true,
-          visibility: true,
-        },
-      }),
-      prisma.localPlace.findMany({
-        where: { propertyId },
-        orderBy: [{ name: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          categoryKey: true,
-          name: true,
-          guestDescription: true,
-          aiNotes: true,
-          distanceMeters: true,
-          hoursText: true,
-          visibility: true,
-        },
-      }),
-    ]);
+  const propertyPromise = prisma.property.findUnique({
+    where: { id: propertyId },
+    select: {
+      id: true,
+      checkInStart: true,
+      checkInEnd: true,
+      checkOutTime: true,
+      primaryAccessMethod: true,
+      accessMethodsJson: true,
+      policiesJson: true,
+    },
+  });
+  const spacesPromise = prisma.space.findMany({
+    where: { propertyId, status: "active" },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      spaceType: true,
+      name: true,
+      visibility: true,
+      guestNotes: true,
+      aiNotes: true,
+      internalNotes: true,
+      featuresJson: true,
+      sortOrder: true,
+      beds: {
+        select: { id: true, bedType: true, quantity: true },
+        orderBy: [{ bedType: "asc" }, { id: "asc" }],
+      },
+    },
+  });
+  const amenityInstancesPromise = prisma.propertyAmenityInstance.findMany({
+    where: { propertyId },
+    select: {
+      id: true,
+      amenityKey: true,
+      subtypeKey: true,
+      detailsJson: true,
+      guestInstructions: true,
+      aiInstructions: true,
+      internalNotes: true,
+      visibility: true,
+      placements: { select: { spaceId: true } },
+    },
+  });
+  const contactsPromise = prisma.contact.findMany({
+    where: { propertyId },
+    orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      roleKey: true,
+      displayName: true,
+      phone: true,
+      email: true,
+      guestVisibleNotes: true,
+      internalNotes: true,
+      emergencyAvailable: true,
+      sortOrder: true,
+      visibility: true,
+    },
+  });
+  const localPlacesPromise = prisma.localPlace.findMany({
+    where: { propertyId },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+    select: {
+      id: true,
+      categoryKey: true,
+      name: true,
+      guestDescription: true,
+      aiNotes: true,
+      distanceMeters: true,
+      hoursText: true,
+      visibility: true,
+    },
+  });
 
-  // Build the ref list ONLY for entities tied to sections with
-  // `includesMedia:true`. Sections with `includesMedia:false` (rules,
-  // contacts, emergency) never contribute refs — the batch loader stays
-  // small even on large properties.
+  // Media load needs property + spaces + amenity instances for entity labels.
+  // Wait for those three, then run the media query in parallel with contacts
+  // and localPlaces (neither contributes media refs).
+  const [property, spaces, amenityInstances] = await Promise.all([
+    propertyPromise,
+    spacesPromise,
+    amenityInstancesPromise,
+  ]);
+
   const mediaRefs: EntityMediaRef[] = [];
-  const sectionConfigs = getGuideSectionConfigs();
-  const mediaResolverKeys = new Set(
-    sectionConfigs.filter((s) => s.includesMedia).map((s) => s.resolverKey),
-  );
-  if (property && (mediaResolverKeys.has("arrival") || mediaResolverKeys.has("spaces") || mediaResolverKeys.has("amenities"))) {
-    if (mediaResolverKeys.has("arrival")) {
+  if (property && MEDIA_RESOLVER_KEYS.has("arrival")) {
+    mediaRefs.push({
+      entityType: "property",
+      entityId: property.id,
+      entityLabel: PROPERTY_COVER_LABEL,
+    });
+    if (property.primaryAccessMethod) {
+      const acc = findItem(accessMethodsTaxonomy, property.primaryAccessMethod);
       mediaRefs.push({
-        entityType: "property",
+        entityType: "access_method",
         entityId: property.id,
-        entityLabel: "La casa",
+        entityLabel: acc?.label ?? property.primaryAccessMethod,
       });
-      if (property.primaryAccessMethod) {
-        const acc = findItem(accessMethodsTaxonomy, property.primaryAccessMethod);
-        mediaRefs.push({
-          entityType: "access_method",
-          entityId: property.id,
-          entityLabel: acc?.label ?? property.primaryAccessMethod,
-        });
-      }
     }
-    if (mediaResolverKeys.has("spaces")) {
-      for (const s of spaces) {
-        const typeItem = getSpaceTypeItem(s.spaceType);
-        mediaRefs.push({
-          entityType: "space",
-          entityId: s.id,
-          entityLabel: s.name || typeItem?.label || s.spaceType,
-        });
-      }
+  }
+  if (MEDIA_RESOLVER_KEYS.has("spaces")) {
+    for (const s of spaces) {
+      const typeItem = getSpaceTypeItem(s.spaceType);
+      mediaRefs.push({
+        entityType: "space",
+        entityId: s.id,
+        entityLabel: s.name || typeItem?.label || s.spaceType,
+      });
     }
-    if (mediaResolverKeys.has("amenities")) {
-      for (const inst of amenityInstances) {
-        const item = findAmenityItem(inst.amenityKey);
-        mediaRefs.push({
-          entityType: "amenity_instance",
-          entityId: inst.id,
-          entityLabel: item?.label ?? inst.amenityKey,
-        });
-      }
+  }
+  if (MEDIA_RESOLVER_KEYS.has("amenities")) {
+    for (const inst of amenityInstances) {
+      const item = findAmenityItem(inst.amenityKey);
+      mediaRefs.push({
+        entityType: "amenity_instance",
+        entityId: inst.id,
+        entityLabel: item?.label ?? inst.amenityKey,
+      });
     }
   }
 
-  const mediaByEntity = await loadEntityMedia(publicSlug, audience, mediaRefs);
+  const [mediaByEntity, contacts, localPlaces] = await Promise.all([
+    loadEntityMedia(publicSlug, audience, mediaRefs),
+    contactsPromise,
+    localPlacesPromise,
+  ]);
 
   return {
     propertyId,
@@ -433,13 +444,13 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
 
   // Property cover surfaces as a synthetic first item when there are assets
   // assigned to the property entity. Markdown/HTML render it as a labeled
-  // figure; 10E replaces this with a proper hero.
+  // figure.
   const propertyMedia = takeMedia(ctx, "property", p.id);
   if (propertyMedia.length > 0) {
     items.push({
       id: "arrival.property",
       taxonomyKey: null,
-      label: "La casa",
+      label: PROPERTY_COVER_LABEL,
       value: null,
       visibility: "guest",
       deprecated: false,
@@ -798,10 +809,9 @@ export async function composeGuide(
   audience: GuideAudience,
   publicSlug: string | null,
 ): Promise<GuideTree> {
-  const ctx = await loadGuideContext(propertyId, publicSlug, audience);
+  const ctx = await loadGuideContext(propertyId, audience, publicSlug);
   const sections: GuideSection[] = [];
-  const configs = [...getGuideSectionConfigs()].sort((a, b) => a.order - b.order);
-  for (const cfg of configs) {
+  for (const cfg of SORTED_SECTION_CONFIGS) {
     const resolver = RESOLVERS[cfg.resolverKey];
     const rawItems = resolver(ctx);
     const sorted = applySort(rawItems, cfg.sortBy, cfg.resolverKey);

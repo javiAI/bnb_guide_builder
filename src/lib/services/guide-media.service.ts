@@ -1,17 +1,14 @@
 /**
- * Batch media loader for `composeGuide`. One query per compose, regardless
- * of how many entities the guide references — resolvers look up a map
- * keyed by `{entityType}:{entityId}` instead of hitting the DB per item.
+ * Batch media loader for `composeGuide`. Resolves every entity's media in a
+ * single indexed query so resolvers can read from an in-memory map instead
+ * of hitting the DB per item.
  *
- * Every URL emitted flows through `buildMediaProxyUrl` (10D), never an R2
- * presigned URL. `src/test/guide-rendering-proxy-urls.test.ts` is the hard
- * guard; this service is the only code path that composes `GuideMedia`.
+ * Every URL routes through `buildMediaProxyUrl`; presigned R2 URLs never
+ * reach `GuideTree`. `guide-rendering-proxy-urls.test.ts` is the hard guard.
  *
- * Audience filter: `MediaAsset.visibility` must be compatible with the
- * requested audience. `sensitive` media never enters the tree (sensitive
- * audience returns an empty tree at `filterByAudience`, so even if this
- * loader returned sensitive entries they'd be dropped downstream — we still
- * exclude them here to avoid wasted work and to keep the map honest).
+ * Sensitive media is excluded at the query result — sensitive audiences
+ * already get an empty tree downstream, but keeping the map honest avoids
+ * accidental leakage if that downstream gate is ever refactored.
  */
 
 import { prisma } from "@/lib/db";
@@ -19,12 +16,7 @@ import type { GuideAudience, GuideMedia } from "@/lib/types/guide-tree";
 import { MEDIA_VARIANT_KEYS } from "@/lib/types/media-variant";
 import { buildMediaProxyUrl } from "@/lib/services/media-proxy.service";
 import { isVisibleForAudience } from "@/lib/taxonomy-loader";
-
-export type MediaEntityType =
-  | "property"
-  | "space"
-  | "access_method"
-  | "amenity_instance";
+import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
 export interface EntityMediaRef {
   entityType: MediaEntityType;
@@ -33,7 +25,10 @@ export interface EntityMediaRef {
   entityLabel: string;
 }
 
-function mediaKey(entityType: string, entityId: string): string {
+export function mediaKey(
+  entityType: MediaEntityType,
+  entityId: string,
+): string {
   return `${entityType}:${entityId}`;
 }
 
@@ -77,7 +72,7 @@ export async function loadEntityMedia(
   if (!publicSlug || refs.length === 0 || audience === "sensitive") return out;
 
   // Group entityIds per entityType so the WHERE clause stays indexable
-  // (MediaAssignment has @@index([entityType, entityId])).
+  // against @@index([entityType, entityId]).
   const byType = new Map<MediaEntityType, Set<string>>();
   const labels = new Map<string, string>();
   for (const ref of refs) {
@@ -127,7 +122,7 @@ export async function loadEntityMedia(
   for (const row of assignments) {
     const asset = row.mediaAsset;
     if (!isVisibleForAudience(asset.visibility, audience)) continue;
-    const key = mediaKey(row.entityType, row.entityId);
+    const key = mediaKey(row.entityType as MediaEntityType, row.entityId);
     const entityLabel = labels.get(key) ?? "";
     const caption = asset.caption;
     const media: GuideMedia = {
@@ -147,7 +142,6 @@ export async function loadEntityMedia(
 }
 
 export const __test__ = {
-  mediaKey,
   deriveAlt,
   buildVariants,
 };
