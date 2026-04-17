@@ -7,6 +7,13 @@
  */
 
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
+import {
+  filterRenderableItems,
+  resolveDisplayFields,
+  resolveDisplayValue,
+  resolveEmptyCopy,
+  shouldHideSection,
+} from "./_guide-display";
 
 /** Cap inline images per item — keeps markup lean; lightbox gallery comes in 10E. */
 const INLINE_MEDIA_CAP = 3;
@@ -35,15 +42,17 @@ function renderItem(item: GuideItem, out: string[]): void {
   const deprecated = item.deprecated
     ? ' <em class="gt-deprecated">(deprecated)</em>'
     : "";
-  const value = item.value !== null ? `: ${escapeHtml(item.value)}` : "";
+  const displayValue = resolveDisplayValue(item);
+  const value = displayValue !== null ? `: ${escapeHtml(displayValue)}` : "";
+  const displayFields = resolveDisplayFields(item);
   out.push(
     `<li><strong>${escapeHtml(item.label)}</strong>${deprecated}${value}`,
   );
   const hasDetails =
-    item.fields.length > 0 || item.media.length > 0 || item.children.length > 0;
+    displayFields.length > 0 || item.media.length > 0 || item.children.length > 0;
   if (hasDetails) {
     out.push("<ul>");
-    for (const f of item.fields) {
+    for (const f of displayFields) {
       out.push(
         `<li>${escapeHtml(f.label)}: ${escapeHtml(f.value)}</li>`,
       );
@@ -84,22 +93,31 @@ export function renderHtml(tree: GuideTree): string {
     );
   }
   for (const section of tree.sections) {
+    const renderable = filterRenderableItems(section.items, tree.audience);
+    if (shouldHideSection(section, tree.audience, renderable)) continue;
     out.push(`<section><h2>${escapeHtml(section.label)}</h2>`);
-    if (section.items.length === 0) {
-      if (section.emptyCtaDeepLink && /^(\/[^/]|https?:\/\/)/i.test(section.emptyCtaDeepLink)) {
+    if (renderable.length === 0) {
+      const guestCopy = resolveEmptyCopy(section, tree.audience);
+      if (guestCopy) {
+        out.push(`<p class="gt-empty">${escapeHtml(guestCopy)}</p>`);
+      } else if (
+        tree.audience !== "guest" &&
+        section.emptyCtaDeepLink &&
+        /^(\/[^/]|https?:\/\/)/i.test(section.emptyCtaDeepLink)
+      ) {
         out.push(
           `<p class="gt-empty">Sin elementos. <a href="${escapeHtml(
             section.emptyCtaDeepLink,
           )}">Configurar</a></p>`,
         );
-      } else {
+      } else if (tree.audience !== "guest") {
         out.push('<p class="gt-empty">Sin elementos.</p>');
       }
       out.push("</section>");
       continue;
     }
     out.push("<ul>");
-    for (const item of section.items) {
+    for (const item of renderable) {
       renderItem(item, out);
     }
     out.push("</ul></section>");

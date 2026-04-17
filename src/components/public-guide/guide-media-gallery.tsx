@@ -45,6 +45,11 @@ export function GuideMediaGallery({ media, contextLabel }: Props) {
               className="guide-gallery__thumb-btn"
               aria-label={`Abrir ${m.alt || contextLabel} en grande`}
             >
+              {/* Pre-baked variants (`thumb`/`md`/`full`) already serve
+                  density-optimized assets via our own media proxy; next/image
+                  re-optimization would double-process and defeat the baked
+                  variant URLs. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className="guide-gallery__thumb"
                 src={m.variants.thumb}

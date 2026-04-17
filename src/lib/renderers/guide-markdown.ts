@@ -19,6 +19,13 @@
  */
 
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
+import {
+  filterRenderableItems,
+  resolveDisplayFields,
+  resolveDisplayValue,
+  resolveEmptyCopy,
+  shouldHideSection,
+} from "./_guide-display";
 
 /** Cap inline images per item — keeps markdown output scannable. */
 const INLINE_MEDIA_CAP = 3;
@@ -42,10 +49,11 @@ function encodeMdUrl(url: string): string {
 function renderItem(item: GuideItem, depth: number, out: string[]): void {
   const indent = "  ".repeat(depth);
   const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
-  const value = item.value !== null ? `: ${escapeMd(item.value)}` : "";
+  const displayValue = resolveDisplayValue(item);
+  const value = displayValue !== null ? `: ${escapeMd(displayValue)}` : "";
   out.push(`${indent}- **${escapeMd(item.label)}**${deprecatedMark}${value}`);
   const nestedIndent = "  ".repeat(depth + 1);
-  for (const f of item.fields) {
+  for (const f of resolveDisplayFields(item)) {
     out.push(`${nestedIndent}- ${escapeMd(f.label)}: ${escapeMd(f.value)}`);
   }
   let emitted = 0;
@@ -72,17 +80,22 @@ export function renderMarkdown(tree: GuideTree): string {
     out.push("");
   }
   for (const section of tree.sections) {
+    const renderable = filterRenderableItems(section.items, tree.audience);
+    if (shouldHideSection(section, tree.audience, renderable)) continue;
     out.push(`## ${escapeMd(section.label)}`);
-    if (section.items.length === 0) {
-      out.push(
-        section.emptyCtaDeepLink
-          ? `_Sin elementos. ${section.emptyCtaDeepLink}_`
-          : "_Sin elementos._",
-      );
+    if (renderable.length === 0) {
+      const guestCopy = resolveEmptyCopy(section, tree.audience);
+      if (guestCopy) {
+        out.push(`_${escapeMd(guestCopy)}_`);
+      } else if (tree.audience !== "guest" && section.emptyCtaDeepLink) {
+        out.push(`_Sin elementos. ${section.emptyCtaDeepLink}_`);
+      } else if (tree.audience !== "guest") {
+        out.push("_Sin elementos._");
+      }
       out.push("");
       continue;
     }
-    for (const item of section.items) {
+    for (const item of renderable) {
       renderItem(item, 0, out);
     }
     out.push("");

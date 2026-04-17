@@ -28,6 +28,21 @@ const eslintConfig = [
       "vitest.config.ts",
     ],
   },
+  {
+    rules: {
+      // Standard `_`-prefix convention: intentional unused args (server-action
+      // `_prev`, destructuring strip patterns like `const { secret: _, ...rest }`).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

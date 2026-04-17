@@ -18,6 +18,13 @@ import {
   pdf,
 } from "@react-pdf/renderer";
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
+import {
+  filterRenderableItems,
+  resolveDisplayFields,
+  resolveDisplayValue,
+  resolveEmptyCopy,
+  shouldHideSection,
+} from "./_guide-display";
 
 const styles = StyleSheet.create({
   page: { paddingTop: 40, paddingBottom: 40, paddingHorizontal: 48, fontSize: 10, fontFamily: "Helvetica" },
@@ -36,14 +43,16 @@ const styles = StyleSheet.create({
 });
 
 function ItemView({ item, depth }: { item: GuideItem; depth: number }) {
+  const displayValue = resolveDisplayValue(item);
+  const displayFields = resolveDisplayFields(item);
   return (
     <View style={depth === 0 ? styles.item : styles.nested}>
       <Text>
         <Text style={styles.itemLabel}>{item.label}</Text>
         {item.deprecated ? <Text style={styles.deprecated}> (deprecated)</Text> : null}
-        {item.value ? <Text style={styles.itemValue}>: {item.value}</Text> : null}
+        {displayValue ? <Text style={styles.itemValue}>: {displayValue}</Text> : null}
       </Text>
-      {item.fields.map((f, i) => (
+      {displayFields.map((f, i) => (
         <Text key={i} style={styles.fieldRow}>
           {f.label}: {f.value}
         </Text>
@@ -53,6 +62,9 @@ function ItemView({ item, depth }: { item: GuideItem; depth: number }) {
       {item.media
         .filter((m) => /^https?:\/\//i.test(m.variants.md))
         .map((m, i) => (
+          // @react-pdf/renderer's Image is not the HTML/Next Image element and
+          // does not support `alt` — the a11y rule fires on tag name alone.
+          // eslint-disable-next-line jsx-a11y/alt-text
           <Image key={i} src={m.variants.md} style={styles.image} />
         ))}
       {item.children.map((child) => (
@@ -72,18 +84,27 @@ function GuideDocument({ tree }: { tree: GuideTree }) {
           </Text>
           <Text style={styles.subtitle}>Generado: {tree.generatedAt}</Text>
         </View>
-        {tree.sections.map((section) => (
-          <View key={section.id}>
-            <Text style={styles.sectionTitle}>{section.label}</Text>
-            {section.items.length === 0 ? (
-              <Text style={styles.empty}>Sin elementos.</Text>
-            ) : (
-              section.items.map((item) => (
-                <ItemView key={item.id} item={item} depth={0} />
-              ))
-            )}
-          </View>
-        ))}
+        {tree.sections.map((section) => {
+          const renderable = filterRenderableItems(section.items, tree.audience);
+          if (shouldHideSection(section, tree.audience, renderable)) return null;
+          const emptyCopy = resolveEmptyCopy(section, tree.audience);
+          return (
+            <View key={section.id}>
+              <Text style={styles.sectionTitle}>{section.label}</Text>
+              {renderable.length === 0 ? (
+                emptyCopy ? (
+                  <Text style={styles.empty}>{emptyCopy}</Text>
+                ) : tree.audience !== "guest" ? (
+                  <Text style={styles.empty}>Sin elementos.</Text>
+                ) : null
+              ) : (
+                renderable.map((item) => (
+                  <ItemView key={item.id} item={item} depth={0} />
+                ))
+              )}
+            </View>
+          );
+        })}
       </Page>
     </Document>
   );

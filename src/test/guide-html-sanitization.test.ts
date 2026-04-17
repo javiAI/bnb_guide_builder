@@ -171,7 +171,11 @@ describe("renderHtml — sanitization", () => {
   });
 
   it("escapes empty-state CTA href", () => {
+    // CTA deep-links are a host-panel affordance and only render for
+    // non-guest audiences (rama 10F). Use `internal` so the CTA path is
+    // exercised.
     const tree = makeTree({
+      audience: "internal",
       sections: [
         {
           id: "gs.arrival",

@@ -1,10 +1,17 @@
-import type { GuideSection } from "@/lib/types/guide-tree";
+import type {
+  GuideAudience,
+  GuideItem as GuideItemType,
+  GuideSection,
+} from "@/lib/types/guide-tree";
 import { getJourneyStageLabel } from "@/lib/taxonomy-loader";
+import { resolveEmptyCopy } from "@/lib/renderers/_guide-display";
 import { GuideItem } from "./guide-item";
 import { GuideEmptyState } from "./guide-empty-state";
 
 interface Props {
   section: GuideSection;
+  renderable: GuideItemType[];
+  audience: GuideAudience;
 }
 
 /**
@@ -12,8 +19,9 @@ interface Props {
  * local) override this entry in `public-guide-section-registry`. The section
  * id doubles as the anchor target for the TOC scrollspy.
  */
-export function SectionCard({ section }: Props) {
+export function SectionCard({ section, renderable, audience }: Props) {
   const isHero = !!section.isHero;
+  const emptyCopy = resolveEmptyCopy(section, audience);
   return (
     <section
       id={section.id}
@@ -30,11 +38,11 @@ export function SectionCard({ section }: Props) {
           </span>
         )}
       </header>
-      {section.items.length === 0 ? (
-        <GuideEmptyState copy={section.emptyCopy} />
+      {renderable.length === 0 ? (
+        <GuideEmptyState copy={emptyCopy ?? undefined} />
       ) : (
         <div className="guide-items">
-          {section.items.map((item) => (
+          {renderable.map((item) => (
             <GuideItem key={item.id} item={item} />
           ))}
         </div>

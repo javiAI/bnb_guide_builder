@@ -253,6 +253,8 @@ const GuideSectionConfigSchema = z
     isAggregator: z.boolean().optional(),
     sourceResolverKeys: z.array(z.enum(GUIDE_RESOLVER_KEYS)).optional(),
     emptyCopy: z.string().min(1).optional(),
+    emptyCopyGuest: z.string().min(1).optional(),
+    hideWhenEmptyForGuest: z.boolean().optional(),
   })
   .strict()
   .refine(
@@ -432,8 +434,12 @@ export function getPolicyItems(taxonomy: PolicyGroupedFile): TaxonomyItem[] {
   return taxonomy.groups.flatMap((g) => g.items);
 }
 
+const POLICY_ITEM_BY_ID: ReadonlyMap<string, TaxonomyItem> = new Map(
+  getPolicyItems(policyTaxonomy).map((i) => [i.id, i]),
+);
+
 export function findPolicyItem(itemId: string): TaxonomyItem | undefined {
-  return getPolicyItems(policyTaxonomy).find((i) => i.id === itemId);
+  return POLICY_ITEM_BY_ID.get(itemId);
 }
 
 export function getPolicyOptions(itemId: string): TaxonomyOption[] {

@@ -7,6 +7,10 @@ export function GuideBrandHeader({ title, logoUrl }: Props) {
   return (
     <header className="guide-brand-header" role="banner">
       {logoUrl ? (
+        // Logo URL comes from the published snapshot (proxy path /g/:slug/media
+        // for R2-backed assets, sometimes absolute). Adding every tenant's
+        // domain to next.config.images.remotePatterns isn't tractable.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           className="guide-brand-header__logo"
           src={logoUrl}

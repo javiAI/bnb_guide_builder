@@ -66,6 +66,9 @@ export function ShareableLink({ url, qrSvg }: ShareableLinkProps) {
         </summary>
         <div className="mt-3 flex justify-center">
           <div className="inline-block rounded-[var(--radius-lg)] border border-[var(--border)] bg-white p-4">
+            {/* QR is a base64-encoded inline SVG; next/image optimization
+                pipeline is a no-op on data URLs and would add complexity. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`data:image/svg+xml;base64,${btoa(qrSvg)}`}
               alt="Código QR del link compartible"

@@ -93,6 +93,10 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
       mapRef.current = null;
       markerRef.current = null;
     };
+    // Initial map setup depends on `styleUrl` only — re-creating the map on
+    // every lat/lng change would flicker and lose user interaction. Coordinate
+    // updates are handled by the separate effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleUrl]);
 
   // Update marker when lat/lng change externally (geocode result)
