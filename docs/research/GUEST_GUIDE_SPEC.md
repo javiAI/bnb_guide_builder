@@ -37,47 +37,47 @@ La guía todavía puede servir para facturas, objetos perdidos, reviews y recomp
 El orden correcto no es el del PMS ni el del modelo de datos. Es el del cerebro del huésped. La arquitectura ideal para `/g/:slug` debe ser esta, en este orden:
 
 **Inicio de estancia**  
-No es una portada decorativa; es un panel operativo. Debe mostrar nombre del alojamiento, ventana horaria de check-in o estado de estancia, quick actions y cuatro respuestas inmediatas: entrar, aparcar, Wi-Fi, ayuda. Los productos que mejor convierten la guía en menos mensajes lo hacen llevando lo crítico arriba, no enterrándolo en secciones profundas. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+No es una portada decorativa; es un panel operativo. Debe mostrar nombre del alojamiento, ventana horaria de check-in o estado de estancia, quick actions y cuatro respuestas inmediatas: entrar, aparcar, Wi-Fi, ayuda. Los productos que mejor convierten la guía en menos mensajes lo hacen llevando lo crítico arriba, no enterrándolo en secciones profundas.
 
 **Llegada**  
 Contenido requerido: dirección exacta, enlace a mapas, descripción de acceso, método de entrada, fotos de referencia, parking, edificio/portería, ascensor/escaleras, check-in alternativo si falla el principal.  
 Patrón UX: pasos numerados, 1 acción por bloque, foto o mini-video por paso, botón de copiar código solo cuando el huésped está autorizado a verlo.  
-Ejemplo de qué mostrar: “1. Busca la puerta gris junto a la farmacia. 2. Introduce el código. 3. Gira el pomo hacia arriba. 4. Si no funciona tras dos intentos, llama al contacto de acceso.” [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “1. Busca la puerta gris junto a la farmacia. 2. Introduce el código. 3. Gira el pomo hacia arriba. 4. Si no funciona tras dos intentos, llama al contacto de acceso.”
 
 **Esenciales de la estancia**  
 Contenido requerido: Wi-Fi, calefacción/AC, agua caliente, basura/reciclaje, silencio/horario, fumar/no fumar, mascotas, contacto principal y FAQ rápida.  
 Patrón UX: grid de cards con icono y texto de 1–2 líneas; esto debe ser visible sin scroll excesivo y sin abrir subniveles.  
-Ejemplo de qué mostrar: “Wi-Fi — Red: CasaAzul_5G — Contraseña: copiar”; “Calefacción — Termostato en salón — guía de 3 pasos”; “Basura — orgánico en cubo verde — vidrio en contenedor callejero”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Wi-Fi — Red: CasaAzul_5G — Contraseña: copiar”; “Calefacción — Termostato en salón — guía de 3 pasos”; “Basura — orgánico en cubo verde — vidrio en contenedor callejero”.
 
 **Espacios**  
 Contenido requerido: una ficha por espacio real, no por categoría abstracta. Dormitorio, salón, cocina, baño, terraza, garaje, piscina, cuarto de lavandería, etc. Cada ficha debe responder “qué hay aquí”, “qué puede usar el huésped” y “qué advertencias aplican”.  
 Patrón UX: cards de espacio con foto principal, chips de amenities y CTA “cómo usar este espacio”.  
-Ejemplo de qué mostrar: “Cocina — horno, inducción, cafetera, lavavajillas — no usar estropajo en isla de mármol”. La organización por espacio reduce ambigüedad mejor que una lista plana de amenities. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Cocina — horno, inducción, cafetera, lavavajillas — no usar estropajo en isla de mármol”. La organización por espacio reduce ambigüedad mejor que una lista plana de amenities.
 
 **Cómo usar la casa**  
 Contenido requerido: equipamiento y procedimientos, no solo inventario. TV, horno, vitro, cafetera, hot tub, chimenea, cerraduras, persianas, cargadores EV, piscina, alarmas técnicas, etc.  
 Patrón UX: cada item como FAQ operativa o mini runbook; usar vídeo corto cuando hay manipulación física o varios pasos. Las guías de ejemplo de Touch Stay destacan precisamente que el vídeo funciona mejor que el texto para hot tub, chimenea y aparatos.  
-Ejemplo de qué mostrar: “Lavadora — 1. Pulsa Power. 2. Programa 40°. 3. Añade detergente en cajetín II. 4. No usar secadora tras las 22:00”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Lavadora — 1. Pulsa Power. 2. Programa 40°. 3. Añade detergente en cajetín II. 4. No usar secadora tras las 22:00”.
 
 **Normas y límites**  
 Contenido requerido: ruido, visitas, fiestas, fumar, mascotas, uso de zonas comunes, horas de piscina, límites de ocupación, cámaras exteriores declaradas, reglas legales locales relevantes y consecuencias prácticas. Airbnb insiste en que reglas y limitaciones de amenities deben estar claramente divulgadas; además, las comunidades de hosts muestran que las reglas se incumplen más cuando son genéricas o se descubren tarde.  
 Patrón UX: chips y frases cortas; las reglas largas deben ir en accordion, nunca en un muro de texto.  
-Ejemplo de qué mostrar: “Silencio exterior: 22:00–08:00”; “Piscina: 09:00–21:00”; “No invitados no registrados”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Silencio exterior: 22:00–08:00”; “Piscina: 09:00–21:00”; “No invitados no registrados”.
 
 **Guía local**  
 Contenido requerido: supermercado, farmacia, restaurantes, desayuno, parking alternativo, transporte, urgencias cercanas, actividades por perfil y duración, más un subconjunto “a 10 minutos”. Los productos líderes convierten la guía local en motor de experiencia y, a veces, de ingresos.  
 Patrón UX: categorías simples, mapas enlazados, distancia/tiempo, horarios y tel cuando existan; permitir “guardar” o “copiar a Maps”.  
-Ejemplo de qué mostrar: “Desayuno cerca — Café Norte — 6 min a pie — abre 07:30 — ideal para niños”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Desayuno cerca — Café Norte — 6 min a pie — abre 07:30 — ideal para niños”.
 
 **Ayuda y emergencias**  
 Contenido requerido: emergencia médica, incendio, fuga de agua/gas, corte eléctrico, cerrajero, contacto anfitrión, contacto backup, instrucciones de seguridad, ubicación de extintor y cuadro eléctrico si procede, y qué hacer primero.  
 Patrón UX: bloque visual distinto, iconografía de alta señal, teléfonos click-to-call, y micro-runbooks tipo “si pasa X, haz Y”.  
-Ejemplo de qué mostrar: “No hay calefacción — comprueba termostato — si aparece E1, reinicia con el botón lateral — si no vuelve, llama al soporte técnico”. Esto sirve al huésped y también entrena a la IA. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “No hay calefacción — comprueba termostato — si aparece E1, reinicia con el botón lateral — si no vuelve, llama al soporte técnico”. Esto sirve al huésped y también entrena a la IA.
 
 **Salida**  
 Contenido requerido: hora, pasos razonables, llaves/cerradura, basura, toallas, luces/AC, última comprobación, recordatorio de objetos personales y canal para incidencias de salida.  
 Patrón UX: checklist corta, con una frase por tarea y tono neutral. Nada de mandar al huésped a hacer limpieza profunda.  
-Ejemplo de qué mostrar: “Antes de irte: 1. Saca tu basura. 2. Deja toallas usadas en la ducha. 3. Cierra ventanas. 4. Pulsa Lock al salir”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Ejemplo de qué mostrar: “Antes de irte: 1. Saca tu basura. 2. Deja toallas usadas en la ducha. 3. Cierra ventanas. 4. Pulsa Lock al salir”.
 
 ### Visibilidad por audiencia
 
@@ -85,11 +85,11 @@ El modelo `guest / ai / internal / sensitive` es correcto, pero necesita reglas 
 
 **guest** debe contener solo la mejor respuesta pública posible: clara, breve, accionable y sin ambigüedad. Nada de notas para el equipo, “si falla llamar a Pedro el cerrajero que siempre tarda”, o referencias a vendors internos.
 
-**ai** debe incluir todo lo de guest más `aiNotes`, pasos de diagnóstico, criterios de excepción, sinónimos, restricciones, estado de confianza, y rutas de escalado. Enso, Hostfully y Duve convergen en la misma idea: la IA es útil cuando responde con datos del PMS/guía/políticas y cuando deja rastro de la fuente o del razonamiento operativo. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**ai** debe incluir todo lo de guest más `aiNotes`, pasos de diagnóstico, criterios de excepción, sinónimos, restricciones, estado de confianza, y rutas de escalado. Enso, Hostfully y Duve convergen en la misma idea: la IA es útil cuando responde con datos del PMS/guía/políticas y cuando deja rastro de la fuente o del razonamiento operativo.
 
 **internal** debe incluir playbooks operativos, contactos de proveedores, horarios de mantenimiento, reglas de coste, notas del owner, instrucciones de limpieza y troubleshooting no apto para huésped.
 
-**sensitive** debe reservarse para códigos, combinaciones, ubicaciones de llaves de respaldo, detalles de alarmas, control de accesos, información personal, y cualquier dato que aumente superficie de riesgo si se filtra. Airbnb retrasa las instrucciones detalladas de acceso hasta 48 horas antes del check-in; tómalo como señal de mercado, no como capricho. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**sensitive** debe reservarse para códigos, combinaciones, ubicaciones de llaves de respaldo, detalles de alarmas, control de accesos, información personal, y cualquier dato que aumente superficie de riesgo si se filtra. Airbnb retrasa las instrucciones detalladas de acceso hasta 48 horas antes del check-in; tómalo como señal de mercado, no como capricho.
 
 ### Reglas de seguridad para accesos y datos sensibles
 
@@ -99,13 +99,13 @@ No metas combinaciones ni códigos perpetuos en embeddings accesibles a cualquie
 Muestra acceso sensible solo si hay contexto de reserva válido o un token efímero.  
 Si el método de acceso cambia por estancia, el código debe vivir fuera del árbol público y resolverse en tiempo de consulta.  
 
-Esto no es paranoia: si el HTML se sirve con URLs o datos caducables, acabarás con guías “bonitas” que fallan justo cuando el huésped está en la puerta. Además, las URLs presignadas de S3 y R2 expiran y no son buena base para incrustar secretos o media duradera en páginas prerenderizadas. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Esto no es paranoia: si el HTML se sirve con URLs o datos caducables, acabarás con guías “bonitas” que fallan justo cuando el huésped está en la puerta. Además, las URLs presignadas de S3 y R2 expiran y no son buena base para incrustar secretos o media duradera en páginas prerenderizadas.
 
 ## UX Patterns
 
 ### Layout mobile-first
 
-El layout recomendado es un **single-column shell** con ancho efectivo móvil del 100%, padding horizontal de `16px`, y un ancho máximo de lectura de `680px` en desktop. Body text en `16px`, `line-height: 1.6`, headings comprimidos y nada de párrafos de más de 4 líneas en móvil. La evidencia de NN/g sigue siendo brutalmente vigente: la gente escanea, no lee palabra por palabra. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+El layout recomendado es un **single-column shell** con ancho efectivo móvil del 100%, padding horizontal de `16px`, y un ancho máximo de lectura de `680px` en desktop. Body text en `16px`, `line-height: 1.6`, headings comprimidos y nada de párrafos de más de 4 líneas en móvil. La evidencia de NN/g sigue siendo brutalmente vigente: la gente escanea, no lee palabra por palabra.
 
 El header debe ser fijo y muy bajo en fricción: logo o nombre corto, buscador, selector de idioma y, solo cuando aplica, una pastilla “Hoy” o “Tu llegada”. No recomiendo bottom tabs como navegación principal: funcionan peor en contenido largo y jerárquico que un buscador bueno más TOC corto y sticky.
 
@@ -113,11 +113,11 @@ El header debe ser fijo y muy bajo en fricción: logo o nombre corto, buscador, 
 
 La navegación óptima combina tres capas:
 
-**Búsqueda universal** como primer mecanismo de recuperación. Si el huésped piensa “Wi-Fi” y tarda más de un segundo en deducir dónde está, ya has perdido. Touch Stay y el discurso de varias reseñas/foros apuntan precisamente a “one searchable place”. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**Búsqueda universal** como primer mecanismo de recuperación. Si el huésped piensa “Wi-Fi” y tarda más de un segundo en deducir dónde está, ya has perdido. Touch Stay y el discurso de varias reseñas/foros apuntan precisamente a “one searchable place”.
 
 **Quick actions** siempre visibles para lo urgente: “Cómo entrar”, “Wi-Fi”, “Cómo llegar”, “Llamar”, “WhatsApp”, “Checkout”. Esto reduce la carga cognitiva de la arquitectura completa.
 
-**TOC sticky corta** para navegación semántica: Llegada, Casa, Normas, Local, Ayuda, Salida. En páginas largas, NN/g avala accordions y estructuras de progressive disclosure en móvil, pero avisa de que deben usarse con buena señalización y sin desorientar. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**TOC sticky corta** para navegación semántica: Llegada, Casa, Normas, Local, Ayuda, Salida. En páginas largas, NN/g avala accordions y estructuras de progressive disclosure en móvil, pero avisa de que deben usarse con buena señalización y sin desorientar.
 
 ### Patrones de contenido
 
@@ -128,7 +128,7 @@ Usa **galerías** por espacio y no una ensalada de fotos indiferenciada.
 Usa **FAQ** para dudas repetidas.  
 Usa **mapas o enlaces a Maps** solo donde ayudan a ejecutar una acción, no como adorno.  
 
-Un huésped no quiere explorar tu taxonomía; quiere resolver una microtarea. Cada patrón debe responder a eso. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Un huésped no quiere explorar tu taxonomía; quiere resolver una microtarea. Cada patrón debe responder a eso.
 
 ### Media
 
@@ -140,15 +140,15 @@ vídeo corto para equipamiento complejo,
 thumbnails para contexto,  
 hero discreta para confianza visual.
 
-Touch Stay, Hostfully y Duve destacan explícitamente vídeo, imágenes y branding, pero lo que realmente mueve la aguja es la claridad de instrucciones visuales. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Touch Stay, Hostfully y Duve destacan explícitamente vídeo, imágenes y branding, pero lo que realmente mueve la aguja es la claridad de instrucciones visuales.
 
 ### Accessibility mínima requerida
 
-Cumplimiento base: WCAG 2.2 AA. Eso significa contraste suficiente, foco visible, navegación por teclado, texto alternativo útil, formularios claros y targets táctiles que no obliguen al usuario a jugar a Operación. WCAG 2.2 fija `24x24 CSS px` como mínimo AA para targets y `44x44` como referencia mejorada; para una guía operativa conviene adoptar `44x44` en todos los botones críticos. Las imágenes deben tener `alt` significativo cuando transmiten información, especialmente fachada, acceso y paneles de equipamiento. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Cumplimiento base: WCAG 2.2 AA. Eso significa contraste suficiente, foco visible, navegación por teclado, texto alternativo útil, formularios claros y targets táctiles que no obliguen al usuario a jugar a Operación. WCAG 2.2 fija `24x24 CSS px` como mínimo AA para targets y `44x44` como referencia mejorada; para una guía operativa conviene adoptar `44x44` en todos los botones críticos. Las imágenes deben tener `alt` significativo cuando transmiten información, especialmente fachada, acceso y paneles de equipamiento.
 
 ### Multilenguaje
 
-Debes soportar al menos español, inglés, francés y alemán como contenido de primera clase, no como post-it pegado encima. La mejor práctica observada es un selector visible a nivel de guía completa y, a la vez, permitir que la IA o la mensajería usen el idioma de preferencia del huésped. Touch Stay y Enso ya comercializan traducción multilenguaje de forma explícita. Recomendación: almacenar idioma canónico por item, no traducir solo páginas enteras. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Debes soportar al menos español, inglés, francés y alemán como contenido de primera clase, no como post-it pegado encima. La mejor práctica observada es un selector visible a nivel de guía completa y, a la vez, permitir que la IA o la mensajería usen el idioma de preferencia del huésped. Touch Stay y Enso ya comercializan traducción multilenguaje de forma explícita. Recomendación: almacenar idioma canónico por item, no traducir solo páginas enteras.
 
 ### Empty states
 
@@ -157,7 +157,7 @@ Si no hay recomendaciones locales: “Aún no hay recomendaciones curadas para e
 Si no hay parking: dilo explícitamente y ofrece alternativa.  
 Si un amenity no está disponible por temporada o avería: no lo escondas; muestra estado, rango temporal y alternativa.  
 
-La ausencia de información explícita genera mensajes; una ausencia bien diseñada reduce fricción. Airbnb además insiste en divulgar restricciones y disponibilidad real de amenities. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+La ausencia de información explícita genera mensajes; una ausencia bien diseñada reduce fricción. Airbnb además insiste en divulgar restricciones y disponibilidad real de amenities.
 
 ## Design System Tokens
 

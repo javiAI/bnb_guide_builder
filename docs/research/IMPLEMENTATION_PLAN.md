@@ -38,22 +38,22 @@ Recomendación por defecto: **Leaflet** vía `react-leaflet`. Leaflet sigue sien
 
 Usa **Mapbox** solo si la experiencia de mapa es una parte central de diferenciación visual o funcional, porque ofrece styling fuerte y pricing usage-based con free tier razonable, pero añade dependencia y coste.[^mapbox]
 
-Usa **Google Maps Platform** solo cuando Places Autocomplete, Street View o ecosistema Google sean core de negocio y aceptes su modelo de pricing. La nueva pricing page deja claro que ya convive pay-as-you-go con planes de suscripción. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Usa **Google Maps Platform** solo cuando Places Autocomplete, Street View o ecosistema Google sean core de negocio y aceptes su modelo de pricing. La nueva pricing page deja claro que ya convive pay-as-you-go con planes de suscripción.
 
 **TOC sticky:** sin librería.  
 Hazlo con `IntersectionObserver` y un hook propio pequeño. Para este caso, añadir una librería solo mete bytes y dependencia donde no aporta una ventaja decisiva.
 
 **Búsqueda client-side:** `Fuse.js` por defecto.  
-Motivo: fuzzy search, weighted keys, zero dependencies, bueno para datasets pequeños y medianos en cliente. Si más adelante queréis indexar miles de items offline por propiedad, `FlexSearch` es el upgrade natural. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Motivo: fuzzy search, weighted keys, zero dependencies, bueno para datasets pequeños y medianos en cliente. Si más adelante queréis indexar miles de items offline por propiedad, `FlexSearch` es el upgrade natural.
 
-**PWA / offline:** enfoque manual alineado con docs oficiales de Next.js, con `manifest`, `sw.js` y caché explícita de shell, JSON crítico y media esencial. No recomiendo `next-pwa` como dependencia principal: la propia comunidad de Next lo ha señalado como poco mantenido y con problemas para App Router. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**PWA / offline:** enfoque manual alineado con docs oficiales de Next.js, con `manifest`, `sw.js` y caché explícita de shell, JSON crítico y media esencial. No recomiendo `next-pwa` como dependencia principal: la propia comunidad de Next lo ha señalado como poco mantenido y con problemas para App Router.
 
 ### Back-end y contenido
 
 **Canon de contenido:** PostgreSQL + Prisma como source of truth editorial.  
-**RAG store:** mismo PostgreSQL con pgvector, usando filtros duros por `property_id`, `locale`, `audience`, `journey_stage`, `validity`. pgvector recomienda indexar también columnas filtrables junto al vector search. La versión 0.8.0 mejoró explícitamente coste y filtering. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**RAG store:** mismo PostgreSQL con pgvector, usando filtros duros por `property_id`, `locale`, `audience`, `journey_stage`, `validity`. pgvector recomienda indexar también columnas filtrables junto al vector search. La versión 0.8.0 mejoró explícitamente coste y filtering.
 
-**Embeddings:** **OpenAI** `text-embedding-3-large` como opción de calidad para ES/EN/FR/DE y `text-embedding-3-small` si el coste manda. OpenAI documenta mejora multilingüe en esta familia. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**Embeddings:** **OpenAI** `text-embedding-3-large` como opción de calidad para ES/EN/FR/DE y `text-embedding-3-small` si el coste manda. OpenAI documenta mejora multilingüe en esta familia.
 
 **RAG method:** hybrid retrieval + rerank + contextual chunk prefixes.  
 Para guía operativa, no basta con vector puro porque hay queries altamente keyworded como “wifi”, “E1”, “lockbox”, “A/C”, “PIN”. OpenAI y **Anthropic** justifican bien el enfoque de retrieval con metadatos y contextual retrieval. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
@@ -63,17 +63,17 @@ Para guía operativa, no basta con vector puro porque hay queries altamente keyw
 - **Retrieval text:** Markdown normalizado por item.  
 - **Prompt wrapper:** XML opcional solo si el runtime actual lo aprovecha bien.  
 
-Veredicto: **JSON + Markdown**, no XML como fuente de verdad. JSON es mejor para transformación, validación y tooling; Markdown es mejor para síntesis y legibilidad de modelo. OpenAI retrieval y Anthropic context engineering apoyan, por la vía de los hechos, esta separación entre estructura canónica y contexto recuperado. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Veredicto: **JSON + Markdown**, no XML como fuente de verdad. JSON es mejor para transformación, validación y tooling; Markdown es mejor para síntesis y legibilidad de modelo. OpenAI retrieval y Anthropic context engineering apoyan, por la vía de los hechos, esta separación entre estructura canónica y contexto recuperado.
 
 ## Estrategia de caching y URL management para media
 
 ### Lo correcto
 
-Usa **ISR para la shell pública** y para el contenido no sensible relativamente estable. Next.js documenta claramente time-based revalidation y on-demand revalidation con tags/path; para guías públicas, esa es la pieza adecuada: rápido, CDN-friendly y barato. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+Usa **ISR para la shell pública** y para el contenido no sensible relativamente estable. Next.js documenta claramente time-based revalidation y on-demand revalidation con tags/path; para guías públicas, esa es la pieza adecuada: rápido, CDN-friendly y barato.
 
 ### Lo que no debes hacer
 
-No incrustes URLs presignadas de S3/R2 de 1 hora directamente en HTML prerenderizado si ese HTML va a vivir días o semanas en caché. Te explotará en la cara justo cuando el huésped abra la guía desde el tren. AWS y Cloudflare dejan claro que las presigned URLs expiran; además, Cloudflare R2 recuerda que la misma URL sigue valiendo hasta que caduca, lo que refuerza que no son el identificador estable correcto para HTML cacheado. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+No incrustes URLs presignadas de S3/R2 de 1 hora directamente en HTML prerenderizado si ese HTML va a vivir días o semanas en caché. Te explotará en la cara justo cuando el huésped abra la guía desde el tren. AWS y Cloudflare dejan claro que las presigned URLs expiran; además, Cloudflare R2 recuerda que la misma URL sigue valiendo hasta que caduca, lo que refuerza que no son el identificador estable correcto para HTML cacheado.
 
 ### Diseño recomendado
 
@@ -159,7 +159,7 @@ Es un hop que te ahorra muchos tickets.
 
 **Sí.**  
 Wi-Fi, parking, checkout, y quizá preguntas básicas de appliances.  
-**No** para dinero, compensaciones, incidentes de seguridad, ni ambigüedad alta. Enso describe exactamente esa separación entre low-risk auto-send y temas con human approval. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)
+**No** para dinero, compensaciones, incidentes de seguridad, ni ambigüedad alta. Enso describe exactamente esa separación entre low-risk auto-send y temas con human approval.
 
 ### Una URL pública sin login, pero con revelado condicional
 
@@ -176,9 +176,9 @@ No uses tabs como estructura principal para contenido largo en móvil.
 No expongas códigos permanentes en HTML, screenshots o embeddings.  
 No dupliques contenido por idioma si puedes versionar por item y locale.  
 No priorices fotos de marketing por delante de fotos de acceso y uso real.  
-No obligues a app download para consultar lo básico. El mercado líder vende lo contrario. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)  
+No obligues a app download para consultar lo básico. El mercado líder vende lo contrario.  
 No lances auto-send IA en refunds, daños, seguridad o promesas operativas no verificadas.  
-No adoptes hardware-only como canal principal; YourWelcome muestra que el tablet puede sumar, pero no debe sustituir una guía móvil web-first. [Introducing Contextual Retrieval](https://www.anthropic.com/engineering/contextual-retrieval)  
+No adoptes hardware-only como canal principal; YourWelcome muestra que el tablet puede sumar, pero no debe sustituir una guía móvil web-first.  
 No escondas el bloque crítico detrás de un hero gigante o una intro de marca. La guía no es una landing; es un instrumento.  
 
 La síntesis brutal es esta: **la guía perfecta no es la más bonita, sino la que evita más dudas, resuelve más tareas y comete menos errores justo en el peor momento posible**. Y la KB perfecta para IA no es la más grande, sino la que hace recuperable la respuesta correcta con el menor riesgo posible.
