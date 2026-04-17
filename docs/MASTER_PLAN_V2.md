@@ -652,18 +652,24 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - [IMPLEMENTATION_PLAN.md:L29-L49](research/IMPLEMENTATION_PLAN.md) — stack front-end (`yet-another-react-lightbox`, `react-leaflet`, `IntersectionObserver` puro para TOC).
 - [IMPLEMENTATION_PLAN.md:L171-L183](research/IMPLEMENTATION_PLAN.md) — lo que NO implementar (no PDF largo, no tabs en móvil, no hero gigante).
 
-**Decisiones cerradas en Fase -1 (2026-04-17)**:
+**Decisiones cerradas en Fase -1 (2026-04-17, kickoff 10E)**:
 - Design tokens: adoptar **principios** (escala tipográfica Inter 13/14/15/16/20/28, spacing 4/8/12/16/24/32/48, radius 12/10, targets 44×44, contraste AA, sombras mínimas) **mapeados a los tokens existentes del repo** (`--color-primary-500` indigo, no el teal `#0F766E` del research).
-- Brand theming por property: `Property.brandLogoUrl?` + `brandPrimaryColor?` (validado a HEX AA). No fonts personalizados en este scope.
-- Lightbox: `yet-another-react-lightbox` con plugin video habilitado.
+- Brand theming por property: `Property.brandLogoUrl?` + `Property.brandPaletteKey?` (FK lógica a `BRAND_PALETTE`). **No HEX libre** — curated palette chooser (6-8 colores con par `{light, dark}` pre-validado AA contra texto neutral-50/neutral-900). `src/config/brand-palette.ts` define los pares; cada pair se precomputa aplicando regla HSL (`dark = lighten(light, ~+20L) · desaturate(-10S)`) congelada en build, no en runtime. Dark primary auto-derivado **dentro del scope de esta rama**. No fonts personalizados.
+- Lightbox: `yet-another-react-lightbox` v3 + plugin video. **Lazy-loaded con `next/dynamic({ ssr: false })`** en tap a imagen — no entra en el bundle inicial del shell público (protege Lighthouse mobile ≥85).
 - Mapas: componente stub con interfaz `GuideMap`; Leaflet se cablea en 13C.
+- Arquitectura de renderers: **registry `public-guide-section-registry.ts`** (sectionKey → Component), no pivot monolítico. Aunque incialmente 1-2 renderers bastan, la registry es la opción de largo plazo coherente con `icon-registry`/`field-type-registry` del repo.
 - Secciones nuevas en `guide_sections.json`:
-  - `gs.essentials` — aggregator, `sourceResolverKeys: ["arrival", "amenities", "rules", "contacts"]`, filtros `journeyTags: ["essential"]` en items.
-  - `gs.howto` — nueva, renderiza `SpaceFeature` + `AmenityInstance.runbookJson` cuando exista.
-  - `gs.checkout` — nueva, items desde `policy_taxonomy` con `journeyStage: "checkout"`.
+  - `gs.essentials` — aggregator, `sourceResolverKeys: ["arrival", "amenities", "rules", "contacts"]`, filtra items cuyo `taxonomyKey` lleva `journeyTags: ["essential"]` en su taxonomía de origen. **Dedup semantics**: `essentials` **clona** los items en el hero, las secciones originales **siguen apareciendo** intactas. El TOC sticky filtra secciones con `isAggregator: true` (aparecen visualmente al inicio, no se listan en el TOC para evitar saltos duplicados).
+  - `gs.howto` — nueva, renderiza `SpaceFeature` + `AmenityInstance.runbookJson`.
+  - `gs.checkout` — nueva, items desde `policy_taxonomy` con `journeyStage: "checkout"` (campo **añadido en esta rama** a las entries relevantes).
   - `gs.emergency` — absorbe `contacts` con rol `emergency_service` / `host_primary` / `host_backup`.
+- **Journey tags source**: campo `journeyTags: string[]` añadido a `amenity_taxonomy.json` + `policy_taxonomy.json` + (si aplica) `access_method_taxonomy.json`. Resolver los lee al emitir `GuideItem.journeyTags`. No hard-code en resolvers ni en `guide_sections.json`.
+- **Empty state copy**: campo `emptyCopy: string` por sección en `guide_sections.json`. Renderer consume directamente — añadir copy nuevo = editar JSON, no componentes.
 - Hooks tipados para `sensitiveAccessAllowed` y `journeyStage` quedan apagados por defecto (activación en FUTURE cuando exista reservation context).
-- ISR para shell pública (no datos sensibles): `revalidate` + `revalidateTag('guide-' + slug)`.
+- ISR para shell pública (no datos sensibles): **solo tag** — `export const revalidate = false` + `revalidateTag('guide-' + slug)` invocado en `publishGuideVersionAction`. Sin revalidación periódica (evita hits innecesarios a una guía que no cambia).
+- **Schema version de `GuideVersion.treeJson`**: añadir columna `treeSchemaVersion Int @default(1)` en `GuideVersion`. Snapshots pre-10E (v1) se renderizan con degradación: el renderer v2 acepta secciones sin `isHero`/`isAggregator`/`journeyTags` (todos `?`) y emite un log `[guide-renderer] snapshot outdated — recomendado re-publicar` cuando detecta `treeSchemaVersion < 2`. Defaults en tipos + compat runtime, sin forzar re-publish masivo en deploy.
+- `AmenityInstance.runbookJson Json?` **se añade en esta rama** (no diferido). Prisma change: 1 columna nullable más en `amenity_instances`. Resolver de `gs.howto` lo emite cuando `!= null`.
+- **Release gates de accesibilidad dobles**: (1) `guide-accessibility.test.ts` Vitest unit sobre fixture renderizada (rápido, bloquea local + CI) + (2) Playwright smoke `axe-playwright` en `/g/<fixture>` renderizado de verdad (detecta focus trap de lightbox, aria-live de toasts, interacciones con teclado). Ambos son gate de PR.
 
 **Archivos a crear**:
 - `src/components/public-guide/guide-renderer.tsx` — root server component, itera `GuideTree.sections`.
@@ -675,26 +681,35 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - `src/components/public-guide/guide-empty-state.tsx` — "no hay X, usa Y" explícito.
 - `src/components/public-guide/guide-brand-header.tsx` — logo + nombre + color primario por property.
 - `src/config/registries/public-guide-section-registry.ts` — mapa `sectionKey → Component` (config-driven, extensible vía taxonomía).
+- `src/config/brand-palette.ts` — curated palette chooser: 6-8 pares `{ key, label, light, dark }` AA-validados; dark precomputado por regla HSL congelada.
 - `src/app/g/[slug]/guide.css` — estilos mobile-first + breakpoints.
-- `src/lib/services/guide-sections/essentials-aggregator.ts` — resuelve Esenciales desde múltiples `sourceResolverKeys`.
+- `src/lib/services/guide-sections/essentials-aggregator.ts` — resuelve Esenciales desde múltiples `sourceResolverKeys` con dedup (clona sin eliminar originales).
+- `src/test/guide-renderer-playwright.spec.ts` — Playwright smoke con `axe-playwright` sobre `/g/<fixture>` (release gate).
 
 **Archivos a modificar**:
-- `taxonomies/guide_sections.json` — reestructuración completa (Esenciales, Cómo usar, Salida, fusión contacts→Emergency) + nuevos flags (`journeyStage`, `isHero`, `isAggregator`, `sourceResolverKeys`, `journeyTags`).
-- `src/lib/services/guide-rendering.service.ts` — resolvers nuevos (`howto`, `checkout`) + soporte aggregator + graceful degradation.
-- `src/lib/types/guide-tree.ts` — añadir `journeyStage?`, `journeyTags?`, `runbookJson?` en `GuideItem`; `isHero?`, `isAggregator?` en `GuideSection`. Hooks tipados para `sensitiveAccessAllowed`.
-- `src/lib/taxonomy-loader.ts` — actualizar Zod schema de `guide_sections.json`.
-- `prisma/schema.prisma` — `Property.brandLogoUrl String?`, `Property.brandPrimaryColor String?`.
-- `src/app/g/[slug]/page.tsx` — sustituir `renderHtml()` + `dangerouslySetInnerHTML` con `<GuideRenderer tree={guestTree} slug={slug} />`.
+- `taxonomies/guide_sections.json` — reestructuración completa (Esenciales, Cómo usar, Salida, fusión contacts→Emergency) + nuevos flags (`journeyStage`, `isHero`, `isAggregator`, `sourceResolverKeys`, `journeyTags`, `emptyCopy`).
+- `taxonomies/amenity_taxonomy.json` — añadir `journeyTags: string[]` (marcar wifi/access_code/heating_primary/etc. como `["essential"]`).
+- `taxonomies/policy_taxonomy.json` — añadir `journeyStage?: "arrival" | "stay" | "checkout"` a las policies relevantes + `journeyTags?: string[]`.
+- `taxonomies/access_method_taxonomy.json` — añadir `journeyTags?: string[]` si aplica para `arrival` essential items.
+- `src/lib/services/guide-rendering.service.ts` — resolvers nuevos (`howto`, `checkout`) + soporte aggregator + graceful degradation. Emitir `journeyTags` en los items leyendo de taxonomías.
+- `src/lib/types/guide-tree.ts` — añadir `journeyStage?`, `journeyTags?`, `runbookJson?` en `GuideItem`; `isHero?`, `isAggregator?`, `emptyCopy?` en `GuideSection`; `schemaVersion?: number` en `GuideTree`. Hooks tipados para `sensitiveAccessAllowed`.
+- `src/lib/taxonomy-loader.ts` — actualizar Zod schema de `guide_sections.json` + taxonomías con nuevos campos.
+- `prisma/schema.prisma` — `Property.brandLogoUrl String?`, `Property.brandPaletteKey String?`, `AmenityInstance.runbookJson Json?`, `GuideVersion.treeSchemaVersion Int @default(1)`.
+- `src/lib/actions/guide.actions.ts` (o equivalente que aloje `publishGuideVersionAction`) — invocar `revalidateTag('guide-' + slug)` tras publish/unpublish/rollback + escribir `treeSchemaVersion: 2` en nuevos snapshots.
+- `src/app/g/[slug]/page.tsx` — sustituir `renderHtml()` + `dangerouslySetInnerHTML` con `<GuideRenderer tree={guestTree} slug={slug} />`, `export const revalidate = false`, log `snapshot outdated` si `treeSchemaVersion < 2`.
 
 **Tests**:
-- `src/test/guide-react-renderer.test.tsx` — cada sección se renderiza; media en galería; TOC contiene secciones no vacías; deprecated marcado visualmente.
-- `src/test/guide-sections-journey.test.ts` — `gs.essentials` agrega desde múltiples resolvers; `gs.howto` incluye items con `runbookJson`; `gs.checkout` filtra por `journeyStage`.
-- `src/test/guide-brand-theming.test.ts` — property sin branding cae a tokens default; con branding inyecta CSS vars.
-- `src/test/guide-accessibility.test.ts` — axe-core smoke: sin violations WCAG 2.2 AA en fixture renderizada.
-- `src/test/guide-empty-states.test.ts` — cada sección emite empty state explícito en audience=guest.
+- `src/test/guide-react-renderer.test.tsx` — cada sección se renderiza; media en galería (mock del lightbox lazy); TOC contiene secciones no vacías y **excluye aggregators** (`isAggregator: true`); deprecated marcado visualmente.
+- `src/test/guide-sections-journey.test.ts` — `gs.essentials` clona items sin eliminar originales; `gs.howto` incluye items con `runbookJson`; `gs.checkout` filtra por `journeyStage`.
+- `src/test/guide-brand-theming.test.ts` — property sin branding cae a tokens default; con `brandPaletteKey` inyecta CSS vars `{ primary-light, primary-dark }` del palette. Palette desconocida en DB cae a default con warning.
+- `src/test/guide-accessibility.test.ts` — axe-core smoke (Vitest): sin violations WCAG 2.2 AA en fixture renderizada (unit, no DOM real).
+- `src/test/guide-renderer-playwright.spec.ts` — `axe-playwright` sobre `/g/<fixture>` real (release gate): focus trap del lightbox, aria-live, keyboard nav del TOC, lazy-loading del lightbox solo tras tap.
+- `src/test/guide-empty-states.test.ts` — cada sección emite `emptyCopy` explícito en audience=guest; sección sin `emptyCopy` lanza en Zod (no fallback silencioso).
+- `src/test/guide-schema-version-compat.test.ts` — snapshot v1 (sin `isHero`/`journeyTags`) renderiza sin romper + emite log de "outdated"; snapshot v2 no emite log.
+- `src/test/brand-palette.test.ts` — cada pair del palette cumple contraste AA (4.5:1) contra neutral-50 y neutral-900; HSL derivation determinista.
 - `src/test/guide-sections-coverage.test.ts` (actualizar de 9A) — cubre las nuevas secciones.
 
-**Criterio de done**: `/g/:slug` se ve profesional, mobile-first, con TOC navegable, iconos, cards, galería lightbox (imagen+video), empty states explícitos, brand theming aplicado. Añadir una sección nueva a `guide_sections.json` la renderiza automáticamente sin tocar componentes. Axe-core sin violations AA. Lighthouse mobile Performance ≥85.
+**Criterio de done**: `/g/:slug` se ve profesional, mobile-first, con TOC navegable (sin aggregators), iconos, cards, galería lightbox lazy-loaded (imagen+video), empty states explícitos desde `emptyCopy`, brand theming aplicado vía `brandPaletteKey` con par light+dark. Añadir una sección nueva a `guide_sections.json` la renderiza automáticamente sin tocar componentes (solo registry entry cuando el renderer difiere). Axe-core sin violations AA **en Vitest y Playwright**. Lighthouse mobile Performance ≥85 con lightbox lazy. Snapshots v1 (pre-10E) renderizan con degradación + log de "outdated"; snapshots v2 sin log.
 
 **Preparación**:
 - **Contexto a leer**:
