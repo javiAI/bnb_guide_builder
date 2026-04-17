@@ -50,7 +50,7 @@ describe("resilience — deprecated taxonomy keys", () => {
         placements: [],
       },
     ]);
-    const tree = await composeGuide("p1", "internal");
+    const tree = await composeGuide("p1", "internal", null);
     const amenities = tree.sections.find((s) => s.id === "gs.amenities")!;
     expect(amenities.items).toHaveLength(1);
     expect(amenities.items[0].deprecated).toBe(true);
@@ -72,14 +72,14 @@ describe("resilience — deprecated taxonomy keys", () => {
         beds: [],
       },
     ]);
-    const tree = await composeGuide("p1", "internal");
+    const tree = await composeGuide("p1", "internal", null);
     const spaces = tree.sections.find((s) => s.id === "gs.spaces")!;
     expect(spaces.items).toHaveLength(1);
     expect(spaces.items[0].deprecated).toBe(true);
   });
 
   it("primaryAccessMethod with unknown key renders as deprecated, no throw", async () => {
-    const tree = await composeGuide("p1", "internal");
+    const tree = await composeGuide("p1", "internal", null);
     const arrival = tree.sections.find((s) => s.id === "gs.arrival")!;
     const accessItem = arrival.items.find((i) => i.id === "arrival.access");
     expect(accessItem).toBeDefined();
@@ -97,7 +97,7 @@ describe("resilience — deprecated taxonomy keys", () => {
       accessMethodsJson: null,
       policiesJson: { "pol.legacy_thing": "some value" },
     });
-    const tree = await composeGuide("p1", "internal");
+    const tree = await composeGuide("p1", "internal", null);
     const rules = tree.sections.find((s) => s.id === "gs.rules")!;
     const deprecatedPolicy = rules.items.find((i) => i.taxonomyKey === "pol.legacy_thing");
     expect(deprecatedPolicy).toBeDefined();
@@ -129,7 +129,7 @@ describe("resilience — unknown field types", () => {
 describe("resilience — composeGuide never throws on missing property", () => {
   it("returns all sections with items: [] when property.findUnique returns null", async () => {
     fn("property", "findUnique").mockResolvedValue(null);
-    const tree = await composeGuide("does-not-exist", "guest");
+    const tree = await composeGuide("does-not-exist", "guest", null);
     expect(tree.sections.every((s) => s.items.length === 0)).toBe(true);
   });
 });

@@ -40,11 +40,15 @@ export async function publishGuideVersionAction(
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, publicSlug: true },
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
 
-  const tree: GuideTree = await composeGuide(propertyId, "internal");
+  const tree: GuideTree = await composeGuide(
+    propertyId,
+    "internal",
+    property.publicSlug,
+  );
 
   try {
     await prisma.$transaction(async (tx) => {

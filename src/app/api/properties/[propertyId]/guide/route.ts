@@ -19,7 +19,7 @@ export async function GET(
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, publicSlug: true },
   });
   if (!property) {
     return NextResponse.json(
@@ -48,7 +48,7 @@ export async function GET(
   const { audience, format } = parsed.data;
 
   try {
-    const tree = await composeGuide(propertyId, audience);
+    const tree = await composeGuide(propertyId, audience, property.publicSlug);
 
     switch (format) {
       case "json":

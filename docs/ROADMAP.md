@@ -38,7 +38,14 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 
-**Total plan V2**: 32 ramas (8 ✅ completadas, 24 pendientes). Siguiente: **Rama 10D `feat/guide-media-proxy`**.
+**Total plan V2**: 32 ramas (9 ✅ completadas, 23 pendientes). Siguiente: **Rama 10C `feat/guide-media-in-tree`**.
+
+**Orden sugerido (actualizado)**:
+- Ahora: **Fase 10** — continuar por **10C `feat/guide-media-in-tree`** (ahora que la ruta estable de 10D existe, los resolvers pueden emitir media sin romper el cache)
+- Después: **Fase 11** — Knowledge + Assistant + i18n
+- Luego: **Fase 12** — Messaging con variables
+- Después: **Fase 13** — Guía local + issue reporting
+- Finalmente: **Fase 14** — Platform integrations (Airbnb/Booking)
 
 ### Progreso Fase 8
 
@@ -59,11 +66,11 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 - ✅ **10B** `feat/media-per-entity` — EntityGallery reutilizable + UploadDropzone (drag&drop multi-archivo, presigned → R2) + reorder + cover photo + integrado en spaces/access/amenities + Mediateca refactorizada. PR #54 merged.
 - ✅ `refactor/shared-action-result` — ActionResult<T> extraído a `src/lib/types/action-result.ts`, 8 definiciones duplicadas eliminadas, 33 consumidores migrados. PR #55 merged.
 - ⏳ **10C** `feat/guide-media-in-tree` — exponer media por item en `GuideTree`, `<figure>` en renderer markdown/HTML.
-- ⏳ **10D** `feat/guide-media-proxy` — `/g/:slug/media/:assetId/:variant` decoupla HTML cache de presigned URL lifetime. **Próxima rama**.
+- ✅ **10D** `feat/guide-media-proxy` — `/g/:slug/media/:assetId-:hashPrefix/:variant` con cache immutable + ETag escopado a variant + 304/206 + auth por `publicSlug` + ≥1 `GuideVersion.published`. Passthrough MVP (Sharp/CF Image Resizing diferido). Backfill de `contentHash` vía ETag de R2. PR #57.
 - ⏳ **10E** `feat/guide-react-renderer` — renderer React con journey IA (Essentials/Howto/Checkout/Emergency fused) + brand theming + WCAG 2.2 AA + lightbox + maps stub + TOC sticky.
 - ⏳ **10F** `feat/guide-hero-quick-actions` — hero con countdown + quick-actions (copy-wifi, call, whatsapp, maps) + tracking endpoint.
 - ⏳ **10G** `feat/guide-client-search` — Fuse.js instant search (<20ms p95) sobre `GuideTree` serializado.
-- ⏳ **10H** `feat/guide-pwa` — manual Service Worker + 3-tier offline cache (shell + predictive images + lazy noncritical) + A2HS nudge.
+- ⏳ **10H** `feat/guide-pwa-offline` — manual Service Worker + 3-tier offline cache (shell + predictive images + lazy noncritical) + A2HS nudge.
 
 ### Progreso Fase 11 (2026-04-17 revisada: 4→6 ramas)
 

@@ -129,6 +129,7 @@ describe("headObject", () => {
     mockSend.mockResolvedValue({
       ContentLength: 123456,
       ContentType: "image/jpeg",
+      ETag: '"abcdef1234567890"',
     });
 
     const result = await headObject("p/a/file.jpg");
@@ -136,7 +137,17 @@ describe("headObject", () => {
     expect(result).toEqual({
       contentLength: 123456,
       contentType: "image/jpeg",
+      etag: "abcdef1234567890",
     });
+  });
+
+  it("returns etag=null when ETag header absent", async () => {
+    mockSend.mockResolvedValue({
+      ContentLength: 0,
+      ContentType: "image/jpeg",
+    });
+    const result = await headObject("p/a/file.jpg");
+    expect(result?.etag).toBeNull();
   });
 
   it("returns null when object not found", async () => {

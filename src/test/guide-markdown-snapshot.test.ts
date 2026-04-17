@@ -70,7 +70,7 @@ afterEach(() => {
 
 describe("renderMarkdown — snapshot by audience", () => {
   it("guest snapshot", async () => {
-    const tree = await composeGuide("p1", "guest");
+    const tree = await composeGuide("p1", "guest", null);
     const md = renderMarkdown(tree);
     expect(md).toMatchInlineSnapshot(`
       "## Llegada
@@ -102,8 +102,8 @@ describe("renderMarkdown — snapshot by audience", () => {
   });
 
   it("internal audience exposes internal-visibility fields not in guest snapshot", async () => {
-    const guestTree = await composeGuide("p1", "guest");
-    const internalTree = await composeGuide("p1", "internal");
+    const guestTree = await composeGuide("p1", "guest", null);
+    const internalTree = await composeGuide("p1", "internal", null);
     const guestMd = renderMarkdown(guestTree);
     const internalMd = renderMarkdown(internalTree);
     expect(guestMd).not.toContain("Notas internas");

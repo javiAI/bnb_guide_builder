@@ -24,6 +24,7 @@ Secretos incluyen:
 - contraseñas internas
 - tokens
 - credenciales de smart locks
+- **URLs presignadas de R2** (llevan credenciales S3 Sigv4 en el query string)
 
 No deben:
 
@@ -31,6 +32,7 @@ No deben:
 - salir en mensajes por defecto
 - entrar en previews públicas
 - aparecer en logs o diffs sin sanitizar
+- **incrustarse en HTML cacheado por CDN/ISR** — las URLs presignadas caducan en 1h mientras el HTML puede vivir días o semanas. Regla: toda media pública se referencia por la ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` (ver `docs/FEATURES/MEDIA_ASSETS.md` §7). Invariantes en `src/test/guide-rendering-proxy-urls.test.ts` fallan si `composeGuide` emite `r2.cloudflarestorage.com` o `X-Amz-*` en `GuideTree`.
 
 ## 4. Audit model
 

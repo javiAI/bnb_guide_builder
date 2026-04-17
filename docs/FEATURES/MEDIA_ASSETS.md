@@ -81,3 +81,52 @@ Un asset se asigna a entidades específicas:
 
 - fotos o vídeos nunca deben exponer secretos en superficies públicas
 - la UI debe avisar si una imagen marcada como `public` muestra un lockbox, keypad, código o similar
+
+## 7. Public media proxy
+
+Ruta estable pública: `GET /g/:slug/media/:assetId-:hashPrefix/:variant` (Rama 10D). Desacopla el HTML cacheado (ISR/CDN) del ciclo de vida de las URLs presignadas de R2 (1h), de modo que `Cache-Control: immutable` es honesto — una HTML cacheada durante semanas sigue sirviendo media sin romperse al caducar la firma.
+
+### Estructura de URL
+
+- `:slug` — `Property.publicSlug`.
+- `:assetId-:hashPrefix` — cuid del `MediaAsset` + primeros 8 chars del `contentHash`. Re-upload ⇒ nuevo hash ⇒ nueva URL ⇒ CDN re-fetch automático.
+- `:variant` — `thumb` | `md` | `full`. Los cuids no contienen guiones, así que el último `-` separa id y hash sin ambigüedad.
+
+### Variantes
+
+Actualmente las tres variantes son **passthrough** al binario original. La interfaz `streamVariant(asset, variant, range)` es estable — una futura rama enchufará transformación real (Sharp in-Node o Cloudflare Image Resizing) sin cambiar consumidores.
+
+| Variante | `maxWidthPx` | Uso |
+| --- | --- | --- |
+| `thumb` | 256 | thumbnails, listados |
+| `md` | 800 | galería pública |
+| `full` | null | lightbox, descarga |
+
+### Cache policy
+
+- `contentHash` presente → `Cache-Control: public, max-age=31536000, immutable` + ETag `"{contentHash}-{variant}"`. El ETag se **escopa a la variante** para que un CDN que cacheó `full` no sirva esos bytes para `thumb`.
+- `contentHash` ausente (pre-backfill) → `Cache-Control: public, max-age=3600, must-revalidate` sin ETag. Política transitoria hasta que `scripts/backfill-media-content-hash.ts` ejecute.
+
+Conditional requests (`If-None-Match`) devuelven 304 cuando el ETag coincide; Range requests se propagan a R2 y devuelven 206 con `Content-Range` (necesario para seek de `<video>` en Safari iOS).
+
+### Autorización
+
+Un asset es público si y solo si **todas** las siguientes condiciones se cumplen:
+
+1. `asset.property.publicSlug != null`
+2. `asset.property.publicSlug === :slug` de la URL
+3. `asset.property` tiene al menos un `GuideVersion.status = "published"` (verificado vía `_count` en la misma query)
+
+Cualquier fallo (asset no existe, slug no coincide, no hay versión publicada, hash prefix no coincide) devuelve **404** sin distinguir la causa — no se filtra información al atacante.
+
+### Nunca presignadas en HTML cacheado
+
+`composeGuide()` emite URLs relativas `/g/:slug/media/...` en `GuideTree`. Hay invariantes en `src/test/guide-rendering-proxy-urls.test.ts` que fallan si alguna URL en `GuideItem.media[]` contiene `r2.cloudflarestorage.com` o `X-Amz-*`.
+
+### Backfill de `contentHash`
+
+```bash
+npx tsx scripts/backfill-media-content-hash.ts [--dry-run]
+```
+
+Usa `headObject()` para traer el `ETag` de R2 (MD5 hex para uploads no-multipart, que es nuestro caso) y lo copia a `MediaAsset.contentHash`. Seguro de re-ejecutar — los assets que ya tienen hash se saltan.

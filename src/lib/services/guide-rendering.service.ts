@@ -50,6 +50,12 @@ import type { SubtypeField } from "@/lib/types/taxonomy";
 
 interface GuideContext {
   propertyId: string;
+  /**
+   * Public slug — required to build `/g/:slug/media/...` proxy URLs (10D).
+   * `null` when composing for internal/preview flows that never emit media URLs.
+   * Always `null` for resolvers that don't attach media; never hardcoded.
+   */
+  publicSlug: string | null;
   property: {
     id: string;
     checkInStart: string | null;
@@ -106,7 +112,10 @@ interface GuideContext {
   }>;
 }
 
-async function loadGuideContext(propertyId: string): Promise<GuideContext> {
+async function loadGuideContext(
+  propertyId: string,
+  publicSlug: string | null,
+): Promise<GuideContext> {
   const [property, spaces, amenityInstances, contacts, localPlaces] =
     await Promise.all([
       prisma.property.findUnique({
@@ -187,6 +196,7 @@ async function loadGuideContext(propertyId: string): Promise<GuideContext> {
     ]);
   return {
     propertyId,
+    publicSlug,
     property,
     spaces,
     amenityInstances,
@@ -693,8 +703,9 @@ export function getGuideResolverKeys(): ReadonlyArray<GuideResolverKey> {
 export async function composeGuide(
   propertyId: string,
   audience: GuideAudience,
+  publicSlug: string | null,
 ): Promise<GuideTree> {
-  const ctx = await loadGuideContext(propertyId);
+  const ctx = await loadGuideContext(propertyId, publicSlug);
   const sections: GuideSection[] = [];
   const configs = [...getGuideSectionConfigs()].sort((a, b) => a.order - b.order);
   for (const cfg of configs) {

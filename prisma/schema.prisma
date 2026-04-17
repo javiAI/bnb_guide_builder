@@ -512,6 +512,7 @@ model MediaAsset {
   visibility       VisibilityLevel @default(guest)
   sizeBytes        Int?     @map("size_bytes")
   blurhash         String?
+  contentHash      String?  @map("content_hash")
   status           String   @default("pending")
   uploadedByUserId String?  @map("uploaded_by_user_id")
   createdAt        DateTime @default(now()) @map("created_at")
