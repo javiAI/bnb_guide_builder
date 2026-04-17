@@ -121,7 +121,7 @@ Context7 (MCP) se activa auto — no invocar explícitamente salvo que falle.
 | `research/AI_KNOWLEDGE_BASE_SPEC.md` | Casos de uso (L7-37), AI schema (L40-139), chunk fields (L141-147), chunking (L149-192), contextual retrieval (L194-206), flujo retrieval (L208-215), qué IA necesita (L217-235), prompts (L237-368), campos modelo (L370-425) | Fase 11 completa |
 | `research/IMPLEMENTATION_PLAN.md` | Benchmark (L5-25), stack front (L29-49), back + RAG (L51-66), caching (L68-106), roadmap table (L109-127), decisiones críticas (L129-169), no-implementar (L171-183) | Fase 10D (media proxy), 10H (PWA), 11C (retrieval stack) |
 
-Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md)`. Nunca copies el contenido al plan — el research está congelado v1.0 en el repo y es referenciable por línea.
+Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el contenido al plan — el research está congelado v1.0 en el repo y es referenciable por línea.
 
 ---
 

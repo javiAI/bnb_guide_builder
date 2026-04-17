@@ -124,7 +124,7 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 **Estado**: diferido.
 **Trigger**: >50 properties publicadas o demanda explícita de hosts.
 
-10F introduce tracking MVP lightweight (endpoint `/api/analytics/guide-event`, tabla `GuideEvent`). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
+10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
 
 ---
 
