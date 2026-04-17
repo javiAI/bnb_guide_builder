@@ -5,6 +5,21 @@
   "units_system": "metric",
   "items": [
     {
+      "id": "gs.essentials",
+      "label": "Esenciales",
+      "order": 5,
+      "maxVisibility": "internal",
+      "sortBy": "explicit_order",
+      "resolverKey": "essentials",
+      "emptyCtaDeepLink": null,
+      "includesMedia": true,
+      "isHero": true,
+      "isAggregator": true,
+      "sourceResolverKeys": ["arrival", "amenities", "rules"],
+      "journeyStage": "arrival",
+      "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente."
+    },
+    {
       "id": "gs.arrival",
       "label": "Llegada",
       "order": 10,
@@ -12,7 +27,9 @@
       "sortBy": "explicit_order",
       "resolverKey": "arrival",
       "emptyCtaDeepLink": "/properties/{propertyId}/access",
-      "includesMedia": true
+      "includesMedia": true,
+      "journeyStage": "arrival",
+      "emptyCopy": "Aún no hay instrucciones de llegada configuradas. Añade el método de acceso y los detalles de check-in."
     },
     {
       "id": "gs.spaces",
@@ -22,7 +39,21 @@
       "sortBy": "taxonomy_order",
       "resolverKey": "spaces",
       "emptyCtaDeepLink": "/properties/{propertyId}/spaces",
-      "includesMedia": true
+      "includesMedia": true,
+      "journeyStage": "stay",
+      "emptyCopy": "Los espacios de la propiedad no están configurados. Añade dormitorios, baños y zonas comunes."
+    },
+    {
+      "id": "gs.howto",
+      "label": "Cómo usar",
+      "order": 25,
+      "maxVisibility": "internal",
+      "sortBy": "taxonomy_order",
+      "resolverKey": "howto",
+      "emptyCtaDeepLink": "/properties/{propertyId}/amenities",
+      "includesMedia": false,
+      "journeyStage": "stay",
+      "emptyCopy": "Añade notas de uso o runbooks en tus amenities o sistemas y aparecerán aquí para orientar al huésped."
     },
     {
       "id": "gs.amenities",
@@ -32,7 +63,9 @@
       "sortBy": "recommended_first",
       "resolverKey": "amenities",
       "emptyCtaDeepLink": "/properties/{propertyId}/amenities",
-      "includesMedia": true
+      "includesMedia": true,
+      "journeyStage": "stay",
+      "emptyCopy": "No has configurado equipamiento todavía. Selecciona los elementos que ofrece tu propiedad."
     },
     {
       "id": "gs.rules",
@@ -42,17 +75,21 @@
       "sortBy": "taxonomy_order",
       "resolverKey": "rules",
       "emptyCtaDeepLink": "/properties/{propertyId}/rules",
-      "includesMedia": false
+      "includesMedia": false,
+      "journeyStage": "stay",
+      "emptyCopy": "Aún no hay normas configuradas. Indica políticas de ruido, fumar, mascotas y eventos."
     },
     {
-      "id": "gs.contacts",
-      "label": "Contactos",
-      "order": 50,
+      "id": "gs.checkout",
+      "label": "Salida",
+      "order": 45,
       "maxVisibility": "internal",
       "sortBy": "explicit_order",
-      "resolverKey": "contacts",
-      "emptyCtaDeepLink": "/properties/{propertyId}/contacts",
-      "includesMedia": false
+      "resolverKey": "checkout",
+      "emptyCtaDeepLink": "/properties/{propertyId}/rules",
+      "includesMedia": false,
+      "journeyStage": "checkout",
+      "emptyCopy": "Configura el horario de check-out, políticas de salida y suplementos para que aparezcan aquí."
     },
     {
       "id": "gs.local",
@@ -62,17 +99,21 @@
       "sortBy": "alpha",
       "resolverKey": "local",
       "emptyCtaDeepLink": "/properties/{propertyId}/local-guide",
-      "includesMedia": false
+      "includesMedia": false,
+      "journeyStage": "stay",
+      "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio."
     },
     {
       "id": "gs.emergency",
-      "label": "Emergencias",
+      "label": "Ayuda y emergencias",
       "order": 70,
       "maxVisibility": "internal",
       "sortBy": "explicit_order",
       "resolverKey": "emergency",
       "emptyCtaDeepLink": "/properties/{propertyId}/contacts",
-      "includesMedia": false
+      "includesMedia": false,
+      "journeyStage": "help",
+      "emptyCopy": "Añade al menos un contacto de anfitrión y los servicios de emergencia locales para ofrecer apoyo inmediato."
     }
   ]
 }

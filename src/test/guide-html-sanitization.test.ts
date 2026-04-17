@@ -37,10 +37,10 @@ describe("renderHtml — sanitization", () => {
     const tree = makeTree({
       sections: [
         {
-          id: "gs.contacts",
-          label: "Contactos",
+          id: "gs.emergency",
+          label: "Ayuda y emergencias",
           order: 5,
-          resolverKey: "contacts",
+          resolverKey: "emergency",
           sortBy: "explicit_order",
           emptyCtaDeepLink: null,
           maxVisibility: "internal",

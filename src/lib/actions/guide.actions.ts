@@ -6,7 +6,10 @@ import { revalidatePath } from "next/cache";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { ensurePropertySlug } from "@/lib/services/guide-slug.service";
 import { isPrismaUniqueViolation } from "@/lib/utils";
-import type { GuideTree } from "@/lib/types/guide-tree";
+import {
+  GUIDE_TREE_SCHEMA_VERSION,
+  type GuideTree,
+} from "@/lib/types/guide-tree";
 import type { ActionResult } from "@/lib/types/action-result";
 
 async function revalidatePublishingPaths(
@@ -15,16 +18,17 @@ async function revalidatePublishingPaths(
 ): Promise<void> {
   revalidatePath(`/properties/${propertyId}/publishing`);
   revalidatePath(`/properties/${propertyId}/guest-guide`);
-  if (publicSlug) {
-    revalidatePath(`/g/${publicSlug}`);
-    return;
+  let slug = publicSlug ?? null;
+  if (!slug) {
+    const prop = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { publicSlug: true },
+    });
+    slug = prop?.publicSlug ?? null;
   }
-  // Slug not provided — fetch from DB as fallback
-  const prop = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { publicSlug: true },
-  });
-  if (prop?.publicSlug) revalidatePath(`/g/${prop.publicSlug}`);
+  if (slug) {
+    revalidatePath(`/g/${slug}`);
+  }
 }
 
 // ──────────────────────────────────────────────
@@ -80,6 +84,7 @@ export async function publishGuideVersionAction(
           version: nextVersion,
           status: "published",
           treeJson: tree as unknown as Prisma.InputJsonValue,
+          treeSchemaVersion: GUIDE_TREE_SCHEMA_VERSION,
           publishedAt: new Date(),
           property: { connect: { id: propertyId } },
         },
@@ -140,7 +145,13 @@ export async function rollbackToVersionAction(
 
   const source = await prisma.guideVersion.findUnique({
     where: { id: sourceVersionId },
-    select: { id: true, propertyId: true, status: true, treeJson: true },
+    select: {
+      id: true,
+      propertyId: true,
+      status: true,
+      treeJson: true,
+      treeSchemaVersion: true,
+    },
   });
   if (!source) return { success: false, error: "Versión fuente no encontrada" };
   if (source.status !== "archived") {
@@ -167,6 +178,9 @@ export async function rollbackToVersionAction(
           version: nextVersion,
           status: "published",
           treeJson: source.treeJson as Prisma.InputJsonValue,
+          // Preserve the source snapshot's schema — the old JSON shape is
+          // already baked, bumping to v2 here would lie about the payload.
+          treeSchemaVersion: source.treeSchemaVersion,
           publishedAt: new Date(),
           property: { connect: { id: source.propertyId } },
         },

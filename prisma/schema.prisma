@@ -108,6 +108,8 @@ model Property {
   hasPrivateEntrance      Boolean @default(false) @map("has_private_entrance")
   infrastructureJson      Json?   @map("infrastructure_json")
   publicSlug       String?  @unique @map("public_slug")
+  brandLogoUrl     String?  @map("brand_logo_url")
+  brandPaletteKey  String?  @map("brand_palette_key")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
@@ -330,6 +332,7 @@ model PropertyAmenityInstance {
   aiInstructions       String?  @map("ai_instructions")
   internalNotes        String?  @map("internal_notes")
   troubleshootingNotes String?  @map("troubleshooting_notes")
+  runbookJson          Json?    @map("runbook_json")
   visibility           VisibilityLevel @default(guest)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
@@ -614,14 +617,15 @@ model Intent {
 }
 
 model GuideVersion {
-  id          String    @id @default(cuid())
-  propertyId  String    @map("property_id")
-  version     Int       @default(1)
-  status      String    @default("draft")
-  treeJson    Json?     @map("tree_json")
-  publishedAt DateTime? @map("published_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id                String    @id @default(cuid())
+  propertyId        String    @map("property_id")
+  version           Int       @default(1)
+  status            String    @default("draft")
+  treeJson          Json?     @map("tree_json")
+  treeSchemaVersion Int       @default(1) @map("tree_schema_version")
+  publishedAt       DateTime? @map("published_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 

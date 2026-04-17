@@ -1369,7 +1369,8 @@
       "importanceLevel": "highlight",
       "canonicalOwner": "sys.internet",
       "destination": "derived_from_system",
-      "target": "sys.internet"
+      "target": "sys.internet",
+      "journeyTags": ["essential"]
     },
     {
       "id": "am.kitchen",

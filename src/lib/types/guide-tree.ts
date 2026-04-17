@@ -3,9 +3,20 @@
 // resolver returns items with the same shape so the renderer (9B) and any
 // downstream consumer can walk the tree uniformly.
 
-import type { GuideAudience, GuideResolverKey, GuideSortBy } from "@/lib/taxonomy-loader";
+import type {
+  GuideAudience,
+  GuideJourneyStage,
+  GuideResolverKey,
+  GuideSortBy,
+} from "@/lib/taxonomy-loader";
 
-export type { GuideAudience, GuideResolverKey, GuideSortBy };
+export type { GuideAudience, GuideJourneyStage, GuideResolverKey, GuideSortBy };
+
+/** Current schema version written into freshly composed / published trees.
+ * Bump when the shape changes in a way the React renderer can detect and
+ * log (see `app/g/[slug]/page.tsx`). Old snapshots without this field still
+ * render; they just log once per request as "snapshot pre-v2". */
+export const GUIDE_TREE_SCHEMA_VERSION = 2 as const;
 
 export interface GuideMediaVariants {
   thumb: string;
@@ -28,6 +39,16 @@ export interface GuideItemField {
   visibility: GuideAudience;
 }
 
+/** Field labels for contact/emergency items. The resolver emits these as
+ * GuideItemField labels and `GuideEmergencySection` matches on them to promote
+ * phone/email to `tel:` / `mailto:` links. Keep in one place so the two sides
+ * can't drift apart silently. */
+export const EMERGENCY_FIELD_LABELS = {
+  phone: "Teléfono",
+  email: "Email",
+  notes: "Notas",
+} as const;
+
 export interface GuideItem {
   /** Stable id — DB row id for entity-backed items, synthetic for derived ones. */
   id: string;
@@ -49,6 +70,12 @@ export interface GuideItem {
   media: GuideMedia[];
   /** Nested items (e.g. amenities inside a space). Empty array when none. */
   children: GuideItem[];
+  /** Guest journey stage inherited from the source taxonomy (10E). */
+  journeyStage?: GuideJourneyStage;
+  /** Cross-cutting tags from the source taxonomy (e.g. `essential`). */
+  journeyTags?: string[];
+  /** Pre-rendered HTML safe string of runbook/troubleshooting notes (amenity instances). */
+  runbookHtml?: string;
 }
 
 export interface GuideSection {
@@ -70,11 +97,28 @@ export interface GuideSection {
    */
   maxVisibility: GuideAudience;
   items: GuideItem[];
+  /** Guest journey stage — drives progress rail / section grouping (10E). */
+  journeyStage?: GuideJourneyStage;
+  /** True for the lead/hero section (rendered with larger layout). Only one per tree. */
+  isHero?: boolean;
+  /** True for sections that clone items from other sections (e.g. gs.essentials).
+   * Excluded from TOC to avoid duplicate navigation entries. */
+  isAggregator?: boolean;
+  /** Resolver keys whose items this aggregator pulls from (required when isAggregator). */
+  sourceResolverKeys?: GuideResolverKey[];
+  /** Human-readable empty-state copy (preferred over generic fallback). */
+  emptyCopy?: string;
 }
 
 export interface GuideTree {
+  /** Snapshot shape version. Absent = legacy pre-v2 snapshot. */
+  schemaVersion?: number;
   propertyId: string;
   audience: GuideAudience;
   generatedAt: string;
   sections: GuideSection[];
+  /** Brand palette key (curated set in `src/config/brand-palette.ts`). */
+  brandPaletteKey?: string | null;
+  /** Content-addressable URL of the host logo (proxied via /g/:slug/media/...). */
+  brandLogoUrl?: string | null;
 }

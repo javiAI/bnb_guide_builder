@@ -11,8 +11,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { composeGuide, __test__ } from "@/lib/services/guide-rendering.service";
-const { filterByAudience } = __test__;
+import {
+  composeGuide,
+  filterByAudience,
+} from "@/lib/services/guide-rendering.service";
 import type { GuideItem } from "@/lib/types/guide-tree";
 
 const fn = <K extends keyof typeof prisma>(table: K, method: "findUnique" | "findMany") =>
@@ -41,15 +43,17 @@ beforeEach(() => {
 });
 
 describe("composeGuide — basic shape", () => {
-  it("returns all 7 sections declared in guide_sections.json in order", async () => {
+  it("returns all 9 sections declared in guide_sections.json in order", async () => {
     const tree = await composeGuide("p1", "guest", null);
     const ids = tree.sections.map((s) => s.id);
     expect(ids).toEqual([
+      "gs.essentials",
       "gs.arrival",
       "gs.spaces",
+      "gs.howto",
       "gs.amenities",
       "gs.rules",
-      "gs.contacts",
+      "gs.checkout",
       "gs.local",
       "gs.emergency",
     ]);
@@ -67,7 +71,13 @@ describe("composeGuide — basic shape", () => {
 
   it("internal audience emits resolved emptyCtaDeepLink with propertyId", async () => {
     const tree = await composeGuide("p1", "internal", null);
-    for (const section of tree.sections) {
+    // gs.essentials is an aggregator and declares `emptyCtaDeepLink: null` in
+    // config (it has no editor surface of its own — CTAs live on the leaves).
+    const sectionsWithCta = tree.sections.filter(
+      (s) => !s.isAggregator,
+    );
+    expect(sectionsWithCta.length).toBeGreaterThan(0);
+    for (const section of sectionsWithCta) {
       expect(section.emptyCtaDeepLink).toContain("p1");
     }
   });
@@ -128,7 +138,7 @@ describe("composeGuide — audience filtering", () => {
     fn("contact", "findMany").mockResolvedValue([
       {
         id: "c1",
-        roleKey: "contact.host",
+        roleKey: "ct.host",
         displayName: "Internal-only",
         phone: "123",
         email: null,
@@ -140,9 +150,9 @@ describe("composeGuide — audience filtering", () => {
       },
     ]);
     const guest = await composeGuide("p1", "guest", null);
-    expect(guest.sections.find((s) => s.id === "gs.contacts")!.items).toHaveLength(0);
+    expect(guest.sections.find((s) => s.id === "gs.emergency")!.items).toHaveLength(0);
     const internal = await composeGuide("p1", "internal", null);
-    expect(internal.sections.find((s) => s.id === "gs.contacts")!.items).toHaveLength(1);
+    expect(internal.sections.find((s) => s.id === "gs.emergency")!.items).toHaveLength(1);
   });
 });
 
@@ -169,12 +179,12 @@ describe("filterByAudience", () => {
   });
 });
 
-describe("composeGuide — emergency split", () => {
-  it("emergency-flagged contacts go to emergency, others to contacts", async () => {
+describe("composeGuide — emergency fusion (Rama 10E)", () => {
+  it("emergency-flagged contacts and host/cohost roles both land in gs.emergency, emergency first", async () => {
     fn("contact", "findMany").mockResolvedValue([
       {
         id: "c1",
-        roleKey: "contact.host",
+        roleKey: "ct.host",
         displayName: "Host",
         phone: "1",
         email: null,
@@ -186,7 +196,7 @@ describe("composeGuide — emergency split", () => {
       },
       {
         id: "c2",
-        roleKey: "contact.emergency",
+        roleKey: "ct.emergency_service",
         displayName: "Emergency",
         phone: "112",
         email: null,
@@ -198,9 +208,30 @@ describe("composeGuide — emergency split", () => {
       },
     ]);
     const tree = await composeGuide("p1", "guest", null);
-    const contacts = tree.sections.find((s) => s.id === "gs.contacts")!;
     const emergency = tree.sections.find((s) => s.id === "gs.emergency")!;
-    expect(contacts.items.map((i) => i.id)).toEqual(["c1"]);
-    expect(emergency.items.map((i) => i.id)).toEqual(["c2"]);
+    // Emergency-flagged first, host/cohost second.
+    expect(emergency.items.map((i) => i.id)).toEqual(["c2", "c1"]);
+    // No orphan `gs.contacts` section — fusion eliminated it.
+    expect(tree.sections.find((s) => s.id === "gs.contacts")).toBeUndefined();
+  });
+
+  it("contacts without emergency flag or host/cohost role are dropped", async () => {
+    fn("contact", "findMany").mockResolvedValue([
+      {
+        id: "c3",
+        roleKey: "ct.cleaning",
+        displayName: "Cleaner",
+        phone: "9",
+        email: null,
+        guestVisibleNotes: null,
+        internalNotes: null,
+        emergencyAvailable: false,
+        sortOrder: 0,
+        visibility: "guest",
+      },
+    ]);
+    const tree = await composeGuide("p1", "guest", null);
+    const emergency = tree.sections.find((s) => s.id === "gs.emergency")!;
+    expect(emergency.items).toHaveLength(0);
   });
 });

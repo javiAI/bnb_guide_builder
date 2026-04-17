@@ -30,6 +30,10 @@ import type {
   GuideTree,
 } from "@/lib/types/guide-tree";
 import {
+  GUIDE_TREE_SCHEMA_VERSION,
+  EMERGENCY_FIELD_LABELS,
+} from "@/lib/types/guide-tree";
+import {
   findAmenityItem,
   findSubtype,
   findItem,
@@ -37,6 +41,7 @@ import {
   bedTypes,
   getGuideSectionConfigs,
   getSpaceTypeItem,
+  isHostRole,
   isVisibleForAudience,
   policyTaxonomy,
   spaceTypes,
@@ -72,6 +77,8 @@ interface GuideContext {
     primaryAccessMethod: string | null;
     accessMethodsJson: unknown;
     policiesJson: unknown;
+    brandPaletteKey: string | null;
+    brandLogoUrl: string | null;
   } | null;
   spaces: Array<{
     id: string;
@@ -93,6 +100,8 @@ interface GuideContext {
     guestInstructions: string | null;
     aiInstructions: string | null;
     internalNotes: string | null;
+    troubleshootingNotes: string | null;
+    runbookJson: unknown;
     visibility: GuideAudience;
     placements: Array<{ spaceId: string }>;
   }>;
@@ -160,6 +169,8 @@ async function loadGuideContext(
       primaryAccessMethod: true,
       accessMethodsJson: true,
       policiesJson: true,
+      brandPaletteKey: true,
+      brandLogoUrl: true,
     },
   });
   const spacesPromise = prisma.space.findMany({
@@ -191,6 +202,8 @@ async function loadGuideContext(
       guestInstructions: true,
       aiInstructions: true,
       internalNotes: true,
+      troubleshootingNotes: true,
+      runbookJson: true,
       visibility: true,
       placements: { select: { spaceId: true } },
     },
@@ -383,10 +396,15 @@ const RECOMMENDED_AMENITIES: ReadonlySet<string> = new Set(
 );
 const EMPTY_SET: ReadonlySet<string> = new Set();
 
+const POLICY_ORDER = policyTaxonomy.groups.flatMap((g) => g.items.map((i) => i.id));
+const AMENITY_ORDER = amenityTaxonomy.items.map((a) => a.id);
+
 const TAXONOMY_ORDER_BY_RESOLVER: Partial<Record<GuideResolverKey, readonly string[]>> = {
   spaces: spaceTypes.items.map((s) => s.id),
-  amenities: amenityTaxonomy.items.map((a) => a.id),
-  rules: policyTaxonomy.groups.flatMap((g) => g.items.map((i) => i.id)),
+  amenities: AMENITY_ORDER,
+  rules: POLICY_ORDER,
+  howto: AMENITY_ORDER,
+  checkout: POLICY_ORDER,
 };
 
 function applySort(
@@ -443,8 +461,7 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
   const items: GuideItem[] = [];
 
   // Property cover surfaces as a synthetic first item when there are assets
-  // assigned to the property entity. Markdown/HTML render it as a labeled
-  // figure.
+  // assigned to the property entity. The renderer shows it as a labeled figure.
   const propertyMedia = takeMedia(ctx, "property", p.id);
   if (propertyMedia.length > 0) {
     items.push({
@@ -458,6 +475,8 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
       fields: [],
       media: propertyMedia,
       children: [],
+      journeyStage: "arrival",
+      journeyTags: ["essential"],
     });
   }
 
@@ -477,20 +496,8 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
       fields: [],
       media: [],
       children: [],
-    });
-  }
-  if (p.checkOutTime) {
-    items.push({
-      id: "arrival.checkout",
-      taxonomyKey: null,
-      label: "Check-out",
-      value: p.checkOutTime,
-      visibility: "guest",
-      deprecated: false,
-      warnings: [],
-      fields: [],
-      media: [],
-      children: [],
+      journeyStage: "arrival",
+      journeyTags: ["essential"],
     });
   }
   if (p.primaryAccessMethod) {
@@ -506,6 +513,8 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
       fields: [],
       media: takeMedia(ctx, "access_method", p.id),
       children: [],
+      journeyStage: "arrival",
+      journeyTags: ["essential"],
     });
   }
   return items;
@@ -601,8 +610,86 @@ function resolveAmenities(ctx: GuideContext): GuideItem[] {
       ],
       media: takeMedia(ctx, "amenity_instance", inst.id),
       children: [],
+      journeyStage: item?.journeyStage,
+      journeyTags: item?.journeyTags,
     };
   });
+}
+
+/** Runbook steps emitted by the howto resolver. The React renderer consumes
+ * this as an ordered list; raw JSON in the DB is an array of
+ * `{ label, detail }`. */
+export interface GuideRunbookStep {
+  label: string;
+  detail?: string;
+}
+
+function parseRunbookSteps(raw: unknown): GuideRunbookStep[] {
+  if (!raw) return [];
+  if (!Array.isArray(raw)) return [];
+  const steps: GuideRunbookStep[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const label = (entry as { label?: unknown }).label;
+    if (typeof label !== "string" || label.trim() === "") continue;
+    const detail = (entry as { detail?: unknown }).detail;
+    steps.push({
+      label,
+      detail: typeof detail === "string" && detail.trim() !== "" ? detail : undefined,
+    });
+  }
+  return steps;
+}
+
+function resolveHowto(ctx: GuideContext): GuideItem[] {
+  const items: GuideItem[] = [];
+  for (const inst of ctx.amenityInstances) {
+    const steps = parseRunbookSteps(inst.runbookJson);
+    const hasTrouble = !!inst.troubleshootingNotes?.trim();
+    const hasGuestInstructions = !!inst.guestInstructions?.trim();
+    if (steps.length === 0 && !hasTrouble && !hasGuestInstructions) continue;
+    const item = findAmenityItem(inst.amenityKey);
+    const fields: GuideItemField[] = [];
+    if (hasGuestInstructions) {
+      fields.push({
+        label: "Instrucciones",
+        value: inst.guestInstructions as string,
+        visibility: "guest",
+      });
+    }
+    if (hasTrouble) {
+      fields.push({
+        label: "Solución de problemas",
+        value: inst.troubleshootingNotes as string,
+        visibility: "guest",
+      });
+    }
+    items.push({
+      id: `howto.${inst.id}`,
+      taxonomyKey: inst.amenityKey,
+      label: item?.label ?? inst.amenityKey,
+      value: null,
+      visibility: inst.visibility,
+      deprecated: !item,
+      warnings: [],
+      fields,
+      media: [],
+      children: steps.map((step, idx) => ({
+        id: `howto.${inst.id}.step.${idx}`,
+        taxonomyKey: null,
+        label: step.label,
+        value: step.detail ?? null,
+        visibility: "guest",
+        deprecated: false,
+        warnings: [],
+        fields: [],
+        media: [],
+        children: [],
+      })),
+      journeyStage: "stay",
+    });
+  }
+  return items;
 }
 
 /**
@@ -637,22 +724,31 @@ function lookupPolicyValue(
   return (parentObj as Record<string, unknown>)[mapping.child];
 }
 
-function resolveRules(ctx: GuideContext): GuideItem[] {
-  const raw = ctx.property?.policiesJson;
-  if (!raw) return [];
-  // Guard against legacy string-encoded JSON
-  let parsed: Record<string, unknown>;
+function parsePoliciesJson(
+  raw: unknown,
+): Record<string, unknown> | null {
+  if (!raw) return null;
   if (typeof raw === "string") {
-    try { parsed = JSON.parse(raw); } catch { return []; }
-  } else if (typeof raw === "object" && !Array.isArray(raw)) {
-    parsed = raw as Record<string, unknown>;
-  } else {
-    return [];
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return null;
+}
 
+/** Builds GuideItems for policies whose `journeyStage` matches the filter.
+ * Items without a declared stage default to `"stay"` (backwards compatibility
+ * with un-tagged taxonomy entries). */
+function resolvePoliciesByStage(
+  parsed: Record<string, unknown>,
+  stageFilter: (stage: "arrival" | "stay" | "checkout" | "help") => boolean,
+): { items: GuideItem[]; coveredDbKeys: Set<string> } {
   const items: GuideItem[] = [];
-  // Track which DB keys are covered by the taxonomy so the deprecated pass
-  // doesn't duplicate them.
   const coveredDbKeys = new Set<string>();
   for (const group of policyTaxonomy.groups) {
     for (const policyItem of group.items) {
@@ -660,6 +756,12 @@ function resolveRules(ctx: GuideContext): GuideItem[] {
       if (mapping) {
         coveredDbKeys.add(typeof mapping === "string" ? mapping : mapping.parent);
       }
+      const stage = (policyItem.journeyStage ?? "stay") as
+        | "arrival"
+        | "stay"
+        | "checkout"
+        | "help";
+      if (!stageFilter(stage)) continue;
       const rawValue = lookupPolicyValue(parsed, policyItem.id);
       if (rawValue === undefined || rawValue === null) continue;
       const valueStr =
@@ -678,9 +780,21 @@ function resolveRules(ctx: GuideContext): GuideItem[] {
         fields: [],
         media: [],
         children: [],
+        journeyStage: stage,
+        journeyTags: policyItem.journeyTags,
       });
     }
   }
+  return { items, coveredDbKeys };
+}
+
+function resolveRules(ctx: GuideContext): GuideItem[] {
+  const parsed = parsePoliciesJson(ctx.property?.policiesJson);
+  if (!parsed) return [];
+  const { items, coveredDbKeys } = resolvePoliciesByStage(
+    parsed,
+    (stage) => stage !== "checkout",
+  );
   // Keys not covered by the taxonomy surface as deprecated so renamed policies
   // never swallow persisted data.
   for (const [key, value] of Object.entries(parsed)) {
@@ -705,15 +819,51 @@ function resolveRules(ctx: GuideContext): GuideItem[] {
   return items;
 }
 
-function resolveContacts(ctx: GuideContext): GuideItem[] {
-  return ctx.contacts
-    .filter((c) => !c.emergencyAvailable)
-    .map((c) => contactToGuideItem(c));
+function resolveCheckout(ctx: GuideContext): GuideItem[] {
+  const p = ctx.property;
+  const items: GuideItem[] = [];
+  if (p?.checkOutTime) {
+    items.push({
+      id: "checkout.time",
+      taxonomyKey: null,
+      label: "Hora de check-out",
+      value: p.checkOutTime,
+      visibility: "guest",
+      deprecated: false,
+      warnings: [],
+      fields: [],
+      media: [],
+      children: [],
+      journeyStage: "checkout",
+      journeyTags: ["essential"],
+    });
+  }
+  const parsed = parsePoliciesJson(p?.policiesJson);
+  if (parsed) {
+    const { items: policyItems } = resolvePoliciesByStage(
+      parsed,
+      (stage) => stage === "checkout",
+    );
+    items.push(...policyItems);
+  }
+  return items;
 }
 
+/** Rama 10E fused the old `gs.contacts` section into `gs.emergency` (now
+ * "Ayuda y emergencias"). Host/cohost contacts feed the help section
+ * alongside emergency-flagged ones, with `emergencyAvailable=true` ranked
+ * first. */
 function resolveEmergency(ctx: GuideContext): GuideItem[] {
-  return ctx.contacts
-    .filter((c) => c.emergencyAvailable)
+  const relevant = ctx.contacts.filter(
+    (c) => c.emergencyAvailable || isHostRole(c.roleKey),
+  );
+  return relevant
+    .sort((a, b) => {
+      if (a.emergencyAvailable !== b.emergencyAvailable) {
+        return a.emergencyAvailable ? -1 : 1;
+      }
+      return a.sortOrder - b.sortOrder;
+    })
     .map((c) => contactToGuideItem(c));
 }
 
@@ -721,10 +871,12 @@ function contactToGuideItem(
   c: GuideContext["contacts"][number],
 ): GuideItem {
   const fields: GuideItemField[] = [];
-  if (c.phone) fields.push({ label: "Teléfono", value: c.phone, visibility: "guest" });
-  if (c.email) fields.push({ label: "Email", value: c.email, visibility: "guest" });
+  if (c.phone)
+    fields.push({ label: EMERGENCY_FIELD_LABELS.phone, value: c.phone, visibility: "guest" });
+  if (c.email)
+    fields.push({ label: EMERGENCY_FIELD_LABELS.email, value: c.email, visibility: "guest" });
   if (c.guestVisibleNotes)
-    fields.push({ label: "Notas", value: c.guestVisibleNotes, visibility: "guest" });
+    fields.push({ label: EMERGENCY_FIELD_LABELS.notes, value: c.guestVisibleNotes, visibility: "guest" });
   if (c.internalNotes)
     fields.push({
       label: "Notas internas",
@@ -783,21 +935,61 @@ function resolveLocal(ctx: GuideContext): GuideItem[] {
   });
 }
 
-// Registry: resolverKey → resolver function. The test
-// `guide-sections-coverage.test.ts` enforces that the keys here match
-// `GUIDE_RESOLVER_KEYS` in the taxonomy-loader.
-const RESOLVERS: Record<GuideResolverKey, (ctx: GuideContext) => GuideItem[]> = {
+// Leaf resolvers produce items from the raw GuideContext only. The aggregator
+// registry below runs after all leaves and can consume their outputs.
+type LeafResolver = (ctx: GuideContext) => GuideItem[];
+
+const LEAF_RESOLVERS: Partial<Record<GuideResolverKey, LeafResolver>> = {
   arrival: resolveArrival,
   spaces: resolveSpaces,
+  howto: resolveHowto,
   amenities: resolveAmenities,
   rules: resolveRules,
-  contacts: resolveContacts,
+  checkout: resolveCheckout,
   local: resolveLocal,
   emergency: resolveEmergency,
 };
 
+/** An aggregator clones items from other (already-resolved) leaf sections into
+ * a dedicated section without removing the originals. `sourceResolverKeys`
+ * comes from the section config; items are kept when `journeyTags` includes
+ * `"essential"`. Cloned items are reassigned synthetic ids so the renderer
+ * doesn't produce duplicate DOM ids. */
+function resolveEssentials(
+  _ctx: GuideContext,
+  resolved: ReadonlyMap<GuideResolverKey, GuideItem[]>,
+  sourceResolverKeys: readonly GuideResolverKey[],
+): GuideItem[] {
+  const out: GuideItem[] = [];
+  for (const key of sourceResolverKeys) {
+    const items = resolved.get(key);
+    if (!items) continue;
+    for (const item of items) {
+      if (!item.journeyTags?.includes("essential")) continue;
+      out.push({
+        ...item,
+        id: `essentials.${key}.${item.id}`,
+      });
+    }
+  }
+  return out;
+}
+
+type AggregatorResolver = (
+  ctx: GuideContext,
+  resolved: ReadonlyMap<GuideResolverKey, GuideItem[]>,
+  sourceResolverKeys: readonly GuideResolverKey[],
+) => GuideItem[];
+
+const AGGREGATOR_RESOLVERS: Partial<Record<GuideResolverKey, AggregatorResolver>> = {
+  essentials: resolveEssentials,
+};
+
 export function getGuideResolverKeys(): ReadonlyArray<GuideResolverKey> {
-  return Object.keys(RESOLVERS) as GuideResolverKey[];
+  return [
+    ...Object.keys(LEAF_RESOLVERS),
+    ...Object.keys(AGGREGATOR_RESOLVERS),
+  ] as GuideResolverKey[];
 }
 
 // ──────────────────────────────────────────────
@@ -810,10 +1002,26 @@ export async function composeGuide(
   publicSlug: string | null,
 ): Promise<GuideTree> {
   const ctx = await loadGuideContext(propertyId, audience, publicSlug);
+
+  // Pass 1 — leaf resolvers. Emit raw items per resolver key; we keep an
+  // unsorted/unfiltered copy so aggregators get the full set (aggregators pick
+  // by `journeyTags`, not audience).
+  const leafItemsByKey = new Map<GuideResolverKey, GuideItem[]>();
+  for (const cfg of SORTED_SECTION_CONFIGS) {
+    const resolver = LEAF_RESOLVERS[cfg.resolverKey];
+    if (!resolver) continue;
+    leafItemsByKey.set(cfg.resolverKey, resolver(ctx));
+  }
+
+  // Pass 2 — assemble sections. Aggregators run inline here (they only need
+  // `leafItemsByKey`, fully populated by pass 1) so we avoid a second
+  // temporary map just to thread the items into the section struct.
   const sections: GuideSection[] = [];
   for (const cfg of SORTED_SECTION_CONFIGS) {
-    const resolver = RESOLVERS[cfg.resolverKey];
-    const rawItems = resolver(ctx);
+    const aggregator = AGGREGATOR_RESOLVERS[cfg.resolverKey];
+    const rawItems = aggregator
+      ? aggregator(ctx, leafItemsByKey, cfg.sourceResolverKeys ?? [])
+      : leafItemsByKey.get(cfg.resolverKey) ?? [];
     const sorted = applySort(rawItems, cfg.sortBy, cfg.resolverKey);
     const items = filterByAudience(sorted, audience);
     // Host-panel deep links are not exposed to guest audiences (see
@@ -823,7 +1031,7 @@ export async function composeGuide(
     const emptyCtaDeepLink =
       audience === "guest"
         ? null
-        : cfg.emptyCtaDeepLink.replace("{propertyId}", propertyId);
+        : cfg.emptyCtaDeepLink?.replace("{propertyId}", propertyId) ?? null;
     sections.push({
       id: cfg.id,
       label: cfg.label,
@@ -833,20 +1041,30 @@ export async function composeGuide(
       emptyCtaDeepLink,
       maxVisibility: cfg.maxVisibility,
       items,
+      journeyStage: cfg.journeyStage,
+      isHero: cfg.isHero,
+      isAggregator: cfg.isAggregator,
+      sourceResolverKeys: cfg.sourceResolverKeys as
+        | GuideResolverKey[]
+        | undefined,
+      emptyCopy: cfg.emptyCopy,
     });
   }
   return {
+    schemaVersion: GUIDE_TREE_SCHEMA_VERSION,
     propertyId,
     audience,
     generatedAt: new Date().toISOString(),
     sections,
+    brandPaletteKey: ctx.property?.brandPaletteKey ?? null,
+    brandLogoUrl: ctx.property?.brandLogoUrl ?? null,
   };
 }
 
 // Exports for integrity/resilience tests — they need a way to inspect the
-// resolver registry without reaching into internals.
+// resolver registries without reaching into internals.
 export const __test__ = {
-  RESOLVERS,
+  LEAF_RESOLVERS,
+  AGGREGATOR_RESOLVERS,
   loadGuideContext,
-  filterByAudience,
 };

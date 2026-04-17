@@ -18,7 +18,9 @@
           "required": true,
           "recommended": true,
           "default_from_field": "basics.max_guests",
-          "dependency_hints": []
+          "dependency_hints": [],
+          "journeyStage": "arrival",
+          "journeyTags": ["essential"]
         },
         {
           "id": "pol.quiet_hours",
@@ -32,7 +34,9 @@
           },
           "dependency_hints": [
             "Si enabled=true, pedir inicio y fin en formato 24 h."
-          ]
+          ],
+          "journeyStage": "stay",
+          "journeyTags": ["essential"]
         },
         {
           "id": "pol.smoking",
@@ -65,7 +69,9 @@
               "description": "Sin restricciones específicas."
             }
           ],
-          "dependency_hints": []
+          "dependency_hints": [],
+          "journeyStage": "arrival",
+          "journeyTags": ["essential"]
         },
         {
           "id": "pol.events",
@@ -266,7 +272,9 @@
           ],
           "dependency_hints": [
             "Si allowed=true, activar plantillas y operación relacionadas con mascotas."
-          ]
+          ],
+          "journeyStage": "stay",
+          "journeyTags": ["essential"]
         },
         {
           "id": "pol.checkin_checkout",
@@ -276,7 +284,9 @@
           "required": true,
           "recommended": true,
           "ref": "arrival.check_in_window + arrival.check_out_time",
-          "dependency_hints": []
+          "dependency_hints": [],
+          "journeyStage": "checkout",
+          "journeyTags": ["essential"]
         },
         {
           "id": "pol.commercial_photography",
@@ -373,7 +383,8 @@
           "currency": "EUR",
           "required": false,
           "recommended": false,
-          "dependency_hints": []
+          "dependency_hints": [],
+          "journeyStage": "checkout"
         },
         {
           "id": "fee.extra_guest",
@@ -385,7 +396,8 @@
           "recommended": false,
           "dependency_hints": [
             "Mostrar solo si existe política diferenciada por ocupación."
-          ]
+          ],
+          "journeyStage": "checkout"
         },
         {
           "id": "fee.pet",
@@ -395,7 +407,8 @@
           "ref": "pol.pets.fee_mode + pol.pets.fee_amount",
           "required": false,
           "recommended": false,
-          "dependency_hints": []
+          "dependency_hints": [],
+          "journeyStage": "checkout"
         }
       ]
     }
