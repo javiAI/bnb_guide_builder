@@ -115,7 +115,6 @@ export async function loadEntityMedia(
         select: {
           id: true,
           assetRoleKey: true,
-          mediaType: true,
           mimeType: true,
           caption: true,
           visibility: true,
