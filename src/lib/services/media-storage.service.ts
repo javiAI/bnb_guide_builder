@@ -130,7 +130,7 @@ export async function getUploadUrl(
   contentType: string,
 ): Promise<string> {
   const command = new PutObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
     ContentType: contentType,
   });
@@ -144,7 +144,7 @@ export async function getDownloadUrl(storageKey: string): Promise<string> {
   if (cached) return cached;
 
   const command = new GetObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
   });
   const url = await getSignedUrl(getS3Client(), command, {
@@ -159,7 +159,7 @@ export async function getDownloadUrl(storageKey: string): Promise<string> {
 
 export async function deleteObject(storageKey: string): Promise<void> {
   const command = new DeleteObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
   });
   await getS3Client().send(command);
@@ -170,7 +170,7 @@ export async function headObject(
 ): Promise<{ contentLength: number; contentType: string; etag: string | null } | null> {
   try {
     const command = new HeadObjectCommand({
-      Bucket: getR2Config().bucket,
+      Bucket: getR2Bucket(),
       Key: storageKey,
     });
     const result = await getS3Client().send(command);
