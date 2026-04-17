@@ -38,10 +38,10 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 
-**Total plan V2**: 32 ramas (9 ✅ completadas, 23 pendientes). Siguiente: **Rama 10C `feat/guide-media-in-tree`**.
+**Total plan V2**: 32 ramas (10 ✅ completadas, 22 pendientes). Siguiente: **Rama 10E `feat/guide-react-renderer`**.
 
 **Orden sugerido (actualizado)**:
-- Ahora: **Fase 10** — continuar por **10C `feat/guide-media-in-tree`** (ahora que la ruta estable de 10D existe, los resolvers pueden emitir media sin romper el cache)
+- Ahora: **Fase 10** — continuar por **10E `feat/guide-react-renderer`** (React renderer con journey IA, brand theming, WCAG 2.2 AA, lightbox — consume `GuideTree.media` ya poblado por 10C)
 - Después: **Fase 11** — Knowledge + Assistant + i18n
 - Luego: **Fase 12** — Messaging con variables
 - Después: **Fase 13** — Guía local + issue reporting
@@ -65,7 +65,7 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 - ✅ **10A** `feat/media-storage` — Cloudflare R2 storage service + presigned uploads + blurhash + server actions (request/confirm/delete/download). PR #53 merged.
 - ✅ **10B** `feat/media-per-entity` — EntityGallery reutilizable + UploadDropzone (drag&drop multi-archivo, presigned → R2) + reorder + cover photo + integrado en spaces/access/amenities + Mediateca refactorizada. PR #54 merged.
 - ✅ `refactor/shared-action-result` — ActionResult<T> extraído a `src/lib/types/action-result.ts`, 8 definiciones duplicadas eliminadas, 33 consumidores migrados. PR #55 merged.
-- ⏳ **10C** `feat/guide-media-in-tree` — exponer media por item en `GuideTree`, `<figure>` en renderer markdown/HTML.
+- ✅ **10C** `feat/media-in-guide` — `GuideItem.media[]` poblado desde `MediaAssignment` + `MediaAsset` (cover, spaces, amenity instances, primary access). Single batched `mediaAssignment.findMany` por compose (OR por `entityType`, filtro `image/*`), audiencia filtrada. `GuideMedia` con variantes `{thumb, md, full}` + alt derivado (caption → `role — entityLabel`). Markdown inline `![alt](md) *caption*`, HTML `<figure><img/><figcaption/></figure>`, cap 3 por item. `includesMedia` por sección en taxonomy. PR #58 merged.
 - ✅ **10D** `feat/guide-media-proxy` — `/g/:slug/media/:assetId-:hashPrefix/:variant` con cache immutable + ETag escopado a variant + 304/206 + auth por `publicSlug` + ≥1 `GuideVersion.published`. Passthrough MVP (Sharp/CF Image Resizing diferido). Backfill de `contentHash` vía ETag de R2. PR #57.
 - ⏳ **10E** `feat/guide-react-renderer` — renderer React con journey IA (Essentials/Howto/Checkout/Emergency fused) + brand theming + WCAG 2.2 AA + lightbox + maps stub + TOC sticky.
 - ⏳ **10F** `feat/guide-hero-quick-actions` — hero con countdown + quick-actions (copy-wifi, call, whatsapp, maps) + tracking endpoint.
