@@ -617,8 +617,8 @@ function resolveAmenities(ctx: GuideContext): GuideItem[] {
 }
 
 /** Runbook steps emitted by the howto resolver. The React renderer consumes
- * this as an ordered list; raw JSON in the DB can be either a string (legacy)
- * or an array of `{ label, detail }`. */
+ * this as an ordered list; raw JSON in the DB is an array of
+ * `{ label, detail }`. */
 export interface GuideRunbookStep {
   label: string;
   detail?: string;
@@ -954,8 +954,7 @@ const LEAF_RESOLVERS: Partial<Record<GuideResolverKey, LeafResolver>> = {
  * a dedicated section without removing the originals. `sourceResolverKeys`
  * comes from the section config; items are kept when `journeyTags` includes
  * `"essential"`. Cloned items are reassigned synthetic ids so the renderer
- * doesn't produce duplicate DOM ids, and the cloned item remembers its origin
- * via `_cloneOriginKey` (internal, stripped before emission). */
+ * doesn't produce duplicate DOM ids. */
 function resolveEssentials(
   _ctx: GuideContext,
   resolved: ReadonlyMap<GuideResolverKey, GuideItem[]>,

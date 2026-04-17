@@ -84,7 +84,7 @@
       "label": "Salida",
       "order": 45,
       "maxVisibility": "internal",
-      "sortBy": "taxonomy_order",
+      "sortBy": "explicit_order",
       "resolverKey": "checkout",
       "emptyCtaDeepLink": "/properties/{propertyId}/rules",
       "includesMedia": false,
