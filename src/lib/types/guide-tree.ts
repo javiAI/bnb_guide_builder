@@ -7,8 +7,17 @@ import type { GuideAudience, GuideResolverKey, GuideSortBy } from "@/lib/taxonom
 
 export type { GuideAudience, GuideResolverKey, GuideSortBy };
 
+export interface GuideMediaVariants {
+  thumb: string;
+  md: string;
+  full: string;
+}
+
 export interface GuideMedia {
-  url: string;
+  assetId: string;
+  variants: GuideMediaVariants;
+  mimeType: string;
+  alt: string;
   role?: string;
   caption?: string;
 }

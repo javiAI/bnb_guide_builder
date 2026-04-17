@@ -123,6 +123,31 @@ Cualquier fallo (asset no existe, slug no coincide, no hay versión publicada, h
 
 `composeGuide()` emite URLs relativas `/g/:slug/media/...` en `GuideTree`. Hay invariantes en `src/test/guide-rendering-proxy-urls.test.ts` que fallan si alguna URL en `GuideItem.media[]` contiene `r2.cloudflarestorage.com` o `X-Amz-*`.
 
+### En el guide rendering (Rama 10C)
+
+`composeGuide()` inyecta los assets de cada entidad en `GuideItem.media[]` a través de `loadEntityMedia()` (una sola query `mediaAssignment.findMany` por compose, agrupada por `entityType` con `OR` clauses — **no N+1**). Cada entry tiene la forma:
+
+```ts
+interface GuideMedia {
+  assetId: string;                      // cuid del MediaAsset
+  variants: { thumb: string; md: string; full: string };
+  mimeType: string;
+  alt: string;                          // caption || `${role} — ${entityLabel}`
+  role?: string;                        // usageKey ?? assetRoleKey
+  caption?: string;
+}
+```
+
+- **Todas las variantes se emiten siempre**, aunque 10C inline sólo use `md`. El fingerprint de diff y el caché del CDN se escopan a la variante, así que `variants.thumb` y `variants.full` viajan listas para 10E (galería con lightbox).
+- **Filtrado por audiencia**: `isVisibleForAudience(asset.visibility, audience)` descarta media cuya visibility excede el tier del consumidor. `sensitive` nunca entra en el tree.
+- **Filtro por `includesMedia`**: `taxonomies/guide_sections.json` marca qué secciones aceptan media (`arrival`, `spaces`, `amenities`, `local`). `rules`, `contacts`, `emergency` tienen `includesMedia: false` — la ref list no incluye sus entidades y el loader no las consulta.
+- **Scope de entidades en 10C**: `property` (cover → primer item sintético `arrival.property`), `space`, `amenity_instance`, `access_method` (propertyId compartido, label del taxonomy).
+- **Cap en renderers**: `INLINE_MEDIA_CAP = 3` en markdown y HTML para mantener el output escaneable. El PDF aplica el mismo cap implícito via filtro de URLs absolutas.
+- **Alt text**: caption textual si existe; fallback WCAG a `"{role formateado} — {entityLabel}"` (`photo_gallery` → `"photo gallery — Dormitorio principal"`).
+- **Orden**: cover primero (`usageKey="cover"` ordena antes de null en ASC), luego `sortOrder` ASC.
+
+Nunca se emiten URLs presignadas — todas pasan por `buildMediaProxyUrl(slug, assetId, contentHash, variant)`. Si `publicSlug` es `null` (preview / unpublished), el loader devuelve un mapa vacío y el tree sale sin media.
+
 ### Backfill de `contentHash`
 
 ```bash

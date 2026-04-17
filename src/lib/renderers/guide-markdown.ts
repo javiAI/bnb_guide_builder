@@ -8,13 +8,20 @@
  *   ## <section.label>
  *   - **<item.label>**: <item.value>
  *     - <field.label>: <field.value>
- *     - ![caption](url)
+ *     - ![alt](variants.md) — optional *caption*
  *     - **<child.label>**: <child.value>
  *       - <childField.label>: <childField.value>
  *   _Sin elementos. <emptyCtaDeepLink>_
+ *
+ * Media: renders the `md` (800px) variant inline, cap 3 per item so the
+ * markdown output stays scannable. Richer galleries (lightbox, all variants)
+ * arrive with 10E React renderer.
  */
 
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
+
+/** Cap inline images per item — keeps markdown output scannable. */
+const INLINE_MEDIA_CAP = 3;
 
 function escapeMd(text: string): string {
   return text
@@ -28,6 +35,10 @@ function isSafeMdUrl(url: string): boolean {
   return /^(\/g\/[^/]+\/|https?:\/\/)/i.test(url);
 }
 
+function encodeMdUrl(url: string): string {
+  return url.replace(/[() ]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`);
+}
+
 function renderItem(item: GuideItem, depth: number, out: string[]): void {
   const indent = "  ".repeat(depth);
   const deprecatedMark = item.deprecated ? " _(deprecated)_" : "";
@@ -37,11 +48,16 @@ function renderItem(item: GuideItem, depth: number, out: string[]): void {
   for (const f of item.fields) {
     out.push(`${nestedIndent}- ${escapeMd(f.label)}: ${escapeMd(f.value)}`);
   }
+  let emitted = 0;
   for (const m of item.media) {
-    if (!isSafeMdUrl(m.url)) continue;
-    const caption = escapeMd(m.caption ?? "");
-    const safeUrl = m.url.replace(/[() ]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`);
-    out.push(`${nestedIndent}- ![${caption}](${safeUrl})`);
+    if (emitted >= INLINE_MEDIA_CAP) break;
+    const url = m.variants.md;
+    if (!isSafeMdUrl(url)) continue;
+    const alt = escapeMd(m.alt);
+    const safeUrl = encodeMdUrl(url);
+    const captionSuffix = m.caption ? ` *${escapeMd(m.caption)}*` : "";
+    out.push(`${nestedIndent}- ![${alt}](${safeUrl})${captionSuffix}`);
+    emitted++;
   }
   for (const child of item.children) {
     renderItem(child, depth + 1, out);

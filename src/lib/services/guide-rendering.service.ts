@@ -23,6 +23,7 @@ import type {
   GuideAudience,
   GuideItem,
   GuideItemField,
+  GuideMedia,
   GuideResolverKey,
   GuideSection,
   GuideSortBy,
@@ -43,6 +44,10 @@ import {
 } from "@/lib/taxonomy-loader";
 import { isKnownFieldType } from "@/config/registries/field-type-registry";
 import type { SubtypeField } from "@/lib/types/taxonomy";
+import {
+  type EntityMediaRef,
+  loadEntityMedia,
+} from "@/lib/services/guide-media.service";
 
 // ──────────────────────────────────────────────
 // Context — entities loaded once per compose()
@@ -110,11 +115,29 @@ interface GuideContext {
     hoursText: string | null;
     visibility: GuideAudience;
   }>;
+  /**
+   * Media indexed by `{entityType}:{entityId}`. Populated by
+   * `loadEntityMedia` (10C) — always empty when `publicSlug` is null.
+   */
+  mediaByEntity: Map<string, GuideMedia[]>;
+}
+
+function mediaKeyFor(entityType: string, entityId: string): string {
+  return `${entityType}:${entityId}`;
+}
+
+function takeMedia(
+  ctx: GuideContext,
+  entityType: string,
+  entityId: string,
+): GuideMedia[] {
+  return ctx.mediaByEntity.get(mediaKeyFor(entityType, entityId)) ?? [];
 }
 
 async function loadGuideContext(
   propertyId: string,
   publicSlug: string | null,
+  audience: GuideAudience,
 ): Promise<GuideContext> {
   const [property, spaces, amenityInstances, contacts, localPlaces] =
     await Promise.all([
@@ -194,6 +217,56 @@ async function loadGuideContext(
         },
       }),
     ]);
+
+  // Build the ref list ONLY for entities tied to sections with
+  // `includesMedia:true`. Sections with `includesMedia:false` (rules,
+  // contacts, emergency) never contribute refs — the batch loader stays
+  // small even on large properties.
+  const mediaRefs: EntityMediaRef[] = [];
+  const sectionConfigs = getGuideSectionConfigs();
+  const mediaResolverKeys = new Set(
+    sectionConfigs.filter((s) => s.includesMedia).map((s) => s.resolverKey),
+  );
+  if (property && (mediaResolverKeys.has("arrival") || mediaResolverKeys.has("spaces") || mediaResolverKeys.has("amenities"))) {
+    if (mediaResolverKeys.has("arrival")) {
+      mediaRefs.push({
+        entityType: "property",
+        entityId: property.id,
+        entityLabel: "La casa",
+      });
+      if (property.primaryAccessMethod) {
+        const acc = findItem(accessMethodsTaxonomy, property.primaryAccessMethod);
+        mediaRefs.push({
+          entityType: "access_method",
+          entityId: property.id,
+          entityLabel: acc?.label ?? property.primaryAccessMethod,
+        });
+      }
+    }
+    if (mediaResolverKeys.has("spaces")) {
+      for (const s of spaces) {
+        const typeItem = getSpaceTypeItem(s.spaceType);
+        mediaRefs.push({
+          entityType: "space",
+          entityId: s.id,
+          entityLabel: s.name || typeItem?.label || s.spaceType,
+        });
+      }
+    }
+    if (mediaResolverKeys.has("amenities")) {
+      for (const inst of amenityInstances) {
+        const item = findAmenityItem(inst.amenityKey);
+        mediaRefs.push({
+          entityType: "amenity_instance",
+          entityId: inst.id,
+          entityLabel: item?.label ?? inst.amenityKey,
+        });
+      }
+    }
+  }
+
+  const mediaByEntity = await loadEntityMedia(publicSlug, audience, mediaRefs);
+
   return {
     propertyId,
     publicSlug,
@@ -202,6 +275,7 @@ async function loadGuideContext(
     amenityInstances,
     contacts,
     localPlaces,
+    mediaByEntity,
   };
 }
 
@@ -357,6 +431,25 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
   if (!p) return [];
   const items: GuideItem[] = [];
 
+  // Property cover surfaces as a synthetic first item when there are assets
+  // assigned to the property entity. Markdown/HTML render it as a labeled
+  // figure; 10E replaces this with a proper hero.
+  const propertyMedia = takeMedia(ctx, "property", p.id);
+  if (propertyMedia.length > 0) {
+    items.push({
+      id: "arrival.property",
+      taxonomyKey: null,
+      label: "La casa",
+      value: null,
+      visibility: "guest",
+      deprecated: false,
+      warnings: [],
+      fields: [],
+      media: propertyMedia,
+      children: [],
+    });
+  }
+
   const checkInRange =
     p.checkInStart || p.checkInEnd
       ? `${p.checkInStart ?? "?"} – ${p.checkInEnd ?? "?"}`
@@ -400,7 +493,7 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
       deprecated: !item,
       warnings: [],
       fields: [],
-      media: [],
+      media: takeMedia(ctx, "access_method", p.id),
       children: [],
     });
   }
@@ -434,7 +527,7 @@ function resolveSpaces(ctx: GuideContext): GuideItem[] {
         }),
         ...bedFields,
       ],
-      media: [],
+      media: takeMedia(ctx, "space", space.id),
       children: [],
     };
   });
@@ -495,7 +588,7 @@ function resolveAmenities(ctx: GuideContext): GuideItem[] {
           internal: inst.internalNotes,
         }),
       ],
-      media: [],
+      media: takeMedia(ctx, "amenity_instance", inst.id),
       children: [],
     };
   });
@@ -705,7 +798,7 @@ export async function composeGuide(
   audience: GuideAudience,
   publicSlug: string | null,
 ): Promise<GuideTree> {
-  const ctx = await loadGuideContext(propertyId, publicSlug);
+  const ctx = await loadGuideContext(propertyId, publicSlug, audience);
   const sections: GuideSection[] = [];
   const configs = [...getGuideSectionConfigs()].sort((a, b) => a.order - b.order);
   for (const cfg of configs) {

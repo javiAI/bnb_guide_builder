@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     propertyAmenityInstance: { findMany: vi.fn() },
     contact: { findMany: vi.fn() },
     localPlace: { findMany: vi.fn() },
+    mediaAssignment: { findMany: vi.fn() },
   },
 }));
 
@@ -29,7 +30,9 @@ const fn = <K extends keyof typeof prisma>(k: K, m: "findUnique" | "findMany") =
 
 function walkUrls(items: GuideItem[], acc: string[]): void {
   for (const it of items) {
-    for (const m of it.media) acc.push(m.url);
+    for (const m of it.media) {
+      acc.push(m.variants.thumb, m.variants.md, m.variants.full);
+    }
     walkUrls(it.children, acc);
   }
 }
@@ -46,6 +49,8 @@ beforeEach(() => {
   fn("propertyAmenityInstance", "findMany").mockReset();
   fn("contact", "findMany").mockReset();
   fn("localPlace", "findMany").mockReset();
+  fn("mediaAssignment", "findMany").mockReset();
+  fn("mediaAssignment", "findMany").mockResolvedValue([]);
   fn("property", "findUnique").mockResolvedValue({
     id: "p1",
     checkInStart: null,

@@ -124,9 +124,39 @@ describe("renderHtml — sanitization", () => {
               warnings: [],
               fields: [],
               media: [
-                { url: "javascript:alert(1)", caption: "evil" },
-                { url: "file:///etc/passwd", caption: "leak" },
-                { url: "https://cdn.example.com/ok.png", caption: "safe" },
+                {
+                  assetId: "a1",
+                  variants: {
+                    thumb: "javascript:alert(1)",
+                    md: "javascript:alert(1)",
+                    full: "javascript:alert(1)",
+                  },
+                  mimeType: "image/png",
+                  alt: "evil",
+                  caption: "evil",
+                },
+                {
+                  assetId: "a2",
+                  variants: {
+                    thumb: "file:///etc/passwd",
+                    md: "file:///etc/passwd",
+                    full: "file:///etc/passwd",
+                  },
+                  mimeType: "image/png",
+                  alt: "leak",
+                  caption: "leak",
+                },
+                {
+                  assetId: "a3",
+                  variants: {
+                    thumb: "https://cdn.example.com/ok.png",
+                    md: "https://cdn.example.com/ok.png",
+                    full: "https://cdn.example.com/ok.png",
+                  },
+                  mimeType: "image/png",
+                  alt: "safe",
+                  caption: "safe",
+                },
               ],
               children: [],
             },

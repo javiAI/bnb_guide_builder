@@ -1,6 +1,6 @@
 {
   "file": "guide_sections.json",
-  "version": "2026-04-15",
+  "version": "2026-04-17",
   "locale": "es-ES",
   "units_system": "metric",
   "items": [
@@ -11,7 +11,8 @@
       "maxVisibility": "internal",
       "sortBy": "explicit_order",
       "resolverKey": "arrival",
-      "emptyCtaDeepLink": "/properties/{propertyId}/access"
+      "emptyCtaDeepLink": "/properties/{propertyId}/access",
+      "includesMedia": true
     },
     {
       "id": "gs.spaces",
@@ -20,7 +21,8 @@
       "maxVisibility": "internal",
       "sortBy": "taxonomy_order",
       "resolverKey": "spaces",
-      "emptyCtaDeepLink": "/properties/{propertyId}/spaces"
+      "emptyCtaDeepLink": "/properties/{propertyId}/spaces",
+      "includesMedia": true
     },
     {
       "id": "gs.amenities",
@@ -29,7 +31,8 @@
       "maxVisibility": "internal",
       "sortBy": "recommended_first",
       "resolverKey": "amenities",
-      "emptyCtaDeepLink": "/properties/{propertyId}/amenities"
+      "emptyCtaDeepLink": "/properties/{propertyId}/amenities",
+      "includesMedia": true
     },
     {
       "id": "gs.rules",
@@ -38,7 +41,8 @@
       "maxVisibility": "internal",
       "sortBy": "taxonomy_order",
       "resolverKey": "rules",
-      "emptyCtaDeepLink": "/properties/{propertyId}/rules"
+      "emptyCtaDeepLink": "/properties/{propertyId}/rules",
+      "includesMedia": false
     },
     {
       "id": "gs.contacts",
@@ -47,7 +51,8 @@
       "maxVisibility": "internal",
       "sortBy": "explicit_order",
       "resolverKey": "contacts",
-      "emptyCtaDeepLink": "/properties/{propertyId}/contacts"
+      "emptyCtaDeepLink": "/properties/{propertyId}/contacts",
+      "includesMedia": false
     },
     {
       "id": "gs.local",
@@ -56,7 +61,8 @@
       "maxVisibility": "internal",
       "sortBy": "alpha",
       "resolverKey": "local",
-      "emptyCtaDeepLink": "/properties/{propertyId}/local-guide"
+      "emptyCtaDeepLink": "/properties/{propertyId}/local-guide",
+      "includesMedia": true
     },
     {
       "id": "gs.emergency",
@@ -65,7 +71,8 @@
       "maxVisibility": "internal",
       "sortBy": "explicit_order",
       "resolverKey": "emergency",
-      "emptyCtaDeepLink": "/properties/{propertyId}/contacts"
+      "emptyCtaDeepLink": "/properties/{propertyId}/contacts",
+      "includesMedia": false
     }
   ]
 }

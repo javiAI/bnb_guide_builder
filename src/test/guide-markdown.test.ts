@@ -50,7 +50,17 @@ describe("renderMarkdown — media + children", () => {
                 warnings: [],
                 fields: [],
                 media: [
-                  { url: "https://cdn.example.com/1.jpg", caption: "Vista general" },
+                  {
+                    assetId: "a1",
+                    variants: {
+                      thumb: "https://cdn.example.com/1.jpg",
+                      md: "https://cdn.example.com/1.jpg",
+                      full: "https://cdn.example.com/1.jpg",
+                    },
+                    mimeType: "image/jpeg",
+                    alt: "Vista general",
+                    caption: "Vista general",
+                  },
                 ],
                 children: [],
               },
@@ -59,7 +69,7 @@ describe("renderMarkdown — media + children", () => {
         ],
       }),
     );
-    expect(md).toContain("![Vista general](https://cdn.example.com/1.jpg)");
+    expect(md).toContain("![Vista general](https://cdn.example.com/1.jpg) *Vista general*");
   });
 
   it("renders nested children indented two spaces deeper", () => {

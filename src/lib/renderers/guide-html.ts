@@ -8,6 +8,9 @@
 
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 
+/** Cap inline images per item — keeps markup lean; lightbox gallery comes in 10E. */
+const INLINE_MEDIA_CAP = 3;
+
 const HTML_ESCAPE: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -45,11 +48,20 @@ function renderItem(item: GuideItem, out: string[]): void {
         `<li>${escapeHtml(f.label)}: ${escapeHtml(f.value)}</li>`,
       );
     }
+    let emitted = 0;
     for (const m of item.media) {
-      if (!isSafeUrl(m.url)) continue;
-      const caption = escapeHtml(m.caption ?? "");
-      const url = escapeHtml(m.url);
-      out.push(`<li><img src="${url}" alt="${caption}" /></li>`);
+      if (emitted >= INLINE_MEDIA_CAP) break;
+      const src = m.variants.md;
+      if (!isSafeUrl(src)) continue;
+      const alt = escapeHtml(m.alt);
+      const url = escapeHtml(src);
+      const captionHtml = m.caption
+        ? `<figcaption>${escapeHtml(m.caption)}</figcaption>`
+        : "";
+      out.push(
+        `<li><figure><img src="${url}" alt="${alt}" loading="lazy" />${captionHtml}</figure></li>`,
+      );
+      emitted++;
     }
     for (const child of item.children) {
       renderItem(child, out);

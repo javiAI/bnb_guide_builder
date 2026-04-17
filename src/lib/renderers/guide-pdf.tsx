@@ -48,10 +48,12 @@ function ItemView({ item, depth }: { item: GuideItem; depth: number }) {
           {f.label}: {f.value}
         </Text>
       ))}
+      {/* PDF needs absolute URLs; proxy paths (`/g/...`) are relative and
+          skipped until the PDF pipeline is taught to prepend an origin. */}
       {item.media
-        .filter((m) => /^https?:\/\//i.test(m.url))
+        .filter((m) => /^https?:\/\//i.test(m.variants.md))
         .map((m, i) => (
-          <Image key={i} src={m.url} style={styles.image} />
+          <Image key={i} src={m.variants.md} style={styles.image} />
         ))}
       {item.children.map((child) => (
         <ItemView key={child.id} item={child} depth={depth + 1} />
