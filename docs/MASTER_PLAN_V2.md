@@ -1,8 +1,8 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-17 (rev. 3 — research integration: Fase 10 expandida a 8 ramas, Fase 11 expandida a 6 ramas, Fase 13 añade issue-reporting)
+Versión: 2026-04-17 (rev. 4 — guest-presentation-layer audit integration: Fase 10 pasa 8→9 ramas, se inserta 10F `fix/guest-presentation-layer` antes del hero, 10G/H/I renumeradas)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
-Alcance: 7 fases, 32 ramas, ~32 PRs independientes y revisables
+Alcance: 7 fases, 33 ramas, ~33 PRs independientes y revisables
 
 Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.10).
 
@@ -32,7 +32,7 @@ Heredados del v1 y reconfirmados:
 
 ## 2. Protocolo de ejecución por rama
 
-Cada una de las 32 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
+Cada una de las 33 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
 
 ### 2.1 Fase -1 — Revisión pre-rama (gate de aprobación)
 
@@ -156,13 +156,13 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 |---|---|---:|---|---|---|
 | 8 | Deuda técnica pre-output | 3 | Bajo | Medio | No |
 | 9 | Guest Guide v2 | 4 | Medio | Alto | No |
-| 10 | Media + Guide Renderer + PWA | 8 | Medio | Alto | Sí (storage, media URLs) |
+| 10 | Media + Guide Renderer + Presentation layer + PWA | 9 | Medio | Alto | Sí (storage, media URLs, `GuideTree` schema v3) |
 | 11 | Knowledge + Assistant + i18n | 6 | Alto | Alto | No |
 | 12 | Messaging con variables | 3 | Medio | Alto | No |
 | 13 | Guía local + issue reporting | 4 | Bajo | Medio | No |
 | 14 | Platform integrations | 4 | Alto | Alto | Posible |
 
-**Total**: 32 ramas (8 ✅ completadas hasta 10B + refactor/shared-action-result; 24 pendientes).
+**Total**: 33 ramas (12 ✅ completadas hasta 10E + refactor/shared-action-result; 21 pendientes). El alta de la rama 10F `fix/guest-presentation-layer` (rev. 4, [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md)) separa **presentación** de **modelo** antes de abrir la senda de UX premium (hero, search, PWA).
 
 ---
 
@@ -438,9 +438,23 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
-## FASE 10 — Media real
+## FASE 10 — Media, Presentation layer y Guest UX premium
 
-**Objetivo**: habilitar uploads reales. Sin fotos, la Guest Guide vale a medias.
+**Objetivo macro**: pasar de "tenemos los datos y un renderer estructurado" a "el huésped recibe una experiencia móvil operativa, sin fuga de modelo interno, con acciones críticas a un toque y funcionando offline".
+
+La fase tenía originalmente foco en media (10A–10D) + renderer (10E) + hero/search/PWA (10F/G/H). La auditoría externa de [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) detectó un problema bloqueante que precede a cualquier polish visual o performance: **el pipeline `composeGuide → filterByAudience → render` filtra por visibilidad pero NO traduce el modelo interno a una capa de presentación adecuada al huésped**. El guest todavía puede ver — cuando el contenido existe — JSON crudo (`policiesJson`, `featuresJson`, `accessMethodsJson`), claves técnicas (`rm.smoking_outdoor_only`, `ct.host`), copy editorial pensado para el host ("Añade al menos un contacto de anfitrión..."), o labels internos ("Propiedad", "Slot"). Arreglar el hero o meter búsqueda sobre un modelo que sigue filtrando estructura interna es construir encima de un bug de contrato.
+
+Por eso rev.4 inserta una nueva rama **10F — `fix/guest-presentation-layer`** entre el renderer (10E) y la iteración de UX (hero/search/PWA). Su scope es quirúrgico: añadir un paso terminal `normalizeGuideForPresentation(tree, audience)` que convierte cada `GuideItem` en un objeto listo para renderizar, aplica presenters humanizados (taxonomía + registry), sella invariantes anti-leak y prepara (sin consumir) los flags editoriales que las ramas posteriores usarán (`heroEligible`, `quickActionEligible`, `guestCriticality`). Bumpea `GUIDE_TREE_SCHEMA_VERSION` a 3. Renumera 10F→10G, 10G→10H, 10H→10I.
+
+**Reprioridad (post-auditoría)**:
+
+1. **10C/D/E quedan como están** — media + proxy + renderer son infraestructura irrenunciable.
+2. **10F (nueva)** — presentation boundary. *Esta es ahora la rama de mayor valor por esfuerzo unitario*: destrábala y todo el resto de UX gana.
+3. **10G hero + quick actions** — consume ya las ayudas del presenter (`heroEligible`, `quickActionEligible`, `displayValue` listo para copiar). Curación real queda protegida por invariantes.
+4. **10H search** — indexa sobre `displayValue` / `displayFields`, no sobre raw.
+5. **10I PWA** — caché sobre el output ya presentado + invariante "offline nunca escapa más de lo que escapaba online".
+
+Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **tampoco se puede publicar con orgullo** — no hay polish cosmético que tape un `"rm.smoking_outdoor_only"` en la pantalla del huésped.
 
 ### Rama 10A — `feat/media-storage`
 
@@ -736,7 +750,142 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
-### Rama 10F — `feat/guide-hero-quick-actions`
+### Rama 10F — `fix/guest-presentation-layer`
+
+**Propósito**: sellar la frontera entre **modelo interno** (JSON, enums, copy editorial del host) y **presentación al huésped**. Introduce el paso terminal `normalizeGuideForPresentation(tree, audience)` al final del pipeline (`composeGuide → filterByAudience → normalizeGuideForPresentation → render`), un **presenter registry** (taxonomyKey → formatter humanizado) y el contrato de fields de presentación (`presentationType?`, `displayValue?`, `displayFields?`, `presentationWarnings?`). Bumpea `GUIDE_TREE_SCHEMA_VERSION` a 3 y documenta la degradación de snapshots pre-v3 (se normalizan en boot al servir). Prepara — **sin consumir** — los flags editoriales que las ramas posteriores usarán: `heroEligible`, `quickActionEligible`, `guestCriticality`, `hideWhenEmptyForGuest`. Deja invariantes y tests de regresión como red de seguridad permanente.
+
+**Por qué esta rama (resumen del fallo actual)**:
+
+- `policies.jsonSchemaRef: "rooms.smoking_rules"` que viajen a `guest` todavía pueden renderizarse como JSON crudo porque no hay normalización post-filter.
+- Enums de taxonomía (`rm.smoking_outdoor_only`, `ct.host`, `am.wifi`) y claves de sección (`gs.essentials`) filtran sin un diccionario humano (`EnumLabels`).
+- `emptyCopy` de `guide_sections.json` — copy editorial pensada para el host ("Añade normas de ruido, fumar, mascotas y eventos.") — hoy sale tal cual a `audience=guest`.
+- `GuideSection.label` interno ("Normas de la casa"), `GuideItem.label` igual al roleKey (`ct.cleaning`) y JSON contenedores (`featuresJson`, `accessMethodsJson`) no tienen traducción declarativa.
+- No hay invariante que bloquee un regreso: basta con un resolver nuevo que escriba `value: JSON.stringify(...)` y nadie se da cuenta hasta QA manual.
+
+**Motivación (auditoría externa)**:
+
+- [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md §1](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — "Arquitectura sólida, frontera guest↔modelo floja".
+- [HANDOFF §2](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — inventario de leaks visibles.
+- [HANDOFF §4](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — por qué arreglar hero/búsqueda antes de cerrar la frontera es construir sobre bug.
+- [HANDOFF §7](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — spec precisa del normalizador + presenter registry + invariantes.
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+
+- **Pipeline canónico**: `composeGuide → filterByAudience → normalizeGuideForPresentation → render`. El normalizador es **terminal y puro** (input tree filtrado → output tree presentado); no hace DB, no muta input. Se invoca también al servir `snapshotJson` — snapshots pre-v3 pasan por él con un warning `pre-v3-normalize`.
+- **Contrato de tipo (superficie mínima)**: `GuideItem` crece con 4 campos opcionales. **No se añaden flags derivables**:
+  - `presentationType?: "text" | "enum" | "policy" | "contact" | "amenity" | "space" | "checkin_window" | "access_instruction" | "raw"` — `raw` es sentinel de bug (solo en `audience=internal`, en `guest` bloquea el render con warning + empty state).
+  - `displayValue?: string` — primary value humanizado.
+  - `displayFields?: Array<{ label: string; value: string; icon?: string; href?: string }>` — fields ya traducidos; `href` habilita `tel:`/`mailto:`/`https://wa.me/`.
+  - `presentationWarnings?: string[]` — p.ej. `"missing-taxonomy-label:rm.smoking_outdoor_only"`.
+- **No** se añaden `heroEligible` / `quickActionEligible` / `guestCriticality` al tipo `GuideItem` en esta rama — se declaran en las **taxonomías** (`amenity_taxonomy.json`, `policy_taxonomy.json`, `contact_roles.json`) y se propagan como `displayFields.meta` solo si el presenter los usa. Las ramas 10G (hero) y 10H (search) los leen.
+- **Presenter registry** (`src/config/registries/presenter-registry.ts`): `Map<string, (item, context) => { displayValue, displayFields, presentationType, warnings[] }>`. Claves = `taxonomyKey` o `presentationType`. Default fallback: presenter `generic-text` que limpia y escapa.
+  - Cobertura mínima **obligatoria en esta rama**: todas las keys de `policy_taxonomy.json`, todas de `contact_roles.json`, todas de `amenity_taxonomy.json`.
+  - `access_method` queda para cuando realmente aparezca una key problemática sin presenter — el test de cobertura lo forzará.
+  - Test `presenter-coverage.test.ts` falla si existe `taxonomyKey` en las 3 taxonomías sin presenter y sin fallback explícito declarado.
+- **Taxonomías extendidas** (3 archivos, solo añadir campos, ningún remove):
+  - `policy_taxonomy.json` → cada entry: `guestLabel?`, `guestDescription?`, `icon?`, `heroEligible?: boolean`, `quickActionEligible?: boolean`, `guestCriticality?: "critical" | "high" | "normal" | "low"`.
+  - `contact_roles.json` → cada entry: `guestLabel?`, `icon?`, `heroEligible?`, `quickActionEligible?`, `guestCriticality?`.
+  - `amenity_taxonomy.json` → cada entry: `guestLabel?`, `guestDescription?`, `icon?`, `heroEligible?`, `quickActionEligible?`, `guestCriticality?`.
+  - Zod del loader se extiende con defaults seguros (`heroEligible: false`, `guestCriticality: "normal"`).
+- **`guide_sections.json`** — se añade `emptyCopyGuest?: string` y `hideWhenEmptyForGuest?: boolean`. `emptyCopy` queda como copy **para host** (audience `internal`). Si `emptyCopyGuest` falta y audience=guest, el normalizador NO emite ninguna copy editorial; la sección se puede ocultar (`hideWhenEmptyForGuest`) o emite un empty state neutro (`"—"`). Nunca se muestra copy editorial del host al huésped.
+- **`GUIDE_TREE_SCHEMA_VERSION = 3`** (en `guide-tree.ts`). Snapshots pre-v3 se re-normalizan al servir (runtime no migra; no se reescriben en DB). Se loggea una vez por request con `snapshotPreV3`.
+- **Invariantes anti-leak (tests)**:
+  1. Para `audience=guest`, ningún `GuideItemField.value` ni `displayValue` empieza por `{`, `[`, contiene `\"json\":`, o termina en `}`.
+  2. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con una **clave** de taxonomía (`^[a-z]+(_[a-z]+)*\\.[a-z_]+$` — `rm.x`, `ct.y`, `am.z`).
+  3. Ninguna `section.emptyCopy` aparece en el tree cuando `audience=guest`; solo puede aparecer `emptyCopyGuest` si está declarado.
+  4. Ningún `displayValue` o `label` en `audience=guest` está en la deny-list de labels internos: `"Slot"`, `"Propiedad"`, `"Config JSON"`, `"Raw"`, etc. (lista en `src/test/guest-leak-invariants.ts`).
+  5. Items con `presentationType === "raw"` en `audience=guest` → error en render (no se muestra; log).
+- **Observabilidad**: el normalizador cuenta `presentationWarnings` por tree y emite un `Sentry.captureMessage` (o `console.warn` en dev) con el top-10 warnings por property — sirve para auditar coverage de presenters al crecer las taxonomías.
+- **Scope NO incluido (explicit out-of-scope)**:
+  - No cambia el renderer (10E) salvo para llamar al normalizador y consumir `displayValue`/`displayFields` en lugar de `value`/`fields`.
+  - No curación de hero, ni búsqueda, ni PWA — eso queda en 10G/H/I.
+  - No migración de snapshots publicados en DB (se normalizan al servir).
+  - No crea `presentationType: "raw"` nuevos — solo se usa como sentinel de bug.
+  - No cambia `GuideItemField.visibility` (sigue filtrando por audience). La capa de presentación opera **después** del filter.
+
+**Archivos a crear**:
+
+- `src/lib/services/guide-presentation.service.ts` — función pura `normalizeGuideForPresentation(tree: GuideTree, audience: GuideAudience): GuideTree`. Recorre secciones + items + children recursivamente y llama al presenter registry.
+- `src/config/registries/presenter-registry.ts` — `Map<string, Presenter>` + helper `getPresenter(item)` con fallback a `generic-text`.
+- `src/lib/presenters/policy-presenter.ts` — presenter para items con `taxonomyKey` que empieza por `rm.` o `pl.`. Consume `policy_taxonomy.json[key].guestLabel` / `guestDescription`.
+- `src/lib/presenters/contact-presenter.ts` — presenter para `ct.*`. Emite `displayFields` con `href: "tel:+..."` para teléfono, `href: "https://wa.me/..."` si hay flag `whatsappAvailable`, `href: "mailto:..."` para email.
+- `src/lib/presenters/amenity-presenter.ts` — presenter para `am.*`. Consume `amenity_taxonomy.json[key].guestLabel`, `guestDescription`, `icon`.
+- `src/lib/presenters/space-presenter.ts` — presenter para items de `gs.spaces`; humaniza `spaceType` + bed summary + features.
+- `src/lib/presenters/checkin-window-presenter.ts` — presenter específico para el par `checkInStart/checkInEnd` → `"De 16:00 a 22:00"` con locale.
+- `src/lib/presenters/access-instruction-presenter.ts` — presenter para `accessMethodsJson` (humaniza JSON → lista de pasos) cuando el flag `primaryAccessMethod` existe.
+- `src/lib/presenters/generic-text-presenter.ts` — fallback: escapa HTML, deja string plano, loggea `missing-presenter` warning.
+- `src/test/guide-presentation.test.ts` — happy path: cada presenter produce `displayValue` no-vacío para fixture real.
+- `src/test/guest-leak-invariants.test.ts` — 5 invariantes descritas arriba, corre sobre fixture "todo configurado con valores raros" (enums deprecated, JSON en campos libres, contact sin label).
+- `src/test/presenter-coverage.test.ts` — para cada `taxonomyKey` en `policy_taxonomy.json | contact_roles.json | amenity_taxonomy.json`, debe existir presenter o estar en allowlist explícita.
+- `src/test/guest-schema-version.test.ts` — trees recién compuestos llevan `schemaVersion: 3`; snapshots fixture pre-v3 pasan por normalizador y quedan válidos con warning.
+
+**Archivos a modificar**:
+
+- `src/lib/types/guide-tree.ts` — añadir los 4 campos opcionales a `GuideItem`, bump `GUIDE_TREE_SCHEMA_VERSION = 3`, documentar contrato (comment top-of-file).
+- `src/lib/services/guide-rendering.service.ts` — `composeGuide(...)` llama a `normalizeGuideForPresentation(tree, audience)` como último paso antes de devolver. El normalizador vive en un módulo separado para test-aislado.
+- `src/app/g/[slug]/page.tsx` — cuando sirve `snapshotJson` legacy, pasa por `normalizeGuideForPresentation` si `schemaVersion` ausente o `<3`. Loguea `snapshotPreV3` una vez por request.
+- `src/lib/actions/guide.actions.ts` — al **publicar** (`publishGuideVersionAction`), persistir el tree ya normalizado (con `schemaVersion: 3`). No hay backfill masivo; snapshots viejos se normalizan al servir.
+- `taxonomies/policy_taxonomy.json` — añadir `guestLabel` / `guestDescription` / `icon` / `heroEligible` / `quickActionEligible` / `guestCriticality` a cada entry (valores concretos, nada `null`).
+- `taxonomies/contact_roles.json` — idem.
+- `taxonomies/amenity_taxonomy.json` — idem.
+- `taxonomies/guide_sections.json` — añadir `emptyCopyGuest` + `hideWhenEmptyForGuest` a cada sección; renombrar semántica: `emptyCopy` pasa a significar "copy para host/internal". Ajustar Zod en `taxonomy-loader.ts`.
+- `src/lib/taxonomy-loader.ts` — Zod extendido + tipos derivados exportados.
+- `src/components/public-guide/guide-renderer.tsx` — consume `displayValue` / `displayFields` (ya humanizados); si `presentationType === "raw"` en audience guest, renderiza nada + log. NO debe volver a formatear; el normalizador es la única fuente de verdad.
+- `src/test/guide-rendering.test.ts` — actualizar mocks y expectativas para que verifiquen `displayValue` donde antes miraban `value`.
+
+**Tests (mínimo)**:
+
+- `guide-presentation.test.ts` — 5 presenters × 3 casos (valor normal / taxonomía deprecated / valor vacío).
+- `guest-leak-invariants.test.ts` — 5 invariantes sobre fixture adversarial.
+- `presenter-coverage.test.ts` — cobertura 100% de las 3 taxonomías obligatorias.
+- `guest-schema-version.test.ts` — v3 emitido; pre-v3 snapshot normalizado al servir.
+- `src/test/guide-rendering.test.ts` — ampliado para verificar `displayValue`/`displayFields` en los 9 slots declarados.
+- `src/test/guide-empty-states.test.ts` — para cada sección, `audience=guest` con property vacía **no** muestra `emptyCopy` de host; usa `emptyCopyGuest` o queda oculto si `hideWhenEmptyForGuest`.
+
+**Criterio de done**:
+
+- `npm run test` verde.
+- `tsc --noEmit` verde tras `prisma generate`.
+- Playwright (mobile 375) sobre fixture "property-empty" y "property-rich": cero coincidencias de regex `r'\{.*\"[a-z_]+\":'` (JSON crudo), cero coincidencias de regex de claves taxonómicas (`r'\b[a-z]+\.[a-z_]+\b'`) en textos visibles de `audience=guest`.
+- axe-core sobre ambas fixtures: 0 violations serias.
+- Smoke manual con `/g/:slug` sobre fixture adversarial (valores enum desconocidos + JSON en campos libres + contacto con `label === roleKey`) muestra empty-state neutro o texto humanizado, nunca JSON ni enums.
+- `/simplify` pasado sobre todos los cambios de la rama antes de abrir PR.
+
+**Preparación**:
+
+- **Contexto a leer**:
+  - [docs/research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — completa, especialmente §§1, 2, 4, 7.
+  - [docs/research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) §§ sobre audience separation + emergency/contacts.
+  - `src/lib/services/guide-rendering.service.ts`, `src/lib/types/guide-tree.ts`, `src/test/guide-rendering.test.ts` (pipeline actual).
+  - `taxonomies/policy_taxonomy.json`, `taxonomies/contact_roles.json`, `taxonomies/amenity_taxonomy.json`, `taxonomies/guide_sections.json`.
+  - `src/config/registries/field-type-registry.ts` (modelo mental del registry pattern a replicar).
+  - `docs/FEATURES/GUEST_GUIDE_UX.md` (creado en este plan-update PR) para conocer qué espera consumir 10G/H.
+- **Docs a actualizar al terminar**:
+  - `docs/ARCHITECTURE_OVERVIEW.md` § "Rendering model" — marcar la capa de presentación como componente estable (no sólo planeada).
+  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Presenter registry" — mover de "añadir presenter" a "presenters activos por taxonomía".
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Sections journey" — pipeline con paso normalizador.
+  - `CLAUDE.md` § "Patrones — Guía pública (audience=guest)" — reforzar invariantes y añadir las reglas duras que surjan durante la implementación.
+  - `docs/QA_AND_RELEASE.md` § "Final release gates" — marcar gates 8–11 (anti-leak) como verificados automáticamente por esta rama.
+  - `docs/ROADMAP.md` — marcar 10F ✅ al terminar.
+- **Skills/tools obligatorios**:
+  - **Agent `code-explorer`** antes — mapear todos los puntos donde el renderer actual lee `value`/`fields` directamente (para saber cuántos sitios tocar sin romper).
+  - **Agent `code-architect`** antes — consolidar la decisión `registry-por-clave vs presenter-por-type` y el shape exacto de `displayFields`.
+  - **Context7** (auto) — Zod v3 defaults + `z.discriminatedUnion`, Fuse.js no aplica aquí.
+  - **`/playwright-cli`** al final — 3 viewports (375/768/1280) sobre fixtures empty/rich/adversarial.
+  - **axe-core** integrado en Playwright — 0 violations serias.
+  - **`/simplify`** obligatorio antes de abrir PR (§2.6).
+  - **`/pre-commit-review`** antes de cada commit (§2.6).
+
+**Relación con ramas posteriores**:
+
+- **10G `feat/guide-hero-quick-actions`** lee `heroEligible` + `quickActionEligible` de las taxonomías extendidas aquí; consume `displayValue` para copy/WA text; no puede regresar a `value` raw.
+- **10H `feat/guide-client-search`** indexa `displayValue` + `displayFields.value` como único input → no hay forma de filtrar por enums internos (bonus: el invariante 2 impide que lo intente).
+- **10I `feat/guide-pwa-offline`** cachea el tree ya normalizado; ganar offline no degrada la frontera.
+- **Fase 11 `feat/knowledge-autoextract`** puede usar `presenter-registry` para generar `bm25Text` humanizado de KnowledgeItems — reutilización directa.
+
+---
+
+### Rama 10G — `feat/guide-hero-quick-actions`
 
 **Propósito**: bloque hero "Inicio de estancia" — panel operativo NO decorativo — arriba del pliegue, con 4 respuestas inmediatas (entrar / aparcar / Wi-Fi / ayuda) + quick actions universales click-to-call, click-to-WhatsApp, copy Wi-Fi password, abrir-en-Maps. Toast de feedback al copiar. Instrumentación ligera de clicks para métricas futuras.
 
@@ -790,7 +939,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
-### Rama 10G — `feat/guide-client-search`
+### Rama 10H — `feat/guide-client-search`
 
 **Propósito**: buscador client-side con Fuse.js en el header de la guía pública. Index construido desde `GuideTree` guest filtrado (nunca incluye `internal`/`sensitive`), fuzzy + weighted keys, resultados instant con scroll-to-section. Coexiste con 11F (semantic search) como capa instant/offline; Fuse.js responde en <20ms sin red, 11F responde con comprensión semántica cuando hay conexión.
 
@@ -828,8 +977,9 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 **Preparación**:
 - **Contexto a leer**:
   - [docs/research/IMPLEMENTATION_PLAN.md:L44-L49](research/IMPLEMENTATION_PLAN.md).
-  - Renderer de 10E, hero de 10F.
+  - Renderer de 10E, presentation layer de 10F, hero de 10G.
   - `GuideTree` types (9A) y filtrado guest (9A `filterByAudience`).
+  - **Importante**: el index se construye desde `displayValue` / `displayFields.value` (10F), nunca desde `value` raw. Invariante: un hit nunca puede exponer texto que no haya pasado por el normalizador.
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — añadir capa search.
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Client search" — separación con 11F semantic.
@@ -841,7 +991,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ---
 
-### Rama 10H — `feat/guide-pwa-offline`
+### Rama 10I — `feat/guide-pwa-offline`
 
 **Propósito**: convertir la guía pública en PWA instalable con caché crítica offline en 3 niveles. Sin red, el huésped sigue viendo Llegada, Wi-Fi, Ayuda y Salida. Add-to-Home-Screen nudge aparece después de la primera visita útil, no en el primer segundo.
 
@@ -889,7 +1039,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
   - [docs/research/GUEST_GUIDE_SPEC.md:L225-L234](research/GUEST_GUIDE_SPEC.md).
   - [docs/research/IMPLEMENTATION_PLAN.md:L49-L50](research/IMPLEMENTATION_PLAN.md), [L94-L106](research/IMPLEMENTATION_PLAN.md).
   - Media proxy de 10D (rutas estables imprescindibles para cache).
-  - Renderer de 10E, hero de 10F, search de 10G.
+  - Renderer de 10E, presentation layer de 10F, hero de 10G, search de 10H.
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — añadir PWA section.
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Offline strategy".
@@ -1086,7 +1236,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 **Archivos a modificar**:
 - `src/lib/services/assistant/pipeline.ts` (de 11C) — branch escalation cuando confidence baja o sin citations
-- `src/app/properties/[propertyId]/ai/page.tsx` — UI de "Te pongo en contacto con…" con tap-to-call/whatsapp (reusa componentes de 10F)
+- `src/app/properties/[propertyId]/ai/page.tsx` — UI de "Te pongo en contacto con…" con tap-to-call/whatsapp (reusa componentes de 10G)
 
 **Tests**:
 - `src/test/assistant-escalation.test.ts` — low-confidence intent de "emergencia médica" → escala al contacto con rol `emergency_service`
@@ -1137,9 +1287,9 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 11F — `feat/guide-semantic-search`
 
-**Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings + retriever de 11C; coexiste con el Fuse.js client search de 10G como capa complementaria (Fuse para instant/offline, este para lenguaje natural).
+**Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings + retriever de 11C; coexiste con el Fuse.js client search de 10H como capa complementaria (Fuse para instant/offline, este para lenguaje natural).
 
-**Motivación**: Fuse.js (10G) resuelve búsqueda léxica fuzzy en cliente (rápido, offline, <20ms). Pero no entiende "cómo llego" → arrival, o "mascota" → pet_policy. [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) marca búsqueda semántica como feature diferencial post-MVP. Este es el componente de capa 2: cuando Fuse no encuentra match o el huésped usa lenguaje natural largo, se ofrece "Búsqueda inteligente" que llama al backend.
+**Motivación**: Fuse.js (10H) resuelve búsqueda léxica fuzzy en cliente (rápido, offline, <20ms). Pero no entiende "cómo llego" → arrival, o "mascota" → pet_policy. [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) marca búsqueda semántica como feature diferencial post-MVP. Este es el componente de capa 2: cuando Fuse no encuentra match o el huésped usa lenguaje natural largo, se ofrece "Búsqueda inteligente" que llama al backend.
 
 **Decisiones cerradas en Fase -1 (2026-04-17)**:
 - **UX**: Fuse es default (instant como se tecla); si el input supera 4 palabras o Fuse retorna < 3 resultados, aparece CTA "Búsqueda inteligente" que hace request al endpoint semántico.
@@ -1162,14 +1312,14 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 **Criterio de done**: huésped puede buscar con lenguaje natural y navegar directamente al contenido relevante en la guía pública.
 
-**Dependencias**: 11C (retriever + embeddings), 10E (renderer con TOC scroll-to), 10G (Fuse como capa 1).
+**Dependencias**: 11C (retriever + embeddings), 10E (renderer con TOC scroll-to), 10F (capa de presentación — garantiza que los hits devuelvan `displayValue`/`displayFields` humanizados), 10H (Fuse como capa 1).
 
 **Preparación**:
 - **Contexto a leer**:
   - [GUEST_GUIDE_SPEC.md:L211-L234](research/GUEST_GUIDE_SPEC.md) — interactividad + búsqueda
   - Pipeline de 11C (retriever hybrid)
   - Renderer de 10E (guide-renderer, TOC, scroll-to-section)
-  - Fuse search de 10G (para coexistencia)
+  - Fuse search de 10H (para coexistencia)
 - **Docs a actualizar al terminar**:
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Public guide search" — arquitectura de dos capas
   - `docs/API_ROUTES.md` — documentar `GET /api/g/:slug/search?q=`
@@ -1565,11 +1715,13 @@ Fase 10 (paralelo con 9 en 10A/B/C; secuencial desde 10D)
                                                     ▼
                                         10E React renderer (journey IA + brand theming + WCAG 2.2 AA)
                                                     ▼
-                                        10F Hero + quick-actions (copy-wifi/call/whatsapp/maps)
+                                        10F Guest presentation layer (normalizer + presenter registry + anti-leak invariants)
                                                     ▼
-                                        10G Client search (Fuse.js, <20ms p95)
+                                        10G Hero + quick-actions (consume heroEligible/quickActionEligible + displayValue)
                                                     ▼
-                                        10H PWA (manual SW + 3-tier offline cache)
+                                        10H Client search (Fuse.js sobre displayValue, <20ms p95)
+                                                    ▼
+                                        10I PWA (manual SW + 3-tier offline cache del tree ya normalizado)
 
 Fase 11 (requiere 10E para montar UI y 9D para embeddings consistentes)
   11A Knowledge autoextract (schema AI completo)
@@ -1581,7 +1733,7 @@ Fase 11 (requiere 10E para montar UI y 9D para embeddings consistentes)
   11D Escalation ─┐
   11E Evals ◄─────┤ (11E depende de 11C + 11D)
       ▼
-  11F Semantic search en guía pública (capa 2 de Fuse 10G)
+  11F Semantic search en guía pública (capa 2 de Fuse 10H)
 
 Fase 12 (requiere 11A mínimo para resolver variables con knowledge)
   12A Variables → 12B Automations → 12C Starter packs
@@ -1617,27 +1769,29 @@ Fase 14 (requiere estabilidad de 9-11)
 
 - Fase 8 ✅: 3 PRs → completada
 - Fase 9 ✅: 4 PRs → completada
-- Fase 10: 8 PRs. 10A/B ✅ (merged). 10C paralelo con 9; 10D→10E→10F→10G→10H secuencial. Resto de la fase: 2-3 semanas
+- Fase 10: 9 PRs. 10A/B/C/D/E ✅ (merged). 10F (nueva, `fix/guest-presentation-layer`) → 10G → 10H → 10I secuencial. Resto de la fase: 2-3 semanas (10F ~1 semana, 10G–10I 2 semanas). **10F es prerrequisito duro** de 10G/H/I: sin capa de presentación, el hero exhibiría copy editorial del host y la search indexaría enums/JSON.
 - Fase 11: 6 PRs secuenciales (11A→11B→11C→{11D,11E}→11F) → 4-5 semanas. 11C es la rama más costosa (providers, tuning, evals iniciales)
 - Fase 12: 12A independiente, 12B→12C secuencial → 1-2 semanas
 - Fase 13: 4 PRs; 13A/B/C paralelizables, 13D depende de 10E → 2 semanas
 - Fase 14: depende de decisión estratégica; 4 PRs secuenciales → 6-8 semanas
 
-**Total plan**: 32 ramas (8 ✅ completadas, 24 pendientes). Orden óptimo: terminar 10 (renderer desbloquea 11F + 13D), 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica.
+**Total plan**: 33 ramas (12 ✅ completadas, 21 pendientes). Orden óptimo: cerrar 10F (frontera presentación — desbloquea UX premium en todo el pipeline), luego 10G/H/I en secuencia, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica.
 
 ---
 
 ## 8. Decisiones abiertas (confirmar antes de empezar cada fase)
 
 1. ~~**Provider de storage para media (Fase 10)**~~: ✅ Cloudflare R2 (decidido en 10A).
-2. **Service Worker strategy (Fase 10H)**: SW manual propio (decidido en Fase -1 de 10H) vs `next-pwa`. Confirmar versionado del SW (single bumped version vs per-asset hash) antes de 10H.
-3. **Reranker provider (Fase 11C)**: Cohere Rerank 3 `rerank-multilingual-v3.0` (default Fase -1) vs Voyage Rerank. Confirmar antes de 11C según pricing actual + latencia p95.
-4. **Embeddings provider (Fase 11C)**: Voyage `voyage-3-lite` (default) vs OpenAI `text-embedding-3-small`. Decidir antes de 11C.
-5. **i18n fallback policy (Fase 11B)**: locale missing → mostrar en `defaultLocale` con nota visible (default) vs auto-translate con LLM (diferido a FUTURE). Confirmar.
-6. **Scheduler para messaging automations (Fase 12B)**: cron simple (Vercel cron) vs queue (BullMQ). Depende de volumen esperado.
-7. **Email provider para issue-reporting (Fase 13D)**: reusar lo de 12B si existe vs Resend vs Postmark. Decidir antes de 13D.
-8. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
-9. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
+2. ~~**Presenter registry layout (Fase 10F)**~~: ✅ `Map<taxonomyKey | presentationType, Presenter>` con fallback `generic-text` + cobertura obligatoria sobre `policy_taxonomy` + `contact_roles` + `amenity_taxonomy` (decidido en Fase -1 de 10F, rev. 4 plan-update).
+3. ~~**Superficie de tipo presentation en `GuideItem` (Fase 10F)**~~: ✅ cuatro campos opcionales (`presentationType?`, `displayValue?`, `displayFields?`, `presentationWarnings?`); los flags editoriales (`heroEligible`, `quickActionEligible`, `guestCriticality`, `hideWhenEmptyForGuest`) viven en las **taxonomías**, no en el tipo (rev. 4 plan-update).
+4. **Service Worker strategy (Fase 10I)**: SW manual propio (decidido en Fase -1 de 10I) vs `next-pwa`. Confirmar versionado del SW (single bumped version vs per-asset hash) antes de 10I.
+5. **Reranker provider (Fase 11C)**: Cohere Rerank 3 `rerank-multilingual-v3.0` (default Fase -1) vs Voyage Rerank. Confirmar antes de 11C según pricing actual + latencia p95.
+6. **Embeddings provider (Fase 11C)**: Voyage `voyage-3-lite` (default) vs OpenAI `text-embedding-3-small`. Decidir antes de 11C.
+7. **i18n fallback policy (Fase 11B)**: locale missing → mostrar en `defaultLocale` con nota visible (default) vs auto-translate con LLM (diferido a FUTURE). Confirmar.
+8. **Scheduler para messaging automations (Fase 12B)**: cron simple (Vercel cron) vs queue (BullMQ). Depende de volumen esperado.
+9. **Email provider para issue-reporting (Fase 13D)**: reusar lo de 12B si existe vs Resend vs Postmark. Decidir antes de 13D.
+10. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
+11. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
 
 ---
 

@@ -6,12 +6,13 @@
 
 ## 1. Snapshot en 30 segundos
 
-- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 32 ramas totales; 8 ✅.
+- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 33 ramas totales; 12 ✅ (hasta 10E).
 - Estado vivo: [ROADMAP.md](ROADMAP.md) (tabla + "Progreso Fase X" por rama).
 - Research base congelado v1.0 (referenciar por línea, no copiar):
   - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md)
   - [research/AI_KNOWLEDGE_BASE_SPEC.md](research/AI_KNOWLEDGE_BASE_SPEC.md)
   - [research/IMPLEMENTATION_PLAN.md](research/IMPLEMENTATION_PLAN.md)
+  - [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — **origen de rev.4**: fija prioridad absoluta de la rama 10F `fix/guest-presentation-layer`
 - Diferido (no confundir con roadmap): [FUTURE.md](FUTURE.md).
 
 ---
@@ -127,6 +128,16 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 
 ## 10. Próxima rama (mantener actualizado al hacer merge)
 
-**Rama 10D — `feat/guide-media-proxy`**. Ver `MASTER_PLAN_V2.md § Rama 10D` para Fase -1.
+**Rama 10F — `fix/guest-presentation-layer`** (nueva en rev.4 post-auditoría). Ver `MASTER_PLAN_V2.md § Rama 10F` para Fase -1 + motivación + [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) §§1, 2, 4, 7.
 
-Tras merge: actualizar este apartado + "Progreso Fase X" en ROADMAP.md.
+**Por qué esta rama antes que 10G (hero) o 10H (search)**: sin capa de presentación cerrada, el huésped puede ver JSON crudo, enums taxonómicos (`rm.smoking_outdoor_only`), copy editorial del host ("Añade...") y labels internos ("Slot"). Hero y search heredarían todos esos leaks. 10F sella la frontera modelo↔huésped con `normalizeGuideForPresentation`, presenter registry, schema v3, e invariantes anti-leak. Es prerrequisito duro de 10G/H/I.
+
+**Lectura mínima para arrancar**:
+
+- [MASTER_PLAN_V2.md § Rama 10F](MASTER_PLAN_V2.md) — entera.
+- [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — §§1, 2, 4, 7.
+- [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) — reglas duras que 10F prepara para 10G/H/I.
+- `src/lib/services/guide-rendering.service.ts`, `src/lib/types/guide-tree.ts`, `src/test/guide-rendering.test.ts` — pipeline actual.
+- `taxonomies/policy_taxonomy.json`, `taxonomies/contact_roles.json`, `taxonomies/amenity_taxonomy.json`, `taxonomies/guide_sections.json`.
+
+Tras merge: actualizar este apartado + "Progreso Fase X" en ROADMAP.md. Próxima por orden óptimo: **10G `feat/guide-hero-quick-actions`**.
