@@ -140,7 +140,7 @@ interface GuideMedia {
 
 - **Todas las variantes se emiten siempre**, aunque 10C inline sólo use `md`. El fingerprint de diff y el caché del CDN se escopan a la variante, así que `variants.thumb` y `variants.full` viajan listas para 10E (galería con lightbox).
 - **Filtrado por audiencia**: `isVisibleForAudience(asset.visibility, audience)` descarta media cuya visibility excede el tier del consumidor. `sensitive` nunca entra en el tree.
-- **Filtro por `includesMedia`**: `taxonomies/guide_sections.json` marca qué secciones aceptan media (`arrival`, `spaces`, `amenities`, `local`). `rules`, `contacts`, `emergency` tienen `includesMedia: false` — la ref list no incluye sus entidades y el loader no las consulta.
+- **Filtro por `includesMedia`**: `taxonomies/guide_sections.json` marca qué secciones aceptan media (`arrival`, `spaces`, `amenities`). `rules`, `contacts`, `emergency`, `local` tienen `includesMedia: false` — la ref list no incluye sus entidades y el loader no las consulta. `local` flipea a `true` cuando llegue la rama 13D (media en lugares locales).
 - **Scope de entidades en 10C**: `property` (cover → primer item sintético `arrival.property`), `space`, `amenity_instance`, `access_method` (propertyId compartido, label del taxonomy).
 - **Cap en renderers**: `INLINE_MEDIA_CAP = 3` en markdown y HTML para mantener el output escaneable. El PDF aplica el mismo cap implícito via filtro de URLs absolutas.
 - **Alt text**: caption textual si existe; fallback WCAG a `"{role formateado} — {entityLabel}"` (`photo_gallery` → `"photo gallery — Dormitorio principal"`).

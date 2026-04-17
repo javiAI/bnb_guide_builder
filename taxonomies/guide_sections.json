@@ -62,7 +62,7 @@
       "sortBy": "alpha",
       "resolverKey": "local",
       "emptyCtaDeepLink": "/properties/{propertyId}/local-guide",
-      "includesMedia": true
+      "includesMedia": false
     },
     {
       "id": "gs.emergency",

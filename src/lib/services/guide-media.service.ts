@@ -35,10 +35,10 @@ export function mediaKey(
 function deriveAlt(
   caption: string | null,
   entityLabel: string,
-  assetRoleKey: string,
+  roleKey: string,
 ): string {
   if (caption && caption.trim().length > 0) return caption;
-  const role = assetRoleKey.replace(/[_-]+/g, " ").trim();
+  const role = roleKey.replace(/[_-]+/g, " ").trim();
   return role ? `${role} — ${entityLabel}` : entityLabel;
 }
 
@@ -90,10 +90,14 @@ export async function loadEntityMedia(
     entityId: { in: Array.from(ids) },
   }));
 
+  // Renderers emit media as <img>/markdown image syntax only. Videos would
+  // produce a broken <img src="…mp4">, so filter them out at the query.
+  // Extending GuideMedia + renderers to handle video is tracked for a later
+  // rama; until then images are the only supported payload.
   const assignments = await prisma.mediaAssignment.findMany({
     where: {
       OR: orClauses,
-      mediaAsset: { status: "ready" },
+      mediaAsset: { status: "ready", mimeType: { startsWith: "image/" } },
     },
     orderBy: [
       // Cover first, then sortOrder. Prisma translates null → "last" for asc;
@@ -125,12 +129,13 @@ export async function loadEntityMedia(
     const key = mediaKey(row.entityType as MediaEntityType, row.entityId);
     const entityLabel = labels.get(key) ?? "";
     const caption = asset.caption;
+    const role = row.usageKey ?? asset.assetRoleKey;
     const media: GuideMedia = {
       assetId: asset.id,
       variants: buildVariants(publicSlug, asset.id, asset.contentHash),
       mimeType: asset.mimeType,
-      alt: deriveAlt(caption, entityLabel, asset.assetRoleKey),
-      role: row.usageKey ?? asset.assetRoleKey,
+      alt: deriveAlt(caption, entityLabel, role),
+      role,
       caption: caption ?? undefined,
     };
     const bucket = out.get(key);

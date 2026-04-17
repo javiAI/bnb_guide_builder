@@ -539,7 +539,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 10C — `feat/media-in-guide`
 
-**Propósito**: poblar `GuideItem.media[]` (hoy siempre `[]`) con assets reales por entidad y renderizar `<figure>` en markdown/HTML. La ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` ya la proporciona 10D — 10C **nunca** emite URLs presignadas (invariante en `guide-rendering-proxy-urls.test.ts`).
+**Propósito**: poblar `GuideItem.media[]` (hoy siempre `[]`) con assets reales por entidad y renderizarlos en markdown/HTML: el renderer markdown emite imagen en sintaxis markdown (`![alt](url) *caption*`) con caption textual cuando exista, y el renderer HTML emite `<figure>/<figcaption>`. La ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` ya la proporciona 10D — 10C **nunca** emite URLs presignadas (invariante en `guide-rendering-proxy-urls.test.ts`).
 
 **Decisiones cerradas en Fase -1 (2026-04-17)**:
 - **Variante por defecto en 10C**: `md` (800 px) únicamente. La multi-variante para galería con lightbox se implementa en 10E (React renderer).
@@ -551,7 +551,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 - **Flag `includesMedia` en secciones**: `arrival`, `spaces`, `amenities`, `local` → `true`; `rules`, `contacts`, `emergency` → `false`. El batch loader omite las secciones con `includesMedia:false` para evitar cargar assignments que no se van a renderizar.
 
 **Archivos a crear**:
-- `src/lib/services/guide-media.service.ts` — `loadEntityMedia(propertyId, audience, entityRefs)` → `Map<entityKey, GuideMedia[]>`. Una sola query batch `findMany` sobre `MediaAssignment` con `IN` (entityIds), filtra por `visibility` y `status="ready"`, ordena por `sortOrder`. Construye las URLs con `buildMediaProxyUrl()` para las tres variantes.
+- `src/lib/services/guide-media.service.ts` — `loadEntityMedia(publicSlug, audience, refs)` → `Map<entityKey, GuideMedia[]>`. Si `publicSlug` es `null`, retorna temprano sin consultar. Una sola query batch `findMany` sobre `MediaAssignment` con `IN` (entityIds), filtra por `visibility`, `status="ready"` y `mimeType startsWith "image/"`, ordena por `sortOrder`. Construye las URLs con `buildMediaProxyUrl()` para las tres variantes.
 - `src/test/guide-with-media.test.ts` — items con assignments tienen `media[]` no vacío; assets con `visibility > audience` excluidos; URLs siempre `/g/:slug/media/...` con las 3 variantes.
 - `src/test/guide-media-batch.test.ts` — una sola query para todos los entityIds de la guía (no N+1).
 - `src/test/guide-markdown-media.test.ts` — markdown emite `<figure>` con alt derivado, cap de 3 imágenes por item, ruta `/md` por defecto.
