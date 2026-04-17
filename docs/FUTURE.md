@@ -80,3 +80,75 @@ Esfuerzo estimado: XL (6-8 semanas en total).
 **Estado**: measurement-dependent. Diferido hasta tener ≥10 propiedades reales con datos.
 
 Ajustar pesos y umbrales en `taxonomies/completeness_rules.json` según uso real. No es trabajo técnico — es medición + tuning. La extracción a JSON ya está hecha (rama **8A** completada): las reglas son editables sin redeploy y validadas con Zod en el loader.
+
+---
+
+## 4. Revelado condicional de contenido sensible (post-MVP)
+
+**Estado**: diferido.
+**Trigger**: si los logs muestran que >5% de huéspedes acceden a `/g/:slug` antes del check-in y leen `wifi_password` o `door_code` prematuramente (riesgo de difusión no-autorizada).
+
+Hoy la visibility es binaria por audience (`guest | ai | internal | sensitive`). Un futuro "timeline-based visibility" ocultaría `wifi_password` hasta `arrivalDate - 4h`, `door_code` hasta `arrivalDate`, post-checkout purga los secretos de la sesión. Requiere fecha de reserva conocida en el slug (firmado) y expiración automática.
+
+---
+
+## 5. Journey-stage aware UI
+
+**Estado**: diferido.
+**Trigger**: cuando la guía tenga tráfico real y se puedan medir patrones de consulta por stage.
+
+La taxonomía `journeyStage` (`pre_arrival | arrival | stay | checkout | post_checkout`) se introduce en **11A**. Hoy se usa solo como filtro del retriever (servidor). Una segunda capa futura: el renderer de la guía pública (10E) resalta/reordena secciones según el `journeyStage` detectado (`now - arrivalDate`), sin cambiar la URL. Requiere `arrivalDate` en el slug firmado.
+
+---
+
+## 6. Upsells contextuales en la guía
+
+**Estado**: diferido.
+**Trigger**: decisión de producto de monetizar tráfico de la guía pública.
+
+Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto") en secciones específicas. Requiere modelo `Upsell` + trigger engine (reusa patrón de 12B) + estudio de UX para no degradar la guía. Ver [GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) para contexto de oportunidad.
+
+---
+
+## 7. Brand theming avanzado
+
+**Estado**: diferido.
+**Trigger**: demanda real de white-label / host profesional quiere control visual pleno.
+
+10E introduce brand theming MVP: logo + primary color. Extensión futura: tipografía secundaria custom, dark mode per-property, patrones de fondo, variantes por stage. Conservar el constraint de tokens de `src/config/design-tokens.ts` como único sitio donde se declaran variables CSS.
+
+---
+
+## 8. Analytics dashboard de la guía pública
+
+**Estado**: diferido.
+**Trigger**: >50 properties publicadas o demanda explícita de hosts.
+
+10F introduce tracking MVP lightweight (endpoint `/api/analytics/guide-event`, tabla `GuideEvent`). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
+
+---
+
+## 9. Video optimization pipeline
+
+**Estado**: diferido.
+**Trigger**: >10% de las medias uploaded son video (medir tras Fase 10).
+
+10D/10E soportan video en galería como blob directo en R2 (sin transcoding). Extensión futura: transcoding a HLS adaptive bitrate via Mux o Cloudflare Stream, thumbnail automático, captions auto-generados. Costo de integración no justificado hasta que el volumen lo pida.
+
+---
+
+## 10. Auto-translate de KnowledgeItems con LLM
+
+**Estado**: diferido.
+**Trigger**: host con >3 idiomas activos se queja del coste manual de traducción.
+
+11B deja la política "missing locale → fallback con nota visible". Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + validación humana obligatoria antes de marcar como `published`). DeepL como alternativa más barata para texto corto. Evitar auto-publicar sin revisión.
+
+---
+
+## 11. Image resize/optimization on upload
+
+**Estado**: diferido (ya mencionado en ROADMAP).
+**Trigger**: coste de R2 + bandwidth crece visiblemente con fotos HD subidas directamente.
+
+Sharp (server-side) o Cloudflare Image Resizing. Genera variantes `thumb | medium | full` al confirmar upload. El media proxy de 10D ya contempla el parámetro `:variant`, por lo que el front-end no cambia cuando se active esto.
