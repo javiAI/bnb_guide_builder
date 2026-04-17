@@ -162,7 +162,7 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 | 13 | Guía local + issue reporting | 4 | Bajo | Medio | No |
 | 14 | Platform integrations | 4 | Alto | Alto | Posible |
 
-**Total**: 33 ramas (12 ✅ completadas hasta 10E + refactor/shared-action-result; 21 pendientes). El alta de la rama 10F `fix/guest-presentation-layer` (rev. 4, [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md)) separa **presentación** de **modelo** antes de abrir la senda de UX premium (hero, search, PWA).
+**Total**: 33 ramas (12 ✅ completadas hasta 10E; 21 pendientes). Math: Fase 8 (3) + Fase 9 (4) + 10A–10E (5) = 12. La rama `refactor/shared-action-result` (PR #55) queda **fuera** de este recuento del plan por ser refactor interno, no rama numerada. El alta de la rama 10F `fix/guest-presentation-layer` (rev. 4, [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md)) separa **presentación** de **modelo** antes de abrir la senda de UX premium (hero, search, PWA).
 
 ---
 

@@ -370,7 +370,7 @@ El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce u
 - `guide-no-hardcoded-ids.test.ts`: el servicio no contiene comparaciones `=== "am.*"`, `=== "sp.*"`, `=== "sys.*"`, `=== "pol.*"`. Cero IDs hardcoded.
 - `guide-sections-coverage.test.ts`: toda sección declarada tiene resolver; todo resolver está declarado.
 - `guide-rendering-resilience.test.ts`: keys deprecadas, types desconocidos y entidades ausentes degradan a `GuideItem` marcado, nunca lanzan.
-- `guest-leak-invariants.test.ts` (10F): en `audience=guest`, nunca aparece JSON crudo (no `{` / `[` / `"json":`), nunca aparece una clave taxonómica (regex `^[a-z]+\.[a-z_]+$`), nunca aparece `emptyCopy` editorial del host, nunca aparece un label de la deny-list (`"Slot"`, `"Propiedad"`, `"Config JSON"`...), y nunca se renderiza un item con `presentationType: "raw"`.
+- `guest-leak-invariants.test.ts` (10F): en `audience=guest`, enforce el set canónico de 5 invariantes documentado en [QA_AND_RELEASE.md §3 "Anti-leak gates"](QA_AND_RELEASE.md) — (1) no JSON crudo (no `{` / `[` / `"json":`), (2) no claves taxonómicas (regex `^[a-z]+(_[a-z]+)*\.[a-z_]+$`), (3) no `emptyCopy` editorial del host, (4) no labels de la deny-list (`"Slot"`, `"Propiedad"`, `"Config JSON"`...), (5) no items con `presentationType: "raw"` renderizados.
 - `presenter-coverage.test.ts` (10F): para cada key de `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` existe un presenter registrado o está en allowlist explícita.
 
 **Regla dura para futuras ramas**: cualquier feature que añada lógica de dominio al guide engine debe apoyarse en taxonomía y registry, no en switch statements sobre IDs.

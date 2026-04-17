@@ -107,10 +107,10 @@ La IA general de la guía va razonablemente bien:
 
 ## 4. Qué NO está correcto
 
-## 4.1 Problema principal — falta de “guest presentation layer”
+### 4.1 Problema principal — falta de “guest presentation layer”
 El sistema compone el árbol, pero **no cierra el boundary entre dato estructurado y copy final para huésped**.
 
-### Síntomas
+#### Síntomas
 - JSON crudo en guest
 - enums crudos en guest
 - placeholders editoriales en guest
@@ -119,7 +119,7 @@ El sistema compone el árbol, pero **no cierra el boundary entre dato estructura
 - fees false mostrados como JSON
 - contactos con valores técnicos
 
-### Conclusión
+#### Conclusión
 Hace falta una fase explícita:
 
 ```ts
@@ -131,16 +131,16 @@ composeGuide(...)
 
 ---
 
-## 4.2 “Esenciales” está mal resuelto UXmente
+### 4.2 “Esenciales” está mal resuelto UXmente
 `gs.essentials` hoy funciona más como **aggregator técnico** que como **panel operativo real**.
 
-### Problemas
+#### Problemas
 - se parece demasiado a una sección normal
 - duplica visualmente contenido de `Llegada`
 - incluye items que no son críticos para el hero
 - no actúa como panel de supervivencia
 
-### Ejemplo actual de contenido inadecuado en hero
+#### Ejemplo actual de contenido inadecuado en hero
 - Check-in
 - Cerradura inteligente
 - Horario de silencio
@@ -149,7 +149,7 @@ composeGuide(...)
 
 Eso no es el mix correcto para un hero guest-first.
 
-### Lo correcto
+#### Lo correcto
 El bloque superior debe priorizar:
 - cómo entrar
 - WiFi
@@ -164,7 +164,7 @@ No:
 
 ---
 
-## 4.3 Falta de quick actions y reducción de fricción
+### 4.3 Falta de quick actions y reducción de fricción
 No se observa todavía un panel con:
 - copiar WiFi
 - abrir Maps
@@ -177,13 +177,13 @@ Esto es una carencia crítica respecto a la investigación.
 
 ---
 
-## 4.4 Empty states aún escritos para host/editor
+### 4.4 Empty states aún escritos para host/editor
 Ejemplo incorrecto:
 - “Añade notas de uso o runbooks...”
 
 Esto no debe llegar nunca a audience=`guest`.
 
-### Regla
+#### Regla
 Para guest:
 - o se oculta la sección vacía
 - o se muestra una frase útil para el huésped
@@ -191,7 +191,7 @@ Para guest:
 
 ---
 
-## 4.5 Jerarquía visual insuficiente
+### 4.5 Jerarquía visual insuficiente
 Todo pesa demasiado parecido:
 - mismas cards
 - mismo tono
@@ -200,7 +200,7 @@ Todo pesa demasiado parecido:
 
 ---
 
-## 4.6 Espacios todavía demasiado “inventarial”
+### 4.6 Espacios todavía demasiado “inventarial”
 Ahora mismo `Espacios` funciona como ficha básica, pero no responde suficientemente a:
 - qué hay aquí
 - qué se puede usar
@@ -209,7 +209,7 @@ Ahora mismo `Espacios` funciona como ficha básica, pero no responde suficientem
 
 ---
 
-## 4.7 Guía todavía demasiado “renderer correcto” y no “producto premium”
+### 4.7 Guía todavía demasiado “renderer correcto” y no “producto premium”
 La guía actual se percibe como:
 - limpia
 - ordenada
@@ -276,9 +276,9 @@ Objetivo real:
 
 ---
 
-## 7.1 Cambios funcionales esperados
+### 7.1 Cambios funcionales esperados
 
-### Guest no debe ver nunca
+#### Guest no debe ver nunca
 - JSON crudo
 - snake_case enums
 - valores serializados
@@ -288,7 +288,7 @@ Objetivo real:
 - copy editorial (“añade/configura/runbook…”)
 - roles como `ct.host`
 
-### Guest debe ver siempre
+#### Guest debe ver siempre
 - copy humana
 - frases accionables
 - reglas resumidas
@@ -297,16 +297,16 @@ Objetivo real:
 
 ---
 
-## 7.2 Diseño del pipeline
+### 7.2 Diseño del pipeline
 
-### Estado actual conceptual
+#### Estado actual conceptual
 ```ts
 composeGuide(...)
 → filterByAudience(...)
 → render
 ```
 
-### Estado objetivo
+#### Estado objetivo
 ```ts
 composeGuide(...)
 → filterByAudience(...)
@@ -316,9 +316,9 @@ composeGuide(...)
 
 ---
 
-## 7.3 Archivos a crear
+### 7.3 Archivos a crear
 
-### `src/lib/services/guide-presentation.service.ts`
+#### `src/lib/services/guide-presentation.service.ts`
 Responsable de transformar el `GuideTree` para presentación.
 
 Funciones:
@@ -328,7 +328,7 @@ Funciones:
 - `presentGuideValue(item, audience, locale): PresentedValue`
 - `shouldHideEmptySectionForAudience(section, audience): boolean`
 
-### `src/lib/services/guide-presenters/policy-presenter.ts`
+#### `src/lib/services/guide-presenters/policy-presenter.ts`
 Presentación semántica de policies.
 
 Funciones sugeridas:
@@ -340,7 +340,7 @@ Funciones sugeridas:
 - `presentServicesInHomePolicy(value, locale)`
 - `presentFeeEnabledFlag(value, locale)`
 
-### `src/lib/services/guide-presenters/value-presenter-registry.ts`
+#### `src/lib/services/guide-presenters/value-presenter-registry.ts`
 Registry por `taxonomyKey` o `presentationType`.
 
 Ejemplo:
@@ -357,7 +357,7 @@ PRESENTERS = {
 }
 ```
 
-### `src/lib/services/guide-presenters/fallback-presenter.ts`
+#### `src/lib/services/guide-presenters/fallback-presenter.ts`
 Fallback robusto cuando no haya presenter específico.
 
 Debe:
@@ -367,7 +367,7 @@ Debe:
 - emitir warning interno
 - nunca romper render
 
-### Tests
+#### Tests
 - `src/test/guide-presentation.test.ts`
 - `src/test/guide-presentation-no-raw-json.test.ts`
 - `src/test/guide-presentation-no-enum-leaks.test.ts`
@@ -377,14 +377,14 @@ Debe:
 
 ---
 
-## 7.4 Archivos a modificar
+### 7.4 Archivos a modificar
 
-### `src/lib/services/guide-rendering.service.ts`
+#### `src/lib/services/guide-rendering.service.ts`
 No meter toda la lógica aquí, pero sí:
 - separar si hace falta `composeGuideRaw(...)`
 - llamar al presentation layer al final del pipeline
 
-### `src/lib/types/guide-tree.ts`
+#### `src/lib/types/guide-tree.ts`
 Añadir opcionalmente:
 - `presentationType?: string`
 - `displayValue?: string`
@@ -393,7 +393,7 @@ Añadir opcionalmente:
 - `isRenderableToGuest?: boolean`
 - `hideWhenEmptyForGuest?: boolean` en secciones
 
-### `taxonomies/guide_sections.json`
+#### `taxonomies/guide_sections.json`
 Añadir soporte para:
 - `hideWhenEmptyForGuest`
 - `emptyCopyGuest`
@@ -409,7 +409,7 @@ Ejemplo:
 }
 ```
 
-### Taxonomías de policies / access / contacts / amenities
+#### Taxonomías de policies / access / contacts / amenities
 Muy recomendable añadir:
 - `presentationType`
 - `enumLabels`
@@ -419,9 +419,9 @@ Muy recomendable añadir:
 
 ---
 
-## 7.5 Presentaciones concretas a implementar ya
+### 7.5 Presentaciones concretas a implementar ya
 
-### `pol.quiet_hours`
+#### `pol.quiet_hours`
 Input:
 ```json
 {"to":"08:00","from":"00:00","enabled":true}
@@ -429,14 +429,14 @@ Input:
 Output:
 - `Silencio de 00:00 a 08:00`
 
-### `pol.smoking = designated_area`
+#### `pol.smoking = designated_area`
 Output:
 - `Solo se permite fumar en la zona habilitada`
 
 Si existe `smokingArea = balcones`:
 - `Solo se permite fumar en los balcones`
 
-### `pol.events`
+#### `pol.events`
 Input:
 ```json
 {"policy":"small_gatherings","maxPeople":6}
@@ -444,7 +444,7 @@ Input:
 Output:
 - `Se permiten reuniones pequeñas de hasta 6 personas`
 
-### `pol.pets`
+#### `pol.pets`
 Input: JSON estructurado
 
 Output recomendado:
@@ -454,23 +454,23 @@ Output recomendado:
 - `Restricciones: No subir a los sofás · Deben estar supervisadas`
 - `Tamaño máximo: Mediano`
 
-### `pol.commercial_photography = not_allowed`
+#### `pol.commercial_photography = not_allowed`
 Output:
 - `No se permite fotografía o grabación comercial`
 
-### `pol.services_in_home = {"allowed":false}`
+#### `pol.services_in_home = {"allowed":false}`
 Output:
 - `No se permiten servicios externos dentro del alojamiento`
 
-### `fee.cleaning = {"enabled":false}`
+#### `fee.cleaning = {"enabled":false}`
 Guest:
 - ocultar o mostrar `No aplica`
 - recomendación: ocultar si no aporta valor
 
-### `fee.extra_guest = {"enabled":false}`
+#### `fee.extra_guest = {"enabled":false}`
 Igual
 
-### Contactos
+#### Contactos
 Nunca mostrar:
 - `Javier: ct.host`
 
@@ -481,16 +481,16 @@ Mostrar:
 
 ---
 
-## 7.6 Tests obligatorios
+### 7.6 Tests obligatorios
 
-### `guide-presentation-no-raw-json.test.ts`
+#### `guide-presentation-no-raw-json.test.ts`
 Asegurar que en guest no aparecen:
 - `{`
 - `}`
 - arrays serializados
 - blobs JSON
 
-### `guide-presentation-no-enum-leaks.test.ts`
+#### `guide-presentation-no-enum-leaks.test.ts`
 Asegurar que no aparecen en guest:
 - `designated_area`
 - `not_allowed`
@@ -498,20 +498,20 @@ Asegurar que no aparecen en guest:
 - `per_pet_per_night`
 - `medium_max`
 
-### `guide-presentation-empty-states.test.ts`
+#### `guide-presentation-empty-states.test.ts`
 Asegurar que en guest no aparecen:
 - “Añade”
 - “configura”
 - “runbooks”
 - “aparecerán aquí”
 
-### `guide-presentation-contacts.test.ts`
+#### `guide-presentation-contacts.test.ts`
 Asegurar que:
 - `ct.host`
 - otros labels internos
 no aparecen en guest
 
-### `guide-presentation-registry.test.ts`
+#### `guide-presentation-registry.test.ts`
 Asegurar que todas las keys críticas actuales tienen presenter o fallback correcto:
 - `pol.quiet_hours`
 - `pol.smoking`
@@ -525,7 +525,7 @@ Asegurar que todas las keys críticas actuales tienen presenter o fallback corre
 
 ---
 
-## 7.7 Criterio de done
+### 7.7 Criterio de done
 La rama se considera terminada cuando:
 
 1. El output guest ya no muestra JSON crudo

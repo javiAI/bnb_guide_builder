@@ -63,8 +63,10 @@ Font: **Inter** (variable) con subset latin-ext. Cargada via `next/font/google` 
 | Display | 28 | 32 | 700 | Título del hero, título de la propiedad |
 | H1 de sección | 20 | 26 | 600 | Encabezados de nivel sección (Arrival, Spaces...) |
 | H2 de card | 16 | 22 | 600 | Título de card |
-| Body | 14 | 20 | 400 | Texto corrido |
+| Body | 16 mobile / 14 desktop | 24 mobile / 20 desktop | 400 | Texto corrido |
 | Micro | 12 | 16 | 500 | Metadatos, leyendas, timestamps |
+
+**Regla ejecutable**: en viewport mobile (`<768px`), `Body` nunca baja de **16 px** (mobile-first + legibilidad con luz ambiental / manos sucias, consistente con la auditoría). En desktop (`≥1024px`) puede compactarse a **14 px** para ritmo vertical denso. El breakpoint tablet hereda de mobile (16 px).
 
 Escalas prohibidas: 10, 11, 13, 15, 17, 18, 22, 24, 26. Si un diseño pide un tamaño intermedio, fuerza a elegir uno del set.
 

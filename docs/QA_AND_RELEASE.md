@@ -37,6 +37,7 @@ Estos gates se aplican cada vez que se publique una `GuideVersion` o se sirva `/
 2. **No enum leaks en guest**. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con el patrón de clave taxonómica `^[a-z]+(_[a-z]+)*\.[a-z_]+$` (ej: `rm.smoking_outdoor_only`, `ct.host`, `am.wifi`).
 3. **No copy editorial del host en guest**. `section.emptyCopy` nunca aparece en un tree con `audience=guest`; solo `emptyCopyGuest` cuando está declarado. Si la sección no tiene `emptyCopyGuest`, se oculta (`hideWhenEmptyForGuest: true`) o emite un empty state neutro.
 4. **No labels internos en guest**. Ningún `displayValue` / `label` en `audience=guest` está en la deny-list mantenida en `src/test/guest-leak-invariants.ts` (`"Slot"`, `"Propiedad"`, `"Config JSON"`, `"Raw"`, etc.). La deny-list crece cuando QA detecta un leak nuevo.
+5. **No `presentationType: "raw"` visible en guest**. Ningún `GuideItem` con `presentationType === "raw"` se renderiza en `audience=guest`. Es un sentinel de bug (falló el normalizador / presenter faltante) — el renderer lo oculta y emite log `missing-presenter`.
 
 Complementariamente: **accesibilidad AA** (axe-core 0 violations serious/critical) y **gates visuales** Playwright en 3 viewports (`375x667`, `768x1024`, `1280x800`) son obligatorios desde 10F — ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release".
 

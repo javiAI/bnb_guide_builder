@@ -272,12 +272,12 @@ No se considera estable una fase si falta cualquiera de:
 - **Presenter registry** (`src/config/registries/presenter-registry.ts`): `Map<taxonomyKey | presentationType, Presenter>`. Presenters mínimos cubiertos: policy, contact, amenity, space, checkin_window, access_instruction, generic-text (fallback). Coverage test falla si hay `taxonomyKey` en `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` sin presenter.
 - Taxonomías extendidas: `guestLabel?`, `guestDescription?`, `icon?`, `heroEligible?`, `quickActionEligible?`, `guestCriticality?` se declaran aquí, no en React. 10G/10H/10I los consumen; 10F los prepara sin consumirlos.
 - `guide_sections.json` añade `emptyCopyGuest?` + `hideWhenEmptyForGuest?`. `emptyCopy` queda reservado para audience internal (copy editorial del host). **Nunca** se muestra copy editorial del host al huésped.
-- **Invariantes anti-leak** (tests en `src/test/guest-leak-invariants.test.ts`):
+- **Invariantes anti-leak** (5 canónicas, sincronizadas con [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md); tests en `src/test/guest-leak-invariants.test.ts`):
   1. Ningún `displayValue` / `displayFields.value` en `audience=guest` empieza por `{` o `[` ni contiene sustring `"json":`.
-  2. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con una clave de taxonomía (`rm.x`, `ct.y`, `am.z`).
+  2. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con clave taxonómica — regex `^[a-z]+(_[a-z]+)*\.[a-z_]+$` (ej: `rm.smoking_outdoor_only`, `ct.host`, `am.wifi`).
   3. `section.emptyCopy` no aparece en trees `audience=guest`; solo `emptyCopyGuest` cuando existe.
   4. Ningún `displayValue` / `label` en `audience=guest` está en la deny-list de labels internos (`"Slot"`, `"Propiedad"`, `"Config JSON"`, ...).
-  5. Items con `presentationType === "raw"` en `audience=guest` no se renderizan (sentinel de bug + log).
+  5. Items con `presentationType === "raw"` en `audience=guest` no se renderizan (sentinel de bug + log `missing-presenter`).
 - Schema evolution: `GUIDE_TREE_SCHEMA_VERSION = 2` → `3`. Snapshots pre-v3 se normalizan al servir (`snapshotPreV3` log).
 
 ### AI view
