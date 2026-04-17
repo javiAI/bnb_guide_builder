@@ -76,8 +76,14 @@ vitest run src/test/config-driven.test.ts  # Single test file
 
 ## Flujo de ramas (MASTER_PLAN_V2)
 
+- **OBLIGATORIO — Kickoff de rama (context handoff)**: ANTES de ejecutar cualquier comando de la nueva rama (incluida la lectura de `MASTER_PLAN_V2.md`), el asistente DEBE emitir un bloque titulado `Kickoff de rama <id>` con exactamente tres apartados:
+  1. **Context management**: una de `/clear` | `/compact <argumentos concretos>` | `ninguna acción` — justificando la elección en una línea (p. ej. "compactar para preservar decisiones de Fase -1 de 10C" vs "clear porque la rama anterior no deja contexto útil").
+  2. **Prompt inicial**: el texto literal que el usuario debe pegar al iniciar la nueva sesión, listo para copiar (sin placeholders, con el id de rama y el camino al § de `MASTER_PLAN_V2.md`).
+  3. **Checklist pre-kickoff**: estado de PR anterior (mergeada/cerrada), ramas locales a borrar, pulls pendientes sobre `main`.
+  Este bloque NUNCA se omite, aunque el usuario pida "empieza ya" — se emite primero y se espera confirmación.
 - **Antes de crear cualquier rama del plan** (8A en adelante), leer `docs/MASTER_PLAN_V2.md` § correspondiente **entera** y ejecutar su **Fase -1 — Revisión pre-rama** (§2.1): resumen técnico + resumen conceptual + ambigüedades + alternativas, iterar hasta aprobación explícita del usuario. No crear rama sin ese gate.
 - Seguir el resto del protocolo §2 (Fase 0 → Fase 6) sin saltos.
+- **OBLIGATORIO — Gate antes de crear la PR**: ejecutar `/simplify` sobre TODOS los cambios de la rama (no solo el último commit) y aplicar las correcciones antes de abrir la PR con `gh pr create`. El asistente NUNCA crea la PR sin haber corrido `/simplify` en esa misma sesión. Si ya se corrió antes de commits posteriores, se vuelve a correr. Commits de ajuste tras `/simplify` son válidos, pero la última acción antes de `gh pr create` siempre es verificar que `/simplify` cubrió los cambios finales.
 - **Al terminar la rama**: actualizar los docs listados en "Docs a actualizar al terminar" de la rama. **No crear docs nuevos** si cabe en uno existente. Marcar la rama en `docs/ROADMAP.md`.
 - Cambios al plan descubiertos en ejecución: PR aparte `chore/plan-update-<tema>` (ver §2.9), nunca editar `MASTER_PLAN_V2.md` silenciosamente.
 
