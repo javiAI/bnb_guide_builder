@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
+import "yet-another-react-lightbox/styles.css";
 import type { GuideMedia } from "@/lib/types/guide-tree";
 
 // Lightbox ships ~40 KB gzipped — only load it once the user actually taps a
 // thumbnail. ssr:false keeps it out of the server bundle entirely; opening
-// media is inherently client-driven.
+// media is inherently client-driven. The stylesheet sits at module scope so
+// the overlay is styled from first open (package ships CSS separately from JS).
 const Lightbox = dynamic(() => import("yet-another-react-lightbox"), {
   ssr: false,
 });
@@ -42,13 +44,6 @@ export function GuideMediaGallery({ media, contextLabel }: Props) {
               onClick={() => open(i)}
               className="guide-gallery__thumb-btn"
               aria-label={`Abrir ${m.alt || contextLabel} en grande`}
-              style={{
-                padding: 0,
-                border: "none",
-                background: "transparent",
-                display: "block",
-                width: "100%",
-              }}
             >
               <img
                 className="guide-gallery__thumb"
