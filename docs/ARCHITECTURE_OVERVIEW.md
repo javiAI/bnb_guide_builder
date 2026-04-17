@@ -261,24 +261,25 @@ No se considera estable una fase si falta cualquiera de:
 - Resiliencia: taxonomy keys desconocidas no rompen el render — el item se emite con `deprecated: true`, `label` = raw key, y un warning. Invariante enforced por `src/test/guide-no-hardcoded-ids.test.ts`.
 - Output estable: `renderMarkdown(tree)` en `src/lib/renderers/guide-markdown.ts` + React renderer (10E) como canal principal para `/g/:slug`.
 
-### Guest presentation layer (rama 10F — post-auditoría 2026-04-17)
+### Guest presentation layer (rama 10F — estable desde 2026-04-18)
 
 **El filtrado por audiencia no es suficiente**: `canAudienceSee` controla *qué se ve*, no *cómo se ve*. Sin una capa terminal, un `policiesJson` viaja al huésped como JSON crudo, un enum `rm.smoking_outdoor_only` aparece como clave técnica, y un `emptyCopy` editorial ("Añade normas...") escrito para el host se muestra tal cual al huésped. La capa de presentación sella ese contrato.
 
-**Pipeline canónico** (a partir de 10F): `composeGuide → filterByAudience → normalizeGuideForPresentation → render`.
+**Pipeline canónico**: `composeGuide → filterByAudience → normalizeGuideForPresentation → render`.
 
-- `normalizeGuideForPresentation(tree, audience)` es **pura y terminal**: no consulta DB, no muta input, devuelve un `GuideTree` con `GUIDE_TREE_SCHEMA_VERSION = 3`. Se invoca también al servir `snapshotJson` pre-v3 (normalización al servir, sin rewrite en DB).
-- Cada `GuideItem` gana 4 campos opcionales: `presentationType?`, `displayValue?`, `displayFields?`, `presentationWarnings?`. El renderer consume `displayValue` / `displayFields` — nunca formatea desde `value` / `fields` raw.
-- **Presenter registry** (`src/config/registries/presenter-registry.ts`): `Map<taxonomyKey | presentationType, Presenter>`. Presenters mínimos cubiertos: policy, contact, amenity, space, checkin_window, access_instruction, generic-text (fallback). Coverage test falla si hay `taxonomyKey` en `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` sin presenter.
-- Taxonomías extendidas: `guestLabel?`, `guestDescription?`, `icon?`, `heroEligible?`, `quickActionEligible?`, `guestCriticality?` se declaran aquí, no en React. 10G/10H/10I los consumen; 10F los prepara sin consumirlos.
-- `guide_sections.json` añade `emptyCopyGuest?` + `hideWhenEmptyForGuest?`. `emptyCopy` queda reservado para audience internal (copy editorial del host). **Nunca** se muestra copy editorial del host al huésped.
-- **Invariantes anti-leak** (5 canónicas, sincronizadas con [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md); tests en `src/test/guest-leak-invariants.test.ts`):
+- `normalizeGuideForPresentation(tree, audience)` es **pura, terminal e idempotente**: no consulta DB, no muta input, devuelve un `GuideTree` con `GUIDE_TREE_SCHEMA_VERSION = 3`. Se invoca también al servir `snapshotJson` pre-v3 (normalización al servir, sin rewrite en DB, con log `snapshotPreV3`).
+- Cada `GuideItem` gana 4 campos opcionales: `presentationType?`, `displayValue?`, `displayFields?`, `presentationWarnings?`. El renderer consume `displayValue` / `displayFields` — nunca formatea desde `value` / `fields` raw. El fallback en `src/lib/renderers/_guide-display.ts` a `value`/`fields` es defensive-only para trees legacy pre-normalización.
+- **Presenter registry** (`src/config/registries/presenter-registry.ts`): resolución exact `taxonomyKey` → longest-prefix match (`pol.*` → policy, `fee.*` → policy, `ct.*` → contact) → fallback `genericTextPresenter`. Coverage test (`presenter-coverage.test.ts`) falla si hay `taxonomyKey` en las taxonomías cubiertas sin presenter.
+- Taxonomías extendidas: `guestLabel?`, `guestDescription?`, `icon?`, `heroEligible?`, `quickActionEligible?`, `guestCriticality?` se declaran en JSON, no en React. 10G/10H/10I los consumen; 10F los prepara sin consumirlos.
+- `guide_sections.json` añade `emptyCopyGuest?` + `hideWhenEmptyForGuest?`. `emptyCopy` queda reservado para audience internal (copy editorial del host). **Nunca** se muestra copy editorial del host al huésped. `GuideRenderer` computa `filterRenderableItems` una sola vez y pasa `renderable` como prop a cada `SectionCard` / `GuideEmergencySection` — sin doble filter por sección.
+- **Red defensiva en el normalizador**: `sanitizeGuestFields` descarta fields cuyo label está en `INTERNAL_FIELD_LABEL_DENYLIST` (`ReadonlySet<string>` exportado: `"Slot"`, `"Config JSON"`, `"Raw"`, `"Propiedad"`), cuyo value empieza por `{`/`[` (raw JSON), o cuyo value matchea `TAXONOMY_KEY_PATTERN`. El test de invariantes importa el set directamente; `GuideItem.tsx` tiene un `if (item.presentationType === "raw") return null` como defense-in-depth.
+- **Invariantes anti-leak** (5 canónicas, sincronizadas con [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md); tests en `src/test/guest-leak-invariants.test.ts` sobre `src/test/fixtures/adversarial-property.ts`, verificadas en tree + markdown + html):
   1. Ningún `displayValue` / `displayFields.value` en `audience=guest` empieza por `{` o `[` ni contiene sustring `"json":`.
-  2. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con clave taxonómica — regex `^[a-z]+(_[a-z]+)*\.[a-z_]+$` (ej: `rm.smoking_outdoor_only`, `ct.host`, `am.wifi`).
+  2. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con `TAXONOMY_KEY_PATTERN = /^[a-z]+(_[a-z]+)*\.[a-z_]+$/`.
   3. `section.emptyCopy` no aparece en trees `audience=guest`; solo `emptyCopyGuest` cuando existe.
-  4. Ningún `displayValue` / `label` en `audience=guest` está en la deny-list de labels internos (`"Slot"`, `"Propiedad"`, `"Config JSON"`, ...).
+  4. Ningún `displayValue` / `label` / field en `audience=guest` está en `INTERNAL_FIELD_LABEL_DENYLIST`.
   5. Items con `presentationType === "raw"` en `audience=guest` no se renderizan (sentinel de bug + log `missing-presenter`).
-- Schema evolution: `GUIDE_TREE_SCHEMA_VERSION = 2` → `3`. Snapshots pre-v3 se normalizan al servir (`snapshotPreV3` log).
+- Schema evolution: `GUIDE_TREE_SCHEMA_VERSION = 2` → `3`. Snapshots pre-v3 se normalizan al servir.
 
 ### AI view
 

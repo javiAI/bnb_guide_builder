@@ -137,16 +137,21 @@ Todos los targets consumen el **mismo modelo de dominio normalizado** (Knowledge
 
 API tipada sobre `media_requirements.json`. Los formularios, validaciones, previews y publishing checks usan la misma fuente.
 
-### 8. Presenter registry (`src/config/registries/presenter-registry.ts`, rama 10F)
+### 8. Presenter registry (`src/config/registries/presenter-registry.ts`)
 
-Frontera **modelo ↔ huésped**. Traduce `GuideItem` (modelo interno: enums, JSON, claves taxonómicas) a un shape de presentación consumible directamente por el renderer (`displayValue`, `displayFields`, `presentationType`, `presentationWarnings`).
+Frontera **modelo ↔ huésped** (estable desde 10F). Traduce `GuideItem` (modelo interno: enums, JSON, claves taxonómicas) a un shape de presentación consumible directamente por el renderer (`displayValue`, `displayFields`, `presentationType`, `presentationWarnings`).
 
-- Forma: `Map<taxonomyKey | presentationType, Presenter>`.
-- Fallback obligatorio: `generic-text` (escapa HTML, deja texto plano, emite warning `missing-presenter`).
-- Coverage mandatory: `taxonomies/policy_taxonomy.json`, `taxonomies/contact_roles.json`, `taxonomies/amenity_taxonomy.json` — `src/test/presenter-coverage.test.ts` falla si una key declarada no tiene presenter (y no está en allowlist explícita).
-- Un presenter jamás consulta DB ni muta input. Toma `(item, context)` → `{ displayValue, displayFields, presentationType, warnings[] }`.
-- Añadir soporte para una nueva taxonomía visible al huésped = (1) ampliar entries en la taxonomía con `guestLabel` / `guestDescription` / `icon`, (2) registrar presenter por `taxonomyKey` o por prefijo (`rm.*`, `ct.*`, `am.*`), (3) actualizar coverage allowlist si aplica.
-- El renderer consume **siempre** `displayValue` / `displayFields`, nunca `value` / `fields` raw. El normalizador (`normalizeGuideForPresentation`) es la única fuente de verdad de presentación.
+- **Resolución**: `getPresenter(taxonomyKey)` — exact match en `EXACT_PRESENTERS` → longest-prefix match en `PREFIX_PRESENTERS` (sorted por longitud) → fallback `genericTextPresenter`.
+- Presenters activos:
+  - Prefix `pol.` → `policyPresenter` (normas de casa, políticas).
+  - Prefix `fee.` → `policyPresenter` (tarifas, mismo shape que pol).
+  - Prefix `ct.` → `contactPresenter` (contactos; genera `href: "tel:+..."` / `mailto:...`).
+  - Fallback → `genericTextPresenter` (escapa HTML, deja texto plano, emite warning `missing-presenter` si el taxonomyKey no tiene presenter explícito).
+- Coverage guard: `src/test/presenter-coverage.test.ts` verifica 100% sobre las taxonomías cubiertas y ausencia de regressiones silenciosas.
+- Un presenter jamás consulta DB ni muta input. Toma `(item, context)` → `{ displayValue, displayFields, presentationType, warnings[] }`. Corre dentro del normalizador puro `normalizeGuideForPresentation(tree, audience)`.
+- Añadir soporte para una nueva taxonomía visible al huésped: (1) ampliar entries en la taxonomía con `guestLabel` / `guestDescription` / `icon`, (2) registrar presenter por `taxonomyKey` exacto o por prefijo en el array apropiado del registry, (3) `presenter-coverage.test.ts` verde.
+- El renderer consume **siempre** `displayValue` / `displayFields`, nunca `value` / `fields` raw. El normalizador es la única fuente de verdad de presentación.
+- Red defensiva: el normalizador aplica `sanitizeGuestFields` sobre todos los fields en `audience=guest`, descartando los cuyo label está en `INTERNAL_FIELD_LABEL_DENYLIST` (exportado del service), cuyo value empieza por `{`/`[` (raw JSON), o matchea `TAXONOMY_KEY_PATTERN`. Garantiza las 5 invariantes de [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md) aun si un presenter falla.
 
 ---
 

@@ -6,13 +6,13 @@
 
 ## 1. Snapshot en 30 segundos
 
-- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 33 ramas totales; 12 ✅ (hasta 10E).
+- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 34 ramas totales; 13 ✅ (hasta 10F). Siguiente: **10J `chore/e2e-harness-public-guide`** (harness Playwright+axe compartido por 10G/H/I).
 - Estado vivo: [ROADMAP.md](ROADMAP.md) (tabla + "Progreso Fase X" por rama).
 - Research base congelado v1.0 (referenciar por línea, no copiar):
   - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md)
   - [research/AI_KNOWLEDGE_BASE_SPEC.md](research/AI_KNOWLEDGE_BASE_SPEC.md)
   - [research/IMPLEMENTATION_PLAN.md](research/IMPLEMENTATION_PLAN.md)
-  - [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — **origen de rev.4**: fija prioridad absoluta de la rama 10F `fix/guest-presentation-layer`
+  - [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — origen de rev.4; la rama 10F resolvió la frontera de presentación. 10J (harness E2E+axe) queda como rama formal siguiente antes de 10G/H/I.
 - Diferido (no confundir con roadmap): [FUTURE.md](FUTURE.md).
 
 ---

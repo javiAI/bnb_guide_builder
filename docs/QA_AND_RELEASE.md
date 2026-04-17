@@ -29,17 +29,26 @@ Cada fase requiere:
 - messaging preview y automations válidos
 - media y review queue funcionales
 
-### Anti-leak gates (rama 10F en adelante — `audience=guest`)
+### Anti-leak gates (rama 10F — `audience=guest`)
 
-Estos gates se aplican cada vez que se publique una `GuideVersion` o se sirva `/g/:slug` con `audience=guest`. Enforced por `src/test/guest-leak-invariants.test.ts` + Playwright sobre fixture adversarial:
+Estos gates se aplican cada vez que se publique una `GuideVersion` o se sirva `/g/:slug` con `audience=guest`. Desde 10F están **blindados unitariamente** por `src/test/guest-leak-invariants.test.ts` (tree + markdown + html) sobre la fixture adversarial `src/test/fixtures/adversarial-property.ts`:
 
-1. **No raw JSON en guest**. Ningún `GuideItemField.value` ni `displayValue` visible en `audience=guest` empieza por `{` o `[`, ni contiene la sustring literal `"json":`. El snapshot publicado de una `GuideVersion` se chequea al publicar; `/g/:slug` se chequea en integración.
-2. **No enum leaks en guest**. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con el patrón de clave taxonómica `^[a-z]+(_[a-z]+)*\.[a-z_]+$` (ej: `rm.smoking_outdoor_only`, `ct.host`, `am.wifi`).
+1. **No raw JSON en guest**. Ningún `GuideItemField.value` ni `displayValue` visible en `audience=guest` empieza por `{` o `[`, ni contiene la sustring literal `"json":`. El snapshot publicado de una `GuideVersion` pasa por `normalizeGuideForPresentation` antes de persistirse (`publishGuideVersionAction`). Snapshots pre-v3 se re-normalizan al servir (`snapshotPreV3` log).
+2. **No enum leaks en guest**. Ningún `displayValue` / `displayFields.value` en `audience=guest` coincide con `TAXONOMY_KEY_PATTERN = /^[a-z]+(_[a-z]+)*\.[a-z_]+$/` (ej: `rm.smoking_outdoor_only`, `ct.host`, `am.wifi`).
 3. **No copy editorial del host en guest**. `section.emptyCopy` nunca aparece en un tree con `audience=guest`; solo `emptyCopyGuest` cuando está declarado. Si la sección no tiene `emptyCopyGuest`, se oculta (`hideWhenEmptyForGuest: true`) o emite un empty state neutro.
-4. **No labels internos en guest**. Ningún `displayValue` / `label` en `audience=guest` está en la deny-list mantenida en `src/test/guest-leak-invariants.ts` (`"Slot"`, `"Propiedad"`, `"Config JSON"`, `"Raw"`, etc.). La deny-list crece cuando QA detecta un leak nuevo.
-5. **No `presentationType: "raw"` visible en guest**. Ningún `GuideItem` con `presentationType === "raw"` se renderiza en `audience=guest`. Es un sentinel de bug (falló el normalizador / presenter faltante) — el renderer lo oculta y emite log `missing-presenter`.
+4. **No labels internos en guest**. Ningún `displayValue` / `label` ni field en `audience=guest` está en `INTERNAL_FIELD_LABEL_DENYLIST` (`"Slot"`, `"Config JSON"`, `"Raw"`, `"Propiedad"`), exportado desde `src/lib/services/guide-presentation.service.ts` como `ReadonlySet<string>`. El test importa el set directamente; el normalizador aplica `sanitizeGuestFields` como red defensiva.
+5. **No `presentationType: "raw"` visible en guest**. Ningún `GuideItem` con `presentationType === "raw"` se renderiza en `audience=guest`. Es un sentinel de bug (falló el normalizador / presenter faltante) — el renderer lo oculta y emite log `missing-presenter`. `GuideItem.tsx` añade un guard defensivo `if (item.presentationType === "raw") return null`.
 
-Complementariamente: **accesibilidad AA** (axe-core 0 violations serious/critical) y **gates visuales** Playwright en 3 viewports (`375x667`, `768x1024`, `1280x800`) son obligatorios desde 10F — ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release".
+### E2E + accesibilidad (rama 10J, gate compartido por 10G/H/I)
+
+Playwright + `@axe-core/playwright` se introducen como **harness compartido** en la rama `chore/e2e-harness-public-guide` (10J). Una vez mergeada:
+
+- **Viewports**: mobile 375, tablet 768, desktop 1280 (y webkit-mobile 375 como secundario).
+- **Fixtures**: `property-empty`, `property-rich`, `property-adversarial` (reutiliza `src/test/fixtures/adversarial-property.ts` de 10F).
+- **Gates bloqueantes en CI**: (a) regex anti-leak sobre DOM renderizado — JSON crudo, taxonomy keys; (b) axe-core `serious` / `critical` = 0.
+- **Comando**: `npm run test:e2e`.
+
+Ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release" para la tabla completa de gates de UX.
 
 ## 4. Expected commands
 

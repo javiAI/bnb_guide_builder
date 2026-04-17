@@ -832,26 +832,25 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `src/lib/taxonomy-loader.ts` — Zod extendido + tipos derivados exportados.
 - `src/components/public-guide/guide-renderer.tsx` — consume `displayValue` / `displayFields` (ya humanizados); si `presentationType === "raw"` en audience guest, renderiza nada + log. NO debe volver a formatear; el normalizador es la única fuente de verdad.
 - `src/test/guide-rendering.test.ts` — actualizar mocks y expectativas para que verifiquen `displayValue` donde antes miraban `value`.
-- `package.json` — añadir `@axe-core/playwright` como devDependency (requerido por los tests de accesibilidad y por el gate "axe-core 0 violations serias" del criterio de done).
-- `playwright.config.ts` (crear si no existe) — projects para viewports mobile 375, tablet 768, desktop 1280.
+- Playwright + axe-core diferidos al harness dedicado (ver rama `chore/e2e-harness-public-guide` más abajo). Aquí no se añade ni `@axe-core/playwright` ni `playwright.config.ts`.
 
 **Tests (mínimo)**:
 
-- `guide-presentation.test.ts` — 5 presenters × 3 casos (valor normal / taxonomía deprecated / valor vacío).
-- `guest-leak-invariants.test.ts` — 5 invariantes sobre fixture adversarial.
-- `presenter-coverage.test.ts` — cobertura 100% de las 3 taxonomías obligatorias.
-- `guest-schema-version.test.ts` — v3 emitido; pre-v3 snapshot normalizado al servir.
-- `src/test/guide-rendering.test.ts` — ampliado para verificar `displayValue`/`displayFields` en los 9 slots declarados.
-- `src/test/guide-empty-states.test.ts` — para cada sección, `audience=guest` con property vacía **no** muestra `emptyCopy` de host; usa `emptyCopyGuest` o queda oculto si `hideWhenEmptyForGuest`.
+- `guide-presentation.test.ts` — purity + idempotence + audience-awareness; cada presenter produce `displayValue` / `displayFields` esperados.
+- `guest-leak-invariants.test.ts` — **5 invariantes** anti-leak sobre fixture adversarial, verificadas sobre tree + markdown + html render paths.
+- `presenter-coverage.test.ts` — cobertura 100% de `pol.*` (prefix) y `ct.*` (prefix) + auditoría de fallback genérico.
+- `guest-schema-version.test.ts` — `GUIDE_TREE_SCHEMA_VERSION = 3` emitido al publicar; snapshots pre-v3 pasan por normalizador al servir (idempotencia verificada).
+- `guide-empty-states.test.ts` — matriz A3 (`emptyCopy` host vs `emptyCopyGuest` vs `hideWhenEmptyForGuest`) validada sección por sección; `emptyCopy` host nunca llega a `audience=guest`.
+- `src/test/fixtures/adversarial-property.ts` — fixture compartida que empaqueta los 5 leak shapes (raw JSON, taxonomy keys, editorial host copy, internal labels, empty section forzada).
 
 **Criterio de done**:
 
-- `npm run test` verde.
+- `npm run test` verde (incluye los 5 archivos de tests nuevos: `guide-presentation`, `guest-leak-invariants`, `presenter-coverage`, `guide-empty-states`, `guest-schema-version`).
 - `tsc --noEmit` verde tras `prisma generate`.
-- Playwright (mobile 375) sobre fixture "property-empty" y "property-rich": cero coincidencias de regex `r'\{.*\"[a-z_]+\":'` (JSON crudo), cero coincidencias de regex de claves taxonómicas (`r'\b[a-z]+\.[a-z_]+\b'`) en textos visibles de `audience=guest`.
-- axe-core sobre ambas fixtures: 0 violations serias.
+- Las 5 invariantes anti-leak verificadas unitariamente con fixture adversarial empaquetada en `src/test/fixtures/adversarial-property.ts` (cobertura sobre el tree + markdown + html).
 - Smoke manual con `/g/:slug` sobre fixture adversarial (valores enum desconocidos + JSON en campos libres + contacto con `label === roleKey`) muestra empty-state neutro o texto humanizado, nunca JSON ni enums.
 - `/simplify` pasado sobre todos los cambios de la rama antes de abrir PR.
+- **Playwright + axe-core diferidos a la rama `chore/e2e-harness-public-guide`** (ver sección dedicada más abajo): 10F cierra con gates unitarios exhaustivos; el harness E2E+a11y queda como rama formal siguiente, reutilizable por 10G/10H/10I.
 
 **Preparación**:
 
@@ -869,14 +868,13 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - `CLAUDE.md` § "Patrones — Guía pública (audience=guest)" — reforzar invariantes y añadir las reglas duras que surjan durante la implementación.
   - `docs/QA_AND_RELEASE.md` § "Final release gates" — marcar gates 8–11 (anti-leak) como verificados automáticamente por esta rama.
   - `docs/ROADMAP.md` — marcar 10F ✅ al terminar.
-- **Skills/tools obligatorios** (no opcionales — ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
+- **Skills/tools obligatorios** (ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
   - **Agent `code-explorer`** antes de tocar código — mapear todos los puntos donde el renderer actual lee `value`/`fields` directamente (para saber cuántos sitios tocar sin romper).
   - **Agent `code-architect`** antes de codificar — consolidar la decisión `registry-por-clave vs presenter-por-type` y el shape exacto de `displayFields`. Output mínimo: 1 documento interno con los contratos.
   - **Context7** (auto) — Zod v3 defaults + `z.discriminatedUnion`.
-  - **`/playwright-cli`** al final — 3 viewports (375x667 / 768x1024 / 1280x800) sobre fixtures `empty` / `rich` / `adversarial`.
-  - **`@axe-core/playwright`** integrado en los specs de Playwright — 0 violations serious/critical. No opcional.
   - **`/simplify`** obligatorio antes de abrir PR (§2.6).
   - **`/pre-commit-review`** antes de cada commit (§2.6).
+  - Playwright + `@axe-core/playwright`: **no aquí** — viven en la rama `chore/e2e-harness-public-guide`, que introduce la infra compartida por 10G/10H/10I.
 
 **Relación con ramas posteriores**:
 
@@ -939,8 +937,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - **`/firecrawl-search`** antes — re-benchmark de hero/quick-actions en Touch Stay / Hostfully / Enso / Breezeway / Airbnb (últimos 6 meses).
   - **Agent `code-architect`** — valida shape del `quick-action-registry` + contrato `resolveValue(tree)` antes de implementar.
   - **Context7** (auto) — Clipboard API spec, URI schemes `tel:`/`wa.me`/`geo:`/universal Maps links, `@radix-ui/react-toast`.
-  - **`/playwright-cli`** en 3 viewports (375/768/1280) — verificar copy-to-clipboard en Chromium + WebKit, comportamiento `tel:` en mobile emulation, tab focus del toast.
-  - **`@axe-core/playwright`** — 0 violations serious/critical sobre la ruta con hero montado. No opcional.
+  - **E2E + axe-core**: reutilizar el harness compartido introducido en la rama `chore/e2e-harness-public-guide`. 10G añade specs específicos para hero + quick actions (copy/tel/wa.me/maps) en las 3 viewports; los gates de accesibilidad heredan `serious/critical = 0`.
   - **`/simplify`** tras implementar — validar que 10E+10F+10G no duplican lógica de resolución.
   - **`/pre-commit-review`** antes de cada commit.
 
@@ -995,8 +992,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - **Skills/tools obligatorios** (ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
   - **Agent `code-architect`** — valida shape del index + pesos antes de codificar (el index es un artefacto caliente, cambios posteriores fuerzan recomputar todo).
   - **Context7** (auto) — `fuse.js` v7.x (`threshold`, `keys`, `includeMatches`), `React.useDeferredValue`.
-  - **`/playwright-cli`** en 3 viewports (375/768/1280) — tests de teclado (`/` abre, `Escape` cierra, `Enter`/`ArrowUp`/`ArrowDown`), screen reader labels, focus trap.
-  - **`@axe-core/playwright`** — 0 violations serious/critical.
+  - **E2E + axe-core**: reutilizar el harness compartido (`chore/e2e-harness-public-guide`). 10H añade specs para teclado (`/` abre, `Escape` cierra, `Enter` navega, arrows mueven selección), focus trap, y cero-results hint; gates a11y heredan `serious/critical = 0`.
   - **`/firecrawl-search`** — "guidebook instant search UX zero-result hint" + benchmarks de overlays en Airbnb / Touch Stay.
   - **`/simplify`** + **`/pre-commit-review`** obligatorios antes de PR.
 
@@ -1059,8 +1055,67 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - Defaults §2.
   - **Context7** (auto) — Service Worker API, Next.js 15 manifest + dynamic headers, MDN cache storage strategies.
   - **`/firecrawl-search`** antes — "next.js 15 app router pwa service worker manual", "touch stay offline guest guide".
-  - **`/playwright-cli`** — test airplane mode (`browserContext.setOffline(true)`), A2HS trigger en chromium-mobile emulation.
+  - **E2E**: reutilizar el harness (`chore/e2e-harness-public-guide`). 10I añade specs de airplane mode (`browserContext.setOffline(true)`) y A2HS trigger en chromium-mobile emulation, más cache-tier assertions.
   - **Agent code-architect** — diseñar versionado del SW + strategy de invalidación si la decisión no quedó cerrada.
+
+---
+
+### Rama 10J — `chore/e2e-harness-public-guide`
+
+**Propósito**: introducir **una única vez** el harness E2E + accesibilidad que 10G, 10H y 10I reutilizan. Instala Playwright + `@axe-core/playwright`, define `playwright.config.ts` con 3 viewports (mobile 375, tablet 768, desktop 1280), monta fixtures navegables (`property-empty`, `property-rich`, `property-adversarial`) y deja specs mínimos que verifican los gates anti-leak (regex JSON crudo, regex de claves taxonómicas) y los gates de accesibilidad (axe-core, 0 violations serious/critical) sobre la ruta pública `/g/:slug`.
+
+**Por qué sale de 10F**: 10F entregó las invariantes anti-leak como **tests unitarios exhaustivos** (tree + markdown + html) sobre fixture adversarial. Un Playwright stub-nivel añadido sólo para "cerrar 10F" habría sido pseudo-E2E débil — mismo coste que harness real pero sin la infra reutilizable que 10G/10H/10I necesitan. Mejor invertir una rama formal en el harness que será el gate de release para todo el bloque de guía pública.
+
+**Decisiones cerradas en Fase -1 (pendiente al crear la rama)**:
+
+- **Fixtures de propiedades navegables** en `src/test/fixtures/e2e/` (3 shapes: empty/rich/adversarial). Adversarial **reutiliza** `src/test/fixtures/adversarial-property.ts` de 10F — no duplicar.
+- **Estrategia de servidor**: `next start` en puerto random + seed de DB via `prisma db push` sobre una SQLite temporal (`DATABASE_URL=file:./e2e-tmp.db`) o — preferible — fixtures en memoria vía mock del repositorio. Decisión final en Fase -1 de la rama.
+- **Script npm**: `npm run test:e2e` (single command: seed → build → start → playwright test → teardown). Timeouts CI-friendly.
+- **CI hook**: gate bloqueante en el workflow principal. Si axe-core detecta `serious` o `critical` → falla la PR. Si alguno de los regex anti-leak hace match → falla la PR.
+
+**Archivos a crear**:
+
+- `playwright.config.ts` — projects chromium (375/768/1280) + webkit-mobile (375).
+- `e2e/public-guide.spec.ts` — smoke: renderiza las 3 fixtures, valida estructura básica, captura screenshots baseline.
+- `e2e/guest-leak-invariants.spec.ts` — regex anti-leak sobre el DOM renderizado (invariantes 1–4 de 10F como E2E complementario).
+- `e2e/axe-a11y.spec.ts` — `@axe-core/playwright` sobre cada fixture × cada viewport; 0 violations serious/critical.
+- `src/test/fixtures/e2e/` — helpers para seedar fixtures `empty` / `rich` / `adversarial` en el server.
+- `.github/workflows/e2e.yml` (o extender el workflow existente) — job E2E paralelo al job unit.
+
+**Archivos a modificar**:
+
+- `package.json` — añadir `@playwright/test`, `@axe-core/playwright` como devDependencies; añadir `test:e2e` script.
+- `README.md` — sección "E2E tests" con comandos.
+- `docs/QA_AND_RELEASE.md` — mover los gates Playwright+axe de 10F/G/H/I a esta rama como gate compartido.
+
+**Tests (el harness ES el test)**:
+
+- Las 3 suites de specs cubren los 3 gates: smoke + anti-leak + a11y.
+- Fixtures `rich` y `adversarial` ejercitan todos los presenters/resolvers de 10F.
+
+**Criterio de done**:
+
+- `npm run test:e2e` verde local (3 viewports).
+- CI verde: job E2E ejecuta en PRs y bloquea merge si falla.
+- `docs/QA_AND_RELEASE.md` actualizado con el nuevo gate.
+- 10G/10H/10I: su sección "Skills/tools" referencia este harness para Playwright+axe en vez de pedir herramientas ad-hoc.
+
+**Preparación**:
+
+- **Contexto a leer**:
+  - [Playwright docs](https://playwright.dev/docs/intro) — fixtures, project configs, test lifecycle.
+  - [@axe-core/playwright](https://www.npmjs.com/package/@axe-core/playwright) — integración, severity levels.
+  - `src/test/fixtures/adversarial-property.ts` (10F) — punto de partida de la fixture adversarial navegable.
+  - 10F PR entera — entender qué invariantes ya están cubiertas unitariamente para no duplicar.
+- **Docs a actualizar al terminar**:
+  - `docs/QA_AND_RELEASE.md` — nuevo gate "E2E + axe-core" + comandos.
+  - `docs/ARCHITECTURE_OVERVIEW.md` — sección "Testing" añade layer E2E.
+  - `CLAUDE.md` § "Entorno y comandos" — nota sobre `npm run test:e2e` + DB temporal.
+  - `docs/ROADMAP.md` — marcar 10J ✅.
+- **Skills/tools**:
+  - **Context7** (auto) — Playwright v1.x, `@axe-core/playwright`, Next.js `next start`.
+  - **`/firecrawl-search`** — "playwright next.js 15 app router fixtures", "axe-core serious violations threshold".
+  - **`/simplify`** + **`/pre-commit-review`** obligatorios antes de PR.
 
 ---
 
