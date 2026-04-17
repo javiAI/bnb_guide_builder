@@ -42,7 +42,7 @@ beforeEach(() => {
 
 describe("composeGuide — basic shape", () => {
   it("returns all 7 sections declared in guide_sections.json in order", async () => {
-    const tree = await composeGuide("p1", "guest");
+    const tree = await composeGuide("p1", "guest", null);
     const ids = tree.sections.map((s) => s.id);
     expect(ids).toEqual([
       "gs.arrival",
@@ -58,7 +58,7 @@ describe("composeGuide — basic shape", () => {
   });
 
   it("empty property emits all sections with items: [] + null deep-link for guest", async () => {
-    const tree = await composeGuide("p1", "guest");
+    const tree = await composeGuide("p1", "guest", null);
     for (const section of tree.sections) {
       expect(section.items).toHaveLength(0);
       expect(section.emptyCtaDeepLink).toBeNull();
@@ -66,7 +66,7 @@ describe("composeGuide — basic shape", () => {
   });
 
   it("internal audience emits resolved emptyCtaDeepLink with propertyId", async () => {
-    const tree = await composeGuide("p1", "internal");
+    const tree = await composeGuide("p1", "internal", null);
     for (const section of tree.sections) {
       expect(section.emptyCtaDeepLink).toContain("p1");
     }
@@ -90,7 +90,7 @@ describe("composeGuide — audience filtering", () => {
       },
     ]);
     for (const audience of ["guest", "ai", "internal"] as const) {
-      const tree = await composeGuide("p1", audience);
+      const tree = await composeGuide("p1", audience, null);
       const space = tree.sections.find((s) => s.id === "gs.spaces")!.items[0];
       expect(space).toBeDefined();
       // sensitive is never in the tree; every remaining field must be visible
@@ -116,8 +116,8 @@ describe("composeGuide — audience filtering", () => {
         beds: [],
       },
     ]);
-    const guest = await composeGuide("p1", "guest");
-    const internal = await composeGuide("p1", "internal");
+    const guest = await composeGuide("p1", "guest", null);
+    const internal = await composeGuide("p1", "internal", null);
     const guestFields = guest.sections.find((s) => s.id === "gs.spaces")!.items[0].fields;
     const internalFields = internal.sections.find((s) => s.id === "gs.spaces")!.items[0].fields;
     expect(guestFields.every((f) => f.visibility === "guest")).toBe(true);
@@ -139,9 +139,9 @@ describe("composeGuide — audience filtering", () => {
         visibility: "internal",
       },
     ]);
-    const guest = await composeGuide("p1", "guest");
+    const guest = await composeGuide("p1", "guest", null);
     expect(guest.sections.find((s) => s.id === "gs.contacts")!.items).toHaveLength(0);
-    const internal = await composeGuide("p1", "internal");
+    const internal = await composeGuide("p1", "internal", null);
     expect(internal.sections.find((s) => s.id === "gs.contacts")!.items).toHaveLength(1);
   });
 });
@@ -197,7 +197,7 @@ describe("composeGuide — emergency split", () => {
         visibility: "guest",
       },
     ]);
-    const tree = await composeGuide("p1", "guest");
+    const tree = await composeGuide("p1", "guest", null);
     const contacts = tree.sections.find((s) => s.id === "gs.contacts")!;
     const emergency = tree.sections.find((s) => s.id === "gs.emergency")!;
     expect(contacts.items.map((i) => i.id)).toEqual(["c1"]);

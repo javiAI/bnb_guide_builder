@@ -25,6 +25,12 @@ function getR2Config() {
   };
 }
 
+export function getR2Bucket(): string {
+  const bucket = getR2Config().bucket;
+  if (!bucket) throw new Error("Missing R2_BUCKET env var");
+  return bucket;
+}
+
 const UPLOAD_EXPIRES_SECONDS = 15 * 60; // 15 min
 const DOWNLOAD_EXPIRES_SECONDS = 60 * 60; // 1 hour
 const DOWNLOAD_CACHE_TTL_MS = 55 * 60 * 1000; // 55 min (5 min buffer before URL expires)
@@ -124,7 +130,7 @@ export async function getUploadUrl(
   contentType: string,
 ): Promise<string> {
   const command = new PutObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
     ContentType: contentType,
   });
@@ -138,7 +144,7 @@ export async function getDownloadUrl(storageKey: string): Promise<string> {
   if (cached) return cached;
 
   const command = new GetObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
   });
   const url = await getSignedUrl(getS3Client(), command, {
@@ -153,7 +159,7 @@ export async function getDownloadUrl(storageKey: string): Promise<string> {
 
 export async function deleteObject(storageKey: string): Promise<void> {
   const command = new DeleteObjectCommand({
-    Bucket: getR2Config().bucket,
+    Bucket: getR2Bucket(),
     Key: storageKey,
   });
   await getS3Client().send(command);
@@ -161,16 +167,18 @@ export async function deleteObject(storageKey: string): Promise<void> {
 
 export async function headObject(
   storageKey: string,
-): Promise<{ contentLength: number; contentType: string } | null> {
+): Promise<{ contentLength: number; contentType: string; etag: string | null } | null> {
   try {
     const command = new HeadObjectCommand({
-      Bucket: getR2Config().bucket,
+      Bucket: getR2Bucket(),
       Key: storageKey,
     });
     const result = await getS3Client().send(command);
+    const rawEtag = result.ETag ?? null;
     return {
       contentLength: result.ContentLength ?? 0,
       contentType: result.ContentType ?? "application/octet-stream",
+      etag: rawEtag ? rawEtag.replace(/"/g, "").trim() || null : null,
     };
   } catch (err) {
     if (

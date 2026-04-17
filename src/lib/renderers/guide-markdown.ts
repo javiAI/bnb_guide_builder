@@ -25,7 +25,7 @@ function escapeMd(text: string): string {
 }
 
 function isSafeMdUrl(url: string): boolean {
-  return /^https?:\/\//i.test(url);
+  return /^(\/g\/[^/]+\/|https?:\/\/)/i.test(url);
 }
 
 function renderItem(item: GuideItem, depth: number, out: string[]): void {

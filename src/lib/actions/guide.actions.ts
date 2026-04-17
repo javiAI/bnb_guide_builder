@@ -44,7 +44,22 @@ export async function publishGuideVersionAction(
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
 
-  const tree: GuideTree = await composeGuide(propertyId, "internal");
+  // Ensure slug BEFORE composing — media URLs in treeJson are baked with this
+  // slug, so a first-publish where publicSlug is still null would otherwise
+  // snapshot broken `/g/null/media/...` paths. If slug generation fails we
+  // still publish, but media URLs fall back to asset-only paths (slug=null)
+  // and will resolve correctly once the user retries or hits the public URL.
+  let publicSlug: string | null = null;
+  try {
+    publicSlug = await ensurePropertySlug(propertyId);
+  } catch (err) {
+    console.error(
+      `Property ${propertyId} slug generation failed — publishing without baked slug.`,
+      err,
+    );
+  }
+
+  const tree: GuideTree = await composeGuide(propertyId, "internal", publicSlug);
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -75,17 +90,6 @@ export async function publishGuideVersionAction(
       return { success: false, error: "Conflicto de versión — reintenta" };
     }
     throw err;
-  }
-
-  // Best-effort slug generation — publishing already committed
-  let publicSlug: string | null = null;
-  try {
-    publicSlug = await ensurePropertySlug(propertyId);
-  } catch (err) {
-    console.error(
-      `Property ${propertyId} was published, but slug generation failed.`,
-      err,
-    );
   }
 
   await revalidatePublishingPaths(propertyId, publicSlug);

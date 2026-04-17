@@ -147,6 +147,7 @@ Módulos canónicos (18):
 ### Public routes (no auth)
 
 - `/g/:slug` — Guest guide (read-only, audience=guest forced). Resolves `Property.publicSlug` → latest published `GuideVersion.treeJson`, re-filtered to guest audience. `sensitive` and `internal` items are stripped server-side before render. Shows "guía no disponible" if no published version exists.
+- `/g/:slug/media/:assetId-:hashPrefix/:variant` — stable public media proxy (Rama 10D). Decouples CDN-cached HTML from R2 presigned URL lifecycle (1h expiry). `:variant` ∈ `thumb`/`md`/`full`. Strong immutable cache when `contentHash` present (ETag = `"{contentHash}-{variant}"`), weak revalidating cache otherwise. Range requests propagate to R2 (206 partial content). Auth: 404 unless asset's property has `publicSlug = :slug` AND ≥1 published `GuideVersion`. See `docs/FEATURES/MEDIA_ASSETS.md` §7.
 
 ## 6. Source-of-truth rules
 

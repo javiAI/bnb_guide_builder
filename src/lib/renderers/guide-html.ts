@@ -21,7 +21,11 @@ export function escapeHtml(value: string): string {
 }
 
 function isSafeUrl(url: string): boolean {
-  return /^(https?:\/\/|data:image\/(png|jpe?g|gif|webp|avif);)/i.test(url);
+  // Relative paths into the public guide media proxy (`/g/<slug>/media/...`)
+  // are the preferred shape — never embed presigned R2 URLs in cacheable HTML.
+  return /^(\/g\/[^/]+\/|https?:\/\/|data:image\/(png|jpe?g|gif|webp|avif);)/i.test(
+    url,
+  );
 }
 
 function renderItem(item: GuideItem, out: string[]): void {

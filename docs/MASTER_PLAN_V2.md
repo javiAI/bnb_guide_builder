@@ -567,8 +567,8 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 **Propósito**: introducir una ruta estable `/g/:slug/media/:assetId/:variant` que desacopla el HTML cacheado del ciclo de vida de las URLs presignadas de R2. Sin esto, cualquier guía renderizada por ISR/CDN explotará al caducar la firma (típicamente 1h). Es **pre-requisito arquitectónico** de 10E (renderer) y de 10H (PWA cache offline).
 
 **Motivación** (research):
-- [IMPLEMENTATION_PLAN.md:L68-L92](research/IMPLEMENTATION_PLAN.md) — "No incrustes URLs presignadas de S3/R2 de 1 hora directamente en HTML prerenderizado si ese HTML va a vivir días o semanas en caché. Te explotará en la cara justo cuando el huésped abra la guía desde el tren."
-- [GUEST_GUIDE_SPEC.md:L94-L102](research/GUEST_GUIDE_SPEC.md) — reglas de seguridad: no publicar contenido sensible en HTML estático.
+- [IMPLEMENTATION_PLAN.md:L68-L92](research/IMPLEMENTATION_PLAN.md#L68-L92) — "No incrustes URLs presignadas de S3/R2 de 1 hora directamente en HTML prerenderizado si ese HTML va a vivir días o semanas en caché. Te explotará en la cara justo cuando el huésped abra la guía desde el tren."
+- [GUEST_GUIDE_SPEC.md:L94-L102](research/GUEST_GUIDE_SPEC.md#L94-L102) — reglas de seguridad: no publicar contenido sensible en HTML estático.
 - La deuda latente existe hoy en 9D/10C: el resolver de media produce URLs firmadas que se serializan en `GuideVersion.treeJson`.
 
 **Decisiones a cerrar en Fase -1**:

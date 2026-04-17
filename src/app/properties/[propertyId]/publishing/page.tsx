@@ -232,7 +232,9 @@ export default async function PublishingPage({
   const publishedTree = publishedWithTree?.treeJson
     ? (publishedWithTree.treeJson as unknown as GuideTree)
     : null;
-  const liveTree = publishedTree ? await composeGuide(propertyId, "internal") : null;
+  const liveTree = publishedTree
+    ? await composeGuide(propertyId, "internal", property.publicSlug)
+    : null;
   const diff = computeGuideDiff(publishedTree, liveTree);
 
   return (

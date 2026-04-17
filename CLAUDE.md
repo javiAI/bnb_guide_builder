@@ -47,7 +47,7 @@ vitest run src/test/config-driven.test.ts  # Single test file
 7. `docs/API_ROUTES.md`
 8. `docs/SECURITY_AND_AUDIT.md`
 9. `docs/QA_AND_RELEASE.md`
-10. `docs/HANDOFF.md` (quickref de sesión — leer primero al arrancar) + `docs/ROADMAP.md` + `docs/MASTER_PLAN_V2.md` (fase activa)
+10. `docs/HANDOFF.md` (quickref al arrancar una sesión, antes de ejecutar una rama) + `docs/ROADMAP.md` + `docs/MASTER_PLAN_V2.md` (fase activa)
 11. `docs/FEATURES/*.md` (según la fase)
 12. `taxonomies/*.json`
 13. skill de la fase activa
@@ -118,6 +118,8 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - Añadir un tipo de campo nuevo para subtypes (amenity/system) = 1 entrada en `src/config/registries/field-type-registry.ts` (`FIELD_TYPES` + `validate`) + 1 entrada en `field-type-renderers.tsx` (`RENDERERS`). El test `field-type-coverage.test.ts` falla si algún `type` en `amenity_subtypes.json` o `system_subtypes.json` no está registrado; `getFieldType()` lanza en boot para tipos desconocidos (no fallback silencioso a texto)
 - Prisma `Json?` null semantics: `Prisma.JsonNull` (campo = JSON null), `Prisma.DbNull` (campo = SQL NULL), `Prisma.AnyNull` (cualquiera de los dos). Filtrar "tiene contenido": `where: { campo: { not: Prisma.AnyNull } }`
 - Campos `Json?` grandes (e.g. `treeJson`): no incluir en queries de listado — fetch selectivo solo cuando se necesita el contenido
+- Media pública nunca se sirve con URL presignada en HTML cacheado. Toda referencia a media desde `composeGuide()` / `GuideTree` usa la ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` (Rama 10D). El ETag se escopa a la variante (`"{contentHash}-{variant}"`) — sin esto, un CDN que cacheó `full` sirve esos bytes para `thumb`. URLs presignadas solo en el dashboard interno (no cacheado). Baking del slug en las URLs ocurre en `publishGuideVersionAction`, no al renderizar la página pública (las URLs van a `treeJson` y se sirven desde la snapshot). Invariantes en `src/test/guide-rendering-proxy-urls.test.ts` fallan si aparecen `r2.cloudflarestorage.com` o `X-Amz-*` en el tree
+- `composeGuide(propertyId, audience, publicSlug)`: `publicSlug` es **required** (no default). Callers sin slug publicado pasan `null` explícito — evita olvidarse de threadear el slug y emitir media sin ruta pública
 
 ## Patrones de UI — Espacios
 
