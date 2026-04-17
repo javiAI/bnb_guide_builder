@@ -539,26 +539,46 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ### Rama 10C — `feat/media-in-guide`
 
-**Propósito**: integrar fotos en el renderer de Guest Guide (rama 9B).
+**Propósito**: poblar `GuideItem.media[]` (hoy siempre `[]`) con assets reales por entidad y renderizarlos en markdown/HTML: el renderer markdown emite imagen en sintaxis markdown (`![alt](url) *caption*`) con caption textual cuando exista, y el renderer HTML emite `<figure>/<figcaption>`. La ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` ya la proporciona 10D — 10C **nunca** emite URLs presignadas (invariante en `guide-rendering-proxy-urls.test.ts`).
+
+**Decisiones cerradas en Fase -1 (2026-04-17)**:
+- **Variante por defecto en 10C**: `md` (800 px) únicamente. La multi-variante para galería con lightbox se implementa en 10E (React renderer).
+- **Entidades con media**: `property` (cover → primer item de Llegada), `space` (items del resolver `spaces`), `PropertyAmenityInstance` (items del resolver `amenities`), `access_method` (cuando `property.primaryAccessMethod` tiene assignments sobre la clave de taxonomía correspondiente).
+- **Filtro por role**: todos los assets con `status="ready"` y `MediaAsset.visibility` compatible con la audiencia, ordenados por `MediaAssignment.sortOrder`. El renderer decide el cap visual (máx 3 por item en markdown para no saturar).
+- **Caption**: `MediaAsset.caption` como fuente única; sin fallback (figcaption omitido si está vacío).
+- **`alt` derivado** (mejora C): si `caption` está vacío, se computa `alt` a partir de `assetRoleKey` + entity label ("Cover de Cocina") para no romper accesibilidad WCAG.
+- **`variants`** (mejora B): `GuideMedia` incluye `variants: { thumb, md, full }` en todas las URLs desde 10C. Coste en `treeJson` (~3× tamaño del bloque media), pero 10E/10H (PWA) y cualquier consumidor srcset lo reutilizan sin recomputar.
+- **Flag `includesMedia` en secciones**: `arrival`, `spaces`, `amenities` → `true`; `local`, `rules`, `contacts`, `emergency` → `false`. `local` flipea a `true` cuando llegue la rama 13D. El batch loader omite las secciones con `includesMedia:false` para evitar cargar assignments que no se van a renderizar.
+
+**Archivos a crear**:
+- `src/lib/services/guide-media.service.ts` — `loadEntityMedia(publicSlug, audience, refs)` → `Map<entityKey, GuideMedia[]>`. Si `publicSlug` es `null`, retorna temprano sin consultar. Una sola query batch `findMany` sobre `MediaAssignment` con `IN` (entityIds), filtra por `visibility`, `status="ready"` y `mimeType startsWith "image/"`, ordena por `sortOrder`. Construye las URLs con `buildMediaProxyUrl()` para las tres variantes.
+- `src/test/guide-with-media.test.ts` — items con assignments tienen `media[]` no vacío; assets con `visibility > audience` excluidos; URLs siempre `/g/:slug/media/...` con las 3 variantes.
+- `src/test/guide-media-batch.test.ts` — una sola query para todos los entityIds de la guía (no N+1).
+- `src/test/guide-markdown-media.test.ts` — markdown emite `<figure>` con alt derivado, cap de 3 imágenes por item, ruta `/md` por defecto.
 
 **Archivos a modificar**:
-- `src/lib/services/guide-rendering.service.ts` — resolver incluye `GuideMedia[]` desde `MediaAssignment`
-- `src/lib/renderers/guide-markdown.ts` + `guide-html.ts` — render imágenes con alt text desde `MediaAsset.description`
-- `taxonomies/guide_sections.json` — flag `includesMedia: boolean` por sección
+- `src/lib/services/guide-rendering.service.ts` — `loadGuideContext` invoca `loadEntityMedia` para el conjunto de entityIds detectados; resolvers de `arrival / spaces / amenities / local` leen el mapa y pueblan `GuideItem.media`. Resolver de `arrival` adjunta cover de `property` al primer item (checkin o access).
+- `src/lib/renderers/guide-markdown.ts` + `guide-html.ts` — al renderizar un `GuideItem` con `media.length > 0`, emitir `<figure>…<figcaption>…</figcaption></figure>` (HTML) / `![alt](url) *caption*` (markdown), usando `variants.md` por defecto. Cap de 3 por item.
+- `src/lib/types/guide-tree.ts` — `GuideMedia` pasa de `{ url, role?, caption? }` a `{ assetId, variants: { thumb, md, full }, alt, caption?, role?, mimeType }`.
+- `taxonomies/guide_sections.json` — añadir `"includesMedia": boolean` por sección.
+- `src/lib/taxonomy-loader.ts` — ampliar Zod de `guide_sections.json` con `includesMedia`.
+- `src/test/guide-rendering-proxy-urls.test.ts` — ahora con assignments reales, asegura que las URLs son proxy estables (`/g/*/media/*`) para las 3 variantes y nunca `r2.cloudflarestorage.com`.
 
-**Tests**:
-- `src/test/guide-with-media.test.ts` — guide publicada incluye URLs firmadas válidas; `sensitive` media excluido
+**Sin cambios de schema Prisma**. `MediaAsset` y `MediaAssignment` ya existen (10A/10B).
 
-**Criterio de done**: la guía publicada tiene fotos visibles vía URL firmada de S3.
+**Criterio de done**: guía publicada con assignments emite items con `media[]` conteniendo las 3 variantes proxy; markdown/HTML muestra `<figure>` con `md`; test `guide-rendering-proxy-urls.test.ts` sigue en verde (0 URLs presignadas).
 
 **Preparación**:
 - **Contexto a leer**:
-  - Servicios de 9A, 9B; storage de 10A
-  - `taxonomies/guide_sections.json` (creado en 9A)
+  - Servicios de 9A, 9B; storage de 10A/10B; proxy de 10D (`buildMediaProxyUrl`, `resolvePublicAsset`).
+  - `src/lib/services/media-proxy.service.ts`, `src/lib/types/media-variant.ts`.
+  - `taxonomies/guide_sections.json`.
+  - Invariantes en `src/test/guide-rendering-proxy-urls.test.ts`.
 - **Docs a actualizar al terminar**:
-  - `docs/FEATURES/MEDIA_ASSETS.md` § "In guide rendering"
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` — citar que media es parte del árbol rendered
-- **Skills/tools específicos**: ninguno extra
+  - `docs/FEATURES/MEDIA_ASSETS.md` § "In guide rendering" — contract de `GuideMedia`, variante por defecto, cap por renderer.
+  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` — media es parte del árbol rendered; variante `md` para huésped.
+  - `CLAUDE.md` § "Patrones de Sistemas" — regla del cap de 3 imágenes en markdown/HTML (galería multi-variante llega con 10E).
+- **Skills/tools específicos**: Defaults §2 (`/pre-commit-review`, `/simplify`, `/review-pr-comments`, `/revise-claude-md`).
 
 ---
 

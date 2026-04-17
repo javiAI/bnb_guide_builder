@@ -76,8 +76,14 @@ vitest run src/test/config-driven.test.ts  # Single test file
 
 ## Flujo de ramas (MASTER_PLAN_V2)
 
+- **OBLIGATORIO — Kickoff de rama (context handoff)**: ANTES de ejecutar cualquier comando de la nueva rama (incluida la lectura de `MASTER_PLAN_V2.md`), el asistente DEBE emitir un bloque titulado `Kickoff de rama <id>` con exactamente tres apartados:
+  1. **Context management**: una de `/clear` | `/compact <argumentos concretos>` | `ninguna acción` — justificando la elección en una línea (p. ej. "compactar para preservar decisiones de Fase -1 de 10C" vs "clear porque la rama anterior no deja contexto útil").
+  2. **Prompt inicial**: el texto literal que el usuario debe pegar al iniciar la nueva sesión, listo para copiar (sin placeholders, con el id de rama y el camino al § de `MASTER_PLAN_V2.md`).
+  3. **Checklist pre-kickoff**: estado de PR anterior (mergeada/cerrada), ramas locales a borrar, pulls pendientes sobre `main`.
+  Este bloque NUNCA se omite, aunque el usuario pida "empieza ya" — se emite primero y se espera confirmación.
 - **Antes de crear cualquier rama del plan** (8A en adelante), leer `docs/MASTER_PLAN_V2.md` § correspondiente **entera** y ejecutar su **Fase -1 — Revisión pre-rama** (§2.1): resumen técnico + resumen conceptual + ambigüedades + alternativas, iterar hasta aprobación explícita del usuario. No crear rama sin ese gate.
 - Seguir el resto del protocolo §2 (Fase 0 → Fase 6) sin saltos.
+- **OBLIGATORIO — Gate antes de crear la PR**: ejecutar `/simplify` sobre TODOS los cambios de la rama (no solo el último commit) y aplicar las correcciones antes de abrir la PR con `gh pr create`. El asistente NUNCA crea la PR sin haber corrido `/simplify` en esa misma sesión. Si ya se corrió antes de commits posteriores, se vuelve a correr. Commits de ajuste tras `/simplify` son válidos, pero la última acción antes de `gh pr create` siempre es verificar que `/simplify` cubrió los cambios finales.
 - **Al terminar la rama**: actualizar los docs listados en "Docs a actualizar al terminar" de la rama. **No crear docs nuevos** si cabe en uno existente. Marcar la rama en `docs/ROADMAP.md`.
 - Cambios al plan descubiertos en ejecución: PR aparte `chore/plan-update-<tema>` (ver §2.9), nunca editar `MASTER_PLAN_V2.md` silenciosamente.
 
@@ -120,6 +126,8 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - Campos `Json?` grandes (e.g. `treeJson`): no incluir en queries de listado — fetch selectivo solo cuando se necesita el contenido
 - Media pública nunca se sirve con URL presignada en HTML cacheado. Toda referencia a media desde `composeGuide()` / `GuideTree` usa la ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` (Rama 10D). El ETag se escopa a la variante (`"{contentHash}-{variant}"`) — sin esto, un CDN que cacheó `full` sirve esos bytes para `thumb`. URLs presignadas solo en el dashboard interno (no cacheado). Baking del slug en las URLs ocurre en `publishGuideVersionAction`, no al renderizar la página pública (las URLs van a `treeJson` y se sirven desde la snapshot). Invariantes en `src/test/guide-rendering-proxy-urls.test.ts` fallan si aparecen `r2.cloudflarestorage.com` o `X-Amz-*` en el tree
 - `composeGuide(propertyId, audience, publicSlug)`: `publicSlug` es **required** (no default). Callers sin slug publicado pasan `null` explícito — evita olvidarse de threadear el slug y emitir media sin ruta pública
+- Media en `GuideTree` (Rama 10C): `GuideMedia` lleva `variants: { thumb, md, full }` — nunca `url` singular. Renderers inline consumen `variants.md` con `INLINE_MEDIA_CAP = 3` por item (markdown, HTML); galería completa con thumb/full queda para 10E. Fingerprints de diff usan `assetId`, no URL — evita invalidar diffs cuando cambia el slug. El ETag del media proxy depende de `contentHash + variant`, no de `assetId`. `loadEntityMedia` es una sola query `mediaAssignment.findMany` con `OR` por entityType y filtro `mimeType startsWith "image/"` — añadir un nuevo `entityType` al scope de guide = extender la ref list en `loadGuideContext` + `MediaEntityType` en `guide-media.service.ts`, no tocar el resolver
+- `taxonomies/guide_sections.json` tiene flag `includesMedia: boolean` por sección. Secciones con `includesMedia:false` (rules, contacts, emergency, local) nunca contribuyen refs al batch loader — mantiene la query pequeña incluso en propiedades grandes. Flip a `true` solo cuando la sección tenga entidad propia con assignments y el resolver la propague (ej: local places en rama 13D)
 
 ## Patrones de UI — Espacios
 

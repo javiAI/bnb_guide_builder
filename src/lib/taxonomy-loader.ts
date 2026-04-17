@@ -215,6 +215,7 @@ const GuideSectionConfigSchema = z
     sortBy: z.enum(GUIDE_SORT_BY),
     resolverKey: z.enum(GUIDE_RESOLVER_KEYS),
     emptyCtaDeepLink: z.string().min(1),
+    includesMedia: z.boolean(),
   })
   .strict();
 

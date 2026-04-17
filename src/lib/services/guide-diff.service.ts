@@ -49,7 +49,7 @@ function itemFingerprint(item: GuideItem): string {
     .map((f) => `${f.label}:${f.value}:${f.visibility}`)
     .join("|");
   const mediaParts = item.media
-    .map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`)
+    .map((m) => `${m.assetId}:${m.role ?? ""}:${m.caption ?? ""}`)
     .join("|");
   const childParts = item.children.map((c) => itemFingerprint(c)).join("|");
   return [
@@ -161,8 +161,8 @@ function describeChanges(oldItem: GuideItem, newItem: GuideItem): string[] {
   if (oldWarnings !== newWarnings) changes.push("warnings modificados");
 
   // Media
-  const oldMediaFp = oldItem.media.map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
-  const newMediaFp = newItem.media.map((m) => `${m.url}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
+  const oldMediaFp = oldItem.media.map((m) => `${m.assetId}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
+  const newMediaFp = newItem.media.map((m) => `${m.assetId}:${m.role ?? ""}:${m.caption ?? ""}`).join("|");
   if (oldMediaFp !== newMediaFp) {
     const diff = newItem.media.length - oldItem.media.length;
     changes.push(diff > 0 ? `+${diff} media` : diff < 0 ? `${diff} media` : "media modificados");
