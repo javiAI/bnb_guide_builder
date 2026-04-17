@@ -832,6 +832,8 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `src/lib/taxonomy-loader.ts` — Zod extendido + tipos derivados exportados.
 - `src/components/public-guide/guide-renderer.tsx` — consume `displayValue` / `displayFields` (ya humanizados); si `presentationType === "raw"` en audience guest, renderiza nada + log. NO debe volver a formatear; el normalizador es la única fuente de verdad.
 - `src/test/guide-rendering.test.ts` — actualizar mocks y expectativas para que verifiquen `displayValue` donde antes miraban `value`.
+- `package.json` — añadir `@axe-core/playwright` como devDependency (requerido por los tests de accesibilidad y por el gate "axe-core 0 violations serias" del criterio de done).
+- `playwright.config.ts` (crear si no existe) — projects para viewports mobile 375, tablet 768, desktop 1280.
 
 **Tests (mínimo)**:
 
@@ -867,12 +869,12 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - `CLAUDE.md` § "Patrones — Guía pública (audience=guest)" — reforzar invariantes y añadir las reglas duras que surjan durante la implementación.
   - `docs/QA_AND_RELEASE.md` § "Final release gates" — marcar gates 8–11 (anti-leak) como verificados automáticamente por esta rama.
   - `docs/ROADMAP.md` — marcar 10F ✅ al terminar.
-- **Skills/tools obligatorios**:
-  - **Agent `code-explorer`** antes — mapear todos los puntos donde el renderer actual lee `value`/`fields` directamente (para saber cuántos sitios tocar sin romper).
-  - **Agent `code-architect`** antes — consolidar la decisión `registry-por-clave vs presenter-por-type` y el shape exacto de `displayFields`.
-  - **Context7** (auto) — Zod v3 defaults + `z.discriminatedUnion`, Fuse.js no aplica aquí.
-  - **`/playwright-cli`** al final — 3 viewports (375/768/1280) sobre fixtures empty/rich/adversarial.
-  - **axe-core** integrado en Playwright — 0 violations serias.
+- **Skills/tools obligatorios** (no opcionales — ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
+  - **Agent `code-explorer`** antes de tocar código — mapear todos los puntos donde el renderer actual lee `value`/`fields` directamente (para saber cuántos sitios tocar sin romper).
+  - **Agent `code-architect`** antes de codificar — consolidar la decisión `registry-por-clave vs presenter-por-type` y el shape exacto de `displayFields`. Output mínimo: 1 documento interno con los contratos.
+  - **Context7** (auto) — Zod v3 defaults + `z.discriminatedUnion`.
+  - **`/playwright-cli`** al final — 3 viewports (375x667 / 768x1024 / 1280x800) sobre fixtures `empty` / `rich` / `adversarial`.
+  - **`@axe-core/playwright`** integrado en los specs de Playwright — 0 violations serious/critical. No opcional.
   - **`/simplify`** obligatorio antes de abrir PR (§2.6).
   - **`/pre-commit-review`** antes de cada commit (§2.6).
 
@@ -914,6 +916,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `taxonomies/guide_sections.json` — marcar `gs.essentials` con `isHero: true` + `quickActionKeys: [...]`.
 - `src/components/public-guide/guide-renderer.tsx` (de 10E) — renderiza `<GuideHero>` cuando `section.isHero`.
 - `src/lib/taxonomy-loader.ts` — Zod actualizado para `isHero`, `quickActionKeys`.
+- `package.json` — añadir deps de UI guest declaradas en [GUEST_GUIDE_UX.md § Librerías recomendadas](../FEATURES/GUEST_GUIDE_UX.md): `class-variance-authority`, `tailwind-merge`, `clsx`, `lucide-react`, `date-fns`, `@radix-ui/react-accordion`, `@radix-ui/react-dialog`, `@radix-ui/react-toast`, `@radix-ui/react-tabs`, `@radix-ui/react-tooltip`, `@radix-ui/react-scroll-area`, `@radix-ui/react-visually-hidden`. `framer-motion` **solo** si una microinteracción concreta lo justifica; si no, CSS.
 
 **Tests**:
 - `src/test/guide-hero.test.tsx` — hero aparece encima de TOC, resuelve 4 answers desde fixture.
@@ -931,11 +934,15 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - **Docs a actualizar al terminar**:
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Quick actions" — cómo se añade una action nueva.
   - `docs/API_ROUTES.md` — documentar `POST /api/g/:slug/_track` (no-op por ahora).
-- **Skills/tools específicos**:
-  - Defaults §2.
-  - **Context7** (auto) — Clipboard API spec, URI schemes `tel:`/`wa.me`/`geo:`/universal Maps links.
-  - **`/playwright-cli`** — verificar copy-to-clipboard en chromium + webkit, comportamiento `tel:` en mobile emulation.
-  - **`/simplify`** tras implementar — validar que 10E+10F no duplican lógica de resolución.
+- **Skills/tools obligatorios** (ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
+  - **`/excalidraw-diagram`** **antes de codificar** — mockup del hero en mobile 375 y desktop 1280 (las 4 respuestas críticas + quick actions); commit del `.excalidraw` en `docs/research/sketches/10G-hero.excalidraw`.
+  - **`/firecrawl-search`** antes — re-benchmark de hero/quick-actions en Touch Stay / Hostfully / Enso / Breezeway / Airbnb (últimos 6 meses).
+  - **Agent `code-architect`** — valida shape del `quick-action-registry` + contrato `resolveValue(tree)` antes de implementar.
+  - **Context7** (auto) — Clipboard API spec, URI schemes `tel:`/`wa.me`/`geo:`/universal Maps links, `@radix-ui/react-toast`.
+  - **`/playwright-cli`** en 3 viewports (375/768/1280) — verificar copy-to-clipboard en Chromium + WebKit, comportamiento `tel:` en mobile emulation, tab focus del toast.
+  - **`@axe-core/playwright`** — 0 violations serious/critical sobre la ruta con hero montado. No opcional.
+  - **`/simplify`** tras implementar — validar que 10E+10F+10G no duplican lógica de resolución.
+  - **`/pre-commit-review`** antes de cada commit.
 
 ---
 
@@ -966,11 +973,13 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `src/components/public-guide/guide-renderer.tsx` (de 10E) — monta `<GuideSearch>` en el shell header.
 - `src/app/g/[slug]/page.tsx` — serializa index minificado como prop.
 - `taxonomies/guide_sections.json` — campo opcional `searchableKeywords[]` por sección (hint manual cuando el label no basta).
+- `package.json` — añadir `fuse.js` (cliente) como dependency.
 
 **Tests**:
 - `src/test/guide-search-index.test.ts` — build desde fixture; "wifi" match amenity de wifi; "parking" match amenity/rule parking; item `sensitive` **nunca** aparece en index.
-- `src/test/guide-search.test.tsx` — componente filtra en vivo; teclado `/` abre; `Enter` navega; 0 resultados muestra hint.
+- `src/test/guide-search.test.tsx` — componente filtra en vivo; teclado `/` abre, `Escape` cierra, `Enter` navega, `ArrowUp`/`ArrowDown` mueven selección; 0 resultados muestra hint.
 - `src/test/guide-search-performance.test.ts` — p95 <20ms en fixture realista (200 items).
+- Playwright e2e en 3 viewports (375/768/1280) con `@axe-core/playwright` — focus trap del overlay, screen-reader labels, contraste AA del hint de cero resultados. 0 violations serious/critical.
 
 **Criterio de done**: huésped tipea "wifi" y ve resultado en <1 frame, scroll lleva al item. Search funciona sin red. Analítica básica de queries sin resultado.
 
@@ -983,11 +992,13 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - **Docs a actualizar al terminar**:
   - `docs/ARCHITECTURE_OVERVIEW.md` § "Public guide rendering" — añadir capa search.
   - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Client search" — separación con 11F semantic.
-- **Skills/tools específicos**:
-  - Defaults §2.
+- **Skills/tools obligatorios** (ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
+  - **Agent `code-architect`** — valida shape del index + pesos antes de codificar (el index es un artefacto caliente, cambios posteriores fuerzan recomputar todo).
   - **Context7** (auto) — `fuse.js` v7.x (`threshold`, `keys`, `includeMatches`), `React.useDeferredValue`.
-  - **`/playwright-cli`** — verificar `/` shortcut + screen reader labels.
-  - **`/firecrawl-search`** opcional — "guidebook search UX zero-result hint".
+  - **`/playwright-cli`** en 3 viewports (375/768/1280) — tests de teclado (`/` abre, `Escape` cierra, `Enter`/`ArrowUp`/`ArrowDown`), screen reader labels, focus trap.
+  - **`@axe-core/playwright`** — 0 violations serious/critical.
+  - **`/firecrawl-search`** — "guidebook instant search UX zero-result hint" + benchmarks de overlays en Airbnb / Touch Stay.
+  - **`/simplify`** + **`/pre-commit-review`** obligatorios antes de PR.
 
 ---
 
@@ -1542,6 +1553,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `src/components/public-guide/guide-renderer.tsx` (de 10E) — montar `<IssueReporter>` como overlay + prop `attachedItemId` contextual
 - `src/app/properties/[propertyId]/incidents/page.tsx` — filtro por `origin: 'guest_guide'`, badge nuevo si hay reportes sin ver
 - `src/lib/visibility.ts` — regla: un Incident con `origin: 'guest_guide'` es visible al reporter (guest) solo sobre campos `{ status, createdAt, resolvedAt, category }`, nunca sobre notas internas del host
+- `package.json` — si no están aún (esperado que 10G los haya añadido ya): `react-hook-form`, `@hookform/resolvers`, `@radix-ui/react-dialog` (drawer/modal del reporter); `zod` ya está en el proyecto. Reusar `yet-another-react-lightbox` solo si se previsualizan las fotos adjuntas.
 
 **Tests**:
 - `src/test/guest-incident-create.test.ts` — POST desde slug guest crea Incident con origin correcto, enlaza a space si `spaceId` en body
@@ -1566,10 +1578,14 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - `docs/API_ROUTES.md` — `POST /api/g/:slug/incidents` + `GET /api/g/:slug/incidents/:id`
   - `docs/SECURITY_AND_AUDIT.md` § "Guest-originated writes" — rate limit + visibility del Incident
   - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `incident_categories.json`
-- **Skills/tools específicos**:
+- **Skills/tools obligatorios** (ver [GUEST_GUIDE_UX.md § Tooling obligatorio](../FEATURES/GUEST_GUIDE_UX.md)):
+  - **`/excalidraw-diagram`** antes de codificar — wireframe del drawer del reporter en mobile 375 (orden de campos, tamaños de targets, posición de CTA); commit en `docs/research/sketches/13D-issue-reporter.excalidraw`.
   - **`/firecrawl-search`** antes: "Breezeway guest reporting flow UX 2026", benchmarks Hostfully/Guesty de issue-reporting para huéspedes.
-  - **Agent code-architect** — decidir provider de email (Resend vs Postmark vs reutilizar lo de 12B) si no está cerrado en Fase -1.
-  - **`/playwright-cli`** al final: flujo completo guest reporta → host ve → marca resolved → guest ve "resuelto".
+  - **Agent `code-architect`** — decidir provider de email (Resend vs Postmark vs reutilizar lo de 12B) si no está cerrado en Fase -1 + validar esquema Zod de validación del form.
+  - **Context7** (auto) — `react-hook-form` + `@hookform/resolvers/zod`, `@radix-ui/react-dialog` (focus trap, portal, `forceMount`).
+  - **`/playwright-cli`** en 3 viewports (375/768/1280): flujo completo guest reporta → host ve → marca resolved → guest ve "resuelto". Verifica focus trap del drawer, `Escape` cierra, campos obligatorios bloquean submit.
+  - **`@axe-core/playwright`** — 0 violations serious/critical sobre el drawer abierto (labels, aria-describedby para errores de validación, contraste).
+  - **`/simplify`** + **`/pre-commit-review`** obligatorios antes de PR.
 
 ---
 

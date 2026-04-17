@@ -286,14 +286,29 @@ Mandatory stack para cualquier rama que toque UI guest a partir de 10F:
 
 ## Tooling obligatorio en cada rama de UX (10F en adelante)
 
-- **Playwright** en 3 viewports (`375x667`, `768x1024`, `1280x800`) con screenshots visuales por cambio relevante.
-- **axe-core** dentro de Playwright: 0 violations serious/critical.
-- **Excalidraw** para mockups previos a implementar hero/search/issue reporter — commitear en `docs/research/sketches/`.
-- **Agent `code-architect`** para diseñar registry y presenter shapes antes de escribir código.
-- **Agent `code-explorer`** para mapear consumidores del renderer actual antes de tocar.
+Estas herramientas son **estándar del proyecto** para cualquier rama que toque UX guest — no sugerencias. Romper este contrato = no merge.
+
+- **`@playwright/test`** en 3 viewports (`375x667`, `768x1024`, `1280x800`) con screenshots visuales por cambio relevante.
+- **`@axe-core/playwright`** integrado en los specs: 0 violations severity `serious` o `critical`.
+- **`/excalidraw-diagram`** para mockups previos a implementar hero / search / issue reporter — commitear el `.excalidraw` en `docs/research/sketches/<rama>-<feature>.excalidraw` antes de abrir Fase 3.
+- **Agent `code-architect`** para diseñar registry / presenter / pipeline / separación de responsabilidades antes de escribir código. Su output acompaña el PR como comentario o como archivo en `docs/research/design/`.
+- **Agent `code-explorer`** para mapear consumidores del renderer actual y evitar leaks olvidados antes de tocar componentes existentes.
 - **`/simplify`** tras implementación significativa y siempre antes de `/pre-commit-review`.
 - **`/pre-commit-review`** obligatorio antes de cada commit (§2.6 MASTER_PLAN_V2.md).
-- **`/firecrawl-search`** opcional para re-benchmarking competitivo antes de cada rama visible (10G, 10H, 13D).
+- **`/firecrawl-search`** para re-benchmarking competitivo (Touch Stay / Hostfully / Enso / Breezeway / Airbnb) y verificación de docs oficiales de librerías antes de cada rama visible (10G, 10H, 13D). No opcional en ramas de UI nueva.
+- **Context7 MCP** (auto) — valida APIs de librerías (Radix, Fuse.js, Zod, RHF) durante implementación.
+
+### Aplicación por rama (estándar del proyecto)
+
+| Rama | Excalidraw antes | code-explorer | code-architect | Playwright 3 viewports | axe-core | Firecrawl benchmark |
+|---|---|---|---|---|---|---|
+| **10F** `fix/guest-presentation-layer` | — (normalizador, no UI nueva) | ✅ (mapear renderer consumers) | ✅ (registry + shape `displayFields`) | ✅ fixtures empty/rich/adversarial | ✅ | — |
+| **10G** `feat/guide-hero-quick-actions` | ✅ mockup hero mobile + desktop | ✅ | ✅ (quick-action-registry) | ✅ | ✅ | ✅ hero + quick actions en Touch Stay / Airbnb |
+| **10H** `feat/guide-client-search` | — (overlay estándar) | — | ✅ (shape del index + pesos) | ✅ teclado + focus trap | ✅ | ✅ zero-result UX |
+| **10I** `feat/guide-pwa-offline` | — | ✅ (cache-tier flags en secciones) | ✅ (SW strategy + versionado) | ✅ airplane mode simulation | ✅ offline fallback page | — |
+| **13D** `feat/guide-issue-reporting` | ✅ wireframe drawer mobile | — | ✅ (email provider + Zod schema) | ✅ flujo completo guest↔host | ✅ drawer abierto | ✅ Breezeway / Hostfully |
+
+`code-explorer` también se invoca puntualmente cuando se toquen varias zonas del renderer que puedan compartir state. `/simplify` y `/pre-commit-review` son universales (§2.6) y no aparecen en la tabla.
 
 ---
 
