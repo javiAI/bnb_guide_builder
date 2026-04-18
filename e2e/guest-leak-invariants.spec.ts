@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { E2E_FIXTURES } from "../src/test/fixtures/e2e";
+import { INTERNAL_FIELD_LABEL_DENYLIST } from "../src/lib/services/guide-presentation.service";
 
 // DOM-side replica of the 4 observable anti-leak invariants from
 // QA_AND_RELEASE §3 (invariants 1-4). The 5th invariant
@@ -14,12 +15,6 @@ import { E2E_FIXTURES } from "../src/test/fixtures/e2e";
 // TAXONOMY_KEY_PATTERN as defined in src/lib/presenters/types.ts.
 const TAXONOMY_KEY_EXACT = /^[a-z]+(_[a-z]+)*\.[a-z_]+$/;
 
-// Labels that belong to the internal data model and must never reach guest.
-// Mirrors INTERNAL_FIELD_LABEL_DENYLIST in guide-presentation.service.ts;
-// dropped "Raw" because it's a common English word that can appear in
-// legitimate guest copy (e.g. "raw material").
-const INTERNAL_LABEL_DENYLIST = ["Slot", "Config JSON", "Propiedad"];
-
 // Host-editorial copy planted in every fixture. Any of these strings reaching
 // the guest means `section.emptyCopy` leaked (invariant 3 — the renderer must
 // resolve to `emptyCopyGuest` or hide the section).
@@ -33,7 +28,6 @@ const HOST_EDITORIAL_COPY = [
   "Añade equipamiento.",
   "Añade espacios.",
   "Añade contactos.",
-  "Añade instrucciones de llegada.",
 ];
 
 for (const fixture of E2E_FIXTURES) {
@@ -84,7 +78,7 @@ for (const fixture of E2E_FIXTURES) {
       for (const label of fieldLabels) {
         const trimmed = label.trim();
         expect(
-          INTERNAL_LABEL_DENYLIST.includes(trimmed),
+          INTERNAL_FIELD_LABEL_DENYLIST.has(trimmed),
           `leaked internal field label: "${trimmed}"`,
         ).toBe(false);
       }

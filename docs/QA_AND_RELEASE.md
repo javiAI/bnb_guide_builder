@@ -63,13 +63,18 @@ Playwright + `@axe-core/playwright` viven como **harness compartido** desde
   - `e2e/axe-a11y.spec.ts` — axe-core con tags `wcag2a/aa + wcag21a/aa`,
     blocking impacts `serious|critical`. Sin downgrade de severidad.
 - **Comandos**: `npm run test:e2e` (canónico — `next build && next start`,
-  fiel a producción, usado por CI) o `npm run test:e2e:dev` (`next dev`,
-  iteración local). Servidor en puerto 3100 para no colisionar con `next dev`
-  en 3000.
+  fiel a producción, requiere DB real) o `npm run test:e2e:dev` (`next dev`,
+  iteración local + CI). Servidor en puerto 3100 para no colisionar con
+  `next dev` en 3000.
 - **CI**: workflow [.github/workflows/ci.yml](../.github/workflows/ci.yml)
   ejecuta dos jobs paralelos (`unit` + `e2e`) en cada PR y push a `main`.
-  El job E2E sube `playwright-report/` siempre y `test-results/` en fallo
-  (retención 7 días).
+  El job E2E corre en **modo dev** (`test:e2e:dev`) porque la pasada de
+  static prerender de `next build` intenta abrir conexión Prisma contra el
+  `DATABASE_URL` dummy y falla; `next dev` compila on-demand y evita el
+  prerender. La cobertura del harness es idéntica en ambos modos. La
+  ejecución canónica con build queda para verificación local pre-PR contra
+  una DB real. El job sube `playwright-report/` siempre y `test-results/`
+  en fallo (retención 7 días).
 
 Ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release" para la tabla completa de gates de UX.
 

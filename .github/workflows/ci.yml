@@ -48,7 +48,12 @@ jobs:
       - run: npx prisma generate
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:e2e
+      # Dev mode in CI sidesteps `next build`'s static-prerender pass, which
+      # would attempt a Prisma connect against the dummy DATABASE_URL and
+      # fail. The harness still exercises the real guest pipeline through
+      # `next dev`. Local `npm run test:e2e` (build + start) remains the
+      # canonical pre-PR check against a real DB.
+      - run: npm run test:e2e:dev
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
