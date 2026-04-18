@@ -10,7 +10,12 @@ import type {
  *   2. taxonomy enum keys (`ct.host`, `rm.smoking_outdoor_only`, …)
  *   3. editorial host copy in `emptyCopy` when the section has content
  *   4. internal labels like "Slot" / "Config JSON" on fields
- *   5. items that somehow reach the renderer without a matching presenter
+ *   5. items that reach the renderer without a matching presenter (live via
+ *      `rawSentinelPresenter` since 10F iteration 2)
+ *
+ * Also plants a section with no items + no `emptyCopyGuest` + no
+ * `hideWhenEmptyForGuest` so tests confirm it is hidden silently (instead
+ * of falling back to the host `emptyCopy`).
  *
  * This is a *pre-normalization* fixture — it mirrors what `composeGuide`
  * might emit before `normalizeGuideForPresentation` runs. Tests apply the
@@ -21,7 +26,13 @@ export function buildAdversarialTree(): GuideTree {
     propertyId: "adv-1",
     audience: "guest",
     generatedAt: "2026-04-18T00:00:00.000Z",
-    sections: [buildRulesSection(), buildEmergencySection(), buildHowtoSection()],
+    sections: [
+      buildRulesSection(),
+      buildEmergencySection(),
+      buildHowtoSection(),
+      buildArrivalSection(),
+      buildOrphanSection(),
+    ],
     brandPaletteKey: null,
     brandLogoUrl: null,
   };
@@ -40,12 +51,13 @@ function buildRulesSection(): GuideSection {
     emptyCopy: "Añade políticas de ruido, fumar y mascotas.",
     emptyCopyGuest: "No hay normas adicionales destacadas para esta estancia.",
     items: [
-      // Leak 1: raw JSON blob in value
+      // Leak 1: raw JSON blob in value (pets policy). The nested `allowed: true`
+      // must surface as a warning once expandObject propagates correctly.
       {
         id: "policy.pol.pets",
         taxonomyKey: "pol.pets",
         label: "Mascotas",
-        value: '{"allowed":true,"fee":50}',
+        value: '{"allowed":true,"fee":50,"hidden_key":"rm.noise_outdoor_only"}',
         visibility: "guest",
         deprecated: false,
         warnings: [],
@@ -129,5 +141,53 @@ function buildHowtoSection(): GuideSection {
     emptyCopy: "Añade runbooks a tus amenities.",
     hideWhenEmptyForGuest: true,
     items: [], // empty → guest renderer must hide the section entirely
+  };
+}
+
+/** Leak 5: a `taxonomyKey` prefix that is neither specialized nor in the
+ * fallback allowlist. The registry must route this through
+ * `rawSentinelPresenter` so the item is hidden from guest output. */
+function buildArrivalSection(): GuideSection {
+  return {
+    id: "gs.arrival",
+    label: "Llegada",
+    order: 10,
+    resolverKey: "howto",
+    sortBy: "taxonomy_order",
+    emptyCtaDeepLink: null,
+    maxVisibility: "internal",
+    emptyCopy: "Añade instrucciones de llegada.",
+    emptyCopyGuest: "Las instrucciones de llegada se comparten más cerca del check-in.",
+    items: [
+      {
+        id: "arrival.unknown",
+        taxonomyKey: "arrival.checkin_code",
+        label: "Código de entrada",
+        value: "arrival.checkin_code",
+        visibility: "guest",
+        deprecated: false,
+        warnings: [],
+        fields: [],
+        media: [],
+        children: [],
+      },
+    ],
+  };
+}
+
+/** A section with no items, no `emptyCopyGuest`, and no `hideWhenEmptyForGuest`.
+ * The renderer must hide it silently (and log `guest-section-missing-empty-copy`)
+ * rather than falling through to the host `emptyCopy`. */
+function buildOrphanSection(): GuideSection {
+  return {
+    id: "gs.orphan",
+    label: "Sección huérfana",
+    order: 999,
+    resolverKey: "howto",
+    sortBy: "explicit_order",
+    emptyCtaDeepLink: null,
+    maxVisibility: "internal",
+    emptyCopy: "Añade algo aquí para que aparezca en la guía.",
+    items: [],
   };
 }

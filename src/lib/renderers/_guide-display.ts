@@ -34,17 +34,23 @@ export function resolveDisplayFields(item: GuideItem): GuideItemField[] {
 }
 
 /** Items whose presenter failed (`presentationType === "raw"`) are hidden
- * from guest output and emit a `missing-presenter` log once. */
+ * from guest output. Emits one `missing-presenter` log per distinct item id
+ * within a single call — the normalizer's aggregated log covers batched
+ * counts; this is a per-render trace so the specific item is identifiable. */
 export function filterRenderableItems(
   items: GuideItem[],
   audience: GuideAudience,
 ): GuideItem[] {
   if (audience !== "guest") return items;
+  const loggedIds = new Set<string>();
   return items.filter((item) => {
     if (item.presentationType === "raw") {
-      console.warn(
-        `[guide-presenter] missing-presenter item=${item.id} taxonomyKey=${item.taxonomyKey}`,
-      );
+      if (!loggedIds.has(item.id)) {
+        loggedIds.add(item.id);
+        console.warn(
+          `[guide-presenter] missing-presenter item=${item.id} taxonomyKey=${item.taxonomyKey}`,
+        );
+      }
       return false;
     }
     return true;
@@ -60,6 +66,12 @@ export function resolveEmptyCopy(
   return section.emptyCopy ?? null;
 }
 
+/** For `audience=guest`, an empty section is hidden when (a) it opted in via
+ * `hideWhenEmptyForGuest`, or (b) it has no `emptyCopyGuest` declared — a
+ * heading without body would either read as a bug or invite the host
+ * `emptyCopy` (which must never reach guest). Hiding silently + logging
+ * `guest-section-missing-empty-copy` surfaces CMS misconfiguration without
+ * leaking editorial copy. */
 export function shouldHideSection(
   section: GuideSection,
   audience: GuideAudience,
@@ -67,5 +79,12 @@ export function shouldHideSection(
 ): boolean {
   if (audience !== "guest") return false;
   if (renderableItems.length > 0) return false;
-  return section.hideWhenEmptyForGuest === true;
+  if (section.hideWhenEmptyForGuest === true) return true;
+  if (!section.emptyCopyGuest) {
+    console.warn(
+      `[guide-presenter] guest-section-missing-empty-copy section=${section.id}`,
+    );
+    return true;
+  }
+  return false;
 }

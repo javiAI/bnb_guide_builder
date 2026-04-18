@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
 import { buildAdversarialTree } from "./fixtures/adversarial-property";
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
@@ -6,6 +6,15 @@ import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 /** Unit tests for the presentation layer (rama 10F). The fixture is shared
  * with `guest-leak-invariants` — here we focus on transformation semantics
  * (purity, idempotence, audience-awareness) rather than the leak surface. */
+
+// Silence the normalizer's aggregated console.warn — individual tests assert
+// the warnings via `presentationWarnings` instead.
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 function findItem(tree: GuideTree, id: string): GuideItem | undefined {
   for (const s of tree.sections) {
@@ -53,7 +62,9 @@ describe("normalizeGuideForPresentation — semantics", () => {
   it("preserves internal `value` / `fields` on the tree (non-guest renderers may read them)", () => {
     const normalized = normalizeGuideForPresentation(buildAdversarialTree(), "guest");
     const pets = findItem(normalized, "policy.pol.pets");
-    expect(pets?.value).toBe('{"allowed":true,"fee":50}');
+    expect(pets?.value).toBe(
+      '{"allowed":true,"fee":50,"hidden_key":"rm.noise_outdoor_only"}',
+    );
     expect(pets?.fields).toEqual([]);
   });
 
@@ -87,5 +98,29 @@ describe("normalizeGuideForPresentation — semantics", () => {
     // fee:50 expands into a displayField (taxonomy has a `fee` field).
     const feeField = pets?.displayFields?.find((f) => /fee/i.test(f.label));
     expect(feeField?.displayValue).toBe("50");
+  });
+
+  it("expandObject propagates taxonomy-key drops from nested JSON keys", () => {
+    // Adversarial pol.pets blob carries `hidden_key: "rm.noise_outdoor_only"` —
+    // the drop must surface on the item via warnings threading through expandObject.
+    const normalized = normalizeGuideForPresentation(buildAdversarialTree(), "guest");
+    const pets = findItem(normalized, "policy.pol.pets");
+    expect(pets?.presentationWarnings?.some((w) => w.includes("taxonomy key"))).toBe(true);
+  });
+
+  it("routes unknown-prefix taxonomyKey through the raw sentinel presenter", () => {
+    const normalized = normalizeGuideForPresentation(buildAdversarialTree(), "guest");
+    const arrival = findItem(normalized, "arrival.unknown");
+    expect(arrival?.presentationType).toBe("raw");
+    expect(arrival?.displayValue).toBe("");
+    expect(arrival?.presentationWarnings?.[0]).toContain("missing-presenter");
+  });
+
+  it("raw sentinel preserves raw value for non-guest audiences (operator debugging)", () => {
+    const normalized = normalizeGuideForPresentation(buildAdversarialTree(), "internal");
+    const arrival = findItem(normalized, "arrival.unknown");
+    expect(arrival?.presentationType).toBe("raw");
+    // Non-guest audiences still see the raw value so operators can triage.
+    expect(arrival?.displayValue).toBe("arrival.checkin_code");
   });
 });

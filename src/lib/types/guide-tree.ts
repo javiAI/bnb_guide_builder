@@ -22,10 +22,13 @@ export type { GuideAudience, GuideJourneyStage, GuideResolverKey, GuideSortBy };
  * Pre-v3 snapshots are normalized at serve time. */
 export const GUIDE_TREE_SCHEMA_VERSION = 3 as const;
 
-/** Presentation type emitted by the normalizer. `raw` is a sentinel for items
- * that reached the renderer without a matching presenter — visible only to
- * internal audiences; the guest renderer hides items with presentationType
- * "raw" and logs `missing-presenter` (see QA_AND_RELEASE §3 invariant 5). */
+/** Presentation type emitted by the normalizer. `raw` is a live sentinel:
+ * the registry routes items whose `taxonomyKey` has an unknown prefix (not
+ * registered, not in `FALLBACK_ALLOWED_PREFIXES`) through
+ * `rawSentinelPresenter`, which stamps this value. The guest renderer hides
+ * any item with `presentationType === "raw"` and logs `missing-presenter`;
+ * non-guest audiences still see the raw `value` for debugging. See
+ * QA_AND_RELEASE §3 invariant 5. */
 export const GUIDE_PRESENTATION_TYPES = [
   "generic_text",
   "policy",

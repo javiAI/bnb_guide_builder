@@ -50,6 +50,7 @@ export const policyPresenter: Presenter = (
         parsed as Record<string, unknown>,
         taxonomyItem?.fields ?? [],
         item.visibility,
+        warnings,
       );
       return {
         presentationType: "policy",
@@ -87,6 +88,7 @@ function expandObject(
   obj: Record<string, unknown>,
   taxonomyFields: PolicyItemField[],
   visibility: GuideAudience,
+  warnings: string[],
 ): GuideItemDisplayField[] {
   const byId = new Map(taxonomyFields.map((f) => [f.id, f]));
   const out: GuideItemDisplayField[] = [];
@@ -97,7 +99,7 @@ function expandObject(
     const displayValue = humanizeScalar(
       typeof value === "object" ? JSON.stringify(value) : String(value),
       field?.options ?? [],
-      [],
+      warnings,
       key,
     );
     if (!displayValue) continue;

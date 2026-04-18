@@ -141,17 +141,24 @@ API tipada sobre `media_requirements.json`. Los formularios, validaciones, previ
 
 Frontera **modelo ↔ huésped** (estable desde 10F). Traduce `GuideItem` (modelo interno: enums, JSON, claves taxonómicas) a un shape de presentación consumible directamente por el renderer (`displayValue`, `displayFields`, `presentationType`, `presentationWarnings`).
 
-- **Resolución**: `getPresenter(taxonomyKey)` — exact match en `EXACT_PRESENTERS` → longest-prefix match en `PREFIX_PRESENTERS` (sorted por longitud) → fallback `genericTextPresenter`.
+- **Resolución** (5 pasos, `getPresenter(taxonomyKey)`):
+  1. `null`/`undefined`/`""` → `genericTextPresenter` (items derivados sin taxonomía).
+  2. Exact match en `EXACT_PRESENTERS`.
+  3. Longest-prefix match en `PREFIX_PRESENTERS` (sorted por longitud).
+  4. Prefijo en `FALLBACK_ALLOWED_PREFIXES` (`sp.`, `am.`, `lp.`) → `genericTextPresenter`. Intencional: el resolver ya sustituye `taxonomyLabel` en `value` antes del normalizador, así que pasar por texto plano es correcto. `listFallbackAllowedPrefixes()` se exporta para el test de cobertura — añadir un prefijo requiere actualizar la aserción.
+  5. Sin match → `rawSentinelPresenter` (emite `presentationType: "raw"` + warning `missing-presenter taxonomyKey=...`; el huésped ve shape vacío, operadores ven el value raw para triage).
 - Presenters activos:
   - Prefix `pol.` → `policyPresenter` (normas de casa, políticas).
   - Prefix `fee.` → `policyPresenter` (tarifas, mismo shape que pol).
   - Prefix `ct.` → `contactPresenter` (contactos; genera `href: "tel:+..."` / `mailto:...`).
-  - Fallback → `genericTextPresenter` (escapa HTML, deja texto plano, emite warning `missing-presenter` si el taxonomyKey no tiene presenter explícito).
-- Coverage guard: `src/test/presenter-coverage.test.ts` verifica 100% sobre las taxonomías cubiertas y ausencia de regressiones silenciosas.
+  - Allowlist `sp.` / `am.` / `lp.` → `genericTextPresenter` (fallback explícito).
+  - Sin match → `rawSentinelPresenter` (sentinel; el item se filtra del output guest vía `filterRenderableItems`).
+- Coverage guard: `src/test/presenter-coverage.test.ts` verifica 100% sobre taxonomías cubiertas, invariancia del allowlist y que prefijos desconocidos rutean al sentinel.
 - Un presenter jamás consulta DB ni muta input. Toma `(item, context)` → `{ displayValue, displayFields, presentationType, warnings[] }`. Corre dentro del normalizador puro `normalizeGuideForPresentation(tree, audience)`.
 - Añadir soporte para una nueva taxonomía visible al huésped: (1) ampliar entries en la taxonomía con `guestLabel` / `guestDescription` / `icon`, (2) registrar presenter por `taxonomyKey` exacto o por prefijo en el array apropiado del registry, (3) `presenter-coverage.test.ts` verde.
 - El renderer consume **siempre** `displayValue` / `displayFields`, nunca `value` / `fields` raw. El normalizador es la única fuente de verdad de presentación.
 - Red defensiva: el normalizador aplica `sanitizeGuestFields` sobre todos los fields en `audience=guest`, descartando los cuyo label está en `INTERNAL_FIELD_LABEL_DENYLIST` (exportado del service), cuyo value empieza por `{`/`[` (raw JSON), o matchea `TAXONOMY_KEY_PATTERN`. Garantiza las 5 invariantes de [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md) aun si un presenter falla.
+- **Observabilidad agregada**: el normalizador hila un `WarningAggregator` por toda la recursión y emite **un solo** `console.warn` al final por invocación, con metadata `{ byTaxonomyKey, byCategory }` (categorías: `missing-presenter`, `raw-json`, `taxonomy-key`, `internal-label`, `other`). No loggear por item — rompe el agregado. `expandObject` en `policyPresenter` propaga su propio array de warnings para que drops dentro de JSON anidado (p.ej. `hidden_key: "rm.*"` dentro de `pol.pets`) también entren en el agregado.
 
 ---
 
