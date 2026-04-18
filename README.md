@@ -28,8 +28,8 @@ npm run dev
 | `npm run typecheck` | Verificación de tipos (TypeScript) |
 | `npm run test` | Tests (Vitest) |
 | `npm run test:watch` | Tests en modo watch |
-| `npm run test:e2e` | E2E + axe-core sobre `/g/:slug` (build + start, fiel a producción) |
-| `npm run test:e2e:dev` | E2E sobre `next dev` (iteración local más rápida) |
+| `npm run test:e2e` | E2E + axe-core sobre `/g/:slug` (build + start, fiel a producción — requiere `DATABASE_URL` real) |
+| `npm run test:e2e:dev` | E2E sobre `next dev` (iteración local más rápida; modo DB-free usado también en CI) |
 
 ### E2E + accesibilidad (Playwright + axe-core)
 
