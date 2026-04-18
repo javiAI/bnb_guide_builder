@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { guideSections, isHostRole } from "@/lib/taxonomy-loader";
+import { guideSections } from "@/lib/taxonomy-loader";
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 import { EMERGENCY_FIELD_LABELS } from "@/lib/types/guide-tree";
 
@@ -75,11 +75,16 @@ function findDisplayFieldValue(item: GuideItem, label: string): string | null {
 }
 
 function resolveHostPhone(flat: GuideItem[]): string | null {
-  const host = flat.find(
-    (item) => item.taxonomyKey != null && isHostRole(item.taxonomyKey),
-  );
-  if (!host) return null;
-  return findDisplayFieldValue(host, EMERGENCY_FIELD_LABELS.phone);
+  const host = flat.find((item) => item.taxonomyKey === "ct.host");
+  const hostPhone = host
+    ? findDisplayFieldValue(host, EMERGENCY_FIELD_LABELS.phone)
+    : null;
+  if (hostPhone) return hostPhone;
+
+  const cohost = flat.find((item) => item.taxonomyKey === "ct.cohost");
+  return cohost
+    ? findDisplayFieldValue(cohost, EMERGENCY_FIELD_LABELS.phone)
+    : null;
 }
 
 function normalizePhoneForWhatsApp(phone: string): string | null {

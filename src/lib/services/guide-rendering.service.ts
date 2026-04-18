@@ -1069,6 +1069,7 @@ export async function composeGuide(
       emptyCopy: cfg.emptyCopy,
       emptyCopyGuest: cfg.emptyCopyGuest,
       hideWhenEmptyForGuest: cfg.hideWhenEmptyForGuest,
+      quickActionKeys: cfg.quickActionKeys,
     });
   }
   const tree: GuideTree = {

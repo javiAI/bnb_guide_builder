@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { GuideRenderer } from "@/components/public-guide/guide-renderer";
+import { selectHeroAnswers } from "@/components/public-guide/guide-hero";
 import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
 import { buildRichTree } from "@/test/fixtures/e2e/rich-tree";
-import type { GuideTree } from "@/lib/types/guide-tree";
+import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 
 // jsdom does not implement IntersectionObserver (guide-toc scrollspy).
 // The hero doesn't need it; the polyfill is just here so GuideRenderer mounts.
@@ -80,6 +81,58 @@ describe("GuideHero", () => {
     await waitFor(() => {
       expect(screen.getByText("Contraseña copiada")).toBeInTheDocument();
     });
+  });
+
+  it("curates hero answers with access → wifi → location → operational priority", () => {
+    const mk = (partial: Partial<GuideItem> & Pick<GuideItem, "id">): GuideItem => ({
+      label: partial.id,
+      taxonomyKey: null,
+      value: null,
+      visibility: "guest",
+      deprecated: false,
+      warnings: [],
+      fields: [],
+      media: [],
+      children: [],
+      ...partial,
+    });
+    const items: GuideItem[] = [
+      mk({ id: "essentials.rules.pol.pets", taxonomyKey: "pol.pets" }),
+      mk({ id: "essentials.amenities.am.wifi", taxonomyKey: "am.wifi" }),
+      mk({ id: "essentials.rules.pol.quiet_hours", taxonomyKey: "pol.quiet_hours" }),
+      mk({ id: "essentials.arrival.arrival.location" }),
+      mk({ id: "essentials.arrival.arrival.access", taxonomyKey: "am.smartlock" }),
+      mk({ id: "essentials.amenities.am.parking", taxonomyKey: "am.parking" }),
+    ];
+    const picked = selectHeroAnswers(items, 4).map((it) => it.id);
+    expect(picked).toEqual([
+      "essentials.arrival.arrival.access",
+      "essentials.amenities.am.wifi",
+      "essentials.arrival.arrival.location",
+      "essentials.amenities.am.parking",
+    ]);
+  });
+
+  it("selectHeroAnswers falls back to aggregator order when preferred keys are absent", () => {
+    const mk = (id: string, taxonomyKey: string | null = null): GuideItem => ({
+      id,
+      label: id,
+      taxonomyKey,
+      value: null,
+      visibility: "guest",
+      deprecated: false,
+      warnings: [],
+      fields: [],
+      media: [],
+      children: [],
+    });
+    const items: GuideItem[] = [
+      mk("a", "pol.no_noise"),
+      mk("b", "am.coffee"),
+      mk("c"),
+    ];
+    const picked = selectHeroAnswers(items, 4).map((it) => it.id);
+    expect(picked).toEqual(["a", "b", "c"]);
   });
 
   it("omits a quick action when its data is missing", () => {
