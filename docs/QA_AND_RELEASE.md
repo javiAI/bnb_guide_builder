@@ -78,6 +78,21 @@ Playwright + `@axe-core/playwright` viven como **harness compartido** desde
 
 Ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release" para la tabla completa de gates de UX.
 
+### Pre-Liora release criteria (aplica a ramas funcionales en vuelo)
+
+Mientras la Fase 15 (Liora Design Replatform) no esté activa — condición actual hasta entrega del paquete de diseño — el criterio de "done" visual en ramas funcionales (10G/H/I, Fase 11, Fase 12, Fase 13) se juzga así:
+
+- **Gates bloqueantes** (siguen aplicando idénticos):
+  - `npx tsc --noEmit` + `npm run lint` + `npm run test` verdes.
+  - Harness E2E de 10J verde (smoke + anti-leak + axe en 4 viewports × 3 fixtures).
+  - Axe-core `serious|critical = 0`.
+  - Targets interactivos ≥44×44; contraste AA; focus management correcto.
+  - Invariantes anti-leak de `audience=guest` (§3 arriba).
+- **Gate estético congelado**:
+  - No se rechaza una PR por "no sigue la paleta futura" o "el mock Liora prefiere otro spacing". Los tokens actuales (`src/config/design-tokens.ts`) y los mock-ups en `docs/FEATURES/GUEST_GUIDE_UX.md` son MVP operativo, no ground-truth congelado.
+  - Sí se rechaza una PR por introducir **familias nuevas** de componentes ad-hoc para "mejorar la paleta" antes de Liora (viola regla 1 de `docs/ARCHITECTURE_OVERVIEW.md` §14: prohibición de duplicados con sufijo de versión).
+- **Foco del review de UX**: comportamiento + accesibilidad + reuse de primitivos existentes + coherencia con el sistema config-driven. Polish visual final se difiere a Fase 15.
+
 ## 4. Expected commands
 
 ```bash

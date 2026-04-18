@@ -37,8 +37,11 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 12 | Messaging con variables | 3 | Medio | 1-2 sem |
 | 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
+| 15 | Liora Design Replatform | 7 | Bloqueada | depende de entrega del paquete de diseño |
 
-**Total plan V2**: 34 ramas (14 ✅ completadas, 20 pendientes). Siguiente: **Rama 10G `feat/guide-hero-quick-actions`**, luego 10H → 10I (todas gated por el harness E2E de 10J).
+**Total plan V2**: 14 ramas ✅ completadas. Siguiente funcional: **Rama 10G `feat/guide-hero-quick-actions`** → 10H → 10I (gated por 10J).
+
+**Fase 15 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10G/H/I ni a las Fases 11-14. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 para scope y ramas 15A-G.
 
 ### Estado y problema actual (post-10J 2026-04-18)
 

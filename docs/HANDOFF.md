@@ -6,7 +6,7 @@
 
 ## 1. Snapshot en 30 segundos
 
-- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 34 ramas totales; 13 ✅ (hasta 10F). Siguiente: **10J `chore/e2e-harness-public-guide`** (harness Playwright+axe compartido por 10G/H/I).
+- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 14 ramas ✅ (hasta 10J). Siguiente funcional: **10G `feat/guide-hero-quick-actions`** (primer consumidor del harness 10J). La Fase 15 (Liora Design Replatform, 7 ramas) existe en el plan pero está **bloqueada por entrega del paquete de diseño** y no bloquea el flujo funcional. Reglas anti-legacy aplicables desde ya: `docs/ARCHITECTURE_OVERVIEW.md` §14.
 - Estado vivo: [ROADMAP.md](ROADMAP.md) (tabla + "Progreso Fase X" por rama).
 - Research base congelado v1.0 (referenciar por línea, no copiar):
   - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md)
@@ -112,6 +112,8 @@ Subagentes: `Explore` (búsqueda cross-archivo >3 queries), `code-explorer` (tra
 
 Context7 (MCP) se activa auto — no invocar explícitamente salvo que falle.
 
+**Skills `/liora-*`**: **no disponibles**. Se crean al arrancar rama 15A junto con los docs `docs/LIORA_*.md`. Ver `docs/MASTER_PLAN_V2.md` § FASE 15.
+
 ---
 
 ## 9. Research index — qué hay en cada archivo
@@ -128,16 +130,19 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 
 ## 10. Próxima rama (mantener actualizado al hacer merge)
 
-**Rama 10F — `fix/guest-presentation-layer`** (nueva en rev.4 post-auditoría). Ver `MASTER_PLAN_V2.md § Rama 10F` para Fase -1 + motivación + [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) §§1, 2, 4, 7.
+**Rama 10G — `feat/guide-hero-quick-actions`** (primer consumidor del harness 10J ya mergeado). Ver `MASTER_PLAN_V2.md § Rama 10G` para scope + Fase -1.
 
-**Por qué esta rama antes que 10G (hero) o 10H (search)**: sin capa de presentación cerrada, el huésped puede ver JSON crudo, enums taxonómicos (`rm.smoking_outdoor_only`), copy editorial del host ("Añade...") y labels internos ("Slot"). Hero y search heredarían todos esos leaks. 10F sella la frontera modelo↔huésped con `normalizeGuideForPresentation`, presenter registry, schema v3, e invariantes anti-leak. Es prerrequisito duro de 10G/H/I.
+**Por qué 10G ahora**: 10F selló la frontera de presentación (`normalizeGuideForPresentation`, presenter registry, 5 invariantes anti-leak). 10J desbloqueó el gate compartido E2E + axe. 10G consume `heroEligible` + `quickActionEligible` + `displayValue` (ya listos en taxonomías + normalizer) y es el único que falta antes de poder medir UX guest de punta a punta.
 
 **Lectura mínima para arrancar**:
 
-- [MASTER_PLAN_V2.md § Rama 10F](MASTER_PLAN_V2.md) — entera.
-- [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — §§1, 2, 4, 7.
-- [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) — reglas duras que 10F prepara para 10G/H/I.
-- `src/lib/services/guide-rendering.service.ts`, `src/lib/types/guide-tree.ts`, `src/test/guide-rendering.test.ts` — pipeline actual.
-- `taxonomies/policy_taxonomy.json`, `taxonomies/contact_roles.json`, `taxonomies/amenity_taxonomy.json`, `taxonomies/guide_sections.json`.
+- [MASTER_PLAN_V2.md § Rama 10G](MASTER_PLAN_V2.md) — entera.
+- [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) — `L5-31` (journey), `L104-160` (UX patterns hero), `L211-234` (interactividad quick-actions).
+- `docs/FEATURES/GUEST_GUIDE_UX.md` — cards + targets + a11y.
+- `src/lib/services/guide-presentation.service.ts`, `taxonomies/policy_taxonomy.json` + `taxonomies/contact_roles.json` (flags `heroEligible` / `quickActionEligible`).
+- `src/components/guide/*` — renderer React de 10E.
+- `docs/ARCHITECTURE_OVERVIEW.md` §14 — reglas anti-legacy aplicables (no consolidar polish visual final; Liora Fase 15 supersedes eventualmente).
 
-Tras merge: actualizar este apartado + "Progreso Fase X" en ROADMAP.md. Próxima por orden óptimo: **10G `feat/guide-hero-quick-actions`**.
+**Restricción de Fase 15 vigente**: 10G prioriza estructura, comportamiento, a11y y reuse de primitivos existentes (`HeroCard`, `EssentialCard`, etc.). No consolidar paleta, microcopy ni iconografía como definitivos — Liora los supersede cuando llegue el paquete de diseño.
+
+Tras merge: actualizar este apartado + "Progreso Fase 10" en ROADMAP.md. Próxima por orden óptimo: **10H `feat/guide-client-search`**.

@@ -65,6 +65,20 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - no saltar de fase sin validación explícita
 - arquitectura config-driven: taxonomías, campos, dependencias, media y renderizado viven en configuración centralizada (`src/config/` y `taxonomies/`), no hardcodeados en componentes React
 - añadir amenity, policy, access method o sección = editar config/taxonomía, no tocar UI
+- **Liora Design Replatform pendiente (Fase 15)**: en toda rama funcional prioriza estructura, accesibilidad, comportamiento y reutilización sobre fidelidad visual — ver sección "Replatform de diseño (Liora)" abajo para el detalle y `docs/ARCHITECTURE_OVERVIEW.md` §14 para las reglas anti-legacy con consecuencias.
+
+## Replatform de diseño (Liora) — reglas duras mientras está pendiente
+
+Hay una replatform visual integral planificada (`docs/MASTER_PLAN_V2.md` § FASE 15), bloqueada por entrega del paquete de diseño. Hasta que arranque la rama 15A:
+
+- **Prioriza** arquitectura, comportamiento, a11y y reuse de primitivos existentes sobre fidelidad visual o consistencia estética.
+- **No consolides** paleta, microcopy ni iconografía como definitivos en ramas 10G/H/I, 11, 12, 13. Los tokens de `src/config/design-tokens.ts` y los mock-ups de `docs/FEATURES/GUEST_GUIDE_UX.md` son MVP operativo — referenciables pero no ground-truth congelado.
+- **No introduzcas** duplicados por versión: prohibido `*V2`, `*V3`, `New*`, `Next*`, `Better*`, `*Alt`, `*Redesign`, `*Old`, `legacy-*`. Si hay que cambiar la API de un componente, se cambia en su sitio.
+- **No abras** convivencias legacy sin plan de retirada documentado en la PR description (motivo, plan, rama/commit que borra, fecha tope).
+- **Axe-core `serious|critical = 0`** y targets ≥44×44 son invariantes permanentes — Liora no puede degradarlos.
+- Los docs `docs/LIORA_*.md` y skills `/liora-*` **no existen todavía** — se crean al arrancar rama 15A. Lista canónica + descripciones en `docs/MASTER_PLAN_V2.md` § FASE 15.
+
+Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` §14.
 
 ## Protocolo de Acción:
 

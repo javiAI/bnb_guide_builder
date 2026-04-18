@@ -290,3 +290,37 @@ No se considera estable una fase si falta cualquiera de:
 
 - Consume `MessageTemplate`, `MessageAutomation`
 - Variables resueltas desde datos canónicos y knowledge
+
+## 14. Legacy management & migration discipline
+
+Reglas operativas duras. Cada una tiene una consecuencia concreta ("la PR no mergea"); sin esas consecuencias, la regla no existe.
+
+El motor de render (composiciones, presenter registry, renderers) es **agnóstico del skin** — sobrevive a cualquier replatform visual (Fase 15 Liora y futuros). Estas reglas protegen esa frontera.
+
+1. **Duplicados por versión: prohibidos en `main`.**
+   Nada de `*V2`, `*V3`, `New*`, `Next*`, `Better*`, `*Alt`, `*Redesign`, `*Old`, `legacy-*` como identificador de componente, módulo, archivo o export.
+   **Consecuencia**: la PR que los introduzca no mergea. Si hay que cambiar la API de un componente, se cambia en su sitio (git conserva la historia).
+
+2. **Toda migración de UI clasifica cada componente tocado.**
+   En la description de la PR, tabla obligatoria `componente | reused | reskinned | rewritten | deleted`. `reskinned` = cambia el look, no la API. `rewritten` = cambia API o estructura interna. `deleted` = se borra en la misma rama o queda marcado para borrado en una rama de cleanup con fecha/ticket explícito.
+   **Consecuencia**: PR sin tabla o con filas ambiguas no mergea.
+
+3. **Convivencia legacy: solo con plan de retirada documentado.**
+   Si por tamaño una rama introduce temporalmente una versión nueva junto a la legacy, la description de la PR debe incluir: (a) motivo, (b) plan de retirada, (c) rama o commit que borra la legacy, (d) fecha tope.
+   **Consecuencia**: sin plan de retirada, la PR no mergea. Sin la rama/commit de retirada materializado antes de la fecha tope, la siguiente PR de esa área se bloquea hasta cerrarlo.
+
+4. **"Painting over" prohibido.**
+   Cambiar estilos a un componente (color, spacing, tipografía) solo es válido si el componente ya está mapeado al sistema de tokens y primitivos vigente. Parches puntuales inline en un componente no migrado no suman — se revierten y se canalizan por la rama de tokens o primitivos correspondiente.
+   **Consecuencia**: la PR con parches inline de estilo se rechaza en review por estructura, no por mérito visual.
+
+5. **Migración por capas: sin saltos.**
+   Orden obligatorio: tokens → primitivos → shells → superficies → cleanup. Una PR de superficie no puede aterrizar si los primitivos que consume no están migrados; una PR de primitivos no puede aterrizar si los tokens que consume no están migrados.
+   **Consecuencia**: PR que salta capas se rechaza y se re-plantea en la capa correcta.
+
+6. **Accesibilidad es invariante, no replatformable.**
+   WCAG 2.1 AA, axe-core `serious|critical = 0`, targets interactivos ≥44×44, contraste AA, landmark structure, focus management, keyboard navigation — se mantienen idénticos o se endurecen. Cualquier replatform (Liora incluido) que degrade a11y se rechaza.
+   **Consecuencia**: axe-core con violaciones `serious|critical > 0` bloquea el merge directamente (ya enforced por el harness E2E de 10J).
+
+7. **Tokens y mock-ups son MVP mientras Liora no esté activo.**
+   Los tokens actuales en `src/config/design-tokens.ts` y los mock-ups en `docs/FEATURES/GUEST_GUIDE_UX.md` son referencias operativas — no ground-truth congelado. Las ramas funcionales en vuelo (10G/H/I, 11, 12, 13) **no consolidan decisiones visuales finales** y priorizan arquitectura + comportamiento + a11y + reuse de primitivos existentes sobre fidelidad visual.
+   **Consecuencia**: una PR rechazada "por no seguir paleta futura" es un rechazo inválido. Una PR que introduce una familia nueva de componentes para consolidar visual MVP sí es motivo de rechazo (viola regla 1).

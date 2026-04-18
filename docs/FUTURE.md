@@ -146,7 +146,16 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 
 ---
 
-## 11. Image resize/optimization on upload
+## 11. Liora Design Replatform
+
+**Estado**: preparado — plan de ejecución completo en [MASTER_PLAN_V2.md § FASE 15](MASTER_PLAN_V2.md) (7 ramas 15A-G).
+**Trigger para activar**: entrega del paquete de diseño Liora (tokens + primitivos + superficies).
+
+Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 15A junto con el paquete de diseño.
+
+---
+
+## 12. Image resize/optimization on upload
 
 **Estado**: diferido (ya mencionado en ROADMAP).
 **Trigger**: coste de R2 + bandwidth crece visiblemente con fotos HD subidas directamente.

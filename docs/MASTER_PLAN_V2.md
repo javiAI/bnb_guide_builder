@@ -1,8 +1,8 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-17 (rev. 4 — guest-presentation-layer audit integration: Fase 10 pasa 8→9 ramas, se inserta 10F `fix/guest-presentation-layer` antes del hero, 10G/H/I renumeradas)
+Versión: 2026-04-18 (rev. 5 — Fase 15 Liora Design Replatform añadida como prep condicional: 7 ramas bloqueadas por entrega del paquete de diseño; no bloquean 10G/H/I ni Fases 11-14)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
-Alcance: 7 fases, 33 ramas, ~33 PRs independientes y revisables
+Alcance: 8 fases, 41 ramas, ~41 PRs independientes y revisables
 
 Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.10).
 
@@ -1747,6 +1747,153 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
+## FASE 15 — Liora Design Replatform
+
+**Estado**: bloqueada por entrega del paquete de diseño Liora. Las ramas están definidas a nivel de alcance y dependencia, pero **sin archivos concretos** hasta que el paquete llegue.
+
+**Prerrequisito duro**: entrega del paquete de diseño Liora (tokens, primitivos, superficies). Sin paquete, ninguna rama 15A-G arranca.
+
+**No bloquea** el flujo funcional en vuelo: 10G/H/I, Fase 11, Fase 12, Fase 13, Fase 14 avanzan con independencia. Fase 15 se intercala cuando la entrega ocurra.
+
+**Artefactos que se crean al arrancar Rama 15A** (no antes):
+- `docs/LIORA_DESIGN_ADOPTION_PLAN.md` — mapa tokens Liora ↔ `src/config/design-tokens.ts` + orden de rollout por superficie.
+- `docs/LIORA_MIGRATION_RULES.md` — extensión operativa de las reglas anti-legacy (ver `docs/ARCHITECTURE_OVERVIEW.md` §14) con criterios específicos del paquete.
+- `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` — plantilla de tabla `componente → reused | reskinned | rewritten | deleted` que cada PR 15B-F rellena.
+- `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` — orden de migración por superficie con dependencias entre primitivos y shells.
+- Skills/prompts específicos en `.claude/commands/` si se necesitan (ej: `/liora-component-map`). No se anticipan hoy.
+
+**Reglas duras aplicables desde ya** (sin esperar al paquete): ver `docs/ARCHITECTURE_OVERVIEW.md` §14 "Legacy management & migration discipline" y el bloque homólogo en `CLAUDE.md`. En particular: no introducir duplicados `V2`/`New*`/`Better*`/`Next*`, no consolidar polish visual final en ramas funcionales en vuelo, no abrir convivencias legacy sin plan de retirada documentado.
+
+---
+
+### Rama 15A — `refactor/liora-token-foundation`
+
+**Propósito**: alinear `src/config/design-tokens.ts` al esquema del paquete Liora (colores, tipografía, spacing, radii, sombras, motion). Cero cambios visuales nuevos en superficies — solo cambio de fuente de tokens.
+
+**Archivos a modificar** (referencia, exhaustividad tras entrega):
+- `src/config/design-tokens.ts` — única fuente de declaración de variables CSS.
+- CSS global / `tailwind.config.ts` — re-mapeo si el paquete introduce tokens semánticos no cubiertos.
+
+**Archivos a crear**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (ver bloque de apertura de la fase).
+
+**Tests**:
+- `src/test/design-tokens-mapping.test.ts` (nuevo) — cobertura Liora → tokens internos.
+- Snapshot de guía pública idéntico al baseline pre-rama (validación de no-regresión visual + a11y).
+
+**Criterio de done**: axe-core + snapshot guest idénticos al baseline pre-rama; tokens Liora declarados en una sola fuente; brand theming de 10E sigue funcionando sin cambios.
+
+**Preparación**:
+- **Contexto a leer**: paquete Liora (cuando exista), `src/config/design-tokens.ts`, `docs/CONFIG_DRIVEN_SYSTEM.md` §UI rule, research `L162-210` de `GUEST_GUIDE_SPEC.md` para el diff de tokens MVP vs Liora.
+- **Docs a actualizar al terminar**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (creado en esta rama).
+- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+
+---
+
+### Rama 15B — `refactor/liora-core-components`
+
+**Propósito**: re-skin (no reescritura) de primitivos compartidos consumiendo los tokens de 15A. Cada componente tocado se clasifica en la PR como `reused` / `reskinned` / `rewritten` / `deleted`.
+
+**Archivos a modificar** (lista preliminar — se cierra con entrega):
+- `src/components/ui/HeroCard.tsx`, `EssentialCard.tsx`, `StandardCard.tsx`, `WarningCard.tsx` (guest).
+- `src/components/ui/button.tsx`, `CollapsibleSection.tsx`, `RadioCardGroup.tsx`, `CheckboxCardGroup.tsx`, `NumberStepper.tsx`, `InfoTooltip.tsx`, `InlineSaveStatus.tsx`, `DeleteConfirmationButton.tsx`, `SelectionBadge.tsx` (operador).
+
+**Prohibido**: crear archivos `*V2.tsx`, `New*`, `Better*`, `Next*`. Si un primitivo exige reescritura de API, va como `rewritten` en la clasificación y la legacy se borra en la misma rama (no coexistencia).
+
+**Tests**:
+- Cobertura existente de cada componente se mantiene verde.
+- Axe-core sobre página de preview interna (si existe) o sobre guest guide.
+
+**Criterio de done**: tabla de clasificación completa en la PR description; 0 duplicados con sufijos prohibidos; axe-core `serious|critical = 0`; targets interactivos ≥44×44 preservados.
+
+**Preparación**:
+- **Contexto a leer**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (creado en 15A), paquete Liora, `docs/FEATURES/GUEST_GUIDE_UX.md` (cards + a11y).
+- **Docs a actualizar al terminar**: `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` (creado aquí) actualizado con los primitivos cubiertos.
+- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+
+---
+
+### Rama 15C — `feat/liora-guest-guide-redesign`
+
+**Propósito**: superficie `/g/:slug` (shell, secciones, hero, footer) adopta los primitivos re-skineados. Cero cambios en `normalizeGuideForPresentation`, presenter registry, resolvers o taxonomías.
+
+**Archivos a modificar**: `src/app/g/[slug]/page.tsx`, `src/components/guide/*` (renderers React de 10E).
+
+**Tests**:
+- Harness E2E de 10J verde (smoke + anti-leak + axe) sobre las 3 fixtures × 4 viewports.
+- Lighthouse p95 ≤10% peor que baseline pre-rama en `/g/:slug`.
+- `src/test/guide-rendering-proxy-urls.test.ts` verde (media proxy inalterado).
+
+**Criterio de done**: harness 10J verde idéntico; 0 cambios en el pipeline de presentación; regresión de performance ≤10%.
+
+**Preparación**:
+- **Contexto a leer**: 15A + 15B, `docs/FEATURES/GUEST_GUIDE_UX.md`, research `L104-160` (UX patterns) y `L236-262` (métricas).
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (creado aquí o en 15A según orden de exploración) marcando guest como superficie migrada.
+- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+
+---
+
+### Rama 15D — `feat/liora-operator-shell-redesign`
+
+**Propósito**: shell del operador — sidebar, topbar, layout de `/properties/[propertyId]`. Sin tocar wizards ni section editors (quedan para 15E).
+
+**Archivos a modificar**: `src/components/layout/*`, `src/app/properties/layout.tsx` (o equivalente).
+
+**Tests**: suite existente verde + axe-core sobre shell vacío y con contenido.
+
+**Criterio de done**: navegación funcional inalterada; tabla de clasificación cubre todos los componentes del shell; axe-core `serious|critical = 0`.
+
+**Preparación**:
+- **Contexto a leer**: 15A + 15B, `docs/ARCHITECTURE_OVERVIEW.md` §4 (Canonical UX model).
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (shell operador).
+- **Skills/tools específicos**: pendientes.
+
+---
+
+### Rama 15E — `feat/liora-operator-module-rollout`
+
+**Propósito**: superficies de módulos del operador — wizard (4 pasos + review) + section editors (spaces, access, amenities, systems, policies, contacts, emergency, local, knowledge). Puede dividirse en sub-PRs internos, siempre bajo la misma rama Git.
+
+**Archivos a modificar**: `src/components/wizard/*`, `src/app/properties/[propertyId]/**/page.tsx`, formularios por sección.
+
+**Tests**: suites existentes de cada módulo + regresión completa de completeness scoring + field-type renderers.
+
+**Criterio de done**: cada módulo con su propia subsección en la PR description + tabla de clasificación; `config-driven.test.ts` verde; `field-type-coverage.test.ts` verde.
+
+**Preparación**:
+- **Contexto a leer**: 15A + 15B + 15D, `docs/CONFIG_DRIVEN_SYSTEM.md` (UI rule), `docs/DATA_MODEL.md` por módulo.
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` por módulo.
+- **Skills/tools específicos**: pendientes.
+
+---
+
+### Rama 15F — `feat/liora-messaging-assistant-redesign`
+
+**Propósito**: superficies de messaging + assistant console. **Requiere** Fase 11 y/o 12 ya mergeadas — si no existen aún, esta rama queda dormida.
+
+**Criterio de done**: paridad funcional con el estado pre-rama + axe-core `serious|critical = 0`.
+
+**Preparación**:
+- **Contexto a leer**: 15A + 15B + 15D + Fase 11/12 según aplique.
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`.
+- **Skills/tools específicos**: pendientes.
+
+---
+
+### Rama 15G — `chore/remove-legacy-ui`
+
+**Propósito**: barrido final. Elimina tokens, clases CSS, variables, helpers y componentes que 15A-F marcaron como `deleted` en su clasificación. Ningún `legacy-*` ni `*-old` sobrevive en el bundle.
+
+**Gate CI**: grep guardado — si aparece cualquier identificador legacy clasificado como `deleted`, la PR falla.
+
+**Criterio de done**: bundle size igual o menor; suite completa verde; tablas de clasificación de 15A-F vaciadas de `deleted` pendientes.
+
+**Preparación**:
+- **Contexto a leer**: tablas de clasificación acumuladas de 15A-F.
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` marca Fase 15 como completada.
+- **Skills/tools específicos**: pendientes.
+
+---
+
 ## 4. Checklist de ejecución por PR
 
 Complementa el Protocolo (§2). Antes de merge:
@@ -1819,6 +1966,11 @@ Fase 14 (requiere estabilidad de 9-11)
                      ──► 14C Booking export
                               ▼
                          14D Import
+
+Fase 15 (requiere entrega del paquete de diseño Liora; NO bloquea 10G/H/I ni 11/12/13/14)
+  15A tokens → 15B primitivos → 15C guest → 15D shell operador → 15E módulos operador
+                                                               → 15F messaging/assistant (requiere Fase 11 y/o 12)
+                                                               → 15G cleanup legacy (último, siempre)
 ```
 
 ---
@@ -1845,8 +1997,9 @@ Fase 14 (requiere estabilidad de 9-11)
 - Fase 12: 12A independiente, 12B→12C secuencial → 1-2 semanas
 - Fase 13: 4 PRs; 13A/B/C paralelizables, 13D depende de 10E → 2 semanas
 - Fase 14: depende de decisión estratégica; 4 PRs secuenciales → 6-8 semanas
+- Fase 15: 7 PRs, bloqueadas por entrega del paquete Liora. Duración no estimable hoy (depende del alcance del paquete). Se intercala en el calendario cuando la entrega ocurra; no desplaza las fases funcionales en vuelo.
 
-**Total plan**: 33 ramas (12 ✅ completadas, 21 pendientes). Orden óptimo: cerrar 10F (frontera presentación — desbloquea UX premium en todo el pipeline), luego 10G/H/I en secuencia, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica.
+**Total plan**: 41 ramas (14 ✅ completadas, 27 pendientes de las cuales 7 son Fase 15 con prerrequisito externo). Orden óptimo funcional: 10G/H/I en secuencia, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica. Fase 15 se activa con entrega de diseño.
 
 ---
 
@@ -1863,6 +2016,7 @@ Fase 14 (requiere estabilidad de 9-11)
 9. **Email provider para issue-reporting (Fase 13D)**: reusar lo de 12B si existe vs Resend vs Postmark. Decidir antes de 13D.
 10. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
 11. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
+12. **Liora Design Replatform (Fase 15)**: entrega del paquete de diseño (tokens + primitivos + superficies) + confirmación del scope inicial (superficies a migrar primero). Sin entrega, Fase 15 no arranca. Mientras tanto aplican las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 a **todas** las ramas en vuelo.
 
 ---
 
