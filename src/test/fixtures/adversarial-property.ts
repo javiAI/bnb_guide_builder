@@ -78,7 +78,10 @@ function buildRulesSection(): GuideSection {
         media: [],
         children: [],
       },
-      // Leak 4: internal-looking field labels
+      // Leak 4: internal-looking field labels + a raw-sentinel child buried
+      // under a renderable parent. Before recursive filtering, the unknown-
+      // prefix child was rendered in the `<ol>` children list of md/html/pdf
+      // and the React component, leaking the label to guests.
       {
         id: "policy.pol.quiet_hours",
         taxonomyKey: "pol.quiet_hours",
@@ -92,7 +95,20 @@ function buildRulesSection(): GuideSection {
           { label: "Config JSON", value: '{"enforced":true}', visibility: "guest" },
         ],
         media: [],
-        children: [],
+        children: [
+          {
+            id: "policy.pol.quiet_hours.nested",
+            taxonomyKey: "unknown.nested_noise",
+            label: "Sensor interno",
+            value: "unknown.nested_noise",
+            visibility: "guest",
+            deprecated: false,
+            warnings: [],
+            fields: [],
+            media: [],
+            children: [],
+          },
+        ],
       },
     ],
   };

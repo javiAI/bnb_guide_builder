@@ -34,27 +34,46 @@ export function resolveDisplayFields(item: GuideItem): GuideItemField[] {
 }
 
 /** Items whose presenter failed (`presentationType === "raw"`) are hidden
- * from guest output. Emits one `missing-presenter` log per distinct item id
- * within a single call — the normalizer's aggregated log covers batched
- * counts; this is a per-render trace so the specific item is identifiable. */
+ * from guest output. Recursive: a raw item buried under a renderable parent
+ * would otherwise leak through renderer recursion (`item.children` map in
+ * md/html/pdf/React). Returns cloned items whose `children` are deep-filtered;
+ * non-raw items with no raw descendants are returned by reference so
+ * downstream equality checks stay cheap. Emits one `missing-presenter` log
+ * per distinct item id within a single call — the normalizer's aggregated log
+ * covers batched counts; this is a per-render trace so the specific item is
+ * identifiable. */
 export function filterRenderableItems(
   items: GuideItem[],
   audience: GuideAudience,
 ): GuideItem[] {
   if (audience !== "guest") return items;
   const loggedIds = new Set<string>();
-  return items.filter((item) => {
-    if (item.presentationType === "raw") {
-      if (!loggedIds.has(item.id)) {
-        loggedIds.add(item.id);
-        console.warn(
-          `[guide-presenter] missing-presenter item=${item.id} taxonomyKey=${item.taxonomyKey}`,
-        );
+  const logRaw = (item: GuideItem) => {
+    if (loggedIds.has(item.id)) return;
+    loggedIds.add(item.id);
+    console.warn(
+      `[guide-presenter] missing-presenter item=${item.id} taxonomyKey=${item.taxonomyKey}`,
+    );
+  };
+  const deepFilter = (list: GuideItem[]): GuideItem[] => {
+    const out: GuideItem[] = [];
+    for (const item of list) {
+      if (item.presentationType === "raw") {
+        logRaw(item);
+        continue;
       }
-      return false;
+      const filteredChildren = deepFilter(item.children);
+      out.push(
+        filteredChildren === item.children
+          ? item
+          : { ...item, children: filteredChildren },
+      );
     }
-    return true;
-  });
+    return out.length === list.length && out.every((v, i) => v === list[i])
+      ? list
+      : out;
+  };
+  return deepFilter(items);
 }
 
 /** Audience-aware empty copy. Returns `null` when nothing should be shown. */

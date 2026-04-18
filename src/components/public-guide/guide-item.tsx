@@ -37,19 +37,25 @@ export function GuideItem({ item }: Props) {
           ))}
         </dl>
       )}
-      {item.children.length > 0 && (
-        <ol className="guide-item__children">
-          {item.children.map((child) => {
-            const childValue = resolveDisplayValue(child);
-            return (
-              <li key={child.id}>
-                <strong>{child.label}</strong>
-                {childValue && <> — {childValue}</>}
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      {item.children.length > 0 && (() => {
+        const renderableChildren = item.children.filter(
+          (child) => child.presentationType !== "raw",
+        );
+        if (renderableChildren.length === 0) return null;
+        return (
+          <ol className="guide-item__children">
+            {renderableChildren.map((child) => {
+              const childValue = resolveDisplayValue(child);
+              return (
+                <li key={child.id}>
+                  <strong>{child.label}</strong>
+                  {childValue && <> — {childValue}</>}
+                </li>
+              );
+            })}
+          </ol>
+        );
+      })()}
       {item.media.length > 0 && (
         <GuideMediaGallery media={item.media} contextLabel={item.label} />
       )}

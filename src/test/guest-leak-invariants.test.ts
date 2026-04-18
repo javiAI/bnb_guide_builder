@@ -177,6 +177,17 @@ describe("guest leak invariants — rendered outputs", () => {
     expect(markdown).not.toContain("Código de entrada");
     expect(html).not.toContain("Código de entrada");
   });
+
+  it("invariant 5: raw-sentinel children buried under a renderable parent are filtered recursively", () => {
+    // `policy.pol.quiet_hours.nested` has taxonomyKey "unknown.nested_noise"
+    // (label "Sensor interno") and sits inside a non-raw parent. Without deep
+    // filtering, renderer recursion prints it in the children `<ol>` / list.
+    const { markdown, html } = render();
+    expect(markdown).not.toContain("Sensor interno");
+    expect(html).not.toContain("Sensor interno");
+    expect(markdown).not.toContain("unknown.nested_noise");
+    expect(html).not.toContain("unknown.nested_noise");
+  });
 });
 
 describe("normalizer observability", () => {
