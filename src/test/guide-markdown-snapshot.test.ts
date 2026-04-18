@@ -84,23 +84,14 @@ describe("renderMarkdown — snapshot by audience", () => {
         - Notas: Vistas al patio
         - Cama doble: 1
 
-      ## Cómo usar
-      _Sin elementos._
-
-      ## Equipamiento
-      _Sin elementos._
-
       ## Normas de la casa
-      _Sin elementos._
+      _No hay normas adicionales destacadas para esta estancia._
 
       ## Salida
       - **Hora de check-out**: 11:00
 
-      ## Guía local
-      _Sin elementos._
-
       ## Ayuda y emergencias
-      - **Ana**: ct.host
+      - **Ana**
         - Teléfono: 600000000
       "
     `);

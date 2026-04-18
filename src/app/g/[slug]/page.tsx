@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
+import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
 import {
   GUIDE_TREE_SCHEMA_VERSION,
   type GuideTree,
@@ -39,14 +40,15 @@ const resolveGuide = cache(async (slug: string): Promise<{
   });
   if (!published?.treeJson) return { property, tree: null };
 
-  // Log once per request when rendering a pre-v2 snapshot. The React renderer
-  // tolerates the older shape (all new fields are optional on `GuideSection`/
-  // `GuideItem`), but the log lets us spot properties that haven't been
-  // re-published since the 10E schema bump and nudge them before shipping
-  // journey-dependent features that *do* require v2.
+  // Log once per request when rendering a pre-v3 snapshot. v3 introduced the
+  // presentation layer (rama 10F); pre-v3 snapshots may still have raw
+  // `value` / `fields` but no `displayValue` / `displayFields`. The
+  // normalization call below stamps those fields on-the-fly, so rendering is
+  // safe — we just want visibility on which properties need a re-publish to
+  // store pre-normalized snapshots. `snapshotPreV3` is the documented log key.
   if (published.treeSchemaVersion < GUIDE_TREE_SCHEMA_VERSION) {
     console.info(
-      `[public-guide] slug=${slug} treeSchemaVersion=${published.treeSchemaVersion} (< ${GUIDE_TREE_SCHEMA_VERSION}) — snapshot outdated, re-publish to adopt new shape.`,
+      `[public-guide] snapshotPreV3 slug=${slug} treeSchemaVersion=${published.treeSchemaVersion} (< ${GUIDE_TREE_SCHEMA_VERSION}) — re-publish to adopt new shape.`,
     );
   }
 
@@ -59,11 +61,17 @@ const resolveGuide = cache(async (slug: string): Promise<{
     items: filterByAudience(section.items, "guest"),
   }));
 
-  const guestTree: GuideTree = {
+  const filteredTree: GuideTree = {
     ...fullTree,
     audience: "guest",
     sections: guestSections,
   };
+
+  // Terminal presentation layer — idempotent, so running it here covers both
+  // pre-v3 snapshots (which lack display fields) and v3 snapshots
+  // (which already carry internal-audience presentation metadata that we
+  // now replace with guest-audience metadata).
+  const guestTree = normalizeGuideForPresentation(filteredTree, "guest");
 
   return { property, tree: guestTree };
 });

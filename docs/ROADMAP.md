@@ -32,47 +32,39 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 |---|---|---:|---|---|
 | 8 ✅ | Deuda técnica pre-output | 3 | Bajo | completada |
 | 9 ✅ | Guest Guide v2 (output principal) | 4 | Medio | completada |
-| 10 | Media + Guide Renderer + Presentation layer + PWA | 9 | Medio | 10A/B/C/D/E ✅; 10F (presentation boundary) + 10G/H/I 2-3 sem |
+| 10 | Media + Guide Renderer + Presentation layer + PWA + E2E harness | 10 | Medio | 10A/B/C/D/E/F ✅; 10G/H/I + 10J (harness) 2-3 sem |
 | 11 | Knowledge + Assistant + i18n | 6 | Alto | 4-5 sem |
 | 12 | Messaging con variables | 3 | Medio | 1-2 sem |
 | 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 
-**Total plan V2**: 33 ramas (12 ✅ completadas, 21 pendientes). Siguiente: **Rama 10F `fix/guest-presentation-layer`** (ver *Estado y problema actual*).
+**Total plan V2**: 34 ramas (13 ✅ completadas, 21 pendientes). Siguiente: **Rama 10J `chore/e2e-harness-public-guide`** (harness Playwright+axe compartido por 10G/H/I), luego 10G → 10H → 10I.
 
-### Estado y problema actual (post-auditoría 2026-04-17)
+### Estado y problema actual (post-10F 2026-04-18)
 
-La infraestructura del pipeline guest está construida: `composeGuide → filterByAudience → render` con tipos sólidos, media proxy estable (10D) y renderer React (10E). **Lo que no está construido es la frontera de presentación**: hoy, un JSON crudo en `policiesJson`, un enum `rm.smoking_outdoor_only`, una `emptyCopy` editorial ("Añade normas…") o un label interno ("Slot") pueden cruzar la frontera `audience=guest` sin que nada los detenga.
+La infraestructura del pipeline guest está completa: `composeGuide → filterByAudience → normalizeGuideForPresentation → render` con tipos sólidos, media proxy estable (10D), renderer React (10E) y **capa de presentación terminal (10F)** que sella la frontera entre modelo interno y salida guest. Las 5 invariantes anti-leak están cubiertas por unit tests (tree + markdown + html).
 
-**Problema principal (bloqueante)**: no hay paso de normalización terminal. `filterByAudience` filtra por visibilidad, pero el huésped puede recibir estructura interna legible (enums, JSON, copy del host). Sin resolver esto, el hero, la search y la PWA heredan todos los leaks.
+**Qué queda pendiente del pliegue guest**: el harness E2E+axe compartido (**10J**) que 10G (hero), 10H (search) y 10I (PWA) reutilizarán, y luego las 3 ramas de UX premium.
 
 **Qué está bien**:
 
-- Composición y filtrado (9A, [src/test/guide-rendering.test.ts](../src/test/guide-rendering.test.ts)).
+- Composición y filtrado (9A) + presentation layer (10F) con presenter registry + 5 invariantes anti-leak blindadas.
 - Media proxy content-addressable con ETag escopado a variante (10D).
 - `includesMedia` per sección evita queries vacías.
-- Schema version en el tree + fallback runtime (bump a 3 en 10F).
-
-**Qué está mal (o suele leakear)**:
-
-- `GuideItemField.value` emitido raw sin humanización (enums, JSON, números sin unidades/locale).
-- `GuideSection.emptyCopy` es copy editorial del host servida al huésped si la sección está vacía.
-- Labels internos (`"Slot"`, `"Propiedad"`, `"Config JSON"`) se cuelan en los 9 slots si el resolver no los traduce.
-- Taxonomías no declaran `guestLabel` / `guestDescription` / `icon` / `heroEligible` / `quickActionEligible` / `guestCriticality`, que las ramas de UX (10G/H/I) necesitan para tomar decisiones editoriales sin hardcode.
-- No hay tests de invariantes anti-leak; un resolver nuevo puede regresar a raw sin red.
+- `GUIDE_TREE_SCHEMA_VERSION = 3` con pre-v3 normalization al servir (`snapshotPreV3`).
 
 **Prioridades reales (orden óptimo)**:
 
-1. **10F `fix/guest-presentation-layer`** — 1 semana · **MAX PRIORIDAD**. Sella la frontera, humaniza, prepara campos de UX. Sin esto, 10G/10H heredan el bug.
-2. **10G hero + quick actions** — 1 semana. Consume `heroEligible` + `displayValue` ya listos.
-3. **10H client search** — 0.5 semana. Indexa sobre `displayValue`.
+1. **10J `chore/e2e-harness-public-guide`** — 0.5 semana. Harness Playwright + axe-core compartido (fixtures navegables, 3 viewports, CI gate). Habilita gates de UX para 10G/H/I.
+2. **10G hero + quick actions** — 1 semana. Consume `heroEligible` + `displayValue` ya listos (10F), a11y gated por 10J.
+3. **10H client search** — 0.5 semana. Indexa sobre `displayValue` / `displayFields.value`.
 4. **10I PWA offline** — 1 semana. Cachea el tree ya normalizado.
 5. **Fase 11** — Knowledge + Assistant + i18n.
 6. **Fase 12/13/14** — Messaging, Guía local + issue reporting, Platform integrations.
 
 **Orden sugerido (actualizado)**:
 
-- Ahora: **Fase 10** — abrir **10F `fix/guest-presentation-layer`** (normalizador + presenter registry + invariantes; prerrequisito duro de toda UX premium).
+- Ahora: **10J harness** (desbloquea los gates E2E/a11y de las 3 ramas siguientes).
 - Después: 10G hero → 10H search → 10I PWA.
 - Siguiente: **Fase 11** — Knowledge + Assistant + i18n.
 - Luego: **Fase 12** → **Fase 13** → **Fase 14** según demanda estratégica.
@@ -90,7 +82,7 @@ La infraestructura del pipeline guest está construida: `composeGuide → filter
 - ✅ **9C** `feat/guide-publish-workflow` — Snapshot versionado (`GuideVersion.treeJson`), publish/unpublish/rollback, diff visual (multiset field diff), depreca `GuideSection`/`GuideSectionItem`. PR #51 merged.
 - ✅ **9D** `feat/guide-shareable-link` — URL pública shareable + QR + slug service + ruta `/g/:slug` guest-only. PR #52 merged.
 
-### Progreso Fase 10 (2026-04-17 revisada: 3→9 ramas, +10F `fix/guest-presentation-layer`)
+### Progreso Fase 10 (2026-04-18 revisada: 3→10 ramas, +10J harness E2E)
 
 - ✅ **10A** `feat/media-storage` — Cloudflare R2 storage service + presigned uploads + blurhash + server actions (request/confirm/delete/download). PR #53 merged.
 - ✅ **10B** `feat/media-per-entity` — EntityGallery reutilizable + UploadDropzone (drag&drop multi-archivo, presigned → R2) + reorder + cover photo + integrado en spaces/access/amenities + Mediateca refactorizada. PR #54 merged.
@@ -98,10 +90,11 @@ La infraestructura del pipeline guest está construida: `composeGuide → filter
 - ✅ **10C** `feat/media-in-guide` — `GuideItem.media[]` poblado desde `MediaAssignment` + `MediaAsset` (cover, spaces, amenity instances, primary access). Single batched `mediaAssignment.findMany` por compose (OR por `entityType`, filtro `image/*`), audiencia filtrada. `GuideMedia` con variantes `{thumb, md, full}` + alt derivado (caption → `role — entityLabel`). Markdown inline `![alt](md) *caption*`, HTML `<figure><img/><figcaption/></figure>`, cap 3 por item. `includesMedia` por sección en taxonomy. PR #58 merged.
 - ✅ **10D** `feat/guide-media-proxy` — `/g/:slug/media/:assetId-:hashPrefix/:variant` con cache immutable + ETag escopado a variant + 304/206 + auth por `publicSlug` + ≥1 `GuideVersion.published`. Passthrough MVP (Sharp/CF Image Resizing diferido). Backfill de `contentHash` vía ETag de R2. PR #57.
 - ✅ **10E** `feat/guide-react-renderer` — renderer React con journey IA (Essentials/Howto/Checkout/Emergency fused) + brand theming + WCAG 2.2 AA + lightbox + maps stub + TOC sticky. PR #59 merged.
-- ⏳ **10F** `fix/guest-presentation-layer` — **NUEVA** (rev. 4, post-auditoría). Paso terminal `normalizeGuideForPresentation(tree, audience)` + presenter registry (taxonomyKey → formatter humanizado) + campos `presentationType?` / `displayValue?` / `displayFields?` / `presentationWarnings?` en `GuideItem` + `GUIDE_TREE_SCHEMA_VERSION = 3` + extensión de `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` con `guestLabel` / `heroEligible` / `quickActionEligible` / `guestCriticality` + `emptyCopyGuest` / `hideWhenEmptyForGuest` en `guide_sections.json` + invariantes anti-leak (no raw JSON, no enum leaks, no copy editorial de host, no labels internos). **Prerrequisito duro** de 10G/H/I. Ver [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md).
-- ⏳ **10G** `feat/guide-hero-quick-actions` — hero con countdown + quick-actions (copy-wifi, call, whatsapp, maps) + tracking endpoint. Consume `heroEligible` + `quickActionEligible` + `displayValue` de 10F (no hay curación hardcoded).
-- ⏳ **10H** `feat/guide-client-search` — Fuse.js instant search (<20ms p95) sobre `GuideTree` serializado. Index construido desde `displayValue` / `displayFields.value` (nunca desde `value` raw).
-- ⏳ **10I** `feat/guide-pwa-offline` — manual Service Worker + 3-tier offline cache (shell + predictive images + lazy noncritical) + A2HS nudge. Cache del tree ya normalizado — offline nunca expone más modelo interno que online.
+- ✅ **10F** `fix/guest-presentation-layer` — paso terminal `normalizeGuideForPresentation(tree, audience)` + presenter registry (`pol.*` / `fee.*` / `ct.*` con fallback `generic-text`) + campos `presentationType?` / `displayValue?` / `displayFields?` / `presentationWarnings?` en `GuideItem` + `GUIDE_TREE_SCHEMA_VERSION = 3` (pre-v3 normalization al servir) + extensión de `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` con `guestLabel` / `heroEligible` / `quickActionEligible` / `guestCriticality` + `emptyCopyGuest` / `hideWhenEmptyForGuest` en `guide_sections.json` + **5 invariantes anti-leak** blindadas unitariamente (no raw JSON, no enum leaks, no copy editorial de host, no labels internos, no `presentationType: "raw"` visible) sobre fixture adversarial. 890 tests / lint + typecheck green. Playwright+axe **diferidos a 10J**.
+- ⏳ **10G** `feat/guide-hero-quick-actions` — hero con countdown + quick-actions (copy-wifi, call, whatsapp, maps) + tracking endpoint. Consume `heroEligible` + `quickActionEligible` + `displayValue` de 10F (no hay curación hardcoded). Gates E2E/a11y vía 10J.
+- ⏳ **10H** `feat/guide-client-search` — Fuse.js instant search (<20ms p95) sobre `GuideTree` serializado. Index construido desde `displayValue` / `displayFields.value` (nunca desde `value` raw). Gates E2E/a11y vía 10J.
+- ⏳ **10I** `feat/guide-pwa-offline` — manual Service Worker + 3-tier offline cache (shell + predictive images + lazy noncritical) + A2HS nudge. Cache del tree ya normalizado — offline nunca expone más modelo interno que online. Gates E2E vía 10J.
+- ⏳ **10J** `chore/e2e-harness-public-guide` — harness Playwright + `@axe-core/playwright` compartido: fixtures `empty` / `rich` / `adversarial`, 3 viewports (375/768/1280), specs anti-leak (regex JSON/taxonomy key sobre DOM) + a11y (serious/critical = 0), CI gate bloqueante. Reusa `src/test/fixtures/adversarial-property.ts` (10F). Prerrequisito operativo de 10G/H/I.
 
 ### Progreso Fase 11 (2026-04-17 revisada: 4→6 ramas)
 

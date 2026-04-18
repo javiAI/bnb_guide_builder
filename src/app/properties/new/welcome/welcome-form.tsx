@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { startWizardAction, checkDuplicateNameAction } from "@/lib/actions/wizard.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 
@@ -102,12 +103,12 @@ export function WelcomeForm({ initialNickname, sessionId }: WelcomeFormProps) {
         </button>
       </form>
 
-      <a
+      <Link
         href="/"
         className="mt-4 block text-center text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
       >
         Cancelar
-      </a>
+      </Link>
     </div>
   );
 }

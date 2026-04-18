@@ -6,6 +6,16 @@ export interface TaxonomyOption {
   label: string;
   description: string;
   recommended?: boolean;
+  /** Guest-facing label. Used by the presentation layer (rama 10F) so enum
+   * keys and internal labels never cross to `audience=guest`. When absent,
+   * the presenter falls back to `label` if it looks human, or drops the
+   * option from guest output. */
+  guestLabel?: string;
+  /** Guest-facing short description, shown in expanded detail views. */
+  guestDescription?: string;
+  /** Optional icon key (matches lucide-react icon names) resolved by the
+   * icon registry. Never a URL. */
+  icon?: string;
 }
 
 // Nested field inside a policy item (e.g., pol.pets → types, fee_mode)
@@ -20,6 +30,11 @@ export interface PolicyItemField {
   currency?: string;
   shown_if?: { field: string; equals: unknown };
   options?: TaxonomyOption[];
+  /** Guest-facing field label (rama 10F). */
+  guestLabel?: string;
+  /** Guest-facing field description — neutral, not host-imperative. */
+  guestDescription?: string;
+  icon?: string;
 }
 
 // Amenity importance classification (maps to OTA categories)
@@ -75,6 +90,16 @@ export interface TaxonomyItem {
   // Guest journey routing (Rama 10E)
   journeyStage?: TaxonomyJourneyStage;
   journeyTags?: string[];
+  // Guest presentation metadata (Rama 10F)
+  /** Guest-facing label — replaces `label` in `audience=guest` rendering.
+   * When absent, presenters fall back to `label` if human-readable; otherwise
+   * the item is hidden or rendered with the raw presenter (internal-only). */
+  guestLabel?: string;
+  /** Guest-facing short description. Never editorial host copy ("Añade...",
+   * "Completa..."). Informative, neutral, guest-relevant. */
+  guestDescription?: string;
+  /** Optional icon key (lucide-react name) resolved by icon registry. */
+  icon?: string;
 }
 
 // Space type item — extends TaxonomyItem with space-specific metadata
@@ -291,6 +316,11 @@ export interface ContactTypeItem {
   recommended: boolean;
   defaultVisibility: string;
   defaultEntityType: string;
+  /** Guest-facing label for this contact role (rama 10F). Without it, the
+   * enum key `ct.*` leaks to guest output. */
+  guestLabel?: string;
+  guestDescription?: string;
+  icon?: string;
 }
 
 export interface ContactTypesTaxonomyFile extends TaxonomyFileBase {

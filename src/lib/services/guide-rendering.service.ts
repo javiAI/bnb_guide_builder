@@ -48,6 +48,7 @@ import {
   amenityTaxonomy,
 } from "@/lib/taxonomy-loader";
 import { isKnownFieldType } from "@/config/registries/field-type-registry";
+import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
 import type { SubtypeField } from "@/lib/types/taxonomy";
 import {
   type EntityMediaRef,
@@ -1048,9 +1049,11 @@ export async function composeGuide(
         | GuideResolverKey[]
         | undefined,
       emptyCopy: cfg.emptyCopy,
+      emptyCopyGuest: cfg.emptyCopyGuest,
+      hideWhenEmptyForGuest: cfg.hideWhenEmptyForGuest,
     });
   }
-  return {
+  const tree: GuideTree = {
     schemaVersion: GUIDE_TREE_SCHEMA_VERSION,
     propertyId,
     audience,
@@ -1059,6 +1062,10 @@ export async function composeGuide(
     brandPaletteKey: ctx.property?.brandPaletteKey ?? null,
     brandLogoUrl: ctx.property?.brandLogoUrl ?? null,
   };
+  // Terminal presentation layer. Runs for every audience so
+  // downstream renderers can always read `displayValue` / `displayFields`.
+  // For non-guest audiences the presenters pass values through unchanged.
+  return normalizeGuideForPresentation(tree, audience);
 }
 
 // Exports for integrity/resilience tests — they need a way to inspect the

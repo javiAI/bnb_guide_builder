@@ -1,6 +1,6 @@
 {
   "file": "guide_sections.json",
-  "version": "2026-04-17",
+  "version": "2026-04-18",
   "locale": "es-ES",
   "units_system": "metric",
   "items": [
@@ -17,7 +17,8 @@
       "isAggregator": true,
       "sourceResolverKeys": ["arrival", "amenities", "rules"],
       "journeyStage": "arrival",
-      "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente."
+      "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.arrival",
@@ -29,7 +30,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/access",
       "includesMedia": true,
       "journeyStage": "arrival",
-      "emptyCopy": "Aún no hay instrucciones de llegada configuradas. Añade el método de acceso y los detalles de check-in."
+      "emptyCopy": "Aún no hay instrucciones de llegada configuradas. Añade el método de acceso y los detalles de check-in.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.spaces",
@@ -41,7 +43,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/spaces",
       "includesMedia": true,
       "journeyStage": "stay",
-      "emptyCopy": "Los espacios de la propiedad no están configurados. Añade dormitorios, baños y zonas comunes."
+      "emptyCopy": "Los espacios de la propiedad no están configurados. Añade dormitorios, baños y zonas comunes.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.howto",
@@ -53,7 +56,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/amenities",
       "includesMedia": false,
       "journeyStage": "stay",
-      "emptyCopy": "Añade notas de uso o runbooks en tus amenities o sistemas y aparecerán aquí para orientar al huésped."
+      "emptyCopy": "Añade notas de uso o runbooks en tus amenities o sistemas y aparecerán aquí para orientar al huésped.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.amenities",
@@ -65,7 +69,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/amenities",
       "includesMedia": true,
       "journeyStage": "stay",
-      "emptyCopy": "No has configurado equipamiento todavía. Selecciona los elementos que ofrece tu propiedad."
+      "emptyCopy": "No has configurado equipamiento todavía. Selecciona los elementos que ofrece tu propiedad.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.rules",
@@ -77,7 +82,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/rules",
       "includesMedia": false,
       "journeyStage": "stay",
-      "emptyCopy": "Aún no hay normas configuradas. Indica políticas de ruido, fumar, mascotas y eventos."
+      "emptyCopy": "Aún no hay normas configuradas. Indica políticas de ruido, fumar, mascotas y eventos.",
+      "emptyCopyGuest": "No hay normas adicionales destacadas para esta estancia."
     },
     {
       "id": "gs.checkout",
@@ -89,7 +95,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/rules",
       "includesMedia": false,
       "journeyStage": "checkout",
-      "emptyCopy": "Configura el horario de check-out, políticas de salida y suplementos para que aparezcan aquí."
+      "emptyCopy": "Configura el horario de check-out, políticas de salida y suplementos para que aparezcan aquí.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.local",
@@ -101,7 +108,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/local-guide",
       "includesMedia": false,
       "journeyStage": "stay",
-      "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio."
+      "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio.",
+      "hideWhenEmptyForGuest": true
     },
     {
       "id": "gs.emergency",
@@ -113,7 +121,8 @@
       "emptyCtaDeepLink": "/properties/{propertyId}/contacts",
       "includesMedia": false,
       "journeyStage": "help",
-      "emptyCopy": "Añade al menos un contacto de anfitrión y los servicios de emergencia locales para ofrecer apoyo inmediato."
+      "emptyCopy": "Añade al menos un contacto de anfitrión y los servicios de emergencia locales para ofrecer apoyo inmediato.",
+      "emptyCopyGuest": "Si necesitas ayuda durante la estancia, contacta con tu anfitrión."
     }
   ]
 }

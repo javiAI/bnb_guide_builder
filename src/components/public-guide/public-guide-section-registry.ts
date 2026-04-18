@@ -1,9 +1,18 @@
 import type { FC } from "react";
-import type { GuideResolverKey, GuideSection } from "@/lib/types/guide-tree";
+import type {
+  GuideAudience,
+  GuideItem,
+  GuideResolverKey,
+  GuideSection,
+} from "@/lib/types/guide-tree";
 import { SectionCard } from "./section-card";
 import { GuideEmergencySection } from "./guide-emergency-section";
 
-export type PublicSectionComponent = FC<{ section: GuideSection }>;
+export type PublicSectionComponent = FC<{
+  section: GuideSection;
+  renderable: GuideItem[];
+  audience: GuideAudience;
+}>;
 
 /** Maps a section's `resolverKey` to its renderer. The default `SectionCard`
  * covers "list of items + empty state"; specialized entries only exist when

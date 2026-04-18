@@ -304,10 +304,11 @@ Estas herramientas son **estándar del proyecto** para cualquier rama que toque 
 
 | Rama | Excalidraw antes | code-explorer | code-architect | Playwright 3 viewports | axe-core | Firecrawl benchmark |
 |---|---|---|---|---|---|---|
-| **10F** `fix/guest-presentation-layer` | — (normalizador, no UI nueva) | ✅ (mapear renderer consumers) | ✅ (registry + shape `displayFields`) | ✅ fixtures empty/rich/adversarial | ✅ | — |
-| **10G** `feat/guide-hero-quick-actions` | ✅ mockup hero mobile + desktop | ✅ | ✅ (quick-action-registry) | ✅ | ✅ | ✅ hero + quick actions en Touch Stay / Airbnb |
-| **10H** `feat/guide-client-search` | — (overlay estándar) | — | ✅ (shape del index + pesos) | ✅ teclado + focus trap | ✅ | ✅ zero-result UX |
-| **10I** `feat/guide-pwa-offline` | — | ✅ (cache-tier flags en secciones) | ✅ (SW strategy + versionado) | ✅ airplane mode simulation | ✅ offline fallback page | — |
+| **10F** `fix/guest-presentation-layer` | — (normalizador, no UI nueva) | ✅ (mapear renderer consumers) | ✅ (registry + shape `displayFields`) | ⛔ diferido a 10J | ⛔ diferido a 10J | — |
+| **10J** `chore/e2e-harness-public-guide` | — (harness, no UI) | — | ✅ (fixtures + CI gate strategy) | ✅ setup inicial para las 3 fixtures | ✅ setup + policy serious/critical=0 | — |
+| **10G** `feat/guide-hero-quick-actions` | ✅ mockup hero mobile + desktop | ✅ | ✅ (quick-action-registry) | ✅ (usa harness 10J) | ✅ (usa harness 10J) | ✅ hero + quick actions en Touch Stay / Airbnb |
+| **10H** `feat/guide-client-search` | — (overlay estándar) | — | ✅ (shape del index + pesos) | ✅ (usa harness 10J) | ✅ (usa harness 10J) | ✅ zero-result UX |
+| **10I** `feat/guide-pwa-offline` | — | ✅ (cache-tier flags en secciones) | ✅ (SW strategy + versionado) | ✅ (usa harness 10J; añade airplane mode) | ✅ offline fallback page | — |
 | **13D** `feat/guide-issue-reporting` | ✅ wireframe drawer mobile | — | ✅ (email provider + Zod schema) | ✅ flujo completo guest↔host | ✅ drawer abierto | ✅ Breezeway / Hostfully |
 
 `code-explorer` también se invoca puntualmente cuando se toquen varias zonas del renderer que puedan compartir state. `/simplify` y `/pre-commit-review` son universales (§2.6) y no aparecen en la tabla.
@@ -317,9 +318,9 @@ Estas herramientas son **estándar del proyecto** para cualquier rama que toque 
 ## Gates de release (antes de hacer merge de cualquier rama UX)
 
 1. TypeScript limpio (`tsc --noEmit` tras `prisma generate`).
-2. Vitest verde (incluyendo `guest-leak-invariants.test.ts` y `presenter-coverage.test.ts`).
-3. Playwright 3 viewports verde.
-4. axe-core 0 violations serious/critical.
+2. Vitest verde (incluyendo `guest-leak-invariants.test.ts`, `presenter-coverage.test.ts`, `guide-empty-states.test.ts`, `guide-presentation.test.ts`, `guest-schema-version.test.ts`).
+3. Playwright 3 viewports verde — **desde 10J en adelante** (el harness lo introduce). En 10F estos gates están cubiertos unitariamente; ramas UX posteriores los heredan via harness.
+4. axe-core 0 violations serious/critical — **desde 10J en adelante** (integrado en el harness).
 5. `/simplify` pasado sobre todos los cambios de la rama.
 6. `/pre-commit-review` limpio.
 7. Screenshots anexados a la PR (mobile + desktop del flujo afectado).

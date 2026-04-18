@@ -68,6 +68,10 @@ export function MediaThumbnail({
     >
       {/* Image / Placeholder */}
       {isImage && imgSrc && !imgError ? (
+        // R2 presigned URLs rotate and would miss the next/image cache — the
+        // retry-on-error flow re-fetches a fresh URL, which is a better fit
+        // for a plain <img>.
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={imgSrc}
           alt={data.caption || "Media"}

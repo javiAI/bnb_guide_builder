@@ -6,9 +6,7 @@ import {
   createChecklistItemSchema,
   updateChecklistItemSchema,
   createStockItemSchema,
-  updateStockItemSchema,
   createMaintenanceTaskSchema,
-  updateMaintenanceTaskSchema,
 } from "@/lib/schemas/ops.schema";
 import type { ActionResult } from "@/lib/types/action-result";
 

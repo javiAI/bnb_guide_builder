@@ -15,8 +15,28 @@ export type { GuideAudience, GuideJourneyStage, GuideResolverKey, GuideSortBy };
 /** Current schema version written into freshly composed / published trees.
  * Bump when the shape changes in a way the React renderer can detect and
  * log (see `app/g/[slug]/page.tsx`). Old snapshots without this field still
- * render; they just log once per request as "snapshot pre-v2". */
-export const GUIDE_TREE_SCHEMA_VERSION = 2 as const;
+ * render; they just log once per request as "snapshot pre-v3".
+ *
+ * v3 (rama 10F): introduces the terminal presentation layer. Normalized trees
+ * carry `presentationType` / `displayValue` / `displayFields` on each item.
+ * Pre-v3 snapshots are normalized at serve time. */
+export const GUIDE_TREE_SCHEMA_VERSION = 3 as const;
+
+/** Presentation type emitted by the normalizer. `raw` is a live sentinel:
+ * the registry routes items whose `taxonomyKey` has an unknown prefix (not
+ * registered, not in `FALLBACK_ALLOWED_PREFIXES`) through
+ * `rawSentinelPresenter`, which stamps this value. The guest renderer hides
+ * any item with `presentationType === "raw"` and logs `missing-presenter`;
+ * non-guest audiences still see the raw `value` for debugging. See
+ * QA_AND_RELEASE §3 invariant 5. */
+export const GUIDE_PRESENTATION_TYPES = [
+  "generic_text",
+  "policy",
+  "contact",
+  "amenity",
+  "raw",
+] as const;
+export type GuidePresentationType = (typeof GUIDE_PRESENTATION_TYPES)[number];
 
 export interface GuideMediaVariants {
   thumb: string;
@@ -37,6 +57,16 @@ export interface GuideItemField {
   label: string;
   value: string;
   visibility: GuideAudience;
+}
+
+/** Presentation-layer field emitted by `normalizeGuideForPresentation`.
+ * Renderers (md/html/pdf/React) consume these instead of `GuideItemField`
+ * when normalized. The internal `value` is never surfaced. */
+export interface GuideItemDisplayField {
+  label: string;
+  displayValue: string;
+  visibility: GuideAudience;
+  icon?: string;
 }
 
 /** Field labels for contact/emergency items. The resolver emits these as
@@ -76,6 +106,14 @@ export interface GuideItem {
   journeyTags?: string[];
   /** Pre-rendered HTML safe string of runbook/troubleshooting notes (amenity instances). */
   runbookHtml?: string;
+  /** Presentation classification — set by `normalizeGuideForPresentation`. */
+  presentationType?: GuidePresentationType;
+  /** Humanized primary value. Renderers use this instead of `value`. */
+  displayValue?: string;
+  /** Humanized fields. Renderers use these instead of `fields`. */
+  displayFields?: GuideItemDisplayField[];
+  /** Non-fatal issues surfaced during normalization (missing presenter, fallback used, etc). */
+  presentationWarnings?: string[];
 }
 
 export interface GuideSection {
@@ -106,8 +144,13 @@ export interface GuideSection {
   isAggregator?: boolean;
   /** Resolver keys whose items this aggregator pulls from (required when isAggregator). */
   sourceResolverKeys?: GuideResolverKey[];
-  /** Human-readable empty-state copy (preferred over generic fallback). */
+  /** Human-readable empty-state copy (internal audiences only — host-facing CTA). */
   emptyCopy?: string;
+  /** Guest-neutral empty copy. When absent, the section may still be hidden via
+   * `hideWhenEmptyForGuest`. Never falls back to `emptyCopy` for guest. */
+  emptyCopyGuest?: string;
+  /** When true, empty sections are omitted entirely from guest-facing output. */
+  hideWhenEmptyForGuest?: boolean;
 }
 
 export interface GuideTree {
