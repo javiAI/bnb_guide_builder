@@ -80,6 +80,7 @@ interface GuideContext {
     policiesJson: unknown;
     brandPaletteKey: string | null;
     brandLogoUrl: string | null;
+    streetAddress: string | null;
   } | null;
   spaces: Array<{
     id: string;
@@ -172,6 +173,7 @@ async function loadGuideContext(
       policiesJson: true,
       brandPaletteKey: true,
       brandLogoUrl: true,
+      streetAddress: true,
     },
   });
   const spacesPromise = prisma.space.findMany({
@@ -513,6 +515,22 @@ function resolveArrival(ctx: GuideContext): GuideItem[] {
       warnings: [],
       fields: [],
       media: takeMedia(ctx, "access_method", p.id),
+      children: [],
+      journeyStage: "arrival",
+      journeyTags: ["essential"],
+    });
+  }
+  if (p.streetAddress && p.streetAddress.trim() !== "") {
+    items.push({
+      id: "arrival.location",
+      taxonomyKey: null,
+      label: "Ubicación",
+      value: p.streetAddress,
+      visibility: "guest",
+      deprecated: false,
+      warnings: [],
+      fields: [],
+      media: [],
       children: [],
       journeyStage: "arrival",
       journeyTags: ["essential"],

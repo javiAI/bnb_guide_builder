@@ -144,6 +144,10 @@ export interface GuideSection {
   isAggregator?: boolean;
   /** Resolver keys whose items this aggregator pulls from (required when isAggregator). */
   sourceResolverKeys?: GuideResolverKey[];
+  /** Ordered list of quick-action ids (see `quick-action-registry`). Buttons
+   * render only when the resolver returns a non-null value — missing data
+   * silently hides the button (graceful degradation). */
+  quickActionKeys?: string[];
   /** Human-readable empty-state copy (internal audiences only — host-facing CTA). */
   emptyCopy?: string;
   /** Guest-neutral empty copy. When absent, the section may still be hidden via

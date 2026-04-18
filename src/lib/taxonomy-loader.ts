@@ -252,6 +252,7 @@ const GuideSectionConfigSchema = z
     isHero: z.boolean().optional(),
     isAggregator: z.boolean().optional(),
     sourceResolverKeys: z.array(z.enum(GUIDE_RESOLVER_KEYS)).optional(),
+    quickActionKeys: z.array(z.string().min(1)).optional(),
     emptyCopy: z.string().min(1).optional(),
     emptyCopyGuest: z.string().min(1).optional(),
     hideWhenEmptyForGuest: z.boolean().optional(),

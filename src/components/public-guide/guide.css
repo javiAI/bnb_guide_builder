@@ -276,3 +276,87 @@
   margin-left: 0.5rem;
   text-transform: lowercase;
 }
+
+/* Quick-action bar. Targets ≥ 44×44 for tap a11y (WCAG 2.5.5). */
+.guide-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+
+.guide-quick-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: var(--guide-brand);
+  color: var(--guide-brand-contrast);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.guide-quick-action:hover,
+.guide-quick-action:focus-visible {
+  outline: 2px solid var(--guide-brand);
+  outline-offset: 2px;
+  text-decoration: none;
+}
+
+.guide-quick-action__label {
+  white-space: nowrap;
+}
+
+/* Toast viewport: bottom-right on desktop, full-width on mobile. */
+.guide-toast-viewport {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(24rem, calc(100vw - 2rem));
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 1000;
+  outline: none;
+}
+
+@media (max-width: 480px) {
+  .guide-toast-viewport {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+.guide-toast {
+  background: var(--color-neutral-900);
+  color: var(--color-neutral-50);
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-size: 0.9375rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .guide-toast {
+    background: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+  }
+}
+
+.guide-toast__title {
+  margin: 0;
+  font-weight: 600;
+}

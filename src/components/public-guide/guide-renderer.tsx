@@ -58,6 +58,7 @@ export function GuideRenderer({ tree, propertyTitle }: Props) {
                 section={section}
                 renderable={renderable}
                 audience={tree.audience}
+                tree={tree}
               />
             );
           })}

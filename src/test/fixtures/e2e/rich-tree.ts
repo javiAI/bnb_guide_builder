@@ -59,6 +59,59 @@ export function buildRichTree(): GuideTree {
     generatedAt: "2026-04-18T00:00:00.000Z",
     sections: [
       {
+        id: "gs.essentials",
+        label: "Esenciales",
+        order: 5,
+        resolverKey: "essentials",
+        sortBy: "explicit_order",
+        emptyCtaDeepLink: null,
+        maxVisibility: "internal",
+        journeyStage: "arrival",
+        isHero: true,
+        isAggregator: true,
+        sourceResolverKeys: ["arrival", "amenities", "rules"],
+        quickActionKeys: [
+          "wifi_copy",
+          "call_host",
+          "whatsapp_host",
+          "maps_open",
+          "access_how",
+        ],
+        hideWhenEmptyForGuest: true,
+        items: [
+          baseItem({
+            id: "essentials.arrival.arrival.checkin",
+            taxonomyKey: "am.checkin_instructions",
+            label: "Check-in",
+            value: "Puerta principal, código 1234",
+            journeyTags: ["essential"],
+            journeyStage: "arrival",
+            fields: [
+              { label: "Hora", value: "16:00", visibility: "guest" },
+            ],
+          }),
+          baseItem({
+            id: "essentials.arrival.arrival.location",
+            label: "Ubicación",
+            value: "Calle Mayor 12, 28013 Madrid",
+            journeyTags: ["essential"],
+            journeyStage: "arrival",
+          }),
+          baseItem({
+            id: "essentials.amenities.am.wifi",
+            taxonomyKey: "am.wifi",
+            label: "Wi-Fi",
+            value: "Red: CasaClaudia",
+            journeyTags: ["essential"],
+            journeyStage: "arrival",
+            fields: [
+              { label: "Nombre de red", value: "CasaClaudia", visibility: "guest" },
+              { label: "Contraseña", value: "welcome2026", visibility: "guest" },
+            ],
+          }),
+        ],
+      },
+      {
         id: "gs.arrival",
         label: "Llegada",
         order: 10,
@@ -69,7 +122,6 @@ export function buildRichTree(): GuideTree {
         emptyCopy: "Añade instrucciones de llegada.",
         emptyCopyGuest: "Detalles de llegada.",
         journeyStage: "arrival",
-        isHero: true,
         items: [
           baseItem({
             id: "arrival.cover",
@@ -85,6 +137,21 @@ export function buildRichTree(): GuideTree {
               { label: "Hora", value: "16:00", visibility: "guest" },
               { label: "Acceso", value: "Llave bajo el felpudo", visibility: "guest" },
             ],
+          }),
+          baseItem({
+            id: "arrival.access",
+            taxonomyKey: "am.smartlock",
+            label: "Cómo entrar",
+            value: "Cerradura inteligente con código 1234",
+            journeyTags: ["essential"],
+            journeyStage: "arrival",
+          }),
+          baseItem({
+            id: "arrival.location",
+            label: "Ubicación",
+            value: "Calle Mayor 12, 28013 Madrid",
+            journeyTags: ["essential"],
+            journeyStage: "arrival",
           }),
         ],
       },
@@ -144,7 +211,12 @@ export function buildRichTree(): GuideTree {
             id: "am.wifi",
             taxonomyKey: "am.wifi",
             label: "Wi-Fi",
-            value: "Red: CasaClaudia — Clave: welcome2026",
+            value: "Red: CasaClaudia",
+            journeyTags: ["essential"],
+            fields: [
+              { label: "Nombre de red", value: "CasaClaudia", visibility: "guest" },
+              { label: "Contraseña", value: "welcome2026", visibility: "guest" },
+            ],
           }),
           baseItem({
             id: "am.coffee",
