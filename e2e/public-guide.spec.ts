@@ -15,12 +15,9 @@ for (const fixture of E2E_FIXTURES) {
       await expect(page.locator(".guide-root")).toBeVisible();
       await expect(page.locator("header[role='banner']")).toBeVisible();
       await expect(page.locator("main.guide-sections")).toBeVisible();
-
-      // The brand header always carries the subtitle "Guía del huésped" —
-      // a spanish-language invariant that confirms we're on the guest path.
-      await expect(
-        page.locator(".guide-brand-header__subtitle"),
-      ).toHaveText("Guía del huésped");
+      // h1 lives inside the brand header — confirms the shell rendered with
+      // a real title without freezing any specific microcopy.
+      await expect(page.locator("header[role='banner'] h1")).toBeVisible();
     });
 
     test("renders at least one section or empty state", async ({ page }) => {

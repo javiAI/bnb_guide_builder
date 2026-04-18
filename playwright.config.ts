@@ -53,7 +53,11 @@ export default defineConfig({
     command: DEV_MODE
       ? `E2E=1 next dev -p ${PORT}`
       : `next build && E2E=1 next start -p ${PORT}`,
-    url: BASE_URL,
+    // Probe a fixture URL rather than `/`. The homepage hits Prisma at
+    // request time and 500s without a real DB; the fixture route is
+    // force-dynamic, DB-free, and confirms both server-up and that the
+    // E2E env gate is wired correctly.
+    url: `${BASE_URL}/g/e2e/empty`,
     reuseExistingServer: !process.env.CI,
     timeout: DEV_MODE ? 120_000 : 240_000,
     stdout: "pipe",

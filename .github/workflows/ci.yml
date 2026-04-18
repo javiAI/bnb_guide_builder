@@ -48,11 +48,11 @@ jobs:
       - run: npx prisma generate
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
-      # Dev mode in CI sidesteps `next build`'s static-prerender pass, which
-      # would attempt a Prisma connect against the dummy DATABASE_URL and
-      # fail. The harness still exercises the real guest pipeline through
-      # `next dev`. Local `npm run test:e2e` (build + start) remains the
-      # canonical pre-PR check against a real DB.
+      # Dev mode in CI: `next build`'s static-prerender pass connects Prisma
+      # against the dummy DATABASE_URL and aborts the build. Dev mode skips
+      # that pass and compiles routes on demand. The harness still exercises
+      # the real guest pipeline. Local `npm run test:e2e` (build + start)
+      # remains the canonical pre-PR check against a real DB.
       - run: npm run test:e2e:dev
       - name: Upload Playwright report
         if: always()

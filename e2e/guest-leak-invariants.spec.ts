@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { E2E_FIXTURES } from "../src/test/fixtures/e2e";
 import { INTERNAL_FIELD_LABEL_DENYLIST } from "../src/lib/services/guide-presentation.service";
+import { TAXONOMY_KEY_PATTERN } from "../src/lib/presenters/types";
 
 // DOM-side replica of the 4 observable anti-leak invariants from
 // QA_AND_RELEASE §3 (invariants 1-4). The 5th invariant
@@ -11,9 +12,6 @@ import { INTERNAL_FIELD_LABEL_DENYLIST } from "../src/lib/services/guide-present
 // Assertions primarily target rendered text inside <main>; a complementary
 // innerHTML check catches raw JSON shapes that whitespace collapsing could
 // hide from innerText.
-
-// TAXONOMY_KEY_PATTERN as defined in src/lib/presenters/types.ts.
-const TAXONOMY_KEY_EXACT = /^[a-z]+(_[a-z]+)*\.[a-z_]+$/;
 
 // Host-editorial copy planted in every fixture. Any of these strings reaching
 // the guest means `section.emptyCopy` leaked (invariant 3 — the renderer must
@@ -60,7 +58,7 @@ for (const fixture of E2E_FIXTURES) {
         expect(
           trimmed,
           `leaked taxonomy key in value: "${trimmed}"`,
-        ).not.toMatch(TAXONOMY_KEY_EXACT);
+        ).not.toMatch(TAXONOMY_KEY_PATTERN);
       }
     });
 
