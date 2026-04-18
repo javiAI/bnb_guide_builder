@@ -41,12 +41,35 @@ Estos gates se aplican cada vez que se publique una `GuideVersion` o se sirva `/
 
 ### E2E + accesibilidad (rama 10J, gate compartido por 10G/H/I)
 
-Playwright + `@axe-core/playwright` se introducen como **harness compartido** en la rama `chore/e2e-harness-public-guide` (10J). Una vez mergeada:
+Playwright + `@axe-core/playwright` viven como **harness compartido** desde
+`chore/e2e-harness-public-guide` (10J). Características:
 
-- **Viewports**: mobile 375, tablet 768, desktop 1280 (y webkit-mobile 375 como secundario).
-- **Fixtures**: `property-empty`, `property-rich`, `property-adversarial` (reutiliza `src/test/fixtures/adversarial-property.ts` de 10F).
-- **Gates bloqueantes en CI**: (a) regex anti-leak sobre DOM renderizado — JSON crudo, taxonomy keys; (b) axe-core `serious` / `critical` = 0.
-- **Comando**: `npm run test:e2e`.
+- **Viewports**: chromium 375 / 768 / 1280 + webkit-mobile 375 (4 projects).
+- **Fixtures**: `empty`, `rich`, `adversarial` registradas en
+  [src/test/fixtures/e2e/](../src/test/fixtures/e2e/). `adversarial` reutiliza
+  `src/test/fixtures/adversarial-property.ts` (10F) — no se duplica.
+- **Ruta dev-only**: `/g/e2e/[fixture]` montada en
+  [src/app/g/e2e/[fixture]/page.tsx](../src/app/g/e2e/%5Bfixture%5D/page.tsx),
+  gateada por `process.env.E2E === "1"` (responde `notFound()` fuera de E2E).
+  El pipeline reproduce línea a línea el de `/g/[slug]/page.tsx`
+  (`filterByAudience` → `normalizeGuideForPresentation` → `GuideRenderer`).
+- **Specs**:
+  - `e2e/public-guide.spec.ts` — smoke: 200 + shell.
+  - `e2e/guest-leak-invariants.spec.ts` — invariantes 1–4 sobre el DOM
+    renderizado (`main.innerText` como assert primario, `innerHTML` como
+    check complementario para invariante 1). La invariante 5
+    (`presentationType: "raw"`) sigue cubierta unitariamente porque el
+    renderer colapsa esos items a `null`.
+  - `e2e/axe-a11y.spec.ts` — axe-core con tags `wcag2a/aa + wcag21a/aa`,
+    blocking impacts `serious|critical`. Sin downgrade de severidad.
+- **Comandos**: `npm run test:e2e` (canónico — `next build && next start`,
+  fiel a producción, usado por CI) o `npm run test:e2e:dev` (`next dev`,
+  iteración local). Servidor en puerto 3100 para no colisionar con `next dev`
+  en 3000.
+- **CI**: workflow [.github/workflows/ci.yml](../.github/workflows/ci.yml)
+  ejecuta dos jobs paralelos (`unit` + `e2e`) en cada PR y push a `main`.
+  El job E2E sube `playwright-report/` siempre y `test-results/` en fallo
+  (retención 7 días).
 
 Ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release" para la tabla completa de gates de UX.
 

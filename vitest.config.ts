@@ -8,6 +8,8 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
+    // Exclude Playwright E2E specs — they run under `npm run test:e2e`.
+    exclude: ["node_modules", "dist", ".next", "e2e"],
   },
   resolve: {
     alias: {
