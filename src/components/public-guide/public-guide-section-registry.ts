@@ -4,24 +4,27 @@ import type {
   GuideItem,
   GuideResolverKey,
   GuideSection,
+  GuideTree,
 } from "@/lib/types/guide-tree";
 import { SectionCard } from "./section-card";
 import { GuideEmergencySection } from "./guide-emergency-section";
+import { GuideHero } from "./guide-hero";
 
 export type PublicSectionComponent = FC<{
   section: GuideSection;
   renderable: GuideItem[];
   audience: GuideAudience;
+  tree: GuideTree;
 }>;
 
 /** Maps a section's `resolverKey` to its renderer. The default `SectionCard`
  * covers "list of items + empty state"; specialized entries only exist when
- * the UX needs more (emergency = tappable phone/email). */
+ * the UX needs more (hero = quick actions, emergency = tappable phone/email). */
 export const PUBLIC_GUIDE_SECTION_REGISTRY: Record<
   GuideResolverKey,
   PublicSectionComponent
 > = {
-  essentials: SectionCard,
+  essentials: GuideHero,
   arrival: SectionCard,
   spaces: SectionCard,
   howto: SectionCard,

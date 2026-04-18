@@ -16,6 +16,7 @@
       "isHero": true,
       "isAggregator": true,
       "sourceResolverKeys": ["arrival", "amenities", "rules"],
+      "quickActionKeys": ["wifi_copy", "call_host", "whatsapp_host", "maps_open", "access_how"],
       "journeyStage": "arrival",
       "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente.",
       "hideWhenEmptyForGuest": true

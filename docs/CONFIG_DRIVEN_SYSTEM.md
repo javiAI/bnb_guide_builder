@@ -160,6 +160,22 @@ Frontera **modelo ↔ huésped** (estable desde 10F). Traduce `GuideItem` (model
 - Red defensiva: el normalizador aplica `sanitizeGuestFields` sobre todos los fields en `audience=guest`, descartando los cuyo label está en `INTERNAL_FIELD_LABEL_DENYLIST` (exportado del service), cuyo value empieza por `{`/`[` (raw JSON), o matchea `TAXONOMY_KEY_PATTERN`. Garantiza las 5 invariantes de [QA_AND_RELEASE.md §3](QA_AND_RELEASE.md) aun si un presenter falla.
 - **Observabilidad agregada**: el normalizador hila un `WarningAggregator` por toda la recursión y emite **un solo** `console.warn` al final por invocación, con metadata `{ byTaxonomyKey, byCategory }` (categorías: `missing-presenter`, `raw-json`, `taxonomy-key`, `internal-label`, `other`). No loggear por item — rompe el agregado. `expandObject` en `policyPresenter` propaga su propio array de warnings para que drops dentro de JSON anidado (p.ej. `hidden_key: "rm.*"` dentro de `pol.pets`) también entren en el agregado.
 
+### 9. Quick-action registry (`src/config/registries/quick-action-registry.ts`)
+
+Frontera **tree normalizado ↔ botones operativos del hero** (rama 10G). Declara las 5 acciones universales disponibles en el hero (`gs.essentials`) y las resuelve contra una vista aplanada del `GuideTree` ya normalizado.
+
+- **Acciones activas**: `wifi_copy`, `call_host`, `whatsapp_host`, `maps_open`, `access_how`. Cada una declara `id`, `label`, `ariaLabel`, `kind` (`copy | tel | whatsapp | maps | anchor`), opcional `toastOnSuccess`, y un `resolve(flat)` puro sobre `GuideItem[]` ya normalizados.
+- **Degradación grácil**: si `resolve` retorna `null` (dato ausente — p.ej. sin contraseña Wi-Fi, sin teléfono de anfitrión), la acción se omite del render. Nunca se muestra un botón "roto".
+- **Wiring por sección**: `quickActionKeys: string[]` en `guide_sections.json` por sección (hoy solo `gs.essentials`). El Zod del loader lo parsea; al cargar el módulo, `validateSectionReferences()` verifica que cada clave exista y no se duplique dentro de la misma sección — fallo loud en boot si falta.
+- **Boot validation**: `validateRegistry()` chequea la forma e invariantes de cada entrada con Zod (`id === key`, `kind ∈ QUICK_ACTION_KINDS`, `kind === "copy"` ⇒ `toastOnSuccess` requerido). Registro corrupto = error de arranque.
+- **Añadir una nueva quick action** (ejemplo: `whatsapp_cohost`):
+  1. Declarar el objeto `QuickAction` en `quick-action-registry.ts` (id, label, ariaLabel, kind, `resolve(flat)` sobre la colección aplanada de items normalizados).
+  2. Registrarlo en `QUICK_ACTIONS`.
+  3. Listarlo en `quickActionKeys` de la sección correspondiente en `taxonomies/guide_sections.json`.
+  4. Si el `kind` es nuevo: extender `QUICK_ACTION_KINDS` y añadir la rama en `hrefFor()` de `quick-action-button.tsx` (o un handler específico si no es un link). Targets ≥44×44 es invariante: no bajar tamaño en CSS.
+- **Fuente de datos**: `resolve` consulta items ya normalizados y aplanados desde el tree — consume `displayValue` / `displayFields`, **nunca** `value` / `fields` raw. Si tu acción necesita un dato nuevo, propágalo upstream (resolver o presenter) antes de leerlo aquí.
+- **No se trackean clicks**: el hero no emite métricas ni `sendBeacon`. Añadir tracking es una decisión de producto posterior a 10G.
+
 ---
 
 ## Guía: Cómo añadir un nuevo amenity
@@ -280,6 +296,8 @@ Todas en `taxonomies/dynamic_field_rules.json`. El motor en `src/config/schemas/
 | Icon registry | ✅ | | Secciones + taxonomías |
 | Renderer registry | ✅ | | 7 configs |
 | Media registry | ✅ | | API sobre taxonomy |
+| Presenter registry | ✅ | | Guest humanization (10F) |
+| Quick-action registry | ✅ | | Hero actions (10G) |
 | Wizard pages (React) | | ✅ | Consumen taxonomías, pendiente schema-driven rendering |
 | Section editor pages | | ✅ | Placeholder, Fase 4+ |
 | Guide renderer | | | Fase 5 |
@@ -351,10 +369,10 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `dynamic_field_rules.json`
 - `automation_channels.json`
 - `review_reasons.json`
-- `contact_roles.json`
+- `contact_types.json`
 - `completeness_rules.json` — pesos/umbrales del scoring de completitud. Parseada con Zod en el loader; reglas accesibles vía `getCompletenessRule(sectionKey)` (throw si la sección no existe).
-- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`, `includesMedia`, `isHero?`, `isAggregator?`, `sourceResolverKeys?`, `journeyStage?`, `emptyCopy?` (audience **internal**), `emptyCopyGuest?` (audience **guest**; añadido en 10F), `hideWhenEmptyForGuest?` (añadido en 10F). Parseada y validada con Zod en el loader; `loadGuideSections()` falla en boot si un `resolverKey` no está en `GUIDE_RESOLVER_KEYS` o si hay `id`/`resolverKey` duplicados. Los getters `getGuideSectionConfig(sectionId)` y `getGuideSectionByResolverKey(key)` devuelven `undefined` si la clave no existe.
-- `policy_taxonomy.json`, `contact_roles.json`, `amenity_taxonomy.json` — a partir de 10F cada entry **debe** declarar `guestLabel`, `guestDescription`, `icon`, `heroEligible`, `quickActionEligible`, `guestCriticality` (valores concretos — defaults Zod `heroEligible: false`, `guestCriticality: "normal"`). `src/test/presenter-coverage.test.ts` falla si una clave no tiene presenter registrado.
+- `guide_sections.json` — declaración de secciones del Guide rendering engine (rama 9A). Campos: `id`, `label`, `order`, `maxVisibility`, `sortBy` (`taxonomy_order | recommended_first | alpha | explicit_order`), `emptyCtaDeepLink`, `resolverKey`, `includesMedia`, `isHero?`, `isAggregator?`, `sourceResolverKeys?`, `journeyStage?`, `emptyCopy?` (audience **internal**), `emptyCopyGuest?` (audience **guest**; añadido en 10F), `hideWhenEmptyForGuest?` (añadido en 10F), `quickActionKeys?` (array de IDs del `quick-action-registry`; añadido en 10G). Parseada y validada con Zod en el loader; `loadGuideSections()` falla en boot si un `resolverKey` no está en `GUIDE_RESOLVER_KEYS` o si hay `id`/`resolverKey` duplicados. Los getters `getGuideSectionConfig(sectionId)` y `getGuideSectionByResolverKey(key)` devuelven `undefined` si la clave no existe.
+- `policy_taxonomy.json`, `contact_types.json`, `amenity_taxonomy.json` — a partir de 10F cada entry **debe** declarar `guestLabel`, `guestDescription`, `icon`, `heroEligible`, `quickActionEligible`, `guestCriticality` (valores concretos — defaults Zod `heroEligible: false`, `guestCriticality: "normal"`). `src/test/presenter-coverage.test.ts` falla si una clave no tiene presenter registrado.
 
 ---
 
@@ -375,6 +393,7 @@ El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce u
 | Reordenar secciones | No | Campo `order` en `guide_sections.json` |
 | Humanizar una key taxonómica al huésped (rama 10F) | No código, sí config | Añadir `guestLabel`/`guestDescription`/`icon` en la taxonomía; registrar presenter por key o prefijo en `presenter-registry.ts`; `presenter-coverage.test.ts` falla si falta |
 | Añadir sección con empty state humano al huésped (10F) | No | `emptyCopyGuest` en `guide_sections.json`; `hideWhenEmptyForGuest: true` oculta en audience guest cuando vacía |
+| Añadir una quick action al hero (rama 10G) | Sí (1 entrada en registry + 1 key en `guide_sections.json`) | Declarar `QuickAction` en `quick-action-registry.ts`; listar su id en `quickActionKeys` de la sección; `validateSectionReferences()` en boot falla si la clave no existe o se duplica. Si `resolve` retorna `null`, el botón se omite (graceful degradation) |
 | Subir `GUIDE_TREE_SCHEMA_VERSION` (10F pasa v2 → v3) | Sí (bump constante) | Renderer acepta snapshots pre-v3 con log `snapshotPreV3` + normalización al servir |
 
 **Invariantes garantizadas por tests**:
@@ -383,7 +402,7 @@ El servicio `GuideRenderingService.composeGuide(propertyId, audience)` produce u
 - `guide-sections-coverage.test.ts`: toda sección declarada tiene resolver; todo resolver está declarado.
 - `guide-rendering-resilience.test.ts`: keys deprecadas, types desconocidos y entidades ausentes degradan a `GuideItem` marcado, nunca lanzan.
 - `guest-leak-invariants.test.ts` (10F): en `audience=guest`, enforce el set canónico de 5 invariantes documentado en [QA_AND_RELEASE.md §3 "Anti-leak gates"](QA_AND_RELEASE.md) — (1) no JSON crudo (no `{` / `[` / `"json":`), (2) no claves taxonómicas (regex `^[a-z]+(_[a-z]+)*\.[a-z_]+$`), (3) no `emptyCopy` editorial del host, (4) no labels de la deny-list (`"Slot"`, `"Propiedad"`, `"Config JSON"`...), (5) no items con `presentationType: "raw"` renderizados.
-- `presenter-coverage.test.ts` (10F): para cada key de `policy_taxonomy` / `contact_roles` / `amenity_taxonomy` existe un presenter registrado o está en allowlist explícita.
+- `presenter-coverage.test.ts` (10F): para cada key de `policy_taxonomy` / `contact_types` / `amenity_taxonomy` existe un presenter registrado o está en allowlist explícita.
 
 **Regla dura para futuras ramas**: cualquier feature que añada lógica de dominio al guide engine debe apoyarse en taxonomía y registry, no en switch statements sobre IDs.
 
