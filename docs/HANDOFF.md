@@ -140,9 +140,9 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) — `L5-31` (journey), `L104-160` (UX patterns hero), `L211-234` (interactividad quick-actions).
 - `docs/FEATURES/GUEST_GUIDE_UX.md` — cards + targets + a11y.
 - `src/lib/services/guide-presentation.service.ts`, `taxonomies/policy_taxonomy.json` + `taxonomies/contact_roles.json` (flags `heroEligible` / `quickActionEligible`).
-- `src/components/guide/*` — renderer React de 10E.
+- `src/components/public-guide/*` — renderer React de 10E (`guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, etc.).
 - `docs/ARCHITECTURE_OVERVIEW.md` §14 — reglas anti-legacy aplicables (no consolidar polish visual final; Liora Fase 15 supersedes eventualmente).
 
-**Restricción de Fase 15 vigente**: 10G prioriza estructura, comportamiento, a11y y reuse de primitivos existentes (`HeroCard`, `EssentialCard`, etc.). No consolidar paleta, microcopy ni iconografía como definitivos — Liora los supersede cuando llegue el paquete de diseño.
+**Restricción de Fase 15 vigente**: 10G prioriza estructura, comportamiento, a11y y reuse de primitivos existentes en `src/components/ui/` (`collapsible-section.tsx`, `primary-cta.tsx`, `info-tooltip.tsx`, etc.) y de la spec `docs/FEATURES/GUEST_GUIDE_UX.md` (`HeroCard`, `EssentialCard` etc. son nombres de spec a materializar vía composición, no archivos existentes hoy). No consolidar paleta, microcopy ni iconografía como definitivos — Liora los supersede cuando llegue el paquete de diseño.
 
 Tras merge: actualizar este apartado + "Progreso Fase 10" en ROADMAP.md. Próxima por orden óptimo: **10H `feat/guide-client-search`**.

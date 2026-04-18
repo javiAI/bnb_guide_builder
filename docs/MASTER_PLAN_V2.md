@@ -32,7 +32,7 @@ Heredados del v1 y reconfirmados:
 
 ## 2. Protocolo de ejecución por rama
 
-Cada una de las 33 ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
+Cada una de las ramas sigue este ciclo. Las herramientas listadas aquí son el **default**. Cada rama solo cita herramientas *extra* específicas. Referencias a herramientas: ver `docs/archive/global-skills-reference.md` para qué hace cada una.
 
 ### 2.1 Fase -1 — Revisión pre-rama (gate de aprobación)
 
@@ -1794,8 +1794,8 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 **Propósito**: re-skin (no reescritura) de primitivos compartidos consumiendo los tokens de 15A. Cada componente tocado se clasifica en la PR como `reused` / `reskinned` / `rewritten` / `deleted`.
 
 **Archivos a modificar** (lista preliminar — se cierra con entrega):
-- `src/components/ui/HeroCard.tsx`, `EssentialCard.tsx`, `StandardCard.tsx`, `WarningCard.tsx` (guest).
-- `src/components/ui/button.tsx`, `CollapsibleSection.tsx`, `RadioCardGroup.tsx`, `CheckboxCardGroup.tsx`, `NumberStepper.tsx`, `InfoTooltip.tsx`, `InlineSaveStatus.tsx`, `DeleteConfirmationButton.tsx`, `SelectionBadge.tsx` (operador).
+- Primitivos actuales en `src/components/ui/` (kebab-case): `badge.tsx`, `banner.tsx`, `checkbox-card-group.tsx`, `collapsible-section.tsx`, `delete-confirmation-button.tsx`, `info-tooltip.tsx`, `inline-save-status.tsx`, `location-map.tsx`, `number-stepper.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `tooltip.tsx`.
+- Cards específicas de la guía guest (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`) hoy **no existen como archivos** — son nombres de la spec `docs/FEATURES/GUEST_GUIDE_UX.md` que se materializan en 15A/B con el mapping definitivo (reused/reskinned/rewritten). El mapping lo documenta `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` al cerrar 15A.
 
 **Prohibido**: crear archivos `*V2.tsx`, `New*`, `Better*`, `Next*`. Si un primitivo exige reescritura de API, va como `rewritten` en la clasificación y la legacy se borra en la misma rama (no coexistencia).
 
@@ -1816,7 +1816,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Propósito**: superficie `/g/:slug` (shell, secciones, hero, footer) adopta los primitivos re-skineados. Cero cambios en `normalizeGuideForPresentation`, presenter registry, resolvers o taxonomías.
 
-**Archivos a modificar**: `src/app/g/[slug]/page.tsx`, `src/components/guide/*` (renderers React de 10E).
+**Archivos a modificar**: `src/app/g/[slug]/page.tsx`, `src/components/public-guide/*` (renderers React de 10E: `guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, `guide-brand-header.tsx`, `guide-emergency-section.tsx`, `guide-empty-state.tsx`, `guide-media-gallery.tsx`, `guide-toc.tsx`, `public-guide-section-registry.ts`, `guide.css`).
 
 **Tests**:
 - Harness E2E de 10J verde (smoke + anti-leak + axe) sobre las 3 fixtures × 4 viewports.
