@@ -52,6 +52,10 @@ __pycache__/
 .playwright/
 .playwright-cli/
 
+# Playwright E2E (Rama 10J)
+/playwright-report/
+/test-results/
+
 # Misc
 *.log
 

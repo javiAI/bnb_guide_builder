@@ -109,6 +109,7 @@ vitest run src/test/config-driven.test.ts  # Single test file
 - `main` no tiene upstream tracking → usar `git pull origin main` (no `git pull` a secas)
 - Cambios de esquema en dev: `prisma db push --accept-data-loss`, no `migrate deploy` (el historial se re-aplica sucio contra una DB ya sincronizada)
 - Media storage (Cloudflare R2): requiere `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` en `.env`. Ver `.env.example` para valores de referencia
+- E2E harness (rama 10J): `npm run test:e2e` (build + start, canónico/CI) o `npm run test:e2e:dev` (next dev, iteración). Sirve en puerto 3100 (`reuseExistingServer` salvo en CI). Las fixtures se exponen vía `/g/e2e/[fixture]`, ruta gateada por `process.env.E2E === "1"` (404 fuera de E2E). Vitest excluye `e2e/` para no colisionar con specs de Playwright
 
 ## Patrones de Sistemas
 

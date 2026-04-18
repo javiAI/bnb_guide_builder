@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:dev": "E2E_MODE=dev playwright test",
     "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts"
   },
   "dependencies": {
@@ -30,6 +32,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",

@@ -28,6 +28,21 @@ npm run dev
 | `npm run typecheck` | Verificación de tipos (TypeScript) |
 | `npm run test` | Tests (Vitest) |
 | `npm run test:watch` | Tests en modo watch |
+| `npm run test:e2e` | E2E + axe-core sobre `/g/:slug` (build + start, fiel a producción — requiere `DATABASE_URL` real) |
+| `npm run test:e2e:dev` | E2E sobre `next dev` (iteración local más rápida; modo DB-free usado también en CI) |
+
+### E2E + accesibilidad (Playwright + axe-core)
+
+El harness E2E vive en [e2e/](e2e/) y valida la guía pública en 4 viewports
+(chromium 375/768/1280 + webkit 375). Tres specs comparten gate bloqueante:
+
+- `e2e/public-guide.spec.ts` — smoke: status 200 + estructura básica del shell.
+- `e2e/guest-leak-invariants.spec.ts` — invariantes anti-leak 1–4 sobre el DOM.
+- `e2e/axe-a11y.spec.ts` — axe-core, 0 violations `serious|critical`.
+
+Las fixtures (`empty`, `rich`, `adversarial`) viven en
+[src/test/fixtures/e2e/](src/test/fixtures/e2e/) y se sirven por la ruta
+dev-only `/g/e2e/[fixture]`, gateada por `E2E=1` en el environment.
 
 ### Validadores del bundle
 
