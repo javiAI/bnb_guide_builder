@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { askRequestSchema } from "@/lib/schemas/assistant.schema";
-import { buildAnswer } from "@/lib/assistant/retrieval";
+import { ask } from "@/lib/services/assistant/pipeline";
+import { coerceJourneyStage } from "@/lib/types/knowledge";
 
 export async function POST(
   request: NextRequest,
@@ -9,12 +10,10 @@ export async function POST(
 ) {
   const { propertyId } = await params;
 
-  // Validate property exists
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
     select: { id: true },
   });
-
   if (!property) {
     return NextResponse.json(
       { error: { code: "NOT_FOUND", message: "Property not found" } },
@@ -22,7 +21,6 @@ export async function POST(
     );
   }
 
-  // Parse and validate body
   let body: unknown;
   try {
     body = await request.json();
@@ -47,52 +45,17 @@ export async function POST(
     );
   }
 
-  const { question, language, audience, journeyStage, conversationId } =
-    parsed.data;
+  const { question, language, audience, journeyStage, conversationId } = parsed.data;
+  const stage = coerceJourneyStage(journeyStage);
 
-  // Build answer using retrieval pipeline
-  const result = await buildAnswer({
+  const result = await ask({
     propertyId,
     question,
-    locale: language,
+    language,
     audience,
-    journeyStage,
-  });
-
-  // Persist conversation and messages
-  let convId = conversationId;
-
-  if (!convId) {
-    const conv = await prisma.assistantConversation.create({
-      data: {
-        property: { connect: { id: propertyId } },
-        actorType: "guest",
-        audience,
-        language,
-      },
-    });
-    convId = conv.id;
-  }
-
-  // Save user question
-  await prisma.assistantMessage.create({
-    data: {
-      conversation: { connect: { id: convId } },
-      role: "user",
-      body: question,
-    },
-  });
-
-  // Save assistant response
-  await prisma.assistantMessage.create({
-    data: {
-      conversation: { connect: { id: convId } },
-      role: "assistant",
-      body: result.answer,
-      citationsJson: result.citations,
-      confidenceScore: result.confidenceScore,
-      escalated: result.escalated,
-    },
+    journeyStage: stage,
+    conversationId: conversationId ?? null,
+    actorType: "guest",
   });
 
   return NextResponse.json({
@@ -102,7 +65,7 @@ export async function POST(
       confidenceScore: result.confidenceScore,
       escalated: result.escalated,
       escalationReason: result.escalationReason,
-      conversationId: convId,
+      conversationId: result.conversationId,
     },
   });
 }

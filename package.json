@@ -12,9 +12,11 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:dev": "E2E_MODE=dev playwright test",
-    "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts"
+    "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts",
+    "embed:backfill": "tsx src/lib/jobs/knowledge-embed-backfill.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "@aws-sdk/client-s3": "^3.967.0",
     "@aws-sdk/s3-request-presigner": "^3.967.0",
     "@prisma/client": "^6.19.3",

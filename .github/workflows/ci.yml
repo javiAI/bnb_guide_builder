@@ -40,7 +40,10 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        # pgvector/pgvector:pg16 is the official pgvector image: Postgres 16
+        # with the `vector` extension preinstalled. Needed because the 11C
+        # migration runs `CREATE EXTENSION IF NOT EXISTS vector`.
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci

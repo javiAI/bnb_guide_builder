@@ -4,26 +4,46 @@ import {
   deleteEntityChunks,
 } from "@/lib/services/knowledge-extract.service";
 
-// Verify that invalidation targets the correct entity type section and
-// does not touch items from other entity types.
+// Verify that invalidation scopes the incremental upsert to the correct
+// entityType/entityId and does not touch items from other entity types.
+// Under Rama 11C's incremental semantics, the `findMany` call carries the
+// scope where; per-row deletes happen by id lists.
 
-const { deleteManyMock, createManyMock, transactionMock } = vi.hoisted(() => {
+const {
+  findManyMock,
+  deleteManyMock,
+  createManyMock,
+  updateMock,
+  executeRawMock,
+  transactionMock,
+} = vi.hoisted(() => {
+  const findManyMock = vi.fn().mockResolvedValue([]);
   const deleteManyMock = vi.fn().mockResolvedValue({ count: 0 });
   const createManyMock = vi.fn().mockResolvedValue({ count: 0 });
+  const updateMock = vi.fn().mockResolvedValue({});
+  const executeRawMock = vi.fn().mockResolvedValue(0);
   const transactionMock = vi.fn().mockImplementation(async (ops: unknown[]) => {
-    for (const op of ops) {
-      await op;
-    }
+    for (const op of ops) await op;
   });
-  return { deleteManyMock, createManyMock, transactionMock };
+  return {
+    findManyMock,
+    deleteManyMock,
+    createManyMock,
+    updateMock,
+    executeRawMock,
+    transactionMock,
+  };
 });
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     $transaction: transactionMock,
+    $executeRaw: executeRawMock,
     knowledgeItem: {
+      findMany: findManyMock,
       deleteMany: deleteManyMock,
       createMany: createManyMock,
+      update: updateMock,
     },
     property: {
       findUnique: vi.fn().mockResolvedValue({ defaultLocale: "es" }),
@@ -62,49 +82,92 @@ vi.mock("@/lib/db", () => ({
 }));
 
 beforeEach(() => {
+  findManyMock.mockClear();
+  findManyMock.mockResolvedValue([]);
   deleteManyMock.mockClear();
   createManyMock.mockClear();
+  updateMock.mockClear();
+  executeRawMock.mockClear();
   transactionMock.mockClear();
 });
 
 describe("invalidateKnowledge — entity type scoping", () => {
-  it("invalidating 'access' section calls deleteMany with entityType=access", async () => {
+  it("invalidating 'access' section scopes findMany by entityType=access", async () => {
     await invalidateKnowledge("prop_1", "access", null);
 
-    const deleteCall = deleteManyMock.mock.calls[0]?.[0];
-    expect(deleteCall?.where?.entityType).toBe("access");
-    expect(deleteCall?.where?.propertyId).toBe("prop_1");
+    const scope = findManyMock.mock.calls[0]?.[0]?.where;
+    expect(scope?.entityType).toBe("access");
+    expect(scope?.propertyId).toBe("prop_1");
+    expect(scope?.locale).toBe("es");
+    expect(scope?.isAutoExtracted).toBe(true);
   });
 
-  it("invalidating 'property' section calls deleteMany with entityType=property", async () => {
+  it("invalidating 'property' section scopes findMany by entityType=property", async () => {
     await invalidateKnowledge("prop_1", "property", null);
-
-    const deleteCall = deleteManyMock.mock.calls[0]?.[0];
-    expect(deleteCall?.where?.entityType).toBe("property");
+    const scope = findManyMock.mock.calls[0]?.[0]?.where;
+    expect(scope?.entityType).toBe("property");
   });
 
-  it("invalidating a specific contact uses its entityId", async () => {
+  it("invalidating a specific contact passes its entityId in the scope", async () => {
     await invalidateKnowledge("prop_1", "contact", "contact_abc");
-
-    const deleteCall = deleteManyMock.mock.calls[0]?.[0];
-    expect(deleteCall?.where?.entityType).toBe("contact");
-    expect(deleteCall?.where?.entityId).toBe("contact_abc");
+    const scope = findManyMock.mock.calls[0]?.[0]?.where;
+    expect(scope?.entityType).toBe("contact");
+    expect(scope?.entityId).toBe("contact_abc");
   });
 
-  it("invalidating 'amenity' does not call deleteMany for 'contact'", async () => {
+  it("invalidating 'amenity' never queries the 'contact' section", async () => {
     await invalidateKnowledge("prop_1", "amenity", null);
-
-    const deleteCalls = deleteManyMock.mock.calls;
-    const contactDelete = deleteCalls.find(
-      ([args]) => args?.where?.entityType === "contact",
-    );
-    expect(contactDelete).toBeUndefined();
+    const scopes = findManyMock.mock.calls.map((c) => c[0]?.where);
+    expect(scopes.find((s) => s?.entityType === "contact")).toBeUndefined();
   });
 
-  it("runs within a transaction (delete then createMany)", async () => {
+  it("nulls the embedding when contentHash changes on an existing row", async () => {
+    findManyMock.mockResolvedValueOnce([
+      {
+        id: "ki_1",
+        entityType: "property",
+        entityId: null,
+        templateKey: "capacity",
+        contentHash: "STALEHASH00000000",
+      },
+    ]);
+
     await invalidateKnowledge("prop_1", "property", null);
-    // $transaction is called with an array of operations
-    expect(transactionMock).toHaveBeenCalled();
+
+    expect(updateMock).toHaveBeenCalled();
+    expect(executeRawMock).toHaveBeenCalled();
+  });
+
+  it("preserves the embedding when contentHash is unchanged", async () => {
+    // First run: capture the hash the extractor produces for a stable row.
+    await invalidateKnowledge("prop_1", "property", null);
+    const createdData = createManyMock.mock.calls[0]?.[0]?.data as Array<{
+      templateKey: string;
+      contentHash: string;
+      entityType: string;
+      entityId: string | null;
+    }>;
+    const stable = createdData?.find((d) => d.templateKey === "capacity");
+    expect(stable).toBeDefined();
+
+    // Second run: feed the same row back as "existing" with matching hash.
+    findManyMock.mockReset();
+    findManyMock.mockResolvedValue([
+      {
+        id: "ki_capacity",
+        entityType: stable!.entityType,
+        entityId: stable!.entityId,
+        templateKey: stable!.templateKey,
+        contentHash: stable!.contentHash,
+      },
+    ]);
+    updateMock.mockClear();
+    executeRawMock.mockClear();
+
+    await invalidateKnowledge("prop_1", "property", null);
+
+    // Row still gets updated (metadata may have moved), but embedding is kept.
+    expect(executeRawMock).not.toHaveBeenCalled();
   });
 });
 

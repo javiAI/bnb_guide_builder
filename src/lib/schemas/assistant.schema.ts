@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { entityTypeSchema, journeyStageSchema } from "@/lib/types/knowledge";
 
 // Assistant API audiences exclude "sensitive" on purpose — callers must not
 // be able to elevate to sensitive via a request body; that level is reserved
@@ -11,17 +12,20 @@ export const askRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: z.string().optional(),
-  conversationId: z.string().optional(),
+  // Explicit null is accepted alongside undefined so clients can send
+  // `{"journeyStage": null}` without a 400 — matches the documented contract
+  // in docs/API_ROUTES.md and lets coerceJourneyStage() do the normalization.
+  journeyStage: journeyStageSchema.nullable().optional(),
+  conversationId: z.string().nullable().optional(),
 });
 
 export type AskRequest = z.infer<typeof askRequestSchema>;
 
 export const citationSchema = z.object({
   knowledgeItemId: z.string(),
-  sourceId: z.string().nullable(),
-  quoteOrNote: z.string().nullable(),
-  relevanceScore: z.number().min(0).max(1),
+  sourceType: entityTypeSchema,
+  entityLabel: z.string(),
+  score: z.number().min(0).max(1),
 });
 
 export type Citation = z.infer<typeof citationSchema>;
@@ -43,7 +47,7 @@ export const debugRetrieveRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: z.string().optional(),
+  journeyStage: journeyStageSchema.nullable().optional(),
 });
 
 export type DebugRetrieveRequest = z.infer<typeof debugRetrieveRequestSchema>;

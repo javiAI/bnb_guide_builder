@@ -2,10 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { extractFromPropertyAll } from "@/lib/services/knowledge-extract.service";
 
 // Verify that:
-// 1. extracting "en" scopes its delete to locale="en" (does not delete "es" items)
-// 2. extracting the same locale twice calls deleteMany once per run — idempotent
+// 1. extractFromPropertyAll scopes its findMany to the requested locale
+//    (never sees items from another locale)
+// 2. Under incremental upsert semantics (Rama 11C), a second run with
+//    matching contentHash produces no deletions and no embedding nulls —
+//    i.e. the pipeline preserves embeddings across idempotent re-extractions.
 
-const { baseProperty, deleteManyMock, createManyMock } = vi.hoisted(() => ({
+const {
+  baseProperty,
+  findManyMock,
+  deleteManyMock,
+  createManyMock,
+  updateMock,
+  executeRawMock,
+} = vi.hoisted(() => ({
   baseProperty: {
     propertyNickname: "Test Property",
     city: "Barcelona",
@@ -23,8 +33,11 @@ const { baseProperty, deleteManyMock, createManyMock } = vi.hoisted(() => ({
     hasBuildingAccess: false,
     policiesJson: null,
   },
+  findManyMock: vi.fn().mockResolvedValue([]),
   deleteManyMock: vi.fn().mockResolvedValue({ count: 0 }),
   createManyMock: vi.fn().mockResolvedValue({ count: 0 }),
+  updateMock: vi.fn().mockResolvedValue({}),
+  executeRawMock: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -37,57 +50,78 @@ vi.mock("@/lib/db", () => ({
     space: { findMany: vi.fn().mockResolvedValue([]) },
     propertySystem: { findMany: vi.fn().mockResolvedValue([]) },
     knowledgeItem: {
+      findMany: findManyMock,
       deleteMany: deleteManyMock,
       createMany: createManyMock,
+      update: updateMock,
     },
+    $executeRaw: executeRawMock,
     $transaction: vi.fn(async (ops: Array<Promise<unknown>>) => Promise.all(ops)),
   },
 }));
 
 beforeEach(() => {
+  findManyMock.mockClear();
+  findManyMock.mockResolvedValue([]);
   deleteManyMock.mockClear();
   createManyMock.mockClear();
+  updateMock.mockClear();
+  executeRawMock.mockClear();
 });
 
-describe("extractFromPropertyAll — locale-scoped delete", () => {
-  it("extracting locale=en scopes deleteMany to locale='en' only", async () => {
+describe("extractFromPropertyAll — locale-scoped incremental", () => {
+  it("scopes findMany to locale='en' when extracting in English", async () => {
     await extractFromPropertyAll("prop_1", "en");
 
-    const deleteCalls = deleteManyMock.mock.calls as Array<[{ where: Record<string, unknown> }]>;
-    expect(deleteCalls.length).toBeGreaterThan(0);
-    for (const [args] of deleteCalls) {
-      expect(args.where.locale).toBe("en");
-      expect(args.where.propertyId).toBe("prop_1");
-      expect(args.where.isAutoExtracted).toBe(true);
-    }
+    const scope = findManyMock.mock.calls[0]?.[0]?.where;
+    expect(scope?.locale).toBe("en");
+    expect(scope?.propertyId).toBe("prop_1");
+    expect(scope?.isAutoExtracted).toBe(true);
   });
 
-  it("extracting locale=es scopes deleteMany to locale='es' only", async () => {
+  it("scopes findMany to locale='es' when extracting in Spanish", async () => {
     await extractFromPropertyAll("prop_1", "es");
-
-    const deleteCalls = deleteManyMock.mock.calls as Array<[{ where: Record<string, unknown> }]>;
-    expect(deleteCalls.length).toBeGreaterThan(0);
-    for (const [args] of deleteCalls) {
-      expect(args.where.locale).toBe("es");
-    }
+    const scope = findManyMock.mock.calls[0]?.[0]?.where;
+    expect(scope?.locale).toBe("es");
   });
 
-  it("deleteMany is never called with locale='es' when extracting locale='en'", async () => {
+  it("never queries locale='es' when extracting locale='en'", async () => {
     await extractFromPropertyAll("prop_1", "en");
-
-    const deleteCalls = deleteManyMock.mock.calls as Array<[{ where: Record<string, unknown> }]>;
-    const esDeletes = deleteCalls.filter(([args]) => args.where.locale === "es");
-    expect(esDeletes).toHaveLength(0);
+    const scopes = findManyMock.mock.calls.map((c) => c[0]?.where);
+    expect(scopes.find((s) => s?.locale === "es")).toBeUndefined();
   });
 
-  it("extracting the same locale twice calls deleteMany exactly twice (one per run)", async () => {
+  it("re-running with unchanged content does not null any embedding", async () => {
+    // First pass: capture the chunks the extractor produced.
     await extractFromPropertyAll("prop_1", "es");
-    const firstRunDeletes = deleteManyMock.mock.calls.length;
-    expect(firstRunDeletes).toBe(1);
+    const created = (createManyMock.mock.calls[0]?.[0]?.data ?? []) as Array<{
+      entityType: string;
+      entityId: string | null;
+      templateKey: string;
+      contentHash: string;
+    }>;
+    expect(created.length).toBeGreaterThan(0);
+
+    // Second pass: feed them back as "existing" with identical hashes.
+    findManyMock.mockReset();
+    findManyMock.mockResolvedValue(
+      created.map((c, i) => ({
+        id: `ki_${i}`,
+        entityType: c.entityType,
+        entityId: c.entityId,
+        templateKey: c.templateKey,
+        contentHash: c.contentHash,
+      })),
+    );
+    createManyMock.mockClear();
+    deleteManyMock.mockClear();
+    executeRawMock.mockClear();
 
     await extractFromPropertyAll("prop_1", "es");
-    const secondRunDeletes = deleteManyMock.mock.calls.length;
-    // Each run adds exactly 1 deleteMany call
-    expect(secondRunDeletes).toBe(2);
+
+    // Idempotent: same content → no new rows, no deletions, no embedding nulls.
+    expect(createManyMock).not.toHaveBeenCalled();
+    expect(deleteManyMock).not.toHaveBeenCalled();
+    expect(executeRawMock).not.toHaveBeenCalled();
   });
 });
