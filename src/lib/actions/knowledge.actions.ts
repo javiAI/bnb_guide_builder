@@ -17,6 +17,8 @@ export async function createKnowledgeItemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+
   const raw = {
     topic: formData.get("topic") as string,
     bodyMd: formData.get("bodyMd") as string,
@@ -39,7 +41,8 @@ export async function createKnowledgeItemAction(
 
   // Manual items are always created in the property's defaultLocale (server-
   // authoritative). Do not rely on the DB column default — that would silently
-  // write "es" when the property is configured in another locale.
+  // write "es" when the property is configured in another locale. Clamp to
+  // SUPPORTED_LOCALES as defense in depth against bad data in the column.
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
     select: { defaultLocale: true },
@@ -48,10 +51,12 @@ export async function createKnowledgeItemAction(
     return { success: false, error: "Propiedad no encontrada" };
   }
 
+  const locale = isSupportedLocale(property.defaultLocale) ? property.defaultLocale : "es";
+
   await prisma.knowledgeItem.create({
     data: {
       ...result.data,
-      locale: property.defaultLocale,
+      locale,
       visibility: result.data.visibility ?? "guest",
       property: { connect: { id: propertyId } },
     },

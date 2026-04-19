@@ -1218,10 +1218,10 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `src/app/properties/[propertyId]/knowledge/locale-switcher.tsx` — tabs por locale con badge missing/present + botón "Generar"
 
 **Archivos modificados**:
-- `prisma/schema.prisma` — `KnowledgeItem.templateKey String? @map("template_key")` + `@@index([propertyId, entityType, entityId, templateKey, locale])`. (Dev: sincronizado con `prisma db push --accept-data-loss`.)
+- `prisma/schema.prisma` — `Property.defaultLocale String @default("es")`, `KnowledgeItem.templateKey String? @map("template_key")`, `@@index([propertyId, entityType, entityId, templateKey, locale])`. Migraciones versionadas: `20260418000000_backfill_autoextract_and_drift` (consolida 11A + drift sin migrar) + `20260419150000_add_knowledge_i18n` (11B). Cadena ejecutable desde DB vacía con `prisma migrate deploy`.
 - `taxonomies/knowledge_templates.json` — top-level `"locale": "es-ES"` → `"defaultLocale": "es"` (describe el fallback por defecto de los templates, no un locale único)
 - `src/lib/types/knowledge.ts` — `ExtractedChunk.templateKey: string`
-- `src/lib/services/knowledge-extract.service.ts` — cada chunk autoextracted setea `templateKey` (9 valores distintos: 4 en property/fact `checkin_time|checkout_time|capacity|location`, 3 en access/procedure `unit_access|building_access|autonomous_checkin`, 4 en policy `pets|smoking|children|quiet_hours`, `contact_info`, `amenity_existence`, `amenity_usage`, `space_info`, `system_info`, `system_troubleshooting`). Inline extractors localizan `topic` + `bodyMd` según `locale`.
+- `src/lib/services/knowledge-extract.service.ts` — cada chunk autoextracted setea `templateKey` con un literal `"..."` del extractor (el código es la fuente canónica; ejemplos: `overview`, `checkin_time`, `checkout_time`, `capacity`, `checkin_logistics`, `unit_access`, `building_access`, `pets`, `smoking`, `children`, `quiet_hours`, `contact_info`, `amenity_existence`, `amenity_usage`, `space_info`, `system_info`, `system_troubleshooting`). Inline extractors localizan `topic` + `bodyMd` según `locale`.
 - `src/lib/actions/knowledge.actions.ts` — `regenerateLocaleAction` valida con `isSupportedLocale` antes de delegar
 - `src/app/properties/[propertyId]/knowledge/page.tsx` — `activeLocale` se clampa con `isSupportedLocale(localeParam)`; `?locale=fr` cae al `defaultLocale` sin estado incoherente
 

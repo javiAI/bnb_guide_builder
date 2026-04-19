@@ -26,6 +26,7 @@ vi.mock("@/lib/db", () => ({
       createMany: createManyMock,
     },
     property: {
+      findUnique: vi.fn().mockResolvedValue({ defaultLocale: "es" }),
       findUniqueOrThrow: vi.fn().mockResolvedValue({
         propertyNickname: "Apartamento Sol",
         propertyType: "pt.apartment",

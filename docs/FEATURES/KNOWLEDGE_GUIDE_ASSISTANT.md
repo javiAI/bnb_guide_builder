@@ -47,13 +47,7 @@ Debe soportar:
 
 **Valores de `templateKey`** (9 fijos):
 
-- `property/fact` → `checkin_time | checkout_time | capacity | location` (4 chunks distintos, antes colapsaban por `(entityType, chunkType, topic)`)
-- `access/procedure` → `unit_access | building_access | autonomous_checkin`
-- `policy/policy` → `pets | smoking | children | quiet_hours`
-- `contact/fact` → `contact_info`
-- `amenity` → `amenity_existence`, `amenity_usage`
-- `space/fact` → `space_info`
-- `system` → `system_info`, `system_troubleshooting`
+Los valores concretos de `templateKey` son los literales `templateKey: "..."` emitidos por `knowledge-extract.service.ts` (por ejemplo `overview`, `checkin_time`, `checkout_time`, `capacity`, `checkin_logistics`, `unit_access`, `building_access`, `pets`, `smoking`, `children`, `quiet_hours`, `contact_info`, `amenity_existence`, `amenity_usage`, `space_info`, `system_info`, `system_troubleshooting`). El código es la fuente canónica — no mantener lista exhaustiva aquí (se desincroniza en cada rama que añada chunks).
 
 **Extracción locale-scoped**: `extractFromPropertyAll(propertyId, locale)` y `upsertSection` eliminan solo ítems con `{ propertyId, locale, isAutoExtracted: true }` — extraer EN nunca borra ítems ES ni manuales.
 

@@ -266,9 +266,23 @@ function resolveAccessMethodLabels(methods: string[]): string {
     .join(", ");
 }
 
+// Bed-type taxonomy labels are Spanish. For EN extraction, map by id to avoid
+// leaking Spanish terms into otherwise-English chunk bodies. Unknown ids fall
+// back to a generic label rather than the taxonomy Spanish string.
+const BED_TYPE_LABELS_EN: Record<string, string> = {
+  double: "Double bed",
+  single: "Single bed",
+  sofa_bed: "Sofa bed",
+  bunk_bed: "Bunk bed",
+  queen: "Queen bed",
+  king: "King bed",
+};
+
 function resolveBedTypeLabel(bedTypeId: string, locale = "es"): string {
-  const fallback = locale === "en" ? "Bed" : "Cama";
-  return bedTypes.items.find((b) => b.id === bedTypeId)?.label ?? fallback;
+  if (locale === "en") {
+    return BED_TYPE_LABELS_EN[bedTypeId] ?? "Bed";
+  }
+  return bedTypes.items.find((b) => b.id === bedTypeId)?.label ?? "Cama";
 }
 
 // NOTE: customDesc intentionally excluded from both — may contain PINs or access codes.
@@ -1146,7 +1160,16 @@ export async function invalidateKnowledge(
   entityType: EntityType,
   entityId: string | null,
 ): Promise<void> {
-  await extractSection(propertyId, entityType, entityId);
+  // Resolve the property's defaultLocale so background invalidation re-
+  // extracts in the right language. Falling back to `extractSection`'s
+  // parameter default ("es") would regenerate Spanish chunks on a property
+  // configured in English, mixing locales on every edit.
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  const locale = property?.defaultLocale ?? "es";
+  await extractSection(propertyId, entityType, entityId, locale);
 }
 
 export function invalidateKnowledgeInBackground(

@@ -54,9 +54,7 @@ export default async function KnowledgePage({
     listMissingTranslations(propertyId, defaultLocale, [...SUPPORTED_LOCALES]),
   ]);
 
-  const nonDefaultMissing = missingTranslations.filter((m) =>
-    m.missingLocales.some((l) => l !== defaultLocale),
-  );
+  const nonDefaultMissing = missingTranslations;
 
   return (
     <div>
@@ -70,7 +68,9 @@ export default async function KnowledgePage({
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <RegenerateKnowledgeButton propertyId={propertyId} />
+          {activeLocale === defaultLocale && (
+            <RegenerateKnowledgeButton propertyId={propertyId} />
+          )}
         </div>
       </div>
 
