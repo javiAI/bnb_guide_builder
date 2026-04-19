@@ -4,6 +4,7 @@ import type {
   GuideSection,
 } from "@/lib/types/guide-tree";
 import { EMERGENCY_FIELD_LABELS } from "@/lib/types/guide-tree";
+import { buildMailtoHref, buildTelHref } from "@/lib/contact-actions";
 import {
   resolveDisplayFields,
   resolveEmptyCopy,
@@ -42,6 +43,7 @@ export function GuideEmergencySection({ section, renderable, audience }: Props) 
             const phone = fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.phone)?.value;
             const email = fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.email)?.value;
             const notes = fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.notes)?.value;
+            const mailto = email ? buildMailtoHref(email) : null;
             return (
               <article key={item.id} className="guide-item" id={`item-${item.id}`}>
                 <h3 className="guide-item__label">{item.label}</h3>
@@ -49,13 +51,13 @@ export function GuideEmergencySection({ section, renderable, audience }: Props) 
                   {phone && (
                     <a
                       className="guide-contact__link"
-                      href={`tel:${phone.replace(/\s+/g, "")}`}
+                      href={buildTelHref(phone)}
                     >
                       {phone}
                     </a>
                   )}
-                  {email && (
-                    <a className="guide-contact__link" href={`mailto:${email}`}>
+                  {mailto && (
+                    <a className="guide-contact__link" href={mailto}>
                       {email}
                     </a>
                   )}

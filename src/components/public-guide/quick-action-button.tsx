@@ -4,6 +4,7 @@ import type {
   QuickActionKind,
   QuickActionResolved,
 } from "@/config/registries/quick-action-registry";
+import { buildTelHref } from "@/lib/contact-actions";
 import { useGuideToast } from "./toast";
 
 interface Props {
@@ -15,8 +16,9 @@ const COPY_FAILURE_MESSAGE = "No se pudo copiar";
 function hrefFor(kind: QuickActionKind, value: string): string | null {
   switch (kind) {
     case "tel":
-      return `tel:${value.replace(/\s+/g, "")}`;
+      return buildTelHref(value);
     case "whatsapp":
+      // Resolver already normalized to wa.me digits.
       return `https://wa.me/${value}`;
     case "maps":
       return value;
