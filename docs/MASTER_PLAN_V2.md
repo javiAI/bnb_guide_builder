@@ -1010,24 +1010,24 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Decisiones cerradas en Fase -1 (2026-04-17, ajustadas 2026-04-19 al arrancar la rama)**:
 - Service worker **manual**, no `next-pwa`.
-- **Aislamiento por slug**: el SW se sirve desde `/g/<slug>/sw.js` (route handler dinámico) con `scope: "/g/<slug>/"` estricto. Un SW por property — el riesgo de leak cross-property pesa más que el coste operativo de mantener N registros activos. Caches namespaced por slug (`guide-<slug>-tier{N}-<v>`).
+- **Aislamiento por slug**: el SW se sirve desde `/g/[slug]/sw.js` (route handler dinámico) con `scope: "/g/[slug]/"` estricto. Un SW por property — el riesgo de leak cross-property pesa más que el coste operativo de mantener N registros activos. Caches namespaced por slug (`guide-<slug>-tier{N}-<v>`, donde `<slug>` se sustituye en runtime).
 - Cache strategy:
   - **Nivel 1 (cache-first)**: CSS, fuentes Inter subset, íconos, manifest, offline page, JSON crítico de secciones `essentials`/`arrival`/`checkout`/`emergency` (incluye Llegada — la spec L227 la enumera explícitamente junto a Wi-Fi/Ayuda/Salida).
-  - **HTML del slug**: `stale-while-revalidate` (no cache-first). Online: red gana siempre. Offline: cae al cache. Razón: `revalidatePath(/g/<slug>)` server-side debe llegar al usuario en la siguiente visita sin esperar a un cambio de versión del SW.
-  - **Nivel 2 (stale-while-revalidate)**: primer thumb por espacio configurado (vía `/g/:slug/media/:id/thumb` de 10D), con cap global de **12 imágenes** para acotar el peso del cache en propiedades grandes.
+  - **HTML del slug**: `stale-while-revalidate` (no cache-first). Online: red gana siempre. Offline: cae al cache. Razón: `revalidatePath('/g/[slug]')` server-side debe llegar al usuario en la siguiente visita sin esperar a un cambio de versión del SW.
+  - **Nivel 2 (stale-while-revalidate)**: primer thumb por espacio configurado (vía `/g/[slug]/media/[assetId]-[hashPrefix]/thumb` de 10D), con cap global de **12 imágenes** para acotar el peso del cache en propiedades grandes.
   - **Nivel 3 (network-first con fallback timeout 2s)**: galerías completas, vídeo, mapas.
-- A2HS nudge: disparado tras 2 visitas o tiempo acumulado >90s; dismissable permanente vía `localStorage`. iOS Safari (sin `beforeinstallprompt`): modal manual mínimo con instrucciones nativas ("compartir → añadir a inicio"); mismo dismiss persistente. Copy y estética sobrios — re-skinable por Liora sin tocar lógica.
-- Versionado del SW: reusa el `buildVersion` de `GuideSearchIndex` de 10H (SHA-1 12 chars sobre el tree). Inyectado en la URL de registro como `?v=<buildVersion>` para forzar reinstalación al cambiar contenido. `skipWaiting()` + `clients.claim()` en `activate`.
+- A2HS nudge: disparado tras 2 visitas o tiempo acumulado >90s; dismissible permanente vía `localStorage`. iOS Safari (sin `beforeinstallprompt`): modal manual mínimo con instrucciones nativas ("compartir → añadir a inicio"); mismo dismiss persistente. Copy y estética sobrios — re-skinable por Liora sin tocar lógica.
+- Versionado del SW: reusa el `buildVersion` de `GuideSearchIndex` de 10H (SHA-1 12 chars sobre el tree). Inyectado en la URL de registro como `?v={buildVersion}` para forzar reinstalación al cambiar contenido. `skipWaiting()` + `clients.claim()` en `activate`.
 - Fallback page `/g/[slug]/offline`: lista hardcodeada de secciones tier 1 (asunción dura: SW activo ⇒ tier 1 garantizado). Si SW no activo, mensaje "abre primero la guía con conexión".
 - Theme color del manifest: derivado del `brandPaletteKey` actual de la property. Aceptado que instalaciones pre-Liora retengan ese color hasta reinstalar (iOS captura tile color al instalar).
 
 **Archivos a crear**:
-- `public/sw.js` — plantilla del service worker manual (vanilla ES). Servido vía route handler dinámico (ver siguiente entrada) que inyecta `slug` y `SW_VERSION`.
-- `src/app/g/[slug]/sw.js/route.ts` — sirve el SW por slug con headers `Cache-Control: no-cache` y `Service-Worker-Allowed: /g/<slug>/`.
+- `src/lib/server/sw-template.ts` — plantilla string del service worker (vanilla ES). **Vive fuera de `public/`** para que Next no la sirva como asset estático en `/sw.js` (eso reabriría un SW global con scope `/`, contradiciendo la decisión de aislamiento por slug). El route handler de la siguiente entrada importa el template, sustituye `__SLUG__` y `__SW_VERSION__`, y lo devuelve con `Content-Type: application/javascript`.
+- `src/app/g/[slug]/sw.js/route.ts` — sirve el SW por slug con headers `Cache-Control: no-cache` y `Service-Worker-Allowed: /g/[slug]/`.
 - `src/app/g/[slug]/manifest.webmanifest/route.ts` — manifest dinámico por property (nombre, íconos 192/512 + maskable, theme_color desde palette, scope/start_url por slug). **Único endpoint de manifest** — no se mantiene un `public/manifest.json` estático.
 - `src/app/g/[slug]/layout.tsx` — crea el shell con `<link rel="manifest">` apuntando al endpoint dinámico, monta `<ServiceWorkerRegister />` + `<InstallNudge />`.
 - `src/app/g/[slug]/offline/page.tsx` — fallback offline page (Server Component) con lista hardcodeada de secciones tier 1.
-- `src/lib/client/service-worker-register.ts` — registra `/g/<slug>/sw.js?v=<buildVersion>` con scope estricto, detecta `updatefound` y postea `SKIP_WAITING`.
+- `src/lib/client/service-worker-register.ts` — registra `/g/[slug]/sw.js?v={buildVersion}` con scope estricto, detecta `updatefound` y postea `SKIP_WAITING`.
 - `src/lib/client/sw-precache-manifest.ts` — lista de assets críticos a precachear, codificada a mano (volumen pequeño, estable). Test de invariante valida que cada path apunta a un archivo existente.
 - `src/components/public-guide/install-nudge.tsx` — client island con trigger condicional + branching iOS/Chromium.
 - Íconos PWA placeholders en `public/icons/` (`guide-192.png`, `guide-512.png`, `guide-512-maskable.png`) — Liora los repondrá.
