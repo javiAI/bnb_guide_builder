@@ -375,18 +375,21 @@ export async function createSpaceAction(
     };
   }
 
+  let createdSpaceId: string;
   await prisma.$transaction(async (tx) => {
-    await tx.space.create({
+    const created = await tx.space.create({
       data: {
         ...result.data,
         property: { connect: { id: propertyId } },
       },
+      select: { id: true },
     });
     await recomputePropertyCounts(tx, propertyId);
+    createdSpaceId = created.id;
   });
 
   recomputeAllInBackground(propertyId);
-  invalidateKnowledgeInBackground(propertyId, "space", null);
+  invalidateKnowledgeInBackground(propertyId, "space", createdSpaceId!);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
@@ -1103,10 +1106,13 @@ export async function createSystemAction(
   const taxonomyItem = findSystemItem(result.data.systemKey);
   if (!taxonomyItem) return { success: false, error: "Sistema no reconocido en la taxonomía" };
   const defaultVisibility = normaliseVisibility(taxonomyItem.visibility);
+  let createdSystemId: string;
   try {
-    await prisma.propertySystem.create({
+    const created = await prisma.propertySystem.create({
       data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },
+      select: { id: true },
     });
+    createdSystemId = created.id;
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este sistema ya está configurado en la propiedad" };
@@ -1114,7 +1120,7 @@ export async function createSystemAction(
     throw err;
   }
   recomputeAllInBackground(propertyId);
-  invalidateKnowledgeInBackground(propertyId, "system", null);
+  invalidateKnowledgeInBackground(propertyId, "system", createdSystemId);
   revalidatePath(`/properties/${propertyId}/systems`);
   return { success: true };
 }

@@ -228,10 +228,11 @@ describe("buildBm25Text", () => {
 
   it("removes common Spanish stopwords", () => {
     const result = buildBm25Text("", "El check-in es a las 15 en la propiedad.");
-    expect(result).not.toContain(" el ");
-    expect(result).not.toContain(" es ");
-    expect(result).not.toContain(" la ");
-    expect(result).not.toContain(" en ");
+    const tokens = result.split(/\s+/);
+    expect(tokens).not.toContain("el");
+    expect(tokens).not.toContain("es");
+    expect(tokens).not.toContain("la");
+    expect(tokens).not.toContain("en");
   });
 });
 

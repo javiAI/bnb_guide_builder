@@ -9,7 +9,7 @@ import {
   accessMethods,
   bedTypes,
 } from "@/lib/taxonomy-loader";
-import type { ExtractedChunk, ChunkType, EntityType } from "@/lib/types/knowledge";
+import type { ExtractedChunk, ChunkType, EntityType, JourneyStage } from "@/lib/types/knowledge";
 import type { VisibilityLevel } from "@prisma/client";
 import knowledgeTemplatesRaw from "../../../taxonomies/knowledge_templates.json";
 
@@ -95,7 +95,7 @@ type TemplateEntry = {
   topic: string;
   canonicalQuestion: string;
   bodyTemplate: string;
-  journeyStage: string;
+  journeyStage: JourneyStage;
   sourceFields: string[];
 };
 
@@ -144,7 +144,7 @@ type PropertyChunkInput = {
   entityType: EntityType;
   entityId: string | null;
   visibility?: VisibilityLevel;
-  journeyStage: string;
+  journeyStage: JourneyStage;
   sourceFields: string[];
   tags?: string[];
   validFrom?: Date | null;
@@ -158,11 +158,12 @@ function makePropertyChunk(
   city: string | null,
   params: PropertyChunkInput,
 ): ExtractedChunk {
-  const visibility = params.visibility ?? "guest";
+  const rawVisibility = params.visibility ?? "guest";
 
   // Invariant: no chunk may have higher visibility than its source entity.
   // Property-level extractors always emit guest visibility.
-  assertVisibilityBound("guest", visibility);
+  assertVisibilityBound("guest", rawVisibility);
+  const visibility = toNonSensitiveVisibility(rawVisibility);
 
   const canonicalQuestion = params.canonicalQuestion ?? params.topic;
   const contextPrefix = buildContextPrefix({
@@ -180,7 +181,7 @@ function makePropertyChunk(
     topic: params.topic,
     bodyMd: params.bodyMd,
     locale,
-    visibility: visibility as "guest" | "ai" | "internal",
+    visibility,
     confidenceScore: 1.0,
     journeyStage: params.journeyStage,
     chunkType: params.chunkType,
@@ -214,6 +215,13 @@ function assertVisibilityBound(
       `[knowledge-extract] visibility violation: source '${sourceLevel}' produced chunk '${chunkLevel}'`,
     );
   }
+}
+
+function toNonSensitiveVisibility(v: VisibilityLevel): Exclude<VisibilityLevel, "sensitive"> {
+  if (v === "sensitive") {
+    throw new Error(`[knowledge-extract] sensitive visibility may not be extracted into a chunk`);
+  }
+  return v;
 }
 
 // ──────────────────────────────────────────────
@@ -493,14 +501,12 @@ export async function extractFromContacts(
   const chunks: ExtractedChunk[] = [];
 
   for (const c of contacts) {
-    // Propagate visibility from source entity
-    assertVisibilityBound(c.visibility, c.visibility);
-
+    const visibility = toNonSensitiveVisibility(c.visibility);
     const roleLabel =
       contactTypes.items.find((t) => t.id === c.roleKey)?.label ?? c.roleKey;
 
     const parts = [`${roleLabel}: ${c.displayName}.`];
-    if (c.visibility === "guest" || c.visibility === "ai") {
+    if (visibility === "guest" || visibility === "ai") {
       if (c.phone) parts.push(`Teléfono: ${c.phone}.`);
       if (c.whatsapp) parts.push(`WhatsApp: ${c.whatsapp}.`);
       if (c.email) parts.push(`Email: ${c.email}.`);
@@ -515,7 +521,7 @@ export async function extractFromContacts(
       city: property.city,
       sectionLabel: SECTION_LABELS.contact,
       entityLabel: roleLabel,
-      visibility: c.visibility,
+      visibility,
       canonicalQuestion,
     });
 
@@ -524,7 +530,7 @@ export async function extractFromContacts(
       topic: `Contacto: ${roleLabel}`,
       bodyMd,
       locale,
-      visibility: c.visibility as "guest" | "ai" | "internal",
+      visibility,
       confidenceScore: 1.0,
       journeyStage: "any",
       chunkType: "fact",
@@ -573,8 +579,7 @@ export async function extractFromAmenities(
   const chunks: ExtractedChunk[] = [];
 
   for (const inst of instances) {
-    assertVisibilityBound(inst.visibility, inst.visibility);
-
+    const visibility = toNonSensitiveVisibility(inst.visibility);
     const amenityItem = findAmenityItem(inst.amenityKey);
     const amenityLabel = amenityItem?.label ?? inst.amenityKey;
 
@@ -599,7 +604,7 @@ export async function extractFromAmenities(
       city: property.city,
       sectionLabel: SECTION_LABELS.amenity,
       entityLabel: amenityLabel,
-      visibility: inst.visibility,
+      visibility,
       canonicalQuestion: existenceQ,
     });
 
@@ -608,7 +613,7 @@ export async function extractFromAmenities(
       topic: amenityLabel,
       bodyMd: existenceBody,
       locale,
-      visibility: inst.visibility as "guest" | "ai" | "internal",
+      visibility,
       confidenceScore: 1.0,
       journeyStage: "stay",
       chunkType: "fact",
@@ -625,14 +630,14 @@ export async function extractFromAmenities(
       validTo: null,
     });
 
-    if (inst.guestInstructions && inst.visibility !== "internal") {
+    if (inst.guestInstructions && visibility !== "internal") {
       const usageQ = `¿Cómo se usa ${amenityLabel}?`;
       const usagePrefix = buildContextPrefix({
         propertyName: property.propertyNickname,
         city: property.city,
         sectionLabel: SECTION_LABELS.amenity,
         entityLabel: `Cómo usar: ${amenityLabel}`,
-        visibility: inst.visibility,
+        visibility,
         canonicalQuestion: usageQ,
       });
       chunks.push({
@@ -640,7 +645,7 @@ export async function extractFromAmenities(
         topic: `Cómo usar: ${amenityLabel}`,
         bodyMd: inst.guestInstructions,
         locale,
-        visibility: inst.visibility as "guest" | "ai" | "internal",
+        visibility,
         confidenceScore: 1.0,
         journeyStage: "stay",
         chunkType: "procedure",
@@ -693,8 +698,7 @@ export async function extractFromSpaces(
   const chunks: ExtractedChunk[] = [];
 
   for (const space of spaces) {
-    assertVisibilityBound(space.visibility, space.visibility);
-
+    const visibility = toNonSensitiveVisibility(space.visibility);
     const spaceTypeLabel = getSpaceTypeLabel(space.spaceType, space.spaceType);
 
     const bedSummary =
@@ -715,7 +719,7 @@ export async function extractFromSpaces(
       city: property.city,
       sectionLabel: SECTION_LABELS.space,
       entityLabel: space.name,
-      visibility: space.visibility,
+      visibility,
       canonicalQuestion: canonicalQ,
     });
 
@@ -724,7 +728,7 @@ export async function extractFromSpaces(
       topic: space.name,
       bodyMd,
       locale,
-      visibility: space.visibility as "guest" | "ai" | "internal",
+      visibility,
       confidenceScore: 1.0,
       journeyStage: "arrival",
       chunkType: "fact",
@@ -773,8 +777,7 @@ export async function extractFromSystems(
   const chunks: ExtractedChunk[] = [];
 
   for (const sys of systems) {
-    assertVisibilityBound(sys.visibility, sys.visibility);
-
+    const visibility = toNonSensitiveVisibility(sys.visibility);
     const systemItem = findSystemItem(sys.systemKey);
     const systemLabel = systemItem?.label ?? sys.systemKey;
 
@@ -799,7 +802,7 @@ export async function extractFromSystems(
       city: property.city,
       sectionLabel: SECTION_LABELS.system,
       entityLabel: systemLabel,
-      visibility: sys.visibility,
+      visibility,
       canonicalQuestion: descQ,
     });
 
@@ -808,7 +811,7 @@ export async function extractFromSystems(
       topic: `Sistema: ${systemLabel}`,
       bodyMd: descBody,
       locale,
-      visibility: sys.visibility as "guest" | "ai" | "internal",
+      visibility,
       confidenceScore: 1.0,
       journeyStage: "stay",
       chunkType: "fact",
@@ -840,7 +843,7 @@ export async function extractFromSystems(
         city: property.city,
         sectionLabel: SECTION_LABELS.system,
         entityLabel: `${systemLabel} — resolución de problemas`,
-        visibility: sys.visibility,
+        visibility,
         canonicalQuestion: tsQ,
       });
 
@@ -849,7 +852,7 @@ export async function extractFromSystems(
         topic: `${systemLabel} — resolución de problemas`,
         bodyMd: tsBody,
         locale,
-        visibility: sys.visibility as "guest" | "ai" | "internal",
+        visibility,
         confidenceScore: 1.0,
         journeyStage: "stay",
         chunkType: "troubleshooting",
@@ -883,6 +886,7 @@ function chunkToCreateInput(c: ExtractedChunk) {
     locale: c.locale,
     visibility: c.visibility,
     confidenceScore: c.confidenceScore,
+    isAutoExtracted: true,
     journeyStage: c.journeyStage,
     chunkType: c.chunkType,
     entityType: c.entityType,
@@ -910,6 +914,7 @@ async function upsertSection(
       where: {
         propertyId,
         entityType,
+        isAutoExtracted: true,
         ...(entityId !== null ? { entityId } : {}),
       },
     }),
@@ -989,7 +994,7 @@ export async function extractFromPropertyAll(
   ];
 
   await prisma.$transaction([
-    prisma.knowledgeItem.deleteMany({ where: { propertyId } }),
+    prisma.knowledgeItem.deleteMany({ where: { propertyId, isAutoExtracted: true } }),
     ...(all.length > 0
       ? [prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) })]
       : []),

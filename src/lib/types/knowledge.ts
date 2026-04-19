@@ -46,7 +46,7 @@ export interface ExtractedChunk {
   locale: string;
   visibility: "guest" | "ai" | "internal";
   confidenceScore: number;
-  journeyStage: string;
+  journeyStage: JourneyStage;
   chunkType: ChunkType;
   entityType: EntityType;
   entityId: string | null;
@@ -65,7 +65,7 @@ export interface KnowledgeTemplateEntry {
   topic: string;
   canonicalQuestion: string;
   bodyTemplate: string;
-  journeyStage: string;
+  journeyStage: JourneyStage;
   sourceFields: string[];
 }
 
