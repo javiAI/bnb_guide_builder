@@ -82,9 +82,14 @@ export function sanitizeSourceText(text: string): string {
       // drop the clause up to the next sentence boundary or newline.
       .replace(/\b(system|assistant|user)\s*:[^.\n]*[.\n]?/gi, " ")
       .replace(/\bignore\s+(all|previous)[^.\n]*[.\n]?/gi, " ")
-      // Turn off opening XML-ish role tags that an attacker might use to
-      // break out of the <source> wrapper.
-      .replace(/<\s*\/?\s*(system|user|assistant|instructions?|prompt)[^>]*>/gi, " ")
+      // Turn off opening XML-ish role tags an attacker might use to hijack
+      // the model, and the wrapper tags this synthesizer itself uses
+      // (<source>, <user_question>) so corpus text can't terminate the
+      // envelope and inject instructions outside the intended boundary.
+      .replace(
+        /<\s*\/?\s*(system|user|assistant|instructions?|prompt|source|user_question)[^>]*>/gi,
+        " ",
+      )
       // Backticks can trick the model into treating content as code/prompt.
       .replace(/```/g, "``")
       .replace(/\s+/g, " ")
@@ -103,9 +108,12 @@ function sanitizeUserQuestion(q: string): string {
 
 function buildSystemPrompt(language: string, audience: VisibilityLevel): string {
   const isEn = language === "en";
+  // Don't hardcode "guest-facing" — callers can ask for `ai` or `internal`
+  // and that biases the model toward guest-safe tone/content even though
+  // retrieval already allowed broader material for that audience.
   const audienceClause = isEn
-    ? `You are answering a guest-facing assistant question. Target audience: ${audience}.`
-    : `Estás respondiendo una pregunta del asistente. Audiencia: ${audience}.`;
+    ? `Target audience: ${audience}.`
+    : `Audiencia objetivo: ${audience}.`;
 
   if (isEn) {
     return [
@@ -140,12 +148,26 @@ function buildUserPrompt(input: SynthesizerInput): string {
     .map((item, idx) => {
       const n = idx + 1;
       const body = sanitizeSourceText(`${item.contextPrefix}\n${item.bodyMd}`);
-      return `<source id="${n}" entityType="${item.entityType}" topic="${item.topic}">\n${body}\n</source>`;
+      return `<source id="${n}" entityType="${escapeXmlAttr(item.entityType)}" topic="${escapeXmlAttr(item.topic)}">\n${body}\n</source>`;
     })
     .join("\n\n");
 
   const question = sanitizeUserQuestion(input.question);
   return `${sources}\n\n<user_question>\n${question}\n</user_question>`;
+}
+
+/**
+ * XML-escape attribute values. `topic` is user-controlled text and could
+ * otherwise break out of the `topic="..."` attribute via a stray quote and
+ * inject additional tags/attributes into the `<source>` wrapper.
+ */
+function escapeXmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 // ============================================================================

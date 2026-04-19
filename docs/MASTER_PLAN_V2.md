@@ -1256,7 +1256,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 **Decisiones efectivamente implementadas (ajuste vs spec Fase -1)**:
 - Voyage `voyage-3-lite` con **dim = 512** (no 1536 — la variante `-lite` rinde 512 nativos, es la config oficial). pgvector column `vector(512)`.
 - **Sin índice ANN** en MVP. Con el scope efectivo (propertyId + locale + visibility) los corpora son <1k rows; el escaneo lineal en el WHERE filtrado es más barato y evita tuning de `ivfflat (lists)`/`hnsw`. Se reintroducirá cuando un tenant supere ~10k rows.
-- BM25 via Postgres FTS con **columna generated `bm25_tsv`** (`tsvector`) + GIN. Índice vive en SQL raw (no en Prisma schema).
+- BM25 via Postgres FTS con **columna generated `bm25_tsv`** (`tsvector`) + GIN. Declarados en `schema.prisma` como `bm25Tsv Unsupported("tsvector")` + `@@index([bm25Tsv], type: Gin)` para que `prisma migrate diff` mantenga paridad con la DB, pero no son queriables vía Prisma Client — el acceso efectivo sigue siendo `$queryRaw`/`$executeRaw`.
 - Reranker: Cohere `rerank-multilingual-v3.0` (REST directo, no SDK).
 - LLM síntesis: Claude Sonnet 4.6 por default, `ASSISTANT_LLM_MODEL` overrideable.
 - Intent resolver: Claude **Haiku 4.5** (`claude-haiku-4-5-20251001`) pinned — no configurable. Heurística keyword-based como fallback cuando falta key o la llamada falla.
