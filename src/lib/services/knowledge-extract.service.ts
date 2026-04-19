@@ -11,6 +11,12 @@ import {
 } from "@/lib/taxonomy-loader";
 import type { ExtractedChunk, ChunkType, EntityType, JourneyStage } from "@/lib/types/knowledge";
 import type { VisibilityLevel } from "@prisma/client";
+import {
+  AUDIENCE_LABELS,
+  AUDIENCE_LABELS_EN,
+  SENSITIVITY_LABELS,
+  SENSITIVITY_LABELS_EN,
+} from "@/lib/visibility";
 import knowledgeTemplatesRaw from "../../../taxonomies/knowledge_templates.json";
 
 // ──────────────────────────────────────────────
@@ -27,24 +33,32 @@ const SECTION_LABELS: Record<EntityType, string> = {
   system: "Sistemas",
 };
 
-const AUDIENCE_LABELS: Record<string, string> = {
-  guest: "huéspedes durante la estancia",
-  ai: "uso interno de IA",
-  internal: "uso interno",
-  sensitive: "uso interno restringido",
-};
-
-const SENSITIVITY_LABELS: Record<string, string> = {
-  guest: "baja",
-  ai: "media",
-  internal: "alta",
-  sensitive: "máxima",
-};
 
 const SPANISH_STOPWORDS = new Set([
   "a", "al", "con", "de", "del", "el", "en", "es", "la", "las", "le", "lo",
   "los", "no", "o", "para", "por", "que", "se", "si", "su", "un", "una", "y",
 ]);
+
+const ENGLISH_STOPWORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+  "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+  "has", "have", "had", "do", "does", "did", "it", "its", "as", "if",
+  "no", "not", "so", "up", "us", "we",
+]);
+
+const SECTION_LABELS_EN: Record<EntityType, string> = {
+  property: "General",
+  access: "Arrival & Access Instructions",
+  policy: "Rules & Policies",
+  contact: "Contacts",
+  amenity: "Amenities",
+  space: "Spaces",
+  system: "Systems",
+};
+
+function getSectionLabels(locale: string): Record<EntityType, string> {
+  return locale === "en" ? SECTION_LABELS_EN : SECTION_LABELS;
+}
 
 // ──────────────────────────────────────────────
 // Pure helpers
@@ -55,11 +69,22 @@ export function buildContextPrefix(params: {
   city: string | null;
   sectionLabel: string;
   entityLabel: string;
-  visibility: string;
+  visibility: VisibilityLevel;
   canonicalQuestion: string;
+  locale?: string;
 }): string {
   const location = params.city ?? "";
   const locationPart = location ? `, ${location}` : "";
+  const isEn = params.locale === "en";
+  if (isEn) {
+    return [
+      `Property: ${params.propertyName}${locationPart}.`,
+      `Section: ${params.sectionLabel} > ${params.entityLabel}.`,
+      `Intended for: ${AUDIENCE_LABELS_EN[params.visibility] ?? params.visibility}.`,
+      `Sensitivity: ${SENSITIVITY_LABELS_EN[params.visibility] ?? "medium"}.`,
+      `Question this answers: "${params.canonicalQuestion}"`,
+    ].join("\n");
+  }
   return [
     `Propiedad: ${params.propertyName}${locationPart}.`,
     `Sección: ${params.sectionLabel} > ${params.entityLabel}.`,
@@ -69,14 +94,15 @@ export function buildContextPrefix(params: {
   ].join("\n");
 }
 
-export function buildBm25Text(contextPrefix: string, bodyMd: string): string {
+export function buildBm25Text(contextPrefix: string, bodyMd: string, locale = "es"): string {
+  const stopwords = locale === "en" ? ENGLISH_STOPWORDS : SPANISH_STOPWORDS;
   return `${contextPrefix} ${bodyMd}`
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 1 && !SPANISH_STOPWORDS.has(w))
+    .filter((w) => w.length > 1 && !stopwords.has(w))
     .join(" ");
 }
 
@@ -166,15 +192,17 @@ function makePropertyChunk(
   const visibility = toNonSensitiveVisibility(rawVisibility);
 
   const canonicalQuestion = params.canonicalQuestion ?? params.topic;
+  const sectionLabels = getSectionLabels(locale);
   const contextPrefix = buildContextPrefix({
     propertyName,
     city,
-    sectionLabel: SECTION_LABELS[params.entityType],
+    sectionLabel: sectionLabels[params.entityType],
     entityLabel: params.topic,
     visibility,
     canonicalQuestion,
+    locale,
   });
-  const bm25Text = buildBm25Text(contextPrefix, params.bodyMd);
+  const bm25Text = buildBm25Text(contextPrefix, params.bodyMd, locale);
   const contentHash = buildContentHash(contextPrefix, params.bodyMd);
   return {
     propertyId,
@@ -520,14 +548,18 @@ export async function extractFromContacts(
     if (c.guestVisibleNotes) parts.push(c.guestVisibleNotes);
 
     const bodyMd = parts.join(" ");
-    const canonicalQuestion = `¿A quién contacto para ${roleLabel}?`;
+    const canonicalQuestion = locale === "en"
+      ? `Who do I contact for ${roleLabel}?`
+      : `¿A quién contacto para ${roleLabel}?`;
+    const sectionLabels = getSectionLabels(locale);
     const prefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.contact,
+      sectionLabel: sectionLabels.contact,
       entityLabel: roleLabel,
       visibility,
       canonicalQuestion,
+      locale,
     });
 
     chunks.push({
@@ -543,7 +575,7 @@ export async function extractFromContacts(
       entityId: c.id,
       canonicalQuestion,
       contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
+      bm25Text: buildBm25Text(prefix, bodyMd, locale),
       tokens: approxTokens(prefix + " " + bodyMd),
       sourceFields: ["displayName", "roleKey", "phone", "whatsapp", "email", "availabilitySchedule", "guestVisibleNotes"],
       tags: [c.roleKey],
@@ -603,14 +635,18 @@ export async function extractFromAmenities(
       .filter(Boolean)
       .join(" ");
 
-    const existenceQ = `¿El alojamiento tiene ${amenityLabel}?`;
+    const existenceQ = locale === "en"
+      ? `Does the property have ${amenityLabel}?`
+      : `¿El alojamiento tiene ${amenityLabel}?`;
+    const amenitySectionLabel = getSectionLabels(locale).amenity;
     const existencePrefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.amenity,
+      sectionLabel: amenitySectionLabel,
       entityLabel: amenityLabel,
       visibility,
       canonicalQuestion: existenceQ,
+      locale,
     });
 
     chunks.push({
@@ -626,7 +662,7 @@ export async function extractFromAmenities(
       entityId: inst.id,
       canonicalQuestion: existenceQ,
       contextPrefix: existencePrefix,
-      bm25Text: buildBm25Text(existencePrefix, existenceBody),
+      bm25Text: buildBm25Text(existencePrefix, existenceBody, locale),
       tokens: approxTokens(existencePrefix + " " + existenceBody),
       sourceFields: ["amenityKey", "detailsJson"],
       tags: [inst.amenityKey],
@@ -636,14 +672,20 @@ export async function extractFromAmenities(
     });
 
     if (inst.guestInstructions && visibility !== "internal") {
-      const usageQ = `¿Cómo se usa ${amenityLabel}?`;
+      const usageQ = locale === "en"
+        ? `How do I use ${amenityLabel}?`
+        : `¿Cómo se usa ${amenityLabel}?`;
+      const usageEntityLabel = locale === "en"
+        ? `How to use: ${amenityLabel}`
+        : `Cómo usar: ${amenityLabel}`;
       const usagePrefix = buildContextPrefix({
         propertyName: property.propertyNickname,
         city: property.city,
-        sectionLabel: SECTION_LABELS.amenity,
-        entityLabel: `Cómo usar: ${amenityLabel}`,
+        sectionLabel: amenitySectionLabel,
+        entityLabel: usageEntityLabel,
         visibility,
         canonicalQuestion: usageQ,
+        locale,
       });
       chunks.push({
         propertyId,
@@ -658,7 +700,7 @@ export async function extractFromAmenities(
         entityId: inst.id,
         canonicalQuestion: usageQ,
         contextPrefix: usagePrefix,
-        bm25Text: buildBm25Text(usagePrefix, inst.guestInstructions),
+        bm25Text: buildBm25Text(usagePrefix, inst.guestInstructions, locale),
         tokens: approxTokens(usagePrefix + " " + inst.guestInstructions),
         sourceFields: ["guestInstructions", "detailsJson"],
         tags: [inst.amenityKey],
@@ -718,14 +760,17 @@ export async function extractFromSpaces(
     if (bedSummary) bodyParts.push(`Camas: ${bedSummary}.`);
     const bodyMd = bodyParts.join(" ");
 
-    const canonicalQ = `¿Qué hay en ${space.name}?`;
+    const canonicalQ = locale === "en"
+      ? `What is in ${space.name}?`
+      : `¿Qué hay en ${space.name}?`;
     const prefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.space,
+      sectionLabel: getSectionLabels(locale).space,
       entityLabel: space.name,
       visibility,
       canonicalQuestion: canonicalQ,
+      locale,
     });
 
     chunks.push({
@@ -741,7 +786,7 @@ export async function extractFromSpaces(
       entityId: space.id,
       canonicalQuestion: canonicalQ,
       contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
+      bm25Text: buildBm25Text(prefix, bodyMd, locale),
       tokens: approxTokens(prefix + " " + bodyMd),
       sourceFields: ["name", "spaceType", "guestNotes", "beds"],
       tags: [space.spaceType],
@@ -801,19 +846,23 @@ export async function extractFromSystems(
       .filter(Boolean)
       .join(" ");
 
-    const descQ = `¿Cómo funciona ${systemLabel} en ${property.propertyNickname}?`;
+    const descQ = locale === "en"
+      ? `How does ${systemLabel} work at ${property.propertyNickname}?`
+      : `¿Cómo funciona ${systemLabel} en ${property.propertyNickname}?`;
+    const systemSectionLabel = getSectionLabels(locale).system;
     const descPrefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.system,
+      sectionLabel: systemSectionLabel,
       entityLabel: systemLabel,
       visibility,
       canonicalQuestion: descQ,
+      locale,
     });
 
     chunks.push({
       propertyId,
-      topic: `Sistema: ${systemLabel}`,
+      topic: locale === "en" ? `System: ${systemLabel}` : `Sistema: ${systemLabel}`,
       bodyMd: descBody,
       locale,
       visibility,
@@ -824,7 +873,7 @@ export async function extractFromSystems(
       entityId: sys.id,
       canonicalQuestion: descQ,
       contextPrefix: descPrefix,
-      bm25Text: buildBm25Text(descPrefix, descBody),
+      bm25Text: buildBm25Text(descPrefix, descBody, locale),
       tokens: approxTokens(descPrefix + " " + descBody),
       sourceFields: ["systemKey", "detailsJson"],
       tags: [sys.systemKey],
@@ -841,20 +890,28 @@ export async function extractFromSystems(
       : null;
 
     if (opsNotes) {
-      const tsQ = `¿Qué hago si ${systemLabel} no funciona?`;
-      const tsBody = `Si ${systemLabel} no funciona: ${opsNotes}`;
+      const tsQ = locale === "en"
+        ? `What do I do if ${systemLabel} is not working?`
+        : `¿Qué hago si ${systemLabel} no funciona?`;
+      const tsBody = locale === "en"
+        ? `If ${systemLabel} is not working: ${opsNotes}`
+        : `Si ${systemLabel} no funciona: ${opsNotes}`;
+      const tsTopic = locale === "en"
+        ? `${systemLabel} — troubleshooting`
+        : `${systemLabel} — resolución de problemas`;
       const tsPrefix = buildContextPrefix({
         propertyName: property.propertyNickname,
         city: property.city,
-        sectionLabel: SECTION_LABELS.system,
-        entityLabel: `${systemLabel} — resolución de problemas`,
+        sectionLabel: systemSectionLabel,
+        entityLabel: tsTopic,
         visibility,
         canonicalQuestion: tsQ,
+        locale,
       });
 
       chunks.push({
         propertyId,
-        topic: `${systemLabel} — resolución de problemas`,
+        topic: tsTopic,
         bodyMd: tsBody,
         locale,
         visibility,
@@ -865,7 +922,7 @@ export async function extractFromSystems(
         entityId: sys.id,
         canonicalQuestion: tsQ,
         contextPrefix: tsPrefix,
-        bm25Text: buildBm25Text(tsPrefix, tsBody),
+        bm25Text: buildBm25Text(tsPrefix, tsBody, locale),
         tokens: approxTokens(tsPrefix + " " + tsBody),
         sourceFields: ["systemKey", "detailsJson", "opsJson"],
         tags: [sys.systemKey],
@@ -912,6 +969,7 @@ async function upsertSection(
   propertyId: string,
   entityType: EntityType,
   entityId: string | null,
+  locale: string,
   chunks: ExtractedChunk[],
 ): Promise<void> {
   await prisma.$transaction([
@@ -919,6 +977,7 @@ async function upsertSection(
       where: {
         propertyId,
         entityType,
+        locale,
         isAutoExtracted: true,
         ...(entityId !== null ? { entityId } : {}),
       },
@@ -959,7 +1018,7 @@ async function extractSection(
       chunks = await extractFromSystems(propertyId, locale, entityId ?? undefined);
       break;
   }
-  await upsertSection(propertyId, entityType, entityId, chunks);
+  await upsertSection(propertyId, entityType, entityId, locale, chunks);
 }
 
 // ──────────────────────────────────────────────
@@ -999,7 +1058,7 @@ export async function extractFromPropertyAll(
   ];
 
   await prisma.$transaction([
-    prisma.knowledgeItem.deleteMany({ where: { propertyId, isAutoExtracted: true } }),
+    prisma.knowledgeItem.deleteMany({ where: { propertyId, locale, isAutoExtracted: true } }),
     ...(all.length > 0
       ? [prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) })]
       : []),

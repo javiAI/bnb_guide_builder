@@ -110,6 +110,7 @@ model Property {
   publicSlug       String?  @unique @map("public_slug")
   brandLogoUrl     String?  @map("brand_logo_url")
   brandPaletteKey  String?  @map("brand_palette_key")
+  defaultLocale    String   @default("es") @map("default_locale")
   status           String   @default("draft")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildContextPrefix } from "@/lib/services/knowledge-extract.service";
+import type { VisibilityLevel } from "@/lib/visibility";
 import { CHUNK_TYPES, ENTITY_TYPES } from "@/lib/types/knowledge";
 
 // This file tests that buildContextPrefix produces the spec-compliant multi-line
@@ -111,7 +112,7 @@ describe("buildContextPrefix — spec format", () => {
   });
 
   it("sanitizes visibility labels correctly for all levels", () => {
-    const levels = [
+    const levels: Array<{ v: VisibilityLevel; expectedAudience: string; expectedSensitivity: string }> = [
       { v: "guest", expectedAudience: "huéspedes", expectedSensitivity: "baja" },
       { v: "ai", expectedAudience: "IA", expectedSensitivity: "media" },
       { v: "internal", expectedAudience: "interno", expectedSensitivity: "alta" },

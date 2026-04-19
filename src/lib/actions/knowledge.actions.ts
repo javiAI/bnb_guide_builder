@@ -110,7 +110,28 @@ export async function regenerateKnowledgeAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
 
-  await extractFromPropertyAll(propertyId);
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  const locale = property?.defaultLocale ?? "es";
+
+  await extractFromPropertyAll(propertyId, locale);
+
+  revalidatePath(`/properties/${propertyId}/knowledge`);
+  return { success: true };
+}
+
+export async function regenerateLocaleAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const locale = formData.get("locale") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+  if (!locale) return { success: false, error: "Falta el locale" };
+
+  await extractFromPropertyAll(propertyId, locale);
 
   revalidatePath(`/properties/${propertyId}/knowledge`);
   return { success: true };
