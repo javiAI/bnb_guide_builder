@@ -121,8 +121,11 @@
           "me he quedado fuera",
           "puerta bloqueada",
           "cerradura rota",
+          "cerradura esta rota",
           "cerradura atascada",
-          "no abre la puerta"
+          "cerradura esta atascada",
+          "no abre la puerta",
+          "no puede entrar"
         ],
         "en": [
           "locked out",
@@ -134,6 +137,8 @@
           "door jammed",
           "broken lock",
           "lock stuck",
+          "lock is stuck",
+          "lock is broken",
           "door won't open"
         ]
       }
