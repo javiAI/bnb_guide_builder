@@ -5,6 +5,11 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import { recomputeAllInBackground } from "@/lib/services/property-derived.service";
+import {
+  invalidateKnowledgeInBackground,
+  deleteEntityChunksInBackground,
+  extractFromPropertyAll,
+} from "@/lib/services/knowledge-extract.service";
 import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
@@ -146,6 +151,10 @@ export async function savePropertyAction(
   });
 
   recomputeAllInBackground(propertyId);
+  // propertyNickname/city appear in contextPrefix of ALL chunk types; trigger full regen
+  extractFromPropertyAll(propertyId).catch((err) => {
+    console.error(`[knowledge] full regen failed after saveProperty for ${propertyId}:`, err);
+  });
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -215,6 +224,9 @@ export async function saveAccessAction(
   });
 
   recomputeAllInBackground(propertyId);
+  invalidateKnowledgeInBackground(propertyId, "access", null);
+  // checkInStart/checkInEnd/checkOutTime also appear in property-level chunks
+  invalidateKnowledgeInBackground(propertyId, "property", null);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -260,13 +272,15 @@ export async function createContactAction(
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
 
-  await prisma.contact.create({
+  const created = await prisma.contact.create({
     data: {
       ...result.data,
       property: { connect: { id: propertyId } },
     },
+    select: { id: true },
   });
 
+  invalidateKnowledgeInBackground(propertyId, "contact", created.id);
   revalidatePath(`/properties/${propertyId}/contacts`);
   return { success: true };
 }
@@ -289,6 +303,7 @@ export async function updateContactAction(
     data: result.data,
   });
 
+  invalidateKnowledgeInBackground(propertyId, "contact", contactId);
   revalidatePath(`/properties/${propertyId}/contacts`);
   return { success: true };
 }
@@ -307,6 +322,7 @@ export async function deleteContactAction(
   if (!contact) return { success: false };
 
   await prisma.contact.deleteMany({ where: { id: contactId } });
+  deleteEntityChunksInBackground(contact.propertyId, "contact", contactId);
   revalidatePath(`/properties/${contact.propertyId}/contacts`);
   return { success: true };
 }
@@ -338,6 +354,7 @@ export async function savePoliciesAction(
   });
 
   recomputeAllInBackground(propertyId);
+  invalidateKnowledgeInBackground(propertyId, "policy", null);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -364,17 +381,20 @@ export async function createSpaceAction(
     };
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.space.create({
+  const createdSpaceId = await prisma.$transaction(async (tx) => {
+    const created = await tx.space.create({
       data: {
         ...result.data,
         property: { connect: { id: propertyId } },
       },
+      select: { id: true },
     });
     await recomputePropertyCounts(tx, propertyId);
+    return created.id;
   });
 
   recomputeAllInBackground(propertyId);
+  invalidateKnowledgeInBackground(propertyId, "space", createdSpaceId);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }
@@ -413,6 +433,7 @@ export async function updateSpaceAction(
   });
 
   recomputeAllInBackground(space.propertyId);
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -442,6 +463,7 @@ export async function archiveSpaceAction(
   });
 
   recomputeAllInBackground(space.propertyId);
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -466,6 +488,7 @@ export async function renameSpaceAction(
     data: { name, createdBy: "user", wizardSeedKey: null },
   });
 
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -514,6 +537,7 @@ export async function updateSpaceDetailsAction(
   });
 
   recomputeAllInBackground(space.propertyId);
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -586,6 +610,7 @@ export async function addBedAction(
   });
 
   recomputeAllInBackground(space.propertyId);
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
   revalidatePath(`/properties/${space.propertyId}/spaces`);
   return { success: true };
 }
@@ -631,6 +656,7 @@ export async function updateBedAction(
   });
 
   recomputeAllInBackground(bed.space.propertyId);
+  invalidateKnowledgeInBackground(bed.space.propertyId, "space", bed.spaceId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -661,6 +687,7 @@ export async function deleteBedAction(
   });
 
   recomputeAllInBackground(bed.space.propertyId);
+  invalidateKnowledgeInBackground(bed.space.propertyId, "space", bed.spaceId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -702,6 +729,7 @@ export async function updateBedConfigAction(
   });
 
   recomputeAllInBackground(bed.space.propertyId);
+  invalidateKnowledgeInBackground(bed.space.propertyId, "space", bed.spaceId);
   revalidatePath(`/properties/${bed.space.propertyId}/spaces`);
   return { success: true };
 }
@@ -754,6 +782,7 @@ export async function toggleAmenityAction(
   }
 
   recomputeAllInBackground(propertyId);
+  invalidateKnowledgeInBackground(propertyId, "amenity", null);
   revalidatePath(`/properties/${propertyId}/amenities`);
   return { success: true };
 }
@@ -854,6 +883,7 @@ export async function updateAmenityAction(
   });
 
   recomputeAllInBackground(instance.propertyId);
+  invalidateKnowledgeInBackground(instance.propertyId, "amenity", amenityId);
   revalidatePath(`/properties/${instance.propertyId}/amenities`);
   return { success: true };
 }
@@ -1081,10 +1111,13 @@ export async function createSystemAction(
   const taxonomyItem = findSystemItem(result.data.systemKey);
   if (!taxonomyItem) return { success: false, error: "Sistema no reconocido en la taxonomía" };
   const defaultVisibility = normaliseVisibility(taxonomyItem.visibility);
+  let createdSystemId: string;
   try {
-    await prisma.propertySystem.create({
+    const created = await prisma.propertySystem.create({
       data: { propertyId, systemKey: result.data.systemKey, visibility: defaultVisibility },
+      select: { id: true },
     });
+    createdSystemId = created.id;
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este sistema ya está configurado en la propiedad" };
@@ -1092,6 +1125,7 @@ export async function createSystemAction(
     throw err;
   }
   recomputeAllInBackground(propertyId);
+  invalidateKnowledgeInBackground(propertyId, "system", createdSystemId);
   revalidatePath(`/properties/${propertyId}/systems`);
   return { success: true };
 }
@@ -1136,6 +1170,7 @@ export async function updateSystemAction(
     },
   });
   recomputeAllInBackground(system.propertyId);
+  invalidateKnowledgeInBackground(system.propertyId, "system", systemId);
   revalidatePath(`/properties/${system.propertyId}/systems`);
   revalidatePath(`/properties/${system.propertyId}/systems/${systemId}`);
   return { success: true };
@@ -1154,6 +1189,7 @@ export async function deleteSystemAction(
   if (!system) return { success: false, error: "Sistema no encontrado" };
 
   await prisma.propertySystem.delete({ where: { id: systemId } });
+  deleteEntityChunksInBackground(system.propertyId, "system", systemId);
   recomputeAllInBackground(system.propertyId);
   revalidatePath(`/properties/${system.propertyId}/systems`);
   revalidatePath(`/properties/${system.propertyId}/spaces`);

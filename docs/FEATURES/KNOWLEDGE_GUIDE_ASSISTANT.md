@@ -18,6 +18,36 @@ Debe soportar:
 - freshness
 - citations
 
+### Knowledge extraction (Rama 11A)
+
+`knowledge-extract.service.ts` extrae chunks determinísticos de todas las entidades de la propiedad. Patrón idéntico a `PropertyDerived`: recomputable, fire-and-forget.
+
+**7 extractores**:
+
+- `extractFromProperty` — checkin/checkout times, capacity, overview. Todos `visibility=guest`.
+- `extractFromAccess` — unit access, building access (si `hasBuildingAccess=true`), checkin logistics. Usa `buildSafeAccessDescription` que excluye `customDesc` (puede contener PINs); solo labels de taxonomía + `customLabel`. **Limitación conocida de 11A**: `customLabel` es texto libre introducido por el host; si contiene un código de acceso en lugar de un nombre descriptivo, ese código aparecerá en el chunk. La eliminación garantizada de secretos en texto libre requiere una capa de referencias estructuradas (planificada en fases posteriores).
+- `extractFromPolicies` — smoking, pets, children, quiet hours. Desde `policiesJson`.
+- `extractFromContacts` — un chunk por contacto; hereda `visibility` del contacto fuente.
+- `extractFromAmenities` — chunk de existencia (`fact`) + chunk de uso (`procedure`) cuando `guestInstructions` presente. Hereda `visibility` del instance.
+- `extractFromSpaces` — un chunk por espacio incluyendo resumen de camas. Hereda `visibility` del space.
+- `extractFromSystems` — chunk de descripción (`fact`) + chunk de troubleshooting cuando `opsJson` presente. Hereda `visibility` del system.
+
+**Campos AI pipeline por chunk** (ver `docs/DATA_MODEL.md` § KnowledgeItem):
+`chunkType`, `entityType`, `entityId`, `contextPrefix` (5 líneas Contextual Retrieval), `bm25Text` (diacríticas plegadas + lowercase + stopwords), `canonicalQuestion`, `contentHash`, `sourceFields[]`, `tags[]`, `tokens`, `validFrom`, `validTo`.
+
+**Invalidación** wired en `editor.actions.ts` como fire-and-forget. **Contrato real de 11A**: granularidad `entityType` + `entityId?` — delete-then-reextract por sección completa o entidad concreta. `sourceFields[]` en cada chunk son metadatos de trazabilidad (qué campos de la entidad componen el chunk) y preparación para invalidación fina en 11B, **no** determinan el scope de invalidación en 11A.
+
+- Mutaciones de propiedad/access/policies → `invalidateKnowledgeInBackground(propertyId, entityType, null)` (borra y re-extrae todos los chunks del entityType)
+- Create/update de contacto/amenity/space/system → `invalidateKnowledgeInBackground(propertyId, entityType, entityId)` (borra y re-extrae solo los chunks de ese entityId)
+- Delete de contacto/system → `deleteEntityChunksInBackground(propertyId, entityType, entityId)` (solo borra, no re-extrae)
+
+**Visibilidad**: `sensitive` excluida en la query. Nunca hay escalación — cada chunk hereda exactamente la visibilidad de su entidad fuente. `assertVisibilityBound` lanza si se viola la invariante.
+
+**Taxonomías**:
+
+- `taxonomies/chunk_types.json` — 7 tipos de chunk con descripción y rango de palabras objetivo
+- `taxonomies/knowledge_templates.json` — plantillas de extracción **activamente consumidas** por `renderKnowledgeTemplate()` en los extractores `property`, `access` y `policy`. Los extractores `contacts`, `amenities`, `spaces` y `systems` usan las plantillas como contrato de referencia; la integración completa se consolida en 11B.
+
 ## 2. Guide generation
 
 `GuideVersion` se compone desde conocimiento elegible.

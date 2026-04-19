@@ -6,6 +6,7 @@ import {
   createKnowledgeItemSchema,
   updateKnowledgeItemSchema,
 } from "@/lib/schemas/knowledge.schema";
+import { extractFromPropertyAll } from "@/lib/services/knowledge-extract.service";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Knowledge Items ──
@@ -97,6 +98,19 @@ export async function deleteKnowledgeItemAction(
   });
 
   await prisma.knowledgeItem.delete({ where: { id: itemId } });
+
+  revalidatePath(`/properties/${propertyId}/knowledge`);
+  return { success: true };
+}
+
+export async function regenerateKnowledgeAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+
+  await extractFromPropertyAll(propertyId);
 
   revalidatePath(`/properties/${propertyId}/knowledge`);
   return { success: true };

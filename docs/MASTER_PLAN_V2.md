@@ -1136,7 +1136,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 **Decisiones cerradas en Fase -1 (2026-04-17)**:
 - **Taxonomía de chunks**: `fact | procedure | policy | place | troubleshooting | summary | template` ([AI_KNOWLEDGE_BASE_SPEC.md:L149-L192](research/AI_KNOWLEDGE_BASE_SPEC.md)). Cada extractor produce 1 o N items con `chunkType` explícito.
 - **Generación de embeddings**: diferida a 11C (aquí solo se persiste el texto + metadata). 11A deja `embedding: null` + `bm25Text` listo; 11C puebla embeddings en batch post-i18n.
-- **Invalidación**: `sourceType` + `sourceId` + `sourceFields[]` (campos de la entidad que el item referencia). Editar `Property.checkInTime` invalida solo items cuyo `sourceFields` incluye `checkInTime`.
+- **Invalidación (implementación real de 11A)**: granularidad `entityType` + `entityId?`. Delete-then-reextract por sección completa (cuando `entityId=null`) o entidad concreta. `sourceFields[]` son metadatos de trazabilidad por chunk, no determinan el scope de invalidación en esta rama — ese nivel de granularidad se introduce en 11B.
 - **`journeyStage`**: enum `pre_arrival | arrival | stay | checkout | post_checkout | any`, mapeado desde la sección de origen (arrival→arrival, rules→stay, etc.) + override manual editable.
 - **`confidenceScore` inicial**: 1.0 para autoextract determinístico; 0.5 para items creados a mano; editable.
 
@@ -1150,17 +1150,28 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `taxonomies/chunk_types.json` — catálogo de `chunkType` con descripción y rules de uso (validado con Zod en el loader)
 
 **Archivos a modificar**:
-- `prisma/schema.prisma` — `KnowledgeItem` expandido con todos los campos AI (ver Motivación). Campos nuevos: `chunkType String`, `locale String`, `audience String`, `journeyStage String`, `entityType String`, `entityId String?`, `contextPrefix String`, `bm25Text String`, `embedding Unsupported("vector(1536)")?` (pgvector), `tokens Int`, `sourceFields String[]`, `confidenceScore Float @default(1.0)`, `tags String[]`. Índices: `@@index([propertyId, audience, locale, journeyStage])`, `@@index([propertyId, chunkType])`. **Migración**: `prisma db push --accept-data-loss` en dev (no hay KnowledgeItem en prod).
-- `src/lib/actions/editor.actions.ts` — invalidar KnowledgeItems por `sourceFields` tras mutación canónica; fire-and-forget llamada a `extractFromProperty`
+- `prisma/schema.prisma` — `KnowledgeItem` expandido. Campos añadidos en 11A: `chunkType`, `locale`, `entityType`, `entityId?`, `contextPrefix`, `bm25Text`, `canonicalQuestion?`, `contentHash?`, `tokens`, `sourceFields[]`, `tags[]`, `validFrom?`, `validTo?`. `embedding` **no** se añade en 11A — pgvector + Voyage se incorporan en 11C. `audience` → se usa campo `visibility` ya existente. Índices: `@@index([propertyId, visibility, locale])`, `@@index([propertyId, entityType, entityId])`. **Migración**: `prisma db push --accept-data-loss` en dev.
+- `src/lib/actions/editor.actions.ts` — 22 call sites fire-and-forget (`invalidateKnowledgeInBackground` / `deleteEntityChunksInBackground`) en todos los puntos de mutación, con scope `entityType + entityId?`
 - `src/lib/types/knowledge.ts` (nuevo) — tipos TS derivados del schema + Zod para validación de extractors
 
 **Tests**:
 - `src/test/knowledge-extract.test.ts` — property fixture (3 spaces + 5 amenities + 1 access + 3 rules) genera N items con `chunkType`, `journeyStage` y `audience` correctos
 - `src/test/knowledge-extract-context-prefix.test.ts` — prefix correcto en los 7 chunkTypes; no-hardcoded de IDs (fail si aparece `am.wifi` literal)
-- `src/test/knowledge-invalidation.test.ts` — editar `Property.checkInTime` invalida solo items con `sourceFields` incluye `checkInTime`; no toca el resto
+- `src/test/knowledge-invalidation.test.ts` — invalidación por `entityType+entityId?` borra solo el scope correcto; `deleteEntityChunksInBackground` borra solo el entityId dado
 - `src/test/knowledge-visibility-boundary.test.ts` — items con `audience = sensitive` nunca salen de un extractor cuyo origen es `Property.houseRules` público (fail-loud)
 
 **Criterio de done**: página `/knowledge` muestra hechos extraídos + editables. Rebuild determinístico (mismo input → mismo output). Schema tiene todos los campos AI listos para retrieval hybrid.
+
+**Ajustes implementados en Fase -1 (2026-04-19)**:
+
+- `audience` → no se añade como campo nuevo; se usa el campo `visibility` ya existente. Plan decía `audience String`, implementación usa `visibility` (guest/ai/internal/sensitive) ya tipado.
+- Campos añadidos que no estaban en el plan pero sí en `docs/research/AI_KNOWLEDGE_BASE_SPEC.md`: `canonicalQuestion`, `contentHash`, `validFrom`, `validTo`. Los cuatro están en el schema.
+- `contextPrefix` es multi-línea (5 líneas): `Propiedad: …`, `Sección: …`, `Destinado a: …`, `Sensibilidad: …`, `Pregunta que responde: "…"`. El plan describía un prefijo de una línea — spec tiene precedencia.
+- `validFrom`/`validTo`: siempre `null` en 11A (sin inferencia heurística desde texto). Solo se rellenan si la fuente estructurada lo provee explícitamente.
+- Sanitización de secretos de acceso: `buildSafeAccessDescription` (unifica `buildSafeUnitAccessDescription` + `buildSafeBuildingAccessDescription`) excluye `customDesc` (puede contener PINs). Solo labels de taxonomía + `customLabel`. Limitación conocida: `customLabel` es texto libre — si el host embebe un PIN aquí, aparece en el chunk. Eliminación garantizada de secretos en texto libre requiere capa estructurada (fases posteriores).
+- Invalidación: por `entityType` + `entityId` opcional (delete-then-reextract). No por `sourceFields` individuales — ese nivel de granularidad se introduce en 11B con `@@unique`.
+- Ruta de spec corregida: `docs/research/AI_KNOWLEDGE_BASE_SPEC.md` (no `research/` sin `docs/`).
+- Extractor `extractFromRules` del plan → renombrado `extractFromPolicies` (alineado con model `policiesJson` de Property).
 
 **Preparación**:
 - **Contexto a leer**:

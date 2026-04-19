@@ -1,0 +1,194 @@
+{
+  "file": "knowledge_templates.json",
+  "version": "2026-04-19",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for traceability).",
+  "templates": {
+    "property": {
+      "fact": {
+        "checkin_time": {
+          "es": {
+            "topic": "Hora de check-in",
+            "canonicalQuestion": "¿A qué hora empieza el check-in?",
+            "bodyTemplate": "El check-in en {{propertyName}} es a partir de las {{checkInStart}} y hasta las {{checkInEnd}}.",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["checkInStart", "checkInEnd"]
+          }
+        },
+        "checkout_time": {
+          "es": {
+            "topic": "Hora de check-out",
+            "canonicalQuestion": "¿A qué hora es el check-out?",
+            "bodyTemplate": "El check-out en {{propertyName}} debe realizarse antes de las {{checkOutTime}}.",
+            "journeyStage": "checkout",
+            "sourceFields": ["checkOutTime"]
+          }
+        },
+        "capacity": {
+          "es": {
+            "topic": "Capacidad del alojamiento",
+            "canonicalQuestion": "¿Cuántas personas pueden alojarse?",
+            "bodyTemplate": "{{propertyName}} tiene capacidad para {{maxGuests}} personas (máximo {{maxAdults}} adultos{{#if maxChildren}} y {{maxChildren}} niños{{/if}}).",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["maxGuests", "maxAdults", "maxChildren"]
+          }
+        },
+        "overview": {
+          "es": {
+            "topic": "Descripción general",
+            "canonicalQuestion": "¿Qué tipo de alojamiento es y dónde está?",
+            "bodyTemplate": "{{propertyName}} es un {{propertyTypeLabel}} ubicado en {{city}}{{#if country}}, {{country}}{{/if}}.",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["propertyNickname", "propertyType", "city", "country"]
+          }
+        }
+      }
+    },
+    "access": {
+      "procedure": {
+        "unit_access": {
+          "es": {
+            "topic": "Acceso a la unidad",
+            "canonicalQuestion": "¿Cómo se accede al alojamiento?",
+            "bodyTemplate": "Para acceder a {{propertyName}}: {{accessDescription}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["primaryAccessMethod", "accessMethodsJson"]
+          }
+        },
+        "building_access": {
+          "es": {
+            "topic": "Acceso al edificio",
+            "canonicalQuestion": "¿Cómo se entra al edificio?",
+            "bodyTemplate": "Para entrar al edificio de {{propertyName}}: {{buildingAccessDescription}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["accessMethodsJson"]
+          }
+        },
+        "checkin_logistics": {
+          "es": {
+            "topic": "Logística de llegada",
+            "canonicalQuestion": "¿Qué debo saber para llegar al alojamiento?",
+            "bodyTemplate": "Llegada a {{propertyName}}: check-in entre las {{checkInStart}} y las {{checkInEnd}}. Check-out antes de las {{checkOutTime}}.{{#if autonomousPart}} {{autonomousPart}}{{/if}}{{#if accessSummary}} {{accessSummary}}{{/if}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["checkInStart", "checkInEnd", "checkOutTime", "isAutonomousCheckin", "primaryAccessMethod", "accessMethodsJson"]
+          }
+        }
+      }
+    },
+    "policy": {
+      "policy": {
+        "smoking": {
+          "es": {
+            "topic": "Política de fumadores",
+            "canonicalQuestion": "¿Se puede fumar en el alojamiento?",
+            "bodyTemplate": "{{smokingPolicyText}}",
+            "journeyStage": "any",
+            "sourceFields": ["policiesJson"]
+          }
+        },
+        "pets": {
+          "es": {
+            "topic": "Política de mascotas",
+            "canonicalQuestion": "¿Se admiten mascotas?",
+            "bodyTemplate": "{{petsPolicyText}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["policiesJson"]
+          }
+        },
+        "children": {
+          "es": {
+            "topic": "Política sobre niños",
+            "canonicalQuestion": "¿Se admiten niños?",
+            "bodyTemplate": "{{childrenPolicyText}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["policiesJson", "infantsAllowed", "maxChildren"]
+          }
+        },
+        "quiet_hours": {
+          "es": {
+            "topic": "Horario de silencio",
+            "canonicalQuestion": "¿Hay horario de silencio?",
+            "bodyTemplate": "{{quietHoursPolicyText}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["policiesJson"]
+          }
+        }
+      }
+    },
+    "contact": {
+      "fact": {
+        "role_contact": {
+          "es": {
+            "topic": "Contacto: {{roleName}}",
+            "canonicalQuestion": "¿A quién contacto para {{roleName}}?",
+            "bodyTemplate": "{{roleName}}: {{displayName}}.{{#if phone}} Teléfono: {{phone}}.{{/if}}{{#if whatsapp}} WhatsApp: {{whatsapp}}.{{/if}}{{#if email}} Email: {{email}}.{{/if}}{{#if availabilitySchedule}} Disponibilidad: {{availabilitySchedule}}.{{/if}}{{#if guestVisibleNotes}} {{guestVisibleNotes}}{{/if}}",
+            "journeyStage": "any",
+            "sourceFields": ["displayName", "roleKey", "phone", "whatsapp", "email", "availabilitySchedule", "guestVisibleNotes"]
+          }
+        }
+      }
+    },
+    "amenity": {
+      "fact": {
+        "existence": {
+          "es": {
+            "topic": "{{amenityLabel}}",
+            "canonicalQuestion": "¿El alojamiento tiene {{amenityLabel}}?",
+            "bodyTemplate": "{{propertyName}} dispone de {{amenityLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["amenityKey", "detailsJson"]
+          }
+        }
+      },
+      "procedure": {
+        "usage": {
+          "es": {
+            "topic": "Cómo usar: {{amenityLabel}}",
+            "canonicalQuestion": "¿Cómo se usa {{amenityLabel}}?",
+            "bodyTemplate": "{{guestInstructions}}",
+            "journeyStage": "stay",
+            "sourceFields": ["guestInstructions", "detailsJson"]
+          }
+        }
+      }
+    },
+    "space": {
+      "fact": {
+        "description": {
+          "es": {
+            "topic": "{{spaceName}}",
+            "canonicalQuestion": "¿Qué hay en {{spaceName}}?",
+            "bodyTemplate": "{{spaceName}} es un {{spaceTypeLabel}}.{{#if guestNotes}} {{guestNotes}}{{/if}}{{#if bedSummary}} Cuenta con: {{bedSummary}}.{{/if}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["name", "spaceType", "guestNotes", "beds"]
+          }
+        }
+      }
+    },
+    "system": {
+      "fact": {
+        "description": {
+          "es": {
+            "topic": "Sistema: {{systemLabel}}",
+            "canonicalQuestion": "¿Cómo funciona {{systemLabel}} en {{propertyName}}?",
+            "bodyTemplate": "{{propertyName}} dispone de {{systemLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["systemKey", "detailsJson"]
+          }
+        }
+      },
+      "troubleshooting": {
+        "generic": {
+          "es": {
+            "topic": "{{systemLabel}} — resolución de problemas",
+            "canonicalQuestion": "¿Qué hago si {{systemLabel}} no funciona?",
+            "bodyTemplate": "Si {{systemLabel}} no funciona:{{#if troubleshootingSteps}} {{troubleshootingSteps}}{{/if}}{{#if opsNotes}} {{opsNotes}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["systemKey", "detailsJson", "opsJson"]
+          }
+        }
+      }
+    }
+  }
+}

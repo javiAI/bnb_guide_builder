@@ -21,7 +21,7 @@ function allowedVisibilitiesFor(audience: AssistantAudience): VisibilityLevel[] 
 export interface RetrievalOptions {
   propertyId: string;
   question: string;
-  language: string;
+  locale: string;
   audience: AssistantAudience;
   journeyStage?: string;
 }
@@ -30,7 +30,7 @@ export interface RetrievalOptions {
  * Retrieve knowledge item candidates for a given question.
  *
  * Pipeline:
- * 1. Filter by property, language, visibility
+ * 1. Filter by property, locale, visibility
  * 2. Optional journey stage filter
  * 3. Keyword matching (simple word overlap for MVP)
  * 4. Rank by relevance score
@@ -41,10 +41,10 @@ export async function retrieveCandidates(
 ): Promise<RetrievalCandidate[]> {
   const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
-  // Step 1-2: DB query with visibility and language filters
+  // Step 1-2: DB query with locale and visibility filters
   const where: Record<string, unknown> = {
     propertyId: opts.propertyId,
-    language: opts.language,
+    locale: opts.locale,
     visibility: { in: allowedVisibilities },
   };
 

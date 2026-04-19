@@ -1,0 +1,50 @@
+{
+  "file": "chunk_types.json",
+  "version": "2026-04-19",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "fact",
+      "label": "Hecho",
+      "description": "Respuesta atómica a una pregunta concreta.",
+      "targetWordRange": [40, 120]
+    },
+    {
+      "id": "procedure",
+      "label": "Procedimiento",
+      "description": "Pasos secuenciales con fallos comunes y escalado.",
+      "targetWordRange": [80, 220]
+    },
+    {
+      "id": "policy",
+      "label": "Política",
+      "description": "Norma condicional y testable.",
+      "targetWordRange": [60, 160]
+    },
+    {
+      "id": "place",
+      "label": "Lugar local",
+      "description": "Ficha local con horario, distancia, categoría y enlace.",
+      "targetWordRange": [40, 100]
+    },
+    {
+      "id": "troubleshooting",
+      "label": "Resolución de problemas",
+      "description": "Árbol corto de diagnóstico con ramas de fallo y escalado.",
+      "targetWordRange": [60, 180]
+    },
+    {
+      "id": "summary",
+      "label": "Resumen de sección",
+      "description": "Resumen de sección o propiedad para recall amplio.",
+      "targetWordRange": [120, 300]
+    },
+    {
+      "id": "template",
+      "label": "Plantilla de mensaje",
+      "description": "Plantilla de mensaje aprobada por el host.",
+      "targetWordRange": [40, 200]
+    }
+  ]
+}

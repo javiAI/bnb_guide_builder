@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   updateKnowledgeItemAction,
@@ -18,6 +17,9 @@ interface KnowledgeItemData {
   journeyStage: string | null;
   confidenceScore: number | null;
   lastVerifiedAt: string | null;
+  chunkType: string;
+  entityType: string;
+  contextPrefix: string;
 }
 
 interface KnowledgeItemCardProps {
@@ -36,6 +38,7 @@ export function KnowledgeItemCard({
   journeyLabel,
 }: KnowledgeItemCardProps) {
   const [editing, setEditing] = useState(false);
+  const [prefixOpen, setPrefixOpen] = useState(false);
 
   const [updateState, updateAction, updatePending] = useActionState<ActionResult | null, FormData>(
     updateKnowledgeItemAction,
@@ -133,49 +136,73 @@ export function KnowledgeItemCard({
   }
 
   return (
-    <div className="flex items-start justify-between rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-[var(--foreground)]">
-            {item.topic}
-          </h3>
-          <Badge label={visibilityLabel} tone={visibilityTone} />
-          {journeyLabel && (
-            <Badge label={journeyLabel} tone="neutral" />
+    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
+      <div className="flex items-start justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-medium text-[var(--foreground)]">
+              {item.topic}
+            </h3>
+            <Badge label={visibilityLabel} tone={visibilityTone} />
+            {journeyLabel && (
+              <Badge label={journeyLabel} tone="neutral" />
+            )}
+            {item.entityType && item.entityType !== "property" && (
+              <Badge label={item.entityType} tone="neutral" />
+            )}
+            {item.chunkType && item.chunkType !== "fact" && (
+              <Badge label={item.chunkType} tone="neutral" />
+            )}
+          </div>
+          <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
+            {item.bodyMd}
+          </p>
+          <div className="mt-2 flex items-center gap-3 text-xs text-[var(--color-neutral-400)]">
+            {item.confidenceScore != null && (
+              <span>Confianza: {Math.round(item.confidenceScore * 100)}%</span>
+            )}
+            {item.lastVerifiedAt && (
+              <span>Verificado: {new Date(item.lastVerifiedAt).toLocaleDateString("es-ES")}</span>
+            )}
+          </div>
+          {item.contextPrefix && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setPrefixOpen((v) => !v)}
+                className="text-xs text-[var(--color-primary-600)] hover:underline"
+              >
+                {prefixOpen ? "Ocultar contexto IA" : "Ver contexto IA"}
+              </button>
+              {prefixOpen && (
+                <pre className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-neutral-50)] p-2 text-xs text-[var(--color-neutral-600)]">
+                  {item.contextPrefix}
+                </pre>
+              )}
+            </div>
           )}
         </div>
-        <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
-          {item.bodyMd}
-        </p>
-        <div className="mt-2 flex items-center gap-3 text-xs text-[var(--color-neutral-400)]">
-          {item.confidenceScore != null && (
-            <span>Confianza: {Math.round(item.confidenceScore * 100)}%</span>
-          )}
-          {item.lastVerifiedAt && (
-            <span>Verificado: {new Date(item.lastVerifiedAt).toLocaleDateString("es-ES")}</span>
-          )}
-        </div>
-      </div>
 
-      <div className="ml-4 flex shrink-0 gap-2">
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
-        >
-          Editar
-        </button>
-        <form action={deleteAction}>
-          <input type="hidden" name="itemId" value={item.id} />
-          <input type="hidden" name="propertyId" value={propertyId} />
+        <div className="ml-4 flex shrink-0 gap-2">
           <button
-            type="submit"
-            disabled={deletePending}
-            className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-600)] transition-colors hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
           >
-            {deletePending ? "…" : "Eliminar"}
+            Editar
           </button>
-        </form>
+          <form action={deleteAction}>
+            <input type="hidden" name="itemId" value={item.id} />
+            <input type="hidden" name="propertyId" value={propertyId} />
+            <button
+              type="submit"
+              disabled={deletePending}
+              className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-600)] transition-colors hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+            >
+              {deletePending ? "…" : "Eliminar"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

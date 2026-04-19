@@ -50,7 +50,7 @@ export async function POST(
   const candidates = await retrieveCandidates({
     propertyId,
     question,
-    language,
+    locale: language,
     audience,
     journeyStage,
   });

@@ -568,26 +568,42 @@ model KnowledgeSource {
 }
 
 model KnowledgeItem {
-  id              String   @id @default(cuid())
-  propertyId      String   @map("property_id")
-  sourceId        String?  @map("source_id")
-  topic           String
-  bodyMd          String   @map("body_md")
-  language        String   @default("es")
-  visibility      VisibilityLevel @default(guest)
-  confidenceScore Float?   @map("confidence_score")
-  journeyStage    String?  @map("journey_stage")
-  lastVerifiedAt  DateTime? @map("last_verified_at")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String          @id @default(cuid())
+  propertyId       String          @map("property_id")
+  sourceId         String?         @map("source_id")
+  topic            String
+  bodyMd           String          @map("body_md")
+  locale           String          @default("es")
+  visibility       VisibilityLevel @default(guest)
+  confidenceScore  Float           @default(0.5) @map("confidence_score")
+  isAutoExtracted  Boolean         @default(false) @map("is_auto_extracted")
+  journeyStage     String?         @map("journey_stage")
+  lastVerifiedAt   DateTime?       @map("last_verified_at")
+  chunkType        String          @default("fact") @map("chunk_type")
+  entityType       String          @default("property") @map("entity_type")
+  entityId         String?         @map("entity_id")
+  canonicalQuestion String?        @map("canonical_question")
+  contextPrefix    String          @default("") @map("context_prefix")
+  bm25Text         String          @default("") @map("bm25_text")
+  tokens           Int             @default(0)
+  sourceFields     String[]        @default([]) @map("source_fields")
+  tags             String[]        @default([])
+  contentHash      String?         @map("content_hash")
+  validFrom        DateTime?       @map("valid_from")
+  validTo          DateTime?       @map("valid_to")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  property  Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  source    KnowledgeSource?   @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  property  Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  source    KnowledgeSource?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   citations KnowledgeCitation[]
 
   @@index([propertyId])
-  @@index([propertyId, visibility, language])
-  @@index([propertyId, journeyStage])
+  @@index([propertyId, locale, visibility])
+  @@index([propertyId, locale, journeyStage])
+  @@index([propertyId, chunkType])
+  @@index([propertyId, entityType, entityId])
+  @@index([propertyId, visibility])
   @@map("knowledge_items")
 }
 

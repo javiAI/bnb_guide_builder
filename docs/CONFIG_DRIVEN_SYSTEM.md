@@ -20,7 +20,7 @@ src/config/
     ├── renderer-registry.ts         # Configuración de renderizado por target
     └── media-registry.ts            # API sobre media_requirements taxonomy
 
-taxonomies/                           # Source of truth (16 JSON files)
+taxonomies/                           # Source of truth (18+ JSON files)
 ├── property_types.json
 ├── room_types.json
 ├── access_methods.json
@@ -36,7 +36,9 @@ taxonomies/                           # Source of truth (16 JSON files)
 ├── dynamic_field_rules.json
 ├── automation_channels.json
 ├── media_asset_roles.json
-└── review_reasons.json
+├── review_reasons.json
+├── chunk_types.json          # Rama 11A — 7 tipos de chunk de conocimiento
+└── knowledge_templates.json  # Rama 11A — plantillas de extracción por entityType × chunkType × locale
 
 src/lib/taxonomy-loader.ts            # Carga y helpers tipados
 src/lib/types/taxonomy.ts             # Tipos TypeScript para taxonomías
@@ -46,7 +48,7 @@ src/lib/types/taxonomy.ts             # Tipos TypeScript para taxonomías
 
 ### 1. Taxonomías (source of truth)
 
-Los 16 archivos JSON en `taxonomies/` son la fuente de verdad. Cada uno incluye:
+Los archivos JSON en `taxonomies/` son la fuente de verdad. Cada uno incluye:
 - `file`, `version`, `locale` (es-ES), `units_system` (metric)
 - IDs estables (e.g., `am.smart_lock`, `pt.apartment`)
 - Labels en español
