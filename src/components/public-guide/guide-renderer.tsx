@@ -1,4 +1,5 @@
 import type { GuideTree } from "@/lib/types/guide-tree";
+import type { GuideSearchIndex } from "@/lib/types/guide-search-hit";
 import { getBrandPair } from "@/config/brand-palette";
 import {
   filterRenderableItems,
@@ -6,15 +7,17 @@ import {
 } from "@/lib/renderers/_guide-display";
 import { GuideBrandHeader } from "./guide-brand-header";
 import { GuideToc, type GuideTocEntry } from "./guide-toc";
+import { GuideSearch } from "./guide-search";
 import { getPublicSectionComponent } from "./public-guide-section-registry";
 import "./guide.css";
 
 interface Props {
   tree: GuideTree;
   propertyTitle: string;
+  searchIndex: GuideSearchIndex;
 }
 
-export function GuideRenderer({ tree, propertyTitle }: Props) {
+export function GuideRenderer({ tree, propertyTitle, searchIndex }: Props) {
   const pair = getBrandPair(tree.brandPaletteKey ?? null);
 
   // Drop sections marked `hideWhenEmptyForGuest` that have no renderable
@@ -46,7 +49,9 @@ export function GuideRenderer({ tree, propertyTitle }: Props) {
         } as React.CSSProperties
       }
     >
-      <GuideBrandHeader title={propertyTitle} logoUrl={tree.brandLogoUrl} />
+      <GuideBrandHeader title={propertyTitle} logoUrl={tree.brandLogoUrl}>
+        <GuideSearch index={searchIndex} />
+      </GuideBrandHeader>
       <div className="guide-layout">
         <GuideToc entries={tocEntries} />
         <main className="guide-sections">

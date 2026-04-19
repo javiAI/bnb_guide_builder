@@ -26,11 +26,19 @@
 
 .guide-brand-header {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   gap: 1rem;
   align-items: center;
   padding: 1.5rem 0;
   border-bottom: 1px solid var(--guide-border);
+}
+
+.guide-brand-header__titles {
+  min-width: 0;
+}
+
+.guide-brand-header__slot {
+  justify-self: end;
 }
 
 .guide-brand-header__logo {
@@ -359,4 +367,202 @@
 .guide-toast__title {
   margin: 0;
   font-weight: 600;
+}
+
+/* Search (Rama 10H) — trigger lives in the brand header slot, dialog
+ * opens over the guide shell. Sizing/contrast align with existing guide
+ * tokens (no new tokens per Liora freeze). */
+
+.guide-search__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--guide-border);
+  border-radius: 999px;
+  background: var(--guide-surface);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.guide-search__trigger:hover,
+.guide-search__trigger:focus-visible {
+  border-color: var(--guide-brand);
+  outline: none;
+}
+
+.guide-search__trigger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+}
+
+.guide-search__trigger-label {
+  color: var(--guide-muted);
+}
+
+@media (max-width: 540px) {
+  .guide-search__trigger-label {
+    display: none;
+  }
+}
+
+.guide-search__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  animation: guideSearchFadeIn 120ms ease-out;
+  z-index: 50;
+}
+
+.guide-search__dialog {
+  /* Radix portals the dialog to `document.body`, so `.guide-root`-scoped
+   * tokens are unreachable. Rebind the minimum set the dialog uses so the
+   * surface, text and borders render against known values (axe WCAG AA). */
+  --guide-brand: var(--guide-brand-light, var(--color-primary-500));
+  --guide-muted: var(--color-neutral-600);
+  --guide-surface: var(--surface-elevated, #ffffff);
+  --guide-border: var(--color-neutral-200);
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  background: var(--guide-surface);
+  color: var(--foreground);
+  padding: 1rem;
+  gap: 0.75rem;
+  animation: guideSearchFadeIn 160ms ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  .guide-search__dialog {
+    --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
+    --guide-muted: var(--color-neutral-400);
+    --guide-surface: var(--color-neutral-900);
+    --guide-border: var(--color-neutral-800);
+  }
+}
+
+@media (min-width: 640px) {
+  .guide-search__dialog {
+    inset: auto;
+    top: 10vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, calc(100vw - 2rem));
+    max-height: 70vh;
+    border-radius: 0.75rem;
+    border: 1px solid var(--guide-border);
+    padding: 1.25rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  }
+}
+
+.guide-search__dialog-title,
+.guide-search__dialog-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.guide-search__input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--guide-border);
+  border-radius: 0.5rem;
+  background: var(--background);
+}
+
+.guide-search__input-row:focus-within {
+  border-color: var(--guide-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+}
+
+.guide-search__input {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 1rem;
+  outline: none;
+}
+
+.guide-search__results-wrap {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.guide-search__empty {
+  margin: 0;
+  padding: 1rem 0.25rem;
+  color: var(--guide-muted);
+  font-size: 0.9375rem;
+}
+
+.guide-search__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-search__result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.125rem 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.guide-search__result--active,
+.guide-search__result:hover {
+  background: color-mix(in srgb, var(--guide-brand) 12%, transparent);
+}
+
+.guide-search__result-label {
+  grid-column: 1;
+  grid-row: 1;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.guide-search__result-snippet {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.875rem;
+  color: var(--guide-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.guide-search__result-section {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.8125rem;
+  color: var(--guide-muted);
+  white-space: nowrap;
+}
+
+@keyframes guideSearchFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

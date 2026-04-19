@@ -256,6 +256,7 @@ const GuideSectionConfigSchema = z
     emptyCopy: z.string().min(1).optional(),
     emptyCopyGuest: z.string().min(1).optional(),
     hideWhenEmptyForGuest: z.boolean().optional(),
+    searchableKeywords: z.array(z.string().min(1)).optional(),
   })
   .strict()
   .refine(

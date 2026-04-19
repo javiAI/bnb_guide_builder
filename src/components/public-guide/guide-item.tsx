@@ -44,10 +44,14 @@ export function GuideItem({ item }: Props) {
         if (renderableChildren.length === 0) return null;
         return (
           <ol className="guide-item__children">
-            {renderableChildren.map((child) => {
+            {renderableChildren.map((child, idx) => {
               const childValue = resolveDisplayValue(child);
+              // Stable child anchor id — must match `anchor` emitted by
+              // `buildGuideSearchIndex` for flattened children. Search
+              // scrolls to `#${anchor}`, so index parity is load-bearing.
+              const childAnchor = `item-${item.id}--child-${idx}`;
               return (
-                <li key={child.id}>
+                <li key={child.id} id={childAnchor}>
                   <strong>{child.label}</strong>
                   {childValue && <> — {childValue}</>}
                 </li>

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
 import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
+import { buildGuideSearchIndex } from "@/lib/services/guide-search-index.service";
 import type { GuideTree } from "@/lib/types/guide-tree";
 import { GuideRenderer } from "@/components/public-guide/guide-renderer";
 import { getE2EFixture } from "@/test/fixtures/e2e";
@@ -52,6 +53,13 @@ export default async function PublicGuideE2EPage({ params }: Props) {
     })),
   };
   const guestTree = normalizeGuideForPresentation(filteredTree, "guest");
+  const searchIndex = buildGuideSearchIndex(guestTree);
 
-  return <GuideRenderer tree={guestTree} propertyTitle={propertyTitle} />;
+  return (
+    <GuideRenderer
+      tree={guestTree}
+      propertyTitle={propertyTitle}
+      searchIndex={searchIndex}
+    />
+  );
 }
