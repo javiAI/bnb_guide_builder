@@ -257,35 +257,37 @@ async function persistConversation(params: {
   reranked: RerankedItem[];
 }): Promise<string> {
   // Scope the lookup to the requesting property — a conversationId from
-  // another property must never attach history to this one.
-  const conversation = params.conversationId
-    ? await prisma.assistantConversation.findFirst({
-        where: { id: params.conversationId, propertyId: params.propertyId },
-        select: { id: true },
-      })
-    : null;
+  // another property must never attach history to this one. Conversation
+  // lookup/create + both message inserts run inside a single transaction so
+  // a mid-flight failure can't leave an orphaned conversation behind.
+  return prisma.$transaction(async (tx) => {
+    const conversation = params.conversationId
+      ? await tx.assistantConversation.findFirst({
+          where: { id: params.conversationId, propertyId: params.propertyId },
+          select: { id: true },
+        })
+      : null;
 
-  const convoId = conversation
-    ? conversation.id
-    : (await prisma.assistantConversation.create({
-        data: {
-          propertyId: params.propertyId,
-          actorType: params.actorType,
-          audience: params.audience,
-          language: params.language,
-        },
-        select: { id: true },
-      })).id;
+    const convoId = conversation
+      ? conversation.id
+      : (await tx.assistantConversation.create({
+          data: {
+            propertyId: params.propertyId,
+            actorType: params.actorType,
+            audience: params.audience,
+            language: params.language,
+          },
+          select: { id: true },
+        })).id;
 
-  await prisma.$transaction([
-    prisma.assistantMessage.create({
+    await tx.assistantMessage.create({
       data: {
         conversationId: convoId,
         role: "user",
         body: params.userQuestion,
       },
-    }),
-    prisma.assistantMessage.create({
+    });
+    await tx.assistantMessage.create({
       data: {
         conversationId: convoId,
         role: "assistant",
@@ -294,10 +296,10 @@ async function persistConversation(params: {
         confidenceScore: params.confidenceScore,
         escalated: params.escalated,
       },
-    }),
-  ]);
+    });
 
-  return convoId;
+    return convoId;
+  });
 }
 
 /**

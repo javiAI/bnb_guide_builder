@@ -35,12 +35,33 @@ vi.mock("@/lib/services/assistant/retriever", async () => {
 });
 
 const { assistantMessageCreateMock, conversationCreateMock, conversationFindMock, transactionMock } =
-  vi.hoisted(() => ({
-    assistantMessageCreateMock: vi.fn().mockResolvedValue({}),
-    conversationCreateMock: vi.fn().mockResolvedValue({ id: "conv_new" }),
-    conversationFindMock: vi.fn().mockResolvedValue(null),
-    transactionMock: vi.fn(async (ops: Array<Promise<unknown>>) => Promise.all(ops)),
-  }));
+  vi.hoisted(() => {
+    const assistantMessageCreateMock = vi.fn().mockResolvedValue({});
+    const conversationCreateMock = vi.fn().mockResolvedValue({ id: "conv_new" });
+    const conversationFindMock = vi.fn().mockResolvedValue(null);
+    const tx = {
+      assistantConversation: {
+        create: conversationCreateMock,
+        findFirst: conversationFindMock,
+      },
+      assistantMessage: {
+        create: assistantMessageCreateMock,
+      },
+    };
+    const transactionMock = vi.fn(
+      async (
+        arg:
+          | Array<Promise<unknown>>
+          | ((tx: typeof import("@/lib/db").prisma) => Promise<unknown>),
+      ) => {
+        if (typeof arg === "function") {
+          return arg(tx as unknown as typeof import("@/lib/db").prisma);
+        }
+        return Promise.all(arg);
+      },
+    );
+    return { assistantMessageCreateMock, conversationCreateMock, conversationFindMock, transactionMock };
+  });
 
 vi.mock("@/lib/db", () => ({
   prisma: {

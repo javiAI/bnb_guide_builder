@@ -12,8 +12,11 @@ export const askRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: journeyStageSchema.optional(),
-  conversationId: z.string().optional(),
+  // Explicit null is accepted alongside undefined so clients can send
+  // `{"journeyStage": null}` without a 400 — matches the documented contract
+  // in docs/API_ROUTES.md and lets coerceJourneyStage() do the normalization.
+  journeyStage: journeyStageSchema.nullable().optional(),
+  conversationId: z.string().nullable().optional(),
 });
 
 export type AskRequest = z.infer<typeof askRequestSchema>;
@@ -44,7 +47,7 @@ export const debugRetrieveRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: journeyStageSchema.optional(),
+  journeyStage: journeyStageSchema.nullable().optional(),
 });
 
 export type DebugRetrieveRequest = z.infer<typeof debugRetrieveRequestSchema>;
