@@ -45,8 +45,8 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships  WorkspaceMembership[]
-  mediaAssets  MediaAsset[]
+  memberships WorkspaceMembership[]
+  mediaAssets MediaAsset[]
 
   @@map("users")
 }
@@ -66,78 +66,78 @@ model WorkspaceMembership {
 }
 
 model Property {
-  id               String   @id @default(cuid())
-  workspaceId      String   @map("workspace_id")
-  propertyNickname String   @map("property_nickname")
-  propertyType     String?  @map("property_type")
-  roomType         String?  @map("room_type")
-  layoutKey        String?  @map("layout_key")
-  propertyEnvironment String? @map("property_environment")
-  country          String?
-  city             String?
-  region           String?
-  postalCode       String?  @map("postal_code")
-  streetAddress    String?  @map("street_address")
-  addressExtra     String?  @map("address_extra")
-  addressLevel     String?  @map("address_level")
-  timezone         String?
-  latitude         Float?
-  longitude        Float?
-  maxGuests        Int?     @map("max_guests")
-  maxAdults        Int      @default(2) @map("max_adults")
-  maxChildren      Int      @default(0) @map("max_children")
-  childrenAgeLimit Int      @default(14) @map("children_age_limit")
-  bedroomsCount    Int?     @map("bedrooms_count")
-  bedsCount        Int?     @map("beds_count")
-  bathroomsCount   Int?     @map("bathrooms_count")
-  checkInStart     String?  @map("check_in_start")
-  checkInEnd       String?  @map("check_in_end")
-  checkOutTime     String?  @map("check_out_time")
-  primaryAccessMethod String? @map("primary_access_method")
-  accessMethodsJson   Json?    @map("access_methods_json")
-  policiesJson     Json?    @map("policies_json")
-  customPropertyTypeLabel String? @map("custom_property_type_label")
-  customPropertyTypeDesc  String? @map("custom_property_type_desc")
-  customRoomTypeLabel     String? @map("custom_room_type_label")
-  customRoomTypeDesc      String? @map("custom_room_type_desc")
-  customAccessMethodLabel String? @map("custom_access_method_label")
-  customAccessMethodDesc  String? @map("custom_access_method_desc")
-  infantsAllowed          Boolean @default(false) @map("infants_allowed")
-  isAutonomousCheckin     Boolean @default(false) @map("is_autonomous_checkin")
-  hasBuildingAccess       Boolean @default(false) @map("has_building_access")
-  hasPrivateEntrance      Boolean @default(false) @map("has_private_entrance")
-  infrastructureJson      Json?   @map("infrastructure_json")
-  publicSlug       String?  @unique @map("public_slug")
-  brandLogoUrl     String?  @map("brand_logo_url")
-  brandPaletteKey  String?  @map("brand_palette_key")
-  defaultLocale    String   @default("es") @map("default_locale")
-  status           String   @default("draft")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                      String   @id @default(cuid())
+  workspaceId             String   @map("workspace_id")
+  propertyNickname        String   @map("property_nickname")
+  propertyType            String?  @map("property_type")
+  roomType                String?  @map("room_type")
+  layoutKey               String?  @map("layout_key")
+  propertyEnvironment     String?  @map("property_environment")
+  country                 String?
+  city                    String?
+  region                  String?
+  postalCode              String?  @map("postal_code")
+  streetAddress           String?  @map("street_address")
+  addressExtra            String?  @map("address_extra")
+  addressLevel            String?  @map("address_level")
+  timezone                String?
+  latitude                Float?
+  longitude               Float?
+  maxGuests               Int?     @map("max_guests")
+  maxAdults               Int      @default(2) @map("max_adults")
+  maxChildren             Int      @default(0) @map("max_children")
+  childrenAgeLimit        Int      @default(14) @map("children_age_limit")
+  bedroomsCount           Int?     @map("bedrooms_count")
+  bedsCount               Int?     @map("beds_count")
+  bathroomsCount          Int?     @map("bathrooms_count")
+  checkInStart            String?  @map("check_in_start")
+  checkInEnd              String?  @map("check_in_end")
+  checkOutTime            String?  @map("check_out_time")
+  primaryAccessMethod     String?  @map("primary_access_method")
+  accessMethodsJson       Json?    @map("access_methods_json")
+  policiesJson            Json?    @map("policies_json")
+  customPropertyTypeLabel String?  @map("custom_property_type_label")
+  customPropertyTypeDesc  String?  @map("custom_property_type_desc")
+  customRoomTypeLabel     String?  @map("custom_room_type_label")
+  customRoomTypeDesc      String?  @map("custom_room_type_desc")
+  customAccessMethodLabel String?  @map("custom_access_method_label")
+  customAccessMethodDesc  String?  @map("custom_access_method_desc")
+  infantsAllowed          Boolean  @default(false) @map("infants_allowed")
+  isAutonomousCheckin     Boolean  @default(false) @map("is_autonomous_checkin")
+  hasBuildingAccess       Boolean  @default(false) @map("has_building_access")
+  hasPrivateEntrance      Boolean  @default(false) @map("has_private_entrance")
+  infrastructureJson      Json?    @map("infrastructure_json")
+  publicSlug              String?  @unique @map("public_slug")
+  brandLogoUrl            String?  @map("brand_logo_url")
+  brandPaletteKey         String?  @map("brand_palette_key")
+  defaultLocale           String   @default("es") @map("default_locale")
+  status                  String   @default("draft")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
-  workspace             Workspace               @relation(fields: [workspaceId], references: [id])
-  wizardSessions        WizardSession[]
-  spaces                Space[]
-  systems               PropertySystem[]
-  amenityInstances      PropertyAmenityInstance[]
+  workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
+  wizardSessions           WizardSession[]
+  spaces                   Space[]
+  systems                  PropertySystem[]
+  amenityInstances         PropertyAmenityInstance[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
-  incidents             Incident[]
-  localPlaces           LocalPlace[]
-  opsChecklistItems     OpsChecklistItem[]
-  stockItems            StockItem[]
-  maintenanceTasks      MaintenanceTask[]
-  mediaAssets           MediaAsset[]
-  knowledgeSources      KnowledgeSource[]
-  knowledgeItems        KnowledgeItem[]
-  guideVersions         GuideVersion[]
-  messageTemplates      MessageTemplate[]
-  messageAutomations    MessageAutomation[]
-  messageDrafts         MessageDraft[]
-  assistantConversations AssistantConversation[]
-  secretReferences      SecretReference[]
-  auditLogs             AuditLog[]
-  contacts              Contact[]
-  derived               PropertyDerived?
+  incidents                Incident[]
+  localPlaces              LocalPlace[]
+  opsChecklistItems        OpsChecklistItem[]
+  stockItems               StockItem[]
+  maintenanceTasks         MaintenanceTask[]
+  mediaAssets              MediaAsset[]
+  knowledgeSources         KnowledgeSource[]
+  knowledgeItems           KnowledgeItem[]
+  guideVersions            GuideVersion[]
+  messageTemplates         MessageTemplate[]
+  messageAutomations       MessageAutomation[]
+  messageDrafts            MessageDraft[]
+  assistantConversations   AssistantConversation[]
+  secretReferences         SecretReference[]
+  auditLogs                AuditLog[]
+  contacts                 Contact[]
+  derived                  PropertyDerived?
 
   @@unique([workspaceId, propertyNickname])
   @@index([workspaceId])
@@ -176,8 +176,8 @@ model WizardSession {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  workspace Workspace       @relation(fields: [workspaceId], references: [id])
-  property  Property?       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  workspace Workspace        @relation(fields: [workspaceId], references: [id])
+  property  Property?        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   responses WizardResponse[]
 
   @@index([workspaceId])
@@ -205,28 +205,28 @@ model WizardResponse {
 // ──────────────────────────────────────────────
 
 model Contact {
-  id                     String   @id @default(cuid())
-  propertyId             String   @map("property_id")
-  roleKey                String   @map("role_key")
-  entityType             String   @default("person") @map("entity_type")
-  displayName            String   @map("display_name")
-  contactPersonName      String?  @map("contact_person_name")
-  phone                  String?
-  phoneSecondary         String?  @map("phone_secondary")
-  email                  String?
-  whatsapp               String?
-  address                String?
-  availabilitySchedule   String?  @map("availability_schedule")
-  emergencyAvailable     Boolean  @default(false) @map("emergency_available")
-  hasPropertyAccess      Boolean  @default(false) @map("has_property_access")
-  internalNotes          String?  @map("internal_notes")
-  guestVisibleNotes      String?  @map("guest_visible_notes")
-  visibility             VisibilityLevel @default(internal)
-  isPrimary              Boolean  @default(false) @map("is_primary")
-  sortOrder              Int      @default(0) @map("sort_order")
-  metadataJson           Json?    @map("metadata_json")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  id                   String          @id @default(cuid())
+  propertyId           String          @map("property_id")
+  roleKey              String          @map("role_key")
+  entityType           String          @default("person") @map("entity_type")
+  displayName          String          @map("display_name")
+  contactPersonName    String?         @map("contact_person_name")
+  phone                String?
+  phoneSecondary       String?         @map("phone_secondary")
+  email                String?
+  whatsapp             String?
+  address              String?
+  availabilitySchedule String?         @map("availability_schedule")
+  emergencyAvailable   Boolean         @default(false) @map("emergency_available")
+  hasPropertyAccess    Boolean         @default(false) @map("has_property_access")
+  internalNotes        String?         @map("internal_notes")
+  guestVisibleNotes    String?         @map("guest_visible_notes")
+  visibility           VisibilityLevel @default(internal)
+  isPrimary            Boolean         @default(false) @map("is_primary")
+  sortOrder            Int             @default(0) @map("sort_order")
+  metadataJson         Json?           @map("metadata_json")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
@@ -240,26 +240,26 @@ model Contact {
 // ──────────────────────────────────────────────
 
 model Space {
-  id            String   @id @default(cuid())
-  propertyId    String   @map("property_id")
-  spaceType     String   @map("space_type")
+  id            String          @id @default(cuid())
+  propertyId    String          @map("property_id")
+  spaceType     String          @map("space_type")
   name          String
-  sortOrder     Int      @default(0) @map("sort_order")
-  guestNotes    String?  @map("guest_notes")
-  aiNotes       String?  @map("ai_notes")
-  internalNotes String?  @map("internal_notes")
+  sortOrder     Int             @default(0) @map("sort_order")
+  guestNotes    String?         @map("guest_notes")
+  aiNotes       String?         @map("ai_notes")
+  internalNotes String?         @map("internal_notes")
   visibility    VisibilityLevel @default(guest)
-  status        String   @default("active")
-  createdBy     String   @default("user") @map("created_by")
-  wizardSeedKey String?  @map("wizard_seed_key")
-  featuresJson  Json?    @map("features_json")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  status        String          @default("active")
+  createdBy     String          @default("user") @map("created_by")
+  wizardSeedKey String?         @map("wizard_seed_key")
+  featuresJson  Json?           @map("features_json")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  property         Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  beds             BedConfiguration[]
-  systemCoverages  PropertySystemCoverage[]
-  amenityPlacements PropertyAmenityPlacement[]
+  property                 Property                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  beds                     BedConfiguration[]
+  systemCoverages          PropertySystemCoverage[]
+  amenityPlacements        PropertyAmenityPlacement[]
   troubleshootingPlaybooks TroubleshootingPlaybook[]
 
   @@unique([propertyId, wizardSeedKey])
@@ -286,17 +286,17 @@ model BedConfiguration {
 }
 
 model PropertySystem {
-  id            String   @id @default(cuid())
-  propertyId    String   @map("property_id")
-  systemKey     String   @map("system_key")
-  detailsJson   Json?    @map("details_json")
-  opsJson       Json?    @map("ops_json")
-  internalNotes String?  @map("internal_notes")
+  id            String          @id @default(cuid())
+  propertyId    String          @map("property_id")
+  systemKey     String          @map("system_key")
+  detailsJson   Json?           @map("details_json")
+  opsJson       Json?           @map("ops_json")
+  internalNotes String?         @map("internal_notes")
   visibility    VisibilityLevel @default(guest)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  property  Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property  Property                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   coverages PropertySystemCoverage[]
 
   @@unique([propertyId, systemKey])
@@ -305,13 +305,13 @@ model PropertySystem {
 }
 
 model PropertySystemCoverage {
-  id         String   @id @default(cuid())
-  systemId   String   @map("system_id")
-  spaceId    String   @map("space_id")
-  mode       String   @default("inherited")
-  note       String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  systemId  String   @map("system_id")
+  spaceId   String   @map("space_id")
+  mode      String   @default("inherited")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   system PropertySystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
   space  Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -323,20 +323,20 @@ model PropertySystemCoverage {
 }
 
 model PropertyAmenityInstance {
-  id                   String   @id @default(cuid())
-  propertyId           String   @map("property_id")
-  amenityKey           String   @map("amenity_key")
-  instanceKey          String   @default("default") @map("instance_key")
-  subtypeKey           String?  @map("subtype_key")
-  detailsJson          Json?    @map("details_json")
-  guestInstructions    String?  @map("guest_instructions")
-  aiInstructions       String?  @map("ai_instructions")
-  internalNotes        String?  @map("internal_notes")
-  troubleshootingNotes String?  @map("troubleshooting_notes")
-  runbookJson          Json?    @map("runbook_json")
+  id                   String          @id @default(cuid())
+  propertyId           String          @map("property_id")
+  amenityKey           String          @map("amenity_key")
+  instanceKey          String          @default("default") @map("instance_key")
+  subtypeKey           String?         @map("subtype_key")
+  detailsJson          Json?           @map("details_json")
+  guestInstructions    String?         @map("guest_instructions")
+  aiInstructions       String?         @map("ai_instructions")
+  internalNotes        String?         @map("internal_notes")
+  troubleshootingNotes String?         @map("troubleshooting_notes")
+  runbookJson          Json?           @map("runbook_json")
   visibility           VisibilityLevel @default(guest)
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
 
   property   Property                   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   placements PropertyAmenityPlacement[]
@@ -348,12 +348,12 @@ model PropertyAmenityInstance {
 }
 
 model PropertyAmenityPlacement {
-  id         String   @id @default(cuid())
-  amenityId  String   @map("amenity_id")
-  spaceId    String   @map("space_id")
-  note       String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(cuid())
+  amenityId String   @map("amenity_id")
+  spaceId   String   @map("space_id")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   amenity PropertyAmenityInstance @relation(fields: [amenityId], references: [id], onDelete: Cascade)
   space   Space                   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -365,23 +365,23 @@ model PropertyAmenityPlacement {
 }
 
 model TroubleshootingPlaybook {
-  id              String   @id @default(cuid())
-  propertyId      String   @map("property_id")
-  playbookKey     String   @map("playbook_key")
+  id              String          @id @default(cuid())
+  propertyId      String          @map("property_id")
+  playbookKey     String          @map("playbook_key")
   title           String
-  severity        String   @default("medium")
-  symptomsMd      String?  @map("symptoms_md")
-  guestStepsMd    String?  @map("guest_steps_md")
-  internalStepsMd String?  @map("internal_steps_md")
-  escalationRule  String?  @map("escalation_rule")
+  severity        String          @default("medium")
+  symptomsMd      String?         @map("symptoms_md")
+  guestStepsMd    String?         @map("guest_steps_md")
+  internalStepsMd String?         @map("internal_steps_md")
+  escalationRule  String?         @map("escalation_rule")
   visibility      VisibilityLevel @default(guest)
-  language        String   @default("es")
-  systemKey       String?  @map("system_key")
-  amenityKey      String?  @map("amenity_key")
-  spaceId         String?  @map("space_id")
-  accessMethodKey String?  @map("access_method_key")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  language        String          @default("es")
+  systemKey       String?         @map("system_key")
+  amenityKey      String?         @map("amenity_key")
+  spaceId         String?         @map("space_id")
+  accessMethodKey String?         @map("access_method_key")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   property  Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   space     Space?     @relation(fields: [spaceId], references: [id], onDelete: SetNull)
@@ -397,20 +397,20 @@ model TroubleshootingPlaybook {
 }
 
 model Incident {
-  id          String    @id @default(cuid())
-  propertyId  String    @map("property_id")
-  title       String
-  severity    String    @default("medium")
-  status      String    @default("open") // open | in_progress | resolved | cancelled
-  targetType  String    @map("target_type") // system | amenity | space | access | property
-  targetId    String?   @map("target_id")
-  playbookId  String?   @map("playbook_id")
-  notes       String?
-  visibility  VisibilityLevel @default(internal)
-  occurredAt  DateTime  @map("occurred_at")
-  resolvedAt  DateTime? @map("resolved_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id         String          @id @default(cuid())
+  propertyId String          @map("property_id")
+  title      String
+  severity   String          @default("medium")
+  status     String          @default("open") // open | in_progress | resolved | cancelled
+  targetType String          @map("target_type") // system | amenity | space | access | property
+  targetId   String?         @map("target_id")
+  playbookId String?         @map("playbook_id")
+  notes      String?
+  visibility VisibilityLevel @default(internal)
+  occurredAt DateTime        @map("occurred_at")
+  resolvedAt DateTime?       @map("resolved_at")
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
 
   property Property                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   playbook TroubleshootingPlaybook? @relation(fields: [playbookId], references: [id], onDelete: SetNull)
@@ -423,22 +423,22 @@ model Incident {
 }
 
 model LocalPlace {
-  id               String    @id @default(cuid())
-  propertyId       String    @map("property_id")
-  categoryKey      String    @map("category_key")
+  id               String          @id @default(cuid())
+  propertyId       String          @map("property_id")
+  categoryKey      String          @map("category_key")
   name             String
-  shortNote        String?   @map("short_note")
-  guestDescription String?   @map("guest_description")
-  aiNotes          String?   @map("ai_notes")
-  distanceMeters   Int?      @map("distance_meters")
-  hoursText        String?   @map("hours_text")
-  linkUrl          String?   @map("link_url")
-  bestFor          String?   @map("best_for")
-  seasonalNotes    String?   @map("seasonal_notes")
-  verifiedAt       DateTime? @map("verified_at")
+  shortNote        String?         @map("short_note")
+  guestDescription String?         @map("guest_description")
+  aiNotes          String?         @map("ai_notes")
+  distanceMeters   Int?            @map("distance_meters")
+  hoursText        String?         @map("hours_text")
+  linkUrl          String?         @map("link_url")
+  bestFor          String?         @map("best_for")
+  seasonalNotes    String?         @map("seasonal_notes")
+  verifiedAt       DateTime?       @map("verified_at")
   visibility       VisibilityLevel @default(guest)
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
@@ -505,26 +505,26 @@ model MaintenanceTask {
 // ──────────────────────────────────────────────
 
 model MediaAsset {
-  id               String   @id @default(cuid())
-  propertyId       String   @map("property_id")
-  assetRoleKey     String   @map("asset_role_key")
-  mediaType        String   @map("media_type")
-  storageKey       String   @map("storage_key")
-  mimeType         String   @map("mime_type")
-  language         String   @default("es")
+  id               String          @id @default(cuid())
+  propertyId       String          @map("property_id")
+  assetRoleKey     String          @map("asset_role_key")
+  mediaType        String          @map("media_type")
+  storageKey       String          @map("storage_key")
+  mimeType         String          @map("mime_type")
+  language         String          @default("es")
   caption          String?
   visibility       VisibilityLevel @default(guest)
-  sizeBytes        Int?     @map("size_bytes")
+  sizeBytes        Int?            @map("size_bytes")
   blurhash         String?
-  contentHash      String?  @map("content_hash")
-  status           String   @default("pending")
-  uploadedByUserId String?  @map("uploaded_by_user_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  contentHash      String?         @map("content_hash")
+  status           String          @default("pending")
+  uploadedByUserId String?         @map("uploaded_by_user_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  property     Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  uploadedBy   User?             @relation(fields: [uploadedByUserId], references: [id])
-  assignments  MediaAssignment[]
+  property    Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  uploadedBy  User?             @relation(fields: [uploadedByUserId], references: [id])
+  assignments MediaAssignment[]
 
   @@index([propertyId])
   @@index([propertyId, visibility, status])
@@ -552,15 +552,15 @@ model MediaAssignment {
 // ──────────────────────────────────────────────
 
 model KnowledgeSource {
-  id            String   @id @default(cuid())
-  propertyId    String   @map("property_id")
-  sourceType    String   @map("source_type")
-  sourceRef     String?  @map("source_ref")
-  lastSyncedAt  DateTime? @map("last_synced_at")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String    @id @default(cuid())
+  propertyId   String    @map("property_id")
+  sourceType   String    @map("source_type")
+  sourceRef    String?   @map("source_ref")
+  lastSyncedAt DateTime? @map("last_synced_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  property  Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property  Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   items     KnowledgeItem[]
   citations KnowledgeCitation[]
 
@@ -569,39 +569,43 @@ model KnowledgeSource {
 }
 
 model KnowledgeItem {
-  id               String          @id @default(cuid())
-  propertyId       String          @map("property_id")
-  sourceId         String?         @map("source_id")
-  topic            String
-  bodyMd           String          @map("body_md")
-  locale           String          @default("es")
-  visibility       VisibilityLevel @default(guest)
-  confidenceScore  Float           @default(0.5) @map("confidence_score")
-  isAutoExtracted  Boolean         @default(false) @map("is_auto_extracted")
-  journeyStage     String?         @map("journey_stage")
-  lastVerifiedAt   DateTime?       @map("last_verified_at")
-  chunkType        String          @default("fact") @map("chunk_type")
-  entityType       String          @default("property") @map("entity_type")
-  entityId         String?         @map("entity_id")
-  canonicalQuestion String?        @map("canonical_question")
-  contextPrefix    String          @default("") @map("context_prefix")
-  bm25Text         String          @default("") @map("bm25_text")
-  tokens           Int             @default(0)
-  sourceFields     String[]        @default([]) @map("source_fields")
-  tags             String[]        @default([])
-  contentHash      String?         @map("content_hash")
-  templateKey      String?         @map("template_key")
-  validFrom        DateTime?       @map("valid_from")
-  validTo          DateTime?       @map("valid_to")
-  // Rama 11C — embeddings for hybrid retrieval. `embedding` is pgvector
-  // (Unsupported: Prisma can't express vector types; writes/reads go through
-  // $executeRaw/$queryRaw in src/lib/services/assistant/*). The generated
-  // column `bm25_tsv` and its GIN index are declared in SQL migration only.
-  embedding        Unsupported("vector(512)")?
-  embeddingModel   String?         @map("embedding_model")
-  embeddingVersion Int             @default(1) @map("embedding_version")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
+  id                String                      @id @default(cuid())
+  propertyId        String                      @map("property_id")
+  sourceId          String?                     @map("source_id")
+  topic             String
+  bodyMd            String                      @map("body_md")
+  locale            String                      @default("es")
+  visibility        VisibilityLevel             @default(guest)
+  confidenceScore   Float                       @default(0.5) @map("confidence_score")
+  isAutoExtracted   Boolean                     @default(false) @map("is_auto_extracted")
+  journeyStage      String?                     @map("journey_stage")
+  lastVerifiedAt    DateTime?                   @map("last_verified_at")
+  chunkType         String                      @default("fact") @map("chunk_type")
+  entityType        String                      @default("property") @map("entity_type")
+  entityId          String?                     @map("entity_id")
+  canonicalQuestion String?                     @map("canonical_question")
+  contextPrefix     String                      @default("") @map("context_prefix")
+  bm25Text          String                      @default("") @map("bm25_text")
+  tokens            Int                         @default(0)
+  sourceFields      String[]                    @default([]) @map("source_fields")
+  tags              String[]                    @default([])
+  contentHash       String?                     @map("content_hash")
+  templateKey       String?                     @map("template_key")
+  validFrom         DateTime?                   @map("valid_from")
+  validTo           DateTime?                   @map("valid_to")
+  // Rama 11C — embeddings for hybrid retrieval. Both `embedding` (vector) and
+  // `bm25Tsv` (tsvector) are Unsupported: Prisma can't express these types
+  // natively. Writes/reads use $executeRaw/$queryRaw in
+  // src/lib/services/assistant/*. `bm25Tsv` is declared with the generated
+  // expression via `dbgenerated` so `prisma migrate diff` matches the live
+  // DB after migrations apply — without this declaration, the diff gate
+  // flags the SQL-only column as drift.
+  embedding         Unsupported("vector(512)")?
+  embeddingModel    String?                     @map("embedding_model")
+  embeddingVersion  Int                         @default(1) @map("embedding_version")
+  bm25Tsv           Unsupported("tsvector")?    @default(dbgenerated("to_tsvector('simple'::regconfig, COALESCE(bm25_text, ''::text))")) @map("bm25_tsv")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
 
   property  Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   source    KnowledgeSource?    @relation(fields: [sourceId], references: [id], onDelete: SetNull)
@@ -614,6 +618,7 @@ model KnowledgeItem {
   @@index([propertyId, entityType, entityId])
   @@index([propertyId, visibility])
   @@index([propertyId, entityType, entityId, templateKey, locale])
+  @@index([bm25Tsv], type: Gin, map: "knowledge_items_bm25_tsv_idx")
   @@map("knowledge_items")
 }
 
@@ -677,7 +682,7 @@ model MessageTemplate {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  property    Property             @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property    Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   automations MessageAutomation[]
 
   @@index([propertyId])
@@ -763,13 +768,13 @@ model AssistantMessage {
 // ──────────────────────────────────────────────
 
 model SecretReference {
-  id          String   @id @default(cuid())
-  propertyId  String   @map("property_id")
-  secretType  String   @map("secret_type")
-  vaultKey    String   @map("vault_key")
-  label       String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(cuid())
+  propertyId String   @map("property_id")
+  secretType String   @map("secret_type")
+  vaultKey   String   @map("vault_key")
+  label      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
