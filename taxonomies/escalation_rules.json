@@ -1,0 +1,213 @@
+{
+  "file": "escalation_rules.json",
+  "version": "2026-04-20",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "fallback": {
+    "id": "er.fallback",
+    "intentId": "int.general",
+    "contactRoles": ["ct.host", "ct.cohost"],
+    "channelPriority": ["tel", "whatsapp", "email"]
+  },
+  "intents": [
+    {
+      "id": "int.emergency_medical",
+      "label": "Emergencia médica",
+      "contactRoles": ["ct.emergency_hospital", "ct.emergency_pharmacy"],
+      "fallbackToHost": true,
+      "emergencyPriority": true,
+      "channelPriority": ["tel", "whatsapp"],
+      "matchKeywords": {
+        "es": [
+          "emergencia médica",
+          "urgencia médica",
+          "ambulancia",
+          "hospital",
+          "herido",
+          "sangrando",
+          "sangra mucho",
+          "pérdida de conocimiento",
+          "desmayo",
+          "ataque al corazón",
+          "infarto",
+          "no respira"
+        ],
+        "en": [
+          "medical emergency",
+          "ambulance",
+          "hospital",
+          "injured",
+          "bleeding",
+          "unconscious",
+          "heart attack",
+          "not breathing"
+        ]
+      }
+    },
+    {
+      "id": "int.emergency_fire",
+      "label": "Fuego",
+      "contactRoles": ["ct.emergency_fire"],
+      "fallbackToHost": true,
+      "emergencyPriority": true,
+      "channelPriority": ["tel"],
+      "matchKeywords": {
+        "es": [
+          "incendio",
+          "hay fuego",
+          "sale fuego",
+          "humo denso",
+          "sale humo",
+          "llamas",
+          "quemándose",
+          "se está quemando"
+        ],
+        "en": [
+          "fire in",
+          "there is a fire",
+          "there's a fire",
+          "heavy smoke",
+          "smoke coming",
+          "flames",
+          "burning"
+        ]
+      }
+    },
+    {
+      "id": "int.emergency_security",
+      "label": "Seguridad",
+      "contactRoles": ["ct.emergency_police"],
+      "fallbackToHost": true,
+      "emergencyPriority": true,
+      "channelPriority": ["tel"],
+      "matchKeywords": {
+        "es": [
+          "robo",
+          "me han robado",
+          "nos han robado",
+          "intruso",
+          "allanamiento",
+          "ladrón",
+          "agresión",
+          "me están atacando"
+        ],
+        "en": [
+          "robbery",
+          "been robbed",
+          "intruder",
+          "break-in",
+          "break in",
+          "burglar",
+          "being attacked",
+          "assault"
+        ]
+      }
+    },
+    {
+      "id": "int.lockout",
+      "label": "Sin acceso",
+      "contactRoles": ["ct.locksmith", "ct.keyholder"],
+      "fallbackToHost": true,
+      "emergencyPriority": false,
+      "channelPriority": ["tel", "whatsapp"],
+      "matchKeywords": {
+        "es": [
+          "no puedo entrar",
+          "no puedo abrir",
+          "cerrado fuera",
+          "perdí la llave",
+          "perdido la llave",
+          "perdí las llaves",
+          "me he quedado fuera",
+          "puerta bloqueada",
+          "cerradura rota",
+          "cerradura atascada",
+          "no abre la puerta"
+        ],
+        "en": [
+          "locked out",
+          "can't get in",
+          "cannot get in",
+          "lost the key",
+          "lost my key",
+          "lost the keys",
+          "door jammed",
+          "broken lock",
+          "lock stuck",
+          "door won't open"
+        ]
+      }
+    },
+    {
+      "id": "int.maintenance_plumbing",
+      "label": "Fontanería urgente",
+      "contactRoles": ["ct.plumber", "ct.handyman"],
+      "fallbackToHost": true,
+      "emergencyPriority": false,
+      "channelPriority": ["tel", "whatsapp"],
+      "matchKeywords": {
+        "es": [
+          "fuga de agua",
+          "pérdida de agua",
+          "inundación",
+          "se inunda",
+          "tubería rota",
+          "atasco grave",
+          "desbordado",
+          "grifo roto"
+        ],
+        "en": [
+          "water leak",
+          "water leaking",
+          "flooding",
+          "flooded",
+          "pipe burst",
+          "burst pipe",
+          "severe clog",
+          "overflowing",
+          "broken faucet"
+        ]
+      }
+    },
+    {
+      "id": "int.maintenance_electrical",
+      "label": "Electricidad urgente",
+      "contactRoles": ["ct.electrician", "ct.handyman"],
+      "fallbackToHost": true,
+      "emergencyPriority": false,
+      "channelPriority": ["tel", "whatsapp"],
+      "matchKeywords": {
+        "es": [
+          "sin luz",
+          "no hay luz",
+          "corte de luz",
+          "apagón",
+          "no hay electricidad",
+          "saltó el diferencial",
+          "cortocircuito",
+          "chispa",
+          "huele a quemado"
+        ],
+        "en": [
+          "no power",
+          "power outage",
+          "no electricity",
+          "blackout",
+          "breaker tripped",
+          "short circuit",
+          "sparking",
+          "burning smell"
+        ]
+      }
+    },
+    {
+      "id": "int.general",
+      "label": "General",
+      "contactRoles": ["ct.host", "ct.cohost"],
+      "fallbackToHost": true,
+      "emergencyPriority": false,
+      "channelPriority": ["tel", "whatsapp", "email"],
+      "matchKeywords": { "es": [], "en": [] }
+    }
+  ]
+}
