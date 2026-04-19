@@ -49,7 +49,14 @@
 ### Knowledge and guide
 
 - `KnowledgeSource`
-- `KnowledgeItem`
+- `KnowledgeItem` — schema expandido en Rama 11A con campos AI pipeline completos:
+  - Identidad del chunk: `chunkType` (`fact|procedure|policy|place|troubleshooting|summary|template`), `entityType` (`property|access|policy|contact|amenity|space|system`), `entityId String?`
+  - Recuperación híbrida: `contextPrefix String` (prefijo multi-línea Contextual Retrieval), `bm25Text String` (texto normalizado BM25), `embedding Unsupported("vector(1536)")?` (deferido a 11C), `tokens Int`
+  - Metadata de calidad: `canonicalQuestion String?`, `contentHash String?` (sha256 16-char del prefijo + body), `confidenceScore Float @default(1.0)`, `validFrom DateTime?`, `validTo DateTime?`
+  - Trazabilidad: `sourceFields String[]` (campos de la entidad fuente que generaron el chunk), `tags String[]`
+  - Localización: `locale String @default("es")` (filtro duro en retrieval; i18n multi-locale en 11B)
+  - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`
+  - Invalidación: delete-then-reextract por `(propertyId, entityType, entityId?)`; wired en `editor.actions.ts` como fire-and-forget
 - `KnowledgeCitation`
 - `Intent`
 - `GuideVersion`

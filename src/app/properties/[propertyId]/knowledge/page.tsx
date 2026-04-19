@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { CreateKnowledgeItemForm } from "./create-knowledge-form";
 import { KnowledgeItemCard } from "./knowledge-item-card";
+import { RegenerateKnowledgeButton } from "./regenerate-knowledge-button";
 import { VISIBILITY_LABEL, VISIBILITY_TONE } from "@/lib/visibility";
 
 const JOURNEY_LABEL: Record<string, string> = {
@@ -10,6 +11,11 @@ const JOURNEY_LABEL: Record<string, string> = {
   pre_arrival: "Pre-llegada",
   during_stay: "Durante estancia",
   post_stay: "Post-estancia",
+  arrival: "Llegada",
+  stay: "Estancia",
+  checkout: "Salida",
+  post_checkout: "Post-salida",
+  any: "Cualquier etapa",
 };
 
 export default async function KnowledgePage({
@@ -28,17 +34,22 @@ export default async function KnowledgePage({
 
   const items = await prisma.knowledgeItem.findMany({
     where: { propertyId },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ entityType: "asc" }, { topic: "asc" }],
   });
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Base de conocimiento
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Verdad estructurada reutilizable por guías, AI y mensajería.
-      </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">
+            Base de conocimiento
+          </h1>
+          <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
+            Verdad estructurada reutilizable por guías, AI y mensajería.
+          </p>
+        </div>
+        <RegenerateKnowledgeButton propertyId={propertyId} />
+      </div>
 
       <div className="mt-8">
         {items.length === 0 ? (
@@ -47,7 +58,7 @@ export default async function KnowledgePage({
               Sin items de conocimiento
             </h2>
             <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-              Crea el primer item para documentar información reutilizable sobre tu alojamiento.
+              Pulsa &ldquo;Regenerar todo&rdquo; para extraer conocimiento automáticamente de los datos de la propiedad, o crea un item manual.
             </p>
           </div>
         ) : (
@@ -55,7 +66,7 @@ export default async function KnowledgePage({
             {items.map((item) => {
               const visLabel = VISIBILITY_LABEL[item.visibility];
               const visTone = VISIBILITY_TONE[item.visibility];
-              const journey = item.journeyStage ? JOURNEY_LABEL[item.journeyStage] : null;
+              const journey = item.journeyStage ? (JOURNEY_LABEL[item.journeyStage] ?? item.journeyStage) : null;
               return (
                 <KnowledgeItemCard
                   key={item.id}
@@ -67,6 +78,9 @@ export default async function KnowledgePage({
                     journeyStage: item.journeyStage,
                     confidenceScore: item.confidenceScore,
                     lastVerifiedAt: item.lastVerifiedAt?.toISOString() ?? null,
+                    chunkType: item.chunkType,
+                    entityType: item.entityType,
+                    contextPrefix: item.contextPrefix,
                   }}
                   propertyId={propertyId}
                   visibilityLabel={visLabel}

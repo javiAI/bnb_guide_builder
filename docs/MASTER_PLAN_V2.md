@@ -1162,6 +1162,17 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Criterio de done**: página `/knowledge` muestra hechos extraídos + editables. Rebuild determinístico (mismo input → mismo output). Schema tiene todos los campos AI listos para retrieval hybrid.
 
+**Ajustes implementados en Fase -1 (2026-04-19)**:
+
+- `audience` → no se añade como campo nuevo; se usa el campo `visibility` ya existente. Plan decía `audience String`, implementación usa `visibility` (guest/ai/internal/sensitive) ya tipado.
+- Campos añadidos que no estaban en el plan pero sí en `docs/research/AI_KNOWLEDGE_BASE_SPEC.md`: `canonicalQuestion`, `contentHash`, `validFrom`, `validTo`. Los cuatro están en el schema.
+- `contextPrefix` es multi-línea (5 líneas): `Propiedad: …`, `Sección: …`, `Destinado a: …`, `Sensibilidad: …`, `Pregunta que responde: "…"`. El plan describía un prefijo de una línea — spec tiene precedencia.
+- `validFrom`/`validTo`: siempre `null` en 11A (sin inferencia heurística desde texto). Solo se rellenan si la fuente estructurada lo provee explícitamente.
+- Sanitización de secretos de acceso: `buildSafeUnitAccessDescription` excluye `customDesc` (puede contener PINs). Solo labels de taxonomía + `customLabel` (nombre, no código).
+- Invalidación: por `entityType` + `entityId` opcional (delete-then-reextract). No por `sourceFields` individuales — ese nivel de granularidad se introduce en 11B con `@@unique`.
+- Ruta de spec corregida: `docs/research/AI_KNOWLEDGE_BASE_SPEC.md` (no `research/` sin `docs/`).
+- Extractor `extractFromRules` del plan → renombrado `extractFromPolicies` (alineado con model `policiesJson` de Property).
+
 **Preparación**:
 - **Contexto a leer**:
   - [AI_KNOWLEDGE_BASE_SPEC.md:L7-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) — casos de uso + AI context schema completo

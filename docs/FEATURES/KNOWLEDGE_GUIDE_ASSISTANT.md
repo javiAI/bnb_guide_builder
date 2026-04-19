@@ -18,6 +18,36 @@ Debe soportar:
 - freshness
 - citations
 
+### Knowledge extraction (Rama 11A)
+
+`knowledge-extract.service.ts` extrae chunks determinísticos de todas las entidades de la propiedad. Patrón idéntico a `PropertyDerived`: recomputable, fire-and-forget.
+
+**7 extractores**:
+
+- `extractFromProperty` — checkin/checkout times, capacity, overview. Todos `visibility=guest`.
+- `extractFromAccess` — unit access, building access (si `hasBuildingAccess=true`), checkin logistics. Usa `buildSafeUnitAccessDescription` que excluye `customDesc` (puede contener PINs); solo labels de taxonomía + `customLabel`.
+- `extractFromPolicies` — smoking, pets, children, quiet hours. Desde `policiesJson`.
+- `extractFromContacts` — un chunk por contacto; hereda `visibility` del contacto fuente.
+- `extractFromAmenities` — chunk de existencia (`fact`) + chunk de uso (`procedure`) cuando `guestInstructions` presente. Hereda `visibility` del instance.
+- `extractFromSpaces` — un chunk por espacio incluyendo resumen de camas. Hereda `visibility` del space.
+- `extractFromSystems` — chunk de descripción (`fact`) + chunk de troubleshooting cuando `opsJson` presente. Hereda `visibility` del system.
+
+**Campos AI pipeline por chunk** (ver `docs/DATA_MODEL.md` § KnowledgeItem):
+`chunkType`, `entityType`, `entityId`, `contextPrefix` (5 líneas Contextual Retrieval), `bm25Text` (diacríticas plegadas + lowercase + stopwords), `canonicalQuestion`, `contentHash`, `sourceFields[]`, `tags[]`, `tokens`, `validFrom`, `validTo`.
+
+**Invalidación** wired en `editor.actions.ts` como fire-and-forget:
+
+- Mutaciones de propiedad/access/policies → `invalidateKnowledgeInBackground(propertyId, entityType, null)` (re-extrae toda la sección)
+- Update de contacto/amenity/space/system específico → `invalidateKnowledgeInBackground(propertyId, entityType, entityId)` (re-extrae solo ese entity)
+- Delete de contacto/system → `deleteEntityChunksInBackground(propertyId, entityType, entityId)` (solo borra, no re-extrae)
+
+**Visibilidad**: `sensitive` excluida en la query. Nunca hay escalación — cada chunk hereda exactamente la visibilidad de su entidad fuente. `assertVisibilityBound` lanza si se viola la invariante.
+
+**Taxonomías**:
+
+- `taxonomies/chunk_types.json` — 7 tipos de chunk con descripción y rango de palabras objetivo
+- `taxonomies/knowledge_templates.json` — plantillas de extracción con `topic`, `canonicalQuestion`, `bodyTemplate`, `journeyStage`, `sourceFields[]` por `entityType × chunkType × locale`
+
 ## 2. Guide generation
 
 `GuideVersion` se compone desde conocimiento elegible.
