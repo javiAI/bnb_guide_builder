@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { entityTypeSchema } from "@/lib/types/knowledge";
 
 // Assistant API audiences exclude "sensitive" on purpose — callers must not
 // be able to elevate to sensitive via a request body; that level is reserved
@@ -19,7 +20,7 @@ export type AskRequest = z.infer<typeof askRequestSchema>;
 
 export const citationSchema = z.object({
   knowledgeItemId: z.string(),
-  sourceType: z.string(),
+  sourceType: entityTypeSchema,
   entityLabel: z.string(),
   score: z.number().min(0).max(1),
 });

@@ -265,7 +265,7 @@ intent resolution (Haiku 4.5 → heuristic fallback)
 ### Backfill y rebuild
 
 - Job determinístico: [src/lib/jobs/knowledge-embed-backfill.ts](../../src/lib/jobs/knowledge-embed-backfill.ts). Args: `--property=<id>`, `--batch=<n>`, `--dry-run`
-- Idempotente: selecciona solo rows con `embedding IS NULL` o `embedding_model != EMBEDDING_VERSION`
+- Idempotente: selecciona solo rows con `embedding IS NULL`, o con `embedding_model` distinto del `modelId` del provider, o con `embedding_version` distinta de la versión del provider
 - Invalidación incremental: `upsertChunksIncremental({propertyId, locale, isAutoExtracted: true}, chunks)` en `knowledge-extract.service.ts` clasifica chunks en delete/create/update por `(entityType|entityId|templateKey)` y nulifica `embedding + embedding_model` solo cuando `contentHash` cambia. Resultado: preservación de embeddings en ediciones sin impacto semántico.
 
 ### Test matrix

@@ -47,7 +47,7 @@ export interface AskInput {
   audience: VisibilityLevel;
   journeyStage?: JourneyStage | null;
   conversationId?: string | null;
-  /** ID already inserted in `assistant_messages` for the user turn, or null. */
+  /** Conversation actor category for the turn. Defaults to `guest`. */
   actorType?: "guest" | "operator" | "system";
 }
 
@@ -256,9 +256,11 @@ async function persistConversation(params: {
   escalationReason: string | null;
   reranked: RerankedItem[];
 }): Promise<string> {
+  // Scope the lookup to the requesting property — a conversationId from
+  // another property must never attach history to this one.
   const conversation = params.conversationId
-    ? await prisma.assistantConversation.findUnique({
-        where: { id: params.conversationId },
+    ? await prisma.assistantConversation.findFirst({
+        where: { id: params.conversationId, propertyId: params.propertyId },
         select: { id: true },
       })
     : null;

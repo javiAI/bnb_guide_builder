@@ -58,7 +58,7 @@
   - Identidad cross-locale (11B): `templateKey String?` — clave semántica estable del chunk que sobrevive a re-extracts. NOT NULL para autoextract; los valores concretos son los literales `templateKey: "..."` emitidos por `knowledge-extract.service.ts` (no mantener lista manual aquí — rota en cada rama que añade chunks). NULL para items manuales (no participan en cross-locale pairing). Pairing real: `(propertyId, entityType, entityId, templateKey)`
   - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`, `(propertyId, entityType, entityId, templateKey, locale)` (11B — cross-locale lookup), GIN sobre `bm25_tsv` (11C)
   - Invalidación (11C): `upsertChunksIncremental` clasifica delete/create/update por `(entityType|entityId|templateKey)` dentro del scope `{propertyId, locale, isAutoExtracted: true}`. Cuando `contentHash` cambia se nulifican `embedding` y `embedding_model` (re-embed por el job de backfill); cuando no cambia el embedding persiste. Wired en `editor.actions.ts` fire-and-forget.
-  - Backfill: `src/lib/jobs/knowledge-embed-backfill.ts` — idempotente (selecciona `embedding IS NULL OR embedding_model != EMBEDDING_VERSION`); args `--property`, `--batch`, `--dry-run`.
+  - Backfill: `src/lib/jobs/knowledge-embed-backfill.ts` — idempotente (selecciona `embedding IS NULL`, o cuando `embedding_model` no coincide con `provider.modelId`, o cuando `embedding_version` no coincide con `provider.version`); args `--property`, `--batch`, `--dry-run`.
 - `KnowledgeCitation`
 - `Intent`
 - `GuideVersion`

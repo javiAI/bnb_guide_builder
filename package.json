@@ -24,7 +24,6 @@
     "@radix-ui/react-toast": "^1.2.15",
     "@react-pdf/renderer": "^4.5.0",
     "blurhash": "^2.0.5",
-    "cohere-ai": "^8.0.0",
     "fuse.js": "^7.3.0",
     "geo-tz": "^8.1.6",
     "maplibre-gl": "^5.22.0",
@@ -34,7 +33,6 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "sharp": "^0.34.5",
-    "voyageai": "^0.2.1",
     "yet-another-react-lightbox": "^3.31.0",
     "zod": "^4.3.6"
   },

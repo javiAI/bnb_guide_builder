@@ -46,7 +46,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     assistantConversation: {
       create: conversationCreateMock,
-      findUnique: conversationFindMock,
+      findFirst: conversationFindMock,
     },
     assistantMessage: {
       create: assistantMessageCreateMock,
@@ -265,11 +265,27 @@ describe("pipeline.ask — happy path + persistence", () => {
     });
 
     expect(conversationFindMock).toHaveBeenCalledWith({
-      where: { id: "conv_prev" },
+      where: { id: "conv_prev", propertyId: "prop_1" },
       select: { id: true },
     });
     expect(conversationCreateMock).not.toHaveBeenCalled();
     expect(out.conversationId).toBe("conv_prev");
+  });
+
+  it("creates a new conversation when the id belongs to another property", async () => {
+    // Cross-property conversationId must NEVER attach history to this property.
+    conversationFindMock.mockResolvedValueOnce(null);
+
+    const out = await ask({
+      propertyId: "prop_1",
+      question: "¿Cuál es la wifi?",
+      language: "es",
+      audience: "guest",
+      conversationId: "conv_from_other_property",
+    });
+
+    expect(conversationCreateMock).toHaveBeenCalledTimes(1);
+    expect(out.conversationId).toBe("conv_new");
   });
 });
 
