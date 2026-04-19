@@ -578,7 +578,6 @@ model KnowledgeItem {
   confidenceScore  Float           @default(1.0) @map("confidence_score")
   journeyStage     String?         @map("journey_stage")
   lastVerifiedAt   DateTime?       @map("last_verified_at")
-  // AI pipeline fields (11A)
   chunkType        String          @default("fact") @map("chunk_type")
   entityType       String          @default("property") @map("entity_type")
   entityId         String?         @map("entity_id")
