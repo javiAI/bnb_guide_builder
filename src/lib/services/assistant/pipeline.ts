@@ -26,6 +26,11 @@ import {
   type SynthesizerOutput,
 } from "./synthesizer";
 import { resolveIntentResolver } from "./intent-resolver";
+import { resolveEscalationIntent } from "./escalation-intent";
+import {
+  resolveEscalation,
+  type EscalationResolution,
+} from "./escalation.service";
 
 // ============================================================================
 // Tunables
@@ -57,6 +62,10 @@ export interface AskOutput {
   confidenceScore: number;
   escalated: boolean;
   escalationReason: string | null;
+  /** When `escalated`, resolved contact handoff (intent + channels) for the
+   *  UI to render. `null` when either the pipeline didn't escalate, or the
+   *  property has no contacts configured for any role in the cascade. */
+  escalationContact: EscalationResolution | null;
   conversationId: string;
   /** Debug metadata kept off the public API schema but useful for ops tests. */
   debug: {
@@ -203,6 +212,19 @@ export async function ask(input: AskInput): Promise<AskOutput> {
     });
   }
 
+  // Escalation handoff: only resolve a contact when the synthesizer (or the
+  // zero-retrieval short-circuit above) chose to escalate. Keeps the extra
+  // DB round-trip off the happy path.
+  const escalationContact = synthesized.escalated
+    ? await resolveEscalationContact({
+        propertyId: input.propertyId,
+        question: input.question,
+        language: input.language,
+        audience: input.audience,
+        escalationReason: synthesized.escalationReason,
+      })
+    : null;
+
   const conversationId = await persistConversation({
     conversationId: input.conversationId ?? null,
     propertyId: input.propertyId,
@@ -215,6 +237,7 @@ export async function ask(input: AskInput): Promise<AskOutput> {
     confidenceScore: synthesized.confidenceScore,
     escalated: synthesized.escalated,
     escalationReason: synthesized.escalationReason,
+    escalationContact,
     reranked,
   });
 
@@ -224,6 +247,7 @@ export async function ask(input: AskInput): Promise<AskOutput> {
     confidenceScore: synthesized.confidenceScore,
     escalated: synthesized.escalated,
     escalationReason: synthesized.escalationReason,
+    escalationContact,
     conversationId,
     debug: {
       intent: {
@@ -236,6 +260,28 @@ export async function ask(input: AskInput): Promise<AskOutput> {
       synthesizerModel: synthesizer.modelId,
     },
   };
+}
+
+async function resolveEscalationContact(params: {
+  propertyId: string;
+  question: string;
+  language: string;
+  audience: VisibilityLevel;
+  escalationReason: string | null;
+}): Promise<EscalationResolution | null> {
+  // The keyword matcher only understands "es" and "en"; anything else falls
+  // back to Spanish (the primary operator locale for this platform).
+  const lang: "es" | "en" = params.language === "en" ? "en" : "es";
+  const intentMatch = resolveEscalationIntent({
+    question: params.question,
+    language: lang,
+    escalationReason: params.escalationReason,
+  });
+  return resolveEscalation({
+    propertyId: params.propertyId,
+    intentId: intentMatch.intentId,
+    audience: params.audience,
+  });
 }
 
 // ============================================================================
@@ -254,6 +300,7 @@ async function persistConversation(params: {
   confidenceScore: number;
   escalated: boolean;
   escalationReason: string | null;
+  escalationContact: EscalationResolution | null;
   reranked: RerankedItem[];
 }): Promise<string> {
   // Scope the lookup to the requesting property — a conversationId from
@@ -303,16 +350,20 @@ async function persistConversation(params: {
 }
 
 /**
- * We don't have a dedicated `escalation_reason` column on AssistantMessage.
- * Keep the reason alongside citations inside the Json envelope — lets us
- * reconstruct history without a migration, and the field name is explicit.
+ * We don't have dedicated `escalation_reason` or `escalation_contact`
+ * columns on AssistantMessage. Keep both alongside citations inside the
+ * Json envelope — lets us reconstruct history without a migration, and
+ * the field names are explicit.
  */
-function serializeCitations(
-  params: { citations: SynthesizerCitation[]; escalationReason: string | null },
-): Prisma.InputJsonValue {
+function serializeCitations(params: {
+  citations: SynthesizerCitation[];
+  escalationReason: string | null;
+  escalationContact: EscalationResolution | null;
+}): Prisma.InputJsonValue {
   return {
     citations: params.citations.map((c) => ({ ...c })),
     escalationReason: params.escalationReason,
+    escalationContact: params.escalationContact,
   } as unknown as Prisma.InputJsonValue;
 }
 
