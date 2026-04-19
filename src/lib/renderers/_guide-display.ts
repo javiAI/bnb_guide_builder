@@ -41,14 +41,21 @@ export function resolveDisplayFields(item: GuideItem): GuideItemField[] {
  * downstream equality checks stay cheap. Emits one `missing-presenter` log
  * per distinct item id within a single call — the normalizer's aggregated log
  * covers batched counts; this is a per-render trace so the specific item is
- * identifiable. */
+ * identifiable.
+ *
+ * `suppressWarnings` silences the `missing-presenter` log — used by the
+ * search-index builder when it runs in the same request as the renderer,
+ * so the warning isn't emitted twice for the same tree. */
 export function filterRenderableItems(
   items: GuideItem[],
   audience: GuideAudience,
+  options?: { suppressWarnings?: boolean },
 ): GuideItem[] {
   if (audience !== "guest") return items;
+  const suppress = options?.suppressWarnings ?? false;
   const loggedIds = new Set<string>();
   const logRaw = (item: GuideItem) => {
+    if (suppress) return;
     if (loggedIds.has(item.id)) return;
     loggedIds.add(item.id);
     console.warn(

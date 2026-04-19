@@ -55,8 +55,10 @@ test.describe("guide search: rich fixture", () => {
 
     // The anchor must exist in the DOM and the URL hash should point at it.
     // `getElementById` is used rather than `page.locator(hash)` because
-    // anchor ids like `item-essentials.amenities.am.wifi` contain dots,
-    // which CSS selectors interpret as class tokens.
+    // anchor ids like `item-am.wifi` contain dots, which CSS selectors
+    // interpret as class tokens. The search dedups aggregator clones to
+    // the canonical id, so the hash points at `item-am.wifi` (amenities),
+    // not at the `essentials.amenities.am.wifi` hero clone.
     const targetExists = await page.evaluate(() => {
       const hash = window.location.hash;
       if (!hash.startsWith("#item-")) return false;

@@ -1,10 +1,6 @@
 import { createHash } from "node:crypto";
 import { getGuideSectionConfig } from "@/lib/taxonomy-loader";
-import {
-  filterRenderableItems,
-  resolveDisplayFields,
-  resolveDisplayValue,
-} from "@/lib/renderers/_guide-display";
+import { filterRenderableItems } from "@/lib/renderers/_guide-display";
 import type {
   GuideItem,
   GuideSection,
@@ -17,20 +13,37 @@ import type {
 
 const SNIPPET_MAX_LENGTH = 160;
 
+/** Aggregator sections clone items from other resolvers with a synthetic id
+ * prefix — currently only `resolveEssentials` does this, stamping
+ * `essentials.<resolverKey>.<originalId>` (see `guide-rendering.service.ts`).
+ * To make "anchor goes home, not to hero" actually work we need to compare
+ * against the canonical id, not the synthetic one. */
+const ESSENTIALS_CLONE_ID = /^essentials\.[^.]+\.(.+)$/;
+function canonicalItemId(item: GuideItem): string {
+  const m = ESSENTIALS_CLONE_ID.exec(item.id);
+  return m ? m[1] : item.id;
+}
+
 /** Builds the serializable search index from an already-normalized guest
  * tree. Must run AFTER `filterByAudience("guest")` +
  * `normalizeGuideForPresentation("guest")` — this builder reads the
  * presentation surface only (`displayValue` / `displayFields[].displayValue`).
+ * Raw fallback to `value` / `fields` is intentionally NOT used here; if an
+ * item reaches the builder without being normalized, we emit an empty
+ * snippet rather than leak raw text into the index.
  *
  * Invariants:
  * - Sensitive / non-guest items never enter the index (they were filtered
  *   upstream; this builder refuses audiences other than `guest` to avoid
  *   a miswired call site).
  * - Items with `presentationType === "raw"` are dropped by
- *   `filterRenderableItems`.
- * - Aggregator sections (`isAggregator = true`) clone items from other
- *   sections; we deduplicate by item id and keep the canonical
- *   (non-aggregator) section as the anchor target.
+ *   `filterRenderableItems` (which we call with `suppressWarnings` so
+ *   we don't log the same missing-presenter twice — the renderer already
+ *   logs it in the same request).
+ * - Aggregator sections (`isAggregator = true`) clone items with a synthetic
+ *   id (`essentials.<key>.<origId>`). We dedupe against the CANONICAL id
+ *   and point the anchor at the canonical DOM node so a search hit that
+ *   only lives in the hero still scrolls to the canonical section.
  * - Children are flattened into their own entries with an anchor pointing
  *   at `item-<parentId>--child-<idx>` (matches the `id` stamped by
  *   `GuideItem` on each `<li>`). */
@@ -45,7 +58,9 @@ export function buildGuideSearchIndex(tree: GuideTree): GuideSearchIndex {
   const aggregatorEntries: GuideSearchEntry[] = [];
 
   for (const section of tree.sections) {
-    const renderable = filterRenderableItems(section.items, "guest");
+    const renderable = filterRenderableItems(section.items, "guest", {
+      suppressWarnings: true,
+    });
     const keywords = getSectionKeywords(section);
     const push = (entry: GuideSearchEntry | null) => {
       if (!entry) return;
@@ -55,10 +70,11 @@ export function buildGuideSearchIndex(tree: GuideTree): GuideSearchIndex {
     };
 
     for (const item of renderable) {
+      const baseId = canonicalItemId(item);
       push(
         buildEntry(item, section, keywords, {
-          id: `item-${item.id}`,
-          anchor: `item-${item.id}`,
+          id: `item-${baseId}`,
+          anchor: `item-${baseId}`,
         }),
       );
       let childIdx = 0;
@@ -66,8 +82,8 @@ export function buildGuideSearchIndex(tree: GuideTree): GuideSearchIndex {
         if (child.presentationType === "raw") continue;
         push(
           buildEntry(child, section, keywords, {
-            id: `child-${item.id}-${childIdx}`,
-            anchor: `item-${item.id}--child-${childIdx}`,
+            id: `child-${baseId}-${childIdx}`,
+            anchor: `item-${baseId}--child-${childIdx}`,
           }),
         );
         childIdx += 1;
@@ -95,9 +111,12 @@ function buildEntry(
 ): GuideSearchEntry | null {
   const label = item.label.trim();
   if (!label) return null;
-  const displayValue = resolveDisplayValue(item) ?? "";
-  const fieldValues = resolveDisplayFields(item)
-    .map((f) => f.value.trim())
+  // Strict: read the presentation surface only. If normalize didn't run on
+  // this item (shouldn't happen for audience=guest, guarded above) we emit
+  // empty content rather than fall back to raw value/fields.
+  const displayValue = (item.displayValue ?? "").trim();
+  const fieldValues = (item.displayFields ?? [])
+    .map((f) => f.displayValue.trim())
     .filter((v) => v.length > 0);
   const snippet = buildSnippet(displayValue, fieldValues);
   return {
@@ -116,8 +135,8 @@ function buildSnippet(
   fieldValues: readonly string[],
 ): string {
   const parts: string[] = [];
-  if (displayValue.trim()) parts.push(displayValue.trim());
-  for (const v of fieldValues) parts.push(v.trim());
+  if (displayValue) parts.push(displayValue);
+  for (const v of fieldValues) parts.push(v);
   const joined = parts.join(" · ");
   if (joined.length <= SNIPPET_MAX_LENGTH) return joined;
   return `${joined.slice(0, SNIPPET_MAX_LENGTH - 1).trimEnd()}…`;

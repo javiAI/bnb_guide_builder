@@ -138,12 +138,21 @@ describe("buildGuideSearchIndex", () => {
     expect(secondChild?.label).toBe("Champú");
   });
 
-  it("dedupes aggregator clones and keeps the canonical section", () => {
-    const wifi = item({
+  it("dedupes essentials clones with synthetic prefix to the canonical section", () => {
+    // Mirror production id shape: `resolveEssentials` stamps
+    // `essentials.<resolverKey>.<originalId>` when it clones an item into
+    // the hero. The dedup MUST normalize against the canonical id, not the
+    // synthetic one — otherwise the search shows duplicates and Enter
+    // scrolls to the hero clone instead of the canonical section.
+    const wifiCanonical = item({
       id: "am.wifi",
       taxonomyKey: "am.wifi",
       label: "Wi-Fi",
       value: "Red CasaClaudia",
+    });
+    const wifiCloned = item({
+      ...wifiCanonical,
+      id: "essentials.amenities.am.wifi",
     });
     const tree = guestTree([
       {
@@ -156,7 +165,7 @@ describe("buildGuideSearchIndex", () => {
         maxVisibility: "internal",
         isAggregator: true,
         sourceResolverKeys: ["amenities"],
-        items: [wifi],
+        items: [wifiCloned],
       },
       {
         id: "gs.amenities",
@@ -166,7 +175,7 @@ describe("buildGuideSearchIndex", () => {
         sortBy: "recommended_first",
         emptyCtaDeepLink: null,
         maxVisibility: "internal",
-        items: [wifi],
+        items: [wifiCanonical],
       },
     ]);
     const index = buildGuideSearchIndex(tree);
@@ -174,6 +183,41 @@ describe("buildGuideSearchIndex", () => {
     expect(wifiEntries).toHaveLength(1);
     expect(wifiEntries[0].sectionId).toBe("gs.amenities");
     expect(wifiEntries[0].sectionLabel).toBe("Equipamiento");
+    expect(wifiEntries[0].anchor).toBe("item-am.wifi");
+    // No entry ever keeps the synthetic id — anchor goes home, not to hero.
+    expect(
+      index.entries.find((e) => e.id === "item-essentials.amenities.am.wifi"),
+    ).toBeUndefined();
+  });
+
+  it("essentials clone survives when the canonical section has no entry for it", () => {
+    // Edge case: if an item is essential-only (no canonical section contains
+    // it), the clone must still end up in the index — but under its
+    // canonical id and pointing at the canonical-shaped anchor.
+    const orphan = item({
+      id: "essentials.amenities.am.heater",
+      taxonomyKey: "am.heater",
+      label: "Calefacción",
+      value: "Radiadores",
+    });
+    const tree = guestTree([
+      {
+        id: "gs.essentials",
+        label: "Esenciales",
+        order: 5,
+        resolverKey: "essentials",
+        sortBy: "explicit_order",
+        emptyCtaDeepLink: null,
+        maxVisibility: "internal",
+        isAggregator: true,
+        sourceResolverKeys: ["amenities"],
+        items: [orphan],
+      },
+    ]);
+    const index = buildGuideSearchIndex(tree);
+    expect(index.entries).toHaveLength(1);
+    expect(index.entries[0].id).toBe("item-am.heater");
+    expect(index.entries[0].anchor).toBe("item-am.heater");
   });
 
   it("buildVersion is stable for identical input", () => {

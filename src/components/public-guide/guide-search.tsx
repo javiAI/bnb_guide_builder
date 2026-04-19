@@ -185,7 +185,7 @@ export function GuideSearch({ index }: Props) {
             />
           </div>
           <div className="guide-search__results-wrap">
-            {query.trim().length < minQueryLength ? null : results.length === 0 ? (
+            {deferredQuery.trim().length < minQueryLength ? null : results.length === 0 ? (
               <p className="guide-search__empty" role="status">
                 {ZERO_HINT}
               </p>
