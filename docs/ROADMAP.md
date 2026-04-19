@@ -39,7 +39,7 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 | 15 | Liora Design Replatform | 7 | Bloqueada | depende de entrega del paquete de diseño |
 
-**Total plan V2**: 16 ramas ✅ completadas. Siguiente funcional: **Fase 11 — Knowledge + Assistant + i18n** (rama 11A).
+**Total plan V2**: 16 ramas ✅ completadas + 11A + 11B. Siguiente funcional: **11C** `feat/assistant-retrieval-pipeline` (hybrid BM25+vector + rerank + embeddings).
 
 **Fase 15 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-14. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 para scope y ramas 15A-G.
 
@@ -100,7 +100,7 @@ La infraestructura del pipeline guest está completa: `composeGuide → filterBy
 ### Progreso Fase 11 (2026-04-17 revisada: 4→6 ramas)
 
 - ✅ **11A** `feat/knowledge-autoextract` — schema AI completo (chunkType, journeyStage, contextPrefix, bm25Text, sourceFields, embedding col) + extractors para 7 fuentes + invalidación wired en editor.actions + UI Regenerar + 62 tests.
-- ✅ **11B** `feat/knowledge-i18n` — locale como filtro duro del retriever; templates i18n + UI de missing translations.
+- ✅ **11B** `feat/knowledge-i18n` — locale como filtro duro del retriever + identidad cross-locale por `templateKey` estable (`(propertyId, entityType, entityId, templateKey)`, no `id+locale`); 4 inline extractors (contacts/amenities/spaces/systems) con `topic`+`bodyMd` localizados; `isSupportedLocale` centralizado en `regenerateLocaleAction` + `page.tsx`; items manuales (`templateKey=null`) excluidos del pairing; locale-scoped delete preserva los del otro locale; UI `LocaleSwitcherClient` + banner de missing translations.
 - ⏳ **11C** `feat/assistant-retrieval-pipeline` — hybrid BM25+vector (RRF) + Cohere Rerank 3 + Voyage embeddings + pgvector ivfflat.
 - ⏳ **11D** `feat/assistant-escalation` — escala a contacto estructurado cuando confidence/citations bajas.
 - ⏳ **11E** `feat/assistant-evals` — banco ≥50 fixtures + release gate accuracy ≥85% + recall@5 ≥0.9.

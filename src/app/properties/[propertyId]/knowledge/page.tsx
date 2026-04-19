@@ -8,6 +8,7 @@ import { VISIBILITY_LABEL, VISIBILITY_TONE } from "@/lib/visibility";
 import {
   SUPPORTED_LOCALES,
   getLocaleStatusForProperty,
+  isSupportedLocale,
   listMissingTranslations,
 } from "@/lib/services/knowledge-i18n.service";
 
@@ -42,7 +43,7 @@ export default async function KnowledgePage({
   if (!property) notFound();
 
   const defaultLocale = property.defaultLocale;
-  const activeLocale = localeParam ?? defaultLocale;
+  const activeLocale = isSupportedLocale(localeParam) ? localeParam : defaultLocale;
 
   const [items, localeStatuses, missingTranslations] = await Promise.all([
     prisma.knowledgeItem.findMany({

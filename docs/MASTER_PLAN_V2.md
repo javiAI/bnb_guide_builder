@@ -1200,31 +1200,39 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Motivación**: ubicada entre 11A y el retrieval pipeline (11C) por decisión arquitectónica: el retriever necesita `locale` como filtro duro desde el día 1 para evitar que embeddings mezclen idiomas (degrada rerank). Introducirlo después de tener embeddings es costoso (re-indexar todo el corpus). [AI_KNOWLEDGE_BASE_SPEC.md:L40-L139](research/AI_KNOWLEDGE_BASE_SPEC.md) exige `locale` explícito en cada chunk; [IMPLEMENTATION_PLAN.md:L129-L169](research/IMPLEMENTATION_PLAN.md) marca multi-idioma como decisión crítica temprana.
 
-**Decisiones cerradas en Fase -1 (2026-04-17)**:
-- **Idiomas MVP**: `es`, `en`. `fr`, `de`, `it`, `pt` planificados como "add one more taxonomy entry + regenerar templates"; no requieren cambios de código.
-- **Fallback policy**: si no hay item en `locale` del huésped, responder en `defaultLocale` de la property con nota visible (`"Disponible en Español, traducción automática a English no ofrecida"`). **No hay auto-translate en MVP** — es un deferido (FUTURE.md).
-- **Fuente de traducción**: templates i18n en `knowledge_templates.json` tienen variantes por locale (`"check_in_time": { "es": "…", "en": "…" }`). Items libres (editados a mano) requieren traducción manual explícita por el host en UI.
-- **UI de traducción**: `/knowledge/[itemId]` muestra selector de locale + estado por locale (`draft | published | missing`). Al menos `defaultLocale` obligatorio.
+**Decisiones cerradas en Fase -1 (2026-04-17) + ejecución (2026-04-19)**:
+- **Idiomas MVP**: `es`, `en`. `SUPPORTED_LOCALES = ["es", "en"] as const`; `isSupportedLocale()` type guard centraliza la validación.
+- **Identidad cross-locale**: chunks autoextracted se emparejan entre locales por `(propertyId, entityType, entityId, templateKey)`, **no** por `id + locale` (el id es per-row y no sobrevive a un re-extract). `templateKey String?` es la clave semántica estable del chunk — NOT NULL para autoextract, NULL para items manuales (quedan fuera del grafo cross-locale).
+- **Fallback policy**: si no hay item en `locale` del huésped, se devuelve el sibling del `defaultLocale` anotado con `_fallbackFrom`. **No hay auto-translate en MVP** — diferido a FUTURE.md.
+- **Items manuales**: `getItemForLocale` retorna `null` para `templateKey = null` cuando el locale pedido difiere del del source. `listMissingTranslations` los excluye con `templateKey: { not: null }` en ambas queries.
+- **Localización real**: los 4 extractores inline (`contacts`, `amenities`, `spaces`, `systems`) emiten `topic`/`bodyMd` en inglés cuando `locale="en"` ("Contact:", "has", "is a", "Beds:", "How to use:", "Phone:", "Availability:"). Los extractores template-based (`property`, `access`, `policy`) siguen usando `knowledge_templates.json` que ya tenía variantes `es`/`en`.
+- **Regeneración**: `regenerateLocaleAction(locale)` + `extractFromPropertyAll(propertyId, locale)`. Scoped delete por `(propertyId, locale, isAutoExtracted)` — nunca borra los items del otro locale ni los manuales.
 
-**Archivos a crear**:
+**Archivos creados**:
 - `src/lib/services/knowledge-i18n.service.ts`:
-  - `getItemForLocale(itemId, locale, fallback): KnowledgeItem` — aplica fallback policy
-  - `listMissingTranslations(propertyId): { itemId, missingLocales[] }[]` — para dashboard
-  - `extractI18n(propertyId, locale)` — wrapper de `extractFromProperty` que genera items para un locale concreto reusando templates
-- `src/components/knowledge/locale-switcher.tsx` — tabs por locale con estado (draft/published/missing)
+  - `SUPPORTED_LOCALES` / `isSupportedLocale()` — type guard exportado
+  - `getItemForLocale(itemId, locale, fallbackLocale): ItemWithFallback | null` — resuelve por identidad semántica (`entityType, entityId, templateKey`), anota `_fallbackFrom`; retorna `null` para items manuales cuando cruza locale
+  - `listMissingTranslations(propertyId, defaultLocale, targetLocales): MissingTranslation[]` — match por `(entityType, entityId, templateKey, locale)`; excluye `templateKey: null`; por cada chunk del defaultLocale emite las localizaciones faltantes
+  - `getLocaleStatusForProperty(propertyId, targetLocales): LocaleStatus[]` — counts agregados para el dashboard
+  - `extractI18n` — wrapper de `extractFromPropertyAll` por locale
+- `src/app/properties/[propertyId]/knowledge/locale-switcher.tsx` — tabs por locale con badge missing/present + botón "Generar"
 
-**Archivos a modificar**:
-- `taxonomies/knowledge_templates.json` — migrar a estructura `{ templateId: { [locale]: string } }`
-- `prisma/schema.prisma` — añadir `KnowledgeItem.defaultLocale String @default("es")` y `@@unique([propertyId, sourceType, sourceId, chunkType, locale])`
-- `src/app/properties/[propertyId]/knowledge/page.tsx` — panel de missing translations + acción "Duplicar y traducir manualmente"
-- `src/lib/services/knowledge-extract.service.ts` (de 11A) — aceptar `locale` + elegir template variant
+**Archivos modificados**:
+- `prisma/schema.prisma` — `KnowledgeItem.templateKey String? @map("template_key")` + `@@index([propertyId, entityType, entityId, templateKey, locale])`. (Dev: sincronizado con `prisma db push --accept-data-loss`.)
+- `taxonomies/knowledge_templates.json` — top-level `"locale": "es-ES"` → `"defaultLocale": "es"` (describe el fallback por defecto de los templates, no un locale único)
+- `src/lib/types/knowledge.ts` — `ExtractedChunk.templateKey: string`
+- `src/lib/services/knowledge-extract.service.ts` — cada chunk autoextracted setea `templateKey` (9 valores distintos: 4 en property/fact `checkin_time|checkout_time|capacity|location`, 3 en access/procedure `unit_access|building_access|autonomous_checkin`, 4 en policy `pets|smoking|children|quiet_hours`, `contact_info`, `amenity_existence`, `amenity_usage`, `space_info`, `system_info`, `system_troubleshooting`). Inline extractors localizan `topic` + `bodyMd` según `locale`.
+- `src/lib/actions/knowledge.actions.ts` — `regenerateLocaleAction` valida con `isSupportedLocale` antes de delegar
+- `src/app/properties/[propertyId]/knowledge/page.tsx` — `activeLocale` se clampa con `isSupportedLocale(localeParam)`; `?locale=fr` cae al `defaultLocale` sin estado incoherente
 
 **Tests**:
-- `src/test/knowledge-i18n-extract.test.ts` — property con default `es`, regenerar para `en` produce items con textos en inglés usando templates i18n
-- `src/test/knowledge-i18n-fallback.test.ts` — pedir item en `fr` cuando solo existe `es` → retorna `es` con `_fallbackFrom: 'es'`
-- `src/test/knowledge-i18n-unique-key.test.ts` — insertar dos items con misma `(propertyId, sourceType, sourceId, chunkType, locale)` → error P2002
+- `src/test/knowledge-i18n-extract.test.ts` — property con default `es`, regenerar para `en` produce items con textos en inglés; `buildContextPrefix` y `buildBm25Text` respetan locale
+- `src/test/knowledge-i18n-fallback.test.ts` — identidad `templateKey`: 4 property facts no colapsan; cross-locale sibling resuelto con row id distinto; manual items `templateKey=null` no cruzan locales; `_fallbackFrom` anotado al caer al defaultLocale; `listMissingTranslations` excluye `templateKey: null` vía filtro de query
+- `src/test/knowledge-i18n-no-leak.test.ts` — los 4 inline extractors en `locale="en"` no emiten strings ES (`Teléfono`, `Disponibilidad`, `Contacto:`, `dispone de`, `es un/una`, `Camas:`, `Cómo usar:`)
+- `src/test/knowledge-i18n-idempotency.test.ts` — `extractFromPropertyAll(propertyId, "en")` scopea `deleteMany` a `locale="en"` y nunca toca `locale="es"`
+- `src/test/knowledge-locale-validation.test.ts` — `regenerateLocaleAction` acepta `es`/`en`, rechaza `fr`/empty con error friendly y no invoca el extractor
 
-**Criterio de done**: host puede activar `en` como idioma secundario, ver gaps de traducción, completarlos manualmente; items quedan indexados por locale listos para 11C.
+**Criterio de done**: host puede activar `en` como idioma secundario, ver gaps de traducción (pairing por templateKey, no por topic), completarlos manualmente o por regeneración; items quedan indexados por locale listos para 11C; locale desconocido nunca deja la UI en estado incoherente; manual items coexisten con autoextracted sin romper el pairing cross-locale.
 
 **Dependencias**: 11A (schema expandido).
 

@@ -7,6 +7,7 @@ import {
   updateKnowledgeItemSchema,
 } from "@/lib/schemas/knowledge.schema";
 import { extractFromPropertyAll } from "@/lib/services/knowledge-extract.service";
+import { isSupportedLocale, SUPPORTED_LOCALES } from "@/lib/services/knowledge-i18n.service";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Knowledge Items ──
@@ -130,6 +131,12 @@ export async function regenerateLocaleAction(
   const locale = formData.get("locale") as string;
   if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
   if (!locale) return { success: false, error: "Falta el locale" };
+  if (!isSupportedLocale(locale)) {
+    return {
+      success: false,
+      error: `Locale no soportado: ${locale}. Soportados: ${SUPPORTED_LOCALES.join(", ")}`,
+    };
+  }
 
   await extractFromPropertyAll(propertyId, locale);
 

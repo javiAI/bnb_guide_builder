@@ -590,6 +590,7 @@ model KnowledgeItem {
   sourceFields     String[]        @default([]) @map("source_fields")
   tags             String[]        @default([])
   contentHash      String?         @map("content_hash")
+  templateKey      String?         @map("template_key")
   validFrom        DateTime?       @map("valid_from")
   validTo          DateTime?       @map("valid_to")
   createdAt        DateTime        @default(now()) @map("created_at")
@@ -605,6 +606,7 @@ model KnowledgeItem {
   @@index([propertyId, chunkType])
   @@index([propertyId, entityType, entityId])
   @@index([propertyId, visibility])
+  @@index([propertyId, entityType, entityId, templateKey, locale])
   @@map("knowledge_items")
 }
 

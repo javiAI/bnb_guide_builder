@@ -1,7 +1,7 @@
 {
   "file": "knowledge_templates.json",
   "version": "2026-04-19",
-  "locale": "es-ES",
+  "defaultLocale": "es",
   "units_system": "metric",
   "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId > locale. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for traceability).",
   "templates": {

@@ -39,17 +39,35 @@ Debe soportar:
 
 ### i18n (Rama 11B)
 
-`KnowledgeItem.locale` y `Property.defaultLocale` (`@default("es")`) son los dos pilares.
+`KnowledgeItem.locale`, `KnowledgeItem.templateKey` y `Property.defaultLocale` (`@default("es")`) son los tres pilares.
 
-**Extracción locale-scoped**: `extractFromPropertyAll(propertyId, locale)` y `upsertSection` eliminan solo ítems con `{ propertyId, locale, isAutoExtracted: true }` — extraer EN nunca borra ítems ES.
+**Locales soportados**: `SUPPORTED_LOCALES = ["es", "en"] as const`. `isSupportedLocale(value)` es el type guard centralizado — cualquier entrada de usuario (action FormData, `searchParams.locale`) pasa por él. Locale desconocido → `regenerateLocaleAction` responde error friendly; `page.tsx` clampa al `defaultLocale` para no dejar la UI en estado incoherente.
 
-**Fallback policy**: `getItemForLocale(itemId, locale, fallbackLocale)` devuelve el ítem del locale pedido; si no existe, devuelve el del `defaultLocale` con `_fallbackFrom` como señal para que la UI lo marque.
+**Identidad cross-locale**: los chunks autoextracted se emparejan por `(propertyId, entityType, entityId, templateKey)` — nunca por `id + locale` (el id es per-row, cambia en cada re-extract). `templateKey String?` es la clave semántica estable del chunk; NOT NULL en autoextract, NULL en items manuales. Un mismo `templateKey` identifica "el mismo chunk" en cualquier locale. Index: `@@index([propertyId, entityType, entityId, templateKey, locale])`.
 
-**`knowledge-i18n.service`**:
+**Valores de `templateKey`** (9 fijos):
 
-- `getLocaleStatusForProperty(propertyId, locales)` — cuenta ítems por locale; devuelve `"present"` / `"missing"`.
-- `listMissingTranslations(propertyId, defaultLocale, targetLocales)` — detecta ítems sin traducción en locales objetivo.
-- `extractI18n(propertyId, locale)` — llama a `extractFromPropertyAll` con el locale dado.
+- `property/fact` → `checkin_time | checkout_time | capacity | location` (4 chunks distintos, antes colapsaban por `(entityType, chunkType, topic)`)
+- `access/procedure` → `unit_access | building_access | autonomous_checkin`
+- `policy/policy` → `pets | smoking | children | quiet_hours`
+- `contact/fact` → `contact_info`
+- `amenity` → `amenity_existence`, `amenity_usage`
+- `space/fact` → `space_info`
+- `system` → `system_info`, `system_troubleshooting`
+
+**Extracción locale-scoped**: `extractFromPropertyAll(propertyId, locale)` y `upsertSection` eliminan solo ítems con `{ propertyId, locale, isAutoExtracted: true }` — extraer EN nunca borra ítems ES ni manuales.
+
+**Localización real**: los 4 extractores inline (`contacts`, `amenities`, `spaces`, `systems`) ramifican `topic` y `bodyMd` por locale — nunca emiten strings ES cuando `locale="en"`. Los template-based (`property`, `access`, `policy`) consumen `knowledge_templates.json` que ya tiene variantes `es`/`en`. El top-level del JSON es `"defaultLocale": "es"` (describe el fallback por defecto de los templates, no un locale único).
+
+**Fallback policy**:
+
+- `getItemForLocale(itemId, locale, fallbackLocale)` — resuelve por identidad semántica. Si `source.locale === locale` devuelve el source. Si `source.templateKey === null` (manual) y el locale difiere, devuelve `null` (los manuales no tienen grafo cross-locale). Si no, busca sibling por `(propertyId, entityType, entityId, templateKey, locale)`; si no existe, cae al mismo identity con `fallbackLocale` anotando `_fallbackFrom`.
+- `listMissingTranslations(propertyId, defaultLocale, targetLocales)` — match por `(entityType, entityId, templateKey, locale)`; filtra `templateKey: { not: null }` en ambas queries para excluir items manuales. Emite `MissingTranslation` con `templateKey` para que el caller pueda regenerar quirúrgicamente.
+
+**`knowledge-i18n.service` — API pública**:
+
+- `SUPPORTED_LOCALES`, `isSupportedLocale()`
+- `getItemForLocale`, `listMissingTranslations`, `getLocaleStatusForProperty`, `extractI18n`
 
 **UI**: `LocaleSwitcherClient` navega vía `router.push(pathname?locale=X)` para que el Server Component lea el locale desde `searchParams`. Tabs con dot de estado (naranja=missing, verde=present). Banner de warning cuando `nonDefaultMissing.length > 0`. Formulario "Añadir item" solo visible en `defaultLocale`.
 

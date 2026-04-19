@@ -5,6 +5,10 @@ import { extractFromPropertyAll } from "./knowledge-extract.service";
 export const SUPPORTED_LOCALES = ["es", "en"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
+export function isSupportedLocale(value: unknown): value is SupportedLocale {
+  return typeof value === "string" && (SUPPORTED_LOCALES as readonly string[]).includes(value);
+}
+
 export interface LocaleStatus {
   locale: string;
   count: number;
@@ -14,6 +18,7 @@ export interface LocaleStatus {
 export interface MissingTranslation {
   entityType: string;
   entityId: string | null;
+  templateKey: string;
   chunkType: string;
   topic: string;
   missingLocales: string[];
@@ -23,34 +28,54 @@ export interface ItemWithFallback extends KnowledgeItem {
   _fallbackFrom?: string;
 }
 
-/**
- * Returns the knowledge item in the requested locale.
- * If not found, falls back to `fallbackLocale` and annotates `_fallbackFrom`.
- * Returns null only when neither locale nor fallback has the item.
- */
+// Cross-locale chunk identity: (propertyId, entityType, entityId, templateKey)
+//
+// Semantics:
+//   1. Load source item by id.
+//   2. If source.locale === requested locale, return as-is.
+//   3. If templateKey is null (manual item), cross-locale lookup is not
+//      defined — manual items do not have a stable identity shared with
+//      their (hypothetical) translations. Return null.
+//   4. Look up sibling with the same identity in the requested locale.
+//   5. Fall back to fallbackLocale with the same identity; annotate
+//      `_fallbackFrom` so callers can surface the stale/fallback state.
 export async function getItemForLocale(
   itemId: string,
   locale: string,
   fallbackLocale: string,
 ): Promise<ItemWithFallback | null> {
-  const item = await prisma.knowledgeItem.findFirst({
-    where: { id: itemId, locale },
+  const source = await prisma.knowledgeItem.findUnique({ where: { id: itemId } });
+  if (!source) return null;
+
+  if (source.locale === locale) return source;
+
+  if (!source.templateKey) return null;
+
+  const identity = {
+    propertyId: source.propertyId,
+    entityType: source.entityType,
+    entityId: source.entityId,
+    templateKey: source.templateKey,
+  };
+
+  const match = await prisma.knowledgeItem.findFirst({
+    where: { ...identity, locale },
   });
-  if (item) return item;
+  if (match) return match;
 
   if (locale === fallbackLocale) return null;
 
+  if (source.locale === fallbackLocale) {
+    return { ...source, _fallbackFrom: fallbackLocale };
+  }
+
   const fallback = await prisma.knowledgeItem.findFirst({
-    where: { id: itemId, locale: fallbackLocale },
+    where: { ...identity, locale: fallbackLocale },
   });
   if (!fallback) return null;
   return { ...fallback, _fallbackFrom: fallbackLocale };
 }
 
-/**
- * Returns locale status summary for a property: how many auto-extracted
- * items exist per locale vs. how many exist in the default locale.
- */
 export async function getLocaleStatusForProperty(
   propertyId: string,
   targetLocales: string[],
@@ -70,14 +95,13 @@ export async function getLocaleStatusForProperty(
   }));
 }
 
-/**
- * Lists (entityType, entityId, chunkType) tuples that exist in the default
- * locale but are missing in one or more target locales.
- *
- * NOTE: Background invalidation in 11B only re-extracts the defaultLocale.
- * Non-default locale variants (e.g. "en") may become stale after source
- * entity edits until the host manually triggers re-extraction for that locale.
- */
+// Lists auto-extracted chunks from the default locale that do not have a
+// sibling with the same `(entityType, entityId, templateKey)` identity in
+// each target locale. Manual items (templateKey=null) are excluded — they
+// do not participate in cross-locale translation tracking.
+//
+// Background invalidation only re-extracts the defaultLocale; non-default
+// variants may go stale until the host triggers locale-scoped re-extraction.
 export async function listMissingTranslations(
   propertyId: string,
   defaultLocale: string,
@@ -88,32 +112,59 @@ export async function listMissingTranslations(
 
   const [defaultItems, otherItems] = await Promise.all([
     prisma.knowledgeItem.findMany({
-      where: { propertyId, locale: defaultLocale, isAutoExtracted: true },
-      select: { entityType: true, entityId: true, chunkType: true, topic: true },
+      where: {
+        propertyId,
+        locale: defaultLocale,
+        isAutoExtracted: true,
+        templateKey: { not: null },
+      },
+      select: {
+        entityType: true,
+        entityId: true,
+        templateKey: true,
+        chunkType: true,
+        topic: true,
+      },
     }),
     prisma.knowledgeItem.findMany({
       where: {
         propertyId,
         locale: { in: otherLocales },
         isAutoExtracted: true,
+        templateKey: { not: null },
       },
-      select: { entityType: true, entityId: true, chunkType: true, locale: true },
+      select: {
+        entityType: true,
+        entityId: true,
+        templateKey: true,
+        locale: true,
+      },
     }),
   ]);
 
+  const identityKey = (
+    entityType: string,
+    entityId: string | null,
+    templateKey: string,
+    locale: string,
+  ) => `${entityType}|${entityId ?? ""}|${templateKey}|${locale}`;
+
   const existingKey = new Set(
-    otherItems.map((i) => `${i.entityType}|${i.entityId ?? ""}|${i.chunkType}|${i.locale}`),
+    otherItems.map((i) =>
+      identityKey(i.entityType, i.entityId, i.templateKey!, i.locale),
+    ),
   );
 
   const missing: MissingTranslation[] = [];
   for (const item of defaultItems) {
     const missingLocales = otherLocales.filter(
-      (l) => !existingKey.has(`${item.entityType}|${item.entityId ?? ""}|${item.chunkType}|${l}`),
+      (l) => !existingKey.has(identityKey(item.entityType, item.entityId, item.templateKey!, l)),
     );
     if (missingLocales.length > 0) {
       missing.push({
         entityType: item.entityType,
         entityId: item.entityId,
+        templateKey: item.templateKey!,
         chunkType: item.chunkType,
         topic: item.topic,
         missingLocales,
@@ -123,11 +174,6 @@ export async function listMissingTranslations(
   return missing;
 }
 
-/**
- * Extracts all knowledge items for a property in the given locale.
- * Thin wrapper around extractFromPropertyAll with locale param.
- * Scoped delete ensures existing items for other locales are preserved.
- */
 export async function extractI18n(
   propertyId: string,
   locale: string,

@@ -1,16 +1,24 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   getItemForLocale,
+  isSupportedLocale,
   listMissingTranslations,
   getLocaleStatusForProperty,
 } from "@/lib/services/knowledge-i18n.service";
 
-// Tests for the fallback policy: requesting a locale without items returns
-// the defaultLocale variant annotated with _fallbackFrom.
+// Cross-locale identity semantics: chunks are paired across locales by
+// (propertyId, entityType, entityId, templateKey), not by row id.
+
+const baseIdentity = {
+  propertyId: "prop_1",
+  entityType: "property",
+  entityId: null,
+  templateKey: "checkin_time",
+};
 
 const esItem = {
-  id: "item_es",
-  propertyId: "prop_1",
+  id: "item_es_checkin",
+  ...baseIdentity,
   sourceId: null,
   topic: "Hora de check-in",
   bodyMd: "El check-in es a las 15:00.",
@@ -21,8 +29,6 @@ const esItem = {
   journeyStage: "pre_arrival",
   lastVerifiedAt: null,
   chunkType: "fact",
-  entityType: "property",
-  entityId: null,
   canonicalQuestion: null,
   contextPrefix: "",
   bm25Text: "",
@@ -36,11 +42,18 @@ const esItem = {
   updatedAt: new Date(),
 };
 
-const enItem = { ...esItem, id: "item_en", locale: "en", topic: "Check-in time", bodyMd: "Check-in is at 15:00." };
+const enItem = {
+  ...esItem,
+  id: "item_en_checkin",
+  locale: "en",
+  topic: "Check-in time",
+  bodyMd: "Check-in is at 15:00.",
+};
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     knowledgeItem: {
+      findUnique: vi.fn(),
       findFirst: vi.fn(),
       findMany: vi.fn(),
       groupBy: vi.fn(),
@@ -48,73 +61,163 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-describe("getItemForLocale", () => {
-  it("returns item directly when requested locale exists", async () => {
-    const { prisma } = await import("@/lib/db");
-    vi.mocked(prisma.knowledgeItem.findFirst).mockResolvedValueOnce(enItem as never);
+beforeEach(async () => {
+  const { prisma } = await import("@/lib/db");
+  vi.mocked(prisma.knowledgeItem.findUnique).mockReset();
+  vi.mocked(prisma.knowledgeItem.findFirst).mockReset();
+  vi.mocked(prisma.knowledgeItem.findMany).mockReset();
+  vi.mocked(prisma.knowledgeItem.groupBy).mockReset();
+});
 
-    const result = await getItemForLocale("item_en", "en", "es");
+describe("isSupportedLocale", () => {
+  it("accepts es and en", () => {
+    expect(isSupportedLocale("es")).toBe(true);
+    expect(isSupportedLocale("en")).toBe(true);
+  });
+  it("rejects other strings and non-strings", () => {
+    expect(isSupportedLocale("fr")).toBe(false);
+    expect(isSupportedLocale("")).toBe(false);
+    expect(isSupportedLocale(null)).toBe(false);
+    expect(isSupportedLocale(undefined)).toBe(false);
+    expect(isSupportedLocale(42)).toBe(false);
+  });
+});
+
+describe("getItemForLocale", () => {
+  it("returns source directly when source.locale matches requested locale", async () => {
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(enItem as never);
+
+    const result = await getItemForLocale("item_en_checkin", "en", "es");
+    expect(result?.id).toBe("item_en_checkin");
     expect(result?.locale).toBe("en");
     expect((result as { _fallbackFrom?: string })?._fallbackFrom).toBeUndefined();
   });
 
-  it("falls back to defaultLocale and annotates _fallbackFrom when locale missing", async () => {
+  it("resolves cross-locale sibling by (entityType, entityId, templateKey) with different row id", async () => {
     const { prisma } = await import("@/lib/db");
-    vi.mocked(prisma.knowledgeItem.findFirst)
-      .mockResolvedValueOnce(null) // fr not found
-      .mockResolvedValueOnce(esItem as never); // fallback es found
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(esItem as never);
+    vi.mocked(prisma.knowledgeItem.findFirst).mockResolvedValueOnce(enItem as never);
 
-    const result = await getItemForLocale("item_es", "fr", "es");
+    const result = await getItemForLocale("item_es_checkin", "en", "es");
+    expect(result?.id).toBe("item_en_checkin");
+    expect(result?.locale).toBe("en");
+    expect((result as { _fallbackFrom?: string })?._fallbackFrom).toBeUndefined();
+
+    const firstCall = vi.mocked(prisma.knowledgeItem.findFirst).mock.calls[0][0];
+    expect(firstCall?.where).toMatchObject({
+      propertyId: "prop_1",
+      entityType: "property",
+      entityId: null,
+      templateKey: "checkin_time",
+      locale: "en",
+    });
+  });
+
+  it("returns null for manual items (templateKey=null) when requested locale differs", async () => {
+    const manual = { ...esItem, id: "manual_1", templateKey: null, isAutoExtracted: false };
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(manual as never);
+
+    const result = await getItemForLocale("manual_1", "en", "es");
+    expect(result).toBeNull();
+    // No cross-locale lookup performed for manual items.
+    expect(prisma.knowledgeItem.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("falls back to defaultLocale sibling and annotates _fallbackFrom", async () => {
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(enItem as never);
+    vi.mocked(prisma.knowledgeItem.findFirst)
+      .mockResolvedValueOnce(null) // fr sibling not found
+      .mockResolvedValueOnce(esItem as never); // es (fallback) sibling found
+
+    const result = await getItemForLocale("item_en_checkin", "fr", "es");
+    expect(result?.id).toBe("item_es_checkin");
     expect(result?.locale).toBe("es");
     expect((result as { _fallbackFrom?: string })?._fallbackFrom).toBe("es");
   });
 
-  it("returns null when neither locale nor fallback has the item", async () => {
+  it("returns source annotated with _fallbackFrom when source is already defaultLocale and requested locale missing", async () => {
     const { prisma } = await import("@/lib/db");
-    vi.mocked(prisma.knowledgeItem.findFirst)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null);
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(esItem as never);
+    vi.mocked(prisma.knowledgeItem.findFirst).mockResolvedValueOnce(null); // no fr sibling
 
-    const result = await getItemForLocale("item_nonexistent", "fr", "es");
+    const result = await getItemForLocale("item_es_checkin", "fr", "es");
+    expect(result?.id).toBe("item_es_checkin");
+    expect((result as { _fallbackFrom?: string })?._fallbackFrom).toBe("es");
+  });
+
+  it("returns null when requested locale === fallbackLocale and item missing", async () => {
+    const { prisma } = await import("@/lib/db");
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(null);
+
+    const result = await getItemForLocale("item_missing", "es", "es");
     expect(result).toBeNull();
   });
 
-  it("returns null (not infinite loop) when locale === fallbackLocale and item missing", async () => {
+  it("returns null when source not found", async () => {
     const { prisma } = await import("@/lib/db");
-    vi.mocked(prisma.knowledgeItem.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.knowledgeItem.findUnique).mockResolvedValueOnce(null);
 
-    const result = await getItemForLocale("item_es", "es", "es");
+    const result = await getItemForLocale("item_missing", "en", "es");
     expect(result).toBeNull();
+    expect(prisma.knowledgeItem.findFirst).not.toHaveBeenCalled();
   });
 });
 
-describe("listMissingTranslations", () => {
-  it("returns items present in defaultLocale but missing in en", async () => {
+describe("listMissingTranslations — identity by templateKey", () => {
+  it("does NOT collapse multiple property/fact chunks with different templateKeys", async () => {
     const { prisma } = await import("@/lib/db");
+    // Four property/fact chunks in es, none translated to en.
     vi.mocked(prisma.knowledgeItem.findMany)
       .mockResolvedValueOnce([
-        { entityType: "property", entityId: null, chunkType: "fact", topic: "Check-in time" },
-        { entityType: "access", entityId: null, chunkType: "procedure", topic: "Unit access" },
+        { entityType: "property", entityId: null, templateKey: "checkin_time", chunkType: "fact", topic: "Hora de check-in" },
+        { entityType: "property", entityId: null, templateKey: "checkout_time", chunkType: "fact", topic: "Hora de check-out" },
+        { entityType: "property", entityId: null, templateKey: "capacity", chunkType: "fact", topic: "Capacidad" },
+        { entityType: "property", entityId: null, templateKey: "location", chunkType: "fact", topic: "Ubicación" },
       ] as never)
       .mockResolvedValueOnce([] as never); // no en items
 
     const missing = await listMissingTranslations("prop_1", "es", ["es", "en"]);
-    expect(missing).toHaveLength(2);
+    expect(missing).toHaveLength(4);
+    const keys = missing.map((m) => m.templateKey).sort();
+    expect(keys).toEqual(["capacity", "checkin_time", "checkout_time", "location"]);
     expect(missing.every((m) => m.missingLocales.includes("en"))).toBe(true);
   });
 
-  it("returns empty when all items have en translations", async () => {
+  it("excludes items already translated (same templateKey present in target locale)", async () => {
     const { prisma } = await import("@/lib/db");
     vi.mocked(prisma.knowledgeItem.findMany)
       .mockResolvedValueOnce([
-        { entityType: "property", entityId: null, chunkType: "fact", topic: "Check-in time" },
+        { entityType: "property", entityId: null, templateKey: "checkin_time", chunkType: "fact", topic: "Hora de check-in" },
+        { entityType: "property", entityId: null, templateKey: "checkout_time", chunkType: "fact", topic: "Hora de check-out" },
       ] as never)
       .mockResolvedValueOnce([
-        { entityType: "property", entityId: null, chunkType: "fact", locale: "en" },
+        { entityType: "property", entityId: null, templateKey: "checkin_time", locale: "en" },
       ] as never);
 
     const missing = await listMissingTranslations("prop_1", "es", ["es", "en"]);
-    expect(missing).toHaveLength(0);
+    expect(missing).toHaveLength(1);
+    expect(missing[0].templateKey).toBe("checkout_time");
+  });
+
+  it("excludes manual items (templateKey=null) — they do not participate in cross-locale tracking", async () => {
+    const { prisma } = await import("@/lib/db");
+    // The query filters templateKey: { not: null } upstream; assert the filter
+    // is wired into the findMany call so manual items never reach the result.
+    vi.mocked(prisma.knowledgeItem.findMany)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce([] as never);
+
+    await listMissingTranslations("prop_1", "es", ["es", "en"]);
+
+    const calls = vi.mocked(prisma.knowledgeItem.findMany).mock.calls;
+    expect(calls).toHaveLength(2);
+    for (const [args] of calls) {
+      const where = (args as { where: Record<string, unknown> }).where;
+      expect(where.templateKey).toEqual({ not: null });
+    }
   });
 
   it("returns empty when targetLocales has only the defaultLocale", async () => {
