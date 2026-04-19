@@ -1,9 +1,9 @@
 {
   "file": "knowledge_templates.json",
   "version": "2026-04-19",
-  "locale": "es-ES",
+  "defaultLocale": "es",
   "units_system": "metric",
-  "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for traceability).",
+  "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId > locale. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for traceability).",
   "templates": {
     "property": {
       "fact": {
@@ -12,6 +12,13 @@
             "topic": "Hora de check-in",
             "canonicalQuestion": "¿A qué hora empieza el check-in?",
             "bodyTemplate": "El check-in en {{propertyName}} es a partir de las {{checkInStart}} y hasta las {{checkInEnd}}.",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["checkInStart", "checkInEnd"]
+          },
+          "en": {
+            "topic": "Check-in time",
+            "canonicalQuestion": "What time does check-in start?",
+            "bodyTemplate": "Check-in at {{propertyName}} is available from {{checkInStart}} until {{checkInEnd}}.",
             "journeyStage": "pre_arrival",
             "sourceFields": ["checkInStart", "checkInEnd"]
           }
@@ -23,6 +30,13 @@
             "bodyTemplate": "El check-out en {{propertyName}} debe realizarse antes de las {{checkOutTime}}.",
             "journeyStage": "checkout",
             "sourceFields": ["checkOutTime"]
+          },
+          "en": {
+            "topic": "Check-out time",
+            "canonicalQuestion": "What time is check-out?",
+            "bodyTemplate": "Check-out at {{propertyName}} must be completed by {{checkOutTime}}.",
+            "journeyStage": "checkout",
+            "sourceFields": ["checkOutTime"]
           }
         },
         "capacity": {
@@ -32,6 +46,13 @@
             "bodyTemplate": "{{propertyName}} tiene capacidad para {{maxGuests}} personas (máximo {{maxAdults}} adultos{{#if maxChildren}} y {{maxChildren}} niños{{/if}}).",
             "journeyStage": "pre_arrival",
             "sourceFields": ["maxGuests", "maxAdults", "maxChildren"]
+          },
+          "en": {
+            "topic": "Property capacity",
+            "canonicalQuestion": "How many guests can stay?",
+            "bodyTemplate": "{{propertyName}} accommodates up to {{maxGuests}} guests (maximum {{maxAdults}} adults{{#if maxChildren}} and {{maxChildren}} children{{/if}}).",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["maxGuests", "maxAdults", "maxChildren"]
           }
         },
         "overview": {
@@ -39,6 +60,13 @@
             "topic": "Descripción general",
             "canonicalQuestion": "¿Qué tipo de alojamiento es y dónde está?",
             "bodyTemplate": "{{propertyName}} es un {{propertyTypeLabel}} ubicado en {{city}}{{#if country}}, {{country}}{{/if}}.",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["propertyNickname", "propertyType", "city", "country"]
+          },
+          "en": {
+            "topic": "Property overview",
+            "canonicalQuestion": "What type of property is this and where is it?",
+            "bodyTemplate": "{{propertyName}} is a {{propertyTypeLabel}} located in {{city}}{{#if country}}, {{country}}{{/if}}.",
             "journeyStage": "pre_arrival",
             "sourceFields": ["propertyNickname", "propertyType", "city", "country"]
           }
@@ -54,6 +82,13 @@
             "bodyTemplate": "Para acceder a {{propertyName}}: {{accessDescription}}",
             "journeyStage": "arrival",
             "sourceFields": ["primaryAccessMethod", "accessMethodsJson"]
+          },
+          "en": {
+            "topic": "Unit access",
+            "canonicalQuestion": "How do I access the property?",
+            "bodyTemplate": "To access {{propertyName}}: {{accessDescription}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["primaryAccessMethod", "accessMethodsJson"]
           }
         },
         "building_access": {
@@ -63,6 +98,13 @@
             "bodyTemplate": "Para entrar al edificio de {{propertyName}}: {{buildingAccessDescription}}",
             "journeyStage": "arrival",
             "sourceFields": ["accessMethodsJson"]
+          },
+          "en": {
+            "topic": "Building access",
+            "canonicalQuestion": "How do I enter the building?",
+            "bodyTemplate": "To enter the building at {{propertyName}}: {{buildingAccessDescription}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["accessMethodsJson"]
           }
         },
         "checkin_logistics": {
@@ -70,6 +112,13 @@
             "topic": "Logística de llegada",
             "canonicalQuestion": "¿Qué debo saber para llegar al alojamiento?",
             "bodyTemplate": "Llegada a {{propertyName}}: check-in entre las {{checkInStart}} y las {{checkInEnd}}. Check-out antes de las {{checkOutTime}}.{{#if autonomousPart}} {{autonomousPart}}{{/if}}{{#if accessSummary}} {{accessSummary}}{{/if}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["checkInStart", "checkInEnd", "checkOutTime", "isAutonomousCheckin", "primaryAccessMethod", "accessMethodsJson"]
+          },
+          "en": {
+            "topic": "Arrival logistics",
+            "canonicalQuestion": "What do I need to know for arrival?",
+            "bodyTemplate": "Arrival at {{propertyName}}: check-in between {{checkInStart}} and {{checkInEnd}}. Check-out before {{checkOutTime}}.{{#if autonomousPart}} {{autonomousPart}}{{/if}}{{#if accessSummary}} {{accessSummary}}{{/if}}",
             "journeyStage": "pre_arrival",
             "sourceFields": ["checkInStart", "checkInEnd", "checkOutTime", "isAutonomousCheckin", "primaryAccessMethod", "accessMethodsJson"]
           }
@@ -85,12 +134,26 @@
             "bodyTemplate": "{{smokingPolicyText}}",
             "journeyStage": "any",
             "sourceFields": ["policiesJson"]
+          },
+          "en": {
+            "topic": "Smoking policy",
+            "canonicalQuestion": "Is smoking allowed at the property?",
+            "bodyTemplate": "{{smokingPolicyText}}",
+            "journeyStage": "any",
+            "sourceFields": ["policiesJson"]
           }
         },
         "pets": {
           "es": {
             "topic": "Política de mascotas",
             "canonicalQuestion": "¿Se admiten mascotas?",
+            "bodyTemplate": "{{petsPolicyText}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["policiesJson"]
+          },
+          "en": {
+            "topic": "Pet policy",
+            "canonicalQuestion": "Are pets allowed?",
             "bodyTemplate": "{{petsPolicyText}}",
             "journeyStage": "pre_arrival",
             "sourceFields": ["policiesJson"]
@@ -103,12 +166,26 @@
             "bodyTemplate": "{{childrenPolicyText}}",
             "journeyStage": "pre_arrival",
             "sourceFields": ["policiesJson", "infantsAllowed", "maxChildren"]
+          },
+          "en": {
+            "topic": "Children policy",
+            "canonicalQuestion": "Are children allowed?",
+            "bodyTemplate": "{{childrenPolicyText}}",
+            "journeyStage": "pre_arrival",
+            "sourceFields": ["policiesJson", "infantsAllowed", "maxChildren"]
           }
         },
         "quiet_hours": {
           "es": {
             "topic": "Horario de silencio",
             "canonicalQuestion": "¿Hay horario de silencio?",
+            "bodyTemplate": "{{quietHoursPolicyText}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["policiesJson"]
+          },
+          "en": {
+            "topic": "Quiet hours",
+            "canonicalQuestion": "Are there quiet hours?",
             "bodyTemplate": "{{quietHoursPolicyText}}",
             "journeyStage": "arrival",
             "sourceFields": ["policiesJson"]
@@ -125,6 +202,13 @@
             "bodyTemplate": "{{roleName}}: {{displayName}}.{{#if phone}} Teléfono: {{phone}}.{{/if}}{{#if whatsapp}} WhatsApp: {{whatsapp}}.{{/if}}{{#if email}} Email: {{email}}.{{/if}}{{#if availabilitySchedule}} Disponibilidad: {{availabilitySchedule}}.{{/if}}{{#if guestVisibleNotes}} {{guestVisibleNotes}}{{/if}}",
             "journeyStage": "any",
             "sourceFields": ["displayName", "roleKey", "phone", "whatsapp", "email", "availabilitySchedule", "guestVisibleNotes"]
+          },
+          "en": {
+            "topic": "Contact: {{roleName}}",
+            "canonicalQuestion": "Who do I contact for {{roleName}}?",
+            "bodyTemplate": "{{roleName}}: {{displayName}}.{{#if phone}} Phone: {{phone}}.{{/if}}{{#if whatsapp}} WhatsApp: {{whatsapp}}.{{/if}}{{#if email}} Email: {{email}}.{{/if}}{{#if availabilitySchedule}} Availability: {{availabilitySchedule}}.{{/if}}{{#if guestVisibleNotes}} {{guestVisibleNotes}}{{/if}}",
+            "journeyStage": "any",
+            "sourceFields": ["displayName", "roleKey", "phone", "whatsapp", "email", "availabilitySchedule", "guestVisibleNotes"]
           }
         }
       }
@@ -138,6 +222,13 @@
             "bodyTemplate": "{{propertyName}} dispone de {{amenityLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
             "journeyStage": "stay",
             "sourceFields": ["amenityKey", "detailsJson"]
+          },
+          "en": {
+            "topic": "{{amenityLabel}}",
+            "canonicalQuestion": "Does the property have {{amenityLabel}}?",
+            "bodyTemplate": "{{propertyName}} has {{amenityLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["amenityKey", "detailsJson"]
           }
         }
       },
@@ -146,6 +237,13 @@
           "es": {
             "topic": "Cómo usar: {{amenityLabel}}",
             "canonicalQuestion": "¿Cómo se usa {{amenityLabel}}?",
+            "bodyTemplate": "{{guestInstructions}}",
+            "journeyStage": "stay",
+            "sourceFields": ["guestInstructions", "detailsJson"]
+          },
+          "en": {
+            "topic": "How to use: {{amenityLabel}}",
+            "canonicalQuestion": "How do I use {{amenityLabel}}?",
             "bodyTemplate": "{{guestInstructions}}",
             "journeyStage": "stay",
             "sourceFields": ["guestInstructions", "detailsJson"]
@@ -162,6 +260,13 @@
             "bodyTemplate": "{{spaceName}} es un {{spaceTypeLabel}}.{{#if guestNotes}} {{guestNotes}}{{/if}}{{#if bedSummary}} Cuenta con: {{bedSummary}}.{{/if}}",
             "journeyStage": "arrival",
             "sourceFields": ["name", "spaceType", "guestNotes", "beds"]
+          },
+          "en": {
+            "topic": "{{spaceName}}",
+            "canonicalQuestion": "What is in {{spaceName}}?",
+            "bodyTemplate": "{{spaceName}} is a {{spaceTypeLabel}}.{{#if guestNotes}} {{guestNotes}}{{/if}}{{#if bedSummary}} It includes: {{bedSummary}}.{{/if}}",
+            "journeyStage": "arrival",
+            "sourceFields": ["name", "spaceType", "guestNotes", "beds"]
           }
         }
       }
@@ -175,6 +280,13 @@
             "bodyTemplate": "{{propertyName}} dispone de {{systemLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
             "journeyStage": "stay",
             "sourceFields": ["systemKey", "detailsJson"]
+          },
+          "en": {
+            "topic": "System: {{systemLabel}}",
+            "canonicalQuestion": "How does {{systemLabel}} work at {{propertyName}}?",
+            "bodyTemplate": "{{propertyName}} has {{systemLabel}}.{{#if detailsSummary}} {{detailsSummary}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["systemKey", "detailsJson"]
           }
         }
       },
@@ -184,6 +296,13 @@
             "topic": "{{systemLabel}} — resolución de problemas",
             "canonicalQuestion": "¿Qué hago si {{systemLabel}} no funciona?",
             "bodyTemplate": "Si {{systemLabel}} no funciona:{{#if troubleshootingSteps}} {{troubleshootingSteps}}{{/if}}{{#if opsNotes}} {{opsNotes}}{{/if}}",
+            "journeyStage": "stay",
+            "sourceFields": ["systemKey", "detailsJson", "opsJson"]
+          },
+          "en": {
+            "topic": "{{systemLabel}} — troubleshooting",
+            "canonicalQuestion": "What do I do if {{systemLabel}} is not working?",
+            "bodyTemplate": "If {{systemLabel}} is not working:{{#if troubleshootingSteps}} {{troubleshootingSteps}}{{/if}}{{#if opsNotes}} {{opsNotes}}{{/if}}",
             "journeyStage": "stay",
             "sourceFields": ["systemKey", "detailsJson", "opsJson"]
           }

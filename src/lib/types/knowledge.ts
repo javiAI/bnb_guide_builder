@@ -57,6 +57,7 @@ export interface ExtractedChunk {
   sourceFields: string[];
   tags: string[];
   contentHash: string;
+  templateKey: string;
   validFrom: Date | null;
   validTo: Date | null;
 }

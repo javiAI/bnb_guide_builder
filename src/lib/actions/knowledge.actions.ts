@@ -7,6 +7,7 @@ import {
   updateKnowledgeItemSchema,
 } from "@/lib/schemas/knowledge.schema";
 import { extractFromPropertyAll } from "@/lib/services/knowledge-extract.service";
+import { isSupportedLocale, SUPPORTED_LOCALES } from "@/lib/services/knowledge-i18n.service";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Knowledge Items ──
@@ -16,6 +17,8 @@ export async function createKnowledgeItemAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+
   const raw = {
     topic: formData.get("topic") as string,
     bodyMd: formData.get("bodyMd") as string,
@@ -36,9 +39,24 @@ export async function createKnowledgeItemAction(
     return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'sensible'." };
   }
 
+  // Manual items are always created in the property's defaultLocale (server-
+  // authoritative). Do not rely on the DB column default — that would silently
+  // write "es" when the property is configured in another locale. Clamp to
+  // SUPPORTED_LOCALES as defense in depth against bad data in the column.
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  if (!property) {
+    return { success: false, error: "Propiedad no encontrada" };
+  }
+
+  const locale = isSupportedLocale(property.defaultLocale) ? property.defaultLocale : "es";
+
   await prisma.knowledgeItem.create({
     data: {
       ...result.data,
+      locale,
       visibility: result.data.visibility ?? "guest",
       property: { connect: { id: propertyId } },
     },
@@ -110,7 +128,34 @@ export async function regenerateKnowledgeAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
 
-  await extractFromPropertyAll(propertyId);
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  const locale = property?.defaultLocale ?? "es";
+
+  await extractFromPropertyAll(propertyId, locale);
+
+  revalidatePath(`/properties/${propertyId}/knowledge`);
+  return { success: true };
+}
+
+export async function regenerateLocaleAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string;
+  const locale = formData.get("locale") as string;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+  if (!locale) return { success: false, error: "Falta el locale" };
+  if (!isSupportedLocale(locale)) {
+    return {
+      success: false,
+      error: `Locale no soportado: ${locale}. Soportados: ${SUPPORTED_LOCALES.join(", ")}`,
+    };
+  }
+
+  await extractFromPropertyAll(propertyId, locale);
 
   revalidatePath(`/properties/${propertyId}/knowledge`);
   return { success: true };

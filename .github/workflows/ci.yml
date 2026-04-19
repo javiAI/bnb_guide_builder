@@ -35,6 +35,45 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
 
+  migrations:
+    name: Migrations (deploy from zero + schema diff)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Real Postgres for this job (the top-level DATABASE_URL is a dummy
+      # used by `prisma generate` / `next build` in the other jobs).
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Apply the full migration chain against a clean DB. Fails if any
+      # migration in prisma/migrations/ can't run from zero.
+      - name: prisma migrate deploy
+        run: npx prisma migrate deploy
+      - run: npx prisma generate
+      # Fail the job if the deployed DB schema drifts from schema.prisma.
+      # --exit-code returns non-zero when the diff is non-empty, so this
+      # catches any future schema change merged without a migration.
+      - name: prisma migrate diff (deployed vs schema — must be empty)
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+
   e2e:
     name: E2E (playwright + axe)
     runs-on: ubuntu-latest

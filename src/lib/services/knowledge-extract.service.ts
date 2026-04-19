@@ -11,6 +11,12 @@ import {
 } from "@/lib/taxonomy-loader";
 import type { ExtractedChunk, ChunkType, EntityType, JourneyStage } from "@/lib/types/knowledge";
 import type { VisibilityLevel } from "@prisma/client";
+import {
+  AUDIENCE_LABELS,
+  AUDIENCE_LABELS_EN,
+  SENSITIVITY_LABELS,
+  SENSITIVITY_LABELS_EN,
+} from "@/lib/visibility";
 import knowledgeTemplatesRaw from "../../../taxonomies/knowledge_templates.json";
 
 // ──────────────────────────────────────────────
@@ -27,24 +33,32 @@ const SECTION_LABELS: Record<EntityType, string> = {
   system: "Sistemas",
 };
 
-const AUDIENCE_LABELS: Record<string, string> = {
-  guest: "huéspedes durante la estancia",
-  ai: "uso interno de IA",
-  internal: "uso interno",
-  sensitive: "uso interno restringido",
-};
-
-const SENSITIVITY_LABELS: Record<string, string> = {
-  guest: "baja",
-  ai: "media",
-  internal: "alta",
-  sensitive: "máxima",
-};
 
 const SPANISH_STOPWORDS = new Set([
   "a", "al", "con", "de", "del", "el", "en", "es", "la", "las", "le", "lo",
   "los", "no", "o", "para", "por", "que", "se", "si", "su", "un", "una", "y",
 ]);
+
+const ENGLISH_STOPWORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+  "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+  "has", "have", "had", "do", "does", "did", "it", "its", "as", "if",
+  "no", "not", "so", "up", "us", "we",
+]);
+
+const SECTION_LABELS_EN: Record<EntityType, string> = {
+  property: "General",
+  access: "Arrival & Access Instructions",
+  policy: "Rules & Policies",
+  contact: "Contacts",
+  amenity: "Amenities",
+  space: "Spaces",
+  system: "Systems",
+};
+
+function getSectionLabels(locale: string): Record<EntityType, string> {
+  return locale === "en" ? SECTION_LABELS_EN : SECTION_LABELS;
+}
 
 // ──────────────────────────────────────────────
 // Pure helpers
@@ -55,11 +69,22 @@ export function buildContextPrefix(params: {
   city: string | null;
   sectionLabel: string;
   entityLabel: string;
-  visibility: string;
+  visibility: VisibilityLevel;
   canonicalQuestion: string;
+  locale?: string;
 }): string {
   const location = params.city ?? "";
   const locationPart = location ? `, ${location}` : "";
+  const isEn = params.locale === "en";
+  if (isEn) {
+    return [
+      `Property: ${params.propertyName}${locationPart}.`,
+      `Section: ${params.sectionLabel} > ${params.entityLabel}.`,
+      `Intended for: ${AUDIENCE_LABELS_EN[params.visibility] ?? params.visibility}.`,
+      `Sensitivity: ${SENSITIVITY_LABELS_EN[params.visibility] ?? "medium"}.`,
+      `Question this answers: "${params.canonicalQuestion}"`,
+    ].join("\n");
+  }
   return [
     `Propiedad: ${params.propertyName}${locationPart}.`,
     `Sección: ${params.sectionLabel} > ${params.entityLabel}.`,
@@ -69,14 +94,15 @@ export function buildContextPrefix(params: {
   ].join("\n");
 }
 
-export function buildBm25Text(contextPrefix: string, bodyMd: string): string {
+export function buildBm25Text(contextPrefix: string, bodyMd: string, locale = "es"): string {
+  const stopwords = locale === "en" ? ENGLISH_STOPWORDS : SPANISH_STOPWORDS;
   return `${contextPrefix} ${bodyMd}`
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 1 && !SPANISH_STOPWORDS.has(w))
+    .filter((w) => w.length > 1 && !stopwords.has(w))
     .join(" ");
 }
 
@@ -147,6 +173,7 @@ type PropertyChunkInput = {
   journeyStage: JourneyStage;
   sourceFields: string[];
   tags?: string[];
+  templateKey: string;
   validFrom?: Date | null;
   validTo?: Date | null;
 };
@@ -166,15 +193,17 @@ function makePropertyChunk(
   const visibility = toNonSensitiveVisibility(rawVisibility);
 
   const canonicalQuestion = params.canonicalQuestion ?? params.topic;
+  const sectionLabels = getSectionLabels(locale);
   const contextPrefix = buildContextPrefix({
     propertyName,
     city,
-    sectionLabel: SECTION_LABELS[params.entityType],
+    sectionLabel: sectionLabels[params.entityType],
     entityLabel: params.topic,
     visibility,
     canonicalQuestion,
+    locale,
   });
-  const bm25Text = buildBm25Text(contextPrefix, params.bodyMd);
+  const bm25Text = buildBm25Text(contextPrefix, params.bodyMd, locale);
   const contentHash = buildContentHash(contextPrefix, params.bodyMd);
   return {
     propertyId,
@@ -194,6 +223,7 @@ function makePropertyChunk(
     sourceFields: params.sourceFields,
     tags: params.tags ?? [],
     contentHash,
+    templateKey: params.templateKey,
     validFrom: params.validFrom ?? null,
     validTo: params.validTo ?? null,
   };
@@ -236,7 +266,22 @@ function resolveAccessMethodLabels(methods: string[]): string {
     .join(", ");
 }
 
-function resolveBedTypeLabel(bedTypeId: string): string {
+// Bed-type taxonomy labels are Spanish. For EN extraction, map by id to avoid
+// leaking Spanish terms into otherwise-English chunk bodies. Unknown ids fall
+// back to a generic label rather than the taxonomy Spanish string.
+const BED_TYPE_LABELS_EN: Record<string, string> = {
+  double: "Double bed",
+  single: "Single bed",
+  sofa_bed: "Sofa bed",
+  bunk_bed: "Bunk bed",
+  queen: "Queen bed",
+  king: "King bed",
+};
+
+function resolveBedTypeLabel(bedTypeId: string, locale = "es"): string {
+  if (locale === "en") {
+    return BED_TYPE_LABELS_EN[bedTypeId] ?? "Bed";
+  }
   return bedTypes.items.find((b) => b.id === bedTypeId)?.label ?? "Cama";
 }
 
@@ -294,12 +339,12 @@ export async function extractFromProperty(
       checkInStart: p.checkInStart,
       checkInEnd: p.checkInEnd,
     });
-    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null, templateKey: "checkin_time" }));
   }
 
   if (p.checkOutTime) {
     const t = tpl("checkout_time", { propertyName: name, checkOutTime: p.checkOutTime });
-    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null, templateKey: "checkout_time" }));
   }
 
   if (p.maxGuests) {
@@ -309,7 +354,7 @@ export async function extractFromProperty(
       maxAdults: String(p.maxAdults),
       maxChildren: p.maxChildren > 0 ? String(p.maxChildren) : null,
     });
-    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null, templateKey: "capacity" }));
   }
 
   if (p.propertyType) {
@@ -321,7 +366,7 @@ export async function extractFromProperty(
       city: p.city,
       country: p.country,
     });
-    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null, templateKey: "overview" }));
   }
 
   return chunks;
@@ -361,34 +406,49 @@ export async function extractFromAccess(
   const tpl = (templateId: string, vars: Record<string, string | null | undefined>) =>
     renderKnowledgeTemplate("access", "procedure", templateId, locale, vars);
 
+  const isEn = locale === "en";
+
   if (access?.unit?.methods?.length) {
-    const accessDescription = buildSafeAccessDescription(access.unit, "Método de acceso disponible");
+    const accessDescription = buildSafeAccessDescription(
+      access.unit,
+      isEn ? "Access method available" : "Método de acceso disponible",
+    );
     const t = tpl("unit_access", { propertyName: name, accessDescription });
-    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null, templateKey: "unit_access" }));
   }
 
   if (p.hasBuildingAccess && access?.building?.methods?.length) {
-    const buildingAccessDescription = buildSafeAccessDescription(access.building, "Acceso al edificio disponible");
+    const buildingAccessDescription = buildSafeAccessDescription(
+      access.building,
+      isEn ? "Building access available" : "Acceso al edificio disponible",
+    );
     const t = tpl("building_access", { propertyName: name, buildingAccessDescription });
-    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null, templateKey: "building_access" }));
   }
 
   if (p.checkInStart && p.checkInEnd && p.checkOutTime) {
     const accessSummary = access?.unit?.methods?.length
-      ? buildSafeAccessDescription(access.unit, "Método de acceso disponible")
+      ? buildSafeAccessDescription(access.unit, isEn ? "Access method available" : "Método de acceso disponible")
       : null;
     const autonomousPart = p.isAutonomousCheckin
-      ? "El acceso es autónomo, sin necesidad de recibimiento en persona."
+      ? isEn
+        ? "Access is self-check-in; no in-person greeting required."
+        : "El acceso es autónomo, sin necesidad de recibimiento en persona."
+      : null;
+    const accessSummaryLine = accessSummary
+      ? isEn
+        ? `Access: ${accessSummary}`
+        : `Acceso: ${accessSummary}`
       : null;
     const t = tpl("checkin_logistics", {
       propertyName: name,
       checkInStart: p.checkInStart,
       checkInEnd: p.checkInEnd,
       checkOutTime: p.checkOutTime,
-      accessSummary: accessSummary ? `Acceso: ${accessSummary}` : null,
+      accessSummary: accessSummaryLine,
       autonomousPart,
     });
-    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null, templateKey: "checkin_logistics" }));
   }
 
   return chunks;
@@ -431,43 +491,73 @@ export async function extractFromPolicies(
   const tpl = (templateId: string, vars: Record<string, string | null | undefined>) =>
     renderKnowledgeTemplate("policy", "policy", templateId, locale, vars);
 
+  const isEn = locale === "en";
+
   if (pol.smoking) {
-    const smokingLabels: Record<string, string> = {
+    const smokingLabelsEs: Record<string, string> = {
       not_allowed: "No se permite fumar en ningún lugar del alojamiento.",
       outdoors_only: "Solo se permite fumar en zonas exteriores.",
       designated_area: "Hay una zona habilitada para fumadores.",
       no_restriction: "No hay restricciones para fumar.",
     };
-    const smokingPolicyText = smokingLabels[pol.smoking] ?? `Política de fumadores: ${pol.smoking}.`;
+    const smokingLabelsEn: Record<string, string> = {
+      not_allowed: "Smoking is not permitted anywhere on the property.",
+      outdoors_only: "Smoking is only permitted in outdoor areas.",
+      designated_area: "There is a designated smoking area.",
+      no_restriction: "There are no smoking restrictions.",
+    };
+    const labels = isEn ? smokingLabelsEn : smokingLabelsEs;
+    const smokingPolicyText =
+      labels[pol.smoking] ??
+      (isEn ? `Smoking policy: ${pol.smoking}.` : `Política de fumadores: ${pol.smoking}.`);
     const t = tpl("smoking", { smokingPolicyText });
-    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null, templateKey: "smoking" }));
   }
 
   if (pol.pets) {
     let petsPolicyText: string;
     if (!pol.pets.allowed) {
-      petsPolicyText = `No se admiten mascotas en ${name}.`;
+      petsPolicyText = isEn ? `Pets are not allowed at ${name}.` : `No se admiten mascotas en ${name}.`;
     } else {
-      const types = pol.pets.types?.join(", ") ?? "mascotas";
-      const countNote = pol.pets.maxCount ? ` (máximo ${pol.pets.maxCount})` : "";
-      petsPolicyText = `Se admiten ${types}${countNote} en ${name}.`;
+      const types = pol.pets.types?.join(", ") ?? (isEn ? "pets" : "mascotas");
+      const countNote = pol.pets.maxCount
+        ? isEn
+          ? ` (maximum ${pol.pets.maxCount})`
+          : ` (máximo ${pol.pets.maxCount})`
+        : "";
+      petsPolicyText = isEn
+        ? `${types.charAt(0).toUpperCase() + types.slice(1)}${countNote} are allowed at ${name}.`
+        : `Se admiten ${types}${countNote} en ${name}.`;
       if (pol.pets.notes) petsPolicyText += ` ${pol.pets.notes}`;
     }
     const t = tpl("pets", { petsPolicyText });
-    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null, templateKey: "pets" }));
   }
 
   if (p.maxChildren > 0 || p.infantsAllowed) {
-    const base = p.maxChildren > 0 ? `Se admiten niños (máximo ${p.maxChildren}).` : "Se admiten niños.";
-    const childrenPolicyText = base + (p.infantsAllowed ? " También se admiten bebés." : "");
+    const base = isEn
+      ? p.maxChildren > 0
+        ? `Children are allowed (maximum ${p.maxChildren}).`
+        : "Children are allowed."
+      : p.maxChildren > 0
+        ? `Se admiten niños (máximo ${p.maxChildren}).`
+        : "Se admiten niños.";
+    const infantsSuffix = p.infantsAllowed
+      ? isEn
+        ? " Infants are also welcome."
+        : " También se admiten bebés."
+      : "";
+    const childrenPolicyText = base + infantsSuffix;
     const t = tpl("children", { childrenPolicyText });
-    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null, templateKey: "children" }));
   }
 
   if (pol.quietHours?.enabled && pol.quietHours.from && pol.quietHours.to) {
-    const quietHoursPolicyText = `El horario de silencio en ${name} es de ${pol.quietHours.from} a ${pol.quietHours.to}.`;
+    const quietHoursPolicyText = isEn
+      ? `Quiet hours at ${name} are from ${pol.quietHours.from} to ${pol.quietHours.to}.`
+      : `El horario de silencio en ${name} es de ${pol.quietHours.from} a ${pol.quietHours.to}.`;
     const t = tpl("quiet_hours", { quietHoursPolicyText });
-    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null, templateKey: "quiet_hours" }));
   }
 
   return chunks;
@@ -504,6 +594,7 @@ export async function extractFromContacts(
   });
 
   const chunks: ExtractedChunk[] = [];
+  const isEn = locale === "en";
 
   for (const c of contacts) {
     const visibility = toNonSensitiveVisibility(c.visibility);
@@ -512,27 +603,34 @@ export async function extractFromContacts(
 
     const parts = [`${roleLabel}: ${c.displayName}.`];
     if (visibility === "guest" || visibility === "ai") {
-      if (c.phone) parts.push(`Teléfono: ${c.phone}.`);
+      if (c.phone) parts.push(isEn ? `Phone: ${c.phone}.` : `Teléfono: ${c.phone}.`);
       if (c.whatsapp) parts.push(`WhatsApp: ${c.whatsapp}.`);
       if (c.email) parts.push(`Email: ${c.email}.`);
     }
-    if (c.availabilitySchedule) parts.push(`Disponibilidad: ${c.availabilitySchedule}.`);
+    if (c.availabilitySchedule) {
+      parts.push(isEn ? `Availability: ${c.availabilitySchedule}.` : `Disponibilidad: ${c.availabilitySchedule}.`);
+    }
     if (c.guestVisibleNotes) parts.push(c.guestVisibleNotes);
 
     const bodyMd = parts.join(" ");
-    const canonicalQuestion = `¿A quién contacto para ${roleLabel}?`;
+    const canonicalQuestion = isEn
+      ? `Who do I contact for ${roleLabel}?`
+      : `¿A quién contacto para ${roleLabel}?`;
+    const topic = isEn ? `Contact: ${roleLabel}` : `Contacto: ${roleLabel}`;
+    const sectionLabels = getSectionLabels(locale);
     const prefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.contact,
+      sectionLabel: sectionLabels.contact,
       entityLabel: roleLabel,
       visibility,
       canonicalQuestion,
+      locale,
     });
 
     chunks.push({
       propertyId,
-      topic: `Contacto: ${roleLabel}`,
+      topic,
       bodyMd,
       locale,
       visibility,
@@ -543,11 +641,12 @@ export async function extractFromContacts(
       entityId: c.id,
       canonicalQuestion,
       contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
+      bm25Text: buildBm25Text(prefix, bodyMd, locale),
       tokens: approxTokens(prefix + " " + bodyMd),
       sourceFields: ["displayName", "roleKey", "phone", "whatsapp", "email", "availabilitySchedule", "guestVisibleNotes"],
       tags: [c.roleKey],
       contentHash: buildContentHash(prefix, bodyMd),
+      templateKey: "contact_info",
       validFrom: null,
       validTo: null,
     });
@@ -582,6 +681,7 @@ export async function extractFromAmenities(
   });
 
   const chunks: ExtractedChunk[] = [];
+  const isEn = locale === "en";
 
   for (const inst of instances) {
     const visibility = toNonSensitiveVisibility(inst.visibility);
@@ -597,20 +697,26 @@ export async function extractFromAmenities(
       : null;
 
     const existenceBody = [
-      `${property.propertyNickname} dispone de ${amenityLabel}.`,
+      isEn
+        ? `${property.propertyNickname} has ${amenityLabel}.`
+        : `${property.propertyNickname} dispone de ${amenityLabel}.`,
       detailsSummary,
     ]
       .filter(Boolean)
       .join(" ");
 
-    const existenceQ = `¿El alojamiento tiene ${amenityLabel}?`;
+    const existenceQ = isEn
+      ? `Does the property have ${amenityLabel}?`
+      : `¿El alojamiento tiene ${amenityLabel}?`;
+    const amenitySectionLabel = getSectionLabels(locale).amenity;
     const existencePrefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.amenity,
+      sectionLabel: amenitySectionLabel,
       entityLabel: amenityLabel,
       visibility,
       canonicalQuestion: existenceQ,
+      locale,
     });
 
     chunks.push({
@@ -626,28 +732,35 @@ export async function extractFromAmenities(
       entityId: inst.id,
       canonicalQuestion: existenceQ,
       contextPrefix: existencePrefix,
-      bm25Text: buildBm25Text(existencePrefix, existenceBody),
+      bm25Text: buildBm25Text(existencePrefix, existenceBody, locale),
       tokens: approxTokens(existencePrefix + " " + existenceBody),
       sourceFields: ["amenityKey", "detailsJson"],
       tags: [inst.amenityKey],
       contentHash: buildContentHash(existencePrefix, existenceBody),
+      templateKey: "amenity_existence",
       validFrom: null,
       validTo: null,
     });
 
     if (inst.guestInstructions && visibility !== "internal") {
-      const usageQ = `¿Cómo se usa ${amenityLabel}?`;
+      const usageQ = isEn
+        ? `How do I use ${amenityLabel}?`
+        : `¿Cómo se usa ${amenityLabel}?`;
+      const usageTopic = isEn
+        ? `How to use: ${amenityLabel}`
+        : `Cómo usar: ${amenityLabel}`;
       const usagePrefix = buildContextPrefix({
         propertyName: property.propertyNickname,
         city: property.city,
-        sectionLabel: SECTION_LABELS.amenity,
-        entityLabel: `Cómo usar: ${amenityLabel}`,
+        sectionLabel: amenitySectionLabel,
+        entityLabel: usageTopic,
         visibility,
         canonicalQuestion: usageQ,
+        locale,
       });
       chunks.push({
         propertyId,
-        topic: `Cómo usar: ${amenityLabel}`,
+        topic: usageTopic,
         bodyMd: inst.guestInstructions,
         locale,
         visibility,
@@ -658,11 +771,12 @@ export async function extractFromAmenities(
         entityId: inst.id,
         canonicalQuestion: usageQ,
         contextPrefix: usagePrefix,
-        bm25Text: buildBm25Text(usagePrefix, inst.guestInstructions),
+        bm25Text: buildBm25Text(usagePrefix, inst.guestInstructions, locale),
         tokens: approxTokens(usagePrefix + " " + inst.guestInstructions),
         sourceFields: ["guestInstructions", "detailsJson"],
         tags: [inst.amenityKey],
         contentHash: buildContentHash(usagePrefix, inst.guestInstructions),
+        templateKey: "amenity_usage",
         validFrom: null,
         validTo: null,
       });
@@ -701,6 +815,7 @@ export async function extractFromSpaces(
   });
 
   const chunks: ExtractedChunk[] = [];
+  const isEn = locale === "en";
 
   for (const space of spaces) {
     const visibility = toNonSensitiveVisibility(space.visibility);
@@ -709,23 +824,30 @@ export async function extractFromSpaces(
     const bedSummary =
       space.beds.length > 0
         ? space.beds
-            .map((b) => `${b.quantity}× ${resolveBedTypeLabel(b.bedType)}`)
+            .map((b) => `${b.quantity}× ${resolveBedTypeLabel(b.bedType, locale)}`)
             .join(", ")
         : null;
 
-    const bodyParts = [`${space.name} es un ${spaceTypeLabel}.`];
+    const bodyParts = [
+      isEn
+        ? `${space.name} is a ${spaceTypeLabel}.`
+        : `${space.name} es un ${spaceTypeLabel}.`,
+    ];
     if (space.guestNotes) bodyParts.push(space.guestNotes);
-    if (bedSummary) bodyParts.push(`Camas: ${bedSummary}.`);
+    if (bedSummary) bodyParts.push(isEn ? `Beds: ${bedSummary}.` : `Camas: ${bedSummary}.`);
     const bodyMd = bodyParts.join(" ");
 
-    const canonicalQ = `¿Qué hay en ${space.name}?`;
+    const canonicalQ = isEn
+      ? `What is in ${space.name}?`
+      : `¿Qué hay en ${space.name}?`;
     const prefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.space,
+      sectionLabel: getSectionLabels(locale).space,
       entityLabel: space.name,
       visibility,
       canonicalQuestion: canonicalQ,
+      locale,
     });
 
     chunks.push({
@@ -741,11 +863,12 @@ export async function extractFromSpaces(
       entityId: space.id,
       canonicalQuestion: canonicalQ,
       contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
+      bm25Text: buildBm25Text(prefix, bodyMd, locale),
       tokens: approxTokens(prefix + " " + bodyMd),
       sourceFields: ["name", "spaceType", "guestNotes", "beds"],
       tags: [space.spaceType],
       contentHash: buildContentHash(prefix, bodyMd),
+      templateKey: "space_info",
       validFrom: null,
       validTo: null,
     });
@@ -780,6 +903,7 @@ export async function extractFromSystems(
   });
 
   const chunks: ExtractedChunk[] = [];
+  const isEn = locale === "en";
 
   for (const sys of systems) {
     const visibility = toNonSensitiveVisibility(sys.visibility);
@@ -795,25 +919,31 @@ export async function extractFromSystems(
       : null;
 
     const descBody = [
-      `${property.propertyNickname} dispone de ${systemLabel}.`,
+      isEn
+        ? `${property.propertyNickname} has ${systemLabel}.`
+        : `${property.propertyNickname} dispone de ${systemLabel}.`,
       detailsSummary,
     ]
       .filter(Boolean)
       .join(" ");
 
-    const descQ = `¿Cómo funciona ${systemLabel} en ${property.propertyNickname}?`;
+    const descQ = isEn
+      ? `How does ${systemLabel} work at ${property.propertyNickname}?`
+      : `¿Cómo funciona ${systemLabel} en ${property.propertyNickname}?`;
+    const systemSectionLabel = getSectionLabels(locale).system;
     const descPrefix = buildContextPrefix({
       propertyName: property.propertyNickname,
       city: property.city,
-      sectionLabel: SECTION_LABELS.system,
+      sectionLabel: systemSectionLabel,
       entityLabel: systemLabel,
       visibility,
       canonicalQuestion: descQ,
+      locale,
     });
 
     chunks.push({
       propertyId,
-      topic: `Sistema: ${systemLabel}`,
+      topic: isEn ? `System: ${systemLabel}` : `Sistema: ${systemLabel}`,
       bodyMd: descBody,
       locale,
       visibility,
@@ -824,11 +954,12 @@ export async function extractFromSystems(
       entityId: sys.id,
       canonicalQuestion: descQ,
       contextPrefix: descPrefix,
-      bm25Text: buildBm25Text(descPrefix, descBody),
+      bm25Text: buildBm25Text(descPrefix, descBody, locale),
       tokens: approxTokens(descPrefix + " " + descBody),
       sourceFields: ["systemKey", "detailsJson"],
       tags: [sys.systemKey],
       contentHash: buildContentHash(descPrefix, descBody),
+      templateKey: "system_info",
       validFrom: null,
       validTo: null,
     });
@@ -841,20 +972,28 @@ export async function extractFromSystems(
       : null;
 
     if (opsNotes) {
-      const tsQ = `¿Qué hago si ${systemLabel} no funciona?`;
-      const tsBody = `Si ${systemLabel} no funciona: ${opsNotes}`;
+      const tsQ = isEn
+        ? `What do I do if ${systemLabel} is not working?`
+        : `¿Qué hago si ${systemLabel} no funciona?`;
+      const tsBody = isEn
+        ? `If ${systemLabel} is not working: ${opsNotes}`
+        : `Si ${systemLabel} no funciona: ${opsNotes}`;
+      const tsTopic = isEn
+        ? `${systemLabel} — troubleshooting`
+        : `${systemLabel} — resolución de problemas`;
       const tsPrefix = buildContextPrefix({
         propertyName: property.propertyNickname,
         city: property.city,
-        sectionLabel: SECTION_LABELS.system,
-        entityLabel: `${systemLabel} — resolución de problemas`,
+        sectionLabel: systemSectionLabel,
+        entityLabel: tsTopic,
         visibility,
         canonicalQuestion: tsQ,
+        locale,
       });
 
       chunks.push({
         propertyId,
-        topic: `${systemLabel} — resolución de problemas`,
+        topic: tsTopic,
         bodyMd: tsBody,
         locale,
         visibility,
@@ -865,11 +1004,12 @@ export async function extractFromSystems(
         entityId: sys.id,
         canonicalQuestion: tsQ,
         contextPrefix: tsPrefix,
-        bm25Text: buildBm25Text(tsPrefix, tsBody),
+        bm25Text: buildBm25Text(tsPrefix, tsBody, locale),
         tokens: approxTokens(tsPrefix + " " + tsBody),
         sourceFields: ["systemKey", "detailsJson", "opsJson"],
         tags: [sys.systemKey],
         contentHash: buildContentHash(tsPrefix, tsBody),
+        templateKey: "system_troubleshooting",
         validFrom: null,
         validTo: null,
       });
@@ -903,6 +1043,7 @@ function chunkToCreateInput(c: ExtractedChunk) {
     sourceFields: c.sourceFields,
     tags: c.tags,
     contentHash: c.contentHash,
+    templateKey: c.templateKey,
     validFrom: c.validFrom,
     validTo: c.validTo,
   };
@@ -912,6 +1053,7 @@ async function upsertSection(
   propertyId: string,
   entityType: EntityType,
   entityId: string | null,
+  locale: string,
   chunks: ExtractedChunk[],
 ): Promise<void> {
   await prisma.$transaction([
@@ -919,6 +1061,7 @@ async function upsertSection(
       where: {
         propertyId,
         entityType,
+        locale,
         isAutoExtracted: true,
         ...(entityId !== null ? { entityId } : {}),
       },
@@ -959,7 +1102,7 @@ async function extractSection(
       chunks = await extractFromSystems(propertyId, locale, entityId ?? undefined);
       break;
   }
-  await upsertSection(propertyId, entityType, entityId, chunks);
+  await upsertSection(propertyId, entityType, entityId, locale, chunks);
 }
 
 // ──────────────────────────────────────────────
@@ -999,7 +1142,7 @@ export async function extractFromPropertyAll(
   ];
 
   await prisma.$transaction([
-    prisma.knowledgeItem.deleteMany({ where: { propertyId, isAutoExtracted: true } }),
+    prisma.knowledgeItem.deleteMany({ where: { propertyId, locale, isAutoExtracted: true } }),
     ...(all.length > 0
       ? [prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) })]
       : []),
@@ -1017,7 +1160,16 @@ export async function invalidateKnowledge(
   entityType: EntityType,
   entityId: string | null,
 ): Promise<void> {
-  await extractSection(propertyId, entityType, entityId);
+  // Resolve the property's defaultLocale so background invalidation re-
+  // extracts in the right language. Falling back to `extractSection`'s
+  // parameter default ("es") would regenerate Spanish chunks on a property
+  // configured in English, mixing locales on every edit.
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  const locale = property?.defaultLocale ?? "es";
+  await extractSection(propertyId, entityType, entityId, locale);
 }
 
 export function invalidateKnowledgeInBackground(

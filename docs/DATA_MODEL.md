@@ -54,9 +54,10 @@
   - Recuperación híbrida: `contextPrefix String` (prefijo multi-línea Contextual Retrieval), `bm25Text String` (texto normalizado BM25), `embedding Unsupported("vector(1536)")?` (deferido a 11C), `tokens Int`
   - Metadata de calidad: `canonicalQuestion String?`, `contentHash String?` (sha256 16-char del prefijo + body), `confidenceScore Float @default(1.0)`, `validFrom DateTime?`, `validTo DateTime?`
   - Trazabilidad: `sourceFields String[]` (campos de la entidad fuente que generaron el chunk), `tags String[]`
-  - Localización: `locale String @default("es")` (filtro duro en retrieval; i18n multi-locale en 11B)
-  - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`
-  - Invalidación: delete-then-reextract por `(propertyId, entityType, entityId?)`; wired en `editor.actions.ts` como fire-and-forget
+  - Localización: `locale String @default("es")` (filtro duro en retrieval; i18n multi-locale en 11B — `SUPPORTED_LOCALES = ["es", "en"]`)
+  - Identidad cross-locale (11B): `templateKey String?` — clave semántica estable del chunk que sobrevive a re-extracts. NOT NULL para autoextract; los valores concretos son los literales `templateKey: "..."` emitidos por `knowledge-extract.service.ts` (no mantener lista manual aquí — rota en cada rama que añade chunks). NULL para items manuales (no participan en cross-locale pairing). Pairing real: `(propertyId, entityType, entityId, templateKey)`
+  - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`, `(propertyId, entityType, entityId, templateKey, locale)` (11B — cross-locale lookup)
+  - Invalidación: delete-then-reextract por `(propertyId, entityType, entityId?)`; scoped por `locale` — regenerar EN nunca toca ES ni los manuales. Wired en `editor.actions.ts` como fire-and-forget.
 - `KnowledgeCitation`
 - `Intent`
 - `GuideVersion`

@@ -35,7 +35,39 @@ Debe soportar:
 **Campos AI pipeline por chunk** (ver `docs/DATA_MODEL.md` § KnowledgeItem):
 `chunkType`, `entityType`, `entityId`, `contextPrefix` (5 líneas Contextual Retrieval), `bm25Text` (diacríticas plegadas + lowercase + stopwords), `canonicalQuestion`, `contentHash`, `sourceFields[]`, `tags[]`, `tokens`, `validFrom`, `validTo`.
 
-**Invalidación** wired en `editor.actions.ts` como fire-and-forget. **Contrato real de 11A**: granularidad `entityType` + `entityId?` — delete-then-reextract por sección completa o entidad concreta. `sourceFields[]` en cada chunk son metadatos de trazabilidad (qué campos de la entidad componen el chunk) y preparación para invalidación fina en 11B, **no** determinan el scope de invalidación en 11A.
+**Invalidación** wired en `editor.actions.ts` como fire-and-forget. **Contrato real de 11A**: granularidad `entityType` + `entityId?` — delete-then-reextract por sección completa o entidad concreta. `sourceFields[]` en cada chunk son metadatos de trazabilidad.
+
+### i18n (Rama 11B)
+
+`KnowledgeItem.locale`, `KnowledgeItem.templateKey` y `Property.defaultLocale` (`@default("es")`) son los tres pilares.
+
+**Locales soportados**: `SUPPORTED_LOCALES = ["es", "en"] as const`. `isSupportedLocale(value)` es el type guard centralizado — cualquier entrada de usuario (action FormData, `searchParams.locale`) pasa por él. Locale desconocido → `regenerateLocaleAction` responde error friendly; `page.tsx` clampa al `defaultLocale` para no dejar la UI en estado incoherente.
+
+**Identidad cross-locale**: los chunks autoextracted se emparejan por `(propertyId, entityType, entityId, templateKey)` — nunca por `id + locale` (el id es per-row, cambia en cada re-extract). `templateKey String?` es la clave semántica estable del chunk; NOT NULL en autoextract, NULL en items manuales. Un mismo `templateKey` identifica "el mismo chunk" en cualquier locale. Index: `@@index([propertyId, entityType, entityId, templateKey, locale])`.
+
+**Valores de `templateKey`** (9 fijos):
+
+Los valores concretos de `templateKey` son los literales `templateKey: "..."` emitidos por `knowledge-extract.service.ts` (por ejemplo `overview`, `checkin_time`, `checkout_time`, `capacity`, `checkin_logistics`, `unit_access`, `building_access`, `pets`, `smoking`, `children`, `quiet_hours`, `contact_info`, `amenity_existence`, `amenity_usage`, `space_info`, `system_info`, `system_troubleshooting`). El código es la fuente canónica — no mantener lista exhaustiva aquí (se desincroniza en cada rama que añada chunks).
+
+**Extracción locale-scoped**: `extractFromPropertyAll(propertyId, locale)` y `upsertSection` eliminan solo ítems con `{ propertyId, locale, isAutoExtracted: true }` — extraer EN nunca borra ítems ES ni manuales.
+
+**Localización real**: los 4 extractores inline (`contacts`, `amenities`, `spaces`, `systems`) ramifican `topic` y `bodyMd` por locale — nunca emiten strings ES cuando `locale="en"`. Los template-based (`property`, `access`, `policy`) consumen `knowledge_templates.json` que ya tiene variantes `es`/`en`. El top-level del JSON es `"defaultLocale": "es"` (describe el fallback por defecto de los templates, no un locale único).
+
+**Fallback policy**:
+
+- `getItemForLocale(itemId, locale, fallbackLocale)` — resuelve por identidad semántica. Si `source.locale === locale` devuelve el source. Si `source.templateKey === null` (manual) y el locale difiere, devuelve `null` (los manuales no tienen grafo cross-locale). Si no, busca sibling por `(propertyId, entityType, entityId, templateKey, locale)`; si no existe, cae al mismo identity con `fallbackLocale` anotando `_fallbackFrom`.
+- `listMissingTranslations(propertyId, defaultLocale, targetLocales)` — match por `(entityType, entityId, templateKey, locale)`; filtra `templateKey: { not: null }` en ambas queries para excluir items manuales. Emite `MissingTranslation` con `templateKey` para que el caller pueda regenerar quirúrgicamente.
+
+**`knowledge-i18n.service` — API pública**:
+
+- `SUPPORTED_LOCALES`, `isSupportedLocale()`
+- `getItemForLocale`, `listMissingTranslations`, `getLocaleStatusForProperty`, `extractI18n`
+
+**UI**: `LocaleSwitcherClient` navega vía `router.push(pathname?locale=X)` para que el Server Component lea el locale desde `searchParams`. Tabs con dot de estado (naranja=missing, verde=present). Banner de warning cuando `nonDefaultMissing.length > 0`. Formulario "Añadir item" solo visible en `defaultLocale`.
+
+**Creación de items manuales**: `createKnowledgeItemAction` lee `property.defaultLocale` desde la DB y lo persiste explícitamente en el nuevo `KnowledgeItem.locale`. **No se confía en el default de columna** (`@default("es")`) — si el host tiene la property en `en`, un item manual creado en la UI aterriza en `en`. Ningún valor de `locale` enviado por el cliente es honrado: el servidor es la autoridad. El formulario (`CreateKnowledgeItemForm`) solo aparece cuando `activeLocale === defaultLocale`, pero la regla dura vive en el action.
+
+**Limitación MVP**: `invalidateKnowledgeInBackground` solo re-extrae el `defaultLocale`; los locales no-default se vuelven stale si el host edita la propiedad sin regenerar manualmente (acción explícita con botón "Generar" en la pestaña del locale).
 
 - Mutaciones de propiedad/access/policies → `invalidateKnowledgeInBackground(propertyId, entityType, null)` (borra y re-extrae todos los chunks del entityType)
 - Create/update de contacto/amenity/space/system → `invalidateKnowledgeInBackground(propertyId, entityType, entityId)` (borra y re-extrae solo los chunks de ese entityId)

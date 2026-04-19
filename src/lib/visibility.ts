@@ -56,3 +56,31 @@ export function canAudienceSee(
   // never exposed beyond their own audience.
   return VISIBILITY_ORDER[itemLevel] <= VISIBILITY_ORDER[audience];
 }
+
+export const AUDIENCE_LABELS: Record<VisibilityLevel, string> = {
+  guest: "huéspedes durante la estancia",
+  ai: "uso interno de IA",
+  internal: "uso interno",
+  sensitive: "uso interno restringido",
+};
+
+export const AUDIENCE_LABELS_EN: Record<VisibilityLevel, string> = {
+  guest: "guests during their stay",
+  ai: "internal AI use",
+  internal: "internal use",
+  sensitive: "restricted internal use",
+};
+
+export const SENSITIVITY_LABELS: Record<VisibilityLevel, string> = {
+  guest: "baja",
+  ai: "media",
+  internal: "alta",
+  sensitive: "máxima",
+};
+
+export const SENSITIVITY_LABELS_EN: Record<VisibilityLevel, string> = {
+  guest: "low",
+  ai: "medium",
+  internal: "high",
+  sensitive: "maximum",
+};
