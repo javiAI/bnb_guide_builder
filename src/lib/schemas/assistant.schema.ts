@@ -19,9 +19,9 @@ export type AskRequest = z.infer<typeof askRequestSchema>;
 
 export const citationSchema = z.object({
   knowledgeItemId: z.string(),
-  sourceId: z.string().nullable(),
-  quoteOrNote: z.string().nullable(),
-  relevanceScore: z.number().min(0).max(1),
+  sourceType: z.string(),
+  entityLabel: z.string(),
+  score: z.number().min(0).max(1),
 });
 
 export type Citation = z.infer<typeof citationSchema>;

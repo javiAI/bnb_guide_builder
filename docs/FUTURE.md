@@ -195,3 +195,44 @@ Los unit tests (`guide-sw-template.test.ts`, `guide-sw-precache-manifest.test.ts
 - `context.setOffline(true)` para simular desconexión.
 - Un fixture E2E con `buildVersion` controlado (o dos slugs de fixture con trees distintos) para probar invalidación.
 - Separar en archivo propio (`e2e/guide-sw-lifecycle.spec.ts`) y marcar `testInfo.skip()` si `process.env.CI_SW_LIFECYCLE !== "1"` para no bloquear el pipeline principal.
+
+---
+
+## 14. Retirar mocks del pipeline del assistant
+
+**Estado**: diferido hasta que todos los entornos de CI/staging/prod tengan `VOYAGE_API_KEY`, `COHERE_API_KEY` y `ANTHROPIC_API_KEY` aprovisionadas y el banco de evals (rama 11E) corra contra providers reales con fixtures cacheadas.
+**Trigger para activar**: las tres claves están en CI (secrets) + staging + prod, y el release gate de 11E pasa contra providers reales sin dependencia del mock.
+
+### Qué hay hoy (rama 11C)
+
+El pipeline degrada silenciosamente en dev/test cuando falta alguna de las tres claves:
+
+| Provider | Mock de fallback | Archivo |
+|---|---|---|
+| Voyage embeddings (`voyage-3-lite`, 512d) | Mock determinístico: hash SHA-256 del texto → seed → 512 floats L2-normalizados | `src/lib/services/assistant/embeddings.service.ts` |
+| Cohere Rerank 3 multilingual | Identity reranker (devuelve top-K sin reorden) | `src/lib/services/assistant/reranker.ts` |
+| Anthropic synthesizer (Sonnet) | Stub que emite respuesta fija más cita única de la primera evidencia | `src/lib/services/assistant/synthesizer.ts` |
+
+En `NODE_ENV=production` el pipeline ya **no** cae a los mocks: hace fail-fast si falta cualquiera de las claves.
+
+### Por qué el mock existe
+
+- Permite correr tests de retrieval/pipeline sin coste ni dependencia de red.
+- Permite que un developer arranque el repo sin aprovisionar tres SaaS.
+- Hace determinístico el banco de fixtures vitest (sin flaky por latencia o cambio silente de modelo en provider).
+
+### Por qué acabará retirándose
+
+- El mock de embeddings no refleja la topología real del espacio (clusters semánticos reales). Tests que dependan del mock como "aproximación de la verdad" pueden enmascarar regresiones silenciosas de retrieval cuando la API real cambia.
+- El identity reranker no valida integración con Cohere; si Cohere rota endpoint o ajusta scoring, nadie se entera hasta prod.
+- El synthesizer stub hace que tests de prompt injection y tests de citation quality sean falsamente verdes.
+
+### Qué cubriría la retirada
+
+1. Borrar los 3 providers mock (`MockEmbeddingsProvider`, identity reranker, synthesizer stub).
+2. Eliminar la rama `if (!process.env.X_API_KEY) return mock…` en los tres servicios.
+3. Actualizar tests vitest para usar fixtures cacheadas de respuesta (grabadas contra providers reales) — coordinar con 11E (`src/test/assistant-evals/fixtures.json`).
+4. Documentar en `CLAUDE.md` que arrancar el repo sin las tres claves ya no funciona.
+5. Garantizar que el release gate de 11E sigue verde con la nueva configuración.
+
+Retirar el mock antes de tiempo rompe dev local y CI — **no lanzar sin el trigger completo**.

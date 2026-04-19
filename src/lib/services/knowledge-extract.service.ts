@@ -11,6 +11,7 @@ import {
 } from "@/lib/taxonomy-loader";
 import type { ExtractedChunk, ChunkType, EntityType, JourneyStage } from "@/lib/types/knowledge";
 import type { VisibilityLevel } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import {
   AUDIENCE_LABELS,
   AUDIENCE_LABELS_EN,
@@ -1056,20 +1057,125 @@ async function upsertSection(
   locale: string,
   chunks: ExtractedChunk[],
 ): Promise<void> {
-  await prisma.$transaction([
-    prisma.knowledgeItem.deleteMany({
-      where: {
-        propertyId,
-        entityType,
-        locale,
-        isAutoExtracted: true,
-        ...(entityId !== null ? { entityId } : {}),
-      },
-    }),
-    ...(chunks.length > 0
-      ? [prisma.knowledgeItem.createMany({ data: chunks.map(chunkToCreateInput) })]
-      : []),
-  ]);
+  await upsertChunksIncremental(
+    {
+      propertyId,
+      entityType,
+      locale,
+      isAutoExtracted: true,
+      ...(entityId !== null ? { entityId } : {}),
+    },
+    chunks,
+  );
+}
+
+/**
+ * Composite match key. `templateKey` alone is not unique in a multi-entity
+ * scope (e.g. two contacts both carry `contact_info`), so we disambiguate by
+ * entityType + entityId.
+ */
+function chunkMatchKey(c: {
+  entityType: string;
+  entityId: string | null;
+  templateKey: string | null;
+}): string | null {
+  if (!c.templateKey) return null;
+  return `${c.entityType}|${c.entityId ?? ""}|${c.templateKey}`;
+}
+
+/**
+ * Incremental upsert: preserves unchanged rows (and their embeddings) instead
+ * of destroying and recreating the scope. Matching is by composite
+ * (entityType, entityId, templateKey). Rows without `templateKey` are legacy
+ * or manual and always deleted within the scope (auto-extract chunks always
+ * carry one).
+ *
+ * When a row's `contentHash` changes, the row is updated and its `embedding`
+ * is nulled via raw SQL (Prisma can't write the pgvector-typed column).
+ * Backfill (`src/lib/jobs/knowledge-embed-backfill.ts`) picks it up on next
+ * run.
+ */
+async function upsertChunksIncremental(
+  scopeWhere: Prisma.KnowledgeItemWhereInput,
+  chunks: ExtractedChunk[],
+): Promise<void> {
+  const existing = await prisma.knowledgeItem.findMany({
+    where: scopeWhere,
+    select: {
+      id: true,
+      entityType: true,
+      entityId: true,
+      templateKey: true,
+      contentHash: true,
+    },
+  });
+
+  const existingByKey = new Map<string, { id: string; contentHash: string | null }>();
+  const existingWithoutKey: string[] = [];
+  for (const row of existing) {
+    const key = chunkMatchKey(row);
+    if (key) {
+      existingByKey.set(key, { id: row.id, contentHash: row.contentHash });
+    } else {
+      existingWithoutKey.push(row.id);
+    }
+  }
+
+  const newByKey = new Map<string, ExtractedChunk>();
+  const newWithoutKey: ExtractedChunk[] = [];
+  for (const chunk of chunks) {
+    const key = chunkMatchKey(chunk);
+    if (key) newByKey.set(key, chunk);
+    else newWithoutKey.push(chunk);
+  }
+
+  const toDelete: string[] = [...existingWithoutKey];
+  for (const [key, row] of existingByKey) {
+    if (!newByKey.has(key)) toDelete.push(row.id);
+  }
+
+  const toCreate: ExtractedChunk[] = [...newWithoutKey];
+  const toUpdate: Array<{
+    id: string;
+    chunk: ExtractedChunk;
+    contentChanged: boolean;
+  }> = [];
+  for (const [key, chunk] of newByKey) {
+    const existingRow = existingByKey.get(key);
+    if (!existingRow) {
+      toCreate.push(chunk);
+    } else {
+      toUpdate.push({
+        id: existingRow.id,
+        chunk,
+        contentChanged: existingRow.contentHash !== chunk.contentHash,
+      });
+    }
+  }
+
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
+  if (toDelete.length > 0) {
+    ops.push(prisma.knowledgeItem.deleteMany({ where: { id: { in: toDelete } } }));
+  }
+  if (toCreate.length > 0) {
+    ops.push(
+      prisma.knowledgeItem.createMany({ data: toCreate.map(chunkToCreateInput) }),
+    );
+  }
+  for (const { id, chunk, contentChanged } of toUpdate) {
+    ops.push(
+      prisma.knowledgeItem.update({ where: { id }, data: chunkToCreateInput(chunk) }),
+    );
+    if (contentChanged) {
+      ops.push(
+        prisma.$executeRaw`UPDATE "knowledge_items" SET "embedding" = NULL, "embedding_model" = NULL WHERE "id" = ${id}`,
+      );
+    }
+  }
+
+  if (ops.length > 0) {
+    await prisma.$transaction(ops);
+  }
 }
 
 async function extractSection(
@@ -1141,12 +1247,10 @@ export async function extractFromPropertyAll(
     ...systemChunks,
   ];
 
-  await prisma.$transaction([
-    prisma.knowledgeItem.deleteMany({ where: { propertyId, locale, isAutoExtracted: true } }),
-    ...(all.length > 0
-      ? [prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) })]
-      : []),
-  ]);
+  await upsertChunksIncremental(
+    { propertyId, locale, isAutoExtracted: true },
+    all,
+  );
 
   return { count: all.length };
 }

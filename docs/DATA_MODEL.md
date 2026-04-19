@@ -51,13 +51,14 @@
 - `KnowledgeSource`
 - `KnowledgeItem` — schema expandido en Rama 11A con campos AI pipeline completos:
   - Identidad del chunk: `chunkType` (`fact|procedure|policy|place|troubleshooting|summary|template`), `entityType` (`property|access|policy|contact|amenity|space|system`), `entityId String?`
-  - Recuperación híbrida: `contextPrefix String` (prefijo multi-línea Contextual Retrieval), `bm25Text String` (texto normalizado BM25), `embedding Unsupported("vector(1536)")?` (deferido a 11C), `tokens Int`
+  - Recuperación híbrida: `contextPrefix String` (prefijo multi-línea Contextual Retrieval), `bm25Text String` (texto normalizado BM25), `embedding Unsupported("vector(512)")?` (pgvector, Rama 11C — Voyage `voyage-3-lite`), `embedding_model String?` (model version stamp para invalidar al cambiar de provider), `bm25_tsv` (columna Postgres `tsvector` generated desde `bm25Text`; no aparece en Prisma — GIN index gestionado por SQL raw en `prisma/migrations/.../knowledge_embeddings_and_fts`), `tokens Int`
   - Metadata de calidad: `canonicalQuestion String?`, `contentHash String?` (sha256 16-char del prefijo + body), `confidenceScore Float @default(1.0)`, `validFrom DateTime?`, `validTo DateTime?`
   - Trazabilidad: `sourceFields String[]` (campos de la entidad fuente que generaron el chunk), `tags String[]`
   - Localización: `locale String @default("es")` (filtro duro en retrieval; i18n multi-locale en 11B — `SUPPORTED_LOCALES = ["es", "en"]`)
   - Identidad cross-locale (11B): `templateKey String?` — clave semántica estable del chunk que sobrevive a re-extracts. NOT NULL para autoextract; los valores concretos son los literales `templateKey: "..."` emitidos por `knowledge-extract.service.ts` (no mantener lista manual aquí — rota en cada rama que añade chunks). NULL para items manuales (no participan en cross-locale pairing). Pairing real: `(propertyId, entityType, entityId, templateKey)`
-  - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`, `(propertyId, entityType, entityId, templateKey, locale)` (11B — cross-locale lookup)
-  - Invalidación: delete-then-reextract por `(propertyId, entityType, entityId?)`; scoped por `locale` — regenerar EN nunca toca ES ni los manuales. Wired en `editor.actions.ts` como fire-and-forget.
+  - Índices: `(propertyId, locale, journeyStage)`, `(propertyId, chunkType)`, `(propertyId, entityType, entityId)`, `(propertyId, visibility)`, `(propertyId, entityType, entityId, templateKey, locale)` (11B — cross-locale lookup), GIN sobre `bm25_tsv` (11C)
+  - Invalidación (11C): `upsertChunksIncremental` clasifica delete/create/update por `(entityType|entityId|templateKey)` dentro del scope `{propertyId, locale, isAutoExtracted: true}`. Cuando `contentHash` cambia se nulifican `embedding` y `embedding_model` (re-embed por el job de backfill); cuando no cambia el embedding persiste. Wired en `editor.actions.ts` fire-and-forget.
+  - Backfill: `src/lib/jobs/knowledge-embed-backfill.ts` — idempotente (selecciona `embedding IS NULL OR embedding_model != EMBEDDING_VERSION`); args `--property`, `--batch`, `--dry-run`.
 - `KnowledgeCitation`
 - `Intent`
 - `GuideVersion`
@@ -76,7 +77,8 @@
 - `AssistantConversation`
   - `id`, `propertyId`, `actorType`, `audience`, `language`, timestamps
 - `AssistantMessage`
-  - `id`, `conversationId`, `role`, `body`, `citationsJson`, `confidenceScore`, `escalated`, `createdAt`
+  - `id`, `conversationId`, `role` (`user|assistant`), `body`, `citationsJson`, `confidenceScore`, `escalated`, `createdAt`
+  - `citationsJson` (Rama 11C) guarda un envelope `{ citations: Citation[], escalationReason: string | null }`. `Citation = { knowledgeItemId, sourceType, entityLabel, score }`. No hay columna dedicada de `escalationReason` para evitar migración — la ruta `ask` serializa y parsea la envoltura.
 
 ### Security and audit
 

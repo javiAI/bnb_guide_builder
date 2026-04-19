@@ -156,24 +156,47 @@
 
 ## 5. Assistant ask response
 
+`POST /api/properties/:propertyId/assistant/ask`
+
+Body (Zod-validated in `src/lib/schemas/assistant.schema.ts`):
+
+```json
+{
+  "question": "¿Cómo enciendo la calefacción?",
+  "language": "es",
+  "audience": "guest",
+  "journeyStage": null,
+  "conversationId": null
+}
+```
+
+Response (Rama 11C):
+
 ```json
 {
   "data": {
-    "answer": "La cafetera es de cápsulas y está en la cocina...",
+    "answer": "El termostato del salón enciende la calefacción [1].",
     "citations": [
       {
         "knowledgeItemId": "ki_123",
-        "sourceId": "src_123",
-        "quoteOrNote": "Cafetera Nespresso en la encimera...",
-        "relevanceScore": 0.94
+        "sourceType": "system",
+        "entityLabel": "Calefacción",
+        "score": 0.87
       }
     ],
-    "confidenceScore": 0.94,
+    "confidenceScore": 0.5,
     "escalated": false,
-    "escalationReason": null
+    "escalationReason": null,
+    "conversationId": "conv_abc"
   }
 }
 ```
+
+Citation shape: `{ knowledgeItemId, sourceType, entityLabel, score }`. `score` es el rerankScore (Cohere rerank-multilingual-v3.0) normalizado a [0,1]. Cuando el modelo escala (fuente insuficiente, off-topic), `answer = ""`, `citations = []`, `escalated = true`, `escalationReason` explica el motivo.
+
+### Debug retrieve
+
+`POST /api/properties/:propertyId/assistant/debug/retrieve` — endpoint interno para ops/ajuste. Ejecuta intent + retrieval + rerank sin síntesis. Devuelve `{ items[], intent, retrieval: { scopeSize, withEmbedding, bm25Hits, vectorHits, degraded } }`. No persiste conversación.
 
 ## 6. Messaging automation request
 

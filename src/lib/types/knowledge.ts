@@ -39,6 +39,14 @@ export const chunkTypeSchema = z.enum(CHUNK_TYPES);
 export const entityTypeSchema = z.enum(ENTITY_TYPES);
 export const journeyStageSchema = z.enum(JOURNEY_STAGES);
 
+/** Narrow an optional string to a `JourneyStage`; any unknown value → null. */
+export function coerceJourneyStage(value?: string | null): JourneyStage | null {
+  if (!value) return null;
+  return (JOURNEY_STAGES as readonly string[]).includes(value)
+    ? (value as JourneyStage)
+    : null;
+}
+
 export interface ExtractedChunk {
   propertyId: string;
   topic: string;

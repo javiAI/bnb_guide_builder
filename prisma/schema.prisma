@@ -593,6 +593,13 @@ model KnowledgeItem {
   templateKey      String?         @map("template_key")
   validFrom        DateTime?       @map("valid_from")
   validTo          DateTime?       @map("valid_to")
+  // Rama 11C — embeddings for hybrid retrieval. `embedding` is pgvector
+  // (Unsupported: Prisma can't express vector types; writes/reads go through
+  // $executeRaw/$queryRaw in src/lib/services/assistant/*). The generated
+  // column `bm25_tsv` and its GIN index are declared in SQL migration only.
+  embedding        Unsupported("vector(512)")?
+  embeddingModel   String?         @map("embedding_model")
+  embeddingVersion Int             @default(1) @map("embedding_version")
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 

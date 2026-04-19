@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { debugRetrieveRequestSchema } from "@/lib/schemas/assistant.schema";
-import { retrieveCandidates } from "@/lib/assistant/retrieval";
+import { retrieve } from "@/lib/services/assistant/pipeline";
+import { coerceJourneyStage } from "@/lib/types/knowledge";
 
 export async function POST(
   request: NextRequest,
@@ -46,20 +47,33 @@ export async function POST(
   }
 
   const { question, language, audience, journeyStage } = parsed.data;
+  const stage = coerceJourneyStage(journeyStage);
 
-  const candidates = await retrieveCandidates({
+  const result = await retrieve({
     propertyId,
     question,
-    locale: language,
+    language,
     audience,
-    journeyStage,
+    journeyStage: stage,
   });
 
   return NextResponse.json({
     data: {
-      query: { question, language, audience, journeyStage },
-      totalCandidates: candidates.length,
-      candidates,
+      query: { question, language, audience, journeyStage: stage },
+      intent: result.intent,
+      retrieval: result.retrieval,
+      totalCandidates: result.items.length,
+      candidates: result.items.map((it) => ({
+        knowledgeItemId: it.id,
+        topic: it.topic,
+        visibility: it.visibility,
+        entityType: it.entityType,
+        journeyStage: it.journeyStage,
+        bm25Score: it.bm25Score,
+        vectorScore: it.vectorScore,
+        rrfScore: it.rrfScore,
+        rerankScore: it.rerankScore,
+      })),
     },
   });
 }

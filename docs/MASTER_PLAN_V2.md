@@ -1135,7 +1135,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Decisiones cerradas en Fase -1 (2026-04-17)**:
 - **Taxonomía de chunks**: `fact | procedure | policy | place | troubleshooting | summary | template` ([AI_KNOWLEDGE_BASE_SPEC.md:L149-L192](research/AI_KNOWLEDGE_BASE_SPEC.md)). Cada extractor produce 1 o N items con `chunkType` explícito.
-- **Generación de embeddings**: diferida a 11C (aquí solo se persiste el texto + metadata). 11A deja `embedding: null` + `bm25Text` listo; 11C puebla embeddings en batch post-i18n.
+- **Generación de embeddings**: diferida a 11C (aquí solo se persiste el texto + metadata). 11A no añade la columna `embedding` (pgvector llega con 11C); `bm25Text` queda listo. 11C crea la columna `embedding vector(512)` + columna FTS generated `bm25_tsv` + index GIN, y puebla embeddings en batch.
 - **Invalidación (implementación real de 11A)**: granularidad `entityType` + `entityId?`. Delete-then-reextract por sección completa (cuando `entityId=null`) o entidad concreta. `sourceFields[]` son metadatos de trazabilidad por chunk, no determinan el scope de invalidación en esta rama — ese nivel de granularidad se introduce en 11B.
 - **`journeyStage`**: enum `pre_arrival | arrival | stay | checkout | post_checkout | any`, mapeado desde la sección de origen (arrival→arrival, rules→stay, etc.) + override manual editable.
 - **`confidenceScore` inicial**: 1.0 para autoextract determinístico; 0.5 para items creados a mano; editable.
@@ -1249,9 +1249,21 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 11C — `feat/assistant-retrieval-pipeline`
+### Rama 11C — `feat/assistant-retrieval-pipeline` ✅ (2026-04-19)
 
 **Propósito**: pipeline RAG production-grade: hybrid BM25+vector retrieval + Cohere Rerank + contextual prefix + filtros duros (visibility, locale, journeyStage). Intent → retrieve → rerank → filter → synthesize con citas.
+
+**Decisiones efectivamente implementadas (ajuste vs spec Fase -1)**:
+- Voyage `voyage-3-lite` con **dim = 512** (no 1536 — la variante `-lite` rinde 512 nativos, es la config oficial). pgvector column `vector(512)`.
+- **Sin índice ANN** en MVP. Con el scope efectivo (propertyId + locale + visibility) los corpora son <1k rows; el escaneo lineal en el WHERE filtrado es más barato y evita tuning de `ivfflat (lists)`/`hnsw`. Se reintroducirá cuando un tenant supere ~10k rows.
+- BM25 via Postgres FTS con **columna generated `bm25_tsv`** (`tsvector`) + GIN. Índice vive en SQL raw (no en Prisma schema).
+- Reranker: Cohere `rerank-multilingual-v3.0` (REST directo, no SDK).
+- LLM síntesis: Claude Sonnet 4.6 por default, `ASSISTANT_LLM_MODEL` overrideable.
+- Intent resolver: Claude **Haiku 4.5** (`claude-haiku-4-5-20251001`) pinned — no configurable. Heurística keyword-based como fallback cuando falta key o la llamada falla.
+- Citation shape: `{ knowledgeItemId, sourceType, entityLabel, score }` (NO `sourceId/quoteOrNote/relevanceScore`).
+- `citationsJson` en `AssistantMessage` guarda un envelope `{ citations, escalationReason }` — no se añadió columna de escalationReason para evitar migración.
+- Invariantes duras: `sensitive` NUNCA en `allowedVisibilitiesFor`; dev/test degrada a stubs con warnings, prod falla rápido sin `VOYAGE_API_KEY`/`COHERE_API_KEY`/`ANTHROPIC_API_KEY`.
+- Invalidación incremental (no delete-then-reextract destructivo): `upsertChunksIncremental` clasifica chunks por `(entityType|entityId|templateKey)`; preserva `embedding` cuando `contentHash` no cambia. El backfill idempotente (`src/lib/jobs/knowledge-embed-backfill.ts`) selecciona por `embedding IS NULL OR embedding_model != EMBEDDING_VERSION`.
 
 **Motivación**: la literatura ([AI_KNOWLEDGE_BASE_SPEC.md:L149-L215](research/AI_KNOWLEDGE_BASE_SPEC.md) + [IMPLEMENTATION_PLAN.md:L51-L66](research/IMPLEMENTATION_PLAN.md)) coincide en que vector search solo rinde ~70% accuracy en corpora pequeños y heterogéneos como una property (decenas a cientos de items). Hybrid (BM25 + vector) + rerank con Cohere Rerank 3 sube a 90%+ en evals. Contextual Retrieval reduce "lost context" en chunks al enriquecer el embedding con prefix.
 

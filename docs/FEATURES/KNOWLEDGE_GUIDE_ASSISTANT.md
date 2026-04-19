@@ -193,19 +193,90 @@ El `GuideTree` devuelto por `composeGuide(propertyId, audience, publicSlug)` (ve
 
 Todos los formatos incluyen `generatedAt` (ISO) para auditoría. El filtrado por audience aplica tanto a items como a fields (ver `src/lib/visibility.ts`); `sensitive` nunca se emite.
 
-## 3. Assistant retrieval
+## 3. Assistant retrieval (Rama 11C)
 
-Pipeline:
+El pipeline RAG vive en [src/lib/services/assistant/](../../src/lib/services/assistant/) y se consume desde dos endpoints:
 
-1. normalize question
-2. optional intent resolution
-3. candidate retrieval
-4. strict visibility and language filters
-5. ranking
-6. answer synthesis
-7. citations
-8. confidence gating
-9. escalation if needed
+- `POST /api/properties/:id/assistant/ask` — público, responde con citations
+- `POST /api/properties/:id/assistant/debug/retrieve` — interno, ops/ajuste
+
+Orquestador: [pipeline.ts](../../src/lib/services/assistant/pipeline.ts) (`ask(input)` y `retrieve(input)`).
+
+**Flujo `ask()`**:
+
+```text
+intent resolution (Haiku 4.5 → heuristic fallback)
+  → hybrid retrieval (BM25 + vector, RRF fusion)
+  → reranker (Cohere multilingual-v3.0 → identity fallback)
+  → floor @ rerankScore ≥ 0.3
+  → synthesizer (Claude Sonnet 4.6, ASSISTANT_LLM_MODEL) with <source id=N> wrapping
+  → parse [N] citations, enforce mandatory-citation rule
+  → persist AssistantConversation + 2 AssistantMessage rows
+```
+
+### Embeddings — Voyage `voyage-3-lite` (512-d)
+
+- Provider: [embeddings.service.ts](../../src/lib/services/assistant/embeddings.service.ts)
+- Input/output: API signature `embed(texts, { inputType })`; `document` en backfill, `query` en runtime
+- Normalización: L2 antes de escribir al `vector(512)` de Postgres (se apoya en distancia coseno)
+- Dev/test fallback: mock determinístico basado en hash. Prod falla rápido si falta `VOYAGE_API_KEY`.
+
+### Retriever híbrido BM25 + vector + RRF
+
+- [retriever.ts](../../src/lib/services/assistant/retriever.ts); RRF k=60, `CANDIDATE_LIMIT=100` por canal, topK del pipeline = 20
+- Hard filters pushdown (SQL): `propertyId`, `locale`, `visibility::text = ANY($allowed)`, `valid_from/valid_to`, `journey_stage` opcional
+- `allowedVisibilitiesFor(audience)` NUNCA incluye `sensitive` — invariante enforced
+- BM25 channel: `ts_rank("bm25_tsv", to_tsquery('simple', $query))` sobre columna generated + GIN (ver `prisma/migrations/.../knowledge_embeddings_and_fts`)
+- Vector channel: `1 - ("embedding" <=> $vec::vector)` con cosine distance sobre pgvector. Sin índice ANN en MVP — el scope efectivo por `propertyId + locale + visibility` es pequeño y el lineal es más barato que mantener ivfflat/HNSW
+- Modo degraded: si <10% del scope tiene embedding, salta el canal vector y marca `degraded: true` para que el caller muestre "still indexing"
+
+### Reranker — Cohere `rerank-multilingual-v3.0`
+
+- [reranker.ts](../../src/lib/services/assistant/reranker.ts); top N = 5 tras rerank
+- Documento para rerank = `contextPrefix + "\n" + bodyMd` (mismo signal que el retriever rankeó)
+- Retry exponencial en 408/429/5xx. Identity fallback solo dev/test. Prod requiere `COHERE_API_KEY`.
+
+### Synthesizer — Claude Sonnet 4.6 (configurable)
+
+- [synthesizer.ts](../../src/lib/services/assistant/synthesizer.ts); modelo vía `ASSISTANT_LLM_MODEL` (default `claude-sonnet-4-6`)
+- Mandatory citation rule: cada afirmación factual referencia `[N]`; si el modelo no cita, el parser escala automáticamente
+- Escalation sentinel: respuesta que empiece por `ESCALATE:` se convierte en `{ escalated: true, escalationReason }` y no llega al huésped
+- Prompt-injection defenses:
+  - system prompt + `<source id="N" entityType topic>` wrapping → modelo trata fuentes como datos
+  - `sanitizeSourceText()` flatten de headers `system:/assistant:/user:` + `ignore (all|previous) ...` hasta boundary de frase, strip de role tags `<system>/<user>/...`, `` ``` `` → `` `` ``
+  - `sanitizeUserQuestion()` strip de `<user_question>` en la pregunta para que el atacante no cierre el tag desde fuera
+- Output JSON estricto: `{ answer, citations: Citation[], escalated, escalationReason, confidenceScore }`. `Citation = { knowledgeItemId, sourceType, entityLabel, score }`.
+
+### Intent resolver — Claude Haiku 4.5 (pinned)
+
+- [intent-resolver.ts](../../src/lib/services/assistant/intent-resolver.ts); `claude-haiku-4-5-20251001` (NO configurable)
+- Clasifica a un `JourneyStage` con confianza [0,1]
+- Threshold: solo se pushea al retriever como hard-filter si `confidence ≥ 0.7` y `stage !== "any"`; si no, se deja scope abierto
+- Fallback: heuristic keyword-based cuando `ANTHROPIC_API_KEY` está ausente o la llamada falla (estabilidad sobre precisión: una mala clasificación > pipeline bloqueado)
+
+### Persistence
+
+`persistConversation()` crea una `AssistantConversation` si no llega `conversationId`, y escribe los 2 `AssistantMessage` en `$transaction`. `citationsJson` carga un envelope `{ citations, escalationReason }` — no hay columna dedicada de escalationReason, evita migración.
+
+### Tunables (en pipeline)
+
+`RERANK_TOP_N=5`, `RERANK_FLOOR=0.3`, `INTENT_CONFIDENCE_THRESHOLD=0.7`, `RETRIEVER_TOP_K=20`.
+
+### Backfill y rebuild
+
+- Job determinístico: [src/lib/jobs/knowledge-embed-backfill.ts](../../src/lib/jobs/knowledge-embed-backfill.ts). Args: `--property=<id>`, `--batch=<n>`, `--dry-run`
+- Idempotente: selecciona solo rows con `embedding IS NULL` o `embedding_model != EMBEDDING_VERSION`
+- Invalidación incremental: `upsertChunksIncremental({propertyId, locale, isAutoExtracted: true}, chunks)` en `knowledge-extract.service.ts` clasifica chunks en delete/create/update por `(entityType|entityId|templateKey)` y nulifica `embedding + embedding_model` solo cuando `contentHash` cambia. Resultado: preservación de embeddings en ediciones sin impacto semántico.
+
+### Test matrix
+
+- `assistant-embeddings-provider.test.ts` — determinismo, L2 norm, prod guard
+- `assistant-retriever-internals.test.ts` — invariante de visibility (sensitive NUNCA), tsquery sanitizer, RRF fusion
+- `assistant-reranker-fallback.test.ts` — identity orden y scaling, topN cap, prod guard
+- `assistant-synthesizer-parsing.test.ts` — ESCALATE, no-citations, citation extraction/dedupe, sanitizer regex
+- `assistant-intent-resolver.test.ts` — JSON robust parsing, clamp confianza, heurística por stage
+- `assistant-pipeline.test.ts` — escalation paths, persistence, reranker floor, intent threshold pushdown, debug shape
+- `knowledge-contextual-prefix.test.ts` — 5-line contextual prefix, stopwords bilingüe, contentHash determinismo
 
 ## 4. Conversation persistence
 

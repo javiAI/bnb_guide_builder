@@ -97,19 +97,19 @@ describe("Citation schema", () => {
   it("accepts valid citation", () => {
     const result = citationSchema.safeParse({
       knowledgeItemId: "ki_1",
-      sourceId: null,
-      quoteOrNote: "WiFi info",
-      relevanceScore: 0.9,
+      sourceType: "system",
+      entityLabel: "WiFi",
+      score: 0.9,
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects relevanceScore > 1", () => {
+  it("rejects score > 1", () => {
     const result = citationSchema.safeParse({
       knowledgeItemId: "ki_1",
-      sourceId: null,
-      quoteOrNote: null,
-      relevanceScore: 1.5,
+      sourceType: "system",
+      entityLabel: "WiFi",
+      score: 1.5,
     });
     expect(result.success).toBe(false);
   });
