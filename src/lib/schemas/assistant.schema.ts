@@ -30,12 +30,41 @@ export const citationSchema = z.object({
 
 export type Citation = z.infer<typeof citationSchema>;
 
+// ── Escalation handoff (rama 11D) ──
+
+export const escalationChannelSchema = z.object({
+  kind: z.enum(["tel", "whatsapp", "email"]),
+  rawValue: z.string(),
+  href: z.string(),
+});
+
+export const escalationContactSchema = z.object({
+  id: z.string(),
+  roleKey: z.string(),
+  displayName: z.string(),
+  channels: z.array(escalationChannelSchema),
+  emergencyAvailable: z.boolean(),
+  isPrimary: z.boolean(),
+  notes: z.string().nullable(),
+});
+
+export const escalationResolutionSchema = z.object({
+  intentId: z.string().regex(/^int\./),
+  intentLabel: z.string(),
+  emergencyPriority: z.boolean(),
+  fallbackLevel: z.enum(["intent", "intent_with_host", "fallback"]),
+  contacts: z.array(escalationContactSchema),
+});
+
+export type EscalationResolutionDTO = z.infer<typeof escalationResolutionSchema>;
+
 export const askResponseSchema = z.object({
   answer: z.string(),
   citations: z.array(citationSchema),
   confidenceScore: z.number().min(0).max(1),
   escalated: z.boolean(),
   escalationReason: z.string().nullable(),
+  escalationContact: escalationResolutionSchema.nullable(),
   conversationId: z.string(),
 });
 
