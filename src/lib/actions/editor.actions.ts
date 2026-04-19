@@ -8,6 +8,7 @@ import { recomputeAllInBackground } from "@/lib/services/property-derived.servic
 import {
   invalidateKnowledgeInBackground,
   deleteEntityChunksInBackground,
+  extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
 import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
@@ -150,7 +151,10 @@ export async function savePropertyAction(
   });
 
   recomputeAllInBackground(propertyId);
-  invalidateKnowledgeInBackground(propertyId, "property", null);
+  // propertyNickname/city appear in contextPrefix of ALL chunk types; trigger full regen
+  extractFromPropertyAll(propertyId).catch((err) => {
+    console.error(`[knowledge] full regen failed after saveProperty for ${propertyId}:`, err);
+  });
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }
@@ -221,6 +225,8 @@ export async function saveAccessAction(
 
   recomputeAllInBackground(propertyId);
   invalidateKnowledgeInBackground(propertyId, "access", null);
+  // checkInStart/checkInEnd/checkOutTime also appear in property-level chunks
+  invalidateKnowledgeInBackground(propertyId, "property", null);
   revalidatePath(`/properties/${propertyId}`);
   return { success: true };
 }

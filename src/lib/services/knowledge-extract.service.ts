@@ -412,7 +412,12 @@ export async function extractFromPolicies(
   const chunks: ExtractedChunk[] = [];
   const name = p.propertyNickname;
   const city = p.city;
-  const pol = p.policiesJson as {
+
+  let rawPolicies = p.policiesJson;
+  if (typeof rawPolicies === "string") {
+    try { rawPolicies = JSON.parse(rawPolicies); } catch { return chunks; }
+  }
+  const pol = rawPolicies as {
     quietHours?: { enabled?: boolean; from?: string; to?: string };
     smoking?: string;
     pets?: { allowed?: boolean; types?: string[]; maxCount?: number; sizeRestriction?: string; notes?: string };
