@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/db";
 import { ServiceWorkerRegister } from "@/lib/client/service-worker-register";
 import { InstallNudge } from "@/components/public-guide/install-nudge";
 
@@ -16,11 +17,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicGuideLayout({ params, children }: Props) {
   const { slug } = await params;
+
+  const published = await prisma.guideVersion.findFirst({
+    where: { property: { publicSlug: slug }, status: "published" },
+    select: { version: true },
+  });
+
   return (
     <>
       {children}
-      <ServiceWorkerRegister slug={slug} />
-      <InstallNudge slug={slug} />
+      {published && <ServiceWorkerRegister slug={slug} />}
+      {published && <InstallNudge slug={slug} />}
     </>
   );
 }

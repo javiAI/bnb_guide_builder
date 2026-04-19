@@ -7,6 +7,11 @@ export function ServiceWorkerRegister({ slug }: { slug: string }) {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
       return;
     }
+    // Invalidation contract: the route handler serves with Cache-Control: no-cache,
+    // so the browser refetches sw.js on every navigation. The SW source embeds
+    // __SW_VERSION__ (= buildVersion), so a content change produces a byte-different
+    // response and the browser triggers the update flow. No query param needed — adding
+    // ?v=<hash> would register a new SW URL instead of updating the existing one.
     const swUrl = `/g/${slug}/sw.js`;
     const scope = `/g/${slug}/`;
 

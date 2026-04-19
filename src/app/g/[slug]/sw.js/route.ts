@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { buildGuestPresentationLayer } from "@/lib/services/guest-presentation-pipeline";
@@ -20,13 +21,14 @@ export async function GET(
   const published = await prisma.guideVersion.findFirst({
     where: { property: { publicSlug: slug }, status: "published" },
     orderBy: { version: "desc" },
-    select: { treeJson: true, property: { select: { id: true } } },
+    select: { treeJson: true },
   });
 
   if (!published) {
-    // Distinguish "no such property" from "property exists but unpublished":
-    // the unpublished case still ships a SW shell (offline fallback works
-    // before first publish), the missing-slug case returns 404.
+    // Property exists but has no published version: still serve a valid SW so
+    // browsers that previously installed the SW (before unpublish) can update
+    // cleanly rather than hitting a 404 update check. New installations are
+    // prevented by the layout guard. Missing slug → 404.
     const property = await prisma.property.findUnique({
       where: { publicSlug: slug },
       select: { id: true },
@@ -37,7 +39,7 @@ export async function GET(
   const version = published?.treeJson
     ? buildGuestPresentationLayer(published.treeJson as unknown as GuideTree)
         .searchIndex.buildVersion
-    : "v0";
+    : createHash("sha1").update(slug).digest("hex").slice(0, 12);
 
   const body = renderSwTemplate({ slug, version });
 

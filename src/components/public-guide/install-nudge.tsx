@@ -124,7 +124,7 @@ export function InstallNudge({ slug }: { slug: string }) {
     let tick: number | undefined;
     const evaluate = () => {
       const elapsed = Date.now() - sessionStartRef.current;
-      const total = next.cumulativeMs + elapsed;
+      const total = readState(slug).cumulativeMs + elapsed;
       if (nextVisits >= VISIT_THRESHOLD || total >= TIME_THRESHOLD_MS) {
         const fresh = readState(slug);
         if (!fresh.dismissedAt && !fresh.installedAt) {
@@ -149,7 +149,7 @@ export function InstallNudge({ slug }: { slug: string }) {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flushTime();
     };
-    window.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", flushTime);
 
     const onBeforeInstall = (event: Event) => {
@@ -167,7 +167,7 @@ export function InstallNudge({ slug }: { slug: string }) {
 
     return () => {
       if (tick !== undefined) window.clearInterval(tick);
-      window.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flushTime);
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
