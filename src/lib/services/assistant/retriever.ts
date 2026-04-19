@@ -305,11 +305,15 @@ async function runVector(
  * Pushdown for the journey-stage filter. The intent resolver passes the stage
  * only when it is confident (≥0.7); below that it leaves the filter off and
  * we keep the whole scope. `any` always matches, as does NULL (legacy rows).
+ *
+ * stage === "any" means "no stage filter" — the pipeline normalizes this to
+ * null upstream, but callers that pass "any" directly must not be silently
+ * narrowed to rows literally tagged "any". Treat it as Prisma.empty.
  */
 function journeyStageScopeClause(
   stage: JourneyStage | null | undefined,
 ): Prisma.Sql {
-  if (!stage) return Prisma.empty;
+  if (!stage || stage === "any") return Prisma.empty;
   return Prisma.sql`AND ("journey_stage" = ${stage} OR "journey_stage" = 'any' OR "journey_stage" IS NULL)`;
 }
 

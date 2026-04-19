@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { entityTypeSchema } from "@/lib/types/knowledge";
+import { entityTypeSchema, journeyStageSchema } from "@/lib/types/knowledge";
 
 // Assistant API audiences exclude "sensitive" on purpose — callers must not
 // be able to elevate to sensitive via a request body; that level is reserved
@@ -12,7 +12,7 @@ export const askRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: z.string().optional(),
+  journeyStage: journeyStageSchema.optional(),
   conversationId: z.string().optional(),
 });
 
@@ -44,7 +44,7 @@ export const debugRetrieveRequestSchema = z.object({
   question: z.string().min(1, "La pregunta es obligatoria"),
   language: z.string().default("es"),
   audience: z.enum(ASSISTANT_AUDIENCES).default("guest"),
-  journeyStage: z.string().optional(),
+  journeyStage: journeyStageSchema.optional(),
 });
 
 export type DebugRetrieveRequest = z.infer<typeof debugRetrieveRequestSchema>;
