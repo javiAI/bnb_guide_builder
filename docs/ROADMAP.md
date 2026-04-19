@@ -100,7 +100,7 @@ La infraestructura del pipeline guest está completa: `composeGuide → filterBy
 ### Progreso Fase 11 (2026-04-17 revisada: 4→6 ramas)
 
 - ✅ **11A** `feat/knowledge-autoextract` — schema AI completo (chunkType, journeyStage, contextPrefix, bm25Text, sourceFields, embedding col) + extractors para 7 fuentes + invalidación wired en editor.actions + UI Regenerar + 62 tests.
-- ⏳ **11B** `feat/knowledge-i18n` — locale como filtro duro del retriever; templates i18n + UI de missing translations.
+- ✅ **11B** `feat/knowledge-i18n` — locale como filtro duro del retriever; templates i18n + UI de missing translations.
 - ⏳ **11C** `feat/assistant-retrieval-pipeline` — hybrid BM25+vector (RRF) + Cohere Rerank 3 + Voyage embeddings + pgvector ivfflat.
 - ⏳ **11D** `feat/assistant-escalation` — escala a contacto estructurado cuando confidence/citations bajas.
 - ⏳ **11E** `feat/assistant-evals` — banco ≥50 fixtures + release gate accuracy ≥85% + recall@5 ≥0.9.

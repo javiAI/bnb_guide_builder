@@ -142,7 +142,9 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 **Estado**: diferido.
 **Trigger**: host con >3 idiomas activos se queja del coste manual de traducción.
 
-11B deja la política "missing locale → fallback con nota visible". Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + validación humana obligatoria antes de marcar como `published`). DeepL como alternativa más barata para texto corto. Evitar auto-publicar sin revisión.
+11B (merged) deja la política de fallback: `getItemForLocale` devuelve el item del `defaultLocale` con `_fallbackFrom` cuando el locale pedido no existe; la UI muestra tabs con dot de estado (missing/present) y banner de warning cuando hay ítems sin traducir. `invalidateKnowledgeInBackground` solo re-extrae el `defaultLocale`; los locales no-default se vuelven stale si el host edita la propiedad sin regenerar manualmente.
+
+Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + validación humana obligatoria antes de marcar como `published`). DeepL como alternativa más barata para texto corto. Evitar auto-publicar sin revisión.
 
 ---
 

@@ -35,7 +35,25 @@ Debe soportar:
 **Campos AI pipeline por chunk** (ver `docs/DATA_MODEL.md` § KnowledgeItem):
 `chunkType`, `entityType`, `entityId`, `contextPrefix` (5 líneas Contextual Retrieval), `bm25Text` (diacríticas plegadas + lowercase + stopwords), `canonicalQuestion`, `contentHash`, `sourceFields[]`, `tags[]`, `tokens`, `validFrom`, `validTo`.
 
-**Invalidación** wired en `editor.actions.ts` como fire-and-forget. **Contrato real de 11A**: granularidad `entityType` + `entityId?` — delete-then-reextract por sección completa o entidad concreta. `sourceFields[]` en cada chunk son metadatos de trazabilidad (qué campos de la entidad componen el chunk) y preparación para invalidación fina en 11B, **no** determinan el scope de invalidación en 11A.
+**Invalidación** wired en `editor.actions.ts` como fire-and-forget. **Contrato real de 11A**: granularidad `entityType` + `entityId?` — delete-then-reextract por sección completa o entidad concreta. `sourceFields[]` en cada chunk son metadatos de trazabilidad.
+
+### i18n (Rama 11B)
+
+`KnowledgeItem.locale` y `Property.defaultLocale` (`@default("es")`) son los dos pilares.
+
+**Extracción locale-scoped**: `extractFromPropertyAll(propertyId, locale)` y `upsertSection` eliminan solo ítems con `{ propertyId, locale, isAutoExtracted: true }` — extraer EN nunca borra ítems ES.
+
+**Fallback policy**: `getItemForLocale(itemId, locale, fallbackLocale)` devuelve el ítem del locale pedido; si no existe, devuelve el del `defaultLocale` con `_fallbackFrom` como señal para que la UI lo marque.
+
+**`knowledge-i18n.service`**:
+
+- `getLocaleStatusForProperty(propertyId, locales)` — cuenta ítems por locale; devuelve `"present"` / `"missing"`.
+- `listMissingTranslations(propertyId, defaultLocale, targetLocales)` — detecta ítems sin traducción en locales objetivo.
+- `extractI18n(propertyId, locale)` — llama a `extractFromPropertyAll` con el locale dado.
+
+**UI**: `LocaleSwitcherClient` navega vía `router.push(pathname?locale=X)` para que el Server Component lea el locale desde `searchParams`. Tabs con dot de estado (naranja=missing, verde=present). Banner de warning cuando `nonDefaultMissing.length > 0`. Formulario "Añadir item" solo visible en `defaultLocale`.
+
+**Limitación MVP**: `invalidateKnowledgeInBackground` solo re-extrae el `defaultLocale`; los locales no-default se vuelven stale si el host edita la propiedad sin regenerar manualmente (acción explícita con botón "Generar" en la pestaña del locale).
 
 - Mutaciones de propiedad/access/policies → `invalidateKnowledgeInBackground(propertyId, entityType, null)` (borra y re-extrae todos los chunks del entityType)
 - Create/update de contacto/amenity/space/system → `invalidateKnowledgeInBackground(propertyId, entityType, entityId)` (borra y re-extrae solo los chunks de ese entityId)
