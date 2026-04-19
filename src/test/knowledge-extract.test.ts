@@ -353,7 +353,7 @@ describe("extractFromSpaces", () => {
   it("includes bed summary in bodyMd when beds present", async () => {
     const chunks = await extractFromSpaces("prop_1");
     const bedroomChunk = chunks.find((c) => c.entityId === "space_1");
-    expect(bedroomChunk?.bodyMd).toContain("bt.king");
+    expect(bedroomChunk?.bodyMd).toContain("Cama King");
   });
 
   it("all space chunks have entityType=space, chunkType=fact", async () => {

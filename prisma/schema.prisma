@@ -585,8 +585,8 @@ model KnowledgeItem {
   contextPrefix    String          @default("") @map("context_prefix")
   bm25Text         String          @default("") @map("bm25_text")
   tokens           Int             @default(0)
-  sourceFields     String[]        @map("source_fields")
-  tags             String[]
+  sourceFields     String[]        @default([]) @map("source_fields")
+  tags             String[]        @default([])
   contentHash      String?         @map("content_hash")
   validFrom        DateTime?       @map("valid_from")
   validTo          DateTime?       @map("valid_to")

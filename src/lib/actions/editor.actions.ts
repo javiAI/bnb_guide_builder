@@ -266,14 +266,15 @@ export async function createContactAction(
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
 
-  await prisma.contact.create({
+  const created = await prisma.contact.create({
     data: {
       ...result.data,
       property: { connect: { id: propertyId } },
     },
+    select: { id: true },
   });
 
-  invalidateKnowledgeInBackground(propertyId, "contact", null);
+  invalidateKnowledgeInBackground(propertyId, "contact", created.id);
   revalidatePath(`/properties/${propertyId}/contacts`);
   return { success: true };
 }

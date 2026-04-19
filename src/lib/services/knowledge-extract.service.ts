@@ -7,9 +7,11 @@ import {
   contactTypes,
   propertyTypes,
   accessMethods,
+  bedTypes,
 } from "@/lib/taxonomy-loader";
 import type { ExtractedChunk, ChunkType, EntityType } from "@/lib/types/knowledge";
 import type { VisibilityLevel } from "@prisma/client";
+import knowledgeTemplatesRaw from "../../../taxonomies/knowledge_templates.json";
 
 // ──────────────────────────────────────────────
 // Constants
@@ -83,6 +85,50 @@ export function buildContentHash(contextPrefix: string, bodyMd: string): string 
     .update(`${contextPrefix}\n${bodyMd}`)
     .digest("hex")
     .slice(0, 16);
+}
+
+// ──────────────────────────────────────────────
+// Template renderer (knowledge_templates.json)
+// ──────────────────────────────────────────────
+
+type TemplateEntry = {
+  topic: string;
+  canonicalQuestion: string;
+  bodyTemplate: string;
+  journeyStage: string;
+  sourceFields: string[];
+};
+
+function interpolate(
+  template: string,
+  vars: Record<string, string | null | undefined>,
+): string {
+  let result = template.replace(
+    /\{\{#if (\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
+    (_, key: string, content: string) => (vars[key] ? content : ""),
+  );
+  result = result.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
+  return result.trim();
+}
+
+function renderKnowledgeTemplate(
+  entityType: string,
+  chunkType: string,
+  templateId: string,
+  locale: string,
+  vars: Record<string, string | null | undefined>,
+): (Omit<TemplateEntry, "bodyTemplate"> & { bodyMd: string }) | null {
+  const templates = (knowledgeTemplatesRaw as { templates: Record<string, Record<string, Record<string, Record<string, TemplateEntry>>>> }).templates;
+  const entry = templates[entityType]?.[chunkType]?.[templateId]?.[locale]
+    ?? templates[entityType]?.[chunkType]?.[templateId]?.["es"];
+  if (!entry) return null;
+  return {
+    topic: interpolate(entry.topic, vars),
+    canonicalQuestion: interpolate(entry.canonicalQuestion, vars),
+    bodyMd: interpolate(entry.bodyTemplate, vars),
+    journeyStage: entry.journeyStage,
+    sourceFields: entry.sourceFields,
+  };
 }
 
 function approxTokens(text: string): number {
@@ -175,10 +221,15 @@ function assertVisibilityBound(
 // ──────────────────────────────────────────────
 
 // Returns only taxonomy-derived labels — never includes customDesc (may contain PINs/codes).
+// Falls back to generic label (never raw key) to prevent internal IDs leaking into bodyMd.
 function resolveAccessMethodLabels(methods: string[]): string {
   return methods
-    .map((m) => accessMethods.items.find((a) => a.id === m)?.label ?? m)
+    .map((m) => accessMethods.items.find((a) => a.id === m)?.label ?? "Método de acceso")
     .join(", ");
+}
+
+function resolveBedTypeLabel(bedTypeId: string): string {
+  return bedTypes.items.find((b) => b.id === bedTypeId)?.label ?? "Cama";
 }
 
 // NOTE: customDesc intentionally excluded from both — may contain PINs or access codes.
@@ -226,74 +277,43 @@ export async function extractFromProperty(
     params: Parameters<typeof makePropertyChunk>[4],
   ) => makePropertyChunk(propertyId, locale, name, city, params);
 
+  const tpl = (templateId: string, vars: Record<string, string | null | undefined>) =>
+    renderKnowledgeTemplate("property", "fact", templateId, locale, vars);
+
   if (p.checkInStart && p.checkInEnd) {
-    chunks.push(
-      mk({
-        topic: "Hora de check-in",
-        canonicalQuestion: "¿A qué hora empieza el check-in?",
-        bodyMd: `El check-in en ${name} es a partir de las ${p.checkInStart} y hasta las ${p.checkInEnd}.`,
-        chunkType: "fact",
-        entityType: "property",
-        entityId: null,
-        journeyStage: "pre_arrival",
-        sourceFields: ["checkInStart", "checkInEnd"],
-      }),
-    );
+    const t = tpl("checkin_time", {
+      propertyName: name,
+      checkInStart: p.checkInStart,
+      checkInEnd: p.checkInEnd,
+    });
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
   }
 
   if (p.checkOutTime) {
-    chunks.push(
-      mk({
-        topic: "Hora de check-out",
-        canonicalQuestion: "¿A qué hora es el check-out?",
-        bodyMd: `El check-out en ${name} debe realizarse antes de las ${p.checkOutTime}.`,
-        chunkType: "fact",
-        entityType: "property",
-        entityId: null,
-        journeyStage: "checkout",
-        sourceFields: ["checkOutTime"],
-      }),
-    );
+    const t = tpl("checkout_time", { propertyName: name, checkOutTime: p.checkOutTime });
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
   }
 
   if (p.maxGuests) {
-    const childrenNote =
-      p.maxChildren > 0
-        ? ` y ${p.maxChildren} niños${p.infantsAllowed ? " (bebés admitidos)" : ""}`
-        : "";
-    chunks.push(
-      mk({
-        topic: "Capacidad del alojamiento",
-        canonicalQuestion: "¿Cuántas personas pueden alojarse?",
-        bodyMd: `${name} tiene capacidad para ${p.maxGuests} personas (máximo ${p.maxAdults} adultos${childrenNote}).`,
-        chunkType: "fact",
-        entityType: "property",
-        entityId: null,
-        journeyStage: "pre_arrival",
-        sourceFields: ["maxGuests", "maxAdults", "maxChildren", "infantsAllowed"],
-      }),
-    );
+    const t = tpl("capacity", {
+      propertyName: name,
+      maxGuests: String(p.maxGuests),
+      maxAdults: String(p.maxAdults),
+      maxChildren: p.maxChildren > 0 ? String(p.maxChildren) : null,
+    });
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
   }
 
   if (p.propertyType) {
     const typeLabel =
-      propertyTypes.items.find((t) => t.id === p.propertyType)?.label ??
-      p.propertyType;
-    const locationPart = p.city
-      ? `${p.city}${p.country ? `, ${p.country}` : ""}`
-      : p.country ?? "";
-    chunks.push(
-      mk({
-        topic: "Descripción general",
-        canonicalQuestion: "¿Qué tipo de alojamiento es y dónde está?",
-        bodyMd: `${name} es un ${typeLabel}${locationPart ? ` ubicado en ${locationPart}` : ""}.`,
-        chunkType: "fact",
-        entityType: "property",
-        entityId: null,
-        journeyStage: "pre_arrival",
-        sourceFields: ["propertyNickname", "propertyType", "city", "country"],
-      }),
-    );
+      propertyTypes.items.find((tt) => tt.id === p.propertyType)?.label ?? p.propertyType;
+    const t = tpl("overview", {
+      propertyName: name,
+      propertyTypeLabel: typeLabel,
+      city: p.city,
+      country: p.country,
+    });
+    if (t) chunks.push(mk({ ...t, chunkType: "fact", entityType: "property", entityId: null }));
   }
 
   return chunks;
@@ -327,125 +347,40 @@ export async function extractFromAccess(
     building?: { methods: string[]; customLabel?: string | null; customDesc?: string | null } | null;
   } | null;
 
+  const mkAccess = (params: Parameters<typeof makePropertyChunk>[4]) =>
+    makePropertyChunk(propertyId, locale, name, city, params);
+
+  const tpl = (templateId: string, vars: Record<string, string | null | undefined>) =>
+    renderKnowledgeTemplate("access", "procedure", templateId, locale, vars);
+
   if (access?.unit?.methods?.length) {
-    const accessDesc = buildSafeAccessDescription(access.unit, "Método de acceso disponible");
-    const prefix = buildContextPrefix({
-      propertyName: name,
-      city,
-      sectionLabel: SECTION_LABELS.access,
-      entityLabel: "Acceso a la unidad",
-      visibility: "guest",
-      canonicalQuestion: "¿Cómo se accede al alojamiento?",
-    });
-    const bodyMd = `Para acceder a ${name}: ${accessDesc}`;
-    chunks.push({
-      propertyId,
-      topic: "Acceso a la unidad",
-      bodyMd,
-      locale,
-      visibility: "guest",
-      confidenceScore: 1.0,
-      journeyStage: "arrival",
-      chunkType: "procedure",
-      entityType: "access",
-      entityId: null,
-      canonicalQuestion: "¿Cómo se accede al alojamiento?",
-      contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
-      tokens: approxTokens(prefix + " " + bodyMd),
-      sourceFields: ["primaryAccessMethod", "accessMethodsJson"],
-      tags: [],
-      contentHash: buildContentHash(prefix, bodyMd),
-      validFrom: null,
-      validTo: null,
-    });
+    const accessDescription = buildSafeAccessDescription(access.unit, "Método de acceso disponible");
+    const t = tpl("unit_access", { propertyName: name, accessDescription });
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
   }
 
   if (p.hasBuildingAccess && access?.building?.methods?.length) {
-    const buildingDesc = buildSafeAccessDescription(access.building, "Acceso al edificio disponible");
-    const prefix = buildContextPrefix({
-      propertyName: name,
-      city,
-      sectionLabel: SECTION_LABELS.access,
-      entityLabel: "Acceso al edificio",
-      visibility: "guest",
-      canonicalQuestion: "¿Cómo se entra al edificio?",
-    });
-    const bodyMd = `Para entrar al edificio de ${name}: ${buildingDesc}`;
-    chunks.push({
-      propertyId,
-      topic: "Acceso al edificio",
-      bodyMd,
-      locale,
-      visibility: "guest",
-      confidenceScore: 1.0,
-      journeyStage: "arrival",
-      chunkType: "procedure",
-      entityType: "access",
-      entityId: null,
-      canonicalQuestion: "¿Cómo se entra al edificio?",
-      contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
-      tokens: approxTokens(prefix + " " + bodyMd),
-      sourceFields: ["accessMethodsJson", "hasBuildingAccess"],
-      tags: [],
-      contentHash: buildContentHash(prefix, bodyMd),
-      validFrom: null,
-      validTo: null,
-    });
+    const buildingAccessDescription = buildSafeAccessDescription(access.building, "Acceso al edificio disponible");
+    const t = tpl("building_access", { propertyName: name, buildingAccessDescription });
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
   }
 
   if (p.checkInStart && p.checkInEnd && p.checkOutTime) {
-    const autonomousPart = p.isAutonomousCheckin
-      ? " El acceso es autónomo, sin necesidad de recibimiento en persona."
-      : "";
     const accessSummary = access?.unit?.methods?.length
       ? buildSafeAccessDescription(access.unit, "Método de acceso disponible")
-      : "";
-    const prefix = buildContextPrefix({
+      : null;
+    const autonomousPart = p.isAutonomousCheckin
+      ? "El acceso es autónomo, sin necesidad de recibimiento en persona."
+      : null;
+    const t = tpl("checkin_logistics", {
       propertyName: name,
-      city,
-      sectionLabel: SECTION_LABELS.access,
-      entityLabel: "Logística de llegada",
-      visibility: "guest",
-      canonicalQuestion: "¿Qué debo saber para llegar al alojamiento?",
-    });
-    const bodyMd = [
-      `Llegada a ${name}: check-in entre las ${p.checkInStart} y las ${p.checkInEnd}.`,
-      `Check-out antes de las ${p.checkOutTime}.`,
+      checkInStart: p.checkInStart,
+      checkInEnd: p.checkInEnd,
+      checkOutTime: p.checkOutTime,
+      accessSummary: accessSummary ? `Acceso: ${accessSummary}` : null,
       autonomousPart,
-      accessSummary ? `Acceso: ${accessSummary}` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    chunks.push({
-      propertyId,
-      topic: "Logística de llegada",
-      bodyMd,
-      locale,
-      visibility: "guest",
-      confidenceScore: 1.0,
-      journeyStage: "pre_arrival",
-      chunkType: "procedure",
-      entityType: "access",
-      entityId: null,
-      canonicalQuestion: "¿Qué debo saber para llegar al alojamiento?",
-      contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
-      tokens: approxTokens(prefix + " " + bodyMd),
-      sourceFields: [
-        "checkInStart",
-        "checkInEnd",
-        "checkOutTime",
-        "isAutonomousCheckin",
-        "primaryAccessMethod",
-        "accessMethodsJson",
-      ],
-      tags: [],
-      contentHash: buildContentHash(prefix, bodyMd),
-      validFrom: null,
-      validTo: null,
     });
+    if (t) chunks.push(mkAccess({ ...t, chunkType: "procedure", entityType: "access", entityId: null }));
   }
 
   return chunks;
@@ -477,42 +412,11 @@ export async function extractFromPolicies(
 
   if (!pol) return chunks;
 
-  const mkPolicy = (
-    topic: string,
-    canonicalQuestion: string,
-    bodyMd: string,
-    sourceFields: string[],
-  ): ExtractedChunk => {
-    const prefix = buildContextPrefix({
-      propertyName: name,
-      city,
-      sectionLabel: SECTION_LABELS.policy,
-      entityLabel: topic,
-      visibility: "guest",
-      canonicalQuestion,
-    });
-    return {
-      propertyId,
-      topic,
-      bodyMd,
-      locale,
-      visibility: "guest",
-      confidenceScore: 1.0,
-      journeyStage: "any",
-      chunkType: "policy",
-      entityType: "policy",
-      entityId: null,
-      canonicalQuestion,
-      contextPrefix: prefix,
-      bm25Text: buildBm25Text(prefix, bodyMd),
-      tokens: approxTokens(prefix + " " + bodyMd),
-      sourceFields,
-      tags: [],
-      contentHash: buildContentHash(prefix, bodyMd),
-      validFrom: null,
-      validTo: null,
-    };
-  };
+  const mkPolicy = (params: Parameters<typeof makePropertyChunk>[4]): ExtractedChunk =>
+    makePropertyChunk(propertyId, locale, name, city, params);
+
+  const tpl = (templateId: string, vars: Record<string, string | null | undefined>) =>
+    renderKnowledgeTemplate("policy", "policy", templateId, locale, vars);
 
   if (pol.smoking) {
     const smokingLabels: Record<string, string> = {
@@ -521,41 +425,36 @@ export async function extractFromPolicies(
       designated_area: "Hay una zona habilitada para fumadores.",
       no_restriction: "No hay restricciones para fumar.",
     };
-    const text = smokingLabels[pol.smoking] ?? `Política de fumadores: ${pol.smoking}.`;
-    chunks.push(mkPolicy("Política de fumadores", "¿Se puede fumar en el alojamiento?", text, ["policiesJson"]));
+    const smokingPolicyText = smokingLabels[pol.smoking] ?? `Política de fumadores: ${pol.smoking}.`;
+    const t = tpl("smoking", { smokingPolicyText });
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
   }
 
   if (pol.pets) {
-    let text: string;
+    let petsPolicyText: string;
     if (!pol.pets.allowed) {
-      text = `No se admiten mascotas en ${name}.`;
+      petsPolicyText = `No se admiten mascotas en ${name}.`;
     } else {
       const types = pol.pets.types?.join(", ") ?? "mascotas";
       const countNote = pol.pets.maxCount ? ` (máximo ${pol.pets.maxCount})` : "";
-      text = `Se admiten ${types}${countNote} en ${name}.`;
-      if (pol.pets.notes) text += ` ${pol.pets.notes}`;
+      petsPolicyText = `Se admiten ${types}${countNote} en ${name}.`;
+      if (pol.pets.notes) petsPolicyText += ` ${pol.pets.notes}`;
     }
-    chunks.push(mkPolicy("Política de mascotas", "¿Se admiten mascotas?", text, ["policiesJson"]));
+    const t = tpl("pets", { petsPolicyText });
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
   }
 
   if (p.maxChildren > 0 || p.infantsAllowed) {
-    const childrenText = p.maxChildren > 0
-      ? `Se admiten niños (máximo ${p.maxChildren}).`
-      : "Se admiten niños.";
-    const infantsText = p.infantsAllowed ? " También se admiten bebés." : "";
-    chunks.push(
-      mkPolicy(
-        "Política sobre niños",
-        "¿Se admiten niños?",
-        childrenText + infantsText,
-        ["policiesJson", "infantsAllowed", "maxChildren"],
-      ),
-    );
+    const base = p.maxChildren > 0 ? `Se admiten niños (máximo ${p.maxChildren}).` : "Se admiten niños.";
+    const childrenPolicyText = base + (p.infantsAllowed ? " También se admiten bebés." : "");
+    const t = tpl("children", { childrenPolicyText });
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
   }
 
   if (pol.quietHours?.enabled && pol.quietHours.from && pol.quietHours.to) {
-    const text = `El horario de silencio en ${name} es de ${pol.quietHours.from} a ${pol.quietHours.to}.`;
-    chunks.push(mkPolicy("Horario de silencio", "¿Hay horario de silencio?", text, ["policiesJson"]));
+    const quietHoursPolicyText = `El horario de silencio en ${name} es de ${pol.quietHours.from} a ${pol.quietHours.to}.`;
+    const t = tpl("quiet_hours", { quietHoursPolicyText });
+    if (t) chunks.push(mkPolicy({ ...t, chunkType: "policy", entityType: "policy", entityId: null }));
   }
 
   return chunks;
@@ -801,7 +700,7 @@ export async function extractFromSpaces(
     const bedSummary =
       space.beds.length > 0
         ? space.beds
-            .map((b) => `${b.quantity}× ${b.bedType}`)
+            .map((b) => `${b.quantity}× ${resolveBedTypeLabel(b.bedType)}`)
             .join(", ")
         : null;
 
@@ -835,7 +734,7 @@ export async function extractFromSpaces(
       contextPrefix: prefix,
       bm25Text: buildBm25Text(prefix, bodyMd),
       tokens: approxTokens(prefix + " " + bodyMd),
-      sourceFields: ["name", "spaceType", "guestNotes", "featuresJson"],
+      sourceFields: ["name", "spaceType", "guestNotes", "beds"],
       tags: [space.spaceType],
       contentHash: buildContentHash(prefix, bodyMd),
       validFrom: null,
@@ -1014,7 +913,9 @@ async function upsertSection(
         ...(entityId !== null ? { entityId } : {}),
       },
     }),
-    prisma.knowledgeItem.createMany({ data: chunks.map(chunkToCreateInput) }),
+    ...(chunks.length > 0
+      ? [prisma.knowledgeItem.createMany({ data: chunks.map(chunkToCreateInput) })]
+      : []),
   ]);
 }
 
@@ -1087,10 +988,11 @@ export async function extractFromPropertyAll(
     ...systemChunks,
   ];
 
-  // Full rebuild: delete all existing items for this property, then insert fresh.
   await prisma.$transaction([
     prisma.knowledgeItem.deleteMany({ where: { propertyId } }),
-    prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) }),
+    ...(all.length > 0
+      ? [prisma.knowledgeItem.createMany({ data: all.map(chunkToCreateInput) })]
+      : []),
   ]);
 
   return { count: all.length };

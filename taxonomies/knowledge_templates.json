@@ -1,6 +1,9 @@
 {
-  "version": "1",
-  "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for invalidation).",
+  "file": "knowledge_templates.json",
+  "version": "2026-04-19",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "note": "Templates for knowledge extraction. Keyed by entityType > chunkType > templateId. bodyTemplate uses {{variable}} interpolation; {{#if field}}...{{/if}} for conditional blocks. sourceFields lists the entity fields that compose this chunk (used for traceability).",
   "templates": {
     "property": {
       "fact": {
@@ -66,7 +69,7 @@
           "es": {
             "topic": "Logística de llegada",
             "canonicalQuestion": "¿Qué debo saber para llegar al alojamiento?",
-            "bodyTemplate": "Llegada a {{propertyName}}: check-in entre las {{checkInStart}} y las {{checkInEnd}}. Check-out antes de las {{checkOutTime}}. {{accessSummary}}",
+            "bodyTemplate": "Llegada a {{propertyName}}: check-in entre las {{checkInStart}} y las {{checkInEnd}}. Check-out antes de las {{checkOutTime}}.{{#if autonomousPart}} {{autonomousPart}}{{/if}}{{#if accessSummary}} {{accessSummary}}{{/if}}",
             "journeyStage": "pre_arrival",
             "sourceFields": ["checkInStart", "checkInEnd", "checkOutTime", "isAutonomousCheckin", "primaryAccessMethod", "accessMethodsJson"]
           }
@@ -158,7 +161,7 @@
             "canonicalQuestion": "¿Qué hay en {{spaceName}}?",
             "bodyTemplate": "{{spaceName}} es un {{spaceTypeLabel}}.{{#if guestNotes}} {{guestNotes}}{{/if}}{{#if bedSummary}} Cuenta con: {{bedSummary}}.{{/if}}",
             "journeyStage": "arrival",
-            "sourceFields": ["name", "spaceType", "guestNotes", "featuresJson"]
+            "sourceFields": ["name", "spaceType", "guestNotes", "beds"]
           }
         }
       }

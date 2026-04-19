@@ -1,5 +1,8 @@
 {
-  "version": "1",
+  "file": "chunk_types.json",
+  "version": "2026-04-19",
+  "locale": "es-ES",
+  "units_system": "metric",
   "items": [
     {
       "id": "fact",
