@@ -54,6 +54,36 @@ composeGuide(propertyId, audience, publicSlug)
 
 `GUIDE_TREE_SCHEMA_VERSION = 3` a partir de 10F. Snapshots pre-v3 se normalizan al servir con log `snapshotPreV3`; no hay rewrite masivo.
 
+### Client search (Rama 10H)
+
+La guía pública expone un buscador *instant*, offline-first, sobre el `GuideTree` guest ya normalizado. No interactúa con el pipeline de retrieval del asistente — son dos capas de descubrimiento con tradeoffs distintos:
+
+| Capa | Implementación | Latencia | Ventaja | Limitación |
+| --- | --- | --- | --- | --- |
+| **10H — Client search** | Fuse.js embebido (`src/components/public-guide/guide-search.tsx`) sobre un index JSON emitido en RSC | p95 <20ms, sin red | Funciona sin conexión, cero round-trip, fuzzy por sinónimos manuales | Sin comprensión semántica, solo label/snippet/keywords |
+| **11F — Semantic search** (pendiente) | RAG sobre `KnowledgeItem` + embeddings | 500–2000ms con red | Responde preguntas en lenguaje natural con síntesis y citations | Requiere red, coste por query |
+
+**Invariante**: el index se construye en server (`src/lib/services/guide-search-index.service.ts`) **después** de `filterByAudience("guest")` + `normalizeGuideForPresentation("guest")`. Cada entry deriva exclusivamente de `displayValue` / `displayFields[].displayValue` — nunca de `value`/`fields` raw. Items con `presentationType === "raw"` se descartan en `filterRenderableItems`. Un hit no puede exponer texto que no haya pasado por el normalizador.
+
+**Shape del index** (`src/lib/types/guide-search-hit.ts`):
+
+- `GuideSearchEntry`: `{ id, anchor, sectionId, sectionLabel, label, snippet, keywords }`. `id` estable (`item-<id>` para top-level, `child-<parentId>-<idx>` para children flatten). `anchor` apunta al `id` del DOM (`item-<id>` o `item-<parentId>--child-<idx>` en `GuideItem`).
+- `GuideSearchIndex`: `{ buildVersion, entries }`. `buildVersion` es un SHA-1 truncado de `propertyId | generatedAt | entries.length | entries[].id.join(",")`; consumido por la PWA de 10I para invalidar cache cuando cambia el contenido.
+- **Dedupe aggregator**: items duplicados entre una sección aggregator (ej. `gs.essentials` hero) y su sección canónica (ej. `gs.amenities`) se colapsan; el anchor del hit apunta siempre a la sección canónica ("anchor goes home, not to hero").
+
+**Fuse options** (congeladas en Fase -1, 2026-04-17, en `src/lib/client/guide-search-index.ts`):
+
+- `threshold: 0.35`, `ignoreDiacritics: true`, `ignoreLocation: true`, `minMatchCharLength: 2`.
+- Weighted keys: `label ×2`, `snippet ×1.5`, `keywords ×1`.
+- `keywords` concatena label + snippet + `guide_sections.json → searchableKeywords[]` (sinónimos manuales por sección: `wifi/wi-fi/internet/contraseña`, `parking/aparcamiento`, etc.).
+
+**UX/A11y**:
+
+- Trigger en el slot del header (`min-height: 44px`, pill), `/` abre, `Escape` cierra, `Enter` navega al primer hit, `ArrowUp/Down` mueven selección. Radix Dialog con focus trap nativo.
+- Combobox + listbox + option ARIA pattern. `aria-activedescendant` en el input para soporte de lectores de pantalla sin mover foco del caret.
+- Zero-result hint con `role="status"` + log `search-miss` (debounce 600ms) vía `src/lib/client/guide-analytics.ts` — shim con surface estable que un futuro wiring GA/PostHog cambia en un solo archivo.
+- Axe-core `serious|critical = 0` enforced por `e2e/guide-search.spec.ts` en los 4 proyectos Playwright (375/768/1280 + iPhone 13). Los tokens del dialog se rebindean sobre `.guide-search__dialog` porque Radix portaliza a `body`, fuera del scope de `.guide-root`.
+
 ### Output formats (Rama 9B)
 
 El `GuideTree` devuelto por `composeGuide(propertyId, audience, publicSlug)` (ver `src/lib/services/guide-rendering.service.ts`) se expone en cuatro formatos vía `GET /api/properties/:id/guide?audience&format`:

@@ -19,7 +19,8 @@
       "quickActionKeys": ["wifi_copy", "call_host", "whatsapp_host", "maps_open", "access_how"],
       "journeyStage": "arrival",
       "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["esencial", "básico", "imprescindible"]
     },
     {
       "id": "gs.arrival",
@@ -32,7 +33,8 @@
       "includesMedia": true,
       "journeyStage": "arrival",
       "emptyCopy": "Aún no hay instrucciones de llegada configuradas. Añade el método de acceso y los detalles de check-in.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["llegar", "entrada", "acceso", "check-in", "checkin", "puerta", "llaves", "código", "cerradura"]
     },
     {
       "id": "gs.spaces",
@@ -45,7 +47,8 @@
       "includesMedia": true,
       "journeyStage": "stay",
       "emptyCopy": "Los espacios de la propiedad no están configurados. Añade dormitorios, baños y zonas comunes.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["habitación", "dormitorio", "baño", "cocina", "salón", "terraza", "jardín"]
     },
     {
       "id": "gs.howto",
@@ -58,7 +61,8 @@
       "includesMedia": false,
       "journeyStage": "stay",
       "emptyCopy": "Añade notas de uso o runbooks en tus amenities o sistemas y aparecerán aquí para orientar al huésped.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["cómo usar", "instrucciones", "manual", "guía", "funciona", "ayuda"]
     },
     {
       "id": "gs.amenities",
@@ -71,7 +75,8 @@
       "includesMedia": true,
       "journeyStage": "stay",
       "emptyCopy": "No has configurado equipamiento todavía. Selecciona los elementos que ofrece tu propiedad.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["wifi", "wi-fi", "internet", "contraseña", "red", "parking", "aparcamiento", "aire acondicionado", "ac", "climatización", "calefacción", "televisión", "tv", "lavadora", "secadora", "microondas", "piscina"]
     },
     {
       "id": "gs.rules",
@@ -84,7 +89,8 @@
       "includesMedia": false,
       "journeyStage": "stay",
       "emptyCopy": "Aún no hay normas configuradas. Indica políticas de ruido, fumar, mascotas y eventos.",
-      "emptyCopyGuest": "No hay normas adicionales destacadas para esta estancia."
+      "emptyCopyGuest": "No hay normas adicionales destacadas para esta estancia.",
+      "searchableKeywords": ["normas", "reglas", "política", "fumar", "tabaco", "mascotas", "ruido", "fiestas", "horario silencio", "eventos"]
     },
     {
       "id": "gs.checkout",
@@ -97,7 +103,8 @@
       "includesMedia": false,
       "journeyStage": "checkout",
       "emptyCopy": "Configura el horario de check-out, políticas de salida y suplementos para que aparezcan aquí.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["salida", "checkout", "check-out", "irse", "devolver llaves", "marcharse", "despedida"]
     },
     {
       "id": "gs.local",
@@ -110,7 +117,8 @@
       "includesMedia": false,
       "journeyStage": "stay",
       "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio.",
-      "hideWhenEmptyForGuest": true
+      "hideWhenEmptyForGuest": true,
+      "searchableKeywords": ["local", "barrio", "cerca", "restaurante", "supermercado", "farmacia", "transporte", "metro", "playa", "ocio"]
     },
     {
       "id": "gs.emergency",
@@ -123,7 +131,8 @@
       "includesMedia": false,
       "journeyStage": "help",
       "emptyCopy": "Añade al menos un contacto de anfitrión y los servicios de emergencia locales para ofrecer apoyo inmediato.",
-      "emptyCopyGuest": "Si necesitas ayuda durante la estancia, contacta con tu anfitrión."
+      "emptyCopyGuest": "Si necesitas ayuda durante la estancia, contacta con tu anfitrión.",
+      "searchableKeywords": ["ayuda", "emergencia", "contacto", "anfitrión", "host", "teléfono", "urgencia", "policía", "bombero", "médico"]
     }
   ]
 }

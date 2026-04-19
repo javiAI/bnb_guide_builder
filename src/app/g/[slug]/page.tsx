@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { filterByAudience } from "@/lib/services/guide-rendering.service";
 import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
+import { buildGuideSearchIndex } from "@/lib/services/guide-search-index.service";
 import {
   GUIDE_TREE_SCHEMA_VERSION,
   type GuideTree,
 } from "@/lib/types/guide-tree";
+import type { GuideSearchIndex } from "@/lib/types/guide-search-hit";
 import { GuideRenderer } from "@/components/public-guide/guide-renderer";
 import { GuideNotAvailable } from "./not-available";
 
@@ -23,6 +25,7 @@ export const revalidate = false;
 const resolveGuide = cache(async (slug: string): Promise<{
   property: { propertyNickname: string } | null;
   tree: GuideTree | null;
+  searchIndex: GuideSearchIndex | null;
 }> => {
   const property = await prisma.property.findUnique({
     where: { publicSlug: slug },
@@ -31,14 +34,14 @@ const resolveGuide = cache(async (slug: string): Promise<{
       propertyNickname: true,
     },
   });
-  if (!property) return { property: null, tree: null };
+  if (!property) return { property: null, tree: null, searchIndex: null };
 
   const published = await prisma.guideVersion.findFirst({
     where: { propertyId: property.id, status: "published" },
     orderBy: { version: "desc" },
     select: { treeJson: true, treeSchemaVersion: true },
   });
-  if (!published?.treeJson) return { property, tree: null };
+  if (!published?.treeJson) return { property, tree: null, searchIndex: null };
 
   // Log once per request when rendering a pre-v3 snapshot. v3 introduced the
   // presentation layer (rama 10F); pre-v3 snapshots may still have raw
@@ -72,8 +75,10 @@ const resolveGuide = cache(async (slug: string): Promise<{
   // (which already carry internal-audience presentation metadata that we
   // now replace with guest-audience metadata).
   const guestTree = normalizeGuideForPresentation(filteredTree, "guest");
+  // Build AFTER normalize so entries derive from `displayValue` / `displayFields`.
+  const searchIndex = buildGuideSearchIndex(guestTree);
 
-  return { property, tree: guestTree };
+  return { property, tree: guestTree, searchIndex };
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -98,11 +103,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicGuidePage({ params }: Props) {
   const { slug } = await params;
-  const { property, tree } = await resolveGuide(slug);
+  const { property, tree, searchIndex } = await resolveGuide(slug);
 
-  if (!property || !tree) {
+  if (!property || !tree || !searchIndex) {
     return <GuideNotAvailable />;
   }
 
-  return <GuideRenderer tree={tree} propertyTitle={property.propertyNickname} />;
+  return (
+    <GuideRenderer
+      tree={tree}
+      propertyTitle={property.propertyNickname}
+      searchIndex={searchIndex}
+    />
+  );
 }

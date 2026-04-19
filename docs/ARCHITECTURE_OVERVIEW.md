@@ -281,6 +281,19 @@ No se considera estable una fase si falta cualquiera de:
   5. Items con `presentationType === "raw"` en `audience=guest` no se renderizan (sentinel de bug + log `missing-presenter`).
 - Schema evolution: `GUIDE_TREE_SCHEMA_VERSION = 2` → `3`. Snapshots pre-v3 se normalizan al servir.
 
+### Client-side search (rama 10H — estable desde 2026-04-19)
+
+Capa de descubrimiento *instant* sobre la guía pública. Coexiste con 11F (semantic retrieval) sin solaparse: 10H responde en p95 <20ms sin red con fuzzy match por sinónimos manuales; 11F responderá preguntas en lenguaje natural con embeddings + citations cuando haya conexión. Ver [KNOWLEDGE_GUIDE_ASSISTANT.md § Client search](FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md) para la tabla comparativa completa.
+
+- **Server builder** (`src/lib/services/guide-search-index.service.ts`): `buildGuideSearchIndex(tree)` se ejecuta **después** de `normalizeGuideForPresentation("guest")` y lee solo el surface de presentación (`displayValue` / `displayFields[].displayValue`). Throw explícito si `tree.audience !== "guest"` — guard contra call-sites miswired.
+- **Shape del index** (`src/lib/types/guide-search-hit.ts`): `{ buildVersion: string, entries: GuideSearchEntry[] }`. Cada entry lleva `id`, `anchor`, `sectionId`, `sectionLabel`, `label`, `snippet` (≤160 chars, ellipsis), `keywords` (label + snippet + `guide_sections.json → searchableKeywords[]`).
+- **Anclas estables**: top-level items → `item-<id>`. Children flatten → `item-<parentId>--child-<idx>`. El DOM id se stampea en `GuideItem.tsx` y tiene que coincidir byte a byte con `entry.anchor` — parity es invariant load-bearing: si divergen, `Enter` hace scroll a ningún sitio.
+- **Dedup aggregator**: items emitidos por secciones `isAggregator: true` (hero) se acumulan en un bucket separado y se mergean al final solo si su `id` no está ya en la sección canónica — preserva "anchor goes home, not to hero".
+- **buildVersion**: SHA-1 truncado a 12 chars de `propertyId | generatedAt | entries.length | entries[].id.join(",")`. Consumido por la PWA de 10I para invalidar caché cuando cambia la snapshot publicada; determinístico para same input.
+- **Client island** (`src/components/public-guide/guide-search.tsx`, `"use client"`): Radix Dialog + Fuse.js v7 (`threshold: 0.35`, `ignoreDiacritics: true`, `minMatchCharLength: 2`, keys `label ×2 / snippet ×1.5 / keywords ×1`). `useDeferredValue` desacopla el redibujo de la lista del tipeo. `/` abre desde cualquier parte (respeta `INPUT/TEXTAREA/SELECT/contentEditable` y modifier keys), `Escape` cierra, `Enter` navega al primer hit (scroll smooth + `history.replaceState`).
+- **A11y**: combobox + listbox + option ARIA, `aria-activedescendant` en el input para lectores sin mover el caret, zero-result hint con `role="status"` + `console.info search-miss` (debounce 600ms, shim estable en `src/lib/client/guide-analytics.ts`). Tokens rebind en `.guide-search__dialog` porque Radix portaliza al `body`, fuera del scope de `.guide-root`. Axe-core `serious|critical = 0` enforced en `e2e/guide-search.spec.ts` a lo largo de los 4 proyectos Playwright.
+- **No interactúa con 11F**: esa rama la consumirá como fallback cuando Fuse devuelva cero hits y haya red. El shim `trackSearchMiss` ya deja la señal lista.
+
 ### AI view
 
 - Consume `KnowledgeItem` filtrado por visibility `guest` o `ai`

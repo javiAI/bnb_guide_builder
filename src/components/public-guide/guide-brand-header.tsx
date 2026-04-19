@@ -1,9 +1,12 @@
+import type { ReactNode } from "react";
+
 interface Props {
   title: string;
   logoUrl?: string | null;
+  children?: ReactNode;
 }
 
-export function GuideBrandHeader({ title, logoUrl }: Props) {
+export function GuideBrandHeader({ title, logoUrl, children }: Props) {
   return (
     <header className="guide-brand-header" role="banner">
       {logoUrl ? (
@@ -26,10 +29,11 @@ export function GuideBrandHeader({ title, logoUrl }: Props) {
           style={{ background: "var(--guide-brand)" }}
         />
       )}
-      <div>
+      <div className="guide-brand-header__titles">
         <h1 className="guide-brand-header__title">{title}</h1>
         <p className="guide-brand-header__subtitle">Guía del huésped</p>
       </div>
+      {children && <div className="guide-brand-header__slot">{children}</div>}
     </header>
   );
 }
