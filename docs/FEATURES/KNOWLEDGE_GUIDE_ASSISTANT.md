@@ -71,6 +71,8 @@ Debe soportar:
 
 **UI**: `LocaleSwitcherClient` navega vía `router.push(pathname?locale=X)` para que el Server Component lea el locale desde `searchParams`. Tabs con dot de estado (naranja=missing, verde=present). Banner de warning cuando `nonDefaultMissing.length > 0`. Formulario "Añadir item" solo visible en `defaultLocale`.
 
+**Creación de items manuales**: `createKnowledgeItemAction` lee `property.defaultLocale` desde la DB y lo persiste explícitamente en el nuevo `KnowledgeItem.locale`. **No se confía en el default de columna** (`@default("es")`) — si el host tiene la property en `en`, un item manual creado en la UI aterriza en `en`. Ningún valor de `locale` enviado por el cliente es honrado: el servidor es la autoridad. El formulario (`CreateKnowledgeItemForm`) solo aparece cuando `activeLocale === defaultLocale`, pero la regla dura vive en el action.
+
 **Limitación MVP**: `invalidateKnowledgeInBackground` solo re-extrae el `defaultLocale`; los locales no-default se vuelven stale si el host edita la propiedad sin regenerar manualmente (acción explícita con botón "Generar" en la pestaña del locale).
 
 - Mutaciones de propiedad/access/policies → `invalidateKnowledgeInBackground(propertyId, entityType, null)` (borra y re-extrae todos los chunks del entityType)

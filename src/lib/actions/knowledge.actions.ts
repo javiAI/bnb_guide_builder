@@ -37,9 +37,21 @@ export async function createKnowledgeItemAction(
     return { success: false, error: "Los items de conocimiento no pueden tener visibilidad 'sensible'." };
   }
 
+  // Manual items are always created in the property's defaultLocale (server-
+  // authoritative). Do not rely on the DB column default — that would silently
+  // write "es" when the property is configured in another locale.
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { defaultLocale: true },
+  });
+  if (!property) {
+    return { success: false, error: "Propiedad no encontrada" };
+  }
+
   await prisma.knowledgeItem.create({
     data: {
       ...result.data,
+      locale: property.defaultLocale,
       visibility: result.data.visibility ?? "guest",
       property: { connect: { id: propertyId } },
     },
