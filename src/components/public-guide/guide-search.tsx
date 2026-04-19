@@ -53,15 +53,18 @@ export function GuideSearch({ index }: Props) {
       .map((r) => ({ entry: r.item, score: r.score ?? 1 }));
   }, [deferredQuery, fuse]);
 
+  const minQueryLength = FUSE_OPTIONS.minMatchCharLength ?? 1;
+
   // Debounced miss-tracking. Fires once per "stable" zero-result query so
-  // we don't report every keystroke of a typo in progress.
+  // we don't report every keystroke of a typo in progress. Below the min
+  // length Fuse can't even run — don't log those as misses.
   useEffect(() => {
     if (!open) return;
     const q = deferredQuery.trim();
-    if (!q || results.length > 0) return;
+    if (q.length < minQueryLength || results.length > 0) return;
     const handle = setTimeout(() => trackSearchMiss(q), MISS_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [open, deferredQuery, results.length]);
+  }, [open, deferredQuery, results.length, minQueryLength]);
 
   // `/` anywhere on the page opens search — but never when the user is
   // already typing in a form control, otherwise we'd steal focus from
@@ -74,7 +77,7 @@ export function GuideSearch({ index }: Props) {
       const target = e.target as HTMLElement | null;
       if (isEditableTarget(target)) return;
       e.preventDefault();
-      setOpen(true);
+      setOpen((prev) => (prev ? prev : true));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -98,9 +101,8 @@ export function GuideSearch({ index }: Props) {
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-      // Keep the URL in sync so the browser back-button returns to the
-      // pre-search scroll position. `history.replaceState` avoids adding
-      // a history entry per hit selection.
+      // `replaceState` (not `pushState`) so repeated hits don't pollute
+      // history with one entry per selection.
       window.history.replaceState(null, "", `#${entry.anchor}`);
       setOpen(false);
     },
@@ -183,7 +185,7 @@ export function GuideSearch({ index }: Props) {
             />
           </div>
           <div className="guide-search__results-wrap">
-            {query.trim().length === 0 ? null : results.length === 0 ? (
+            {query.trim().length < minQueryLength ? null : results.length === 0 ? (
               <p className="guide-search__empty" role="status">
                 {ZERO_HINT}
               </p>

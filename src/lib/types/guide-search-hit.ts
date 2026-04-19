@@ -9,11 +9,13 @@
 
 export interface GuideSearchEntry {
   /** Stable id — `item-<id>` for top-level items, `child-<parentId>-<idx>`
-   * for flattened children. Matches the `data-search-anchor` attribute
-   * that the renderer stamps on the DOM for scroll-to. */
+   * for flattened children. Used as the React key and as the dedupe key
+   * when an aggregator section (hero) mirrors an item that also lives in
+   * its canonical section. Distinct from `anchor` — see below. */
   id: string;
-  /** DOM anchor target. For top-level items this is `item-<id>`; for
-   * flattened children it's the parent's item anchor plus a suffix. */
+  /** DOM id the client island passes to `document.getElementById()` to
+   * scroll-to. Top-level → `item-<id>`; flattened children →
+   * `item-<parentId>--child-<idx>` (matches what `GuideItem` stamps). */
   anchor: string;
   /** Section id the entry resolves against for scrollspy context. */
   sectionId: string;
@@ -21,8 +23,8 @@ export interface GuideSearchEntry {
   sectionLabel: string;
   /** Item label (already humanized by the presentation layer). */
   label: string;
-  /** Humanized value or concatenation of `displayFields[].value`, already
-   * trimmed/truncated for snippet display. */
+  /** Humanized value or concatenation of `displayFields[].displayValue`,
+   * trimmed per-field and truncated to `SNIPPET_MAX_LENGTH` with ellipsis. */
   snippet: string;
   /** Flat corpus Fuse searches against — combines label + snippet +
    * section keywords. Kept as a single string to keep the index compact

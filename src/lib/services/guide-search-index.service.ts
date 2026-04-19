@@ -97,7 +97,7 @@ function buildEntry(
   if (!label) return null;
   const displayValue = resolveDisplayValue(item) ?? "";
   const fieldValues = resolveDisplayFields(item)
-    .map((f) => f.value)
+    .map((f) => f.value.trim())
     .filter((v) => v.length > 0);
   const snippet = buildSnippet(displayValue, fieldValues);
   return {
@@ -140,9 +140,14 @@ function computeBuildVersion(
   tree: GuideTree,
   entries: readonly GuideSearchEntry[],
 ): string {
-  const seed = `${tree.propertyId}|${tree.generatedAt}|${entries.length}|${entries
-    .map((e) => e.id)
-    .join(",")}`;
-  return createHash("sha1").update(seed).digest("hex").slice(0, 12);
+  // Hash must turn over when content changes, not only when id set changes —
+  // otherwise 10I's PWA keeps a stale index whenever a label/snippet/keyword
+  // edit leaves ids intact.
+  const hash = createHash("sha1");
+  hash.update(`${tree.propertyId}|${tree.generatedAt}|${entries.length}`);
+  for (const e of entries) {
+    hash.update(`\x1f${e.id}\x1f${e.label}\x1f${e.snippet}\x1f${e.keywords}`);
+  }
+  return hash.digest("hex").slice(0, 12);
 }
 
