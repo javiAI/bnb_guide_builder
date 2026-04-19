@@ -68,7 +68,7 @@ La guía pública expone un buscador *instant*, offline-first, sobre el `GuideTr
 **Shape del index** (`src/lib/types/guide-search-hit.ts`):
 
 - `GuideSearchEntry`: `{ id, anchor, sectionId, sectionLabel, label, snippet, keywords }`. `id` estable (`item-<id>` para top-level, `child-<parentId>-<idx>` para children flatten). `anchor` apunta al `id` del DOM (`item-<id>` o `item-<parentId>--child-<idx>` en `GuideItem`).
-- `GuideSearchIndex`: `{ buildVersion, entries }`. `buildVersion` es un SHA-1 truncado de `propertyId | generatedAt | entries.length | entries[].id.join(",")`; consumido por la PWA de 10I para invalidar cache cuando cambia el contenido.
+- `GuideSearchIndex`: `{ buildVersion, entries }`. `buildVersion` es un SHA-1 truncado a 12 chars sobre `propertyId | generatedAt | entries.length` + cada entry serializada como `id | label | snippet | keywords` — el contenido entra en el hash, no solo los ids, para que 10I invalide cuando un label/snippet/keyword cambia aunque los ids se mantengan.
 - **Dedupe aggregator**: items duplicados entre una sección aggregator (ej. `gs.essentials` hero) y su sección canónica (ej. `gs.amenities`) se colapsan; el anchor del hit apunta siempre a la sección canónica ("anchor goes home, not to hero").
 
 **Fuse options** (congeladas en Fase -1, 2026-04-17, en `src/lib/client/guide-search-index.ts`):
