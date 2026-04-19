@@ -53,11 +53,13 @@ function writeState(slug: string, state: NudgeState): void {
 function isIosSafari(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua);
+  const isIosDevice = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ in "desktop-class browsing" reports Macintosh UA but has touch.
+  const isIpadOsDesktop = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
   // Chrome on iOS reports "CriOS"; Edge on iOS reports "EdgiOS"; we want
   // only Mobile Safari (which lacks `beforeinstallprompt`).
   const isStandaloneSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return isIos && isStandaloneSafari;
+  return (isIosDevice || isIpadOsDesktop) && isStandaloneSafari;
 }
 
 function isStandaloneInstalled(): boolean {
@@ -104,9 +106,14 @@ export function InstallNudge({ slug }: { slug: string }) {
       promptEventRef.current = null;
       return;
     }
-    // No native prompt available → assume iOS, show instructions.
-    setIosInstructionsOpen(true);
-  }, [slug, persistDismiss]);
+    // No native prompt: show A2HS instructions only on iOS/iPadOS Safari;
+    // other browsers without beforeinstallprompt can't install — dismiss.
+    if (isIosSafari()) {
+      setIosInstructionsOpen(true);
+    } else {
+      handleDismiss();
+    }
+  }, [slug, persistDismiss, handleDismiss]);
 
   // Mount: bump visit count, evaluate threshold, accumulate time.
   useEffect(() => {

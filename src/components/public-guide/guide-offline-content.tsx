@@ -6,8 +6,8 @@ export function GuideOfflineContent() {
           Sin conexión
         </h1>
         <p className="mt-3 text-sm text-[var(--color-neutral-500)]">
-          Estás sin conexión. Las secciones esenciales de la guía (llegada,
-          check-out y emergencias) están disponibles aunque no tengas red.
+          Estás sin conexión. Las secciones esenciales de la guía (Wi-Fi,
+          llegada, check-out y emergencias) están disponibles aunque no tengas red.
         </p>
       </div>
     </div>
