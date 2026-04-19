@@ -84,6 +84,40 @@ La guía pública expone un buscador *instant*, offline-first, sobre el `GuideTr
 - Zero-result hint con `role="status"` + log `search-miss` (debounce 600ms) vía `src/lib/client/guide-analytics.ts` — shim con surface estable que un futuro wiring GA/PostHog cambia en un solo archivo.
 - Axe-core `serious|critical = 0` enforced por `e2e/guide-search.spec.ts` en los 4 proyectos Playwright (375/768/1280 + iPhone 13). Los tokens del dialog se rebindean sobre `.guide-search__dialog` porque Radix portaliza a `body`, fuera del scope de `.guide-root`.
 
+### Offline strategy (Rama 10I)
+
+La guía pública se sirve como PWA instalable con caché offline en tres tiers. La capa es **transparente al modelo de render**: lo que el huésped ve online y offline es exactamente lo mismo (composeGuide → filterByAudience → normalize → render). El SW no transforma — solo replays.
+
+**Tiers (declarados en `taxonomies/guide_sections.json` vía `offlineCacheTier`)**:
+
+| Tier | Secciones | Estrategia | Disponibilidad offline |
+|---|---|---|---|
+| 1 — esenciales | `gs.essentials`, `gs.arrival`, `gs.checkout`, `gs.emergency` | Precache en `install` (HTML root + `/offline` + manifest) + SWR para HTML + cache-first para Next static/iconos/manifest | Garantizada offline |
+| 2 — media thumbs | thumbnails de `/g/<slug>/media/.../thumb` | SWR con cap (`TIER2_MAX_ENTRIES = 12`); LRU eviction al insertar la 13 | Best-effort: thumbs vistas recientemente |
+| 3 — media md/full | resoluciones grandes | Network-first con timeout 2s; fallback al cache si existe | No es objetivo offline |
+
+**Versionado**: el SW lleva `__SW_VERSION__` = `GuideSearchIndex.buildVersion` (rama 10H). Mismo hash determinístico = mismo SW byte-a-byte; cualquier cambio en label/snippet/keyword/id flipea el hash y el browser dispara `update`. `Cache-Control: no-cache` en el route handler garantiza el refetch en cada navegación. Rollback/unpublish reemiten el SW con el hash anterior.
+
+**Aislamiento per-slug**: `src/app/g/[slug]/sw.js/route.ts` sirve un SW dinámico con scope `/g/<slug>/`. No hay `public/sw.js` global (riesgo de scope `/`). Cache names llevan el slug en namespace (`guide-<slug>-tier{1,2,3}-<version>`), así dos guías instaladas en el mismo origen no se contaminan.
+
+**Manifest dinámico**: `src/app/g/[slug]/manifest.webmanifest/route.ts` resuelve `propertyNickname` + `brandPaletteKey` y delega en `buildGuidePwaManifest()`. `theme_color` = `getBrandPair(brandPaletteKey).light`. iOS captura el `theme_color` al instalar; un cambio posterior solo se refleja al re-instalar (importante para Liora — replatform de paleta requiere comunicación a hosts con guías ya instaladas).
+
+**Install nudge** (`src/components/public-guide/install-nudge.tsx`): aparece tras `visits >= 2` o `cumulativeMs >= 90s`. Chromium/Edge/Android usan `beforeinstallprompt`. iOS Safari (sin evento) abre panel manual con instrucciones del share sheet. `localStorage` per-slug (`guide-install-nudge:<slug>`) silencia el nudge tras `dismissedAt` o `installedAt`. Componente y CSS están intencionalmente neutros — el comportamiento es load-bearing y no se renegocia en Liora; el skin se reescribe sobre los selectors `guide-install-nudge*` ya enumerados en `guide.css`.
+
+**Offline page** (`src/app/g/[slug]/offline/page.tsx`): shell estático precached al install, devuelto por `handleNavigation()` cuando red + cache fallan.
+
+**Tests**: 5 invariantes en vitest (manifest shape, SW template substitution, precache asset existence, sección coverage de tier, install nudge threshold/persistencia) + 1 spec E2E fuerte (`e2e/guide-pwa-offline.spec.ts`) que cubre HTTP de manifest/sw/offline + DOM del nudge + axe-core sobre el nudge montado. SW lifecycle real (install/fetch/offline replay) deliberadamente no se testea en headless — flake típico; las unit tests cubren la fuente del template y los handlers.
+
+**Comparativa con 10H (client search) y 11F (semantic retrieval futuro)**:
+
+| Capa | Cobertura offline | Latencia | Trigger |
+|---|---|---|---|
+| 10H — fuzzy search | Total — el index entero embebe el snapshot | <20ms p95, todo client-side | `/` o tap en el botón de búsqueda |
+| 10I — PWA shell + media | Tier 1 garantizado, tier 2 best-effort, tier 3 nunca | 0ms del SW (cache hit), red en background | Navegación dentro del scope `/g/<slug>/` |
+| 11F — semantic retrieval (futuro) | **Solo online** — embeddings + LLM requieren red | Variable, depende del modelo | Miss en 10H + red disponible |
+
+10I no asume 11F y viceversa. 10H y 10I se reforzaron mutuamente: el `buildVersion` del index actúa de cache-key para el SW.
+
 ### Output formats (Rama 9B)
 
 El `GuideTree` devuelto por `composeGuide(propertyId, audience, publicSlug)` (ver `src/lib/services/guide-rendering.service.ts`) se expone en cuatro formatos vía `GET /api/properties/:id/guide?audience&format`:

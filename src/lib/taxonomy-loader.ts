@@ -248,6 +248,7 @@ const GuideSectionConfigSchema = z
     resolverKey: z.enum(GUIDE_RESOLVER_KEYS),
     emptyCtaDeepLink: z.string().min(1).nullable(),
     includesMedia: z.boolean(),
+    offlineCacheTier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     journeyStage: z.enum(GUIDE_JOURNEY_STAGES).optional(),
     isHero: z.boolean().optional(),
     isAggregator: z.boolean().optional(),
