@@ -375,8 +375,7 @@ export async function createSpaceAction(
     };
   }
 
-  let createdSpaceId: string;
-  await prisma.$transaction(async (tx) => {
+  const createdSpaceId = await prisma.$transaction(async (tx) => {
     const created = await tx.space.create({
       data: {
         ...result.data,
@@ -385,11 +384,11 @@ export async function createSpaceAction(
       select: { id: true },
     });
     await recomputePropertyCounts(tx, propertyId);
-    createdSpaceId = created.id;
+    return created.id;
   });
 
   recomputeAllInBackground(propertyId);
-  invalidateKnowledgeInBackground(propertyId, "space", createdSpaceId!);
+  invalidateKnowledgeInBackground(propertyId, "space", createdSpaceId);
   revalidatePath(`/properties/${propertyId}/spaces`);
   return { success: true };
 }

@@ -21,7 +21,7 @@ function allowedVisibilitiesFor(audience: AssistantAudience): VisibilityLevel[] 
 export interface RetrievalOptions {
   propertyId: string;
   question: string;
-  language: string;
+  locale: string;
   audience: AssistantAudience;
   journeyStage?: string;
 }
@@ -41,10 +41,10 @@ export async function retrieveCandidates(
 ): Promise<RetrievalCandidate[]> {
   const allowedVisibilities = allowedVisibilitiesFor(opts.audience);
 
-  // Step 1-2: DB query with visibility and language filters
+  // Step 1-2: DB query with visibility and locale filters
   const where: Record<string, unknown> = {
     propertyId: opts.propertyId,
-    language: opts.language,
+    locale: opts.locale,
     visibility: { in: allowedVisibilities },
   };
 

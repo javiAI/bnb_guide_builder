@@ -54,7 +54,7 @@ export async function POST(
   const result = await buildAnswer({
     propertyId,
     question,
-    language,
+    locale: language,
     audience,
     journeyStage,
   });

@@ -200,11 +200,26 @@ describe("Sensitive items — never in extracted output", () => {
 
 describe("Access extractor — no secrets in guest chunks", () => {
   it("access bodyMd does not contain customDesc from accessMethodsJson", async () => {
-    // The mock doesn't set customDesc, but verify that even if it were set,
-    // the taxonomy-based label path doesn't include it.
+    // baseProperty mock now includes a customDesc that looks like a secret code.
+    // The extractor must exclude it — only taxonomy labels and customLabel are allowed.
+    const prismaMock = vi.mocked(
+      (await import("@/lib/db")).prisma as unknown as {
+        property: { findUniqueOrThrow: ReturnType<typeof vi.fn> };
+      },
+    );
+    prismaMock.property.findUniqueOrThrow.mockResolvedValueOnce({
+      ...baseProperty,
+      accessMethodsJson: {
+        unit: {
+          methods: ["am.lockbox"],
+          customLabel: "Caja Azul",
+          customDesc: "PIN_SECRETO_1234",
+        },
+      },
+    });
     const chunks = await extractFromAccess("prop_1");
     for (const c of chunks) {
-      // bodyMd should describe the access method label, not free text codes
+      expect(c.bodyMd).not.toContain("PIN_SECRETO_1234");
       expect(c.entityType).toBe("access");
       expect(c.visibility).toBe("guest");
     }
