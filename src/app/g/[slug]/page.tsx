@@ -1,9 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
-import { filterByAudience } from "@/lib/services/guide-rendering.service";
-import { normalizeGuideForPresentation } from "@/lib/services/guide-presentation.service";
-import { buildGuideSearchIndex } from "@/lib/services/guide-search-index.service";
+import { buildGuestPresentationLayer } from "@/lib/services/guest-presentation-pipeline";
 import {
   GUIDE_TREE_SCHEMA_VERSION,
   type GuideTree,
@@ -55,28 +53,9 @@ const resolveGuide = cache(async (slug: string): Promise<{
     );
   }
 
-  const fullTree = published.treeJson as unknown as GuideTree;
-
-  // CRITICAL: re-filter to guest audience — stored tree has audience=internal
-  const guestSections = fullTree.sections.map((section) => ({
-    ...section,
-    emptyCtaDeepLink: null, // Never expose host-panel links
-    items: filterByAudience(section.items, "guest"),
-  }));
-
-  const filteredTree: GuideTree = {
-    ...fullTree,
-    audience: "guest",
-    sections: guestSections,
-  };
-
-  // Terminal presentation layer — idempotent, so running it here covers both
-  // pre-v3 snapshots (which lack display fields) and v3 snapshots
-  // (which already carry internal-audience presentation metadata that we
-  // now replace with guest-audience metadata).
-  const guestTree = normalizeGuideForPresentation(filteredTree, "guest");
-  // Build AFTER normalize so entries derive from `displayValue` / `displayFields`.
-  const searchIndex = buildGuideSearchIndex(guestTree);
+  const { guestTree, searchIndex } = buildGuestPresentationLayer(
+    published.treeJson as unknown as GuideTree,
+  );
 
   return { property, tree: guestTree, searchIndex };
 });

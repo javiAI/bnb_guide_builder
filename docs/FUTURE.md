@@ -161,3 +161,35 @@ Las reglas anti-legacy que protegen la frontera del replatform ya están vigente
 **Trigger**: coste de R2 + bandwidth crece visiblemente con fotos HD subidas directamente.
 
 Sharp (server-side) o Cloudflare Image Resizing. Genera variantes `thumb | medium | full` al confirmar upload. El media proxy de 10D ya contempla el parámetro `:variant`, por lo que el front-end no cambia cuando se active esto.
+
+
+---
+
+## 13. Service worker lifecycle E2E tests
+
+**Estado**: diferido. Decisión tomada en kickoff de Rama 10I: no se testea en headless por flake típico.
+**Trigger para activar**: CI en prod tiene flake rate < 2% en tests de network interception, o el equipo identifica un regression de lifecycle que los unit tests no atraparon.
+
+### Por qué se diferió
+
+El SW lifecycle (install → activate → fetch intercept → offline replay → version invalidation) es difícil de testear de forma fiable en headless Chromium. Playwright puede controlar Service Workers vía `context.serviceWorkers()`, pero:
+
+- La secuencia install → activate → claim puede tardar más que el timeout razonable.
+- Dos navegaciones consecutivas a la misma URL bajo SW scope causan `net::ERR_FAILED` en headless WebKit.
+- La invalidación real (vieja cache eviccionada, nueva precacheada) requiere múltiples reloads en la misma pestaña, lo que interacciona con `skipWaiting` de formas que varían entre engines.
+
+Los unit tests (`guide-sw-template.test.ts`, `guide-sw-precache-manifest.test.ts`, `guide-sections-cache-tier.test.ts`) cubren el template source y la lógica declarativa. Los E2E actuales validan HTTP seams (manifest/sw endpoints) + DOM (nudge) + axe.
+
+### Qué cubriría cuando se active
+
+1. **Offline replay**: navegar a `/g/e2e/rich/`, esperar SW active, desconectar network, navegar de nuevo → tier-1 sections visibles desde cache.
+2. **Invalidación de versión**: registrar SW con versión A, publicar versión B (diferente `buildVersion`), navegar → browser detecta SW body distinto → update flow completa → caches de versión A eliminadas.
+3. **Offline shell fallback**: intentar navegar a ruta no cacheada offline → `handleNavigation()` devuelve `/offline`.
+
+### Implementación sugerida
+
+- Chromium-only (webkit excluido): `playwright.config.ts` con proyecto `chromium-sw-lifecycle`.
+- `page.context().serviceWorkers()` + `.waitForEvent("serviceworker")` para esperar install.
+- `context.setOffline(true)` para simular desconexión.
+- Un fixture E2E con `buildVersion` controlado (o dos slugs de fixture con trees distintos) para probar invalidación.
+- Separar en archivo propio (`e2e/guide-sw-lifecycle.spec.ts`) y marcar `testInfo.skip()` si `process.env.CI_SW_LIFECYCLE !== "1"` para no bloquear el pipeline principal.
