@@ -11,10 +11,12 @@
 //   anchor field (checkIn / checkOut / bookingConfirmed) + the trigger offset, in
 //   the property's timezone. Stored UTC.
 // - Safety gate (`sensitive_prearrival`): if the resolved body depends on a variable
-//   with `sendPolicy = "sensitive_prearrival"`, the draft only materializes when
-//   `scheduledSendAt` is before the check-in moment of the reservation. Templates
-//   using `internal_only` variables are blocked at automation *creation* time
-//   (never reach this service) — so we do not re-check here.
+//   with `sendPolicy = "sensitive_prearrival"`, the draft only materializes inside
+//   the allowed pre-arrival window `[checkIn − SENSITIVE_PREARRIVAL_MAX_LEAD_MS,
+//   checkIn)`. Sending *after* arrival is blocked (defeats the point) AND sending
+//   too early is blocked (e.g. a wifi_password rendered 14 days before arrival
+//   shouldn't end up materialized by accident). Templates using `internal_only`
+//   variables are blocked at automation *creation* time — we do not re-check here.
 // - Cancel cascade: when a reservation is cancelled, any draft in `pending_review`
 //   or `approved` transitions to `cancelled`. `sent / skipped / error` untouched.
 // - Reservation edits: only `pending_review` drafts are re-scheduled in-place. Any
@@ -54,8 +56,19 @@ export const RESERVATION_STATUSES = [
 ] as const;
 export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
 
+/** Maximum lead time allowed for `sensitive_prearrival` content (wifi password,
+ * access instructions, etc). Drafts whose `scheduledSendAt` lands more than
+ * this many hours before the check-in instant are blocked — we don't want
+ * access secrets sitting in a guest's inbox for two weeks before they arrive.
+ * 48h is the hospitality norm (send the day before or morning-of). */
+export const SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS = 48;
+const SENSITIVE_PREARRIVAL_MAX_LEAD_MS =
+  SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS * 60 * 60 * 1000;
+
 export interface MaterializationOutcome {
-  automationId: string;
+  /** `null` when the outcome is a reservation-wide event (cancellation cascade)
+   * rather than a per-automation result. */
+  automationId: string | null;
   reservationId: string;
   /** Set when a row was upserted. */
   draftId: string | null;
@@ -104,15 +117,30 @@ export async function materializeDraftsForReservation(
   if (!reservation) return [];
 
   if (reservation.status === "cancelled") {
-    await cancelDraftsForReservation(reservationId, { client: db });
-    return [
-      {
-        automationId: "",
+    const affected = await db.messageDraft.findMany({
+      where: {
         reservationId,
-        draftId: null,
-        outcome: "blocked_reservation_cancelled",
+        status: { in: ["pending_review", "approved"] satisfies DraftStatus[] },
       },
-    ];
+      select: { id: true, automationId: true },
+    });
+    await cancelDraftsForReservation(reservationId, { client: db });
+    if (affected.length === 0) {
+      return [
+        {
+          automationId: null,
+          reservationId,
+          draftId: null,
+          outcome: "blocked_reservation_cancelled",
+        },
+      ];
+    }
+    return affected.map((draft) => ({
+      automationId: draft.automationId,
+      reservationId,
+      draftId: draft.id,
+      outcome: "blocked_reservation_cancelled" as const,
+    }));
   }
 
   const property = await db.property.findUnique({
@@ -225,23 +253,26 @@ async function materializeSingleDraft(
     { reservation: reservationCtx },
   );
 
-  // Safety: sensitive_prearrival tokens may only materialize when
-  // scheduledSendAt is strictly before the check-in instant.
+  // Safety: sensitive_prearrival tokens only materialize inside the
+  // `[checkIn − SENSITIVE_PREARRIVAL_MAX_LEAD_MS, checkIn)` window. Both
+  // sides matter: after arrival the data is stale, before the window it
+  // leaks sensitive content (e.g. wifi_password weeks early).
   const checkInInstant = zonedDateToInstant({
     date: reservation.checkInDate,
     time: property.checkInStart ?? "16:00",
     timezone: property.timezone ?? "UTC",
   });
-  if (
-    checkInInstant &&
-    scheduledSendAt >= checkInInstant &&
-    bodyUsesSensitivePrearrival(automation.template.bodyMd)
-  ) {
-    return {
-      ...base,
-      draftId: null,
-      outcome: "blocked_sensitive_prearrival",
-    };
+  if (checkInInstant && bodyUsesSensitivePrearrival(automation.template.bodyMd)) {
+    const earliestAllowed = new Date(
+      checkInInstant.getTime() - SENSITIVE_PREARRIVAL_MAX_LEAD_MS,
+    );
+    if (scheduledSendAt >= checkInInstant || scheduledSendAt < earliestAllowed) {
+      return {
+        ...base,
+        draftId: null,
+        outcome: "blocked_sensitive_prearrival",
+      };
+    }
   }
 
   const resolutionStatesJson = buildResolutionStatesJson(resolution.states);
@@ -478,8 +509,11 @@ export async function transitionDraftAction(
   }
   const newStatus = transition.to;
   const now = new Date().toISOString();
-  await db.messageDraft.update({
-    where: { id: draftId },
+  // Conditional update — fails if a concurrent caller already moved the draft
+  // out of `transition.from`. Avoids double-applied transitions + duplicate
+  // lifecycle events under concurrency (cron + human clicking approve).
+  const result = await db.messageDraft.updateMany({
+    where: { id: draftId, status: { in: [...transition.from] } },
     data: {
       status: newStatus,
       lifecycleHistoryJson: appendLifecycle(draft.lifecycleHistoryJson, {
@@ -491,6 +525,9 @@ export async function transitionDraftAction(
       }),
     },
   });
+  if (result.count === 0) {
+    return { ok: false, reason: `illegal_transition_concurrent` };
+  }
   return { ok: true, newStatus };
 }
 
@@ -510,8 +547,10 @@ export async function editDraftBody(
   }
   if (draft.bodyMd === newBodyMd) return { ok: true };
   const now = new Date().toISOString();
-  await db.messageDraft.update({
-    where: { id: draftId },
+  // Conditional update — rejects if the draft was approved/skipped/cancelled
+  // between our read and this write.
+  const result = await db.messageDraft.updateMany({
+    where: { id: draftId, status: "pending_review" },
     data: {
       bodyMd: newBodyMd,
       lifecycleHistoryJson: appendLifecycle(draft.lifecycleHistoryJson, {
@@ -523,6 +562,9 @@ export async function editDraftBody(
       }),
     },
   });
+  if (result.count === 0) {
+    return { ok: false, reason: `illegal_edit_concurrent` };
+  }
   return { ok: true };
 }
 

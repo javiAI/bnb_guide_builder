@@ -93,13 +93,15 @@ export async function updateReservationAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  const localePresent = formData.has("locale");
+  const rawLocale = str(formData.get("locale")).trim();
   const raw = {
     reservationId: str(formData.get("reservationId")),
     guestName: str(formData.get("guestName")).trim() || undefined,
     checkInDate: str(formData.get("checkInDate")) || undefined,
     checkOutDate: str(formData.get("checkOutDate")) || undefined,
     numGuests: formData.get("numGuests") ? num(formData.get("numGuests")) : undefined,
-    locale: str(formData.get("locale")).trim() || undefined,
+    locale: rawLocale || undefined,
   };
 
   const parsed = updateReservationSchema.safeParse(raw);
@@ -120,6 +122,14 @@ export async function updateReservationAction(
     return { success: false, error: "No se puede editar una reserva cancelada" };
   }
 
+  // locale: distinguish "field absent" (leave alone) from "field present but
+  // blank" (explicit clear → null). The Zod schema collapses "" → undefined
+  // so we can't rely on it here.
+  const localeUpdate =
+    localePresent && rawLocale === ""
+      ? null
+      : (data.locale ?? undefined);
+
   await prisma.reservation.update({
     where: { id: data.reservationId },
     data: {
@@ -127,7 +137,7 @@ export async function updateReservationAction(
       checkInDate: data.checkInDate ? parseIsoDate(data.checkInDate) : undefined,
       checkOutDate: data.checkOutDate ? parseIsoDate(data.checkOutDate) : undefined,
       numGuests: data.numGuests,
-      locale: data.locale ?? undefined,
+      locale: localeUpdate,
     },
   });
 

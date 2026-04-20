@@ -11,6 +11,7 @@ import {
 import type { ActionResult } from "@/lib/types/action-result";
 import { Badge } from "@/components/ui/badge";
 import { findMessagingTrigger } from "@/lib/taxonomy-loader";
+import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import type { DraftStatus } from "@/lib/services/messaging-automation.service";
 
 interface DraftCardData {
@@ -113,7 +114,9 @@ export function DraftCard({ propertyId, draft }: DraftCardProps) {
   >(discardDraftAction, null);
 
   const trigger = draft.automation
-    ? findMessagingTrigger(draft.automation.triggerType)
+    ? findMessagingTrigger(
+        normaliseTriggerType(draft.automation.triggerType) ?? draft.automation.triggerType,
+      )
     : null;
 
   const canMutate = draft.status === "pending_review";

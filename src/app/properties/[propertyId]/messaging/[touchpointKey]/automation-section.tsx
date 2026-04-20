@@ -6,6 +6,7 @@ import {
   createMessageAutomationAction,
   deleteMessageAutomationAction,
 } from "@/lib/actions/messaging.actions";
+import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import type { ActionResult } from "@/lib/types/action-result";
 import {
   automationChannels,
@@ -259,7 +260,7 @@ function AutomationRow({
           />
         </div>
         <p className="mt-0.5 text-xs text-[var(--color-neutral-400)]">
-          {findMessagingTrigger(automation.triggerType)?.label ?? automation.triggerType} ·{" "}
+          {findMessagingTrigger(normaliseTriggerType(automation.triggerType) ?? automation.triggerType)?.label ?? automation.triggerType} ·{" "}
           {formatOffset(automation.sendOffsetMinutes)}
         </p>
       </div>

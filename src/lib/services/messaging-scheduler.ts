@@ -40,17 +40,28 @@ export async function runTick(
 ): Promise<TickReport> {
   const lookaheadDays = options.lookaheadDays ?? DEFAULT_LOOKAHEAD_DAYS;
   const lookaheadEnd = new Date(now.getTime() + lookaheadDays * 86400 * 1000);
+  // `checkInDate` / `checkOutDate` are `@db.Date` (date-only, stored as UTC
+  // midnight). Comparing them against a mid-day `now` would exclude a
+  // reservation checking out *today* as soon as `now > 00:00`. Anchor the
+  // comparison at the start of today (UTC) so day-of-checkout stays in scope.
+  const startOfTodayUtc = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+    ),
+  );
 
   // 1. Materialize — any future or currently in-window reservation.
   const reservations = await prisma.reservation.findMany({
     where: {
       status: "confirmed",
-      // Any reservation whose check-out is still ahead OR whose check-in is
+      // Any reservation whose check-out is today or later OR whose check-in is
       // within lookahead. Belts + suspenders: also include freshly created
       // reservations (bookingConfirmed trigger fires near createdAt).
       OR: [
-        { checkOutDate: { gte: now } },
-        { checkInDate: { gte: now, lte: lookaheadEnd } },
+        { checkOutDate: { gte: startOfTodayUtc } },
+        { checkInDate: { gte: startOfTodayUtc, lte: lookaheadEnd } },
         { createdAt: { gte: new Date(now.getTime() - 86400 * 1000) } },
       ],
     },

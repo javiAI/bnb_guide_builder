@@ -380,28 +380,37 @@ const resolveDerived: Resolver = (item, ctx) => {
 
 const RESERVATION_DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
 
-function getReservationDateFormatter(locale: string): Intl.DateTimeFormat {
-  const cached = RESERVATION_DATE_FORMATTERS.get(locale);
+function getReservationDateFormatter(
+  locale: string,
+  timeZone: string,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${timeZone}`;
+  const cached = RESERVATION_DATE_FORMATTERS.get(key);
   if (cached) return cached;
   const fmt = new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
+    timeZone,
   });
-  RESERVATION_DATE_FORMATTERS.set(locale, fmt);
+  RESERVATION_DATE_FORMATTERS.set(key, fmt);
   return fmt;
 }
 
-function formatReservationDate(date: Date, locale: string): string {
-  return getReservationDateFormatter(locale).format(date);
+function formatReservationDate(
+  date: Date,
+  locale: string,
+  timeZone: string,
+): string {
+  return getReservationDateFormatter(locale, timeZone).format(date);
 }
 
 const RESERVATION_FIELD_READERS: Record<
   string,
-  (r: ReservationContextRow, locale: string) => string | null
+  (r: ReservationContextRow, locale: string, timeZone: string) => string | null
 > = {
   guestName: (r) => (nonEmpty(r.guestName) ? r.guestName : null),
-  checkInDate: (r, locale) => formatReservationDate(r.checkInDate, locale),
-  checkOutDate: (r, locale) => formatReservationDate(r.checkOutDate, locale),
+  checkInDate: (r, locale, tz) => formatReservationDate(r.checkInDate, locale, tz),
+  checkOutDate: (r, locale, tz) => formatReservationDate(r.checkOutDate, locale, tz),
   numGuests: (r) => String(r.numGuests),
 };
 
@@ -411,7 +420,11 @@ const resolveReservation: Resolver = (item, ctx) => {
   const reader = RESERVATION_FIELD_READERS[item.source.field];
   if (!reader) return { status: "missing" };
   const locale = ctx.reservation.locale ?? ctx.property.defaultLocale;
-  const raw = reader(ctx.reservation, locale);
+  // `checkInDate`/`checkOutDate` are @db.Date (UTC midnight). Format in the
+  // property's timezone so a reservation on 2026-05-10 renders as "10 de mayo"
+  // even for properties east/west of UTC.
+  const timeZone = ctx.property.timezone ?? "UTC";
+  const raw = reader(ctx.reservation, locale, timeZone);
   if (!nonEmpty(raw)) return { status: "missing" };
   return { status: "resolved", value: raw, sourceUsed: "canonical" };
 };

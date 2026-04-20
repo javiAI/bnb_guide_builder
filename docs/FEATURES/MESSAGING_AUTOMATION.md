@@ -108,7 +108,7 @@ una sola consulta por propiedad + batches de `Contact`,
 
 `taxonomies/messaging_triggers.json` (Zod loader en `src/lib/taxonomy-loader.ts` vía `loadMessagingTriggers()`). Cada entry declara:
 
-- `id` (`before_arrival`, `day_of_checkin`, `during_stay`, `after_checkout`, `on_booking_confirmed`)
+- `id` (`before_arrival`, `day_of_checkin`, `after_checkout`, `on_booking_confirmed`)
 - `label`, `description` (ES)
 - `anchorField`: `"checkIn" | "checkOut" | "bookingConfirmed"` (la DB **no** guarda anchor — la verdad vive en taxonomía)
 - `defaultOffsetMinutes`
@@ -139,7 +139,7 @@ Contrato:
 3. Para cada automation:
    - `computeScheduledSendAt({trigger, reservation, property, offsetMinutes})` — `fromZonedTime(local, property.timezone)` sobre anchor + offset. DST-aware (`Europe/Madrid` CET/CEST).
    - `resolveVariables(propertyId, template.bodyMd, { reservation })` — las 4 reservation vars suben a `resolved`.
-   - Runtime safety: si `scheduledSendAt >= checkIn` **y** `bodyUsesSensitivePrearrival(bodyMd) === true` → `outcome: "blocked_sensitive_prearrival"` (no se crea draft).
+   - Runtime safety para plantillas con `bodyUsesSensitivePrearrival(bodyMd) === true`: ventana permitida `[checkIn − SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS, checkIn)` (actualmente 48 h). Si `scheduledSendAt >= checkIn` **o** `scheduledSendAt < checkIn − 48h` → `outcome: "blocked_sensitive_prearrival"` (no se crea draft). Esto cubre tanto post-llegada (credenciales inútiles después de check-in) como envío demasiado anticipado (p. ej. `wifi_password` 14 días antes queda bloqueado).
    - Upsert por `@@unique([automationId, reservationId])`:
      - No existe → crea `MessageDraft { status: "pending_review", bodyMd: output, scheduledSendAt, resolutionStatesJson }`. Outcome `created`.
      - Existe en `pending_review` y cambian body/scheduledSendAt/resolutionStates → update + lifecycle event. Outcome `updated`.
