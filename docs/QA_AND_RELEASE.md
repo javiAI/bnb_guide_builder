@@ -78,6 +78,21 @@ Playwright + `@axe-core/playwright` viven como **harness compartido** desde
 
 Ver [docs/FEATURES/GUEST_GUIDE_UX.md](FEATURES/GUEST_GUIDE_UX.md) "Gates de release" para la tabla completa de gates de UX.
 
+### Assistant release gate (rama 11E)
+
+Job `evals` en [.github/workflows/ci.yml](../.github/workflows/ci.yml), bloqueante en cada PR y push a `main`. Corre `npm run eval:assistant` contra `pgvector/pgvector:pg16` y sube `eval-artifacts/` (JSON + markdown) con retención 14 días.
+
+- **Accuracy ≥ 0.85**: cada fact esperado (substring case-insensitive) debe aparecer en la respuesta sintetizada.
+- **Recall@5 ≥ 0.9**: `|expected_items ∩ top_5_citations| / |expected_items|`. El pipeline ya cappea en `RERANK_TOP_N = 5`.
+- **Fixture bank ≥ 50**: actualmente 60 fixtures (ES 35 + EN 25) sobre 2 properties sintéticas y 57 `KnowledgeItem` hand-written. Bodies tight para que las citations esperadas sean estables.
+- **Determinismo**: los 4 resolvers se pinean a stubs vía `__set*ForTests`:
+  - embeddings → `SemanticBowEmbeddingProvider` (token-level BoW 512-d, stopword-filtered ES+EN)
+  - reranker → identity pass-through (RRF order)
+  - synthesizer → stub (top-3 bodies truncados + `[N]`)
+  - intent resolver → heurística pura (sin LLM)
+
+El gate no consume claves externas (`VOYAGE_API_KEY`, `COHERE_API_KEY`, `ANTHROPIC_API_KEY`) para mantener CI reproducible y barato. El script `npm run eval:assistant:refresh` (opcional, requiere `VOYAGE_API_KEY`) repuebla `embeddings-cache.json` para un futuro gate de mayor fidelidad que queda como palanca diferida — no se consume hoy.
+
 ### Pre-Liora release criteria (aplica a ramas funcionales en vuelo)
 
 Mientras la Fase 15 (Liora Design Replatform) no esté activa — condición actual hasta entrega del paquete de diseño — el criterio de "done" visual en ramas funcionales (10G/H/I, Fase 11, Fase 12, Fase 13) se juzga así:

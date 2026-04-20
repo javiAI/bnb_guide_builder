@@ -77,6 +77,45 @@ jobs:
       - name: prisma migrate diff (deployed vs schema — must be empty)
         run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
 
+  evals:
+    name: Assistant evals (release gate)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      EVAL_ARTIFACT_DIR: eval-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: prisma migrate deploy
+        run: npx prisma migrate deploy
+      - run: npx prisma generate
+      - run: npm run eval:assistant
+      - name: Upload eval artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: assistant-eval-report
+          path: eval-artifacts/
+          retention-days: 14
+
   e2e:
     name: E2E (playwright + axe)
     runs-on: ubuntu-latest

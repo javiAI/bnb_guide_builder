@@ -56,6 +56,9 @@ __pycache__/
 /playwright-report/
 /test-results/
 
+# Assistant eval bank artifacts
+/eval-artifacts/
+
 # Misc
 *.log
 
