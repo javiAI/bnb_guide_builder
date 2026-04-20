@@ -355,11 +355,15 @@ interface PreviewState {
   error?: string;
 }
 
-function TemplatePreview({ propertyId, body }: TemplatePreviewProps) {
+export function TemplatePreview({ propertyId, body }: TemplatePreviewProps) {
   const [state, setState] = useState<PreviewState>({ status: "idle" });
+  // Monotonic id per dispatched request; responses whose id no longer
+  // matches the ref are stale (a newer request already superseded them).
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (body.trim().length === 0) {
+      requestIdRef.current++;
       setState({ status: "idle" });
       return;
     }
@@ -368,7 +372,9 @@ function TemplatePreview({ propertyId, body }: TemplatePreviewProps) {
     );
 
     const timer = setTimeout(async () => {
+      const myId = ++requestIdRef.current;
       const result = await previewMessageTemplateAction(propertyId, body);
+      if (myId !== requestIdRef.current) return;
       if (result.success) {
         setState({
           status: "ready",
@@ -381,7 +387,12 @@ function TemplatePreview({ propertyId, body }: TemplatePreviewProps) {
       }
     }, 400);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Intentional live-ref mutation — invalidates any in-flight response.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      requestIdRef.current++;
+    };
   }, [body, propertyId]);
 
   if (state.status === "idle") return null;
