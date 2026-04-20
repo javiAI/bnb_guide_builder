@@ -1,12 +1,7 @@
 "use client";
 
 import type { EscalationResolutionDTO } from "@/lib/schemas/assistant.schema";
-
-// Inline card rendered inside an assistant turn when the pipeline escalated
-// and produced a ResolvedContact. Operator-only for Rama 11D (the ops UI
-// exercises this; a guest-facing card lands in 11E when the guest widget
-// ships). Keeps the DOM shallow: one <article> with the intent banner +
-// per-contact block with tappable tel:/wa.me/mailto: buttons.
+import type { ContactChannel } from "@/lib/contact-actions";
 
 interface Props {
   handoff: EscalationResolutionDTO;
@@ -19,7 +14,7 @@ const FALLBACK_COPY: Record<EscalationResolutionDTO["fallbackLevel"], string> = 
   fallback: "Fallback general — no hay contacto específico disponible.",
 };
 
-const CHANNEL_LABEL: Record<"tel" | "whatsapp" | "email", string> = {
+const CHANNEL_LABEL: Record<ContactChannel, string> = {
   tel: "Llamar",
   whatsapp: "WhatsApp",
   email: "Correo",

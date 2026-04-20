@@ -212,18 +212,20 @@ export async function ask(input: AskInput): Promise<AskOutput> {
     });
   }
 
-  // Escalation handoff: only resolve a contact when the synthesizer (or the
-  // zero-retrieval short-circuit above) chose to escalate. Keeps the extra
-  // DB round-trip off the happy path.
-  const escalationContact = synthesized.escalated
-    ? await resolveEscalationContact({
-        propertyId: input.propertyId,
-        question: input.question,
-        language: input.language,
-        audience: input.audience,
-        escalationReason: synthesized.escalationReason,
-      })
-    : null;
+  let escalationContact: EscalationResolution | null = null;
+  if (synthesized.escalated) {
+    const lang: "es" | "en" = input.language === "en" ? "en" : "es";
+    const intentMatch = resolveEscalationIntent({
+      question: input.question,
+      language: lang,
+      escalationReason: synthesized.escalationReason,
+    });
+    escalationContact = await resolveEscalation({
+      propertyId: input.propertyId,
+      intentId: intentMatch.intentId,
+      audience: input.audience,
+    });
+  }
 
   const conversationId = await persistConversation({
     conversationId: input.conversationId ?? null,
@@ -260,28 +262,6 @@ export async function ask(input: AskInput): Promise<AskOutput> {
       synthesizerModel: synthesizer.modelId,
     },
   };
-}
-
-async function resolveEscalationContact(params: {
-  propertyId: string;
-  question: string;
-  language: string;
-  audience: VisibilityLevel;
-  escalationReason: string | null;
-}): Promise<EscalationResolution | null> {
-  // The keyword matcher only understands "es" and "en"; anything else falls
-  // back to Spanish (the primary operator locale for this platform).
-  const lang: "es" | "en" = params.language === "en" ? "en" : "es";
-  const intentMatch = resolveEscalationIntent({
-    question: params.question,
-    language: lang,
-    escalationReason: params.escalationReason,
-  });
-  return resolveEscalation({
-    propertyId: params.propertyId,
-    intentId: intentMatch.intentId,
-    audience: params.audience,
-  });
 }
 
 // ============================================================================

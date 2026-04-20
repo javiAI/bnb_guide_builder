@@ -1,8 +1,5 @@
-// Pure helpers to build contact-channel hrefs (tel / whatsapp / email).
-//
-// Shared between the public guide (10G quick actions, 10D/E emergency
-// section) and the operator assistant (11D escalation handoff). Keep this
-// module React-free and side-effect-free — both server and client import it.
+// Server and client both import this module — keep it React-free and
+// side-effect-free.
 
 export const CONTACT_CHANNELS = ["tel", "whatsapp", "email"] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];

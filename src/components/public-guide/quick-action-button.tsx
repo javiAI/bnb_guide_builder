@@ -4,7 +4,7 @@ import type {
   QuickActionKind,
   QuickActionResolved,
 } from "@/config/registries/quick-action-registry";
-import { buildTelHref } from "@/lib/contact-actions";
+import { buildTelHref, buildWhatsAppHref } from "@/lib/contact-actions";
 import { useGuideToast } from "./toast";
 
 interface Props {
@@ -18,8 +18,7 @@ function hrefFor(kind: QuickActionKind, value: string): string | null {
     case "tel":
       return buildTelHref(value);
     case "whatsapp":
-      // Resolver already normalized to wa.me digits.
-      return `https://wa.me/${value}`;
+      return buildWhatsAppHref(value);
     case "maps":
       return value;
     case "anchor":

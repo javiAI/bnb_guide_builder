@@ -4,10 +4,6 @@ import { useState, type FormEvent } from "react";
 import type { EscalationResolutionDTO } from "@/lib/schemas/assistant.schema";
 import { EscalationHandoff } from "./EscalationHandoff";
 
-// Minimal chat UI to exercise the pipeline end-to-end from the operator
-// dashboard. Intentionally plain: one input, one conversation thread,
-// citations rendered inline. Full-fidelity UX lands in a later phase.
-
 interface Citation {
   knowledgeItemId: string;
   sourceType: string;

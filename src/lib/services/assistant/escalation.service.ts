@@ -1,20 +1,3 @@
-// Escalation contact resolver.
-//
-// Given an intent (from `escalation-intent.ts`), pick the contact rows
-// from the DB that should handle the handoff, applying:
-//   • the intent's declared `contactRoles` first
-//   • `fallbackToHost` (ct.host + ct.cohost) if the intent is empty
-//   • the taxonomy-level fallback intent if still empty
-//   • audience-gated visibility (sensitive never leaks, and a guest
-//     audience only sees guest-visibility contacts)
-//
-// Tiebreak among candidates in a matched set:
-//   emergencyAvailable desc → isPrimary desc → sortOrder asc → createdAt asc
-//
-// This service is consumed by the pipeline when `ask()` escalates; the
-// resulting handoff envelope is persisted alongside citations in
-// AssistantMessage.citationsJson (no migration needed).
-
 import { prisma } from "@/lib/db";
 import {
   findEscalationIntent,
@@ -58,7 +41,10 @@ export interface ResolvedContact {
   notes: string | null;
 }
 
-export type EscalationFallbackLevel = "intent" | "intent_with_host" | "fallback";
+export const FALLBACK_LEVELS = ["intent", "intent_with_host", "fallback"] as const;
+export type EscalationFallbackLevel = (typeof FALLBACK_LEVELS)[number];
+
+const HOST_ROLES = ["ct.host", "ct.cohost"] as const;
 
 export interface EscalationResolution {
   intentId: EscalationIntentId;
@@ -77,35 +63,33 @@ export async function resolveEscalation(
 ): Promise<EscalationResolution | null> {
   const intent = findEscalationIntent(input.intentId) ?? null;
   const fallback = getEscalationFallback();
-  // Unknown intent id → degrade to the taxonomy-declared fallback. This is
-  // defense-in-depth: the pipeline should never pass an id that's not in
-  // the registry, but we don't want the handoff to blow up if it does.
   const effectiveIntent: EscalationIntent =
     intent ?? (findEscalationIntent(fallback.intentId) as EscalationIntent);
 
-  const fetchContacts = (roles: string[]) =>
-    loadContactsForRoles({
-      propertyId: input.propertyId,
-      roleKeys: roles,
-      audience: input.audience,
-    });
+  const tier1 = new Set(effectiveIntent.contactRoles);
+  const tier2 = effectiveIntent.fallbackToHost ? new Set<string>(HOST_ROLES) : null;
+  const tier3 = new Set(fallback.contactRoles);
+  const unionRoles = [...new Set([...tier1, ...(tier2 ?? []), ...tier3])];
 
-  // 1. Intent's own roles.
-  let contacts = await fetchContacts(effectiveIntent.contactRoles);
+  const visibleRows = await loadContactsForRoles({
+    propertyId: input.propertyId,
+    roleKeys: unionRoles,
+    audience: input.audience,
+  });
+
+  const pickTier = (roles: Set<string>) =>
+    visibleRows.filter((r) => roles.has(r.roleKey));
+
+  let contacts = pickTier(tier1);
   let fallbackLevel: EscalationFallbackLevel = "intent";
-
-  // 2. If the intent has `fallbackToHost` and yielded nothing, try host/cohost.
-  if (contacts.length === 0 && effectiveIntent.fallbackToHost) {
-    contacts = await fetchContacts(["ct.host", "ct.cohost"]);
+  if (contacts.length === 0 && tier2) {
+    contacts = pickTier(tier2);
     fallbackLevel = "intent_with_host";
   }
-
-  // 3. Last-resort: the taxonomy-level fallback intent's roles.
   if (contacts.length === 0) {
-    contacts = await fetchContacts(fallback.contactRoles);
+    contacts = pickTier(tier3);
     fallbackLevel = "fallback";
   }
-
   if (contacts.length === 0) return null;
 
   const channelPriority = effectiveIntent.channelPriority;
@@ -173,10 +157,8 @@ async function loadContactsForRoles(params: {
       createdAt: true,
     },
   });
-  // Apply visibility filter in-memory. `sensitive` is clamped upstream
-  // (`allowedVisibilitiesFor` in the retriever already caps the pipeline
-  // audience at internal) but we re-check here so a direct caller can't
-  // slip a sensitive-level contact to a guest.
+  // Defense-in-depth: a caller that bypasses the retriever must not reach
+  // sensitive-visibility contacts.
   return rows.filter((r) =>
     canAudienceSee(params.audience, normaliseVisibility(r.visibility)),
   );
@@ -220,15 +202,12 @@ function buildChannel(
     return { kind, rawValue: v, href: buildTelHref(v) };
   }
   if (kind === "whatsapp") {
-    // Prefer the explicit whatsapp field; fall back to phone so operators
-    // don't need to double-enter the same number.
     const v = row.whatsapp ?? row.phone ?? row.phoneSecondary;
     if (!v) return null;
     const href = buildWhatsAppHref(v);
     if (!href) return null;
     return { kind, rawValue: v, href };
   }
-  // kind === "email"
   if (!row.email) return null;
   const href = buildMailtoHref(row.email);
   if (!href) return null;
@@ -237,8 +216,6 @@ function buildChannel(
 
 function pickNotes(row: ContactRow, audience: VisibilityLevel): string | null {
   if (audience === "guest") return row.guestVisibleNotes ?? null;
-  // ai / internal see the richer internalNotes, falling back to the
-  // guest-visible copy if no internal note was authored.
   return row.internalNotes ?? row.guestVisibleNotes ?? null;
 }
 

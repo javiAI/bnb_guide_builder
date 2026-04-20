@@ -1,17 +1,6 @@
-// Escalation intent resolver.
-//
-// Pure, deterministic, no LLM. Maps an unanswered question (+ optional
-// `escalationReason` from the synthesizer) to one of the `int.*` intents
-// declared in `taxonomies/escalation_rules.json`. The pipeline uses the
-// resulting intent to pick which contact role(s) to hand the guest off to
-// in `escalation.service.ts`.
-//
-// Why keyword-based (not LLM): routing a guest to "locksmith" vs. "host"
-// must be auditable, testable, and config-driven. An operator adding
-// `"perdí la llave maestra"` to `int.lockout.matchKeywords.es` must see
-// the effect on the next ask() without redeploying prompts. A Haiku
-// classifier layer may be added later (see §11D Commit 4) but only if
-// precision on the critical intents falls below the gate.
+// Keyword-based intent routing is auditable and config-driven: an operator
+// adding keywords to escalation_rules.json sees the effect on the next
+// ask() without redeploying prompts.
 
 import {
   getEscalationFallback,
@@ -70,6 +59,33 @@ interface Candidate {
   matchedKeyword: string;
 }
 
+interface NormalizedKeyword {
+  original: string;
+  normalized: string;
+}
+
+const normalizedKeywordCache = new WeakMap<
+  EscalationIntent,
+  { es: NormalizedKeyword[]; en: NormalizedKeyword[] }
+>();
+
+function normalizedKeywordsFor(
+  intent: EscalationIntent,
+  lang: "es" | "en",
+): NormalizedKeyword[] {
+  let entry = normalizedKeywordCache.get(intent);
+  if (!entry) {
+    const build = (list: readonly string[]) =>
+      list.map((kw) => ({ original: kw, normalized: normalize(kw) }));
+    entry = {
+      es: build(intent.matchKeywords.es),
+      en: build(intent.matchKeywords.en),
+    };
+    normalizedKeywordCache.set(intent, entry);
+  }
+  return entry[lang];
+}
+
 /** Pick the best candidate across all intents.
  *  Priority: emergency > non-emergency; within the same tier, the candidate
  *  whose matched keyword is longest wins (more specific match). */
@@ -103,16 +119,20 @@ export function resolveEscalationIntent(
 
   const candidates: Candidate[] = [];
   for (const intent of getEscalationIntents()) {
-    // `int.general` declares no keywords — it's the fallback bucket.
-    const keywords = intent.matchKeywords[input.language];
+    const keywords = normalizedKeywordsFor(intent, input.language);
     if (keywords.length === 0) continue;
-    let longest: string | null = null;
+    let longest: NormalizedKeyword | null = null;
     for (const kw of keywords) {
-      if (haystack.includes(normalize(kw)) && (!longest || kw.length > longest.length)) {
+      if (
+        haystack.includes(kw.normalized) &&
+        (!longest || kw.original.length > longest.original.length)
+      ) {
         longest = kw;
       }
     }
-    if (longest !== null) candidates.push({ intent, matchedKeyword: longest });
+    if (longest !== null) {
+      candidates.push({ intent, matchedKeyword: longest.original });
+    }
   }
 
   const best = pickBest(candidates);
