@@ -309,7 +309,7 @@ Cuando el synthesizer decide `escalated: true` (sentinel `ESCALATE:` o ausencia 
 - [escalation-intent.ts](../../src/lib/services/assistant/escalation-intent.ts): `resolveEscalationIntent({ question, lang })` → `EscalationIntentMatch { intentId, confidence, ... }`. Accent-strip NFD + lowercase, match por keywords ES/EN desde `taxonomies/escalation_rules.json`, longest-match tiebreak, emergency precedence absoluta sobre non-emergency.
 - Confidence tiers: `emergency: 0.9`, `nonEmergency: 0.75`, `fallback: 0.25` (sin match). El fallback mapea a `int.general` → contacto general_host.
 - **Precision gate**: [assistant-escalation-intent-precision.test.ts](../../src/test/assistant-escalation-intent-precision.test.ts) corre un corpus labeled ([escalation-intent-corpus.ts](../../src/test/fixtures/escalation-intent-corpus.ts), 53 rows + `CRITICAL_INTENTS`) y exige `precision ≥ 0.95` + `recall = 1.0` + ≥5 rows por intent crítico. Añadir un intent nuevo = (a) entry en `escalation_rules.json` con `keywords.{es,en}[]`, (b) ≥5 rows etiquetados en el corpus, (c) tests verdes.
-- **Classifier LLM diferido**: la heurística pasa el gate con holgura; Haiku classifier como fallback queda parked hasta 11E (evals + banco de fixtures real).
+- **Classifier LLM diferido más allá de 11E**: la heurística cubre los 4 intents críticos con precision ≥0.95 + recall 1.0; Haiku classifier como fallback queda parked en rama dedicada posterior. Se reabre (con su propia Fase -1) cuando aparezca un corpus de intents que la heurística no resuelva — no se prioriza mientras el gate de 11E pase con holgura.
 
 ### Contact resolution — 3-tier cascade
 
@@ -348,7 +348,44 @@ Cuando el synthesizer decide `escalated: true` (sentinel `ESCALATE:` o ausencia 
 - `escalation-handoff.test.tsx` (6) — banner variants, hrefs, target size, empty contacts, Principal/24/7 badges.
 - `assistant-pipeline.test.ts` — el happy path no llama `prisma.contact.findMany`; el escalated path produce `escalationContact` poblado.
 
-## 6. Secret exclusion
+## 6. Evals & release gate (rama 11E)
+
+Release gate determinístico que valida end-to-end el pipeline RAG. Bloquea merges a `main` en cada PR desde el job `evals` de [.github/workflows/ci.yml](../../.github/workflows/ci.yml).
+
+### Fixture bank
+
+- [src/test/assistant-evals/fixtures.json](../../src/test/assistant-evals/fixtures.json): 60 fixtures etiquetados (ES 35 + EN 25) sobre 2 properties sintéticas + 57 `KnowledgeItem` hand-written en [knowledge-items-corpus.ts](../../src/test/assistant-evals/knowledge-items-corpus.ts). Bodies deliberadamente tight para que las citations esperadas sean estables bajo el stub synthesizer.
+- Cada fixture declara: `question`, `language`, `audience`, `expectedFacts[]` (substring case-insensitive) y `expectedItemIds[]` (KI ids esperados en top-5).
+- [property-seed.ts](../../src/test/assistant-evals/property-seed.ts) reconstruye las 2 properties + 57 items + chunks + embeddings determinísticos por cada run. Idempotente: `teardownEvalFixtures()` borra workspace/properties/knowledge items del scope eval antes de cada `seedEvalFixtures()`, sin `$transaction` (cada run arranca desde estado limpio, no desde rollback).
+
+### Métricas
+
+- **Accuracy**: cada fact esperado debe aparecer como substring case-insensitive en la respuesta sintetizada. Gate ≥ 0.85.
+- **Recall@5**: `|expected_items ∩ top_5_citations| / |expected_items|`. El pipeline ya cappea en `RERANK_TOP_N = 5`. Gate ≥ 0.9.
+- Actual: 95% accuracy + 95% recall@5 con holgura sobre ambos umbrales.
+
+### Determinismo — resolvers pineados
+
+Los 4 resolvers del pipeline se pinean a stubs vía `__set*ForTests` antes del run ([runner.ts](../../src/test/assistant-evals/runner.ts)):
+
+- **Embeddings** → [SemanticBowEmbeddingProvider](../../src/test/assistant-evals/semantic-embeddings.ts): token-level BoW 512-d, stopword-filtered ES+EN, SHA-256 fold + L2-norm. Mismo input → mismo vector bit-exact, sin red.
+- **Reranker** → identity pass-through (preserva el orden RRF, escala a `[0,1]`).
+- **Synthesizer** → stub que concatena top-3 bodies truncados + `[N]` citations. Determinista y cubre accuracy sin tocar Claude.
+- **Intent resolver** → heurística pura existente (sin LLM).
+
+El gate NO consume `VOYAGE_API_KEY` / `COHERE_API_KEY` / `ANTHROPIC_API_KEY` — CI queda reproducible y barato. `npm run eval:assistant:refresh` (opcional) repuebla `embeddings-cache.json` con embeddings Voyage reales para un futuro gate de mayor fidelidad, palanca diferida sin consumo actual.
+
+### Comando y artefactos
+
+- `npm run eval:assistant` — corre [release-gate.test.ts](../../src/test/assistant-evals/release-gate.test.ts) via `vitest.evals.config.ts` (excluida del run default). Requiere pgvector local.
+- Artifact JSON + markdown en `eval-artifacts/` (`.gitignore` los excluye), subido por el job CI con retención 14 días. Artifact incluye por fixture: question, answer, expected vs actual facts, citations top-5, flag booleano `accuracyPass` y métrica numérica `recallAt5`.
+
+### Scope exclusions
+
+- **Haiku intent classifier**: diferido a rama dedicada posterior (no 11E). Heurística pasa el precision gate; el classifier solo justifica costo cuando aparezca un corpus de intents que la heurística no resuelva.
+- **Dashboard UI**: intencionalmente ausente. El artifact JSON + markdown (CI retention 14 días) es el surface completo — fail loud, sin UI que mantener.
+
+## 7. Secret exclusion
 
 - secretos fuera del corpus general
 - secretos fuera de prompts del assistant salvo flujo interno explícito y autorizado

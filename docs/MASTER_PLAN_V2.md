@@ -1347,36 +1347,38 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - Tests: `assistant-escalation-intent.test.ts` (53) + `assistant-escalation-intent-precision.test.ts` (9) + `assistant-escalation-service.test.ts` (15) + `assistant-schema-escalation.test.ts` (5) + `escalation-handoff.test.tsx` (6) + happy-path guard en `assistant-pipeline.test.ts`
 
 **Diferidos documentados**:
-- **Haiku intent classifier** → 11E (condicionado a regresión de precision gate en corpus expandido).
+- **Haiku intent classifier** → diferido a una rama posterior (NO forma parte de 11E). La heurística cubre los 4 intents críticos con precision ≥0.95 y 100% recall; el classifier solo justifica costo cuando aparezca un intent corpus que la heurística no resuelva. Reabrir con su propia Fase -1 cuando ocurra.
 - **Guest-facing UI de escalation** → 11F (widget huésped coexistiendo con semantic search).
 - **Per-contact `escalationIntents[]` override** → `docs/FUTURE.md` (cuando un host quiera mapear explícitamente un contacto a un intent sin pasar por `contactType`).
 
 ---
 
-### Rama 11E — `feat/assistant-evals`
+### Rama 11E — `feat/assistant-evals` ✅
 
 **Propósito**: banco de evals + release gate. Sin esto, el assistant no es production-ready y cambios silenciosos de modelo pueden degradar calidad.
 
-**Archivos a crear**:
-- `src/test/assistant-evals/fixtures.json` — ≥50 pares `(pregunta, locale, intent esperado, citas mínimas esperadas, respuesta mínima aceptable)` cubriendo los 7 chunkTypes + los 5 journeyStages
-- `src/test/assistant-evals/runner.ts` — corre fixtures contra pipeline real (con embedding API real cacheada en fixture)
-- `src/test/assistant-evals/release-gate.test.ts` — falla si accuracy < 85% o si recall@5 de citations < 0.9
-- `src/test/assistant-evals/metrics.ts` — métricas por intent + journeyStage + locale para dashboard
+**Archivos creados**:
+- `src/test/assistant-evals/fixtures.json` — 60 pares etiquetados en ES (35) + EN (25) cubriendo los 5 chunkTypes × 5 journeyStages × 2 locales
+- `src/test/assistant-evals/knowledge-items-corpus.ts` — corpus hand-written de 57 items (2 properties sintéticas: Madrid urban + Tarifa beach)
+- `src/test/assistant-evals/semantic-embeddings.ts` — `SemanticBowEmbeddingProvider` (token-level BoW 512-d, determinista, stopword-filtered ES+EN) que reemplaza al MockEmbeddingProvider en el gate para que el canal vector cargue señal real en vez de ruido SHA-256
+- `src/test/assistant-evals/cached-embeddings.ts` + `scripts/refresh-eval-embeddings.ts` — cache opcional de vectores Voyage (uso `EVAL_EMBED_REFRESH=1 VOYAGE_API_KEY=...`), no consumida por el gate
+- `src/test/assistant-evals/runner.ts` — pinea los 4 resolvers (embedding=BoW, reranker=identity, synthesizer=stub, intent=heuristic) vía `__set*ForTests`, seedea DB, itera fixtures por `ask()`
+- `src/test/assistant-evals/metrics.ts` — accuracy (fact-substring match) + recall@5 (|expected ∩ cited_top5| / |expected|) + breakdowns por language/journeyStage/chunkType
+- `src/test/assistant-evals/release-gate.test.ts` — falla si accuracy < 0.85 o recall@5 < 0.9; escribe `eval-artifacts/{eval-summary.json, eval-runs.json, eval-report.md}`
+- `src/test/assistant-evals/property-seed.ts` — seed idempotente (2 properties + 57 items) con embeddings batched en un `UPDATE ... FROM unnest(...)`
+- `vitest.evals.config.ts` + scripts `eval:assistant` / `eval:assistant:refresh` en `package.json`
+- CI: nuevo job `evals` en `.github/workflows/ci.yml` con `pgvector/pgvector:pg16`, corre `prisma migrate deploy` + `npm run eval:assistant`, sube `eval-artifacts/` como artefacto (retención 14 días)
 
-**Criterio de done**: CI falla si una PR del assistant baja accuracy o recall de citations. Dashboard con breakdown por dimensión.
+**Resultados**: accuracy 95% / recall@5 95% (gates 85% / 90%) — margen sano que absorbe ruido determinístico del BoW sobre prefix-matches cortos en BM25.
 
-**Dependencias**: 11C + 11D.
+**Criterio de done**: ✅ CI falla si una PR del assistant baja accuracy o recall@5; artifacts JSON/markdown subidos en cada run para debug.
 
-**Preparación**:
-- **Contexto a leer**:
-  - Pipeline de 11C + escalación de 11D
-  - [AI_KNOWLEDGE_BASE_SPEC.md:L237-L368](research/AI_KNOWLEDGE_BASE_SPEC.md) — prompt templates (necesario para construir fixtures fieles al comportamiento esperado)
-  - `docs/QA_AND_RELEASE.md` (patrón de release gates)
-- **Docs a actualizar al terminar**:
-  - `docs/QA_AND_RELEASE.md` § "Release gates" — gate de accuracy + recall@5 con umbrales concretos
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Evals"
-- **Skills/tools específicos**:
-  - **Agent code-architect** — diseñar estructura de fixtures para que cubran la matriz `intent × chunkType × journeyStage × locale` sin explosión combinatoria.
+**Dependencias**: 11C + 11D ✅.
+
+**Scope explícitamente excluido**:
+- **Haiku intent classifier**: la heurística de 11D cubre los 4 intents críticos con precision ≥0.95 y recall 100%; el classifier solo entra cuando aparezca un corpus que la heurística no resuelva. Se diferirá a una rama dedicada con su propia Fase -1.
+- **Dashboard UI**: los artifacts JSON + markdown son suficientes; no se añade página de dashboard en este repo (la UI de observabilidad externa puede consumirlos).
+- **Real Voyage embeddings en CI**: el gate corre con `SemanticBowEmbeddingProvider` para ser determinístico y no depender de claves. El script de refresh queda como lever opcional para un gate de mayor fidelidad en el futuro.
 
 ---
 
