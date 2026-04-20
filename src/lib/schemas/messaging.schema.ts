@@ -1,4 +1,12 @@
 import { z } from "zod";
+import {
+  KNOWN_MESSAGING_VARIABLES,
+  messagingVariablesByToken,
+} from "@/lib/taxonomy-loader";
+import {
+  extractVariableTokens,
+  suggestVariable,
+} from "@/lib/services/messaging-variables.service";
 
 // ── Message Templates ──
 
@@ -41,36 +49,49 @@ export const updateMessageAutomationSchema = z.object({
 export type CreateMessageAutomationData = z.infer<typeof createMessageAutomationSchema>;
 export type UpdateMessageAutomationData = z.infer<typeof updateMessageAutomationSchema>;
 
-// ── Variable validation ──
+// ── Variable validation (derived from taxonomies/messaging_variables.json) ──
+//
+// Source of truth: `taxonomies/messaging_variables.json` → loaded/validated in
+// `taxonomy-loader.ts`. Never add a variable here; edit the taxonomy instead.
 
-const TEMPLATE_VARIABLE_REGEX = /\{\{(\w+)\}\}/g;
-
-export const KNOWN_VARIABLES: Record<string, string> = {
-  guest_name: "Nombre del huésped",
-  property_name: "Nombre del alojamiento",
-  check_in_date: "Fecha de check-in",
-  check_in_time: "Hora de check-in",
-  check_out_date: "Fecha de check-out",
-  check_out_time: "Hora de check-out",
-  access_instructions: "Instrucciones de acceso",
-  wifi_name: "Nombre WiFi",
-  wifi_password: "Contraseña WiFi",
-  host_name: "Nombre del anfitrión",
-  support_contact: "Contacto de soporte",
-  guide_url: "URL de la guía",
-};
-
-export function extractVariables(body: string): string[] {
-  const matches = body.matchAll(TEMPLATE_VARIABLE_REGEX);
-  return [...new Set([...matches].map((m) => m[1]))];
+export interface UnknownVariableReport {
+  token: string;
+  suggestion: string | null;
 }
 
-export function validateVariables(body: string): {
+export interface VariableValidationResult {
   valid: string[];
-  unknown: string[];
-} {
-  const vars = extractVariables(body);
-  const valid = vars.filter((v) => v in KNOWN_VARIABLES);
-  const unknown = vars.filter((v) => !(v in KNOWN_VARIABLES));
+  unknown: UnknownVariableReport[];
+}
+
+/** Static validation of a template body: catches unknown `{{var}}` tokens and
+ * proposes the closest known match. Does NOT hit the database — resolution
+ * (missing vs resolved vs unresolved_context) lives in
+ * `resolveVariables()` from `messaging-variables.service`. */
+export function validateVariables(body: string): VariableValidationResult {
+  const tokens = extractVariableTokens(body);
+  const valid: string[] = [];
+  const unknown: UnknownVariableReport[] = [];
+  for (const token of tokens) {
+    if (KNOWN_MESSAGING_VARIABLES.has(token)) {
+      valid.push(token);
+    } else {
+      unknown.push({ token, suggestion: suggestVariable(token) });
+    }
+  }
   return { valid, unknown };
+}
+
+/** Human-readable Spanish error for an unknown variable, with optional
+ * "¿quisiste decir {{y}}?" suggestion. Used by server actions + UI. */
+export function describeUnknownVariable(report: UnknownVariableReport): string {
+  if (report.suggestion) {
+    return `Variable desconocida {{${report.token}}}. ¿Quisiste decir {{${report.suggestion}}}?`;
+  }
+  return `Variable desconocida {{${report.token}}}.`;
+}
+
+/** Convenience helper for templates rendered in non-DB contexts (e.g. tests). */
+export function variableLabel(token: string): string | null {
+  return messagingVariablesByToken.get(token)?.label ?? null;
 }

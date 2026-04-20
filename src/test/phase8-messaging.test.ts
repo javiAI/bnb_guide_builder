@@ -3,11 +3,15 @@ import {
   createMessageTemplateSchema,
   updateMessageTemplateSchema,
   createMessageAutomationSchema,
-  extractVariables,
   validateVariables,
-  KNOWN_VARIABLES,
 } from "@/lib/schemas/messaging.schema";
-import { messagingTouchpoints, automationChannels, getItems } from "@/lib/taxonomy-loader";
+import { extractVariableTokens } from "@/lib/services/messaging-variables.service";
+import {
+  messagingTouchpoints,
+  automationChannels,
+  messagingVariables,
+  getItems,
+} from "@/lib/taxonomy-loader";
 
 describe("Message template schemas", () => {
   it("rejects empty touchpointKey", () => {
@@ -91,31 +95,33 @@ describe("Message automation schemas", () => {
 
 describe("Variable validation", () => {
   it("extracts variables from template body", () => {
-    const vars = extractVariables("Hola {{guest_name}}, tu check-in es a las {{check_in_time}}.");
+    const vars = extractVariableTokens(
+      "Hola {{guest_name}}, tu check-in es a las {{check_in_time}}.",
+    );
     expect(vars).toEqual(["guest_name", "check_in_time"]);
   });
 
   it("deduplicates variables", () => {
-    const vars = extractVariables("{{guest_name}} — {{guest_name}}");
+    const vars = extractVariableTokens("{{guest_name}} — {{guest_name}}");
     expect(vars).toEqual(["guest_name"]);
   });
 
   it("returns empty for no variables", () => {
-    const vars = extractVariables("Hola, bienvenido.");
+    const vars = extractVariableTokens("Hola, bienvenido.");
     expect(vars).toEqual([]);
   });
 
   it("validates known vs unknown variables", () => {
     const result = validateVariables("{{guest_name}} y {{custom_var}}");
     expect(result.valid).toEqual(["guest_name"]);
-    expect(result.unknown).toEqual(["custom_var"]);
+    expect(result.unknown.map((u) => u.token)).toEqual(["custom_var"]);
   });
 
-  it("all known variables have labels", () => {
-    expect(Object.keys(KNOWN_VARIABLES).length).toBeGreaterThanOrEqual(10);
-    for (const [key, label] of Object.entries(KNOWN_VARIABLES)) {
-      expect(key).toBeTruthy();
-      expect(label).toBeTruthy();
+  it("taxonomy catalog is populated and internally consistent", () => {
+    expect(messagingVariables.items.length).toBeGreaterThanOrEqual(10);
+    for (const item of messagingVariables.items) {
+      expect(item.variable).toBeTruthy();
+      expect(item.label).toBeTruthy();
     }
   });
 });
