@@ -132,7 +132,7 @@ El path público **no incluye reranker ni synthesizer** — es pura retrieval co
 **Invariantes duros** (enforced por `src/test/guide-search-visibility.test.ts`):
 
 - `audience` nunca se lee del request — `guideSemanticSearch` lo fuerza a `"guest"`.
-- `locale` viene de `Property.defaultLocale`, nunca del cliente.
+- `locale` viene de `Property.defaultLocale`, nunca del cliente. **Contrato vigente (acordado 2026-04-20):** *one property = one published guide locale = `Property.defaultLocale`*. Hoy `GuideVersion` no tiene columna `locale`, `GuideTree` no lleva campo de locale, `composeGuide()` no recibe locale y `/g/[slug]/page.tsx` no tiene selector — la snapshot publicada está implícitamente atada al `defaultLocale` del alojamiento. Cuando aterrice multi-locale publishing, la fuente de verdad deberá migrar a `GuideVersion.locale` (o el surface equivalente que emerja); el test `guide-search-visibility.test.ts` lleva la rationale en comentario y debe actualizarse en ese momento.
 - `allowedVisibilitiesFor("guest")` del retriever (11C) nunca retorna `sensitive` — la defensa principal está en el retriever; el servicio no re-checkea, confía por contrato.
 
 **Mapping entityType → sectionId**: config-driven en `taxonomies/guide_sections.json` (`entityTypes[]` por sección no-aggregator). `src/lib/taxonomy-loader.ts` valida la exhaustividad sobre `ENTITY_TYPES` al boot: añadir un nuevo tipo sin reclamarlo = throw en arranque. Override único: `journeyStage === "checkout"` re-homa cualquier hit a `gs.checkout` (un policy de checkout no va bajo Normas). Aggregators (ej. `gs.essentials`) se saltan para que el anchor apunte a la home canónica.

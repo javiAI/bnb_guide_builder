@@ -2,6 +2,18 @@
 //   - audience is ALWAYS "guest". Never read it from request input.
 //   - locale comes from `Property.defaultLocale`, not from the request.
 //   - allowedVisibilitiesFor("guest") from the retriever excludes "sensitive".
+//
+// Locale contract — rationale:
+// Today the public guide is monolingual per property. `GuideVersion` has no
+// `locale` column, `GuideTree` has no locale field, `composeGuide()` takes no
+// locale param, and `/g/[slug]/page.tsx` has no guest-facing locale switcher.
+// The single published snapshot is implicitly bound to `Property.defaultLocale`
+// (the host's own configured language). Using `property.defaultLocale` here
+// therefore matches the locale the guest is actually viewing — there is no
+// "EN guide on ES property" path in the product yet. When per-locale publish
+// lands, this line flips to read from whichever surface owns published-guide
+// locale (likely a new `GuideVersion.locale`). Pinned by
+// `guide-search-visibility.test.ts`.
 
 import { prisma } from "@/lib/db";
 import {
@@ -66,14 +78,25 @@ function checkRateLimit(slug: string, now: number): {
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
-// Periodically drop buckets that have fully aged out so the Map doesn't grow
-// unbounded across unique slugs (e.g. a crawler hitting `/api/g/<any>/search`).
-function pruneIdleBuckets(now: number): void {
+const RATE_BUCKETS_SOFT_CAP = 256;
+
+// Drop buckets whose latest entry has aged out, then if we're still over the
+// cap (crawler hitting many distinct slugs within the same window), evict the
+// oldest-touched buckets until we're back under the cap. Without the hard
+// eviction step, a crawler keeps the Map growing indefinitely because no
+// bucket is "idle" yet.
+function enforceBucketCap(now: number): void {
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
   for (const [slug, timestamps] of rateBuckets) {
     const latest = timestamps[timestamps.length - 1];
     if (latest === undefined || latest <= windowStart) rateBuckets.delete(slug);
   }
+  if (rateBuckets.size <= RATE_BUCKETS_SOFT_CAP) return;
+  const byLatest = [...rateBuckets.entries()]
+    .map(([s, ts]) => [s, ts[ts.length - 1] ?? 0] as const)
+    .sort((a, b) => a[1] - b[1]);
+  const excess = rateBuckets.size - RATE_BUCKETS_SOFT_CAP;
+  for (let i = 0; i < excess; i += 1) rateBuckets.delete(byLatest[i][0]);
 }
 
 /** Test-only: clear the rate-limit window for a specific slug (or all). */
@@ -111,7 +134,7 @@ export async function guideSemanticSearch(
   input: GuideSemanticSearchInput,
 ): Promise<GuideSemanticSearchResult> {
   const now = Date.now();
-  if (rateBuckets.size > 256) pruneIdleBuckets(now);
+  if (rateBuckets.size > RATE_BUCKETS_SOFT_CAP) enforceBucketCap(now);
   const gate = checkRateLimit(input.slug, now);
   if (!gate.allowed) {
     return { kind: "rate-limited", retryAfterSeconds: gate.retryAfterSeconds };

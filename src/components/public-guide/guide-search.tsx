@@ -160,7 +160,10 @@ export function GuideSearch({ index, slug }: Props) {
   }, []);
 
   const runSemanticSearch = useCallback(async () => {
-    const q = deferredQuery.trim();
+    // Use the immediate `query` state, not `deferredQuery` (300ms debounce):
+    // when the user clicks the CTA right after typing, the debounced value
+    // may still hold a stale string.
+    const q = query.trim();
     if (q.length < minQueryLength) return;
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -192,7 +195,7 @@ export function GuideSearch({ index, slug }: Props) {
       if ((err as { name?: string }).name === "AbortError") return;
       setSemanticState({ kind: "error" });
     }
-  }, [deferredQuery, minQueryLength, slug]);
+  }, [query, minQueryLength, slug]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {

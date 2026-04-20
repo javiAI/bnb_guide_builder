@@ -67,7 +67,21 @@ describe("guide-search service — visibility invariant", () => {
     expect(allowedVisibilitiesFor("guest")).not.toContain("sensitive");
   });
 
-  it("never threads a locale from outside — it always comes from property.defaultLocale", async () => {
+  // Locale contract (11F, agreed 2026-04-20):
+  //
+  //   one property = one published guide locale = Property.defaultLocale
+  //
+  // Today `GuideVersion` has no `locale` column, `GuideTree` has no locale
+  // field, `composeGuide()` takes no locale parameter, and `/g/[slug]/page.tsx`
+  // has no guest-facing locale switcher. The single published snapshot is
+  // implicitly bound to `Property.defaultLocale`, so retrieval must use the
+  // same field to avoid mismatching the language the guest is actually seeing.
+  //
+  // When multi-locale publishing lands, the source of truth MUST move to
+  // `GuideVersion.locale` (or whichever surface owns published-guide locale
+  // by then), and this test should be updated to pin against that field.
+  // Until then, `Property.defaultLocale` is the contract — do not relax.
+  it("threads locale from Property.defaultLocale (single-locale contract)", async () => {
     hybridRetrieveMock.mockResolvedValue(emptyResult());
     propertyFindUniqueMock.mockResolvedValue({ id: "prop_1", defaultLocale: "fr" });
 

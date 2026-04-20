@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type {
   RetrievalResult,
   RetrievedItem,
@@ -54,6 +54,12 @@ describe("guide-search service — rate limit", () => {
     propertyFindUniqueMock.mockResolvedValue({ id: "prop_1", defaultLocale: "es" });
     guideVersionFindFirstMock.mockResolvedValue({ id: "gv_1" });
     hybridRetrieveMock.mockResolvedValue(empty());
+  });
+
+  afterEach(() => {
+    // Restore real timers so fake timers can't leak into sibling test files
+    // under Vitest worker reuse.
+    vi.useRealTimers();
   });
 
   it("allows exactly RATE_LIMIT_MAX_REQUESTS within the window, then 429s", async () => {
