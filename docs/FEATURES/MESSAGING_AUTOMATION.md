@@ -102,6 +102,112 @@ una sola consulta por propiedad + batches de `Contact`,
 (`src/app/properties/[propertyId]/messaging/[touchpointKey]/`
 `message-body-editor.tsx`) con debounce 400 ms.
 
+## 5ter. Automations + Scheduler + Drafts lifecycle (rama 12B)
+
+### 5ter.1 Triggers (taxonomy)
+
+`taxonomies/messaging_triggers.json` (Zod loader en `src/lib/taxonomy-loader.ts` vía `loadMessagingTriggers()`). Cada entry declara:
+
+- `id` (`before_arrival`, `day_of_checkin`, `during_stay`, `after_checkout`, `on_booking_confirmed`)
+- `label`, `description` (ES)
+- `anchorField`: `"checkIn" | "checkOut" | "bookingConfirmed"` (la DB **no** guarda anchor — la verdad vive en taxonomía)
+- `defaultOffsetMinutes`
+- `presets: { label, offsetMinutes }[]` — chips sugeridos en la UI
+
+Legacy mapping (sin migración DB): `reservation_relative → before_arrival`, `on_event → on_booking_confirmed`. Aplicado en `src/lib/schemas/messaging.schema.ts` (`normaliseTriggerType`).
+
+### 5ter.2 Automation entity
+
+`MessageAutomation` (Prisma):
+
+- `id`, `propertyId`, `templateId`, `channelKey`, `touchpointKey`
+- `triggerType` (ID de la taxonomía tras `normaliseTriggerType`)
+- `sendOffsetMinutes: Int`
+- `active: boolean`
+- `@@index([propertyId, active])`
+
+Check-time gate (`createMessageAutomationAction`): si `bodyUsesInternalOnly(template.bodyMd) === true`, se bloquea la creación con error "La plantilla usa variables internas (internal_only) y no puede automatizarse — edítala primero".
+
+### 5ter.3 Materialization contract
+
+`materializeDraftsForReservation(reservationId, { client? }): MaterializeOutcome[]` en `src/lib/services/messaging-automation.service.ts`.
+
+Contrato:
+
+1. Si `reservation.status === "cancelled"` → cancela en cascada drafts `pending_review|approved` y retorna `outcome: "blocked_reservation_cancelled"` para cada una.
+2. Lista automations activas del `propertyId` + `triggerType` válido.
+3. Para cada automation:
+   - `computeScheduledSendAt({trigger, reservation, property, offsetMinutes})` — `fromZonedTime(local, property.timezone)` sobre anchor + offset. DST-aware (`Europe/Madrid` CET/CEST).
+   - `resolveVariables(propertyId, template.bodyMd, { reservation })` — las 4 reservation vars suben a `resolved`.
+   - Runtime safety: si `scheduledSendAt >= checkIn` **y** `bodyUsesSensitivePrearrival(bodyMd) === true` → `outcome: "blocked_sensitive_prearrival"` (no se crea draft).
+   - Upsert por `@@unique([automationId, reservationId])`:
+     - No existe → crea `MessageDraft { status: "pending_review", bodyMd: output, scheduledSendAt, resolutionStatesJson }`. Outcome `created`.
+     - Existe en `pending_review` y cambian body/scheduledSendAt/resolutionStates → update + lifecycle event. Outcome `updated`.
+     - Existe en `pending_review` e inputs idénticos → `unchanged` (no write).
+     - Existe en `approved|sent|skipped|cancelled|error` → **nunca** modificar. Outcome `unchanged`.
+
+Idempotencia: dos llamadas consecutivas con los mismos inputs producen `[created, unchanged]`. La tabla `message_drafts` es estable bajo retries del cron.
+
+### 5ter.4 Drafts lifecycle
+
+Estados y transiciones (enforced por `ALLOWED_TRANSITIONS` en `messaging-automation.service.ts`):
+
+```text
+pending_review ──approve──▶ approved ──mark_sent──▶ sent
+       │                        │
+       │                        └──cancel──▶ cancelled
+       ├──skip────▶ skipped
+       ├──discard─▶ cancelled
+       └──edit (solo body, permanece en pending_review)
+```
+
+`sent` y `skipped` son terminales. `cancelled` es terminal (re-materialización no la revive).
+
+`MessageDraft.lifecycleHistoryJson`: append-only `{ at: ISO, from: status, to: status, actorId?: string, note?: string }[]`. `scheduler` actor = `"scheduler"`; host actions = `req.userId`. Audit log, no rollback.
+
+### 5ter.5 Cancel cascade
+
+`cancelReservationAction` envuelve en `$transaction`:
+
+1. `reservation.update({status: "cancelled"})`
+2. `cancelDraftsForReservation(reservationId, {client: tx, actorId})` → drafts con `status ∈ {pending_review, approved}` pasan a `cancelled` con evento lifecycle. `sent` y `skipped` quedan tal cual.
+
+`materializeDraftsForReservation` también detecta `reservation.status === "cancelled"` y cancela en cascada — garantiza consistencia si el cron corre después de un cancel en caliente.
+
+### 5ter.6 Scheduler
+
+`runTick(now, {lookaheadDays?, dispatchLimit?}): TickReport` en `src/lib/services/messaging-scheduler.ts`.
+
+1. `reservationsInWindow = prisma.reservation.findMany({ where: OR: [{checkOutDate >= now}, {checkInDate between [now, now+lookahead]}, {createdAt >= now-24h}], status: "confirmed" })`.
+2. Para cada reservation → `materializeDraftsForReservation(id)`. Agrega outcomes.
+3. `listDueDrafts(now, {limit})` → `status: "approved" AND scheduledSendAt <= now`.
+4. Para cada due draft → `transitionDraftAction(id, "mark_sent", {actorId: "scheduler"})`. NO dispatch real (sin provider). El marcado cierra el ciclo y deja espacio a 12D/E para plugear email/WhatsApp.
+
+Retorna `TickReport { now, materialized: {created, updated, unchanged, blocked_*}, dispatched: number }` — observable vía logs del cron handler.
+
+### 5ter.7 Cron endpoint
+
+`POST /api/cron/messaging` (`src/app/api/cron/messaging/route.ts`):
+
+- `export const dynamic = "force-dynamic"`, `runtime = "nodejs"`.
+- Si `process.env.CRON_SECRET` no está definido → `500 { error: "CRON_SECRET not configured" }`.
+- Authorization: `Bearer ${CRON_SECRET}` requerido. Mismatch → `401`.
+- OK → `runTick()` y retorna `{ ok: true, report }`.
+
+Schedule: `vercel.json` → `{ "crons": [{ "path": "/api/cron/messaging", "schedule": "*/10 * * * *" }] }` (cada 10 min).
+
+Sin BullMQ, sin webhooks, sin host notifications. El cron es el único driver.
+
+### 5ter.8 ReservationContext en el resolver
+
+`resolveVariables(propertyId, body, { reservation?: ReservationContextRow })` — 12A expuso el hook; 12B lo consume. Cuando `reservation` llega:
+
+- `guest_name` → `reservation.guestName` (fallback `[Nombre del huésped]` si null)
+- `check_in_date` / `check_out_date` → `Intl.DateTimeFormat(locale, {day:"numeric",month:"long"})` — locale precedence: `reservation.locale || property.defaultLocale || "es"`
+- `num_guests` → `reservation.numGuests`
+
+Las 4 pasan de `unresolved_context` a `resolved`. Sin reservation, siguen en `unresolved_context` (placeholder en preview).
+
 ## 6. Starter packs
 
 Deben derivarse de:

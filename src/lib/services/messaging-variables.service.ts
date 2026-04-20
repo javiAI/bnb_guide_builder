@@ -1,14 +1,14 @@
-// Messaging variable resolution service (rama 12A).
+// Messaging variable resolution service.
 //
 // Substitutes `{{variable}}` tokens in a template body against canonical
-// property data. Contract closed in Fase -1:
+// property data. Resolution states:
 //
 //  - `resolved`            variable known + source available + data present.
 //  - `missing`             variable known + source available + data absent.
 //  - `unknown`             variable not in `taxonomies/messaging_variables.json`
 //                          (typos handled via `suggestion`).
 //  - `unresolved_context`  variable known but depends on reservation context
-//                          that 12A does not have (resolved at send time in 12B).
+//                          not supplied by the caller (filled at send time).
 //
 // No RAG / LLM / reranker / retriever calls. KnowledgeItem lookups are
 // targeted Prisma queries filtered by (entityType, templateKey, tags).
@@ -27,6 +27,7 @@ import {
   type AmenityInstanceRow,
   type KnowledgeItemRow,
   type PropertyContextRow,
+  type ReservationContextRow,
   type ResolverContext,
   type ResolverSourceUsed,
 } from "./messaging-variables-resolvers";
@@ -54,6 +55,10 @@ export interface ResolveOptions {
   /** Absolute base URL for `{{guide_url}}`. If omitted, returns a path-only
    * value (`/g/<slug>`). Send-time (12B) replaces with the public host. */
   guideBaseUrl?: string | null;
+  /** Reservation context. When present, `reservation.*` vars resolve against
+   * it; when absent (preview path), they return `unresolved_context`. The
+   * materializer (12B) always passes a reservation. */
+  reservation?: ReservationContextRow | null;
 }
 
 export async function resolveVariables(
@@ -77,7 +82,12 @@ export async function resolveVariables(
 
   // No DB fetch for all-unknown bodies.
   const ctx = known.length > 0
-    ? await loadResolverContext(propertyId, known, options.guideBaseUrl ?? null)
+    ? await loadResolverContext(
+        propertyId,
+        known,
+        options.guideBaseUrl ?? null,
+        options.reservation ?? null,
+      )
     : null;
 
   const states: Record<string, VariableState> = {};
@@ -225,6 +235,7 @@ async function loadResolverContext(
   propertyId: string,
   known: MessagingVariableItem[],
   guideBaseUrl: string | null,
+  reservation: ReservationContextRow | null,
 ): Promise<ResolverContext> {
   const needed = categorizeNeeds(known);
 
@@ -377,6 +388,7 @@ async function loadResolverContext(
     amenitiesByKey,
     knowledgeByTopic,
     guideBaseUrl,
+    reservation,
   };
 }
 

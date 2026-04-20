@@ -11,6 +11,12 @@ import {
   describeUnknownVariable,
 } from "@/lib/schemas/messaging.schema";
 import { resolveVariables } from "@/lib/services/messaging-variables.service";
+import {
+  bodyUsesInternalOnly,
+  editDraftBody,
+  transitionDraftAction,
+  type DraftLifecycleAction,
+} from "@/lib/services/messaging-automation.service";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Variable validation gate ──
@@ -118,7 +124,7 @@ export async function deleteMessageTemplateAction(
   return { success: true };
 }
 
-// ── Template preview (rama 12A) ──
+// ── Template preview ──
 
 export interface TemplatePreviewState {
   status: "resolved" | "missing" | "unknown" | "unresolved_context";
@@ -215,6 +221,24 @@ export async function createMessageAutomationAction(
 
   const { templateId, ...automationData } = result.data;
 
+  // Safety gate: block automations whose template references `internal_only`
+  // variables. Those tokens may never reach a guest — check-time fail is the
+  // contract.
+  const template = await prisma.messageTemplate.findUnique({
+    where: { id: templateId },
+    select: { bodyMd: true, propertyId: true },
+  });
+  if (!template || template.propertyId !== propertyId) {
+    return { success: false, error: "Plantilla no encontrada" };
+  }
+  if (bodyUsesInternalOnly(template.bodyMd)) {
+    return {
+      success: false,
+      error:
+        "La plantilla usa variables internas (internal_only) y no puede automatizarse. Edita la plantilla o crea una versión guest-safe.",
+    };
+  }
+
   await prisma.messageAutomation.create({
     data: {
       ...automationData,
@@ -273,36 +297,65 @@ export async function deleteMessageAutomationAction(
   return { success: true };
 }
 
-// ── Message Drafts ──
+// ── Message Drafts — lifecycle ──
 
-export async function saveDraftAction(
+async function runDraftTransition(
+  formData: FormData,
+  action: DraftLifecycleAction,
+): Promise<ActionResult> {
+  const draftId = formData.get("draftId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  if (!draftId) return { success: false, error: "draftId obligatorio" };
+
+  const result = await transitionDraftAction(draftId, action);
+  if (!result.ok) {
+    return { success: false, error: result.reason };
+  }
+  if (propertyId) {
+    revalidatePath(`/properties/${propertyId}/messaging/drafts`);
+  }
+  return { success: true };
+}
+
+export async function approveDraftAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
+  return runDraftTransition(formData, "approve");
+}
+
+export async function skipDraftAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runDraftTransition(formData, "skip");
+}
+
+export async function discardDraftAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  return runDraftTransition(formData, "discard");
+}
+
+export async function editDraftBodyAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const draftId = formData.get("draftId") as string;
   const propertyId = formData.get("propertyId") as string;
-  const draftId = formData.get("draftId") as string | null;
-  const bodyMd = formData.get("bodyMd") as string;
-  const channelKey = (formData.get("channelKey") as string) || undefined;
-
-  if (!bodyMd) {
-    return { success: false, error: "El contenido es obligatorio" };
+  const bodyMd = (formData.get("bodyMd") as string) ?? "";
+  if (!draftId) return { success: false, error: "draftId obligatorio" };
+  if (!bodyMd.trim()) {
+    return { success: false, fieldErrors: { bodyMd: ["El contenido no puede estar vacío"] } };
   }
 
-  if (draftId) {
-    await prisma.messageDraft.update({
-      where: { id: draftId },
-      data: { bodyMd, channelKey },
-    });
-  } else {
-    await prisma.messageDraft.create({
-      data: {
-        bodyMd,
-        channelKey,
-        property: { connect: { id: propertyId } },
-      },
-    });
-  }
+  const result = await editDraftBody(draftId, bodyMd);
+  if (!result.ok) return { success: false, error: result.reason };
 
-  revalidatePath(`/properties/${propertyId}/messaging`);
+  if (propertyId) {
+    revalidatePath(`/properties/${propertyId}/messaging/drafts`);
+  }
   return { success: true };
 }
+

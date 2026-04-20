@@ -1,12 +1,45 @@
 import { z } from "zod";
 import {
   KNOWN_MESSAGING_VARIABLES,
+  KNOWN_MESSAGING_TRIGGERS,
   messagingVariablesByToken,
 } from "@/lib/taxonomy-loader";
 import {
   extractVariableTokens,
   suggestVariable,
 } from "@/lib/services/messaging-variables.service";
+
+// Preserves backwards compatibility for rows written before the taxonomy
+// existed. Applied at both schema parse time (inbound writes) and on the
+// read path (materializer + UI label) so legacy rows keep working without
+// a DB migration.
+const LEGACY_TRIGGER_MAP = {
+  reservation_relative: "before_arrival",
+  on_event: "on_booking_confirmed",
+} as const;
+
+export function normaliseTriggerType(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  if (KNOWN_MESSAGING_TRIGGERS.has(raw)) return raw;
+  if (raw in LEGACY_TRIGGER_MAP) {
+    return LEGACY_TRIGGER_MAP[raw as keyof typeof LEGACY_TRIGGER_MAP];
+  }
+  return null;
+}
+
+const triggerTypeField = z
+  .string()
+  .transform((v, ctx) => {
+    const normalised = normaliseTriggerType(v);
+    if (!normalised) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Trigger desconocido: "${v}"`,
+      });
+      return z.NEVER;
+    }
+    return normalised;
+  });
 
 // ── Message Templates ──
 
@@ -34,14 +67,14 @@ export const createMessageAutomationSchema = z.object({
   touchpointKey: z.string().min(1, "El touchpoint es obligatorio"),
   templateId: z.string().min(1, "La plantilla es obligatoria"),
   channelKey: z.string().min(1, "El canal es obligatorio"),
-  triggerType: z.enum(["reservation_relative", "on_event"]),
+  triggerType: triggerTypeField,
   sendOffsetMinutes: z.number().int(),
   active: z.boolean().default(false),
 });
 
 export const updateMessageAutomationSchema = z.object({
   channelKey: z.string().optional(),
-  triggerType: z.enum(["reservation_relative", "on_event"]).optional(),
+  triggerType: triggerTypeField.optional(),
   sendOffsetMinutes: z.number().int().optional(),
   active: z.boolean().optional(),
 });

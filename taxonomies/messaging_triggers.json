@@ -1,0 +1,64 @@
+{
+  "file": "messaging_triggers.json",
+  "version": "2026-04-21",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "before_arrival",
+      "label": "Antes de la llegada",
+      "description": "Se dispara relativo a la fecha y hora de check-in del huésped.",
+      "anchorField": "checkIn",
+      "requiresReservation": true,
+      "defaultOffsetMinutes": -1440,
+      "offsetSign": "negative_typical",
+      "presets": [
+        { "label": "14 días antes", "offsetMinutes": -20160 },
+        { "label": "3 días antes",  "offsetMinutes": -4320 },
+        { "label": "24 h antes",    "offsetMinutes": -1440 },
+        { "label": "2 h antes",     "offsetMinutes": -120 }
+      ]
+    },
+    {
+      "id": "day_of_checkin",
+      "label": "Día del check-in",
+      "description": "Se dispara el mismo día de la llegada, a la hora relativa configurada.",
+      "anchorField": "checkIn",
+      "requiresReservation": true,
+      "defaultOffsetMinutes": 0,
+      "offsetSign": "bidirectional",
+      "presets": [
+        { "label": "A la hora de check-in",   "offsetMinutes": 0 },
+        { "label": "4 h después de check-in", "offsetMinutes": 240 }
+      ]
+    },
+    {
+      "id": "after_checkout",
+      "label": "Después del check-out",
+      "description": "Se dispara relativo a la fecha y hora de salida del huésped.",
+      "anchorField": "checkOut",
+      "requiresReservation": true,
+      "defaultOffsetMinutes": 1440,
+      "offsetSign": "positive_typical",
+      "presets": [
+        { "label": "1 h después", "offsetMinutes": 60 },
+        { "label": "24 h después", "offsetMinutes": 1440 },
+        { "label": "3 días después", "offsetMinutes": 4320 }
+      ]
+    },
+    {
+      "id": "on_booking_confirmed",
+      "label": "Al confirmarse la reserva",
+      "description": "Se dispara al crearse (o confirmarse) la reserva.",
+      "anchorField": "bookingConfirmed",
+      "requiresReservation": true,
+      "defaultOffsetMinutes": 5,
+      "offsetSign": "positive_typical",
+      "presets": [
+        { "label": "Inmediato", "offsetMinutes": 0 },
+        { "label": "5 min después", "offsetMinutes": 5 },
+        { "label": "15 min después", "offsetMinutes": 15 }
+      ]
+    }
+  ]
+}
