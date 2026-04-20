@@ -29,6 +29,7 @@ taxonomies/                           # Source of truth (18+ JSON files)
 ├── policy_taxonomy.json
 ├── troubleshooting_taxonomy.json
 ├── messaging_touchpoints.json
+├── messaging_variables.json   # Rama 12A — catálogo de variables `{{var}}` para templates
 ├── guide_outputs.json
 ├── visibility_levels.json
 ├── media_requirements.json
@@ -364,6 +365,7 @@ El sistema requiere estas taxonomías en `taxonomies/` (ver listado actualizado 
 - `policy_taxonomy.json`
 - `troubleshooting_taxonomy.json`
 - `messaging_touchpoints.json`
+- `messaging_variables.json` — catálogo canónico de variables `{{var}}` para `MessageTemplate.bodyMd` (rama 12A). Cada item declara `id` (`mv.<token>`), `variable` (snake_case), `group` (`property|contact|operations|reservation`), `source` (unión discriminada por `kind`: `property_field` con path en allowlist, `contact` con `roleKey + fallbackRoleKeys[] + field`, `knowledge_item` con `topic`, `derived` con `derivation`, o `reservation`), `sendPolicy` (`safe_always|sensitive_prearrival|internal_only`), `previewBehavior` (`resolve|placeholder` — `reservation` siempre `placeholder`), y `label`/`description`/`example` en ES. Parseada con Zod en [src/lib/taxonomy-loader.ts](../src/lib/taxonomy-loader.ts) mediante `loadMessagingVariables()` (fail-loud: referential integrity de `group`, unicidad de `id`/`variable`, `reservation ⇒ previewBehavior=placeholder`). Consumida por `resolveVariables()` en [src/lib/services/messaging-variables.service.ts](../src/lib/services/messaging-variables.service.ts) y por `validateVariables()` en [src/lib/schemas/messaging.schema.ts](../src/lib/schemas/messaging.schema.ts) (sugerencias Levenshtein para tokens desconocidos). Añadir una variable nueva = editar JSON + registrar resolver si es nuevo `source.kind`; `src/test/messaging-variables-taxonomy.test.ts` enforca cobertura.
 - `guide_outputs.json`
 - `visibility_levels.json`
 - `media_requirements.json`

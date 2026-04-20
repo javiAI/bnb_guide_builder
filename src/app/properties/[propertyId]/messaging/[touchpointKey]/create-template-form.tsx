@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createMessageTemplateAction } from "@/lib/actions/messaging.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { automationChannels, getItems } from "@/lib/taxonomy-loader";
+import { MessageBodyEditor } from "./message-body-editor";
 
 const channels = getItems(automationChannels);
 
@@ -57,22 +58,15 @@ export function CreateTemplateForm({ propertyId, touchpointKey }: CreateTemplate
           )}
         </label>
 
-        <label className="block sm:col-span-2">
-          <span className="text-xs text-[var(--color-neutral-500)]">Contenido *</span>
-          <textarea
+        <div className="sm:col-span-2">
+          <MessageBodyEditor
+            propertyId={propertyId}
             name="bodyMd"
             required
-            rows={4}
             placeholder={"Hola {{guest_name}}, bienvenido a {{property_name}}..."}
-            className={inputClass}
+            fieldError={fieldError("bodyMd")}
           />
-          <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
-            Variables disponibles: {"{{guest_name}}"}, {"{{property_name}}"}, {"{{check_in_time}}"}, {"{{check_out_time}}"}, {"{{guide_url}}"}
-          </p>
-          {fieldError("bodyMd") && (
-            <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("bodyMd")}</p>
-          )}
-        </label>
+        </div>
       </div>
 
       <button

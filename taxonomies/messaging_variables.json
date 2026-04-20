@@ -1,0 +1,277 @@
+{
+  "file": "messaging_variables.json",
+  "version": "2026-04-20",
+  "locale": "es",
+  "units_system": "metric",
+  "groups": [
+    { "id": "property", "label": "Propiedad" },
+    { "id": "contact", "label": "Contactos" },
+    { "id": "operations", "label": "Operativa" },
+    { "id": "reservation", "label": "Reserva" }
+  ],
+  "items": [
+    {
+      "id": "mv.property_name",
+      "variable": "property_name",
+      "label": "Nombre del alojamiento",
+      "description": "Nombre visible de la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "propertyNickname" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Ático Malasaña"
+    },
+    {
+      "id": "mv.check_in_time",
+      "variable": "check_in_time",
+      "label": "Hora de check-in",
+      "description": "Hora de inicio del check-in configurada en la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "checkInStart" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "16:00"
+    },
+    {
+      "id": "mv.check_in_window",
+      "variable": "check_in_window",
+      "label": "Ventana de check-in",
+      "description": "Rango horario de entrada (inicio–fin).",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "checkInWindow" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "16:00–20:00"
+    },
+    {
+      "id": "mv.check_out_time",
+      "variable": "check_out_time",
+      "label": "Hora de check-out",
+      "description": "Hora límite de salida configurada en la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "checkOutTime" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "11:00"
+    },
+    {
+      "id": "mv.city",
+      "variable": "city",
+      "label": "Ciudad",
+      "description": "Ciudad en la que está la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "city" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Madrid"
+    },
+    {
+      "id": "mv.country",
+      "variable": "country",
+      "label": "País",
+      "description": "País en el que está la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "country" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "España"
+    },
+    {
+      "id": "mv.timezone",
+      "variable": "timezone",
+      "label": "Zona horaria",
+      "description": "Zona horaria IANA de la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "timezone" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Europe/Madrid"
+    },
+    {
+      "id": "mv.street_address",
+      "variable": "street_address",
+      "label": "Dirección",
+      "description": "Dirección postal de la propiedad.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "streetAddress" },
+      "sendPolicy": "sensitive_prearrival",
+      "previewBehavior": "resolve",
+      "example": "Calle Fuencarral 123, 3ºB"
+    },
+    {
+      "id": "mv.max_guests",
+      "variable": "max_guests",
+      "label": "Huéspedes máximos",
+      "description": "Capacidad máxima de huéspedes configurada.",
+      "group": "property",
+      "source": { "kind": "property_field", "path": "maxGuests" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "4"
+    },
+    {
+      "id": "mv.guide_url",
+      "variable": "guide_url",
+      "label": "URL de la guía",
+      "description": "Enlace a la guía pública del huésped.",
+      "group": "property",
+      "source": { "kind": "derived", "derivation": "guide_url" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "https://app.example/g/atico-malasana"
+    },
+    {
+      "id": "mv.host_name",
+      "variable": "host_name",
+      "label": "Nombre del anfitrión",
+      "description": "Nombre del anfitrión principal (Contact con rol ct.host o primer contacto de hosting).",
+      "group": "contact",
+      "source": { "kind": "contact", "roleKey": "ct.host", "field": "displayName" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Marta García"
+    },
+    {
+      "id": "mv.support_contact_phone",
+      "variable": "support_contact_phone",
+      "label": "Teléfono de soporte",
+      "description": "Teléfono del contacto de soporte (property_manager, cohost o host como fallback).",
+      "group": "contact",
+      "source": {
+        "kind": "contact",
+        "roleKey": "ct.property_manager",
+        "fallbackRoleKeys": ["ct.cohost", "ct.host"],
+        "field": "phone"
+      },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "+34 600 123 456"
+    },
+    {
+      "id": "mv.support_contact_whatsapp",
+      "variable": "support_contact_whatsapp",
+      "label": "WhatsApp de soporte",
+      "description": "WhatsApp del contacto de soporte (property_manager, cohost o host como fallback).",
+      "group": "contact",
+      "source": {
+        "kind": "contact",
+        "roleKey": "ct.property_manager",
+        "fallbackRoleKeys": ["ct.cohost", "ct.host"],
+        "field": "whatsapp"
+      },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "+34 600 123 456"
+    },
+    {
+      "id": "mv.wifi_name",
+      "variable": "wifi_name",
+      "label": "Nombre WiFi",
+      "description": "SSID del wifi principal. Se obtiene del amenity canónico am.wifi; fallback a KnowledgeItem si no hay datos canónicos.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "wifi_name" },
+      "sendPolicy": "sensitive_prearrival",
+      "previewBehavior": "resolve",
+      "example": "Atico-Guest"
+    },
+    {
+      "id": "mv.wifi_password",
+      "variable": "wifi_password",
+      "label": "Contraseña WiFi",
+      "description": "Clave del wifi principal. Se obtiene del amenity canónico am.wifi; fallback a KnowledgeItem si no hay datos canónicos.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "wifi_password" },
+      "sendPolicy": "sensitive_prearrival",
+      "previewBehavior": "resolve",
+      "example": "bienvenidos2026"
+    },
+    {
+      "id": "mv.access_instructions",
+      "variable": "access_instructions",
+      "label": "Instrucciones de acceso",
+      "description": "Texto con instrucciones de entrada. Se deriva de accessMethodsJson y primaryAccessMethod; fallback a KnowledgeItem.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "access_instructions" },
+      "sendPolicy": "sensitive_prearrival",
+      "previewBehavior": "resolve",
+      "example": "Entrada por portal principal. Código 2024*. Ascensor a planta 3ª, puerta B."
+    },
+    {
+      "id": "mv.pet_policy",
+      "variable": "pet_policy",
+      "label": "Política de mascotas",
+      "description": "Resumen textual de la política de mascotas. Se deriva de policiesJson['pol.pets']; fallback a KnowledgeItem.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "pet_policy" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Se admiten perros pequeños hasta 10 kg con cargo de 15€/noche."
+    },
+    {
+      "id": "mv.smoking_policy",
+      "variable": "smoking_policy",
+      "label": "Política de fumar",
+      "description": "Resumen textual de la política de tabaco/vapeo. Se deriva de policiesJson['pol.smoking']; fallback a KnowledgeItem.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "smoking_policy" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "No se permite fumar en el interior. Permitido solo en el balcón."
+    },
+    {
+      "id": "mv.parking_instructions",
+      "variable": "parking_instructions",
+      "label": "Instrucciones de parking",
+      "description": "Indicaciones de aparcamiento. Se deriva del amenity am.parking si existe; fallback a KnowledgeItem.",
+      "group": "operations",
+      "source": { "kind": "knowledge_item", "topic": "parking_instructions" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "resolve",
+      "example": "Parking en la calle de pago. Garaje público a 100m en Plaza Mayor."
+    },
+    {
+      "id": "mv.guest_name",
+      "variable": "guest_name",
+      "label": "Nombre del huésped",
+      "description": "Nombre del huésped de la reserva. Se resuelve al enviar; no disponible en preview.",
+      "group": "reservation",
+      "source": { "kind": "reservation", "field": "guestName" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "placeholder",
+      "example": "Laura"
+    },
+    {
+      "id": "mv.check_in_date",
+      "variable": "check_in_date",
+      "label": "Fecha de check-in",
+      "description": "Fecha de entrada de la reserva. Se resuelve al enviar; no disponible en preview.",
+      "group": "reservation",
+      "source": { "kind": "reservation", "field": "checkInDate" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "placeholder",
+      "example": "15 de mayo"
+    },
+    {
+      "id": "mv.check_out_date",
+      "variable": "check_out_date",
+      "label": "Fecha de check-out",
+      "description": "Fecha de salida de la reserva. Se resuelve al enviar; no disponible en preview.",
+      "group": "reservation",
+      "source": { "kind": "reservation", "field": "checkOutDate" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "placeholder",
+      "example": "18 de mayo"
+    },
+    {
+      "id": "mv.num_guests",
+      "variable": "num_guests",
+      "label": "Nº de huéspedes",
+      "description": "Número de huéspedes de la reserva. Se resuelve al enviar; no disponible en preview.",
+      "group": "reservation",
+      "source": { "kind": "reservation", "field": "numGuests" },
+      "sendPolicy": "safe_always",
+      "previewBehavior": "placeholder",
+      "example": "3"
+    }
+  ]
+}

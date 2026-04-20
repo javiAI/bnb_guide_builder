@@ -8,9 +8,9 @@ import {
   deleteMessageTemplateAction,
 } from "@/lib/actions/messaging.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { validateVariables } from "@/lib/schemas/messaging.schema";
 import { automationChannels, getItems } from "@/lib/taxonomy-loader";
 import type { BadgeTone } from "@/lib/types";
+import { MessageBodyEditor } from "./message-body-editor";
 
 const channels = getItems(automationChannels);
 
@@ -49,9 +49,6 @@ export function TemplateCard({
     deleteMessageTemplateAction,
     null,
   );
-
-  // Variable validation preview
-  const { unknown } = validateVariables(template.bodyMd);
 
   const inputClass =
     "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
@@ -97,19 +94,15 @@ export function TemplateCard({
               <input name="subjectLine" type="text" defaultValue={template.subjectLine ?? ""} className={inputClass} />
             </label>
 
-            <label className="block sm:col-span-2">
-              <span className="text-xs text-[var(--color-neutral-500)]">Contenido *</span>
-              <textarea
+            <div className="sm:col-span-2">
+              <MessageBodyEditor
+                propertyId={propertyId}
                 name="bodyMd"
                 required
-                rows={4}
                 defaultValue={template.bodyMd}
-                className={inputClass}
+                fieldError={fieldError("bodyMd")}
               />
-              {fieldError("bodyMd") && (
-                <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("bodyMd")}</p>
-              )}
-            </label>
+            </div>
           </div>
 
           <div className="mt-4 flex gap-2">
@@ -151,11 +144,6 @@ export function TemplateCard({
           <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
             {template.bodyMd}
           </p>
-          {unknown.length > 0 && (
-            <p className="mt-1 text-xs text-[var(--color-warning-600)]">
-              Variables desconocidas: {unknown.map((v) => `{{${v}}}`).join(", ")}
-            </p>
-          )}
         </div>
 
         <div className="ml-4 flex shrink-0 gap-2">

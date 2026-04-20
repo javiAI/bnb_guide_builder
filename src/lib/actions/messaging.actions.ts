@@ -8,8 +8,27 @@ import {
   createMessageAutomationSchema,
   updateMessageAutomationSchema,
   validateVariables,
+  describeUnknownVariable,
 } from "@/lib/schemas/messaging.schema";
+import { resolveVariables } from "@/lib/services/messaging-variables.service";
 import type { ActionResult } from "@/lib/types/action-result";
+
+// ── Variable validation gate ──
+
+/** Run blocking validation of template variables: unknown `{{var}}` tokens
+ * produce a fieldError on `bodyMd` with a Spanish-language suggestion.
+ * Missing / unresolved_context are NOT blocking — resolution surfaces those
+ * at send time (12B) and in the live preview. */
+function checkUnknownVariables(bodyMd: string): ActionResult | null {
+  const { unknown } = validateVariables(bodyMd);
+  if (unknown.length === 0) return null;
+  return {
+    success: false,
+    fieldErrors: {
+      bodyMd: unknown.map(describeUnknownVariable),
+    },
+  };
+}
 
 // ── Message Templates ──
 
@@ -34,13 +53,12 @@ export async function createMessageTemplateAction(
     };
   }
 
-  // Variable validation warning (non-blocking)
-  const { unknown } = validateVariables(result.data.bodyMd);
+  const unknownBlock = checkUnknownVariables(result.data.bodyMd);
+  if (unknownBlock) return unknownBlock;
 
   await prisma.messageTemplate.create({
     data: {
       ...result.data,
-      variablesJson: unknown.length > 0 ? { unknownVars: unknown } : undefined,
       property: { connect: { id: propertyId } },
     },
   });
@@ -70,14 +88,12 @@ export async function updateMessageTemplateAction(
     };
   }
 
-  const { unknown } = validateVariables(result.data.bodyMd);
+  const unknownBlock = checkUnknownVariables(result.data.bodyMd);
+  if (unknownBlock) return unknownBlock;
 
   await prisma.messageTemplate.update({
     where: { id: templateId },
-    data: {
-      ...result.data,
-      variablesJson: unknown.length > 0 ? { unknownVars: unknown } : undefined,
-    },
+    data: result.data,
   });
 
   revalidatePath(`/properties/${propertyId}/messaging`);
@@ -100,6 +116,77 @@ export async function deleteMessageTemplateAction(
 
   revalidatePath(`/properties/${propertyId}/messaging`);
   return { success: true };
+}
+
+// ── Template preview (rama 12A) ──
+
+export interface TemplatePreviewState {
+  status: "resolved" | "missing" | "unknown" | "unresolved_context";
+  value?: string;
+  label?: string;
+  suggestion?: string | null;
+}
+
+export interface TemplatePreviewResult {
+  success: true;
+  output: string;
+  states: Record<string, TemplatePreviewState>;
+  counts: {
+    resolved: number;
+    missing: number;
+    unknown: number;
+    unresolvedContext: number;
+  };
+}
+
+export interface TemplatePreviewError {
+  success: false;
+  error: string;
+}
+
+/** Preview a template with real property data. Called from the editor (debounced
+ * on body change). Cheap: one property query + contact/amenity/KI batch. Never
+ * invokes the assistant RAG pipeline. */
+export async function previewMessageTemplateAction(
+  propertyId: string,
+  bodyMd: string,
+): Promise<TemplatePreviewResult | TemplatePreviewError> {
+  if (!propertyId) {
+    return { success: false, error: "propertyId requerido" };
+  }
+  if (typeof bodyMd !== "string") {
+    return { success: false, error: "bodyMd inválido" };
+  }
+
+  try {
+    const result = await resolveVariables(propertyId, bodyMd);
+    const states: Record<string, TemplatePreviewState> = {};
+    for (const [token, state] of Object.entries(result.states)) {
+      if (state.status === "resolved") {
+        states[token] = { status: "resolved", value: state.value };
+      } else if (state.status === "missing") {
+        states[token] = { status: "missing", label: state.label };
+      } else if (state.status === "unresolved_context") {
+        states[token] = { status: "unresolved_context", label: state.label };
+      } else {
+        states[token] = { status: "unknown", suggestion: state.suggestion };
+      }
+    }
+    return {
+      success: true,
+      output: result.output,
+      states,
+      counts: {
+        resolved: result.resolved.length,
+        missing: result.missing.length,
+        unknown: result.unknown.length,
+        unresolvedContext: result.unresolvedContext.length,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Error desconocido";
+    return { success: false, error: message };
+  }
 }
 
 // ── Message Automations ──
