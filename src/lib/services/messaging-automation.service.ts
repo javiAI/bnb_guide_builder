@@ -37,6 +37,7 @@ import {
 } from "@/lib/services/messaging-variables.service";
 import type { ReservationContextRow } from "@/lib/services/messaging-variables-resolvers";
 import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
+import { isPrismaUniqueViolation } from "@/lib/utils";
 
 // ─── Public types ────────────────────────────────────────────────────────
 
@@ -257,12 +258,25 @@ async function materializeSingleDraft(
   // `[checkIn − SENSITIVE_PREARRIVAL_MAX_LEAD_MS, checkIn)` window. Both
   // sides matter: after arrival the data is stale, before the window it
   // leaks sensitive content (e.g. wifi_password weeks early).
+  const isSensitive = bodyUsesSensitivePrearrival(automation.template.bodyMd);
   const checkInInstant = zonedDateToInstant({
     date: reservation.checkInDate,
     time: property.checkInStart ?? "16:00",
     timezone: property.timezone ?? "UTC",
   });
-  if (checkInInstant && bodyUsesSensitivePrearrival(automation.template.bodyMd)) {
+  if (isSensitive) {
+    // Fail-closed if the check-in instant can't be derived (invalid tz,
+    // malformed checkInStart). For non-checkIn-anchored triggers
+    // (e.g. on_booking_confirmed) scheduledSendAt may still compute, but
+    // without a checkInInstant we can't evaluate the lead window — blocking
+    // is safer than materializing an unchecked sensitive draft.
+    if (!checkInInstant) {
+      return {
+        ...base,
+        draftId: null,
+        outcome: "blocked_sensitive_prearrival",
+      };
+    }
     const earliestAllowed = new Date(
       checkInInstant.getTime() - SENSITIVE_PREARRIVAL_MAX_LEAD_MS,
     );
@@ -301,23 +315,45 @@ async function materializeSingleDraft(
       to: "pending_review",
       actorId: null,
     });
-    const created = await db.messageDraft.create({
-      data: {
-        propertyId: reservation.propertyId,
-        reservationId: reservation.id,
-        automationId: automation.id,
-        templateId: automation.templateId,
-        touchpointKey: automation.touchpointKey,
-        bodyMd: resolution.output,
-        channelKey: automation.channelKey,
-        scheduledSendAt,
-        status: "pending_review",
-        resolutionStatesJson,
-        lifecycleHistoryJson: seed,
-      },
-      select: { id: true },
-    });
-    return { ...base, draftId: created.id, outcome: "created" };
+    try {
+      const created = await db.messageDraft.create({
+        data: {
+          propertyId: reservation.propertyId,
+          reservationId: reservation.id,
+          automationId: automation.id,
+          templateId: automation.templateId,
+          touchpointKey: automation.touchpointKey,
+          bodyMd: resolution.output,
+          channelKey: automation.channelKey,
+          scheduledSendAt,
+          status: "pending_review",
+          resolutionStatesJson,
+          lifecycleHistoryJson: seed,
+        },
+        select: { id: true },
+      });
+      return { ...base, draftId: created.id, outcome: "created" };
+    } catch (err) {
+      // Race: another tick/retry created the draft between our findUnique and
+      // this create. The unique constraint `@@unique([automationId, reservationId])`
+      // fires P2002 — treat as the other caller's `created`, we're `unchanged`.
+      // Any other error propagates.
+      if (!isPrismaUniqueViolation(err)) throw err;
+      const racedExisting = await db.messageDraft.findUnique({
+        where: {
+          automationId_reservationId: {
+            automationId: automation.id,
+            reservationId: reservation.id,
+          },
+        },
+        select: { id: true },
+      });
+      return {
+        ...base,
+        draftId: racedExisting?.id ?? null,
+        outcome: "unchanged",
+      };
+    }
   }
 
   // Existing row: only `pending_review` drafts track reservation edits.
@@ -361,8 +397,10 @@ interface ScheduleArgs {
 }
 
 /** Compute the UTC instant at which a draft should be dispatched, given the
- * trigger's anchor and the automation offset. Returns `null` if the property
- * has no anchor time (e.g. check-out without `checkOutTime`). */
+ * trigger's anchor and the automation offset. For date-based anchors, missing
+ * property times fall back to defaults (`16:00` check-in, `11:00` check-out).
+ * Returns `null` only when no anchor instant can be resolved (e.g. invalid
+ * `property.timezone`). */
 export function computeScheduledSendAt(args: ScheduleArgs): Date | null {
   const tz = args.property.timezone ?? "UTC";
 

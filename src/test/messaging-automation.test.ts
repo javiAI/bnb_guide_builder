@@ -255,3 +255,53 @@ describe("cancelDraftsForReservation", () => {
     expect(prismaMock.messageDraft.update).toHaveBeenCalledOnce();
   });
 });
+
+describe("materializeDraftsForReservation — P2002 race", () => {
+  // Two concurrent ticks/retries can both see `findUnique → null` and both
+  // attempt `create`. The unique constraint `@@unique([automationId, reservationId])`
+  // makes the second create throw P2002. The materializer must swallow that
+  // violation, re-read the row created by the winner, and return `unchanged`
+  // so the operation remains truly idempotent.
+  beforeEach(() => {
+    resetMocks();
+    prismaMock.reservation.findUnique.mockResolvedValue(FIXTURE_RESERVATION);
+    prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
+    prismaMock.messageAutomation.findMany.mockResolvedValue([FIXTURE_AUTOMATION]);
+  });
+
+  it("returns `unchanged` when `create` races against another tick (P2002)", async () => {
+    // Simulate the race: our findUnique sees no existing draft, but by the
+    // time we call create, another tick has already inserted the row.
+    prismaMock.messageDraft.findUnique
+      .mockResolvedValueOnce(null) // pre-create check (our turn, no row)
+      .mockResolvedValueOnce({ id: "draft_winner" }); // post-P2002 re-read
+    const p2002 = Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002",
+    });
+    prismaMock.messageDraft.create.mockRejectedValueOnce(p2002);
+
+    const outcomes = await materializeDraftsForReservation("r_1");
+
+    expect(outcomes).toEqual([
+      {
+        automationId: "auto_1",
+        reservationId: "r_1",
+        draftId: "draft_winner",
+        outcome: "unchanged",
+      },
+    ]);
+    expect(prismaMock.messageDraft.create).toHaveBeenCalledOnce();
+    expect(prismaMock.messageDraft.update).not.toHaveBeenCalled();
+  });
+
+  it("propagates non-P2002 errors from `create`", async () => {
+    prismaMock.messageDraft.findUnique.mockResolvedValueOnce(null);
+    prismaMock.messageDraft.create.mockRejectedValueOnce(
+      new Error("connection reset"),
+    );
+
+    await expect(materializeDraftsForReservation("r_1")).rejects.toThrow(
+      "connection reset",
+    );
+  });
+});

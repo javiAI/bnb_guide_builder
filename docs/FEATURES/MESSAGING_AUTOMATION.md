@@ -124,7 +124,7 @@ Legacy mapping (sin migración DB): `reservation_relative → before_arrival`, `
 - `triggerType` (ID de la taxonomía tras `normaliseTriggerType`)
 - `sendOffsetMinutes: Int`
 - `active: boolean`
-- `@@index([propertyId, active])`
+- `@@index([propertyId])`, `@@index([propertyId, touchpointKey])`
 
 Check-time gate (`createMessageAutomationAction`): si `bodyUsesInternalOnly(template.bodyMd) === true`, se bloquea la creación con error "La plantilla usa variables internas (internal_only) y no puede automatizarse — edítala primero".
 
@@ -150,7 +150,7 @@ Idempotencia: dos llamadas consecutivas con los mismos inputs producen `[created
 
 ### 5ter.4 Drafts lifecycle
 
-Estados y transiciones (enforced por `ALLOWED_TRANSITIONS` en `messaging-automation.service.ts`):
+Estados y transiciones (enforced por `LIFECYCLE_TRANSITIONS` en `messaging-automation.service.ts`):
 
 ```text
 pending_review ──approve──▶ approved ──mark_sent──▶ sent
@@ -170,7 +170,7 @@ pending_review ──approve──▶ approved ──mark_sent──▶ sent
 `cancelReservationAction` envuelve en `$transaction`:
 
 1. `reservation.update({status: "cancelled"})`
-2. `cancelDraftsForReservation(reservationId, {client: tx, actorId})` → drafts con `status ∈ {pending_review, approved}` pasan a `cancelled` con evento lifecycle. `sent` y `skipped` quedan tal cual.
+2. `cancelDraftsForReservation(reservationId, {client: tx})` → drafts con `status ∈ {pending_review, approved}` pasan a `cancelled` con evento lifecycle (`actorId: null`, audit-only). `sent` y `skipped` quedan tal cual.
 
 `materializeDraftsForReservation` también detecta `reservation.status === "cancelled"` y cancela en cascada — garantiza consistencia si el cron corre después de un cancel en caliente.
 

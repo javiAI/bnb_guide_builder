@@ -420,11 +420,12 @@ const resolveReservation: Resolver = (item, ctx) => {
   const reader = RESERVATION_FIELD_READERS[item.source.field];
   if (!reader) return { status: "missing" };
   const locale = ctx.reservation.locale ?? ctx.property.defaultLocale;
-  // `checkInDate`/`checkOutDate` are @db.Date (UTC midnight). Format in the
-  // property's timezone so a reservation on 2026-05-10 renders as "10 de mayo"
-  // even for properties east/west of UTC.
-  const timeZone = ctx.property.timezone ?? "UTC";
-  const raw = reader(ctx.reservation, locale, timeZone);
+  // `checkInDate`/`checkOutDate` are @db.Date — stored as UTC-midnight instants.
+  // Formatting them in the property's timezone shifts the rendered calendar day
+  // for properties west of UTC (e.g. America/Los_Angeles turns 2026-05-10 into
+  // "9 de mayo"). Date-only values have no meaningful offset, so format in UTC
+  // to preserve the stored calendar date regardless of property location.
+  const raw = reader(ctx.reservation, locale, "UTC");
   if (!nonEmpty(raw)) return { status: "missing" };
   return { status: "resolved", value: raw, sourceUsed: "canonical" };
 };

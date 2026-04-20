@@ -115,11 +115,36 @@ export async function updateReservationAction(
 
   const existing = await prisma.reservation.findUnique({
     where: { id: data.reservationId },
-    select: { id: true, propertyId: true, status: true },
+    select: {
+      id: true,
+      propertyId: true,
+      status: true,
+      checkInDate: true,
+      checkOutDate: true,
+    },
   });
   if (!existing) return { success: false, error: "Reserva no encontrada" };
   if (existing.status === "cancelled") {
     return { success: false, error: "No se puede editar una reserva cancelada" };
+  }
+
+  // Post-update date invariant: updateReservationSchema only validates the
+  // order when BOTH dates are in the payload, so partial updates could leave
+  // checkInDate >= checkOutDate (e.g. editing only checkInDate into the future).
+  // Compare the effective post-update dates against the persisted row.
+  const effectiveCheckIn = data.checkInDate
+    ? parseIsoDate(data.checkInDate)
+    : existing.checkInDate;
+  const effectiveCheckOut = data.checkOutDate
+    ? parseIsoDate(data.checkOutDate)
+    : existing.checkOutDate;
+  if (effectiveCheckOut.getTime() <= effectiveCheckIn.getTime()) {
+    return {
+      success: false,
+      fieldErrors: {
+        checkOutDate: ["La fecha de salida debe ser posterior a la de llegada"],
+      },
+    };
   }
 
   // locale: distinguish "field absent" (leave alone) from "field present but
