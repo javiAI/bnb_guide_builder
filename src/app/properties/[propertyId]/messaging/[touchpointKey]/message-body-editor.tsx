@@ -55,6 +55,10 @@ export function MessageBodyEditor({
 }: MessageBodyEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const pickerInputRef = useRef<HTMLInputElement | null>(null);
+  // When the picker opens from typing `{{`, we capture the range of those
+  // braces so the selection replaces them rather than nesting into
+  // `{{{{var}}}}`. Null when opened via button or Ctrl/Cmd+Space.
+  const triggerRangeRef = useRef<{ start: number; end: number } | null>(null);
 
   const [value, setValue] = useState(defaultValue);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -88,6 +92,7 @@ export function MessageBodyEditor({
   const closePicker = useCallback(() => {
     setPickerOpen(false);
     setPickerQuery("");
+    triggerRangeRef.current = null;
     textareaRef.current?.focus();
   }, []);
 
@@ -96,8 +101,9 @@ export function MessageBodyEditor({
       const ta = textareaRef.current;
       if (!ta) return;
       const token = `{{${variable}}}`;
-      const start = ta.selectionStart ?? value.length;
-      const end = ta.selectionEnd ?? value.length;
+      const trigger = triggerRangeRef.current;
+      const start = trigger ? trigger.start : ta.selectionStart ?? value.length;
+      const end = trigger ? trigger.end : ta.selectionEnd ?? value.length;
       const next = value.slice(0, start) + token + value.slice(end);
       setValue(next);
       requestAnimationFrame(() => {
@@ -120,6 +126,7 @@ export function MessageBodyEditor({
       next.slice(caret - 2, caret) === "{{" &&
       !/[a-zA-Z_]/.test(next.charAt(caret) || "")
     ) {
+      triggerRangeRef.current = { start: caret - 2, end: caret };
       openPicker();
     }
   };
