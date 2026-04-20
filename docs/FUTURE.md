@@ -242,19 +242,19 @@ Retirar el mock antes de tiempo rompe dev local y CI — **no lanzar sin el trig
 ## 15. Per-contact `escalationIntents[]` override
 
 **Estado**: diferido.
-**Trigger**: un host quiere asignar un `Contact` a un intent de escalation específico sin pasar por el matching `contactType → intentToContactRoles()` de `escalation_rules.json` (ej: una gestora de apartamentos que tiene una concierge de confianza para lockouts aunque su `contactType` sea `ct.host`).
+**Trigger**: un host quiere asignar un `Contact` a un intent de escalation específico sin pasar por el matching `roleKey → contactRoles[]` de `escalation_rules.json` (ej: una gestora de apartamentos que tiene una concierge de confianza para lockouts aunque su `roleKey` sea `ct.host`).
 
 ### Cómo funciona hoy (rama 11D)
 
-La resolución de contacto por intent vive en `taxonomies/escalation_rules.json`: cada intent declara `contactRoles[]` (listado de `contactType` permitidos). `resolveEscalation({intentId})` hace `prisma.contact.findMany({ where: { contactType: { in: contactRoles } } })` + orden + filtro de visibility. El host puede priorizar contacts dentro de un role (vía `isPrimary` + `sortOrder`), pero **no puede** mapear un contact a un intent para el que su `contactType` no cualifica.
+La resolución de contacto por intent vive en `taxonomies/escalation_rules.json`: cada intent declara `contactRoles[]` (listado de `roleKey` permitidos). `resolveEscalation({intentId})` hace `prisma.contact.findMany({ where: { roleKey: { in: contactRoles } } })` + orden + filtro de visibility. El host puede priorizar contacts dentro de un role (vía `isPrimary` + `sortOrder`), pero **no puede** mapear un contact a un intent para el que su `roleKey` no cualifica.
 
 ### Qué añadiría el override
 
-Columna nueva en `Contact`: `escalationIntents String[] @default([])`. Si tiene valores, el service los considera candidatos **además** del match por `contactType`. Resolución final:
+Columna nueva en `Contact`: `escalationIntents String[] @default([])`. Si tiene valores, el service los considera candidatos **además** del match por `roleKey`. Resolución final:
 
 ```text
 candidates = [
-  ...contacts WHERE contactType IN intentToContactRoles(intentId),
+  ...contacts WHERE roleKey IN intent.contactRoles,
   ...contacts WHERE $intentId = ANY(escalationIntents)
 ]
 ```
@@ -263,7 +263,7 @@ Dedupe por `id`, mismo orden determinístico (`emergencyAvailable > isPrimary > 
 
 ### Por qué no está en 11D
 
-- El patrón `contactType + taxonomía central` cubre el 95% de casos (una propiedad tiene un cerrajero → `ct.locksmith` → intent `int.lockout`). Override solo gana cuando hay ambigüedad real, y hoy no hay ninguna reportada.
+- El patrón `roleKey + taxonomía central` cubre el 95% de casos (una propiedad tiene un cerrajero → `ct.locksmith` → intent `int.lockout`). Override solo gana cuando hay ambigüedad real, y hoy no hay ninguna reportada.
 - Añadir una columna nullable a `Contact` requiere migración + UI en el editor de contactos + documentación + tests de cascada. Trabajo no trivial sin demanda.
 - El intent resolver (heurística pura) ya pasa el precision gate sin esta capa. Añadirla sin necesidad complicaría el contrato sin beneficio medible.
 

@@ -315,7 +315,7 @@ Cuando el synthesizer decide `escalated: true` (sentinel `ESCALATE:` o ausencia 
 
 - [escalation.service.ts](../../src/lib/services/assistant/escalation.service.ts): `resolveEscalation({ propertyId, intentId, audience })` → `EscalationResolution | null`.
 - Tiers:
-  1. **`intent`** — hay contacto con `contactType` que matchea `intentToContactRoles(intentId)` de `escalation_rules.json`.
+  1. **`intent`** — hay contacto con `roleKey` (`ct.*`) que matchea `contactRoles[]` del intent en `escalation_rules.json`.
   2. **`intent_with_host`** — no hay contacto específico; se deriva al `ct.host` (general_host). Copy al huésped: "derivando al anfitrión".
   3. **`fallback`** — ni específico ni host disponibles; el caller decide si suprime o muestra un aviso neutro. Por ahora siempre existe host si existe al menos un contact.
 - Orden determinístico: `prisma.orderBy = [{emergencyAvailable:"desc"},{isPrimary:"desc"},{sortOrder:"asc"},{createdAt:"asc"}]`.

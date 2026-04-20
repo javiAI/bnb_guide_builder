@@ -77,28 +77,37 @@ export async function resolveEscalation(
     audience: input.audience,
   });
 
-  const pickTier = (roles: Set<string>) =>
-    visibleRows.filter((r) => roles.has(r.roleKey));
+  // A contact without any reachable channel would render a CTA-less card AND
+  // short-circuit the cascade — filter those before deciding the tier. Tier3
+  // uses fallback.channelPriority (broadest) since we've given up on the
+  // intent-specific semantics; tier1/2 stay scoped to the intent's priority.
+  const tryTier = (
+    roles: Set<string>,
+    priority: ReadonlyArray<EscalationChannel>,
+  ): ResolvedContact[] =>
+    visibleRows
+      .filter((r) => roles.has(r.roleKey))
+      .map((r) => projectContact(r, priority, input.audience))
+      .filter((c) => c.channels.length > 0);
 
-  let contacts = pickTier(tier1);
+  let contacts = tryTier(tier1, effectiveIntent.channelPriority);
   let fallbackLevel: EscalationFallbackLevel = "intent";
   if (contacts.length === 0 && tier2) {
-    contacts = pickTier(tier2);
+    contacts = tryTier(tier2, effectiveIntent.channelPriority);
     fallbackLevel = "intent_with_host";
   }
   if (contacts.length === 0) {
-    contacts = pickTier(tier3);
+    contacts = tryTier(tier3, fallback.channelPriority);
     fallbackLevel = "fallback";
   }
   if (contacts.length === 0) return null;
 
-  const channelPriority = effectiveIntent.channelPriority;
   return {
     intentId: effectiveIntent.id,
     intentLabel: effectiveIntent.label,
     emergencyPriority: effectiveIntent.emergencyPriority,
     fallbackLevel,
-    contacts: contacts.map((c) => projectContact(c, channelPriority, input.audience)),
+    contacts,
   };
 }
 

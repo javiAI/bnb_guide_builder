@@ -20,6 +20,12 @@ const CHANNEL_LABEL: Record<ContactChannel, string> = {
   email: "Correo",
 };
 
+const CHANNEL_ACTION: Record<ContactChannel, string> = {
+  tel: "Llamar a",
+  whatsapp: "Abrir WhatsApp con",
+  email: "Enviar correo a",
+};
+
 export function EscalationHandoff({ handoff }: Props) {
   const emergency = handoff.emergencyPriority;
   return (
@@ -84,6 +90,7 @@ export function EscalationHandoff({ handoff }: Props) {
                     <a
                       key={ch.kind}
                       href={ch.href}
+                      aria-label={`${CHANNEL_ACTION[ch.kind]} ${c.displayName}`}
                       className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-3 py-2 text-xs font-medium text-white"
                     >
                       {CHANNEL_LABEL[ch.kind]}

@@ -83,4 +83,10 @@ describe("<EscalationHandoff>", () => {
     expect(screen.getByText("Principal")).toBeTruthy();
     expect(screen.getByText("24/7")).toBeTruthy();
   });
+
+  it("disambiguates channel CTAs via aria-label (contact name + action)", () => {
+    render(<EscalationHandoff handoff={resolution()} />);
+    expect(screen.getByLabelText("Llamar a Cerrajero 24h")).toBeTruthy();
+    expect(screen.getByLabelText("Abrir WhatsApp con Cerrajero 24h")).toBeTruthy();
+  });
 });

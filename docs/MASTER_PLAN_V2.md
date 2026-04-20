@@ -1333,17 +1333,17 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 **Reconciliación con lo entregado (2026-04-19)**:
 - **Trigger exclusivo**: `synthesized.escalated === true` (sentinel `ESCALATE:` o ausencia de `[N]` refs). La spec original decía "si `confidenceScore < threshold` o `citations.length === 0`" — se reconcilió a un único trigger para evitar doble gate (la mandatory-citation rule + ESCALATE ya cubren ambos casos desde 11C y añadir threshold crearía divergencia silenciosa).
-- **Intent resolver**: heurística pura en `resolveEscalationIntent` (accent-strip NFD, keywords ES/EN desde `taxonomies/escalation_rules.json`, longest-match tiebreak, emergency precedence). Classifier LLM (Haiku) queda **diferido a 11E** porque la heurística pasa el precision gate ≥0.95 + recall 1.0 en los 4 intents críticos (`int.emergency_medical`, `int.emergency_fire`, `int.emergency_security`, `int.lockout`) sobre corpus de 53 rows. Activar Haiku solo si la cobertura de intents crece y la heurística pierde precisión.
+- **Intent resolver**: heurística pura en `resolveEscalationIntent` (accent-strip NFD, keywords ES/EN desde `taxonomies/escalation_rules.json`, longest-match tiebreak, emergency precedence). Classifier LLM (Haiku) queda **diferido a 11E** porque la heurística pasa el precision gate ≥0.95 + recall 1.0 en los 4 intents críticos (`int.lockout`, `int.emergency_medical`, `int.emergency_fire`, `int.general`) sobre corpus de 53 rows. Activar Haiku solo si la cobertura de intents crece y la heurística pierde precisión.
 - **Persistence**: `AssistantMessage.citationsJson` envelope extendido con `escalationContact: EscalationResolution | null`. Sin migración (confirma patrón de 11C).
 - **UI**: `<EscalationHandoff>` inline en `AssistantChat` (operator-only). Widget huésped equivalente queda **diferido a 11F** (coexistencia con semantic search público).
 
 **Archivos entregados**:
 - `src/lib/services/assistant/escalation-intent.ts` — heurística pura
 - `src/lib/services/assistant/escalation.service.ts` — cascada 3-tier (`intent`/`intent_with_host`/`fallback`), visibility defense-in-depth, channel projection (tel/wa.me/mailto)
-- `taxonomies/escalation_rules.json` + `src/lib/taxonomy/escalation-rules.loader.ts` (Zod)
+- `taxonomies/escalation_rules.json` + `src/lib/taxonomy-loader.ts` (`loadEscalationRules()`, Zod)
 - `src/lib/schemas/assistant.schema.ts` — `escalationResolutionSchema` + embed en `askResponseSchema` (nullable required)
 - `src/components/assistant/EscalationHandoff.tsx` + wiring en `AssistantChat`
-- Pipeline wiring en `src/lib/services/assistant/pipeline.ts` — `resolveEscalationContact()` guardado por `synthesized.escalated` (happy path no toca `prisma.contact.findMany`)
+- Pipeline wiring en `src/lib/services/assistant/pipeline.ts` — resolución inline de `intent → contact` guardada por `synthesized.escalated` (happy path no toca `prisma.contact.findMany`)
 - Tests: `assistant-escalation-intent.test.ts` (53) + `assistant-escalation-intent-precision.test.ts` (9) + `assistant-escalation-service.test.ts` (15) + `assistant-schema-escalation.test.ts` (5) + `escalation-handoff.test.tsx` (6) + happy-path guard en `assistant-pipeline.test.ts`
 
 **Diferidos documentados**:

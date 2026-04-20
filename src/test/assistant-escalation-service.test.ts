@@ -309,19 +309,45 @@ describe("resolveEscalation — channels", () => {
     expect(r!.contacts[0].channels.map((c) => c.kind)).toEqual(["email"]);
   });
 
-  it("returns empty channels array when the contact has no reachable field", async () => {
-    // An edge case: a contact row with just a displayName. The resolver
-    // must not crash — an operator would see the card with 0 channels and
-    // know the entry is incomplete.
+  it("drops contacts with no reachable channel (cascades to next tier)", async () => {
+    // Ghost contact in tier1 must not short-circuit the cascade — its tier
+    // has no usable contact, so we fall back rather than render an empty card.
     respondByRole({
-      "ct.host": [{ id: "h", roleKey: "ct.host", displayName: "Ghost" }],
+      "ct.locksmith": [{ id: "ghost", roleKey: "ct.locksmith", displayName: "Ghost" }],
+      "ct.host": [{ id: "h", roleKey: "ct.host", displayName: "Alice", phone: "+34611" }],
     });
     const r = await resolveEscalation({
       propertyId: "p1",
-      intentId: "int.general",
+      intentId: "int.lockout",
       audience: "internal",
     });
-    expect(r!.contacts[0].channels).toEqual([]);
+    expect(r!.fallbackLevel).toBe("intent_with_host");
+    expect(r!.contacts.map((c) => c.id)).toEqual(["h"]);
+  });
+
+  it("tier3 (general fallback) uses fallback.channelPriority, not the intent's", async () => {
+    // Fire intent has channelPriority=["tel"]. If we cascade to the general
+    // fallback and the host only has email, we must surface email rather than
+    // drop the contact — at tier3 we've given up on the intent's channel
+    // semantics.
+    respondByRole({
+      "ct.emergency_fire": [],
+      "ct.host": [
+        {
+          id: "email-host",
+          roleKey: "ct.host",
+          displayName: "Email host",
+          email: "host@example.com",
+        },
+      ],
+    });
+    const r = await resolveEscalation({
+      propertyId: "p1",
+      intentId: "int.emergency_fire",
+      audience: "internal",
+    });
+    expect(r!.fallbackLevel).toBe("fallback");
+    expect(r!.contacts[0].channels.map((c) => c.kind)).toEqual(["email"]);
   });
 });
 
