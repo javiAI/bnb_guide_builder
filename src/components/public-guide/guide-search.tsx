@@ -142,11 +142,15 @@ export function GuideSearch({ index, slug }: Props) {
 
   // A new query invalidates the previous semantic payload. We always abort
   // the in-flight request so late responses can't overwrite a newer state.
+  // Key on the immediate `query` (not `deferredQuery`): the CTA fetch itself
+  // uses `query`, so if we kept the 300ms-lagged value here, a successful
+  // response could land and then a late `deferredQuery` tick would reset the
+  // state back to idle.
   useEffect(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     setSemanticState({ kind: "idle" });
-  }, [deferredQuery]);
+  }, [query]);
 
   const navigateTo = useCallback((anchor: string) => {
     const target = document.getElementById(anchor);

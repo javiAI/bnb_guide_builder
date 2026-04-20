@@ -1382,9 +1382,9 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 11F — `feat/guide-semantic-search` ✅ (2026-04-20, PR #73)
+### Rama 11F — `feat/guide-semantic-search` (PR #73, pendiente de merge)
 
-**Estado**: MERGED. Resumen de ejecución al final del apartado.
+**Estado**: PR #73 abierta. Resumen de ejecución al final del apartado se consolidará al mergear.
 
 **Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings + retriever de 11C; coexiste con el Fuse.js client search de 10H como capa complementaria (Fuse para instant/offline, este para lenguaje natural).
 

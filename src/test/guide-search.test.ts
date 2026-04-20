@@ -81,7 +81,10 @@ describe("guide-search service", () => {
     guideVersionFindFirstMock.mockResolvedValue({ id: "gv_1" });
   });
 
-  it("maps an access hit to the arrival section with an item anchor", async () => {
+  it("maps an access hit to the arrival section with the section anchor (access is not anchor-compatible)", async () => {
+    // `access` is not anchor-compatible: the arrival resolver emits GuideItem
+    // id `arrival.access`, not the access row id, so `item-${entityId}` would
+    // miss the DOM node. The service falls back to the bare section id.
     hybridRetrieveMock.mockResolvedValue(stubResult([stubItem()]));
 
     const result = await guideSemanticSearch({ slug: "demo", query: "cómo llego" });
@@ -90,12 +93,25 @@ describe("guide-search service", () => {
     expect(result.data.hits).toHaveLength(1);
     const hit = result.data.hits[0];
     expect(hit.sectionId).toBe("gs.arrival");
-    expect(hit.anchor).toBe("item-access_1");
+    expect(hit.anchor).toBe("gs.arrival");
     expect(hit.label).toBe("¿Cómo llego al piso?");
     expect(hit.sectionLabel).toBe("Llegada");
   });
 
-  it("falls back to a section-level anchor when entityId is null", async () => {
+  it("uses `item-<entityId>` for anchor-compatible types (contact/space/amenity)", async () => {
+    hybridRetrieveMock.mockResolvedValue(
+      stubResult([
+        stubItem({ entityType: "contact", entityId: "ct_1", journeyStage: "stay" }),
+      ]),
+    );
+
+    const result = await guideSemanticSearch({ slug: "demo", query: "phone" });
+    expect(result.kind).toBe("ok");
+    if (result.kind !== "ok") return;
+    expect(result.data.hits[0].anchor).toBe("item-ct_1");
+  });
+
+  it("falls back to the bare section id (no `section-` prefix) when entityId is null", async () => {
     hybridRetrieveMock.mockResolvedValue(
       stubResult([stubItem({ entityId: null })]),
     );
@@ -103,7 +119,7 @@ describe("guide-search service", () => {
     const result = await guideSemanticSearch({ slug: "demo", query: "cómo llego" });
     expect(result.kind).toBe("ok");
     if (result.kind !== "ok") return;
-    expect(result.data.hits[0].anchor).toBe("section-gs.arrival");
+    expect(result.data.hits[0].anchor).toBe("gs.arrival");
   });
 
   it("forces audience='guest' and locale from property.defaultLocale, ignoring any retriever knobs", async () => {

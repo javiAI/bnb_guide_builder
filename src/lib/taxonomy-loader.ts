@@ -359,18 +359,40 @@ export function getGuideSectionByResolverKey(
   return found;
 }
 
-// Journey stage `checkout` re-homes a policy hit from `gs.rules` to
+function findNonAggregatorSectionByResolverKey(key: string): string | null {
+  const section = guideSections.items.find(
+    (s) => s.resolverKey === key && !s.isAggregator,
+  );
+  return section ? section.id : null;
+}
+
+// `entityType="property"` covers chunks across the whole guide surface
+// (check-in time, capacity, overview, checkout time, …) and the generic
+// `entityTypes[]` mapping routes them to Amenities by default. Chunks
+// carrying `journeyStage` belong elsewhere: `pre_arrival` → Arrival,
+// `checkout` → Checkout. Other entityTypes already live in their own
+// sections, so we only apply this override for `property`.
+//
+// Journey stage `checkout` also globally re-homes hits from `gs.rules` to
 // `gs.checkout` because the UX groups checkout policies under the Salida card
-// regardless of their declared entityType.
+// regardless of declared entityType.
 export function getSectionIdForEntity(
   entityType: EntityType,
   journeyStage: JourneyStage | null | undefined,
 ): string | null {
+  if (entityType === "property") {
+    if (journeyStage === "pre_arrival") {
+      const arrival = findNonAggregatorSectionByResolverKey("arrival");
+      if (arrival) return arrival;
+    }
+    if (journeyStage === "checkout") {
+      const checkout = findNonAggregatorSectionByResolverKey("checkout");
+      if (checkout) return checkout;
+    }
+  }
   if (journeyStage === "checkout") {
-    const checkout = guideSections.items.find(
-      (s) => s.resolverKey === "checkout" && !s.isAggregator,
-    );
-    if (checkout) return checkout.id;
+    const checkout = findNonAggregatorSectionByResolverKey("checkout");
+    if (checkout) return checkout;
   }
   for (const section of guideSections.items) {
     if (section.isAggregator) continue;

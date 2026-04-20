@@ -21,6 +21,22 @@ import {
   type RetrievedItem,
 } from "@/lib/services/assistant/retriever";
 import { getSectionIdForEntity, getGuideSectionConfig } from "@/lib/taxonomy-loader";
+import type { EntityType } from "@/lib/types/knowledge";
+
+// Anchor contract:
+//   Sections render with `id={section.id}` (e.g. `gs.arrival`) — there is no
+//   `section-…` prefix in the DOM. Items render `id={`item-${GuideItem.id}`}`,
+//   where `GuideItem.id` equals the source row id only for a subset of entity
+//   types. For the rest (`property`, `access`, `policy`, `system`) the
+//   resolver emits synthetic ids (`arrival.checkin`, `policy.${taxonomyKey}`,
+//   …) or doesn't render at all, so `item-${entityId}` would point to a
+//   non-existent DOM node. We whitelist only the types we know match and fall
+//   back to the bare `sectionId` for everything else.
+const ANCHOR_COMPATIBLE_ENTITY_TYPES: ReadonlySet<EntityType> = new Set([
+  "contact",
+  "space",
+  "amenity",
+]);
 
 export interface GuideSemanticHit {
   itemId: string;
@@ -134,8 +150,10 @@ export async function guideSemanticSearch(
   input: GuideSemanticSearchInput,
 ): Promise<GuideSemanticSearchResult> {
   const now = Date.now();
-  if (rateBuckets.size > RATE_BUCKETS_SOFT_CAP) enforceBucketCap(now);
   const gate = checkRateLimit(input.slug, now);
+  // Enforce after the insert: a brand-new slug can grow the map from exactly
+  // the cap to cap+1 inside `checkRateLimit`, and a pre-check misses that.
+  if (rateBuckets.size > RATE_BUCKETS_SOFT_CAP) enforceBucketCap(now);
   if (!gate.allowed) {
     return { kind: "rate-limited", retryAfterSeconds: gate.retryAfterSeconds };
   }
@@ -170,11 +188,15 @@ export async function guideSemanticSearch(
     const sectionConfig = getGuideSectionConfig(sectionId);
     if (!sectionConfig) continue;
 
+    const canUseItemAnchor =
+      item.entityId !== null &&
+      item.entityId !== undefined &&
+      ANCHOR_COMPATIBLE_ENTITY_TYPES.has(item.entityType);
     hits.push({
       itemId: item.id,
       sectionId,
       sectionLabel: sectionConfig.label,
-      anchor: item.entityId ? `item-${item.entityId}` : `section-${sectionId}`,
+      anchor: canUseItemAnchor ? `item-${item.entityId}` : sectionId,
       label:
         item.canonicalQuestion && item.canonicalQuestion.trim().length > 0
           ? item.canonicalQuestion.trim()
