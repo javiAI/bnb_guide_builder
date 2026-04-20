@@ -34,34 +34,46 @@ vi.mock("@/lib/services/assistant/retriever", async () => {
   };
 });
 
-const { assistantMessageCreateMock, conversationCreateMock, conversationFindMock, transactionMock } =
-  vi.hoisted(() => {
-    const assistantMessageCreateMock = vi.fn().mockResolvedValue({});
-    const conversationCreateMock = vi.fn().mockResolvedValue({ id: "conv_new" });
-    const conversationFindMock = vi.fn().mockResolvedValue(null);
-    const tx = {
-      assistantConversation: {
-        create: conversationCreateMock,
-        findFirst: conversationFindMock,
-      },
-      assistantMessage: {
-        create: assistantMessageCreateMock,
-      },
-    };
-    const transactionMock = vi.fn(
-      async (
-        arg:
-          | Array<Promise<unknown>>
-          | ((tx: typeof import("@/lib/db").prisma) => Promise<unknown>),
-      ) => {
-        if (typeof arg === "function") {
-          return arg(tx as unknown as typeof import("@/lib/db").prisma);
-        }
-        return Promise.all(arg);
-      },
-    );
-    return { assistantMessageCreateMock, conversationCreateMock, conversationFindMock, transactionMock };
-  });
+const {
+  assistantMessageCreateMock,
+  conversationCreateMock,
+  conversationFindMock,
+  transactionMock,
+  contactFindManyMock,
+} = vi.hoisted(() => {
+  const assistantMessageCreateMock = vi.fn().mockResolvedValue({});
+  const conversationCreateMock = vi.fn().mockResolvedValue({ id: "conv_new" });
+  const conversationFindMock = vi.fn().mockResolvedValue(null);
+  const contactFindManyMock = vi.fn().mockResolvedValue([]);
+  const tx = {
+    assistantConversation: {
+      create: conversationCreateMock,
+      findFirst: conversationFindMock,
+    },
+    assistantMessage: {
+      create: assistantMessageCreateMock,
+    },
+  };
+  const transactionMock = vi.fn(
+    async (
+      arg:
+        | Array<Promise<unknown>>
+        | ((tx: typeof import("@/lib/db").prisma) => Promise<unknown>),
+    ) => {
+      if (typeof arg === "function") {
+        return arg(tx as unknown as typeof import("@/lib/db").prisma);
+      }
+      return Promise.all(arg);
+    },
+  );
+  return {
+    assistantMessageCreateMock,
+    conversationCreateMock,
+    conversationFindMock,
+    transactionMock,
+    contactFindManyMock,
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -71,6 +83,9 @@ vi.mock("@/lib/db", () => ({
     },
     assistantMessage: {
       create: assistantMessageCreateMock,
+    },
+    contact: {
+      findMany: contactFindManyMock,
     },
     $transaction: transactionMock,
   },
@@ -140,6 +155,8 @@ beforeEach(() => {
   conversationFindMock.mockClear();
   conversationFindMock.mockResolvedValue(null);
   transactionMock.mockClear();
+  contactFindManyMock.mockReset();
+  contactFindManyMock.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -236,6 +253,116 @@ describe("pipeline.ask — escalation paths", () => {
 
     expect(out.escalated).toBe(true);
     expect(out.escalationReason).toBe("off-topic for this property");
+  });
+
+  it("attaches a resolved escalationContact when escalating and contacts exist", async () => {
+    hybridRetrieveMock.mockResolvedValue({
+      items: [retrievedItem()],
+      degraded: false,
+      stats: { scopeSize: 1, withEmbedding: 1, bm25Hits: 1, vectorHits: 1 },
+    });
+    __setRerankerForTests(new StubReranker());
+    __setSynthesizerForTests(
+      new StubSynth({
+        answer: "",
+        citations: [],
+        escalated: true,
+        escalationReason: "guest reports lockout",
+        confidenceScore: 0,
+      }),
+    );
+    __setIntentResolverForTests(new StubIntent());
+    contactFindManyMock.mockResolvedValueOnce([
+      {
+        id: "c1",
+        roleKey: "ct.locksmith",
+        displayName: "Cerrajero 24h",
+        phone: "+34600111222",
+        phoneSecondary: null,
+        email: null,
+        whatsapp: null,
+        emergencyAvailable: true,
+        isPrimary: true,
+        sortOrder: 0,
+        visibility: "internal",
+        internalNotes: null,
+        guestVisibleNotes: null,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      },
+    ]);
+
+    const out = await ask({
+      propertyId: "prop_1",
+      question: "no puedo entrar, perdí la llave",
+      language: "es",
+      audience: "internal",
+    });
+
+    expect(out.escalated).toBe(true);
+    expect(out.escalationContact).not.toBeNull();
+    expect(out.escalationContact!.intentId).toBe("int.lockout");
+    expect(out.escalationContact!.contacts[0].displayName).toBe("Cerrajero 24h");
+  });
+
+  it("escalationContact is null on the happy path (no DB lookup performed)", async () => {
+    hybridRetrieveMock.mockResolvedValue({
+      items: [retrievedItem()],
+      degraded: false,
+      stats: { scopeSize: 1, withEmbedding: 1, bm25Hits: 1, vectorHits: 1 },
+    });
+    __setRerankerForTests(new StubReranker(0.95));
+    __setSynthesizerForTests(
+      new StubSynth({
+        answer: "la wifi es 1234 [1].",
+        citations: [{ knowledgeItemId: "ki_1", sourceType: "system", entityLabel: "WiFi", score: 1 }],
+        escalated: false,
+        escalationReason: null,
+        confidenceScore: 0.9,
+      }),
+    );
+    __setIntentResolverForTests(new StubIntent());
+
+    const out = await ask({
+      propertyId: "prop_1",
+      question: "wifi?",
+      language: "es",
+      audience: "guest",
+    });
+
+    expect(out.escalated).toBe(false);
+    expect(out.escalationContact).toBeNull();
+    expect(contactFindManyMock).not.toHaveBeenCalled();
+  });
+
+  it("escalationContact is null when escalating but no contacts configured", async () => {
+    hybridRetrieveMock.mockResolvedValue({
+      items: [],
+      degraded: false,
+      stats: { scopeSize: 0, withEmbedding: 0, bm25Hits: 0, vectorHits: 0 },
+    });
+    __setRerankerForTests(new StubReranker());
+    __setSynthesizerForTests(
+      new StubSynth({
+        answer: "unused",
+        citations: [],
+        escalated: true,
+        escalationReason: null,
+        confidenceScore: 0,
+      }),
+    );
+    __setIntentResolverForTests(new StubIntent());
+    // findMany returns [] for every tier in the cascade.
+    contactFindManyMock.mockResolvedValue([]);
+
+    const out = await ask({
+      propertyId: "prop_1",
+      question: "cualquier cosa",
+      language: "es",
+      audience: "guest",
+    });
+
+    expect(out.escalated).toBe(true);
+    expect(out.escalationContact).toBeNull();
   });
 });
 

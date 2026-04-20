@@ -295,7 +295,60 @@ Los mensajes guardan:
 - confidenceScore
 - escalated
 
-## 5. Secret exclusion
+## 5. Escalation (rama 11D)
+
+Cuando el synthesizer decide `escalated: true` (sentinel `ESCALATE:` o ausencia de `[N]` refs), el pipeline NO inventa respuesta. En lugar de eso resuelve un contacto estructurado y lo propaga al caller para renderizarlo junto al turno del assistant.
+
+### Trigger
+
+- **Exclusivo**: `synthesized.escalated === true`. No hay threshold sobre `confidenceScore` ni sobre `citations.length` — la decisión vive en el synthesizer (mandatory-citation rule + sentinel) y `resolveEscalationContact()` solo actúa si esa señal está encendida.
+- **Happy path**: `ask()` nunca toca `prisma.contact.findMany` cuando la respuesta es válida. Guard verificado por `src/test/assistant-pipeline.test.ts` ("escalationContact is null on the happy path").
+
+### Intent resolution — heurística pura
+
+- [escalation-intent.ts](../../src/lib/services/assistant/escalation-intent.ts): `resolveEscalationIntent({ question, lang })` → `EscalationIntentMatch { intentId, confidence, ... }`. Accent-strip NFD + lowercase, match por keywords ES/EN desde `taxonomies/escalation_rules.json`, longest-match tiebreak, emergency precedence absoluta sobre non-emergency.
+- Confidence tiers: `emergency: 0.9`, `nonEmergency: 0.75`, `fallback: 0.25` (sin match). El fallback mapea a `int.general` → contacto general_host.
+- **Precision gate**: [assistant-escalation-intent-precision.test.ts](../../src/test/assistant-escalation-intent-precision.test.ts) corre un corpus labeled ([escalation-intent-corpus.ts](../../src/test/fixtures/escalation-intent-corpus.ts), 53 rows + `CRITICAL_INTENTS`) y exige `precision ≥ 0.95` + `recall = 1.0` + ≥5 rows por intent crítico. Añadir un intent nuevo = (a) entry en `escalation_rules.json` con `keywords.{es,en}[]`, (b) ≥5 rows etiquetados en el corpus, (c) tests verdes.
+- **Classifier LLM diferido**: la heurística pasa el gate con holgura; Haiku classifier como fallback queda parked hasta 11E (evals + banco de fixtures real).
+
+### Contact resolution — 3-tier cascade
+
+- [escalation.service.ts](../../src/lib/services/assistant/escalation.service.ts): `resolveEscalation({ propertyId, intentId, audience })` → `EscalationResolution | null`.
+- Tiers:
+  1. **`intent`** — hay contacto con `roleKey` (`ct.*`) que matchea `contactRoles[]` del intent en `escalation_rules.json`.
+  2. **`intent_with_host`** — no hay contacto específico; se deriva al `ct.host` (general_host). Copy al huésped: "derivando al anfitrión".
+  3. **`fallback`** — ni específico ni host disponibles; el caller decide si suprime o muestra un aviso neutro. Por ahora siempre existe host si existe al menos un contact.
+- Orden determinístico: `prisma.orderBy = [{emergencyAvailable:"desc"},{isPrimary:"desc"},{sortOrder:"asc"},{createdAt:"asc"}]`.
+- Visibility defense-in-depth: aunque el retriever ya clampa audience, el service re-filtra contacts por `visibility` (el caller puede venir de un path que no pase por retriever).
+- Channel projection por contact:
+  - `phone` → `{ kind: "tel", rawValue, href: "tel:+..." }`
+  - `whatsapp` → `{ kind: "whatsapp", rawValue, href: "https://wa.me/..." }`; si no hay `whatsapp` pero sí `phone`, se infiere.
+  - `email` → `{ kind: "email", rawValue, href: "mailto:..." }`
+- `emergencyPriority: boolean` en la resolution = `intent` declara `emergency: true` en la taxonomía.
+
+### Escalation persistence
+
+- **Sin migración**. `AssistantMessage.citationsJson` se extiende con `escalationContact: EscalationResolution | null`, conviviendo con `{ citations, escalationReason }`. El parser del caller conoce el envelope completo.
+
+### API contract
+
+- `POST /api/properties/:id/assistant/ask` responde `{ data: { ..., escalationContact: EscalationResolution | null } }`. Field **required** en `askResponseSchema` (nullable) — un server que olvide serializarlo falla Zod validation. Ver [assistant-schema-escalation.test.ts](../../src/test/assistant-schema-escalation.test.ts).
+
+### UI — operator dashboard
+
+- [EscalationHandoff.tsx](../../src/components/assistant/EscalationHandoff.tsx): card inline renderizada en el turno escalado del assistant dentro de `AssistantChat`. Banner `Emergencia` / `Contacto` según `emergencyPriority`, intent label, fallback-level copy, ranked contacts con tap-to-call/WhatsApp/email (targets ≥44×44).
+- Audience de 11D: **operator-only**. El widget huésped equivalente se entrega en 11F (`feat/guide-semantic-search` + widget público).
+
+### Test matrix (11D)
+
+- `assistant-escalation-intent.test.ts` (53 casos) — resolución por keyword, accent strip, precedence emergency > nonEmergency, language scoping.
+- `assistant-escalation-intent-precision.test.ts` (9) — precision ≥ 0.95 + recall 1.0 por intent crítico.
+- `assistant-escalation-service.test.ts` (15) — cascada de tiers, orden, visibility filter, channel projection, fallback con host.
+- `assistant-schema-escalation.test.ts` (5) — Zod shape del envelope + rechazo de `fallbackLevel` / `channel.kind` desconocidos.
+- `escalation-handoff.test.tsx` (6) — banner variants, hrefs, target size, empty contacts, Principal/24/7 badges.
+- `assistant-pipeline.test.ts` — el happy path no llama `prisma.contact.findMany`; el escalated path produce `escalationContact` poblado.
+
+## 6. Secret exclusion
 
 - secretos fuera del corpus general
 - secretos fuera de prompts del assistant salvo flujo interno explícito y autorizado

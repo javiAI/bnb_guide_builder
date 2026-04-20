@@ -60,6 +60,8 @@ import accessibilityFeaturesJson from "../../taxonomies/accessibility_features.j
 import propertyEnvironmentsJson from "../../taxonomies/property_environments.json";
 import completenessRulesJson from "../../taxonomies/completeness_rules.json";
 import guideSectionsJson from "../../taxonomies/guide_sections.json";
+import escalationRulesJson from "../../taxonomies/escalation_rules.json";
+import { CONTACT_CHANNELS } from "./contact-actions";
 
 // ── Item-based taxonomies ──
 
@@ -361,6 +363,125 @@ export function getCompletenessRule<K extends CompletenessSectionKey>(
     );
   }
   return completenessRules.sections[sectionKey];
+}
+
+// ── Escalation rules (rama 11D) ──
+// Declarative mapping `intent → contactRoles[]` consumed by the assistant
+// escalation service. Keeps routing decisions out of code. Boot validation
+// enforces that (a) every referenced `ct.*` key exists in contact_types.json,
+// (b) intent ids are unique, and (c) channel priorities only name registered
+// contact channels (tel/whatsapp/email).
+
+const EscalationMatchKeywordsSchema = z
+  .object({
+    es: z.array(z.string().min(1)),
+    en: z.array(z.string().min(1)),
+  })
+  .strict();
+
+const EscalationChannelSchema = z.enum(CONTACT_CHANNELS);
+
+const EscalationIntentSchema = z
+  .object({
+    id: z.string().regex(/^int\.[a-z][a-z0-9_]*$/),
+    label: z.string().min(1),
+    contactRoles: z.array(z.string().regex(/^ct\./)).min(1),
+    fallbackToHost: z.boolean(),
+    emergencyPriority: z.boolean(),
+    channelPriority: z.array(EscalationChannelSchema).min(1),
+    matchKeywords: EscalationMatchKeywordsSchema,
+  })
+  .strict();
+
+const EscalationFallbackSchema = z
+  .object({
+    id: z.string().min(1),
+    intentId: z.string().regex(/^int\./),
+    contactRoles: z.array(z.string().regex(/^ct\./)).min(1),
+    channelPriority: z.array(EscalationChannelSchema).min(1),
+  })
+  .strict();
+
+const EscalationRulesFileSchema = z
+  .object({
+    file: z.string(),
+    version: z.string(),
+    locale: z.string(),
+    units_system: z.string(),
+    fallback: EscalationFallbackSchema,
+    intents: z.array(EscalationIntentSchema).min(1),
+  })
+  .strict();
+
+export type EscalationChannel = z.infer<typeof EscalationChannelSchema>;
+export type EscalationIntent = z.infer<typeof EscalationIntentSchema>;
+export type EscalationIntentId = EscalationIntent["id"];
+export type EscalationFallback = z.infer<typeof EscalationFallbackSchema>;
+export type EscalationRulesFile = z.infer<typeof EscalationRulesFileSchema>;
+
+function loadEscalationRules(): EscalationRulesFile {
+  const parsed = EscalationRulesFileSchema.safeParse(escalationRulesJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid taxonomies/escalation_rules.json:\n${details}`);
+  }
+  const data = parsed.data;
+
+  // Cross-taxonomy integrity — every ct.* referenced must exist in contact_types.json.
+  const knownRoles = new Set(contactTypes.items.map((c) => c.id));
+  const checkRole = (role: string, path: string) => {
+    if (!knownRoles.has(role)) {
+      throw new Error(
+        `escalation_rules.json references unknown contact role "${role}" at ${path}. ` +
+          `Must exist in contact_types.json.`,
+      );
+    }
+  };
+  for (const role of data.fallback.contactRoles) {
+    checkRole(role, "fallback.contactRoles");
+  }
+  for (const intent of data.intents) {
+    for (const role of intent.contactRoles) {
+      checkRole(role, `intents[${intent.id}].contactRoles`);
+    }
+  }
+
+  // Intent id uniqueness.
+  const seen = new Set<string>();
+  for (const intent of data.intents) {
+    if (seen.has(intent.id)) {
+      throw new Error(`Duplicate escalation intent id: ${intent.id}`);
+    }
+    seen.add(intent.id);
+  }
+
+  // The fallback intent id must match one of the declared intents so the
+  // resolver can look up its rule if needed.
+  if (!seen.has(data.fallback.intentId)) {
+    throw new Error(
+      `Fallback intentId "${data.fallback.intentId}" is not declared in intents[].`,
+    );
+  }
+
+  return data;
+}
+
+export const escalationRules: EscalationRulesFile = loadEscalationRules();
+
+export function getEscalationIntents(): ReadonlyArray<EscalationIntent> {
+  return escalationRules.intents;
+}
+
+export function getEscalationFallback(): EscalationFallback {
+  return escalationRules.fallback;
+}
+
+export function findEscalationIntent(
+  intentId: string,
+): EscalationIntent | undefined {
+  return escalationRules.intents.find((i) => i.id === intentId);
 }
 
 // ── Grouped taxonomies ──

@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-
-// Minimal chat UI to exercise the pipeline end-to-end from the operator
-// dashboard. Intentionally plain: one input, one conversation thread,
-// citations rendered inline. Full-fidelity UX lands in a later phase.
+import type { EscalationResolutionDTO } from "@/lib/schemas/assistant.schema";
+import { EscalationHandoff } from "./EscalationHandoff";
 
 interface Citation {
   knowledgeItemId: string;
@@ -20,6 +18,7 @@ interface Turn {
   citations?: Citation[];
   escalated?: boolean;
   escalationReason?: string | null;
+  escalationContact?: EscalationResolutionDTO | null;
   confidence?: number;
 }
 
@@ -76,6 +75,7 @@ export function AssistantChat({
         citations: Citation[];
         escalated: boolean;
         escalationReason: string | null;
+        escalationContact: EscalationResolutionDTO | null;
         confidenceScore: number;
         conversationId: string;
       };
@@ -89,6 +89,7 @@ export function AssistantChat({
           citations: data.citations,
           escalated: data.escalated,
           escalationReason: data.escalationReason,
+          escalationContact: data.escalationContact,
           confidence: data.confidenceScore,
         },
       ]);
@@ -202,6 +203,9 @@ function TurnView({ turn }: { turn: Turn }) {
           turn.content
         )}
       </div>
+      {turn.escalated && turn.escalationContact && (
+        <EscalationHandoff handoff={turn.escalationContact} />
+      )}
       {turn.citations && turn.citations.length > 0 && (
         <ul className="ml-1 space-y-0.5 text-xs text-[var(--color-neutral-500)]">
           {turn.citations.map((c, i) => (

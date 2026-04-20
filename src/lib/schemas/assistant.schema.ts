@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { entityTypeSchema, journeyStageSchema } from "@/lib/types/knowledge";
+import { CONTACT_CHANNELS } from "@/lib/contact-actions";
+import { FALLBACK_LEVELS } from "@/lib/services/assistant/escalation.service";
 
 // Assistant API audiences exclude "sensitive" on purpose — callers must not
 // be able to elevate to sensitive via a request body; that level is reserved
@@ -30,12 +32,39 @@ export const citationSchema = z.object({
 
 export type Citation = z.infer<typeof citationSchema>;
 
+export const escalationChannelSchema = z.object({
+  kind: z.enum(CONTACT_CHANNELS),
+  rawValue: z.string(),
+  href: z.string(),
+});
+
+export const escalationContactSchema = z.object({
+  id: z.string(),
+  roleKey: z.string(),
+  displayName: z.string(),
+  channels: z.array(escalationChannelSchema),
+  emergencyAvailable: z.boolean(),
+  isPrimary: z.boolean(),
+  notes: z.string().nullable(),
+});
+
+export const escalationResolutionSchema = z.object({
+  intentId: z.string().regex(/^int\./),
+  intentLabel: z.string(),
+  emergencyPriority: z.boolean(),
+  fallbackLevel: z.enum(FALLBACK_LEVELS),
+  contacts: z.array(escalationContactSchema),
+});
+
+export type EscalationResolutionDTO = z.infer<typeof escalationResolutionSchema>;
+
 export const askResponseSchema = z.object({
   answer: z.string(),
   citations: z.array(citationSchema),
   confidenceScore: z.number().min(0).max(1),
   escalated: z.boolean(),
   escalationReason: z.string().nullable(),
+  escalationContact: escalationResolutionSchema.nullable(),
   conversationId: z.string(),
 });
 

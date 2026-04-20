@@ -65,6 +65,7 @@ export async function POST(
       confidenceScore: result.confidenceScore,
       escalated: result.escalated,
       escalationReason: result.escalationReason,
+      escalationContact: result.escalationContact,
       conversationId: result.conversationId,
     },
   });

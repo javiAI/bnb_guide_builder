@@ -1327,35 +1327,29 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 11D — `feat/assistant-escalation`
+### Rama 11D — `feat/assistant-escalation` ✅ (ver entrega real)
 
-**Propósito**: si `confidenceScore < threshold` o `citations.length === 0`, el assistant escala a un contacto estructurado en vez de inventar respuesta.
+**Propósito**: cuando el synthesizer decide `escalated: true`, el pipeline resuelve un contacto estructurado en vez de inventar respuesta.
 
-**Archivos a crear**:
-- `src/lib/services/assistant/escalation.service.ts` — decide contacto por intent (lockout→cerrajero, emergencia→host, fuera-de-dominio→concierge) usando `taxonomies/escalation_rules.json`
-- `taxonomies/escalation_rules.json` — mapeo `intent → contactRole` + fallback `general_host`
+**Reconciliación con lo entregado (2026-04-19)**:
+- **Trigger exclusivo**: `synthesized.escalated === true` (sentinel `ESCALATE:` o ausencia de `[N]` refs). La spec original decía "si `confidenceScore < threshold` o `citations.length === 0`" — se reconcilió a un único trigger para evitar doble gate (la mandatory-citation rule + ESCALATE ya cubren ambos casos desde 11C y añadir threshold crearía divergencia silenciosa).
+- **Intent resolver**: heurística pura en `resolveEscalationIntent` (accent-strip NFD, keywords ES/EN desde `taxonomies/escalation_rules.json`, longest-match tiebreak, emergency precedence). Classifier LLM (Haiku) queda **diferido a 11E** porque la heurística pasa el precision gate ≥0.95 + recall 1.0 en los 4 intents críticos (`int.lockout`, `int.emergency_medical`, `int.emergency_fire`, `int.general`) sobre corpus de 53 rows. Activar Haiku solo si la cobertura de intents crece y la heurística pierde precisión.
+- **Persistence**: `AssistantMessage.citationsJson` envelope extendido con `escalationContact: EscalationResolution | null`. Sin migración (confirma patrón de 11C).
+- **UI**: `<EscalationHandoff>` inline en `AssistantChat` (operator-only). Widget huésped equivalente queda **diferido a 11F** (coexistencia con semantic search público).
 
-**Archivos a modificar**:
-- `src/lib/services/assistant/pipeline.ts` (de 11C) — branch escalation cuando confidence baja o sin citations
-- `src/app/properties/[propertyId]/ai/page.tsx` — UI de "Te pongo en contacto con…" con tap-to-call/whatsapp (reusa componentes de 10G)
+**Archivos entregados**:
+- `src/lib/services/assistant/escalation-intent.ts` — heurística pura
+- `src/lib/services/assistant/escalation.service.ts` — cascada 3-tier (`intent`/`intent_with_host`/`fallback`), visibility defense-in-depth, channel projection (tel/wa.me/mailto)
+- `taxonomies/escalation_rules.json` + `src/lib/taxonomy-loader.ts` (`loadEscalationRules()`, Zod)
+- `src/lib/schemas/assistant.schema.ts` — `escalationResolutionSchema` + embed en `askResponseSchema` (nullable required)
+- `src/components/assistant/EscalationHandoff.tsx` + wiring en `AssistantChat`
+- Pipeline wiring en `src/lib/services/assistant/pipeline.ts` — resolución inline de `intent → contact` guardada por `synthesized.escalated` (happy path no toca `prisma.contact.findMany`)
+- Tests: `assistant-escalation-intent.test.ts` (53) + `assistant-escalation-intent-precision.test.ts` (9) + `assistant-escalation-service.test.ts` (15) + `assistant-schema-escalation.test.ts` (5) + `escalation-handoff.test.tsx` (6) + happy-path guard en `assistant-pipeline.test.ts`
 
-**Tests**:
-- `src/test/assistant-escalation.test.ts` — low-confidence intent de "emergencia médica" → escala al contacto con rol `emergency_service`
-- `src/test/assistant-escalation-no-match.test.ts` — intent fuera de catálogo → fallback `general_host`, nunca null
-
-**Criterio de done**: preguntas fuera de cobertura se resuelven con contacto estructurado, no con alucinación.
-
-**Dependencias**: 11C (pipeline con hook escalate).
-
-**Preparación**:
-- **Contexto a leer**:
-  - Pipeline de 11C
-  - [AI_KNOWLEDGE_BASE_SPEC.md:L217-L235](research/AI_KNOWLEDGE_BASE_SPEC.md) — qué necesita la IA para escalar bien
-  - `prisma/schema.prisma` — modelo `Contact` y `taxonomies/contact_roles.json`
-- **Docs a actualizar al terminar**:
-  - `docs/FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md` § "Escalation"
-  - `docs/CONFIG_DRIVEN_SYSTEM.md` § "Mandatory taxonomies" — añadir `escalation_rules.json`
-- **Skills/tools específicos**: ninguno extra.
+**Diferidos documentados**:
+- **Haiku intent classifier** → 11E (condicionado a regresión de precision gate en corpus expandido).
+- **Guest-facing UI de escalation** → 11F (widget huésped coexistiendo con semantic search).
+- **Per-contact `escalationIntents[]` override** → `docs/FUTURE.md` (cuando un host quiera mapear explícitamente un contacto a un intent sin pasar por `contactType`).
 
 ---
 

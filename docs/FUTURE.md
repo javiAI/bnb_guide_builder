@@ -236,3 +236,43 @@ En `NODE_ENV=production` el pipeline ya **no** cae a los mocks: hace fail-fast s
 5. Garantizar que el release gate de 11E sigue verde con la nueva configuración.
 
 Retirar el mock antes de tiempo rompe dev local y CI — **no lanzar sin el trigger completo**.
+
+---
+
+## 15. Per-contact `escalationIntents[]` override
+
+**Estado**: diferido.
+**Trigger**: un host quiere asignar un `Contact` a un intent de escalation específico sin pasar por el matching `roleKey → contactRoles[]` de `escalation_rules.json` (ej: una gestora de apartamentos que tiene una concierge de confianza para lockouts aunque su `roleKey` sea `ct.host`).
+
+### Cómo funciona hoy (rama 11D)
+
+La resolución de contacto por intent vive en `taxonomies/escalation_rules.json`: cada intent declara `contactRoles[]` (listado de `roleKey` permitidos). `resolveEscalation({intentId})` hace `prisma.contact.findMany({ where: { roleKey: { in: contactRoles } } })` + orden + filtro de visibility. El host puede priorizar contacts dentro de un role (vía `isPrimary` + `sortOrder`), pero **no puede** mapear un contact a un intent para el que su `roleKey` no cualifica.
+
+### Qué añadiría el override
+
+Columna nueva en `Contact`: `escalationIntents String[] @default([])`. Si tiene valores, el service los considera candidatos **además** del match por `roleKey`. Resolución final:
+
+```text
+candidates = [
+  ...contacts WHERE roleKey IN intent.contactRoles,
+  ...contacts WHERE $intentId = ANY(escalationIntents)
+]
+```
+
+Dedupe por `id`, mismo orden determinístico (`emergencyAvailable > isPrimary > sortOrder > createdAt`).
+
+### Por qué no está en 11D
+
+- El patrón `roleKey + taxonomía central` cubre el 95% de casos (una propiedad tiene un cerrajero → `ct.locksmith` → intent `int.lockout`). Override solo gana cuando hay ambigüedad real, y hoy no hay ninguna reportada.
+- Añadir una columna nullable a `Contact` requiere migración + UI en el editor de contactos + documentación + tests de cascada. Trabajo no trivial sin demanda.
+- El intent resolver (heurística pura) ya pasa el precision gate sin esta capa. Añadirla sin necesidad complicaría el contrato sin beneficio medible.
+
+### Qué cubriría la implementación
+
+1. Migración Prisma: `escalationIntents String[] @default([])` en `Contact`.
+2. UI en el editor de contactos: multi-select sobre intents de `escalation_rules.json` (opcional, vacío por defecto).
+3. Ampliar `resolveEscalation` con la rama de override (query adicional + dedupe).
+4. Tests de cascada: override gana sobre contactType-match cuando hay empate; no rompe el orden determinístico.
+5. Doc en `KNOWLEDGE_GUIDE_ASSISTANT.md §5 Escalation`.
+
+Sin demanda explícita, la taxonomía central es mejor por claridad y consistencia cross-property. **No lanzar sin el trigger.**

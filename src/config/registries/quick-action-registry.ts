@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { guideSections } from "@/lib/taxonomy-loader";
+import { normalizePhoneForWhatsApp } from "@/lib/contact-actions";
 import type { GuideItem, GuideTree } from "@/lib/types/guide-tree";
 import { EMERGENCY_FIELD_LABELS } from "@/lib/types/guide-tree";
 
@@ -85,12 +86,6 @@ function resolveHostPhone(flat: GuideItem[]): string | null {
   return cohost
     ? findDisplayFieldValue(cohost, EMERGENCY_FIELD_LABELS.phone)
     : null;
-}
-
-function normalizePhoneForWhatsApp(phone: string): string | null {
-  const digits = phone.replace(/[^\d]/g, "");
-  if (digits.length < 7 || digits.length > 15) return null;
-  return digits;
 }
 
 const wifiCopy: QuickAction = {
