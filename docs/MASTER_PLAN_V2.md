@@ -1382,7 +1382,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 11F — `feat/guide-semantic-search` ✅ (2026-04-20, PR #71)
+### Rama 11F — `feat/guide-semantic-search` ✅ (2026-04-20, PR #73)
 
 **Estado**: MERGED. Resumen de ejecución al final del apartado.
 
