@@ -15,9 +15,10 @@ interface Props {
   tree: GuideTree;
   propertyTitle: string;
   searchIndex: GuideSearchIndex;
+  slug: string;
 }
 
-export function GuideRenderer({ tree, propertyTitle, searchIndex }: Props) {
+export function GuideRenderer({ tree, propertyTitle, searchIndex, slug }: Props) {
   const pair = getBrandPair(tree.brandPaletteKey ?? null);
 
   // Drop sections marked `hideWhenEmptyForGuest` that have no renderable
@@ -50,7 +51,7 @@ export function GuideRenderer({ tree, propertyTitle, searchIndex }: Props) {
       }
     >
       <GuideBrandHeader title={propertyTitle} logoUrl={tree.brandLogoUrl}>
-        <GuideSearch index={searchIndex} />
+        <GuideSearch index={searchIndex} slug={slug} />
       </GuideBrandHeader>
       <div className="guide-layout">
         <GuideToc entries={tocEntries} />

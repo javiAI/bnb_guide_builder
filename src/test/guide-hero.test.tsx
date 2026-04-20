@@ -31,7 +31,7 @@ function guestTreeFromRich(): GuideTree {
 describe("GuideHero", () => {
   it("renders the hero section above other sections", () => {
     const tree = guestTreeFromRich();
-    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} />);
+    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} slug="casa-claudia" />);
     const sections = document.querySelectorAll("section.guide-section");
     const ids = Array.from(sections).map((s) => s.id);
     expect(ids[0]).toBe("gs.essentials");
@@ -41,7 +41,7 @@ describe("GuideHero", () => {
 
   it("renders essential items inside the hero", () => {
     const tree = guestTreeFromRich();
-    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} />);
+    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} slug="casa-claudia" />);
     const hero = document.getElementById("gs.essentials")!;
     expect(hero.querySelector("#item-essentials\\.amenities\\.am\\.wifi")).toBeTruthy();
     expect(hero.querySelector("#item-essentials\\.arrival\\.arrival\\.location")).toBeTruthy();
@@ -49,7 +49,7 @@ describe("GuideHero", () => {
 
   it("renders quick-action buttons with min 44×44 targets", () => {
     const tree = guestTreeFromRich();
-    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} />);
+    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} slug="casa-claudia" />);
     const wifiBtn = screen.getByRole("button", { name: "Copiar contraseña del Wi-Fi" });
     expect(wifiBtn).toHaveClass("guide-quick-action");
     const tel = screen.getByRole("link", { name: "Llamar al anfitrión" });
@@ -73,7 +73,7 @@ describe("GuideHero", () => {
       configurable: true,
     });
     const tree = guestTreeFromRich();
-    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} />);
+    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} slug="casa-claudia" />);
     const btn = screen.getByRole("button", { name: "Copiar contraseña del Wi-Fi" });
     await act(async () => {
       fireEvent.click(btn);
@@ -147,7 +147,7 @@ describe("GuideHero", () => {
       ),
     };
     const tree = normalizeGuideForPresentation({ ...pruned, audience: "guest" }, "guest");
-    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} />);
+    render(<GuideRenderer tree={tree} propertyTitle="Casa Claudia" searchIndex={buildGuideSearchIndex(tree)} slug="casa-claudia" />);
     expect(screen.queryByRole("link", { name: "Llamar al anfitrión" })).toBeNull();
     expect(
       screen.queryByRole("link", { name: "Enviar WhatsApp al anfitrión" }),

@@ -73,7 +73,7 @@ async function typeQuery(value: string) {
 
 describe("<GuideSearch />", () => {
   it("renders trigger and is closed by default", () => {
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     expect(
       screen.getByRole("button", { name: "Buscar en la guía" }),
     ).toBeTruthy();
@@ -81,7 +81,7 @@ describe("<GuideSearch />", () => {
   });
 
   it("opens when the user presses '/'", () => {
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     fireEvent.keyDown(window, { key: "/" });
     expect(
       screen.getByRole("searchbox", { name: "Buscar en la guía" }),
@@ -92,13 +92,13 @@ describe("<GuideSearch />", () => {
     const other = document.createElement("input");
     document.body.appendChild(other);
     other.focus();
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     fireEvent.keyDown(other, { key: "/" });
     expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
   it("closes on Escape", () => {
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     openDialog();
     expect(screen.getByRole("searchbox")).toBeTruthy();
     fireEvent.keyDown(document.activeElement ?? document.body, {
@@ -108,7 +108,7 @@ describe("<GuideSearch />", () => {
   });
 
   it("filters results live and shows matches", async () => {
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     openDialog();
     await typeQuery("wifi");
     const list = screen.getByRole("listbox");
@@ -119,7 +119,7 @@ describe("<GuideSearch />", () => {
   });
 
   it("Enter navigates to the first hit and closes the dialog", async () => {
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     const target = document.createElement("section");
     target.id = "item-am.wifi";
     document.body.appendChild(target);
@@ -166,7 +166,7 @@ describe("<GuideSearch />", () => {
         },
       ],
     };
-    render(<GuideSearch index={index} />);
+    render(<GuideSearch index={index} slug="test-slug" />);
     openDialog();
     const input = await typeQuery("letra");
     const options = screen
@@ -185,7 +185,7 @@ describe("<GuideSearch />", () => {
   it("shows zero-result hint and logs a miss after debounce", async () => {
     vi.useFakeTimers();
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
-    render(<GuideSearch index={baseIndex()} />);
+    render(<GuideSearch index={baseIndex()} slug="test-slug" />);
     openDialog();
     const input = screen.getByRole("searchbox") as HTMLInputElement;
     await act(async () => {

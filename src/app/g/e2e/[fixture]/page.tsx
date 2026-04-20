@@ -36,6 +36,7 @@ export default async function PublicGuideE2EPage({ params }: Props) {
       tree={guestTree}
       propertyTitle={entry.propertyTitle}
       searchIndex={searchIndex}
+      slug={`e2e-${fixture}`}
     />
   );
 }
