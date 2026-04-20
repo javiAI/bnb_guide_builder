@@ -224,8 +224,12 @@ function buildChannel(
 }
 
 function pickNotes(row: ContactRow, audience: VisibilityLevel): string | null {
-  if (audience === "guest") return row.guestVisibleNotes ?? null;
-  return row.internalNotes ?? row.guestVisibleNotes ?? null;
+  // `internalNotes` is operator-only. `ai` audience sits below `internal`
+  // in the visibility hierarchy and must only receive guest-visible copy.
+  if (audience === "internal" || audience === "sensitive") {
+    return row.internalNotes ?? row.guestVisibleNotes ?? null;
+  }
+  return row.guestVisibleNotes ?? null;
 }
 
 export const __internal = { buildChannels, pickNotes };

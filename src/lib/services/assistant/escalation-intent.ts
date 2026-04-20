@@ -46,12 +46,16 @@ const CONFIDENCE = {
 // Matching
 // ============================================================================
 
-/** Lowercase + strip combining diacritics so "médica" matches "medica". */
+/** Lowercase + strip combining diacritics ("médica" → "medica") and collapse
+ *  non-alphanumerics to spaces so word-boundary matching works by wrapping
+ *  both sides in spaces: " hospital " doesn't match " hospitality ". */
 function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 interface Candidate {
@@ -109,13 +113,17 @@ export function resolveEscalationIntent(
 ): EscalationIntentMatch {
   const fallback = getEscalationFallback();
   const haystack = normalize(`${input.question}\n${input.escalationReason ?? ""}`);
-  if (haystack.trim().length === 0) {
+  if (haystack.length === 0) {
     return {
       intentId: fallback.intentId as EscalationIntentId,
       confidence: CONFIDENCE.fallback,
       matchedKeyword: null,
     };
   }
+
+  // Pad with spaces so keyword comparison honors word boundaries — prevents
+  // "hospital" (int.emergency_medical) from matching inside "hospitality".
+  const paddedHaystack = ` ${haystack} `;
 
   const candidates: Candidate[] = [];
   for (const intent of getEscalationIntents()) {
@@ -124,7 +132,7 @@ export function resolveEscalationIntent(
     let longest: NormalizedKeyword | null = null;
     for (const kw of keywords) {
       if (
-        haystack.includes(kw.normalized) &&
+        paddedHaystack.includes(` ${kw.normalized} `) &&
         (!longest || kw.original.length > longest.original.length)
       ) {
         longest = kw;

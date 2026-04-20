@@ -72,6 +72,25 @@ describe("resolveEscalationIntent — int.emergency_medical", () => {
     });
     expect(r.intentId).toBe("int.emergency_medical");
   });
+
+  it("word-boundary: 'hospital' keyword must not match 'hospitality' in a question", () => {
+    const r = resolveEscalationIntent({
+      question: "I work in hospitality and have a question about check-in",
+      language: "en",
+    });
+    // Should fall through to general; before the word-boundary fix this
+    // routed to int.emergency_medical because "hospital" is a substring of
+    // "hospitality".
+    expect(r.intentId).toBe("int.general");
+  });
+
+  it("word-boundary: Spanish 'robo' must not match 'robótica'", () => {
+    const r = resolveEscalationIntent({
+      question: "hay un curso de robotica en la zona",
+      language: "es",
+    });
+    expect(r.intentId).toBe("int.general");
+  });
 });
 
 describe("resolveEscalationIntent — int.emergency_fire", () => {

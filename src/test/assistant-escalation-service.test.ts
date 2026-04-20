@@ -396,6 +396,31 @@ describe("resolveEscalation — notes by audience", () => {
     });
     expect(r!.contacts[0].notes).toBe("has a spare key hidden behind the meter");
   });
+
+  it("ai audience only sees guestVisibleNotes (never internalNotes)", async () => {
+    // guest < ai < internal. `internalNotes` is operator-only, so the AI
+    // audience must not receive it even though its clearance sits above
+    // guest in the visibility hierarchy.
+    respondByRole({
+      "ct.host": [
+        {
+          id: "h",
+          roleKey: "ct.host",
+          displayName: "Alice",
+          phone: "+34111",
+          visibility: "ai",
+          internalNotes: "has a spare key hidden behind the meter",
+          guestVisibleNotes: "responds within 30 min on weekdays",
+        },
+      ],
+    });
+    const r = await resolveEscalation({
+      propertyId: "p1",
+      intentId: "int.general",
+      audience: "ai",
+    });
+    expect(r!.contacts[0].notes).toBe("responds within 30 min on weekdays");
+  });
 });
 
 // ── Prisma orderBy contract ─────────────────────────────────────────────────
