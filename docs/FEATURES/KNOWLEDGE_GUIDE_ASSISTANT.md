@@ -356,7 +356,7 @@ Release gate determinístico que valida end-to-end el pipeline RAG. Bloquea merg
 
 - [src/test/assistant-evals/fixtures.json](../../src/test/assistant-evals/fixtures.json): 60 fixtures etiquetados (ES 35 + EN 25) sobre 2 properties sintéticas + 57 `KnowledgeItem` hand-written en [knowledge-items-corpus.ts](../../src/test/assistant-evals/knowledge-items-corpus.ts). Bodies deliberadamente tight para que las citations esperadas sean estables bajo el stub synthesizer.
 - Cada fixture declara: `question`, `language`, `audience`, `expectedFacts[]` (substring case-insensitive) y `expectedItemIds[]` (KI ids esperados en top-5).
-- [property-seed.ts](../../src/test/assistant-evals/property-seed.ts) reconstruye las 2 properties + 57 items + chunks + embeddings determinísticos por cada run (idempotente, transaction-scoped).
+- [property-seed.ts](../../src/test/assistant-evals/property-seed.ts) reconstruye las 2 properties + 57 items + chunks + embeddings determinísticos por cada run. Idempotente: `teardownEvalFixtures()` borra workspace/properties/knowledge items del scope eval antes de cada `seedEvalFixtures()`, sin `$transaction` (cada run arranca desde estado limpio, no desde rollback).
 
 ### Métricas
 
@@ -378,7 +378,7 @@ El gate NO consume `VOYAGE_API_KEY` / `COHERE_API_KEY` / `ANTHROPIC_API_KEY` —
 ### Comando y artefactos
 
 - `npm run eval:assistant` — corre [release-gate.test.ts](../../src/test/assistant-evals/release-gate.test.ts) via `vitest.evals.config.ts` (excluida del run default). Requiere pgvector local.
-- Artifact JSON + markdown en `eval-artifacts/` (`.gitignore` los excluye), subido por el job CI con retención 14 días. Artifact incluye por fixture: question, answer, expected vs actual facts, citations top-5, flags `accuracyPass` + `recallPass`.
+- Artifact JSON + markdown en `eval-artifacts/` (`.gitignore` los excluye), subido por el job CI con retención 14 días. Artifact incluye por fixture: question, answer, expected vs actual facts, citations top-5, flag booleano `accuracyPass` y métrica numérica `recallAt5`.
 
 ### Scope exclusions
 

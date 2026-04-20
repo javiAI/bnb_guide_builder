@@ -15,7 +15,7 @@
     "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts",
     "embed:backfill": "tsx src/lib/jobs/knowledge-embed-backfill.ts",
     "eval:assistant": "vitest run --config vitest.evals.config.ts",
-    "eval:assistant:refresh": "EVAL_EMBED_REFRESH=1 tsx scripts/refresh-eval-embeddings.ts"
+    "eval:assistant:refresh": "tsx scripts/refresh-eval-embeddings.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

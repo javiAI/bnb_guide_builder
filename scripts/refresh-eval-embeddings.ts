@@ -1,5 +1,5 @@
 // Populates embeddings-cache.json with real Voyage vectors.
-//   EVAL_EMBED_REFRESH=1 VOYAGE_API_KEY=... npm run eval:assistant:refresh
+//   VOYAGE_API_KEY=... npm run eval:assistant:refresh
 // The gate does not consume this file — it's an optional replay cache.
 
 import fs from "node:fs";
