@@ -30,6 +30,11 @@ import type {
 import { z } from "zod";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
 import { canAudienceSee } from "./visibility";
+import {
+  ENTITY_TYPES,
+  type EntityType,
+  type JourneyStage,
+} from "./types/knowledge";
 
 import propertyTypesJson from "../../taxonomies/property_types.json";
 import roomTypesJson from "../../taxonomies/room_types.json";
@@ -260,6 +265,7 @@ const GuideSectionConfigSchema = z
     emptyCopyGuest: z.string().min(1).optional(),
     hideWhenEmptyForGuest: z.boolean().optional(),
     searchableKeywords: z.array(z.string().min(1)).optional(),
+    entityTypes: z.array(z.enum(ENTITY_TYPES)),
   })
   .strict()
   .refine(
@@ -308,6 +314,23 @@ function loadGuideSections(): GuideSectionsFile {
     }
     resolverKeys.add(item.resolverKey);
   }
+  // Exhaustiveness: every KnowledgeItem `entityType` must map to at least one
+  // non-aggregator section, otherwise the public semantic search (rama 11F)
+  // cannot resolve a hit to a GuideTree anchor. Aggregators are excluded so
+  // hits land on their canonical home, not on a facade section.
+  const claimed = new Set<EntityType>();
+  for (const item of parsed.data.items) {
+    if (item.isAggregator) continue;
+    for (const t of item.entityTypes) claimed.add(t);
+  }
+  const missing = ENTITY_TYPES.filter((t) => !claimed.has(t));
+  if (missing.length > 0) {
+    throw new Error(
+      `guide_sections.json: entityTypes[] is not exhaustive — missing ${missing.join(
+        ", ",
+      )}. Every KnowledgeItem.entityType must be claimed by at least one non-aggregator section.`,
+    );
+  }
   return parsed.data;
 }
 
@@ -334,6 +357,48 @@ export function getGuideSectionByResolverKey(
     );
   }
   return found;
+}
+
+function findNonAggregatorSectionByResolverKey(key: string): string | null {
+  const section = guideSections.items.find(
+    (s) => s.resolverKey === key && !s.isAggregator,
+  );
+  return section ? section.id : null;
+}
+
+// `entityType="property"` covers chunks across the whole guide surface
+// (check-in time, capacity, overview, checkout time, …) and the generic
+// `entityTypes[]` mapping routes them to Amenities by default. Chunks
+// carrying `journeyStage` belong elsewhere: `pre_arrival` → Arrival,
+// `checkout` → Checkout. Other entityTypes already live in their own
+// sections, so we only apply this override for `property`.
+//
+// Journey stage `checkout` also globally re-homes hits from `gs.rules` to
+// `gs.checkout` because the UX groups checkout policies under the Salida card
+// regardless of declared entityType.
+export function getSectionIdForEntity(
+  entityType: EntityType,
+  journeyStage: JourneyStage | null | undefined,
+): string | null {
+  if (entityType === "property") {
+    if (journeyStage === "pre_arrival") {
+      const arrival = findNonAggregatorSectionByResolverKey("arrival");
+      if (arrival) return arrival;
+    }
+    if (journeyStage === "checkout") {
+      const checkout = findNonAggregatorSectionByResolverKey("checkout");
+      if (checkout) return checkout;
+    }
+  }
+  if (journeyStage === "checkout") {
+    const checkout = findNonAggregatorSectionByResolverKey("checkout");
+    if (checkout) return checkout;
+  }
+  for (const section of guideSections.items) {
+    if (section.isAggregator) continue;
+    if (section.entityTypes.includes(entityType)) return section.id;
+  }
+  return null;
 }
 
 // ── Visibility hierarchy (rama 9A) ──

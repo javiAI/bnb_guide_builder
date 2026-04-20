@@ -83,6 +83,21 @@
 - `PATCH /api/guide-sections/:guideSectionId`
 - `POST /api/guide-versions/:guideVersionId/publish`
 
+#### Public guest guide
+
+- `GET /api/g/:slug/search?q=<query>` — **público, sin autenticación** (rama 11F). Delega al hybrid retriever de 11C (BM25 + vector + RRF) con `audience='guest'` forzado y `locale=Property.defaultLocale` (invariante: nunca se lee del request). Sin reranker ni synthesizer. Rate-limit 10 req/min por slug (in-memory, per-process). `Cache-Control: no-store`. `q ∈ [2, 200]` caracteres (Zod).
+
+  **Contrato de locale (11F, acordado 2026-04-20):** *one property = one published guide locale = `Property.defaultLocale`*. Hoy `GuideVersion` no tiene columna `locale`, `GuideTree` no lleva campo de locale, `composeGuide()` no recibe locale y `/g/[slug]/page.tsx` no tiene selector de idioma para el huésped — la snapshot publicada está implícitamente atada a `Property.defaultLocale`. El retriever usa ese mismo campo para evitar mismatch con el idioma que el huésped está leyendo. Cuando aterrice multi-locale publishing, la fuente de verdad deberá pasar a `GuideVersion.locale` (o el surface equivalente); el test `guide-search-visibility.test.ts` pinea el contrato actual y debe actualizarse en ese momento.
+
+  Status codes:
+  - `200` — `{ hits: GuideSemanticHit[], degraded: boolean }`. `hits ≤ 5`. Cada hit: `{ itemId, sectionId, sectionLabel, anchor, label, snippet, score }` — pointers, no texto sintetizado. `anchor` es `item-<entityId>` si existe o `section-<sectionId>` (coinciden con IDs del DOM del renderer).
+  - `400 invalid_query` — `q` vacío, <2, >200, o ausente.
+  - `404 not_found` — slug sin `Property` o sin `GuideVersion` publicado.
+  - `429 rate_limited` — excede 10 req/min. Body `{ error: "rate_limited", retryAfterSeconds }` + header `Retry-After`.
+  - `500 internal_error` — errores no esperados del retriever (embedding provider down, DB, etc.).
+
+  Mapping `entityType → sectionId` vive en `taxonomies/guide_sections.json` (`entityTypes[]`). Override: `journeyStage==='checkout'` re-homa a `gs.checkout`. Items sin sección asignable se dropean del payload.
+
 ### Messaging and automation
 
 - `GET /api/properties/:propertyId/message-templates`

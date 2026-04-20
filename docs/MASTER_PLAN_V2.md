@@ -1382,7 +1382,9 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 11F — `feat/guide-semantic-search`
+### Rama 11F — `feat/guide-semantic-search` (PR #73, pendiente de merge)
+
+**Estado**: PR #73 abierta. Resumen de ejecución al final del apartado se consolidará al mergear.
 
 **Propósito**: buscador semántico en la guía pública (`/g/:slug`) que entiende la intención del huésped y navega al contenido relevante. Reutiliza embeddings + retriever de 11C; coexiste con el Fuse.js client search de 10H como capa complementaria (Fuse para instant/offline, este para lenguaje natural).
 
@@ -1422,6 +1424,35 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - `docs/API_ROUTES.md` — documentar `GET /api/g/:slug/search?q=`
 - **Skills/tools específicos**:
   - **Context7** (auto) — Next.js rate limiting por ruta pública.
+
+**Ejecución (2026-04-20)**:
+
+- **Files añadidos**:
+  - `src/lib/services/guide-search.service.ts` — orquestador (slug → propertyId + locale + published-check → `hybridRetrieve` con `audience='guest'` forzado → map a `sectionId` + anchor + snippet). Rate-limit in-memory per slug (10 req/min) con pruning de buckets vacíos (cap 256). Exports `guideSemanticSearch`, `__resetRateLimitForTests`, `__guide_search_internal` (test-only).
+  - `src/app/api/g/[slug]/search/route.ts` — `runtime=nodejs`, `dynamic=force-dynamic`, Zod schema `q ∈ [2,200]`. Códigos: 400 (`invalid_query`), 404 (`not_found`), 429 (`rate_limited` + `Retry-After`), 200 (`{hits, degraded}`), 500 (`internal_error`). `Cache-Control: no-store` en todas.
+  - `src/test/guide-search.test.ts` (10 tests), `guide-search-visibility.test.ts` (3 — invariante `audience='guest'` y locale desde DB), `guide-search-rate-limit.test.ts` (4 — con `vi.useFakeTimers`), `guide-search-mapping.test.ts` (5 — exhaustividad por `EntityType`, sin aggregators, overrides de checkout).
+- **Files modificados**:
+  - `taxonomies/guide_sections.json` — añadido `entityTypes[]` a las 9 secciones. No-aggregators cubren los 7 `EntityType` canónicos; aggregators quedan con `[]`.
+  - `src/lib/taxonomy-loader.ts` — schema extendido (`entityTypes: z.array(z.enum(ENTITY_TYPES))`), exhaustividad chequeada al boot (throw si falta un `EntityType`), nuevo helper `getSectionIdForEntity(entityType, journeyStage: JourneyStage|null)` con override `journeyStage==='checkout' → gs.checkout`.
+  - `src/components/public-guide/guide-search.tsx` — nueva prop requerida `slug: string`, `SemanticState` discriminada (`idle|loading|ok|error|rate-limited`), debounce 300ms para CTA, `AbortController` sobre cambio de query / cierre de diálogo, lista semántica con `<button>` por item (a11y: tab-navegable, `focus-visible` outline), Enter con 0-hits Fuse dispara semantic si la CTA está elegible.
+  - `src/components/public-guide/guide.css` — estilos minimal (funcional únicamente) para `.guide-search__semantic-cta`, `.guide-search__divider`, `.guide-search__inline-note`, `.guide-search__inline-error`, `.guide-search__result--semantic`.
+  - `src/app/g/[slug]/page.tsx`, `src/app/g/e2e/[fixture]/page.tsx`, `src/components/public-guide/guide-renderer.tsx`, `src/test/guide-hero.test.tsx`, `src/test/guide-search.test.tsx` — threading de `slug` end-to-end.
+- **Invariantes enforced**:
+  - `audience` nunca se lee del request — el servicio lo fuerza a `"guest"` (test `guide-search-visibility.test.ts`).
+  - `locale` viene de `Property.defaultLocale`, nunca del cliente (mismo test).
+  - `allowedVisibilitiesFor('guest')` de 11C nunca retorna `sensitive` — invariante delegado al retriever, pinneado en `assistant-retriever-internals.test.ts`.
+  - Exhaustividad `EntityType → sectionId`: el loader throwea al boot si alguna entrada de `ENTITY_TYPES` no está reclamada por un `entityTypes[]` no-aggregator.
+- **Decisiones (diff sobre el plan original)**:
+  - **Locale desde `Property.defaultLocale`, no desde `GuideVersion`**: `GuideVersion` no tiene columna `locale` en el schema actual. Patrón canónico del repo (`knowledge.actions.ts`, `knowledge-extract.service.ts`) usa `Property.defaultLocale`. Invariante equivalente para el huésped (guide pública siempre en el locale del property publisher).
+  - **Mapping config-driven**: `entityType → sectionId` vive en `taxonomies/guide_sections.json` (`entityTypes[]`) + helper `getSectionIdForEntity`. Añadir un nuevo `EntityType` = editar el JSON + tests exhaustivos fallan si no se reclama.
+  - **Rate-limit in-memory** (Map<slug, ring-buffer>): suficiente para MVP single-process single-region. Documentado upgrade path a Redis.
+  - **Sin reranker / sin synthesizer** en el path público: blindaje explícito (la rama no los importa). Se consumen `item.bodyMd` + `item.canonicalQuestion` directamente para construir snippet.
+  - **Respuesta recortada**: `{hits, degraded}` — quitamos `stats` internos (scopeSize/bm25Hits/vectorHits) que el retriever devuelve, para no filtrar telemetría de pipeline al cliente público.
+- **Deferred a futuras ramas**:
+  - Sharding del rate-limit en Redis (multi-region) — seguirá in-memory mientras 11 viva en un solo proceso.
+  - ANN index sobre `knowledge_items.embedding` — no necesario al scope `propertyId + locale + visibility`.
+  - E2E playwright del CTA/semantic-list — 10J cubre shell + anti-leak + axe; la search pipe se cubre con 30 unit tests.
+  - Polish visual de la CTA y la lista semántica — explícitamente diferido a FASE 15 (Liora Design Replatform).
 
 ---
 

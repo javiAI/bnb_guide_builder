@@ -21,24 +21,43 @@ import type {
   GuideSearchHit,
   GuideSearchIndex,
 } from "@/lib/types/guide-search-hit";
+import type {
+  GuideSemanticHit,
+  GuideSemanticSearchResponse,
+} from "@/lib/services/guide-search.service";
+
+type SemanticState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ok"; hits: GuideSemanticHit[]; degraded: boolean }
+  | { kind: "error" }
+  | { kind: "rate-limited"; retryAfterSeconds: number };
 
 interface Props {
   index: GuideSearchIndex;
+  /** Public slug — required to call the semantic search endpoint. */
+  slug: string;
 }
 
 const MAX_RESULTS = 8;
 const ZERO_HINT =
   "Nada coincide. Prueba «wifi», «parking», «checkout», «llegada», «normas».";
 const MISS_DEBOUNCE_MS = 600;
+const SEMANTIC_WORDS_THRESHOLD = 4; // >4 words triggers the CTA
+const SEMANTIC_FEW_HITS_THRESHOLD = 3; // OR Fuse returns <3 hits
+const SEMANTIC_DEBOUNCE_MS = 300;
 
-export function GuideSearch({ index }: Props) {
+export function GuideSearch({ index, slug }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIdx, setActiveIdx] = useState(0);
+  const [semanticState, setSemanticState] = useState<SemanticState>({ kind: "idle" });
+  const [showSemanticCta, setShowSemanticCta] = useState(false);
   const deferredQuery = useDeferredValue(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
   const optionIdPrefix = useId();
+  const abortRef = useRef<AbortController | null>(null);
 
   const fuse = useMemo<Fuse<GuideSearchEntry>>(
     () => createFuseFromIndex(index),
@@ -87,27 +106,100 @@ export function GuideSearch({ index }: Props) {
     setActiveIdx(0);
   }, [deferredQuery]);
 
-  // When the dialog closes, reset state so the next open starts fresh.
+  // Debounce the CTA visibility: only show when the trigger condition holds
+  // steadily for SEMANTIC_DEBOUNCE_MS. Otherwise the CTA would flash while
+  // the user types.
+  useEffect(() => {
+    const q = deferredQuery.trim();
+    if (q.length < minQueryLength) {
+      setShowSemanticCta(false);
+      return;
+    }
+    const wordCount = q.split(/\s+/).filter(Boolean).length;
+    const shouldShow =
+      wordCount > SEMANTIC_WORDS_THRESHOLD ||
+      results.length < SEMANTIC_FEW_HITS_THRESHOLD;
+    if (!shouldShow) {
+      setShowSemanticCta(false);
+      return;
+    }
+    const handle = setTimeout(() => setShowSemanticCta(true), SEMANTIC_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [deferredQuery, results.length, minQueryLength]);
+
+  // Reset state on close. The CTA visibility is derived, but the semantic
+  // payload and any in-flight request must be cleared explicitly — otherwise
+  // stale hits from a prior query can briefly flash when the user reopens.
   useEffect(() => {
     if (!open) {
       setQuery("");
       setActiveIdx(0);
+      setSemanticState({ kind: "idle" });
+      abortRef.current?.abort();
+      abortRef.current = null;
     }
   }, [open]);
 
-  const navigateTo = useCallback(
-    (entry: GuideSearchEntry) => {
-      const target = document.getElementById(entry.anchor);
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
+  // A new query invalidates the previous semantic payload. We always abort
+  // the in-flight request so late responses can't overwrite a newer state.
+  // Key on the immediate `query` (not `deferredQuery`): the CTA fetch itself
+  // uses `query`, so if we kept the 300ms-lagged value here, a successful
+  // response could land and then a late `deferredQuery` tick would reset the
+  // state back to idle.
+  useEffect(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setSemanticState({ kind: "idle" });
+  }, [query]);
+
+  const navigateTo = useCallback((anchor: string) => {
+    const target = document.getElementById(anchor);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    // `replaceState` (not `pushState`) so repeated hits don't pollute
+    // history with one entry per selection.
+    window.history.replaceState(null, "", `#${anchor}`);
+    setOpen(false);
+  }, []);
+
+  const runSemanticSearch = useCallback(async () => {
+    // Use the immediate `query` state, not `deferredQuery` (300ms debounce):
+    // when the user clicks the CTA right after typing, the debounced value
+    // may still hold a stale string.
+    const q = query.trim();
+    if (q.length < minQueryLength) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setSemanticState({ kind: "loading" });
+    try {
+      const url = `/api/g/${encodeURIComponent(slug)}/search?q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      if (res.status === 429) {
+        const body = await res.json().catch(() => ({ retryAfterSeconds: 60 }));
+        setSemanticState({
+          kind: "rate-limited",
+          retryAfterSeconds: Number(body.retryAfterSeconds) || 60,
+        });
+        return;
       }
-      // `replaceState` (not `pushState`) so repeated hits don't pollute
-      // history with one entry per selection.
-      window.history.replaceState(null, "", `#${entry.anchor}`);
-      setOpen(false);
-    },
-    [],
-  );
+      if (!res.ok) {
+        setSemanticState({ kind: "error" });
+        return;
+      }
+      const payload = (await res.json()) as GuideSemanticSearchResponse;
+      setSemanticState({
+        kind: "ok",
+        hits: payload.hits,
+        degraded: payload.degraded,
+      });
+    } catch (err) {
+      if ((err as { name?: string }).name === "AbortError") return;
+      setSemanticState({ kind: "error" });
+    }
+  }, [query, minQueryLength, slug]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
@@ -119,10 +211,18 @@ export function GuideSearch({ index }: Props) {
       e.preventDefault();
       setActiveIdx((i) => (i - 1 + results.length) % results.length);
     } else if (e.key === "Enter") {
-      if (results.length === 0) return;
+      if (results.length === 0) {
+        // No Fuse match — trigger semantic search on Enter if the CTA
+        // would be eligible. Keeps one-key-to-act behavior.
+        if (showSemanticCta && semanticState.kind !== "loading") {
+          e.preventDefault();
+          void runSemanticSearch();
+        }
+        return;
+      }
       e.preventDefault();
       const idx = Math.min(activeIdx, results.length - 1);
-      navigateTo(results[idx].entry);
+      navigateTo(results[idx].entry.anchor);
     }
   };
 
@@ -210,7 +310,7 @@ export function GuideSearch({ index }: Props) {
                           : "guide-search__result"
                       }
                       onMouseEnter={() => setActiveIdx(i)}
-                      onClick={() => navigateTo(hit.entry)}
+                      onClick={() => navigateTo(hit.entry.anchor)}
                     >
                       <span className="guide-search__result-label">
                         {hit.entry.label}
@@ -227,6 +327,71 @@ export function GuideSearch({ index }: Props) {
                   );
                 })}
               </ul>
+            )}
+            {showSemanticCta && semanticState.kind !== "ok" && (
+              <button
+                type="button"
+                className="guide-search__semantic-cta"
+                onClick={() => void runSemanticSearch()}
+                aria-disabled={semanticState.kind === "loading"}
+                disabled={semanticState.kind === "loading"}
+              >
+                {semanticState.kind === "loading"
+                  ? "Buscando…"
+                  : "Búsqueda inteligente"}
+              </button>
+            )}
+            {semanticState.kind === "ok" && (
+              <>
+                <p className="guide-search__divider">Resultados inteligentes</p>
+                {semanticState.degraded && (
+                  <p className="guide-search__inline-note" role="status">
+                    Aún indexando — resultados parciales.
+                  </p>
+                )}
+                {semanticState.hits.length === 0 ? (
+                  <p className="guide-search__inline-note" role="status">
+                    Sin coincidencias. Prueba a reformular la pregunta.
+                  </p>
+                ) : (
+                  <ul
+                    aria-label="Resultados inteligentes"
+                    className="guide-search__results"
+                  >
+                    {semanticState.hits.map((hit) => (
+                      <li key={hit.itemId}>
+                        <button
+                          type="button"
+                          className="guide-search__result guide-search__result--semantic"
+                          onClick={() => navigateTo(hit.anchor)}
+                        >
+                          <span className="guide-search__result-label">
+                            {hit.label}
+                          </span>
+                          {hit.snippet && (
+                            <span className="guide-search__result-snippet">
+                              {hit.snippet}
+                            </span>
+                          )}
+                          <span className="guide-search__result-section">
+                            en {hit.sectionLabel}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+            {semanticState.kind === "error" && (
+              <p className="guide-search__inline-error" role="alert">
+                La búsqueda inteligente no está disponible ahora.
+              </p>
+            )}
+            {semanticState.kind === "rate-limited" && (
+              <p className="guide-search__inline-error" role="alert">
+                Demasiadas búsquedas. Prueba en {semanticState.retryAfterSeconds}s.
+              </p>
             )}
           </div>
         </Dialog.Content>

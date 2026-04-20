@@ -21,7 +21,8 @@
       "journeyStage": "arrival",
       "emptyCopy": "Aún no hay información esencial configurada. Añade wifi, horario de check-in y reglas clave para que aparezcan aquí automáticamente.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["esencial", "básico", "imprescindible"]
+      "searchableKeywords": ["esencial", "básico", "imprescindible"],
+      "entityTypes": []
     },
     {
       "id": "gs.arrival",
@@ -36,7 +37,8 @@
       "journeyStage": "arrival",
       "emptyCopy": "Aún no hay instrucciones de llegada configuradas. Añade el método de acceso y los detalles de check-in.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["llegar", "entrada", "acceso", "check-in", "checkin", "puerta", "llaves", "código", "cerradura"]
+      "searchableKeywords": ["llegar", "entrada", "acceso", "check-in", "checkin", "puerta", "llaves", "código", "cerradura"],
+      "entityTypes": ["access"]
     },
     {
       "id": "gs.spaces",
@@ -51,7 +53,8 @@
       "journeyStage": "stay",
       "emptyCopy": "Los espacios de la propiedad no están configurados. Añade dormitorios, baños y zonas comunes.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["habitación", "dormitorio", "baño", "cocina", "salón", "terraza", "jardín"]
+      "searchableKeywords": ["habitación", "dormitorio", "baño", "cocina", "salón", "terraza", "jardín"],
+      "entityTypes": ["space"]
     },
     {
       "id": "gs.howto",
@@ -66,7 +69,8 @@
       "journeyStage": "stay",
       "emptyCopy": "Añade notas de uso o runbooks en tus amenities o sistemas y aparecerán aquí para orientar al huésped.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["cómo usar", "instrucciones", "manual", "guía", "funciona", "ayuda"]
+      "searchableKeywords": ["cómo usar", "instrucciones", "manual", "guía", "funciona", "ayuda"],
+      "entityTypes": ["system"]
     },
     {
       "id": "gs.amenities",
@@ -81,7 +85,8 @@
       "journeyStage": "stay",
       "emptyCopy": "No has configurado equipamiento todavía. Selecciona los elementos que ofrece tu propiedad.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["wifi", "wi-fi", "internet", "contraseña", "red", "parking", "aparcamiento", "aire acondicionado", "ac", "climatización", "calefacción", "televisión", "tv", "lavadora", "secadora", "microondas", "piscina"]
+      "searchableKeywords": ["wifi", "wi-fi", "internet", "contraseña", "red", "parking", "aparcamiento", "aire acondicionado", "ac", "climatización", "calefacción", "televisión", "tv", "lavadora", "secadora", "microondas", "piscina"],
+      "entityTypes": ["amenity", "property"]
     },
     {
       "id": "gs.rules",
@@ -96,7 +101,8 @@
       "journeyStage": "stay",
       "emptyCopy": "Aún no hay normas configuradas. Indica políticas de ruido, fumar, mascotas y eventos.",
       "emptyCopyGuest": "No hay normas adicionales destacadas para esta estancia.",
-      "searchableKeywords": ["normas", "reglas", "política", "fumar", "tabaco", "mascotas", "ruido", "fiestas", "horario silencio", "eventos"]
+      "searchableKeywords": ["normas", "reglas", "política", "fumar", "tabaco", "mascotas", "ruido", "fiestas", "horario silencio", "eventos"],
+      "entityTypes": ["policy"]
     },
     {
       "id": "gs.checkout",
@@ -111,7 +117,8 @@
       "journeyStage": "checkout",
       "emptyCopy": "Configura el horario de check-out, políticas de salida y suplementos para que aparezcan aquí.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["salida", "checkout", "check-out", "irse", "devolver llaves", "marcharse", "despedida"]
+      "searchableKeywords": ["salida", "checkout", "check-out", "irse", "devolver llaves", "marcharse", "despedida"],
+      "entityTypes": []
     },
     {
       "id": "gs.local",
@@ -126,7 +133,8 @@
       "journeyStage": "stay",
       "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio.",
       "hideWhenEmptyForGuest": true,
-      "searchableKeywords": ["local", "barrio", "cerca", "restaurante", "supermercado", "farmacia", "transporte", "metro", "playa", "ocio"]
+      "searchableKeywords": ["local", "barrio", "cerca", "restaurante", "supermercado", "farmacia", "transporte", "metro", "playa", "ocio"],
+      "entityTypes": []
     },
     {
       "id": "gs.emergency",
@@ -141,7 +149,8 @@
       "journeyStage": "help",
       "emptyCopy": "Añade al menos un contacto de anfitrión y los servicios de emergencia locales para ofrecer apoyo inmediato.",
       "emptyCopyGuest": "Si necesitas ayuda durante la estancia, contacta con tu anfitrión.",
-      "searchableKeywords": ["ayuda", "emergencia", "contacto", "anfitrión", "host", "teléfono", "urgencia", "policía", "bombero", "médico"]
+      "searchableKeywords": ["ayuda", "emergencia", "contacto", "anfitrión", "host", "teléfono", "urgencia", "policía", "bombero", "médico"],
+      "entityTypes": ["contact"]
     }
   ]
 }

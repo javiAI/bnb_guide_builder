@@ -93,6 +93,7 @@ export default async function PublicGuidePage({ params }: Props) {
       tree={tree}
       propertyTitle={property.propertyNickname}
       searchIndex={searchIndex}
+      slug={slug}
     />
   );
 }
