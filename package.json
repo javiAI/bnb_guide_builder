@@ -26,6 +26,8 @@
     "@radix-ui/react-toast": "^1.2.15",
     "@react-pdf/renderer": "^4.5.0",
     "blurhash": "^2.0.5",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "fuse.js": "^7.3.0",
     "geo-tz": "^8.1.6",
     "maplibre-gl": "^5.22.0",

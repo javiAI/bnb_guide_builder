@@ -133,6 +133,7 @@ model Property {
   messageTemplates         MessageTemplate[]
   messageAutomations       MessageAutomation[]
   messageDrafts            MessageDraft[]
+  reservations             Reservation[]
   assistantConversations   AssistantConversation[]
   secretReferences         SecretReference[]
   auditLogs                AuditLog[]
@@ -706,24 +707,61 @@ model MessageAutomation {
 
   property Property        @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   template MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  drafts   MessageDraft[]
 
   @@index([propertyId])
   @@index([propertyId, touchpointKey])
   @@map("message_automations")
 }
 
+model Reservation {
+  id             String    @id @default(cuid())
+  propertyId     String    @map("property_id")
+  source         String    @default("manual")
+  externalId     String?   @map("external_id")
+  guestName      String    @map("guest_name")
+  checkInDate    DateTime  @map("check_in_date") @db.Date
+  checkOutDate   DateTime  @map("check_out_date") @db.Date
+  numGuests      Int       @map("num_guests")
+  status         String    @default("confirmed")
+  locale         String?
+  cancelledAt    DateTime? @map("cancelled_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  property Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  drafts   MessageDraft[]
+
+  @@unique([propertyId, source, externalId])
+  @@index([propertyId, checkInDate])
+  @@index([propertyId, status])
+  @@map("reservations")
+}
+
 model MessageDraft {
-  id         String   @id @default(cuid())
-  propertyId String   @map("property_id")
-  bodyMd     String   @map("body_md")
-  channelKey String?  @map("channel_key")
-  status     String   @default("draft")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id                    String    @id @default(cuid())
+  propertyId            String    @map("property_id")
+  reservationId         String?   @map("reservation_id")
+  automationId          String?   @map("automation_id")
+  templateId            String?   @map("template_id")
+  touchpointKey         String?   @map("touchpoint_key")
+  bodyMd                String    @map("body_md")
+  channelKey            String?   @map("channel_key")
+  scheduledSendAt       DateTime? @map("scheduled_send_at")
+  status                String    @default("pending_review")
+  resolutionStatesJson  Json?     @map("resolution_states_json")
+  lifecycleHistoryJson  Json?     @map("lifecycle_history_json")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property    Property           @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reservation Reservation?       @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  automation  MessageAutomation? @relation(fields: [automationId], references: [id], onDelete: SetNull)
 
+  @@unique([automationId, reservationId])
   @@index([propertyId])
+  @@index([propertyId, status])
+  @@index([status, scheduledSendAt])
   @@map("message_drafts")
 }
 

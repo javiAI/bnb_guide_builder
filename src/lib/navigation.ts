@@ -30,6 +30,7 @@ function buildWorkspaceNav(): NavItem[] {
   // Non-section nav items
   const extras: NavItem[] = [
     { key: "publishing", label: "Publicación", href: (id) => `/properties/${id}/publishing`, group: "outputs" },
+    { key: "reservations", label: "Reservas", href: (id) => `/properties/${id}/reservations`, group: "operations" },
     { key: "analytics", label: "Analítica", href: (id) => `/properties/${id}/analytics`, group: "operations" },
     { key: "settings", label: "Configuración", href: (id) => `/properties/${id}/settings`, group: "operations" },
   ];

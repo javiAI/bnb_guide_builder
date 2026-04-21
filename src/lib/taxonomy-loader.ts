@@ -67,6 +67,7 @@ import completenessRulesJson from "../../taxonomies/completeness_rules.json";
 import guideSectionsJson from "../../taxonomies/guide_sections.json";
 import escalationRulesJson from "../../taxonomies/escalation_rules.json";
 import messagingVariablesJson from "../../taxonomies/messaging_variables.json";
+import messagingTriggersJson from "../../taxonomies/messaging_triggers.json";
 import { CONTACT_CHANNELS } from "./contact-actions";
 
 // ── Item-based taxonomies ──
@@ -186,7 +187,7 @@ function loadCompletenessRules(): CompletenessRulesFile {
 
 export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
 
-// ── Messaging variables (rama 12A) ──
+// ── Messaging variables ──
 // Canonical catalog of template variables (`{{var}}`) + the source each one
 // resolves from. Adding a variable = JSON entry + resolver registration in
 // `src/lib/services/messaging-variables-resolvers.ts`. The coverage test fails
@@ -362,6 +363,97 @@ export const messagingVariablesByToken: ReadonlyMap<
 export const KNOWN_MESSAGING_VARIABLES: ReadonlySet<string> = new Set(
   messagingVariables.items.map((i) => i.variable),
 );
+
+// ── Messaging triggers ──
+// Catalog of automation trigger types. Each entry declares which reservation
+// anchor the offset is relative to (`checkIn`, `checkOut`, `bookingConfirmed`)
+// plus UX presets. `requiresReservation=true` means no draft can materialize
+// without a reservation row — enforced by the materializer service.
+
+export const MV_TRIGGER_ANCHORS = [
+  "checkIn",
+  "checkOut",
+  "bookingConfirmed",
+] as const;
+export type MessagingTriggerAnchor = (typeof MV_TRIGGER_ANCHORS)[number];
+
+const MvTriggerPresetSchema = z
+  .object({
+    label: z.string().min(1),
+    offsetMinutes: z.number().int().finite(),
+  })
+  .strict();
+
+const MvTriggerItemSchema = z
+  .object({
+    id: z.string().regex(/^[a-z][a-z0-9_]*$/),
+    label: z.string().min(1),
+    description: z.string().min(1),
+    anchorField: z.enum(MV_TRIGGER_ANCHORS),
+    requiresReservation: z.boolean(),
+    defaultOffsetMinutes: z.number().int().finite(),
+    offsetSign: z.enum([
+      "negative_typical",
+      "positive_typical",
+      "bidirectional",
+    ]),
+    presets: z.array(MvTriggerPresetSchema).min(1),
+  })
+  .strict();
+
+const MessagingTriggersSchema = z
+  .object({
+    file: z.literal("messaging_triggers.json"),
+    version: z.string().min(1),
+    locale: z.string().min(1),
+    units_system: z.string().min(1).optional(),
+    items: z.array(MvTriggerItemSchema).min(1),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const seen = new Set<string>();
+    data.items.forEach((item, idx) => {
+      if (seen.has(item.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["items", idx, "id"],
+          message: `Duplicate trigger id "${item.id}"`,
+        });
+      }
+      seen.add(item.id);
+    });
+  });
+
+export type MessagingTriggersFile = z.infer<typeof MessagingTriggersSchema>;
+export type MessagingTriggerItem = MessagingTriggersFile["items"][number];
+
+function loadMessagingTriggers(): MessagingTriggersFile {
+  const parsed = MessagingTriggersSchema.safeParse(messagingTriggersJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid taxonomies/messaging_triggers.json:\n${details}`,
+    );
+  }
+  return parsed.data;
+}
+
+export const messagingTriggers: MessagingTriggersFile = loadMessagingTriggers();
+
+export const messagingTriggersById: ReadonlyMap<string, MessagingTriggerItem> =
+  new Map(messagingTriggers.items.map((t) => [t.id, t]));
+
+export const KNOWN_MESSAGING_TRIGGERS: ReadonlySet<string> = new Set(
+  messagingTriggers.items.map((t) => t.id),
+);
+
+export function findMessagingTrigger(
+  id: string,
+): MessagingTriggerItem | undefined {
+  return messagingTriggersById.get(id);
+}
 
 // ── Guide sections (rama 9A) ──
 // Resolver keys are declared here (mirror of the resolvers registered in

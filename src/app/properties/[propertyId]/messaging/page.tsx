@@ -13,23 +13,25 @@ export default async function MessagingPage({
 }) {
   const { propertyId } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true },
-  });
+  const [property, templates, automations, pendingDraftsCount] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    }),
+    prisma.messageTemplate.findMany({
+      where: { propertyId },
+      select: { touchpointKey: true, status: true },
+    }),
+    prisma.messageAutomation.findMany({
+      where: { propertyId },
+      select: { touchpointKey: true, active: true },
+    }),
+    prisma.messageDraft.count({
+      where: { propertyId, status: "pending_review" },
+    }),
+  ]);
 
   if (!property) notFound();
-
-  // Get template counts per touchpoint
-  const templates = await prisma.messageTemplate.findMany({
-    where: { propertyId },
-    select: { touchpointKey: true, status: true },
-  });
-
-  const automations = await prisma.messageAutomation.findMany({
-    where: { propertyId },
-    select: { touchpointKey: true, active: true },
-  });
 
   const templateCountByTouchpoint = new Map<string, number>();
   const activeAutomationByTouchpoint = new Map<string, number>();
@@ -65,6 +67,16 @@ export default async function MessagingPage({
           label={`${automations.filter((a) => a.active).length} automations activas`}
           tone={automations.some((a) => a.active) ? "success" : "neutral"}
         />
+        <Link
+          href={`/properties/${propertyId}/messaging/drafts`}
+          className="inline-flex"
+          aria-label="Ver drafts pendientes"
+        >
+          <Badge
+            label={`${pendingDraftsCount} drafts pendientes`}
+            tone={pendingDraftsCount > 0 ? "warning" : "neutral"}
+          />
+        </Link>
       </div>
 
       <div className="mt-8 space-y-3">

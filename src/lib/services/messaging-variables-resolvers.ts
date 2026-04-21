@@ -1,16 +1,17 @@
-// Private resolvers for messaging template variables (rama 12A).
+// Private resolvers for messaging template variables.
 //
 // One resolver per `source.kind` declared in taxonomies/messaging_variables.json.
 // Resolvers are pure, synchronous functions over a pre-fetched `ResolverContext`
 // — the service batches all DB reads upstream so the resolution loop is O(N).
 //
-// Contract (closed in Fase -1):
+// Contract:
 // - Never call the assistant RAG pipeline (retriever/reranker/synthesizer/LLM).
 // - `knowledge_item` resolvers try the canonical source first, fall back to a
 //   targeted `KnowledgeItem` query, and only return short values — long
 //   narrative text only if no other option.
-// - Reservation resolvers always return `unresolved_context` in 12A; 12B will
-//   inject reservation context.
+// - Reservation resolvers resolve when `ResolverContext.reservation` is
+//   present; otherwise they return `unresolved_context` (preview without
+//   reservation context, e.g. before a booking exists).
 // - Visibility: never surface data whose source visibility exceeds `internal`.
 //   Templates themselves are `visibility=internal`, so variable data can reach
 //   that tier but `sensitive` is opaque to this service.
@@ -74,6 +75,17 @@ export interface KnowledgeItemRow {
   confidenceScore: number;
 }
 
+export interface ReservationContextRow {
+  id: string;
+  guestName: string;
+  /** ISO calendar date (YYYY-MM-DD). Formatting happens in the resolver,
+   * using `Property.timezone` and the property's default locale. */
+  checkInDate: Date;
+  checkOutDate: Date;
+  numGuests: number;
+  locale: string | null;
+}
+
 export interface ResolverContext {
   propertyId: string;
   property: PropertyContextRow;
@@ -81,6 +93,10 @@ export interface ResolverContext {
   amenitiesByKey: ReadonlyMap<string, AmenityInstanceRow[]>;
   knowledgeByTopic: ReadonlyMap<string, KnowledgeItemRow[]>;
   guideBaseUrl: string | null;
+  /** Optional reservation context. When absent, `reservation` vars return
+   * `unresolved_context`. Used by (a) preview without a reservation, and
+   * (b) the materializer which always passes a reservation. */
+  reservation: ReservationContextRow | null;
 }
 
 // ─── Resolver result ─────────────────────────────────────────────────────
@@ -362,7 +378,57 @@ const resolveDerived: Resolver = (item, ctx) => {
   return { status: "missing" };
 };
 
-const resolveReservation: Resolver = () => ({ status: "unresolved_context" });
+const RESERVATION_DATE_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+function getReservationDateFormatter(
+  locale: string,
+  timeZone: string,
+): Intl.DateTimeFormat {
+  const key = `${locale}|${timeZone}`;
+  const cached = RESERVATION_DATE_FORMATTERS.get(key);
+  if (cached) return cached;
+  const fmt = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone,
+  });
+  RESERVATION_DATE_FORMATTERS.set(key, fmt);
+  return fmt;
+}
+
+function formatReservationDate(
+  date: Date,
+  locale: string,
+  timeZone: string,
+): string {
+  return getReservationDateFormatter(locale, timeZone).format(date);
+}
+
+const RESERVATION_FIELD_READERS: Record<
+  string,
+  (r: ReservationContextRow, locale: string, timeZone: string) => string | null
+> = {
+  guestName: (r) => (nonEmpty(r.guestName) ? r.guestName : null),
+  checkInDate: (r, locale, tz) => formatReservationDate(r.checkInDate, locale, tz),
+  checkOutDate: (r, locale, tz) => formatReservationDate(r.checkOutDate, locale, tz),
+  numGuests: (r) => String(r.numGuests),
+};
+
+const resolveReservation: Resolver = (item, ctx) => {
+  if (item.source.kind !== "reservation") return { status: "missing" };
+  if (!ctx.reservation) return { status: "unresolved_context" };
+  const reader = RESERVATION_FIELD_READERS[item.source.field];
+  if (!reader) return { status: "missing" };
+  const locale = ctx.reservation.locale ?? ctx.property.defaultLocale;
+  // `checkInDate`/`checkOutDate` are @db.Date — stored as UTC-midnight instants.
+  // Formatting them in the property's timezone shifts the rendered calendar day
+  // for properties west of UTC (e.g. America/Los_Angeles turns 2026-05-10 into
+  // "9 de mayo"). Date-only values have no meaningful offset, so format in UTC
+  // to preserve the stored calendar date regardless of property location.
+  const raw = reader(ctx.reservation, locale, "UTC");
+  if (!nonEmpty(raw)) return { status: "missing" };
+  return { status: "resolved", value: raw, sourceUsed: "canonical" };
+};
 
 export const RESOLVERS: Record<MessagingVariableSourceKind, Resolver> = {
   property_field: resolvePropertyField,

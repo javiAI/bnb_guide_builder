@@ -1,15 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   createMessageAutomationAction,
   deleteMessageAutomationAction,
 } from "@/lib/actions/messaging.actions";
+import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import type { ActionResult } from "@/lib/types/action-result";
-import { automationChannels, getItems } from "@/lib/taxonomy-loader";
+import {
+  automationChannels,
+  findMessagingTrigger,
+  getItems,
+  messagingTriggers,
+} from "@/lib/taxonomy-loader";
 
 const channels = getItems(automationChannels);
+const triggers = messagingTriggers.items;
 
 interface AutomationData {
   id: string;
@@ -131,26 +138,7 @@ export function AutomationSection({
               )}
             </label>
 
-            <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Tipo de trigger</span>
-              <select name="triggerType" defaultValue="reservation_relative" className={inputClass}>
-                <option value="reservation_relative">Relativo a reserva</option>
-                <option value="on_event">Al evento</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Offset (minutos)</span>
-              <input
-                name="sendOffsetMinutes"
-                type="number"
-                defaultValue={0}
-                className={inputClass}
-              />
-              <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
-                Negativo = antes, positivo = después
-              </p>
-            </label>
+            <TriggerAndOffsetFields inputClass={inputClass} />
           </div>
 
           <button
@@ -169,6 +157,76 @@ export function AutomationSection({
         </p>
       )}
     </div>
+  );
+}
+
+function TriggerAndOffsetFields({ inputClass }: { inputClass: string }) {
+  const defaultTrigger = triggers[0];
+  const [triggerId, setTriggerId] = useState<string>(defaultTrigger.id);
+  const [offset, setOffset] = useState<number>(
+    defaultTrigger.defaultOffsetMinutes,
+  );
+
+  const current = useMemo(
+    () => triggers.find((t) => t.id === triggerId) ?? defaultTrigger,
+    [triggerId, defaultTrigger],
+  );
+
+  return (
+    <>
+      <label className="block">
+        <span className="text-xs text-[var(--color-neutral-500)]">Tipo de trigger</span>
+        <select
+          name="triggerType"
+          value={triggerId}
+          onChange={(e) => {
+            const next = triggers.find((t) => t.id === e.target.value);
+            setTriggerId(e.target.value);
+            if (next) setOffset(next.defaultOffsetMinutes);
+          }}
+          className={inputClass}
+        >
+          {triggers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
+          {current.description}
+        </p>
+      </label>
+
+      <label className="block">
+        <span className="text-xs text-[var(--color-neutral-500)]">Offset</span>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <input
+            name="sendOffsetMinutes"
+            type="number"
+            value={offset}
+            onChange={(e) => setOffset(Number(e.target.value))}
+            className={`${inputClass} w-32`}
+          />
+          <span className="text-xs text-[var(--color-neutral-400)]">minutos</span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {current.presets.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => setOffset(preset.offsetMinutes)}
+              className={`rounded-full px-2 py-0.5 text-[11px] ${
+                offset === preset.offsetMinutes
+                  ? "bg-[var(--color-primary-500)] text-white"
+                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-200)]"
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+      </label>
+    </>
   );
 }
 
@@ -202,7 +260,8 @@ function AutomationRow({
           />
         </div>
         <p className="mt-0.5 text-xs text-[var(--color-neutral-400)]">
-          {automation.triggerType === "reservation_relative" ? "Relativo a reserva" : "Al evento"} · {formatOffset(automation.sendOffsetMinutes)}
+          {findMessagingTrigger(normaliseTriggerType(automation.triggerType) ?? automation.triggerType)?.label ?? automation.triggerType} ·{" "}
+          {formatOffset(automation.sendOffsetMinutes)}
         </p>
       </div>
       <form action={deleteAction} className="ml-3 shrink-0">
