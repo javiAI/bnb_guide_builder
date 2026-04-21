@@ -37,6 +37,10 @@ export interface AggregatedSourceReport {
 
 export interface AggregatedLocalEventsResult {
   merged: MergedCanonicalEvent[];
+  /** Canonical groups aligned 1:1 with `merged` (`merged[i]` is the merge of
+   * `groups[i]`). Exposed so the sync layer can persist per-source links
+   * without re-running canonicalize. */
+  groups: CanonicalEventGroup[];
   sourceReports: AggregatedSourceReport[];
   /** Aggregator-level warnings: unexpected provider exceptions,
    * out-of-window drops, envelope validation failures. Per-source warnings
@@ -113,6 +117,7 @@ export async function aggregateLocalEvents(
 
   return {
     merged,
+    groups,
     sourceReports: reports,
     warnings: aggregatorWarnings,
     startedAt,
