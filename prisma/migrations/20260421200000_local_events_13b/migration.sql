@@ -66,3 +66,6 @@ ALTER TABLE "local_events" ADD CONSTRAINT "local_events_property_id_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "local_event_source_links" ADD CONSTRAINT "local_event_source_links_event_id_fkey" FOREIGN KEY ("event_id") REFERENCES "local_events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "local_event_source_links" ADD CONSTRAINT "local_event_source_links_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "properties"("id") ON DELETE CASCADE ON UPDATE CASCADE;

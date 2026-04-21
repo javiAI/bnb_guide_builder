@@ -242,6 +242,33 @@ describe("mergeCanonicalGroup", () => {
     expect(merged.imageUrl).toBe("https://turismo.teruel/img.jpg");
   });
 
+  it("fromFamily walks all Firecrawl candidates when the first lacks imageUrl", () => {
+    // Canonical group with two Firecrawl candidates: the first has no
+    // imageUrl but a later one does. Priority must still route imageUrl to
+    // the Firecrawl family (not fall through to TM).
+    const groups = canonicalizeCandidates([
+      candidate({
+        source: "firecrawl:teruel_turismo",
+        sourceExternalId: "fc-1",
+        venueName: "Auditorio",
+      }),
+      candidate({
+        source: "firecrawl:albarracin_guide",
+        sourceExternalId: "fc-2",
+        imageUrl: "https://albarracin.guide/hero.jpg",
+        venueName: "Auditorio",
+      }),
+      candidate({
+        source: "ticketmaster",
+        sourceExternalId: "tm-1",
+        imageUrl: "https://tm/img.jpg",
+        venueName: "Auditorio",
+      }),
+    ]);
+    const merged = mergeCanonicalGroup(groups[0]);
+    expect(merged.imageUrl).toBe("https://albarracin.guide/hero.jpg");
+  });
+
   it("TM wins sourceUrl even when PHQ is primary", () => {
     const groups = canonicalizeCandidates([
       candidate({

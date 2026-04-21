@@ -75,17 +75,21 @@ function byPriority<T>(
   return undefined;
 }
 
+// Returns the first non-empty picked value across ALL candidates in the
+// requested family, walking them in the same priority order as `byPriority`.
+// Picking only `candidates.find(...)` would return `undefined` whenever the
+// first family member lacked the field — even when another member had it —
+// silently breaking rules like "Firecrawl wins imageUrl" for canonical
+// groups with multiple curated Firecrawl sources.
 function fromFamily<T>(
   candidates: ReadonlyArray<NormalizedEventCandidate>,
   family: string,
   pick: (c: NormalizedEventCandidate) => T | undefined,
 ): T | undefined {
-  const match = candidates.find((c) => providerFamily(c.source) === family);
-  if (match) {
-    const v = pick(match);
-    if (v !== undefined && v !== null && v !== "") return v;
-  }
-  return undefined;
+  const familyCandidates = candidates.filter(
+    (c) => providerFamily(c.source) === family,
+  );
+  return byPriority(familyCandidates, pick);
 }
 
 function uniqueContributing(

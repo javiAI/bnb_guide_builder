@@ -97,6 +97,16 @@ describe("mapFirecrawlCategory", () => {
     expect(mapFirecrawlCategory(undefined)).toBe("le.other");
     expect(mapFirecrawlCategory("zarzuela contemporánea lunar")).toBe("le.other");
   });
+
+  it("matches accented raw inputs via accent-stripped keywords", () => {
+    // Keywords with Spanish accents/ñ (niños, niñas, galería, exposición)
+    // must still match after `stripAccents` is applied to the raw input.
+    // Regression for the pre-fix bug where keywords were compared unstripped.
+    expect(mapFirecrawlCategory("Actividad para niños")).toBe("le.family");
+    expect(mapFirecrawlCategory("Evento con niñas")).toBe("le.family");
+    expect(mapFirecrawlCategory("Galería municipal")).toBe("le.exhibition");
+    expect(mapFirecrawlCategory("Exposición itinerante")).toBe("le.exhibition");
+  });
 });
 
 describe("deriveFirecrawlExternalId", () => {

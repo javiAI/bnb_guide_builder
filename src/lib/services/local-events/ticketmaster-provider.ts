@@ -379,7 +379,14 @@ export class TicketmasterEventsProvider implements LocalEventSourceProvider {
       const candidateInput: NormalizedEventCandidate = {
         source: this.source,
         sourceExternalId: ev.id,
-        sourceUrl: ev.url && isHttpUrl(ev.url) ? ev.url : `${this.baseUrl}/event/${ev.id}`,
+        // `baseUrl` is the Discovery API host (`app.ticketmaster.com`) — not
+        // user-facing. When `ev.url` is missing or invalid, fall back to the
+        // public deep-link domain (`www.ticketmaster.com/event/<id>`), which
+        // resolves to the event page in the user's region.
+        sourceUrl:
+          ev.url && isHttpUrl(ev.url)
+            ? ev.url
+            : `https://www.ticketmaster.com/event/${encodeURIComponent(ev.id)}`,
         title: ev.name,
         ...(ev.info || ev.description
           ? { descriptionMd: (ev.info ?? ev.description) as string }

@@ -105,20 +105,28 @@ const FirecrawlScrapeResponseSchema = z
 // to registered `le.*` keys using keyword prefixes. Unknown terms fall to
 // `le.other` (a registered key, not a raw string).
 
+// Keywords are pre-normalized with the same `stripAccents + toLowerCase`
+// pipeline we apply to `raw`, so entries containing accented characters
+// (e.g. "niños" → "ninos") still match real-world inputs.
 const FIRECRAWL_CATEGORY_RULES: ReadonlyArray<{
   keywords: readonly string[];
   categoryKey: string;
-}> = [
-  { keywords: ["concierto", "concert", "musica", "jazz", "rock"], categoryKey: "le.concert" },
-  { keywords: ["deporte", "sport", "partido", "carrera", "maraton"], categoryKey: "le.sports" },
-  { keywords: ["teatro", "danza", "opera", "escenic"], categoryKey: "le.arts" },
-  { keywords: ["familia", "familiar", "infantil", "nino", "niños"], categoryKey: "le.family" },
-  { keywords: ["festival", "fallas"], categoryKey: "le.festival" },
-  { keywords: ["exposicion", "expo", "museo", "galeria"], categoryKey: "le.exhibition" },
-  { keywords: ["mercado", "feria", "barrio", "popular", "comunidad"], categoryKey: "le.community" },
-  { keywords: ["taller", "curso", "workshop"], categoryKey: "le.workshop" },
-  { keywords: ["fiesta", "nocturna", "dj"], categoryKey: "le.nightlife" },
-];
+}> = (
+  [
+    { keywords: ["concierto", "concert", "musica", "jazz", "rock"], categoryKey: "le.concert" },
+    { keywords: ["deporte", "sport", "partido", "carrera", "maraton"], categoryKey: "le.sports" },
+    { keywords: ["teatro", "danza", "opera", "escenic"], categoryKey: "le.arts" },
+    { keywords: ["familia", "familiar", "infantil", "niño", "niños", "niña", "niñas"], categoryKey: "le.family" },
+    { keywords: ["festival", "fallas"], categoryKey: "le.festival" },
+    { keywords: ["exposición", "expo", "museo", "galería"], categoryKey: "le.exhibition" },
+    { keywords: ["mercado", "feria", "barrio", "popular", "comunidad"], categoryKey: "le.community" },
+    { keywords: ["taller", "curso", "workshop"], categoryKey: "le.workshop" },
+    { keywords: ["fiesta", "nocturna", "dj"], categoryKey: "le.nightlife" },
+  ] as const
+).map((r) => ({
+  keywords: r.keywords.map((k) => stripAccents(k.toLowerCase())),
+  categoryKey: r.categoryKey,
+}));
 
 export function mapFirecrawlCategory(raw: string | undefined): string {
   if (!raw) return "le.other";

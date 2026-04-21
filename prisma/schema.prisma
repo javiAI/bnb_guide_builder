@@ -124,6 +124,7 @@ model Property {
   incidents                Incident[]
   localPlaces              LocalPlace[]
   localEvents              LocalEvent[]
+  localEventSourceLinks    LocalEventSourceLink[]
   opsChecklistItems        OpsChecklistItem[]
   stockItems               StockItem[]
   maintenanceTasks         MaintenanceTask[]
@@ -464,8 +465,10 @@ model LocalPlace {
 // (`src/lib/services/local-events/aggregator.ts`). Per-source contributions
 // land in `LocalEventSourceLink`. One canonical event may have 1..N links
 // (one per provider that supplied data for it). The pair is reconciled every
-// tick by the sync service; rows absent from the tick's output for more than
-// the retention horizon are deleted.
+// tick by the sync service; future rows (`startsAt >= tickStartedAt`) that
+// aren't re-surfaced by the current tick are deleted on that tick. Past
+// events remain as historical record until a separate retention sweep runs
+// (out of scope for 13B).
 
 model LocalEvent {
   id                  String    @id @default(cuid())
@@ -513,7 +516,8 @@ model LocalEventSourceLink {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  event LocalEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event    LocalEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  property Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, source, sourceExternalId], map: "local_event_source_links_property_source_ext_unique")
   @@index([eventId])

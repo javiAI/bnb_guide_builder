@@ -158,6 +158,53 @@ describe("TicketmasterEventsProvider", () => {
     expect(res.events[0].startsAt.toISOString()).toBe("2026-05-15T00:00:00.000Z");
   });
 
+  it("falls back to public deep-link when ev.url is missing", async () => {
+    const provider = new TicketmasterEventsProvider({
+      apiKey: "tm-key",
+      fetchImpl: mockOk({
+        _embedded: {
+          events: [
+            {
+              id: "no-url-1",
+              name: "Evento sin URL",
+              // no `url` field — provider must synthesize a fallback
+              dates: { start: { dateTime: "2026-05-10T19:00:00Z" } },
+              classifications: [{ segment: { name: "Music" } }],
+            },
+          ],
+        },
+      }),
+    });
+    const res = await provider.fetch(baseParams());
+    expect(res.events.length).toBe(1);
+    expect(res.events[0].sourceUrl).toBe(
+      "https://www.ticketmaster.com/event/no-url-1",
+    );
+  });
+
+  it("falls back to public deep-link when ev.url is not a valid http URL", async () => {
+    const provider = new TicketmasterEventsProvider({
+      apiKey: "tm-key",
+      fetchImpl: mockOk({
+        _embedded: {
+          events: [
+            {
+              id: "bad-url-1",
+              name: "URL inválida",
+              url: "not-a-real-url",
+              dates: { start: { dateTime: "2026-05-10T19:00:00Z" } },
+              classifications: [{ segment: { name: "Music" } }],
+            },
+          ],
+        },
+      }),
+    });
+    const res = await provider.fetch(baseParams());
+    expect(res.events[0].sourceUrl).toBe(
+      "https://www.ticketmaster.com/event/bad-url-1",
+    );
+  });
+
   it("drops events outside the window", async () => {
     const provider = new TicketmasterEventsProvider({
       apiKey: "tm-key",
