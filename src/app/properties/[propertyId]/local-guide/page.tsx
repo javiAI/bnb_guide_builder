@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { localPlaceCategories, findLocalPlaceCategory } from "@/lib/taxonomy-loader";
 import { CreateLocalPlaceForm } from "./create-local-place-form";
 import { LocalPlaceCard } from "./local-place-card";
+import { LocalEventsRadiusForm } from "./local-events-radius-form";
 
 const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
   value: c.id,
@@ -19,7 +20,7 @@ export default async function LocalGuidePage({
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, localEventsRadiusKm: true },
   });
 
   if (!property) notFound();
@@ -45,6 +46,16 @@ export default async function LocalGuidePage({
       <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
         Recomendaciones cercanas para huéspedes.
       </p>
+
+      <div className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-[var(--foreground)]">
+          Eventos automáticos
+        </h2>
+        <LocalEventsRadiusForm
+          propertyId={propertyId}
+          initialRadiusKm={property.localEventsRadiusKm}
+        />
+      </div>
 
       <div className="mt-8">
         {places.length === 0 ? (

@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { GuideMapData, GuideMapPin } from "@/lib/types/guide-map";
 import { escapeHtml } from "@/lib/renderers/guide-html";
 import { formatDistance } from "@/lib/services/places";
+import { distanceBucketLabel } from "@/lib/services/places/distance-bucket";
 
 type FilterMode = "all" | "places" | "events";
 
@@ -35,14 +36,20 @@ export function GuideMap({ data }: Props) {
 
   // Memoed because it gates an imperative `useEffect` below — a new array
   // identity on every render would re-run marker rebuild unnecessarily.
-  const visiblePins = useMemo<GuideMapPin[]>(() => {
-    if (mode === "places") return data.pins.filter((p) => p.kind === "place");
-    if (mode === "events") return data.pins.filter((p) => p.kind === "event");
-    return data.pins;
+  const { places, events, visiblePins } = useMemo(() => {
+    const places: GuideMapPin[] = [];
+    const events: GuideMapPin[] = [];
+    for (const p of data.pins) {
+      if (p.kind === "place") places.push(p);
+      else if (p.kind === "event") events.push(p);
+    }
+    const visiblePins =
+      mode === "places" ? places : mode === "events" ? events : data.pins;
+    return { places, events, visiblePins };
   }, [data.pins, mode]);
 
-  const placeCount = data.pins.filter((p) => p.kind === "place").length;
-  const eventCount = data.pins.filter((p) => p.kind === "event").length;
+  const placeCount = places.length;
+  const eventCount = events.length;
 
   useEffect(() => {
     let cancelled = false;
@@ -320,12 +327,19 @@ function buildPinElement(pin: GuideMapPin): HTMLButtonElement {
 function buildPopupHtml(pin: GuideMapPin): string {
   const safeLabel = escapeHtml(pin.label);
   if (pin.kind === "place") {
+    // Prefer exact meters when the payload was built for internal audience;
+    // otherwise fall back to the coarse bucket label emitted for guest/ai.
+    // See `guide-map.service.ts` for the triangulation rationale.
     const distance =
-      pin.distanceMeters != null ? formatDistance(pin.distanceMeters) : null;
+      pin.distanceMeters != null
+        ? formatDistance(pin.distanceMeters)
+        : pin.distanceBucketKey
+          ? distanceBucketLabel(pin.distanceBucketKey)
+          : null;
     return `
       <div class="guide-map__popup">
         <p class="guide-map__popup-title">${safeLabel}</p>
-        ${distance ? `<p class="guide-map__popup-meta">${distance}</p>` : ""}
+        ${distance ? `<p class="guide-map__popup-meta">${escapeHtml(distance)}</p>` : ""}
       </div>
     `.trim();
   }

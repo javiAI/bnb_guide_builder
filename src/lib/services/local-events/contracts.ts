@@ -26,6 +26,7 @@ import { isLocalEventCategoryKey } from "@/lib/taxonomy-loader";
 export const SOURCE_FETCH_STATUS = [
   "ok",
   "disabled",
+  "no_sources_applicable",
   "config_error",
   "rate_limited",
   "unavailable",
@@ -177,6 +178,12 @@ export interface SourceFetchParams {
   /** Time window [from, to]. Providers MUST NOT return events outside this
    * window; the aggregator drops out-of-window candidates as a defense. */
   window: { from: Date; to: Date };
+  /** Search radius in kilometers. Applied per-property (configured from the
+   * local-guide editor). PHQ and Ticketmaster use it as the upstream
+   * geo-radius parameter; Firecrawl uses it as an override/widener over
+   * each curated source's own `radiusKm`. Providers fall back to their
+   * constructor default when omitted. */
+  radiusKm?: number;
   /** Max candidates this provider should return. Providers may return fewer. */
   limit?: number;
   signal?: AbortSignal;
@@ -211,12 +218,16 @@ export const SourceFetchResultSchema = z
   .refine(
     (v) => {
       if (v.status === "ok") return v.error === undefined;
-      if (v.status === "disabled") return true;
+      // `disabled` and `no_sources_applicable` are informational non-ok
+      // states, not errors — the provider ran its protocol, there just
+      // wasn't anything to call. No `error` object required/allowed.
+      if (v.status === "disabled") return v.error === undefined;
+      if (v.status === "no_sources_applicable") return v.error === undefined;
       return v.error !== undefined;
     },
     {
       message:
-        "error is required for non-ok/non-disabled status; forbidden for ok",
+        "error required for actual failures; forbidden for ok/disabled/no_sources_applicable",
     },
   );
 

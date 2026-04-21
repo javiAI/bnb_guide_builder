@@ -84,6 +84,7 @@ export async function runLocalEventsTick(
       longitude: true,
       city: true,
       defaultLocale: true,
+      localEventsRadiusKm: true,
     },
   });
 
@@ -100,6 +101,7 @@ export async function runLocalEventsTick(
           locale,
           city: p.city,
           window: { from: windowFrom, to: windowTo },
+          radiusKm: p.localEventsRadiusKm,
         },
         providers,
         propertyId: p.id,

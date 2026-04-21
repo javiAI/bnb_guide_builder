@@ -111,6 +111,11 @@ model Property {
   brandLogoUrl            String?  @map("brand_logo_url")
   brandPaletteKey         String?  @map("brand_palette_key")
   defaultLocale           String   @default("es") @map("default_locale")
+  // Search radius (km) used by the local-events sync (Rama 13C). Passed to
+  // PHQ/TM as their geo radius and to Firecrawl as a widening factor over
+  // per-source curated radii. Host-configurable from the local-guide editor;
+  // default 25 km covers typical urban stays without excess noise.
+  localEventsRadiusKm     Int      @default(25) @map("local_events_radius_km")
   status                  String   @default("draft")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")

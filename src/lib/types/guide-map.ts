@@ -42,6 +42,8 @@ export type GuideMapAnchor =
  * Kind-specific fields only appear on the matching variant, so helpers
  * can't accidentally read `startsAt` off a place pin or vice versa.
  */
+import type { DistanceBucketKey } from "@/lib/services/places/distance-bucket";
+
 export type GuideMapPin =
   | {
       id: string;
@@ -50,7 +52,15 @@ export type GuideMapPin =
       lng: number;
       categoryKey: string;
       label: string;
+      /** Exact meters. Only emitted when the map payload was built for
+       * `audience="internal"` — NEVER for guest/ai. Guest/ai payloads carry
+       * `distanceBucketKey` instead so a client cannot triangulate the
+       * (obfuscated-away) property anchor from three or more exact distances. */
       distanceMeters?: number;
+      /** Coarse bucket (<200m, 200–500m, 500m–1km, >1km). Emitted for
+       * guest/ai audiences. Internal payloads may also include it for UI
+       * parity. */
+      distanceBucketKey?: DistanceBucketKey;
     }
   | {
       id: string;

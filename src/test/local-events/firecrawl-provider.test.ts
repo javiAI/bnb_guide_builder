@@ -165,15 +165,18 @@ describe("FirecrawlLocalEventsProvider", () => {
     expect(res.error?.kind).toBe("config");
   });
 
-  it("returns ok with empty events when no curated source applies", async () => {
+  it("returns no_sources_applicable (not ok) when no curated source applies to the property anchor/city", async () => {
+    // Distinct status from `ok (0 events)`: operators need to tell apart
+    // "scrape ran → page had nothing" vs. "no source covers this property".
     const provider = new FirecrawlLocalEventsProvider({
       apiKey: "fc-key",
       sources: [TERUEL],
       fetchImpl: (async () => new Response("{}", { status: 200 })) as unknown as typeof fetch,
     });
     const res = await provider.fetch(baseParams({ city: "Paris", anchor: { latitude: 48.85, longitude: 2.35 } }));
-    expect(res.status).toBe("ok");
+    expect(res.status).toBe("no_sources_applicable");
     expect(res.events).toEqual([]);
+    expect(res.error).toBeUndefined();
     expect(res.warnings[0]).toMatch(/no curated sources applicable/);
   });
 

@@ -319,20 +319,28 @@ describe("buildGuideMapData — property-coord leak invariants", () => {
 describe("buildGuideMapData — distanceMeters triangulation guard", () => {
   // With obfuscated anchors, emitting `distanceMeters` from N place pins
   // whose lat/lng are exact lets a client intersect N circles and recover
-  // the property's true location. The rule: `distanceMeters` is scrubbed
-  // for guest + ai and only surfaces for internal.
-  it("omits distanceMeters from place pins for audience=guest", async () => {
+  // the property's true location. The rule: guest/ai see only a coarse
+  // `distanceBucketKey` (<200m / 200–500m / 500m–1km / >1km); `distanceMeters`
+  // exact only surfaces for audience=internal.
+  it("emits distanceBucketKey (not exact) on place pins for audience=guest", async () => {
     mockPlaces.mockResolvedValueOnce([
-      placeRow({ id: "pl-1", distanceMeters: 250 }),
-      placeRow({ id: "pl-2", distanceMeters: 800 }),
+      placeRow({ id: "pl-1", distanceMeters: 150 }),
+      placeRow({ id: "pl-2", distanceMeters: 250 }),
+      placeRow({ id: "pl-3", distanceMeters: 800 }),
+      placeRow({ id: "pl-4", distanceMeters: 4200 }),
     ]);
     const out = await buildGuideMapData("p1", "guest", { now: NOW });
+    const byId = Object.fromEntries(out!.pins.map((p) => [p.id, p]));
     for (const pin of out!.pins) {
       expect(pin).not.toHaveProperty("distanceMeters");
     }
+    expect((byId["pl-1"] as { distanceBucketKey?: string }).distanceBucketKey).toBe("lt200m");
+    expect((byId["pl-2"] as { distanceBucketKey?: string }).distanceBucketKey).toBe("200_500m");
+    expect((byId["pl-3"] as { distanceBucketKey?: string }).distanceBucketKey).toBe("500m_1km");
+    expect((byId["pl-4"] as { distanceBucketKey?: string }).distanceBucketKey).toBe("gt1km");
   });
 
-  it("omits distanceMeters from place pins for audience=ai", async () => {
+  it("emits distanceBucketKey (not exact) on place pins for audience=ai", async () => {
     mockPlaces.mockResolvedValueOnce([
       placeRow({ id: "pl-1", distanceMeters: 250 }),
     ]);
@@ -340,6 +348,9 @@ describe("buildGuideMapData — distanceMeters triangulation guard", () => {
     for (const pin of out!.pins) {
       expect(pin).not.toHaveProperty("distanceMeters");
     }
+    expect(
+      (out!.pins[0] as { distanceBucketKey?: string }).distanceBucketKey,
+    ).toBe("200_500m");
   });
 
   it("includes distanceMeters on place pins for audience=internal (ops tooling)", async () => {
@@ -350,7 +361,18 @@ describe("buildGuideMapData — distanceMeters triangulation guard", () => {
     const pin = out!.pins[0];
     if (pin.kind === "place") {
       expect(pin.distanceMeters).toBe(250);
+      expect(pin.distanceBucketKey).toBeUndefined();
     }
+  });
+
+  it("omits distance annotations entirely when distanceMeters is null on the place", async () => {
+    mockPlaces.mockResolvedValueOnce([
+      placeRow({ id: "pl-1", distanceMeters: null }),
+    ]);
+    const out = await buildGuideMapData("p1", "guest", { now: NOW });
+    const pin = out!.pins[0];
+    expect(pin).not.toHaveProperty("distanceMeters");
+    expect(pin).not.toHaveProperty("distanceBucketKey");
   });
 });
 

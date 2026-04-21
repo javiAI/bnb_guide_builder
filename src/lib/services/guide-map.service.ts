@@ -40,6 +40,7 @@ import type {
   GuideMapPin,
 } from "@/lib/types/guide-map";
 import { obfuscateAnchor } from "./map-obfuscation";
+import { bucketizeDistance } from "./places/distance-bucket";
 import {
   getLocalEventsForProperty,
   getLocalPlacesForProperty,
@@ -92,6 +93,19 @@ export async function buildGuideMapData(
   for (const place of places) {
     if (place.latitude == null || place.longitude == null) continue;
     if (!isVisibleForAudience(place.visibility, audience)) continue;
+    // SECURITY — triangulation: exact `distanceMeters` combined with the
+    // place's exact coords lets a client intersect circles and recover the
+    // (obfuscated-away) property anchor. For guest/ai we emit a coarse
+    // `distanceBucketKey` (<200m / 200–500m / 500m–1km / >1km); the bucket
+    // width matches the obfuscation disk resolution, so triangulation gains
+    // no new information. Internal callers (ops) keep exact meters.
+    const distanceAnnotation =
+      place.distanceMeters == null
+        ? {}
+        : audience === "internal"
+          ? { distanceMeters: place.distanceMeters }
+          : { distanceBucketKey: bucketizeDistance(place.distanceMeters) };
+
     pins.push({
       id: place.id,
       kind: "place",
@@ -99,14 +113,7 @@ export async function buildGuideMapData(
       lng: place.longitude,
       categoryKey: place.categoryKey,
       label: place.name,
-      // SECURITY: `distanceMeters` is a number-of-metres-from-the-property.
-      // Combined with the place's exact coords, multiple distances let a
-      // client triangulate the true property location — defeating the
-      // obfuscated anchor. Only `audience=internal` (ops) sees it; guest
-      // and ai receive map pins without distance annotations.
-      ...(audience === "internal" && place.distanceMeters != null
-        ? { distanceMeters: place.distanceMeters }
-        : {}),
+      ...distanceAnnotation,
     });
   }
 

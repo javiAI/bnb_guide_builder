@@ -56,6 +56,10 @@ import {
   mediaKey,
 } from "@/lib/services/guide-media.service";
 import { getLocalPlacesForProperty } from "@/lib/services/guide-local-data";
+import {
+  bucketizeDistance,
+  distanceBucketLabel,
+} from "@/lib/services/places/distance-bucket";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
 const PROPERTY_COVER_LABEL = "La casa";
@@ -909,11 +913,22 @@ function contactToGuideItem(
 function resolveLocal(ctx: GuideContext): GuideItem[] {
   return ctx.localPlaces.map((lp) => {
     const fields: GuideItemField[] = [];
+    // SECURITY — triangulation: exact meters at `visibility: "guest"` would
+    // let a client recover the property's obfuscated-away coordinates by
+    // intersecting circles around three or more places. Guests see a coarse
+    // bucket (<200m / 200–500m / 500m–1km / >1km); ops/internal see the
+    // exact value separately.
     if (lp.distanceMeters != null) {
+      const bucketKey = bucketizeDistance(lp.distanceMeters);
       fields.push({
         label: "Distancia",
-        value: `${lp.distanceMeters} m`,
+        value: distanceBucketLabel(bucketKey),
         visibility: "guest",
+      });
+      fields.push({
+        label: "Distancia exacta",
+        value: `${lp.distanceMeters} m`,
+        visibility: "internal",
       });
     }
     if (lp.hoursText) {

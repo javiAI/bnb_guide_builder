@@ -1109,6 +1109,33 @@ export async function updateLocalPlaceAction(
   return { success: true };
 }
 
+/** Update the per-property event-search radius (km). Applied to PHQ/TM as
+ * the upstream geo radius and to Firecrawl as a widening factor over each
+ * curated source's curated radius. Clamped to [1, 200] to avoid degenerate
+ * queries (TM refuses radius > 19999 miles but also returns tiny result
+ * sets past ~50km; 200km is a pragmatic upper bound for rural stays). */
+export async function updateLocalEventsRadiusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string | null;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+  const raw = formData.get("radiusKm");
+  const parsed = Number.parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 200) {
+    return {
+      success: false,
+      fieldErrors: { radiusKm: ["Introduce un radio entre 1 y 200 km"] },
+    };
+  }
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: { localEventsRadiusKm: parsed },
+  });
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  return { success: true };
+}
+
 export async function deleteLocalPlaceAction(
   _prev: ActionResult | null,
   formData: FormData,
