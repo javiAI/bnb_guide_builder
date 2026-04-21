@@ -71,6 +71,7 @@ import messagingTriggersJson from "../../taxonomies/messaging_triggers.json";
 import messagingStarterPacksJson from "../../taxonomies/messaging_starter_packs.json";
 import localPlaceCategoriesJson from "../../taxonomies/local_place_categories.json";
 import localEventCategoriesJson from "../../taxonomies/local_event_categories.json";
+import localEventSourcesJson from "../../taxonomies/local_event_sources.json";
 import { CONTACT_CHANNELS } from "./contact-actions";
 import {
   extractVariableTokens,
@@ -341,6 +342,72 @@ export function findLocalEventCategory(
 
 export function isLocalEventCategoryKey(id: string): boolean {
   return LOCAL_EVENT_CATEGORY_BY_ID.has(id);
+}
+
+// ── Local event sources (Firecrawl curated) ──
+// Canonical catalog of curated web sources the Firecrawl provider scrapes
+// (tourism agendas, council event pages). Each entry is a `firecrawl:<key>`
+// provenance namespace. Applicability per property is city-match first, then
+// haversine-within-radius fallback. URLs must be verified by the operator
+// before relying on the source — the early-validation gate in rama 13B
+// confirms each curated URL surfaces useful structured events.
+
+const LocalEventSourceSchema = z
+  .object({
+    key: z.string().regex(/^[a-z][a-z0-9_]*$/, {
+      message: "source key must match `[a-z][a-z0-9_]*`",
+    }),
+    sourceUrl: z.string().url(),
+    city: z.string().min(1),
+    latitude: z.number().gte(-90).lte(90),
+    longitude: z.number().gte(-180).lte(180),
+    radiusKm: z.number().positive().lte(200),
+    language: z.enum(["es", "en"]),
+    notes: z.string().min(1).optional(),
+  })
+  .strict();
+
+const LocalEventSourcesFileSchema = z
+  .object({
+    file: z.string(),
+    version: z.string(),
+    locale: z.string(),
+    units_system: z.string(),
+    items: z.array(LocalEventSourceSchema).min(1),
+  })
+  .strict();
+
+export type LocalEventSource = z.infer<typeof LocalEventSourceSchema>;
+export type LocalEventSourcesFile = z.infer<typeof LocalEventSourcesFileSchema>;
+
+function loadLocalEventSources(): LocalEventSourcesFile {
+  const parsed = LocalEventSourcesFileSchema.safeParse(localEventSourcesJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid taxonomies/local_event_sources.json:\n${details}`,
+    );
+  }
+  const keys = parsed.data.items.map((i) => i.key);
+  const duplicates = keys.filter((k, idx) => keys.indexOf(k) !== idx);
+  if (duplicates.length > 0) {
+    throw new Error(
+      `Duplicate local event source keys: ${Array.from(new Set(duplicates)).join(", ")}`,
+    );
+  }
+  return parsed.data;
+}
+
+export const localEventSources: LocalEventSourcesFile =
+  loadLocalEventSources();
+
+const LOCAL_EVENT_SOURCE_BY_KEY: ReadonlyMap<string, LocalEventSource> =
+  new Map(localEventSources.items.map((item) => [item.key, item]));
+
+export function findLocalEventSource(key: string): LocalEventSource | undefined {
+  return LOCAL_EVENT_SOURCE_BY_KEY.get(key);
 }
 
 // ── Messaging variables ──
