@@ -305,16 +305,14 @@ function buildCircleGeoJSON(
   };
 }
 
-function buildPinElement(pin: GuideMapPin): HTMLDivElement {
-  // Pins are imperative DOM nodes (MapLibre owns them). Category-specific
-  // iconography lives in the React listing — here we keep the marker
-  // lightweight: a colored dot whose `kind` tells place vs event. Accessible
-  // naming comes from the popup, which is keyboard-reachable via the marker's
-  // focusable button.
-  const el = document.createElement("div");
+function buildPinElement(pin: GuideMapPin): HTMLButtonElement {
+  // Real <button> (not div role=button) so native Enter/Space activation
+  // fires the click → popup, and focus styles are handled by the UA.
+  // Category-specific iconography lives in the React listing; the marker
+  // itself stays a colored dot whose `kind` tells place vs event.
+  const el = document.createElement("button");
+  el.type = "button";
   el.className = `guide-map__pin guide-map__pin--${pin.kind}`;
-  el.setAttribute("role", "button");
-  el.setAttribute("tabindex", "0");
   el.setAttribute("aria-label", pin.label);
   return el;
 }

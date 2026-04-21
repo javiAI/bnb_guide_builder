@@ -999,16 +999,33 @@
   line-height: 1.4;
 }
 
-.guide-event__source {
+.guide-event__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
   margin-top: 0.25rem;
+}
+
+.guide-event__source {
   font-size: 0.8125rem;
   color: var(--guide-brand);
   text-decoration: none;
-  align-self: flex-start;
 }
 
 .guide-event__source:hover,
 .guide-event__source:focus-visible {
   text-decoration: underline;
   outline: none;
+}
+
+.guide-event__origin {
+  font-size: 0.75rem;
+  color: var(--color-neutral-600, #5a5a5a);
+  background: var(--color-neutral-100, #f2f2f2);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  line-height: 1.2;
+  cursor: help;
 }

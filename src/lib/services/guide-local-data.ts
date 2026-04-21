@@ -54,6 +54,8 @@ export const getLocalEventsForProperty = cache(
         latitude: true,
         longitude: true,
         sourceUrl: true,
+        primarySource: true,
+        contributingSources: true,
       },
     }),
 );

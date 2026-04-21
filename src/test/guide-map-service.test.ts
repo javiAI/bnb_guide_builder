@@ -69,6 +69,8 @@ function eventRow(overrides: Partial<Record<string, unknown>> = {}) {
     latitude: 40.4150,
     longitude: -3.6840,
     sourceUrl: "https://example.com/e/1",
+    primarySource: "predicthq",
+    contributingSources: ["predicthq"],
     ...overrides,
   };
 }
@@ -311,5 +313,61 @@ describe("buildGuideMapData — property-coord leak invariants", () => {
     const serialized = JSON.stringify(out);
     expect(serialized).not.toContain(EXACT_LAT_STR);
     expect(serialized).not.toContain(EXACT_LNG_STR);
+  });
+});
+
+describe("buildGuideMapData — distanceMeters triangulation guard", () => {
+  // With obfuscated anchors, emitting `distanceMeters` from N place pins
+  // whose lat/lng are exact lets a client intersect N circles and recover
+  // the property's true location. The rule: `distanceMeters` is scrubbed
+  // for guest + ai and only surfaces for internal.
+  it("omits distanceMeters from place pins for audience=guest", async () => {
+    mockPlaces.mockResolvedValueOnce([
+      placeRow({ id: "pl-1", distanceMeters: 250 }),
+      placeRow({ id: "pl-2", distanceMeters: 800 }),
+    ]);
+    const out = await buildGuideMapData("p1", "guest", { now: NOW });
+    for (const pin of out!.pins) {
+      expect(pin).not.toHaveProperty("distanceMeters");
+    }
+  });
+
+  it("omits distanceMeters from place pins for audience=ai", async () => {
+    mockPlaces.mockResolvedValueOnce([
+      placeRow({ id: "pl-1", distanceMeters: 250 }),
+    ]);
+    const out = await buildGuideMapData("p1", "ai", { now: NOW });
+    for (const pin of out!.pins) {
+      expect(pin).not.toHaveProperty("distanceMeters");
+    }
+  });
+
+  it("includes distanceMeters on place pins for audience=internal (ops tooling)", async () => {
+    mockPlaces.mockResolvedValueOnce([
+      placeRow({ id: "pl-1", distanceMeters: 250 }),
+    ]);
+    const out = await buildGuideMapData("p1", "internal", { now: NOW });
+    const pin = out!.pins[0];
+    if (pin.kind === "place") {
+      expect(pin.distanceMeters).toBe(250);
+    }
+  });
+});
+
+describe("buildGuideLocalEventsData — source origin surfaced", () => {
+  it("propagates primarySource and contributingSources onto items", async () => {
+    mockEvents.mockResolvedValueOnce([
+      eventRow({
+        id: "ev-1",
+        primarySource: "predicthq",
+        contributingSources: ["predicthq", "ticketmaster"],
+      }),
+    ]);
+    const out = await buildGuideLocalEventsData("p1", "guest", { now: NOW });
+    expect(out.items[0].primarySource).toBe("predicthq");
+    expect(out.items[0].contributingSources).toEqual([
+      "predicthq",
+      "ticketmaster",
+    ]);
   });
 });

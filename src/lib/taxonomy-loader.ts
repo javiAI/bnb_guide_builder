@@ -1019,8 +1019,8 @@ const GuideSectionConfigSchema = z
     includesMedia: z.boolean(),
     // Rama 13C: only `gs.local` sets these today. They gate the two
     // sub-renderers ("map pins + obfuscated zone" and "upcoming events
-    // listing"). Optional/defaulting false keeps other sections unchanged
-    // and the schema additive.
+    // listing"). Leaving them optional (no `.default`) keeps the schema
+    // additive — consumers must treat `undefined` as "not enabled".
     includesMap: z.boolean().optional(),
     includesEvents: z.boolean().optional(),
     offlineCacheTier: z.union([z.literal(1), z.literal(2), z.literal(3)]),

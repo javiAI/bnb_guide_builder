@@ -8,9 +8,13 @@
  * requests) but one-way: the seed input stays on the server, so a client
  * that knows the obfuscated point cannot recover the exact coordinates.
  *
- * Hard invariant: NEVER returns the identity transform. Even a hash that
- * draws a very small radial component is clamped via `MIN_R_FRACTION` so
- * the output is always visibly offset from the input.
+ * Invariant for realistic inputs: away from the geographic poles the
+ * function always returns a point visibly offset from the input. The
+ * `MIN_R_FRACTION` clamp prevents the radial draw from collapsing to
+ * identity. Exactly at the poles `cos(lat)=0` forces `deltaLng=0`, so a
+ * hash drawing `theta ∈ {0, π}` could yield zero eastward displacement
+ * while `deltaLat` still fires — and no rental property sits at the
+ * pole, but the function stays total either way.
  */
 
 import { createHash } from "node:crypto";

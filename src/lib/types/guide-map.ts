@@ -84,6 +84,12 @@ export interface GuideLocalEventItem {
    * in `GuideMapData.pins` — lets the UI link "in map" / "not in map" if
    * needed without re-deriving from coords. */
   hasCoords: boolean;
+  /** Origin provider of the merged event (e.g. "predicthq", "ticketmaster",
+   * "firecrawl:teruel_turismo"). Shown in the UI so guests see provenance. */
+  primarySource: string;
+  /** Other providers that contributed to the merged record (empty when a
+   * single provider supplied the event). Surfaced for transparency. */
+  contributingSources: string[];
 }
 
 export interface GuideLocalEventsData {

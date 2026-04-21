@@ -99,7 +99,12 @@ export async function buildGuideMapData(
       lng: place.longitude,
       categoryKey: place.categoryKey,
       label: place.name,
-      ...(place.distanceMeters != null
+      // SECURITY: `distanceMeters` is a number-of-metres-from-the-property.
+      // Combined with the place's exact coords, multiple distances let a
+      // client triangulate the true property location — defeating the
+      // obfuscated anchor. Only `audience=internal` (ops) sees it; guest
+      // and ai receive map pins without distance annotations.
+      ...(audience === "internal" && place.distanceMeters != null
         ? { distanceMeters: place.distanceMeters }
         : {}),
     });
@@ -150,6 +155,8 @@ export async function buildGuideLocalEventsData(
       descriptionMd: event.descriptionMd,
       sourceUrl: event.sourceUrl,
       hasCoords: event.latitude != null && event.longitude != null,
+      primarySource: event.primarySource,
+      contributingSources: event.contributingSources,
     });
   }
 
