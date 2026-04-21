@@ -114,7 +114,7 @@ La infraestructura del pipeline guest está completa: `composeGuide → filterBy
 
 ### Progreso Fase 13 (2026-04-17 revisada: 3→4 ramas)
 
-- ✅ **13A** `feat/local-pois-autosuggest` — provider-agnostic (MapTiler + Mock), host typeahead con geo + provenance en `LocalPlace`.
+- ✅ **13A** `feat/local-pois-autosuggest` — PR #77 merged (ea33f89). Provider-agnostic (`LocalPoiProvider` contract + MapTiler/Mock implementations, fingerprint-cached factory con `LOCAL_POI_PROVIDER` env; prod fail-fast sin `MAPTILER_API_KEY`, dev `console.warn` + degrada a mock). Host typeahead `GET /api/properties/:id/places-search?q=&limit=&lang=` anchored server-side desde `Property.lat/lng` (nunca query); rate-limit sliding-window 30 req/60s/propertyId **después** del property lookup (404/409 no drenan quota), bucket-cap evict LRU 256. `LocalPlace` gana `latitude/longitude/address/website/provider/providerPlaceId/providerMetadata` JSONB + `@@unique(propertyId, provider, providerPlaceId)` con semántica NULLs-distinct (rows manuales coexisten); `createLocalPlaceAction` catch-ea Prisma P2002 como idempotent-accept. Taxonomía `lp.*` (14 categorías) con Zod loader fail-loud + `isLocalPlaceCategoryKey` refine en schema + migración backfill `UPDATE ... CASE` legacy → `lp.*`. `PlaceAutocomplete` combobox ARIA con `useDeferredValue` + debounce 250ms + `AbortController` cleanup; `aria-expanded` refleja popup visibility real (no solo `state.kind==='ok'`). 27 tests nuevos (taxonomía + contract + MapTiler parsing + route + 7 invariantes).
 - ⏳ **13B** `feat/local-events-sync` · **13C** `feat/guide-maps-embedded` · **13D** `feat/guide-issue-reporting` (nueva — reporte de problemas desde `/g/:slug` con foto, notificación al host y track-URL).
 
 ### Orden sugerido
