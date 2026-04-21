@@ -123,6 +123,7 @@ model Property {
   troubleshootingPlaybooks TroubleshootingPlaybook[]
   incidents                Incident[]
   localPlaces              LocalPlace[]
+  localEvents              LocalEvent[]
   opsChecklistItems        OpsChecklistItem[]
   stockItems               StockItem[]
   maintenanceTasks         MaintenanceTask[]
@@ -454,6 +455,70 @@ model LocalPlace {
   @@index([propertyId])
   @@index([propertyId, categoryKey])
   @@map("local_places")
+}
+
+// ──────────────────────────────────────────────
+// Local events sync (Rama 13B)
+// ──────────────────────────────────────────────
+// `LocalEvent` is the merged canonical row emitted by the aggregator
+// (`src/lib/services/local-events/aggregator.ts`). Per-source contributions
+// land in `LocalEventSourceLink`. One canonical event may have 1..N links
+// (one per provider that supplied data for it). The pair is reconciled every
+// tick by the sync service; rows absent from the tick's output for more than
+// the retention horizon are deleted.
+
+model LocalEvent {
+  id                  String    @id @default(cuid())
+  propertyId          String    @map("property_id")
+  canonicalKey        String    @map("canonical_key")
+  title               String
+  descriptionMd       String?   @map("description_md")
+  categoryKey         String    @map("category_key")
+  startsAt            DateTime  @map("starts_at")
+  endsAt              DateTime? @map("ends_at")
+  venueName           String?   @map("venue_name")
+  venueAddress        String?   @map("venue_address")
+  latitude            Float?
+  longitude           Float?
+  imageUrl            String?   @map("image_url")
+  sourceUrl           String    @map("source_url")
+  priceInfo           Json?     @map("price_info")
+  confidence          Float
+  primarySource       String    @map("primary_source")
+  contributingSources String[]  @map("contributing_sources")
+  mergeWarnings       String[]  @map("merge_warnings")
+  lastSyncedAt        DateTime  @map("last_synced_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  property    Property               @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  sourceLinks LocalEventSourceLink[]
+
+  @@unique([propertyId, canonicalKey], map: "local_events_property_canonical_unique")
+  @@index([propertyId, startsAt])
+  @@index([propertyId, categoryKey])
+  @@map("local_events")
+}
+
+model LocalEventSourceLink {
+  id               String   @id @default(cuid())
+  eventId          String   @map("event_id")
+  propertyId       String   @map("property_id")
+  source           String
+  sourceExternalId String   @map("source_external_id")
+  sourceUrl        String   @map("source_url")
+  confidence       Float
+  providerMetadata Json     @map("provider_metadata")
+  retrievedAt      DateTime @map("retrieved_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  event LocalEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, source, sourceExternalId], map: "local_event_source_links_property_source_ext_unique")
+  @@index([eventId])
+  @@index([propertyId])
+  @@map("local_event_source_links")
 }
 
 model OpsChecklistItem {
