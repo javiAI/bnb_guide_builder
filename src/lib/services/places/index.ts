@@ -48,6 +48,9 @@ export function resolveLocalPoiProvider(): LocalPoiProvider {
           "LOCAL_POI_PROVIDER=maptiler requires MAPTILER_API_KEY",
         );
       }
+      console.warn(
+        "[places] MAPTILER_API_KEY not set — using mock provider (dev/test only).",
+      );
       cachedProvider = new MockPlacesProvider();
     } else {
       cachedProvider = new MapTilerPlacesProvider(apiKey);

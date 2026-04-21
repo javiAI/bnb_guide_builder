@@ -9,7 +9,6 @@ import {
 import {
   checkPlacesRateLimit,
   enforcePlacesBucketCap,
-  __placesRateBucketCount,
 } from "@/lib/services/places/rate-limit";
 
 export const runtime = "nodejs";
@@ -73,7 +72,7 @@ export async function GET(
 
   const now = Date.now();
   const gate = checkPlacesRateLimit(propertyId, now);
-  if (__placesRateBucketCount() > 256) enforcePlacesBucketCap(now);
+  enforcePlacesBucketCap(now);
   if (!gate.allowed) {
     return NextResponse.json(
       { error: "rate_limited", retryAfterSeconds: gate.retryAfterSeconds },

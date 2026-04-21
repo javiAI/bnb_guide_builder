@@ -142,7 +142,7 @@ export function PlaceAutocomplete({
       <input
         type="text"
         role="combobox"
-        aria-expanded={open && state.kind === "ok" && state.suggestions.length > 0}
+        aria-expanded={open && state.kind !== "idle"}
         aria-controls={listboxId}
         aria-autocomplete="list"
         aria-activedescendant={

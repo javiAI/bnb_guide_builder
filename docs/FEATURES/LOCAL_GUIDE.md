@@ -20,7 +20,7 @@ La guía local del host se construye sobre `LocalPlace` con una capa de autosugg
 
 ```ts
 interface LocalPoiProvider {
-  name: "maptiler" | "mock";
+  readonly name: string; // impls actuales: "maptiler" | "mock"
   search(params: SearchParams): Promise<PoiSuggestion[]>;
 }
 ```
