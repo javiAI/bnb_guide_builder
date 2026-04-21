@@ -492,9 +492,18 @@ export async function cancelDraftsForReservation(
     select: { id: true, status: true, lifecycleHistoryJson: true },
   });
 
+  // Conditional write: if a draft transitions to a terminal status (sent /
+  // skipped / error) between this read and the update, the `status` guard in
+  // `updateMany` makes it a no-op (count === 0) and the lifecycle append is
+  // discarded — preserves the "sent / skipped / error untouched" contract
+  // under concurrency.
+  let cancelled = 0;
   for (const draft of drafts) {
-    await db.messageDraft.update({
-      where: { id: draft.id },
+    const result = await db.messageDraft.updateMany({
+      where: {
+        id: draft.id,
+        status: { in: ["pending_review", "approved"] satisfies DraftStatus[] },
+      },
       data: {
         status: "cancelled",
         lifecycleHistoryJson: appendLifecycle(draft.lifecycleHistoryJson, {
@@ -506,8 +515,9 @@ export async function cancelDraftsForReservation(
         }),
       },
     });
+    if (result.count > 0) cancelled += 1;
   }
-  return drafts.length;
+  return cancelled;
 }
 
 // ─── Draft lifecycle transitions (reviewer UI) ───────────────────────────

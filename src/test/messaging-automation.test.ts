@@ -21,6 +21,7 @@ const { prismaMock } = vi.hoisted(() => ({
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
@@ -230,15 +231,56 @@ describe("cancelDraftsForReservation", () => {
       { id: "d_pending", status: "pending_review", lifecycleHistoryJson: [] },
       { id: "d_approved", status: "approved", lifecycleHistoryJson: [] },
     ]);
+    prismaMock.messageDraft.updateMany.mockResolvedValue({ count: 1 });
 
     const count = await cancelDraftsForReservation("r_1");
     expect(count).toBe(2);
-    expect(prismaMock.messageDraft.update).toHaveBeenCalledTimes(2);
+    expect(prismaMock.messageDraft.updateMany).toHaveBeenCalledTimes(2);
     // The findMany where clause must filter to non-terminal statuses.
-    const call = prismaMock.messageDraft.findMany.mock.calls[0][0] as {
+    const findCall = prismaMock.messageDraft.findMany.mock.calls[0][0] as {
       where: { status: { in: string[] } };
     };
-    expect(call.where.status.in).toEqual(["pending_review", "approved"]);
+    expect(findCall.where.status.in).toEqual(["pending_review", "approved"]);
+    // Every updateMany must carry the same status guard so a draft that
+    // transitioned to a terminal status between read and write is skipped.
+    for (const [args] of prismaMock.messageDraft.updateMany.mock.calls) {
+      const guarded = args as {
+        where: { id: string; status: { in: string[] } };
+      };
+      expect(guarded.where.status.in).toEqual(["pending_review", "approved"]);
+    }
+  });
+
+  it("skips drafts that transitioned to a terminal status between read and write", async () => {
+    // Read returns two drafts; before we write, one of them is raced to `sent`
+    // by another process. Prisma's `updateMany` respects the status guard and
+    // returns count:0 for that row — we must not count it as cancelled.
+    prismaMock.messageDraft.findMany.mockResolvedValue([
+      { id: "d_pending", status: "pending_review", lifecycleHistoryJson: [] },
+      { id: "d_raced_to_sent", status: "approved", lifecycleHistoryJson: [] },
+    ]);
+    prismaMock.messageDraft.updateMany
+      .mockResolvedValueOnce({ count: 1 }) // d_pending still eligible
+      .mockResolvedValueOnce({ count: 0 }); // d_raced_to_sent no longer matches guard
+
+    const count = await cancelDraftsForReservation("r_1");
+
+    expect(count).toBe(1); // only the one that actually transitioned
+    expect(prismaMock.messageDraft.updateMany).toHaveBeenCalledTimes(2);
+    expect(prismaMock.messageDraft.update).not.toHaveBeenCalled();
+  });
+
+  it("returns zero when every draft was raced to a terminal status", async () => {
+    prismaMock.messageDraft.findMany.mockResolvedValue([
+      { id: "d1", status: "pending_review", lifecycleHistoryJson: [] },
+      { id: "d2", status: "approved", lifecycleHistoryJson: [] },
+    ]);
+    prismaMock.messageDraft.updateMany.mockResolvedValue({ count: 0 });
+
+    const count = await cancelDraftsForReservation("r_1");
+
+    expect(count).toBe(0);
+    expect(prismaMock.messageDraft.update).not.toHaveBeenCalled();
   });
 
   it("cancels all drafts on reservation cancel (materializer path)", async () => {
@@ -249,10 +291,11 @@ describe("cancelDraftsForReservation", () => {
     prismaMock.messageDraft.findMany.mockResolvedValue([
       { id: "d1", status: "pending_review", lifecycleHistoryJson: [] },
     ]);
+    prismaMock.messageDraft.updateMany.mockResolvedValue({ count: 1 });
 
     const outcomes = await materializeDraftsForReservation("r_1");
     expect(outcomes[0].outcome).toBe("blocked_reservation_cancelled");
-    expect(prismaMock.messageDraft.update).toHaveBeenCalledOnce();
+    expect(prismaMock.messageDraft.updateMany).toHaveBeenCalledOnce();
   });
 });
 
