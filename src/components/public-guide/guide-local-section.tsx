@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic";
 import type {
   GuideAudience,
   GuideItem as GuideItemType,
@@ -12,11 +11,7 @@ import { resolveEmptyCopy } from "@/lib/renderers/_guide-display";
 import { GuideItem } from "./guide-item";
 import { GuideEmptyState } from "./guide-empty-state";
 import { GuideLocalEventCard } from "./guide-local-event-card";
-
-const GuideMap = dynamic(
-  () => import("../guide-map").then((m) => m.GuideMap),
-  { ssr: false },
-);
+import { GuideMap } from "./guide-map-loader";
 
 interface Props {
   section: GuideSection;
@@ -26,8 +21,6 @@ interface Props {
   eventsData: GuideLocalEventsData;
 }
 
-/** The map is loaded via `dynamic(..., { ssr: false })` — MapLibre touches
- * `window` on import, so server-rendering it would throw. */
 export function GuideLocalSection({
   section,
   renderable,
