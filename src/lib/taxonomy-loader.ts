@@ -69,6 +69,7 @@ import escalationRulesJson from "../../taxonomies/escalation_rules.json";
 import messagingVariablesJson from "../../taxonomies/messaging_variables.json";
 import messagingTriggersJson from "../../taxonomies/messaging_triggers.json";
 import messagingStarterPacksJson from "../../taxonomies/messaging_starter_packs.json";
+import localPlaceCategoriesJson from "../../taxonomies/local_place_categories.json";
 import { CONTACT_CHANNELS } from "./contact-actions";
 import {
   extractVariableTokens,
@@ -191,6 +192,80 @@ function loadCompletenessRules(): CompletenessRulesFile {
 }
 
 export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
+
+// ── Local place categories ──
+// Canonical catalog of LocalPlace category keys (prefix `lp.*`). Drives
+// category dropdowns in the host editor, public guide grouping, and the
+// MapTiler POI category mapping. Enforced at boot: every id must be
+// `lp.<slug>` so raw MapTiler category strings can never leak into the DB
+// via the place-autosuggest endpoint.
+
+const LocalPlaceCategorySchema = z
+  .object({
+    id: z.string().regex(/^lp\.[a-z][a-z0-9_]*$/, {
+      message: "local place category id must match `lp.<slug>`",
+    }),
+    label: z.string().min(1),
+    description: z.string().min(1),
+    guestLabel: z.string().min(1).optional(),
+    guestDescription: z.string().min(1).optional(),
+    icon: z.string().min(1).optional(),
+    recommended: z.boolean().optional(),
+  })
+  .strict();
+
+const LocalPlaceCategoriesFileSchema = z
+  .object({
+    file: z.string(),
+    version: z.string(),
+    locale: z.string(),
+    units_system: z.string(),
+    items: z.array(LocalPlaceCategorySchema).min(1),
+  })
+  .strict();
+
+export type LocalPlaceCategory = z.infer<typeof LocalPlaceCategorySchema>;
+export type LocalPlaceCategoriesFile = z.infer<
+  typeof LocalPlaceCategoriesFileSchema
+>;
+
+function loadLocalPlaceCategories(): LocalPlaceCategoriesFile {
+  const parsed = LocalPlaceCategoriesFileSchema.safeParse(
+    localPlaceCategoriesJson,
+  );
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid taxonomies/local_place_categories.json:\n${details}`,
+    );
+  }
+  const ids = parsed.data.items.map((i) => i.id);
+  const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
+  if (duplicates.length > 0) {
+    throw new Error(
+      `Duplicate local place category ids: ${Array.from(new Set(duplicates)).join(", ")}`,
+    );
+  }
+  return parsed.data;
+}
+
+export const localPlaceCategories: LocalPlaceCategoriesFile =
+  loadLocalPlaceCategories();
+
+const LOCAL_PLACE_CATEGORY_BY_ID: ReadonlyMap<string, LocalPlaceCategory> =
+  new Map(localPlaceCategories.items.map((item) => [item.id, item]));
+
+export function findLocalPlaceCategory(
+  id: string,
+): LocalPlaceCategory | undefined {
+  return LOCAL_PLACE_CATEGORY_BY_ID.get(id);
+}
+
+export function isLocalPlaceCategoryKey(id: string): boolean {
+  return LOCAL_PLACE_CATEGORY_BY_ID.has(id);
+}
 
 // ── Messaging variables ──
 // Canonical catalog of template variables (`{{var}}`) + the source each one

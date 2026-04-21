@@ -1,25 +1,14 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
+import { localPlaceCategories, findLocalPlaceCategory } from "@/lib/taxonomy-loader";
 import { CreateLocalPlaceForm } from "./create-local-place-form";
 import { LocalPlaceCard } from "./local-place-card";
 
-const CATEGORY_LABELS: Record<string, string> = {
-  restaurant: "Restaurante",
-  cafe: "Cafetería",
-  bar: "Bar",
-  supermarket: "Supermercado",
-  pharmacy: "Farmacia",
-  hospital: "Hospital",
-  transport: "Transporte",
-  parking: "Parking",
-  attraction: "Atracción",
-  beach: "Playa",
-  park: "Parque",
-  gym: "Gimnasio",
-  laundry: "Lavandería",
-  other: "Otro",
-};
+const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
+  value: c.id,
+  label: c.label,
+}));
 
 export default async function LocalGuidePage({
   params,
@@ -72,7 +61,7 @@ export default async function LocalGuidePage({
             {Array.from(grouped.entries()).map(([category, catPlaces]) => (
               <div key={category}>
                 <h2 className="mb-3 text-sm font-semibold text-[var(--foreground)]">
-                  {CATEGORY_LABELS[category] ?? category}
+                  {findLocalPlaceCategory(category)?.label ?? category}
                   <Badge
                     label={String(catPlaces.length)}
                     tone="neutral"
@@ -101,7 +90,10 @@ export default async function LocalGuidePage({
           <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
             Añadir lugar
           </h2>
-          <CreateLocalPlaceForm propertyId={propertyId} />
+          <CreateLocalPlaceForm
+            propertyId={propertyId}
+            categories={CATEGORY_OPTIONS}
+          />
         </div>
       </div>
     </div>

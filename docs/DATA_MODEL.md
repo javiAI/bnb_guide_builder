@@ -31,7 +31,9 @@
 - `TroubleshootingPlaybook`
   - `id`, `propertyId`, `playbookKey`, `title`, `severity`, `symptomsMd`, `guestStepsMd`, `internalStepsMd`, `escalationRule`, `visibility`, `language`, timestamps
 - `LocalPlace`
-  - `id`, `propertyId`, `categoryKey`, `name`, `shortNote`, `guestDescription`, `aiNotes`, `distanceMeters`, `hoursText`, `linkUrl`, `bestFor`, `seasonalNotes`, `verifiedAt`, `visibility`, timestamps
+  - `id`, `propertyId`, `categoryKey` (`lp.*` taxonomy key, fail-loud en boot), `name`, `shortNote`, `guestDescription`, `aiNotes`, `distanceMeters`, `hoursText`, `linkUrl`, `bestFor`, `seasonalNotes`, `verifiedAt`, `visibility`, timestamps
+  - **Geo + provenance (Rama 13A)**: `latitude` / `longitude` (DOUBLE PRECISION), `address`, `website`, `provider` (`"maptiler"` | `"mock"` | NULL para manual), `providerPlaceId` (fingerprint estable del proveedor), `providerMetadata` (JSONB con `nativeCategory`, `placeTypes[]`, `confidence`, `retrievedAt`)
+  - `@@unique([propertyId, provider, providerPlaceId], map: "local_places_property_provider_place_unique")` — Postgres NULLs-distinct semantics: rows manuales (provider/providerPlaceId NULL) nunca colisionan entre sí; solo dos rows con la misma `(propertyId, provider, providerPlaceId)` no-NULL chocan. `createLocalPlaceAction` catch-ea Prisma `P2002` y devuelve "Este lugar ya está añadido" — no read-then-write.
 - `OpsChecklistItem`
   - `id`, `propertyId`, `scopeKey`, `title`, `detailsMd`, `estimatedMinutes`, `required`, `sortOrder`, timestamps
 - `StockItem`

@@ -997,6 +997,22 @@ export async function createLocalPlaceAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
+  const latRaw = formData.get("latitude") as string | null;
+  const lngRaw = formData.get("longitude") as string | null;
+  const providerMetadataRaw = formData.get("providerMetadata") as string | null;
+
+  let providerMetadata: unknown = undefined;
+  if (providerMetadataRaw) {
+    try {
+      providerMetadata = JSON.parse(providerMetadataRaw);
+    } catch {
+      return {
+        success: false,
+        fieldErrors: { providerMetadata: ["JSON inválido"] },
+      };
+    }
+  }
+
   const raw = {
     categoryKey: formData.get("categoryKey") as string,
     name: formData.get("name") as string,
@@ -1004,6 +1020,13 @@ export async function createLocalPlaceAction(
     distanceMeters: formData.get("distanceMeters")
       ? Number(formData.get("distanceMeters"))
       : undefined,
+    latitude: latRaw ? Number(latRaw) : undefined,
+    longitude: lngRaw ? Number(lngRaw) : undefined,
+    address: (formData.get("address") as string) || undefined,
+    website: (formData.get("website") as string) || undefined,
+    provider: (formData.get("provider") as string) || undefined,
+    providerPlaceId: (formData.get("providerPlaceId") as string) || undefined,
+    providerMetadata,
   };
 
   const result = createLocalPlaceSchema.safeParse(raw);
@@ -1014,12 +1037,25 @@ export async function createLocalPlaceAction(
     };
   }
 
-  await prisma.localPlace.create({
-    data: {
-      ...result.data,
-      property: { connect: { id: propertyId } },
-    },
-  });
+  const { providerMetadata: pm, ...rest } = result.data;
+  try {
+    await prisma.localPlace.create({
+      data: {
+        ...rest,
+        ...(pm !== undefined ? { providerMetadata: pm } : {}),
+        property: { connect: { id: propertyId } },
+      },
+    });
+  } catch (err) {
+    // Unique index `(propertyId, provider, providerPlaceId)` collides when
+    // the same POI is added twice (manual entries skip this — both NULL, and
+    // Postgres treats NULLs as distinct). Surface a friendly message instead
+    // of a 500. Other errors re-throw.
+    if ((err as { code?: string }).code === "P2002") {
+      return { success: false, error: "Este lugar ya está añadido" };
+    }
+    throw err;
+  }
 
   revalidatePath(`/properties/${propertyId}/local-guide`);
   return { success: true };

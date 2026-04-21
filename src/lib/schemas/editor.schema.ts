@@ -2,6 +2,8 @@ import { z } from "zod";
 import type { SubtypeField } from "@/lib/types/taxonomy";
 import { visibilityLevels } from "@/lib/visibility";
 import { getFieldType } from "@/config/registries/field-type-registry";
+import { isLocalPlaceCategoryKey } from "@/lib/taxonomy-loader";
+import { ProviderMetadataSchema } from "@/lib/services/places/provider";
 
 // ── Property editor (replaces basics) ──
 
@@ -326,12 +328,58 @@ export type UpdatePlaybookData = z.infer<typeof updatePlaybookSchema>;
 
 // ── Local Guide (S-18) ──
 
-export const createLocalPlaceSchema = z.object({
-  categoryKey: z.string().min(1, "La categoría es obligatoria"),
-  name: z.string().min(1, "El nombre es obligatorio"),
-  shortNote: z.string().optional(),
-  distanceMeters: z.number().int().min(0).optional(),
-});
+export const createLocalPlaceSchema = z
+  .object({
+    categoryKey: z
+      .string()
+      .min(1, "La categoría es obligatoria")
+      .refine(isLocalPlaceCategoryKey, {
+        message: "Categoría no válida",
+      }),
+    name: z.string().min(1, "El nombre es obligatorio"),
+    shortNote: z.string().optional(),
+    distanceMeters: z.number().int().min(0).optional(),
+    // Geo + provenance (Rama 13A). All optional: manual entries omit them.
+    latitude: z.number().gte(-90).lte(90).optional(),
+    longitude: z.number().gte(-180).lte(180).optional(),
+    address: z.string().optional(),
+    website: z.string().url("La URL no es válida").optional(),
+    provider: z.string().min(1).optional(),
+    providerPlaceId: z.string().min(1).optional(),
+    providerMetadata: ProviderMetadataSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Latitude and longitude are a pair — can't submit one without the other.
+    const hasLat = data.latitude !== undefined;
+    const hasLng = data.longitude !== undefined;
+    if (hasLat !== hasLng) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Latitude y longitude deben enviarse juntos o ambos omitirse",
+        path: [hasLat ? "longitude" : "latitude"],
+      });
+    }
+    // Provider provenance is a triple — `providerMetadata` only makes sense
+    // with a `(provider, providerPlaceId)` anchor.
+    const hasProvider = data.provider !== undefined;
+    const hasProviderPlaceId = data.providerPlaceId !== undefined;
+    if (hasProvider !== hasProviderPlaceId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "provider y providerPlaceId deben enviarse juntos o ambos omitirse",
+        path: [hasProvider ? "providerPlaceId" : "provider"],
+      });
+    }
+    if (data.providerMetadata && !hasProvider) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "providerMetadata requiere provider + providerPlaceId",
+        path: ["providerMetadata"],
+      });
+    }
+  });
 
 export const updateLocalPlaceSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio"),

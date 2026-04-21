@@ -166,7 +166,7 @@ describe("Troubleshooting schemas", () => {
 describe("Local guide schemas", () => {
   it("createLocalPlaceSchema validates required fields", () => {
     const valid = createLocalPlaceSchema.safeParse({
-      categoryKey: "restaurant",
+      categoryKey: "lp.restaurant",
       name: "Bar El Rincón",
       distanceMeters: 200,
     });
@@ -175,12 +175,20 @@ describe("Local guide schemas", () => {
 
   it("uses metric units (meters)", () => {
     const valid = createLocalPlaceSchema.safeParse({
-      categoryKey: "supermarket",
+      categoryKey: "lp.supermarket",
       name: "Mercadona",
       distanceMeters: 500,
     });
     expect(valid.success).toBe(true);
     expect(valid.data?.distanceMeters).toBe(500);
+  });
+
+  it("rejects categoryKey values missing the lp.* prefix", () => {
+    const invalid = createLocalPlaceSchema.safeParse({
+      categoryKey: "restaurant",
+      name: "Bar",
+    });
+    expect(invalid.success).toBe(false);
   });
 
   it("updateLocalPlaceSchema accepts all optional fields", () => {

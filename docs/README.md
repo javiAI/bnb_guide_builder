@@ -28,6 +28,7 @@ Fuente de verdad operativa del proyecto. Última consolidación: 2026-04-15 (pos
 - [FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md](FEATURES/KNOWLEDGE_GUIDE_ASSISTANT.md) — knowledge base, guest guide, assistant
 - [FEATURES/MESSAGING_AUTOMATION.md](FEATURES/MESSAGING_AUTOMATION.md) — templates, variables, automations
 - [FEATURES/MEDIA_ASSETS.md](FEATURES/MEDIA_ASSETS.md) — asset lifecycle, assignments
+- [FEATURES/LOCAL_GUIDE.md](FEATURES/LOCAL_GUIDE.md) — POI autosuggest, provider abstraction, `LocalPlace` geo
 
 ### Planificación
 
