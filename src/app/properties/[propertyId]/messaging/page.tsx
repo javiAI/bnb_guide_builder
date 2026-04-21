@@ -3,6 +3,11 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { messagingTouchpoints, getItems } from "@/lib/taxonomy-loader";
+import {
+  listAvailablePacks,
+  getMessagingBootstrapStatus,
+} from "@/lib/services/messaging-seed.service";
+import { StarterPackPicker } from "@/components/messaging/starter-pack-picker";
 
 const touchpoints = getItems(messagingTouchpoints);
 
@@ -13,25 +18,29 @@ export default async function MessagingPage({
 }) {
   const { propertyId } = await params;
 
-  const [property, templates, automations, pendingDraftsCount] = await Promise.all([
-    prisma.property.findUnique({
-      where: { id: propertyId },
-      select: { id: true },
-    }),
-    prisma.messageTemplate.findMany({
-      where: { propertyId },
-      select: { touchpointKey: true, status: true },
-    }),
-    prisma.messageAutomation.findMany({
-      where: { propertyId },
-      select: { touchpointKey: true, active: true },
-    }),
-    prisma.messageDraft.count({
-      where: { propertyId, status: "pending_review" },
-    }),
-  ]);
+  const [property, templates, automations, pendingDraftsCount, bootstrapStatus] =
+    await Promise.all([
+      prisma.property.findUnique({
+        where: { id: propertyId },
+        select: { id: true },
+      }),
+      prisma.messageTemplate.findMany({
+        where: { propertyId },
+        select: { touchpointKey: true, status: true },
+      }),
+      prisma.messageAutomation.findMany({
+        where: { propertyId },
+        select: { touchpointKey: true, active: true },
+      }),
+      prisma.messageDraft.count({
+        where: { propertyId, status: "pending_review" },
+      }),
+      getMessagingBootstrapStatus(propertyId),
+    ]);
 
   if (!property) notFound();
+
+  const packs = listAvailablePacks();
 
   const templateCountByTouchpoint = new Map<string, number>();
   const activeAutomationByTouchpoint = new Map<string, number>();
@@ -78,6 +87,13 @@ export default async function MessagingPage({
           />
         </Link>
       </div>
+
+      <StarterPackPicker
+        propertyId={propertyId}
+        packs={packs}
+        hasPackRows={bootstrapStatus.hasPackRows}
+        templateCount={templates.length}
+      />
 
       <div className="mt-8 space-y-3">
         {touchpoints.map((tp) => {

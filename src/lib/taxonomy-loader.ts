@@ -68,7 +68,12 @@ import guideSectionsJson from "../../taxonomies/guide_sections.json";
 import escalationRulesJson from "../../taxonomies/escalation_rules.json";
 import messagingVariablesJson from "../../taxonomies/messaging_variables.json";
 import messagingTriggersJson from "../../taxonomies/messaging_triggers.json";
+import messagingStarterPacksJson from "../../taxonomies/messaging_starter_packs.json";
 import { CONTACT_CHANNELS } from "./contact-actions";
+import {
+  extractVariableTokens,
+  SENSITIVE_PREARRIVAL_MAX_LEAD_MINUTES,
+} from "./services/messaging-shared";
 
 // ── Item-based taxonomies ──
 
@@ -453,6 +458,275 @@ export function findMessagingTrigger(
   id: string,
 ): MessagingTriggerItem | undefined {
   return messagingTriggersById.get(id);
+}
+
+// ── Messaging starter packs (rama 12C) ──
+// Pre-built templates + inactive automations grouped by `(tone × locale)`.
+// Applied from /messaging; authored as flat JSON with optional per-template
+// overrides keyed by propertyType id. The validator enforces:
+//  - every `{{token}}` in a bodyTemplate (including overrides) is a known
+//    messaging variable
+//  - `internal_only` variables are forbidden anywhere in a pack
+//  - `sensitive_prearrival` variables only appear in touchpoint
+//    `mtp.day_of_checkin` with a trigger that pins `scheduledSendAt` strictly
+//    inside `[checkIn − 48h, checkIn)` (negative `sendOffsetMinutes` on the
+//    `day_of_checkin` anchor, bounded by the 48h lead window)
+
+export const MSP_TONES = ["friendly", "formal", "luxury"] as const;
+export type MessagingStarterPackTone = (typeof MSP_TONES)[number];
+
+export const MSP_LOCALES = ["es", "en"] as const;
+export type MessagingStarterPackLocale = (typeof MSP_LOCALES)[number];
+
+const MspAutomationSchema = z
+  .object({
+    triggerType: z.string().min(1),
+    sendOffsetMinutes: z.number().int().finite(),
+  })
+  .strict();
+
+const MspOverrideSchema = z
+  .object({
+    appliesToPropertyTypes: z.array(z.string().min(1)).min(1),
+    patch: z
+      .object({
+        subjectLine: z.string().min(1).optional(),
+        bodyTemplate: z.string().min(1).optional(),
+      })
+      .strict()
+      .refine((p) => p.subjectLine !== undefined || p.bodyTemplate !== undefined, {
+        message: "override patch must set subjectLine or bodyTemplate",
+      }),
+  })
+  .strict();
+
+const MspTemplateSchema = z
+  .object({
+    touchpointKey: z.string().min(1),
+    channelKey: z.string().min(1),
+    subjectLine: z.string().min(1).optional(),
+    bodyTemplate: z.string().min(1),
+    automation: MspAutomationSchema,
+    overrides: z.array(MspOverrideSchema).optional(),
+  })
+  .strict();
+
+const MspPackSchema = z
+  .object({
+    id: z.string().regex(/^msp\.[a-z0-9_]+$/),
+    name: z.string().min(1),
+    tone: z.enum(MSP_TONES),
+    locale: z.enum(MSP_LOCALES),
+    language: z.enum(MSP_LOCALES),
+    description: z.string().min(1),
+    templates: z.array(MspTemplateSchema).min(1),
+  })
+  .strict()
+  .superRefine((pack, ctx) => {
+    if (pack.language !== pack.locale) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["language"],
+        message: `language "${pack.language}" must match locale "${pack.locale}"`,
+      });
+    }
+  });
+
+export const MessagingStarterPacksSchema = z
+  .object({
+    file: z.literal("messaging_starter_packs.json"),
+    version: z.string().min(1),
+    locale: z.string().min(1),
+    units_system: z.string().min(1).optional(),
+    notes: z.array(z.string().min(1)).optional(),
+    packs: z.array(MspPackSchema).min(1),
+  })
+  .strict()
+  .superRefine((data, ctx) => {
+    const knownTouchpoints = new Set(
+      getItems(messagingTouchpoints).map((t) => t.id),
+    );
+    const knownPropertyTypes = new Set(
+      getItems(propertyTypes).map((p) => p.id),
+    );
+    const seenPackIds = new Set<string>();
+    const seenIdentities = new Set<string>();
+
+    data.packs.forEach((pack, pi) => {
+      if (seenPackIds.has(pack.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["packs", pi, "id"],
+          message: `Duplicate pack id "${pack.id}"`,
+        });
+      }
+      seenPackIds.add(pack.id);
+
+      const identity = `${pack.tone}|${pack.locale}`;
+      if (seenIdentities.has(identity)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["packs", pi],
+          message: `Duplicate pack identity tone=${pack.tone}, locale=${pack.locale}`,
+        });
+      }
+      seenIdentities.add(identity);
+
+      const seenTouchpoints = new Set<string>();
+      pack.templates.forEach((tpl, ti) => {
+        const tplPath = (subpath: (string | number)[]) => [
+          "packs",
+          pi,
+          "templates",
+          ti,
+          ...subpath,
+        ];
+
+        if (!knownTouchpoints.has(tpl.touchpointKey)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: tplPath(["touchpointKey"]),
+            message: `Unknown touchpointKey "${tpl.touchpointKey}"`,
+          });
+        }
+        if (seenTouchpoints.has(tpl.touchpointKey)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: tplPath(["touchpointKey"]),
+            message: `Duplicate touchpointKey "${tpl.touchpointKey}" within pack`,
+          });
+        }
+        seenTouchpoints.add(tpl.touchpointKey);
+
+        if (!messagingTriggersById.has(tpl.automation.triggerType)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: tplPath(["automation", "triggerType"]),
+            message: `Unknown triggerType "${tpl.automation.triggerType}"`,
+          });
+        }
+
+        // Every bodyTemplate variant (base + override patches) passes the same
+        // policy and token checks. We iterate through all variants so an
+        // override that introduces a sensitive token in the wrong touchpoint
+        // fails boot just like the base body would.
+        const variants: Array<{ label: string; body: string }> = [
+          { label: "base", body: tpl.bodyTemplate },
+        ];
+        (tpl.overrides ?? []).forEach((o, oi) => {
+          o.appliesToPropertyTypes.forEach((ptId, pti) => {
+            if (!knownPropertyTypes.has(ptId)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: tplPath(["overrides", oi, "appliesToPropertyTypes", pti]),
+                message: `Unknown propertyType "${ptId}"`,
+              });
+            }
+          });
+          if (o.patch.bodyTemplate) {
+            variants.push({
+              label: `override[${oi}]`,
+              body: o.patch.bodyTemplate,
+            });
+          }
+        });
+
+        const touchpointKey = tpl.touchpointKey;
+        const triggerType = tpl.automation.triggerType;
+        const offset = tpl.automation.sendOffsetMinutes;
+
+        for (const { label, body } of variants) {
+          let usesSensitive = false;
+          for (const token of extractVariableTokens(body)) {
+            const item = messagingVariablesByToken.get(token);
+            if (!item) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: tplPath(["bodyTemplate"]),
+                message: `Unknown variable "{{${token}}}" in ${label} body`,
+              });
+              continue;
+            }
+            if (item.sendPolicy === "internal_only") {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: tplPath(["bodyTemplate"]),
+                message: `Variable "{{${token}}}" is internal_only and cannot appear in a starter pack (${label})`,
+              });
+              continue;
+            }
+            if (item.sendPolicy === "sensitive_prearrival") {
+              usesSensitive = true;
+            }
+          }
+
+          if (!usesSensitive) continue;
+
+          if (touchpointKey !== "mtp.day_of_checkin") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: tplPath(["bodyTemplate"]),
+              message: `sensitive_prearrival variables only allowed in touchpoint "mtp.day_of_checkin" (${label} uses touchpoint "${touchpointKey}")`,
+            });
+          }
+          if (triggerType !== "day_of_checkin") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: tplPath(["automation", "triggerType"]),
+              message: `sensitive_prearrival body requires triggerType "day_of_checkin" (${label} uses "${triggerType}")`,
+            });
+          }
+          if (
+            !(
+              offset < 0 &&
+              offset >= -SENSITIVE_PREARRIVAL_MAX_LEAD_MINUTES
+            )
+          ) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: tplPath(["automation", "sendOffsetMinutes"]),
+              message: `sensitive_prearrival requires sendOffsetMinutes strictly inside [-${SENSITIVE_PREARRIVAL_MAX_LEAD_MINUTES}, 0) (${label} has ${offset})`,
+            });
+          }
+        }
+      });
+    });
+  });
+
+export type MessagingStarterPacksFile = z.infer<
+  typeof MessagingStarterPacksSchema
+>;
+export type MessagingStarterPack = MessagingStarterPacksFile["packs"][number];
+export type MessagingStarterPackTemplate = MessagingStarterPack["templates"][number];
+export type MessagingStarterPackOverride = NonNullable<
+  MessagingStarterPackTemplate["overrides"]
+>[number];
+
+function loadMessagingStarterPacks(): MessagingStarterPacksFile {
+  const parsed = MessagingStarterPacksSchema.safeParse(messagingStarterPacksJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(
+      `Invalid taxonomies/messaging_starter_packs.json:\n${details}`,
+    );
+  }
+  return parsed.data;
+}
+
+export const messagingStarterPacks: MessagingStarterPacksFile =
+  loadMessagingStarterPacks();
+
+export const messagingStarterPacksById: ReadonlyMap<
+  string,
+  MessagingStarterPack
+> = new Map(messagingStarterPacks.packs.map((p) => [p.id, p]));
+
+export function findMessagingStarterPack(
+  id: string,
+): MessagingStarterPack | undefined {
+  return messagingStarterPacksById.get(id);
 }
 
 // ── Guide sections (rama 9A) ──

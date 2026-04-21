@@ -208,14 +208,63 @@ Sin BullMQ, sin webhooks, sin host notifications. El cron es el único driver.
 
 Las 4 pasan de `unresolved_context` a `resolved`. Sin reservation, siguen en `unresolved_context` (placeholder en preview).
 
-## 6. Starter packs
+## 6. Starter packs (rama 12C)
 
-Deben derivarse de:
+Catálogo canónico en `taxonomies/messaging_starter_packs.json` (Zod loader en `src/lib/taxonomy-loader.ts`). **6 packs** = 3 tones (`friendly | formal | luxury`) × 2 locales (`es | en`), mono-locale (`language === locale`). Cada pack trae **7 templates** (uno por touchpoint de `messaging_touchpoints.json`) con **automation pre-cableada (`active: false`)** para que el host revise → active.
 
-- tone
-- arrival strategy
-- checkout policy
-- review request strategy
-- support posture
+### 6.1 Shape del pack
 
-pero quedar editables después
+- `id` (`msp.<tone>_<locale>`) — identidad única
+- `tone`, `locale`, `language`, `description`
+- `templates[]` con:
+  - `touchpointKey`, `channelKey` (`channel_default` del touchpoint)
+  - `subjectLine?`, `bodyTemplate` (tokens `{{...}}` del catálogo 12A)
+  - `automation: { triggerType, sendOffsetMinutes }`
+  - `overrides?[]` por `appliesToPropertyTypes` con `patch: { subjectLine?, bodyTemplate? }`
+
+Propagación de overrides: al apply/preview se selecciona el **primer** override cuyo `appliesToPropertyTypes` incluya el `property.propertyType`. El resto del template queda intacto (automation, channel). Sin override match → base body.
+
+### 6.2 Invariantes de boot
+
+El Zod validator corre al cargar el JSON y **falla build** si:
+
+- dos packs comparten `(tone, locale)` o `id`
+- `language !== locale`
+- un `touchpointKey` no existe en `messagingTouchpoints`
+- un `triggerType` no existe en `messagingTriggers`
+- un `appliesToPropertyTypes` entry no existe en `propertyTypes`
+- un `{{token}}` en body/override no existe en `messagingVariables`
+- un token con `sendPolicy: "internal_only"` aparece en cualquier body
+- un token con `sendPolicy: "sensitive_prearrival"` aparece en un template cuyo **touchpoint ≠ `mtp.day_of_checkin`**, **triggerType ≠ `day_of_checkin`**, o cuyo **offset no esté en `[-2880, 0)`** (= 48 h antes de check-in, nunca igual o posterior). El gate coincide con 12B `SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS = 48`.
+
+### 6.3 Modelo de idempotencia (`origin` + `packId`)
+
+`MessageTemplate` tiene dos columnas nuevas (migration `20260421104359_message_template_origin_12c`):
+
+- `origin: "user" | "pack"` — `default "user"`
+- `packId: string?` — `msp.*` cuando `origin = "pack"`, `null` si `origin = "user"`
+- `@@index([propertyId, origin, packId])`
+
+Reglas:
+
+1. **Apply** (`applyStarterPack`, `$transaction`):
+   - `findMany { propertyId, origin: "pack" }` → borra automations por `templateId` + borra templates (cualquier `packId`, incluye el que se re-aplica).
+   - Crea `templates.length` rows con `origin: "pack", packId: pack.id, status: "draft"` + `automations` con `active: false, timezoneSource: "property_timezone"`.
+   - Los rows con `origin: "user"` **nunca** se tocan.
+2. **Re-apply mismo pack** → swap en sitio (`replacedTemplates === templatesCreated`).
+3. **Apply distinto pack** → swap de pack-rows, `origin: "user"` queda tal cual.
+4. **Edit host** (`updateMessageTemplateAction`) → flip `origin: "user"` + `packId: null`. El row deja de ser candidato para pack-replace en futuras aplicaciones.
+
+### 6.4 Server actions + UI
+
+- `previewStarterPackAction(propertyId, packId)` — resuelve variables token-por-token contra la property (reservation vars siguen siendo `unresolved_context` en preview, igual que 12A/12B).
+- `applyStarterPackAction(_, FormData)` — lee `propertyId` + `packId`, corre `applyStarterPack`, retorna `ApplyStarterPackResult { packId, templatesCreated, automationsCreated, replacedTemplates, replacedAutomations }`.
+
+`StarterPackPicker` en `src/components/messaging/starter-pack-picker.tsx` (cliente):
+
+- Empty state CTA (`templateCount === 0 && !hasPackRows`): banner "Empieza con un pack".
+- Estado con packs/templates: botón "Cargar pack" en la header.
+- Modal con grid de 6 cards (tone + locale + templateCount) + preview drawer por template (subject, body resolved, badges `missing | reserva | desconocida`).
+- Botón Apply muta a "Reemplazar pack" cuando `hasPackRows === true`.
+
+Hook de onboarding wizard queda diferido (ver `docs/FUTURE.md`).

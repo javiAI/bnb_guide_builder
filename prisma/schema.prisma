@@ -680,6 +680,8 @@ model MessageTemplate {
   variablesJson Json?    @map("variables_json")
   language      String   @default("es")
   status        String   @default("draft")
+  origin        String   @default("user")
+  packId        String?  @map("pack_id")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -688,6 +690,7 @@ model MessageTemplate {
 
   @@index([propertyId])
   @@index([propertyId, touchpointKey])
+  @@index([propertyId, origin, packId])
   @@map("message_templates")
 }
 

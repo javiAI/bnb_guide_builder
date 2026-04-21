@@ -276,3 +276,33 @@ Dedupe por `id`, mismo orden determinístico (`emergencyAvailable > isPrimary > 
 5. Doc en `KNOWLEDGE_GUIDE_ASSISTANT.md §5 Escalation`.
 
 Sin demanda explícita, la taxonomía central es mejor por claridad y consistencia cross-property. **No lanzar sin el trigger.**
+
+## 16. Hook de starter pack en el onboarding wizard
+
+### Cómo funciona hoy (rama 12C)
+
+Los 6 starter packs se aplican vía `StarterPackPicker` **exclusivamente** desde `/properties/[propertyId]/messaging`. Al terminar el wizard, una propiedad nueva entra en messaging con `templateCount === 0 && !hasPackRows` → se muestra el banner "Empieza con un pack" como CTA principal. El host elige tone + locale, previsualiza y aplica.
+
+### Qué añadiría el hook del wizard
+
+Un paso al final del wizard (o un campo en un paso existente) para preseleccionar tone + locale y llamar a `applyStarterPackAction` al marcar `completeWizardAction`. Flujo esperado:
+
+1. Wizard añade `defaultMessagingTone` + `defaultMessagingLocale` al schema de onboarding.
+2. `completeWizardAction` hace un `applyStarterPack({ packId: pickPack(tone, locale), propertyId })` dentro del mismo `$transaction` que crea la property.
+3. El host aterriza en messaging con templates + automations ya cableadas (inactivas), salta el empty-state, revisa y activa.
+
+### Por qué no está en 12C
+
+- El scope aprobado de 12C fue explícitamente "solo CTA en `/messaging`, wizard hook diferido". Añadirlo ahora tocaría `wizard-steps.ts`, `wizard.schema.ts`, `wizard.actions.ts`, más tests de regresión del wizard — sin datos de usage que confirmen que acelera el onboarding.
+- El empty-state CTA en messaging ya cubre el caso. Cero fricción extra para hosts que no quieran auto-seed.
+- El hook pierde valor si el wizard cambia de estructura (rama 15 — Liora replatform) y habría que rehacerlo.
+
+### Qué cubriría la implementación del wizard hook
+
+1. Campo `defaultMessagingPackId` (o `tone + locale`) en el último paso del wizard.
+2. Llamada a `applyStarterPack` al final de `completeWizardAction`, dentro del transaction que crea la property (o post-commit, gated por una flag).
+3. Copy en el wizard: "Empieza con mensajería automática cableada" + preview de los 3 tones con sample body.
+4. Tests: wizard complete con pack id → property tiene 7 templates `origin="pack"` + 7 automations inactivas.
+5. Doc en `MESSAGING_AUTOMATION.md §6.4`.
+
+Sin demanda explícita y sin métricas de conversion del empty-state actual, el hook queda pospuesto.
