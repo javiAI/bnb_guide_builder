@@ -237,6 +237,63 @@ describe("syncLocalEventsForProperty — update path", () => {
     expect(upsertArgs.update.lastSyncedAt).toEqual(TICK_STARTED_AT);
   });
 
+  it("preserves a link whose (source, sourceExternalId) is reassigned to a different event in the same tick", async () => {
+    // Pre-tick: 2 events. `link_moving` belongs to `ev_A`. This tick,
+    // canonicalization places `(predicthq, phq1)` under `ev_B` instead.
+    // The stale-link sweep must NOT delete `link_moving` — the key is still
+    // surfaced in this tick, just under a different eventId.
+    mocks.localEventFindMany.mockResolvedValue([
+      { id: "ev_keyA", canonicalKey: "keyA" },
+      { id: "ev_keyB", canonicalKey: "keyB" },
+    ]);
+    mocks.linkFindMany.mockResolvedValue([
+      {
+        id: "link_moving",
+        eventId: "ev_keyA",
+        source: "predicthq",
+        sourceExternalId: "phq1",
+      },
+    ]);
+
+    const report = await syncLocalEventsForProperty({
+      propertyId: PROPERTY_ID,
+      aggregated: buildAggregated(
+        [
+          mergedFixture({ canonicalKey: "keyA", contributingSources: ["ticketmaster"] }),
+          mergedFixture({ canonicalKey: "keyB", contributingSources: ["predicthq"] }),
+        ],
+        [
+          {
+            canonicalKey: "keyA",
+            candidates: [candidate({ source: "ticketmaster", sourceExternalId: "tm1" })],
+            matchKind: "strong",
+          },
+          {
+            canonicalKey: "keyB",
+            candidates: [candidate({ source: "predicthq", sourceExternalId: "phq1" })],
+            matchKind: "strong",
+          },
+        ],
+      ),
+      tickStartedAt: TICK_STARTED_AT,
+    });
+
+    expect(report.linksUpdated).toBe(1);
+    expect(report.linksCreated).toBe(1);
+    expect(report.linksDeleted).toBe(0);
+    expect(mocks.linkDeleteMany).not.toHaveBeenCalled();
+
+    type UpsertArg = {
+      where: { propertyId_source_sourceExternalId: { sourceExternalId: string } };
+      update: { eventId: string };
+    };
+    const movingLinkUpsert = mocks.linkUpsert.mock.calls.find(
+      (c) => (c[0] as UpsertArg).where.propertyId_source_sourceExternalId.sourceExternalId === "phq1",
+    );
+    expect(movingLinkUpsert).toBeDefined();
+    expect((movingLinkUpsert![0] as UpsertArg).update.eventId).toBe("ev_keyB");
+  });
+
   it("classifies a source that dropped off this tick as a linksDeleted", async () => {
     mocks.localEventFindMany.mockResolvedValue([
       { id: "ev_abc123", canonicalKey: "abc123" },

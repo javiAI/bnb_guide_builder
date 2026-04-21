@@ -14,9 +14,13 @@ import type { AggregatedLocalEventsResult } from "./aggregator";
 //       · New canonical groups are created.
 //       · Existing groups (matched by `(propertyId, canonicalKey)`) are
 //         updated and `lastSyncedAt` is bumped to `tickStartedAt`.
-//       · Per-event links are reconciled — sources that dropped off this
-//         tick have their link rows deleted; surviving sources are upserted
-//         with fresh fields.
+//       · Links are reconciled property-wide: after all events+links are
+//         upserted, any pre-existing link whose `(source, sourceExternalId)`
+//         was NOT re-surfaced anywhere in this tick is deleted. Links whose
+//         key DID re-appear survive — even if they were reassigned to a
+//         different `eventId` by the upsert (e.g. canonicalization moved
+//         an event between groups). Deleting by `eventId` (the preloaded
+//         bucket) would mis-delete links that were just moved.
 //       · Future canonical rows that weren't surfaced this tick (i.e.
 //         `lastSyncedAt < tickStartedAt AND startsAt >= tickStartedAt`) are
 //         deleted so stale forward-looking events don't linger. Past events
@@ -84,20 +88,14 @@ export async function syncLocalEventsForProperty(
       string,
       { id: string; eventId: string }
     >();
-    const existingLinksByEventId = new Map<
-      string,
-      Array<{ id: string; source: string; sourceExternalId: string }>
-    >();
     for (const l of existingLinks) {
       existingLinkBySourceKey.set(`${l.source}|${l.sourceExternalId}`, {
         id: l.id,
         eventId: l.eventId,
       });
-      const bucket = existingLinksByEventId.get(l.eventId);
-      const entry = { id: l.id, source: l.source, sourceExternalId: l.sourceExternalId };
-      if (bucket) bucket.push(entry);
-      else existingLinksByEventId.set(l.eventId, [entry]);
     }
+
+    const tickLinkKeys = new Set<string>();
 
     for (let i = 0; i < aggregated.merged.length; i++) {
       const m = aggregated.merged[i];
@@ -160,7 +158,6 @@ export async function syncLocalEventsForProperty(
       if (existed) eventsUpdated += 1;
       else eventsCreated += 1;
 
-      const tickLinkKeys = new Set<string>();
       for (const c of group.candidates) {
         const key = `${c.source}|${c.sourceExternalId}`;
         tickLinkKeys.add(key);
@@ -199,19 +196,22 @@ export async function syncLocalEventsForProperty(
         if (existingLink) linksUpdated += 1;
         else linksCreated += 1;
       }
+    }
 
-      const linksForEvent = existingLinksByEventId.get(upserted.id) ?? [];
-      const staleLinkIds: string[] = [];
-      for (const l of linksForEvent) {
-        const key = `${l.source}|${l.sourceExternalId}`;
-        if (!tickLinkKeys.has(key)) staleLinkIds.push(l.id);
-      }
-      if (staleLinkIds.length > 0) {
-        const { count } = await tx.localEventSourceLink.deleteMany({
-          where: { id: { in: staleLinkIds } },
-        });
-        linksDeleted += count;
-      }
+    // Property-wide stale-link sweep. A link is stale iff its
+    // `(source, sourceExternalId)` never appeared in this tick — i.e. every
+    // source that previously provided it dropped the event. Links whose key
+    // DID appear survive, even if canonicalization moved them to a different
+    // `eventId` (already updated by the upsert above).
+    const staleLinkIds: string[] = [];
+    for (const [key, link] of existingLinkBySourceKey) {
+      if (!tickLinkKeys.has(key)) staleLinkIds.push(link.id);
+    }
+    if (staleLinkIds.length > 0) {
+      const { count } = await tx.localEventSourceLink.deleteMany({
+        where: { id: { in: staleLinkIds } },
+      });
+      linksDeleted += count;
     }
 
     const { count: deletedEventCount } = await tx.localEvent.deleteMany({

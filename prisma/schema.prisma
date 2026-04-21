@@ -485,8 +485,8 @@ model LocalEvent {
   priceInfo           Json?     @map("price_info")
   confidence          Float
   primarySource       String    @map("primary_source")
-  contributingSources String[]  @map("contributing_sources")
-  mergeWarnings       String[]  @map("merge_warnings")
+  contributingSources String[]  @default([]) @map("contributing_sources")
+  mergeWarnings       String[]  @default([]) @map("merge_warnings")
   lastSyncedAt        DateTime  @map("last_synced_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")

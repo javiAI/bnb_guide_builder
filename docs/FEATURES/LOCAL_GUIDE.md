@@ -189,12 +189,13 @@ aggregateLocalEvents(providers, params) → {
 
 1. **Pre-load** existing events (`(propertyId, canonicalKey)`) + existing links (`(propertyId, source, sourceExternalId)`) en el scope.
 2. **Classify**: cada `merged[i]` + `groups[i]` produce un upsert de `LocalEvent`. Cross-reference contra pre-loaded para counts `eventsCreated` vs `eventsUpdated`.
-3. **Links reconciliation**: para cada event, computa `tickLinkKeys = Set<source|sourceExternalId>` del tick actual. Links pre-existentes con ese `eventId` pero fuera del set → `deleteMany` (stale; su source dropped ese event este tick).
-4. **Retention sweep**: `deleteMany LocalEvent where propertyId AND lastSyncedAt < tick AND startsAt >= tick` — borra **solo eventos futuros** no re-surfaced en este tick. Los eventos pasados se conservan como histórico.
+3. **Links upsert**: acumula `tickLinkKeys: Set<source|sourceExternalId>` mientras upserta cada link candidato. Cross-reference contra `existingLinkBySourceKey` preloaded para counts `linksCreated` vs `linksUpdated`.
+4. **Stale-link sweep (property-wide, una sola pasada tras todos los events)**: link stale = `(source, sourceExternalId)` que NO volvió a aparecer en este tick. Scope property-wide a propósito — si la canonicalización movió un link a un `eventId` distinto, su key sigue en `tickLinkKeys` y el link sobrevive. Borrar por `eventId` con el bucket pre-tick mis-borraría links recién reasignados.
+5. **Retention sweep**: `deleteMany LocalEvent where propertyId AND lastSyncedAt < tick AND startsAt >= tick` — borra **solo eventos futuros** no re-surfaced en este tick. Los eventos pasados se conservan como histórico.
 
 **Invariante**: `merged.length === groups.length` — si no, throw. Los groups llevan los `members` (NormalizedEventCandidate originales) necesarios para crear los links.
 
-**JSON semantics**: `priceInfo` usa `value ?? Prisma.JsonNull` (SQL null vs omisión — evita overwrite accidental con `Prisma.DbNull` semantics).
+**JSON semantics**: `priceInfo` usa `value ?? Prisma.DbNull` — cuando falta, persiste SQL NULL en la columna (no un valor JSON `null`, cuya semántica correspondería a `Prisma.JsonNull`).
 
 Report: `{eventsCreated, eventsUpdated, eventsDeleted, linksCreated, linksUpdated, linksDeleted}`.
 
