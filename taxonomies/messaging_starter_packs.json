@@ -1,0 +1,416 @@
+{
+  "file": "messaging_starter_packs.json",
+  "version": "2026-04-21",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "notes": [
+    "Pre-built messaging starter packs applied on demand from /messaging.",
+    "Identity: (tone × locale). Content: templates + automations pre-wired inactive.",
+    "Sensitive (sendPolicy=sensitive_prearrival) variables are restricted to touchpoint mtp.day_of_checkin with a negative sendOffsetMinutes (strictly inside [checkIn-48h, checkIn)). Validator at boot enforces this.",
+    "Overrides are optional per-template patches keyed by propertyType ids (pt.*)."
+  ],
+  "packs": [
+    {
+      "id": "msp.friendly_es",
+      "name": "Cercano — Español",
+      "tone": "friendly",
+      "locale": "es",
+      "language": "es",
+      "description": "Tono cálido, tuteo, guiños cotidianos. Apto para apartamentos, casas y villas.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "¡Reserva confirmada, {{guest_name}}!",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nGracias por reservar {{property_name}} del {{check_in_date}} al {{check_out_date}}. Nos hace mucha ilusión recibirte en {{city}}.\n\nUnos días antes de tu llegada te escribiré con más detalles para preparar la estancia. Mientras tanto, cualquier duda aquí me tienes.\n\nUn saludo,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Tu viaje a {{city}} se acerca",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nFaltan unos días para tu estancia en {{property_name}}. Aquí tienes la guía con toda la información: {{guide_url}}\n\nEl check-in es desde las {{check_in_time}} y el check-out hasta las {{check_out_time}}. Si necesitas algo especial o tienes dudas, escríbeme sin problema.\n\n¡Nos vemos pronto!\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "En 3 días: {{property_name}}",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nQueda poco para vuestra llegada el {{check_in_date}}. Un par de detalles prácticos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}})\n- Check-out hasta las {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Teléfono de soporte: {{support_contact_phone}}\n\nUnas horas antes de tu llegada te mando la dirección exacta, el wifi y cómo entrar.\n\nUn saludo,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.house"],
+              "patch": {
+                "bodyTemplate": "¡Hola {{guest_name}}!\n\nQueda poco para vuestra llegada el {{check_in_date}}. Un par de detalles prácticos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}})\n- Check-out hasta las {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Teléfono de soporte: {{support_contact_phone}}\n\nLa piscina y el jardín estarán listos desde primera hora — si llegáis con tiempo, podéis daros un chapuzón antes de instalaros.\n\nUnas horas antes de tu llegada te mando la dirección exacta, el wifi y cómo entrar.\n\nUn saludo,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "¡Bienvenidos! Cómo entrar y wifi",
+          "bodyTemplate": "¡Hola {{guest_name}}! Ya falta poquito para vuestra llegada.\n\n**Dirección**: {{street_address}}, {{city}}\n\n**Cómo entrar**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — contraseña `{{wifi_password}}`\n\nSi al llegar algo no va bien o tenéis dudas, llamadme al {{support_contact_phone}} y lo resolvemos.\n\n¡Bienvenidos!\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "¿Todo bien por {{property_name}}?",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nYa lleváis unas horas en {{property_name}}. ¿Todo bien con el wifi, el acceso y la casa en general?\n\nSi hay algo que no encuentras o algo no funciona del todo, escríbeme y lo vemos.\n\n¡Que disfrutéis {{city}}!\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Mañana: check-out hasta las {{check_out_time}}",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nMañana es el último día de vuestra estancia. El check-out es hasta las {{check_out_time}}.\n\nAntes de salir:\n- Dejad las llaves donde os indiqué\n- Tirad la basura en los contenedores de la calle\n- Cerrad ventanas y apagad luces\n\n¡Gracias por vuestra visita!\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "¡Gracias por vuestra visita a {{city}}!",
+          "bodyTemplate": "¡Hola {{guest_name}}!\n\nEspero que hayáis disfrutado {{property_name}} y {{city}}. Para mí es importante saber qué os pareció — si os apetece dejar una reseña, me ayuda mucho a seguir mejorando la estancia para los siguientes huéspedes.\n\nY si volvéis por {{city}}, ya sabéis dónde encontrarme.\n\n¡Un abrazo!\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    },
+    {
+      "id": "msp.formal_es",
+      "name": "Profesional — Español",
+      "tone": "formal",
+      "locale": "es",
+      "language": "es",
+      "description": "Tono de usted, cortesía clara y sin floritura. Apto para alojamientos de estándar medio-alto y hosts con perfil profesional.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "Reserva confirmada — {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nConfirmamos su reserva en {{property_name}} del {{check_in_date}} al {{check_out_date}}.\n\nUnos días antes de su llegada le enviaremos los detalles operativos. Para cualquier consulta puede responder a este mensaje.\n\nUn cordial saludo,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Información previa a su estancia en {{city}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nSu estancia en {{property_name}} se aproxima. Le compartimos la guía con toda la información relevante: {{guide_url}}\n\nEl horario de check-in es a partir de las {{check_in_time}}. El check-out está previsto hasta las {{check_out_time}}.\n\nQuedamos a su disposición para cualquier consulta.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "Próxima llegada a {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nSu llegada está prevista para el {{check_in_date}}. Le recordamos los puntos operativos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}})\n- Check-out hasta las {{check_out_time}}\n- Indicaciones de parking: {{parking_instructions}}\n- Teléfono de soporte: {{support_contact_phone}}\n\nEl día de su llegada recibirá la dirección exacta, las credenciales de wifi y las instrucciones de acceso.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.boutique_hotel"],
+              "patch": {
+                "bodyTemplate": "Estimado/a {{guest_name}},\n\nSu llegada está prevista para el {{check_in_date}}. Le recordamos los puntos operativos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}}). Nuestra recepción estará atendida durante toda la ventana.\n- Check-out hasta las {{check_out_time}}\n- Indicaciones de parking: {{parking_instructions}}\n- Teléfono de soporte: {{support_contact_phone}}\n\nEl día de su llegada recibirá la dirección exacta, las credenciales de wifi y las instrucciones de acceso.\n\nAtentamente,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "Detalles de acceso y wifi — {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nLe compartimos la información operativa de su llegada:\n\n**Dirección**: {{street_address}}, {{city}}\n\n**Instrucciones de acceso**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — contraseña `{{wifi_password}}`\n\nPara cualquier incidencia durante su llegada, puede contactarnos en el {{support_contact_phone}}.\n\nLe deseamos una estancia excelente.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "¿Todo en orden en {{property_name}}?",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nQueríamos asegurarnos de que todo está en orden en {{property_name}}: acceso, wifi y estado general del alojamiento.\n\nSi detecta cualquier incidencia, por favor escríbanos y la atenderemos con prontitud.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Recordatorio de check-out — {{check_out_time}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nMañana finaliza su estancia en {{property_name}}. El check-out está previsto hasta las {{check_out_time}}.\n\nAntes de salir, por favor:\n- Deje las llaves según lo indicado\n- Disponga los residuos en los contenedores correspondientes\n- Cierre ventanas y apague luces\n\nAgradecemos su visita.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "Gracias por su estancia en {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nEsperamos que su estancia en {{property_name}} haya sido satisfactoria. Si dispone de un momento, le agradeceríamos dejara su opinión — su valoración es muy valiosa para nosotros y para futuros huéspedes.\n\nQuedamos a su disposición para próximas estancias en {{city}}.\n\nAtentamente,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    },
+    {
+      "id": "msp.luxury_es",
+      "name": "Exclusivo — Español",
+      "tone": "luxury",
+      "locale": "es",
+      "language": "es",
+      "description": "Tono premium: servicio personalizado, atención al detalle, anticipación. Pensado para villas, boutique-hotels y alojamientos de alta gama.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "Su reserva en {{property_name}} está confirmada",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nNos complace confirmar su reserva en {{property_name}} del {{check_in_date}} al {{check_out_date}}.\n\nEn los próximos días nos pondremos en contacto para ultimar los detalles de su llegada y conocer cualquier preferencia específica que desee comunicarnos — una transferencia privada, una reserva en un restaurante de {{city}}, o cualquier atención particular.\n\nQuedamos a su entera disposición.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Preparando su llegada a {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nSu estancia en {{property_name}} se aproxima. Con el fin de que su experiencia sea impecable, le invitamos a consultar la guía del alojamiento: {{guide_url}}\n\nEl check-in es a partir de las {{check_in_time}}. Si desea coordinar un horario de llegada concreto o servicios adicionales (traslados, compras previas, chef privado), indíquenoslo y lo organizamos.\n\nQuedamos a su disposición.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "Últimos detalles antes de su llegada",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nFaltan apenas unos días para su llegada el {{check_in_date}}. Le resumimos los puntos operativos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}})\n- Check-out hasta las {{check_out_time}}\n- Indicaciones de parking: {{parking_instructions}}\n- Contacto directo: {{support_contact_phone}}\n\nUnas horas antes de su llegada le enviaremos la dirección exacta, las credenciales de wifi y las instrucciones de acceso. Si desea concertar alguna atención a su llegada, escríbanos con confianza.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.house"],
+              "patch": {
+                "bodyTemplate": "Estimado/a {{guest_name}},\n\nFaltan apenas unos días para su llegada el {{check_in_date}}. Le resumimos los puntos operativos:\n\n- Check-in desde las {{check_in_time}} (ventana {{check_in_window}})\n- Check-out hasta las {{check_out_time}}\n- Indicaciones de parking: {{parking_instructions}}\n- Contacto directo: {{support_contact_phone}}\n\nLa piscina y los jardines estarán perfectamente preparados para su llegada. Si desea un servicio adicional (limpieza diaria, chef privado, reserva en restaurantes locales), indíquenoslo con antelación.\n\nUnas horas antes de su llegada le enviaremos la dirección exacta, las credenciales de wifi y las instrucciones de acceso.\n\nMuy cordialmente,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "Bienvenida a {{property_name}} — Información de acceso",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nLe damos la bienvenida a {{property_name}}. Le compartimos la información operativa:\n\n**Dirección**: {{street_address}}, {{city}}\n\n**Instrucciones de acceso**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — contraseña `{{wifi_password}}`\n\nA su llegada encontrará una atención de bienvenida preparada para usted. Para cualquier solicitud durante su estancia, puede contactarnos directamente en el {{support_contact_phone}}.\n\nLe deseamos una estancia inolvidable.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "¿Está todo a su gusto en {{property_name}}?",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nQueríamos comprobar que todo está a su entera satisfacción en {{property_name}} tras su llegada.\n\nSi desea solicitar cualquier atención adicional (reservas en {{city}}, servicios en el alojamiento, recomendaciones personalizadas), no dude en contactarnos en cualquier momento.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Su salida de {{property_name}} — información práctica",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nMañana finaliza su estancia en {{property_name}}. El check-out está previsto hasta las {{check_out_time}}.\n\nSi requiere un late check-out, un servicio de traslado, o ayuda con el equipaje, indíquenoslo y buscaremos la mejor alternativa.\n\nAntes de partir, le agradeceremos dejar el alojamiento tal y como lo encontró en cuanto a llaves, residuos y cierres.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "Gracias por elegir {{property_name}}",
+          "bodyTemplate": "Estimado/a {{guest_name}},\n\nHa sido un verdadero placer recibirle en {{property_name}}. Esperamos que su estancia en {{city}} haya sido memorable.\n\nSu opinión es muy valiosa para nosotros. Si dispone de un momento y desea compartirla en una reseña, le estaremos muy agradecidos.\n\nQuedamos a su disposición para una próxima estancia.\n\nMuy cordialmente,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    },
+    {
+      "id": "msp.friendly_en",
+      "name": "Warm — English",
+      "tone": "friendly",
+      "locale": "en",
+      "language": "en",
+      "description": "Warm, first-name tone, small personal touches. Suitable for apartments, houses and villas.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "You're booked, {{guest_name}}!",
+          "bodyTemplate": "Hi {{guest_name}},\n\nThanks so much for booking {{property_name}} from {{check_in_date}} to {{check_out_date}}. We're really looking forward to hosting you in {{city}}.\n\nA few days before you arrive I'll send you more details. In the meantime, any questions — just reply here.\n\nCheers,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Your trip to {{city}} is getting close",
+          "bodyTemplate": "Hi {{guest_name}},\n\nYour stay at {{property_name}} is coming up. Here's the full guide to help you plan: {{guide_url}}\n\nCheck-in is from {{check_in_time}} and check-out is by {{check_out_time}}. If you need anything specific or have questions, just let me know.\n\nSee you soon!\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "3 days to go — {{property_name}}",
+          "bodyTemplate": "Hi {{guest_name}},\n\nJust a few days until you arrive on {{check_in_date}}. A few practical details:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}})\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Support phone: {{support_contact_phone}}\n\nI'll send the exact address, wifi and how to get in a few hours before you arrive, so it's fresh.\n\nCheers,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.house"],
+              "patch": {
+                "bodyTemplate": "Hi {{guest_name}},\n\nJust a few days until you arrive on {{check_in_date}}. A few practical details:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}})\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Support phone: {{support_contact_phone}}\n\nThe pool and garden will be ready from early morning — if you arrive with time to spare, you're welcome to have a swim before settling in.\n\nI'll send the exact address, wifi and how to get in a few hours before you arrive.\n\nCheers,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "Welcome! Access & wifi details",
+          "bodyTemplate": "Hi {{guest_name}}! Almost time for your arrival.\n\n**Address**: {{street_address}}, {{city}}\n\n**How to get in**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — password `{{wifi_password}}`\n\nIf anything's off when you arrive, or you have questions, call me on {{support_contact_phone}} and we'll sort it out.\n\nWelcome!\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "All good at {{property_name}}?",
+          "bodyTemplate": "Hi {{guest_name}},\n\nYou've been at {{property_name}} for a few hours. All good with the wifi, access and the place in general?\n\nIf anything's missing or not quite working, drop me a line and we'll sort it.\n\nEnjoy {{city}}!\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Tomorrow: check-out by {{check_out_time}}",
+          "bodyTemplate": "Hi {{guest_name}},\n\nTomorrow's your last day. Check-out is by {{check_out_time}}.\n\nBefore you leave:\n- Leave the keys where I showed you\n- Take the rubbish to the street bins\n- Close windows and switch off the lights\n\nThanks for staying with us!\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "Thanks for visiting {{city}}!",
+          "bodyTemplate": "Hi {{guest_name}},\n\nI hope you enjoyed {{property_name}} and {{city}}. It really helps to hear what you thought — if you have a moment to leave a review, I'd really appreciate it. It helps me keep improving the stay for the next guests.\n\nAnd if you're ever back in {{city}}, you know where to find me.\n\nTake care!\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    },
+    {
+      "id": "msp.formal_en",
+      "name": "Professional — English",
+      "tone": "formal",
+      "locale": "en",
+      "language": "en",
+      "description": "Professional courteous tone, no fluff. Suitable for mid-to-upper-tier stays and hosts with a professional profile.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "Booking confirmed — {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour booking at {{property_name}} from {{check_in_date}} to {{check_out_date}} is confirmed.\n\nA few days before your arrival we will share the operational details. For any query please reply to this message.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Information ahead of your stay in {{city}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour stay at {{property_name}} is approaching. Please find the guide with all the relevant information here: {{guide_url}}\n\nCheck-in is from {{check_in_time}}. Check-out is by {{check_out_time}}.\n\nWe remain at your disposal should you require anything further.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "Upcoming arrival — {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour arrival is scheduled for {{check_in_date}}. Please find the operational reminders:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}})\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Support line: {{support_contact_phone}}\n\nOn the day of arrival you will receive the exact address, wifi credentials and access instructions.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.boutique_hotel"],
+              "patch": {
+                "bodyTemplate": "Dear {{guest_name}},\n\nYour arrival is scheduled for {{check_in_date}}. Please find the operational reminders:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}}). Our reception will be attended throughout the window.\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Support line: {{support_contact_phone}}\n\nOn the day of arrival you will receive the exact address, wifi credentials and access instructions.\n\nKind regards,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "Access details — {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nHere are your operational details for arrival:\n\n**Address**: {{street_address}}, {{city}}\n\n**Access instructions**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — password `{{wifi_password}}`\n\nFor any issue on arrival, please reach us on {{support_contact_phone}}.\n\nWe wish you an excellent stay.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "Is everything in order at {{property_name}}?",
+          "bodyTemplate": "Dear {{guest_name}},\n\nWe wanted to make sure everything is in order at {{property_name}} — access, wifi, and the general state of the property.\n\nShould you notice any issue, please let us know and we will address it promptly.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Check-out reminder — by {{check_out_time}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour stay at {{property_name}} ends tomorrow. Check-out is by {{check_out_time}}.\n\nBefore departure, kindly:\n- Leave the keys as indicated\n- Dispose of waste in the corresponding bins\n- Close windows and switch off lights\n\nThank you for your visit.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "Thank you for your stay at {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nWe hope your stay at {{property_name}} was satisfactory. If you have a moment, we would be grateful if you could share your feedback in a review — your input is valuable to us and to future guests.\n\nWe remain at your disposal for future stays in {{city}}.\n\nKind regards,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    },
+    {
+      "id": "msp.luxury_en",
+      "name": "Exclusive — English",
+      "tone": "luxury",
+      "locale": "en",
+      "language": "en",
+      "description": "Premium tone: personalised service, attention to detail, anticipation. Designed for villas, boutique hotels and high-end stays.",
+      "templates": [
+        {
+          "touchpointKey": "mtp.booking_confirmed",
+          "channelKey": "ota",
+          "subjectLine": "Your booking at {{property_name}} is confirmed",
+          "bodyTemplate": "Dear {{guest_name}},\n\nWe are pleased to confirm your booking at {{property_name}} from {{check_in_date}} to {{check_out_date}}.\n\nOver the coming days we will be in touch to finalise the details of your arrival and to learn of any specific preferences you may wish to share — a private transfer, a restaurant reservation in {{city}}, or any bespoke arrangement.\n\nWe remain entirely at your disposal.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "on_booking_confirmed", "sendOffsetMinutes": 5 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_14d",
+          "channelKey": "ota",
+          "subjectLine": "Preparing your arrival at {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour stay at {{property_name}} is approaching. To ensure a seamless experience, please find the property guide here: {{guide_url}}\n\nCheck-in is from {{check_in_time}}. Should you wish to coordinate a specific arrival time, or arrange additional services (transfers, provisioning, private chef), kindly let us know and we shall make it happen.\n\nWe remain at your disposal.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -20160 }
+        },
+        {
+          "touchpointKey": "mtp.pre_arrival_3d",
+          "channelKey": "ota",
+          "subjectLine": "Final details before your arrival",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour arrival on {{check_in_date}} is just around the corner. A brief operational summary:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}})\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Direct line: {{support_contact_phone}}\n\nA few hours before your arrival we will share the exact address, wifi credentials and access instructions. Should you wish to arrange any welcome amenity, please let us know.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "before_arrival", "sendOffsetMinutes": -4320 },
+          "overrides": [
+            {
+              "appliesToPropertyTypes": ["pt.house"],
+              "patch": {
+                "bodyTemplate": "Dear {{guest_name}},\n\nYour arrival on {{check_in_date}} is just around the corner. A brief operational summary:\n\n- Check-in from {{check_in_time}} (window {{check_in_window}})\n- Check-out by {{check_out_time}}\n- Parking: {{parking_instructions}}\n- Direct line: {{support_contact_phone}}\n\nThe pool and gardens will be fully prepared upon your arrival. Should you wish to arrange additional services (daily housekeeping, private chef, local restaurant reservations), please let us know in advance.\n\nA few hours before your arrival we will share the exact address, wifi credentials and access instructions.\n\nWarm regards,\n{{host_name}}"
+              }
+            }
+          ]
+        },
+        {
+          "touchpointKey": "mtp.day_of_checkin",
+          "channelKey": "ota",
+          "subjectLine": "Welcome to {{property_name}} — access details",
+          "bodyTemplate": "Dear {{guest_name}},\n\nWelcome to {{property_name}}. Please find your operational details below:\n\n**Address**: {{street_address}}, {{city}}\n\n**Access instructions**: {{access_instructions}}\n\n**WiFi**: {{wifi_name}} — password `{{wifi_password}}`\n\nUpon arrival you will find a welcome amenity prepared for you. For any request during your stay, you may reach us directly on {{support_contact_phone}}.\n\nWe wish you a memorable stay.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": -120 }
+        },
+        {
+          "touchpointKey": "mtp.first_day_check",
+          "channelKey": "ota",
+          "subjectLine": "Is everything to your liking at {{property_name}}?",
+          "bodyTemplate": "Dear {{guest_name}},\n\nWe wanted to check that everything is to your full satisfaction at {{property_name}} following your arrival.\n\nShould you wish to arrange any additional service (restaurant reservations in {{city}}, on-site services, bespoke recommendations), do not hesitate to contact us at any time.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "day_of_checkin", "sendOffsetMinutes": 240 }
+        },
+        {
+          "touchpointKey": "mtp.checkout_reminder",
+          "channelKey": "ota",
+          "subjectLine": "Your departure from {{property_name}} — practical notes",
+          "bodyTemplate": "Dear {{guest_name}},\n\nYour stay at {{property_name}} ends tomorrow. Check-out is by {{check_out_time}}.\n\nShould you require a late check-out, a transfer, or luggage assistance, kindly let us know and we will find the best arrangement.\n\nBefore departure, we would be grateful if you could leave the property as you found it in respect of keys, waste and general closure.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": -1440 }
+        },
+        {
+          "touchpointKey": "mtp.post_checkout_review",
+          "channelKey": "ota",
+          "subjectLine": "Thank you for choosing {{property_name}}",
+          "bodyTemplate": "Dear {{guest_name}},\n\nIt has been a genuine pleasure to host you at {{property_name}}. We hope your stay in {{city}} was memorable.\n\nYour feedback is deeply valued. Should you have a moment and wish to share your impressions in a review, we would be truly grateful.\n\nWe remain at your disposal for a future stay.\n\nWarm regards,\n{{host_name}}",
+          "automation": { "triggerType": "after_checkout", "sendOffsetMinutes": 1440 }
+        }
+      ]
+    }
+  ]
+}

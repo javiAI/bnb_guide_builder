@@ -17,6 +17,13 @@ import {
   transitionDraftAction,
   type DraftLifecycleAction,
 } from "@/lib/services/messaging-automation.service";
+import {
+  applyStarterPack,
+  previewPack,
+  type ApplyStarterPackResult,
+  type StarterPackPreview,
+} from "@/lib/services/messaging-seed.service";
+import { ORIGIN_USER } from "@/lib/services/messaging-shared";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Variable validation gate ──
@@ -97,9 +104,26 @@ export async function updateMessageTemplateAction(
   const unknownBlock = checkUnknownVariables(result.data.bodyMd);
   if (unknownBlock) return unknownBlock;
 
+  // Flip to origin="user" only when the host changed the actual copy
+  // (body or subject). Pure status/channel toggles on a pack template must
+  // NOT detach it — otherwise activating a seeded template permanently
+  // removes it from future pack refreshes.
+  const current = await prisma.messageTemplate.findUnique({
+    where: { id: templateId },
+    select: { bodyMd: true, subjectLine: true, origin: true },
+  });
+  const contentChanged =
+    !!current &&
+    (current.bodyMd !== result.data.bodyMd ||
+      (current.subjectLine ?? null) !== (result.data.subjectLine ?? null));
+
+  const ownershipPatch = contentChanged
+    ? { origin: ORIGIN_USER, packId: null }
+    : {};
+
   await prisma.messageTemplate.update({
     where: { id: templateId },
-    data: result.data,
+    data: { ...result.data, ...ownershipPatch },
   });
 
   revalidatePath(`/properties/${propertyId}/messaging`);
@@ -359,3 +383,48 @@ export async function editDraftBodyAction(
   return { success: true };
 }
 
+// ── Starter packs (rama 12C) ──
+
+export async function previewStarterPackAction(
+  propertyId: string,
+  packId: string,
+): Promise<
+  | { success: true; preview: StarterPackPreview }
+  | { success: false; error: string }
+> {
+  if (!propertyId) return { success: false, error: "propertyId requerido" };
+  if (!packId) return { success: false, error: "packId requerido" };
+
+  try {
+    const preview = await previewPack(packId, propertyId);
+    return { success: true, preview };
+  } catch (err) {
+    return { success: false, error: sanitizeStarterPackError(err) };
+  }
+}
+
+export async function applyStarterPackAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult & { result?: ApplyStarterPackResult }> {
+  const propertyId = formData.get("propertyId") as string;
+  const packId = formData.get("packId") as string;
+  if (!propertyId) return { success: false, error: "propertyId requerido" };
+  if (!packId) return { success: false, error: "packId requerido" };
+
+  try {
+    const result = await applyStarterPack({ packId, propertyId });
+    revalidatePath(`/properties/${propertyId}/messaging`);
+    return { success: true, result };
+  } catch (err) {
+    return { success: false, error: sanitizeStarterPackError(err) };
+  }
+}
+
+function sanitizeStarterPackError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : "";
+  if (raw.includes("Unknown starter pack")) return "Pack no encontrado";
+  if (raw.includes("Unknown property")) return "Propiedad no encontrada";
+  console.error("[starter-pack action]", err);
+  return "Error al procesar el pack";
+}

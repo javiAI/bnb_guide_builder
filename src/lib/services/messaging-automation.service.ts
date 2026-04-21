@@ -31,10 +31,12 @@ import {
   messagingVariablesByToken,
   type MessagingTriggerItem,
 } from "@/lib/taxonomy-loader";
+import { resolveVariables } from "@/lib/services/messaging-variables.service";
 import {
   extractVariableTokens,
-  resolveVariables,
-} from "@/lib/services/messaging-variables.service";
+  SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS,
+  SENSITIVE_PREARRIVAL_MAX_LEAD_MS,
+} from "@/lib/services/messaging-shared";
 import type { ReservationContextRow } from "@/lib/services/messaging-variables-resolvers";
 import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import { isPrismaUniqueViolation } from "@/lib/utils";
@@ -57,14 +59,7 @@ export const RESERVATION_STATUSES = [
 ] as const;
 export type ReservationStatus = (typeof RESERVATION_STATUSES)[number];
 
-/** Maximum lead time allowed for `sensitive_prearrival` content (wifi password,
- * access instructions, etc). Drafts whose `scheduledSendAt` lands more than
- * this many hours before the check-in instant are blocked — we don't want
- * access secrets sitting in a guest's inbox for two weeks before they arrive.
- * 48h is the hospitality norm (send the day before or morning-of). */
-export const SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS = 48;
-const SENSITIVE_PREARRIVAL_MAX_LEAD_MS =
-  SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS * 60 * 60 * 1000;
+export { SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS };
 
 export interface MaterializationOutcome {
   /** `null` when the outcome is a reservation-wide event (cancellation cascade)

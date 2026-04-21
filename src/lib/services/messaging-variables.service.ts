@@ -31,6 +31,10 @@ import {
   type ResolverContext,
   type ResolverSourceUsed,
 } from "./messaging-variables-resolvers";
+import {
+  extractVariableTokens,
+  TEMPLATE_TOKEN_REGEX,
+} from "./messaging-shared";
 
 // ─── Public API ──────────────────────────────────────────────────────────
 
@@ -133,22 +137,7 @@ export async function resolveVariables(
 
 // ─── Variable token extraction ───────────────────────────────────────────
 
-const TOKEN_REGEX = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
-
-/** Extract unique variable names from a template body. Preserves first-seen
- * order for deterministic iteration. */
-export function extractVariableTokens(body: string): string[] {
-  const seen = new Set<string>();
-  const ordered: string[] = [];
-  for (const match of body.matchAll(TOKEN_REGEX)) {
-    const token = match[1];
-    if (!seen.has(token)) {
-      seen.add(token);
-      ordered.push(token);
-    }
-  }
-  return ordered;
-}
+export { extractVariableTokens };
 
 function partitionTokens(tokens: string[]): {
   known: MessagingVariableItem[];
@@ -209,7 +198,7 @@ function applySubstitutions(
   body: string,
   states: Record<string, VariableState>,
 ): string {
-  return body.replace(TOKEN_REGEX, (match, token: string) => {
+  return body.replace(TEMPLATE_TOKEN_REGEX, (match, token: string) => {
     const state = states[token];
     if (!state) return match;
     if (state.status === "resolved") return state.value;
