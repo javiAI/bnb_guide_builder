@@ -51,7 +51,7 @@ export async function syncLocalEventsForProperty(
 
   if (aggregated.merged.length !== aggregated.groups.length) {
     throw new Error(
-      "aggregated.merged and aggregated.groups must be aligned 1:1 (see aggregator contract)",
+      `aggregated.merged and aggregated.groups must be aligned 1:1 (got ${aggregated.merged.length} merged, ${aggregated.groups.length} groups)`,
     );
   }
 
@@ -84,11 +84,19 @@ export async function syncLocalEventsForProperty(
       string,
       { id: string; eventId: string }
     >();
+    const existingLinksByEventId = new Map<
+      string,
+      Array<{ id: string; source: string; sourceExternalId: string }>
+    >();
     for (const l of existingLinks) {
       existingLinkBySourceKey.set(`${l.source}|${l.sourceExternalId}`, {
         id: l.id,
         eventId: l.eventId,
       });
+      const bucket = existingLinksByEventId.get(l.eventId);
+      const entry = { id: l.id, source: l.source, sourceExternalId: l.sourceExternalId };
+      if (bucket) bucket.push(entry);
+      else existingLinksByEventId.set(l.eventId, [entry]);
     }
 
     for (let i = 0; i < aggregated.merged.length; i++) {
@@ -192,9 +200,9 @@ export async function syncLocalEventsForProperty(
         else linksCreated += 1;
       }
 
+      const linksForEvent = existingLinksByEventId.get(upserted.id) ?? [];
       const staleLinkIds: string[] = [];
-      for (const l of existingLinks) {
-        if (l.eventId !== upserted.id) continue;
+      for (const l of linksForEvent) {
         const key = `${l.source}|${l.sourceExternalId}`;
         if (!tickLinkKeys.has(key)) staleLinkIds.push(l.id);
       }

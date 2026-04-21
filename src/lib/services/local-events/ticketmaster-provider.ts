@@ -8,6 +8,7 @@ import {
   type SourceFetchParams,
   type SourceFetchResult,
 } from "./contracts";
+import { isHttpUrl } from "./url-utils";
 
 // ── Response shape (subset) ──
 // Ticketmaster Discovery v2 exposes a much richer payload than we need. We
@@ -447,11 +448,3 @@ function buildPriceInfo(
   };
 }
 
-function isHttpUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}

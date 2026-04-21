@@ -122,6 +122,8 @@ export async function runLocalEventsTick(
         sync,
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const code = (err as { code?: string } | null)?.code;
       perProperty.push({
         propertyId: p.id,
         propertyNickname: p.propertyNickname,
@@ -129,7 +131,7 @@ export async function runLocalEventsTick(
         sourceReports: [],
         aggregatorWarnings: [],
         sync: null,
-        error: err instanceof Error ? err.message : String(err),
+        error: code ? `[${code}] ${message}` : message,
       });
     }
   }

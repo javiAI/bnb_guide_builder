@@ -11,8 +11,8 @@ import {
 // ── Merged canonical event ──
 // Output of the merge layer: a single row per canonical event that the
 // sync service persists as `LocalEvent`. Per-candidate rows land in
-// `LocalEventSourceLink` (see commit 7+8). This struct intentionally does
-// NOT carry per-source fields — it is the canonical view.
+// `LocalEventSourceLink`. This struct intentionally does NOT carry
+// per-source fields — it is the canonical view.
 
 export interface MergedCanonicalEvent {
   canonicalKey: string;

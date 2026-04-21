@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { haversineMeters } from "@/lib/services/places/distance";
 import {
   localEventSources,
   type LocalEventSource,
 } from "@/lib/taxonomy-loader";
+import { stripAccents } from "./canonicalize";
 import {
   NormalizedEventCandidateSchema,
   PROVIDER_PRIORITY,
@@ -13,6 +15,7 @@ import {
   type SourceFetchParams,
   type SourceFetchResult,
 } from "./contracts";
+import { isHttpUrl } from "./url-utils";
 
 // ── Firecrawl-side extract shape ──
 // JSON Schema passed to Firecrawl's `/scrape` extract phase. Hand-written
@@ -117,10 +120,6 @@ const FIRECRAWL_CATEGORY_RULES: ReadonlyArray<{
   { keywords: ["fiesta", "nocturna", "dj"], categoryKey: "le.nightlife" },
 ];
 
-function stripAccents(input: string): string {
-  return input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
 export function mapFirecrawlCategory(raw: string | undefined): string {
   if (!raw) return "le.other";
   const norm = stripAccents(raw.toLowerCase());
@@ -154,7 +153,7 @@ export function deriveFirecrawlExternalId(params: {
     normalizeForHash(params.venueName),
     params.detailUrl ?? "",
   ].join("|");
-  return createHash("sha1").update(parts).digest("hex").slice(0, 16);
+  return createHash("sha256").update(parts).digest("hex").slice(0, 16);
 }
 
 // ── Applicability ──
@@ -164,22 +163,6 @@ export function deriveFirecrawlExternalId(params: {
 // Firecrawl provider once per property — this decides which sources to
 // actually scrape for that call.
 
-function haversineKm(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.latitude - a.latitude);
-  const dLon = toRad(b.longitude - a.longitude);
-  const lat1 = toRad(a.latitude);
-  const lat2 = toRad(b.latitude);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
 export function selectApplicableSources(
   all: ReadonlyArray<LocalEventSource>,
   params: Pick<SourceFetchParams, "anchor" | "city">,
@@ -187,11 +170,11 @@ export function selectApplicableSources(
   const cityNorm = params.city ? normalizeForHash(params.city) : null;
   return all.filter((s) => {
     if (cityNorm && normalizeForHash(s.city) === cityNorm) return true;
-    const km = haversineKm(params.anchor, {
+    const meters = haversineMeters(params.anchor, {
       latitude: s.latitude,
       longitude: s.longitude,
     });
-    return km <= s.radiusKm;
+    return meters <= s.radiusKm * 1000;
   });
 }
 
@@ -468,15 +451,6 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
     }
 
     return { candidates, warnings };
-  }
-}
-
-function isHttpUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
   }
 }
 

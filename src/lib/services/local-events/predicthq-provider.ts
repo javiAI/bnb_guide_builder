@@ -296,9 +296,9 @@ export class PredictHqEventsProvider implements LocalEventSourceProvider {
         source: this.source,
         sourceExternalId: ev.id,
         // PHQ doesn't ship a clickable URL on the raw event. Merge rules
-        // (see merge.ts, commit 5) swap this with TM's clickable URL when
-        // a match is found. For standalone PHQ events, this is the best
-        // stable self-reference we can emit.
+        // in merge.ts swap this with TM's clickable URL when a match is
+        // found. For standalone PHQ events this is the best stable
+        // self-reference we can emit.
         sourceUrl: `https://www.predicthq.com/events/${ev.id}`,
         title: ev.title,
         ...(ev.description ? { descriptionMd: ev.description } : {}),

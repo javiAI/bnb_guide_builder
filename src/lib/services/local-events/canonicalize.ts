@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { haversineMeters } from "@/lib/services/places/distance";
 import {
   PROVIDER_PRIORITY,
   type NormalizedEventCandidate,
@@ -22,7 +23,7 @@ export interface CanonicalEventGroup {
 
 // ── Normalization helpers ──
 
-function stripAccents(input: string): string {
+export function stripAccents(input: string): string {
   return input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
@@ -62,24 +63,6 @@ export function titleSimilarity(a: string, b: string): number {
   for (const t of ta) if (tb.has(t)) inter += 1;
   const union = ta.size + tb.size - inter;
   return union === 0 ? 0 : inter / union;
-}
-
-// ── Distance (haversine, km) ──
-
-function haversineKm(
-  a: { latitude: number; longitude: number },
-  b: { latitude: number; longitude: number },
-): number {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(b.latitude - a.latitude);
-  const dLon = toRad(b.longitude - a.longitude);
-  const lat1 = toRad(a.latitude);
-  const lat2 = toRad(b.latitude);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
 // ── Provider-family priority ──
@@ -132,11 +115,11 @@ function heuristicMatch(
   const hasGeoB =
     typeof b.latitude === "number" && typeof b.longitude === "number";
   if (hasGeoA && hasGeoB) {
-    const km = haversineKm(
+    const meters = haversineMeters(
       { latitude: a.latitude as number, longitude: a.longitude as number },
       { latitude: b.latitude as number, longitude: b.longitude as number },
     );
-    if (km <= 0.5) return true;
+    if (meters <= 500) return true;
   }
 
   return false;
@@ -150,7 +133,7 @@ export function deriveCanonicalKey(seed: NormalizedEventCandidate): string {
     String(startSlot(seed.startsAt)),
     normalizeVenue(seed.venueName),
   ].join("|");
-  return createHash("sha1").update(parts).digest("hex").slice(0, 20);
+  return createHash("sha256").update(parts).digest("hex").slice(0, 20);
 }
 
 // ── Canonicalize ──
