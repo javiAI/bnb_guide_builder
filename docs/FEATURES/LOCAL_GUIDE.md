@@ -86,3 +86,160 @@ MAPTILER_API_KEY=...          # requerido en prod si provider=maptiler
 - Schema: [src/lib/schemas/editor.schema.ts](../../src/lib/schemas/editor.schema.ts) — `createLocalPlaceSchema` con `superRefine` para paired-field invariants (lat↔lng, provider↔providerPlaceId, providerMetadata ⇒ provider).
 - Action: `createLocalPlaceAction` en [src/lib/actions/editor.actions.ts](../../src/lib/actions/editor.actions.ts).
 - UI: [src/app/properties/[propertyId]/local-guide/](../../src/app/properties/[propertyId]/local-guide/).
+
+---
+
+## Local events sync (Rama 13B — `feat/local-events-sync`)
+
+Sync diario multi-source de eventos locales, ortogonal a `LocalPlace` (POIs estables). Backend-only en 13B: no hay UI huésped ni edición desde host (el sync es autoritativo por ahora). Pipeline encadenado sobre propiedades geo-ancladas:
+
+```text
+runLocalEventsTick (scheduler)
+  └─ foreach Property (lat/lng not null)
+       ├─ aggregateLocalEvents(providers[], {anchor, city, locale, window})
+       │    └─ Promise.allSettled(providers.fetch) → canonicalize → merge
+       └─ syncLocalEventsForProperty({aggregated, tickStartedAt})  [transaction]
+             ├─ upsert LocalEvent por (propertyId, canonicalKey)
+             ├─ upsert LocalEventSourceLink por (propertyId, source, sourceExternalId)
+             ├─ deleteMany stale links (source dropped for an event)
+             └─ deleteMany future rows no re-surfaced (retention sweep)
+```
+
+### Provider abstraction (events)
+
+[src/lib/services/local-events/contracts.ts](../../src/lib/services/local-events/contracts.ts) declara la interfaz mínima:
+
+```ts
+interface LocalEventSourceProvider {
+  readonly source: string;          // "predicthq" | "firecrawl" | "ticketmaster"
+  readonly priority: number;         // 100 | 80 | 60 (per-family constant)
+  fetch(params: SourceFetchParams): Promise<SourceFetchResult>;
+}
+```
+
+**Envelope pattern** (`SourceFetchResult`): nunca throws al caller. Estados:
+
+- `ok` — events válidos (puede ser array vacío)
+- `disabled` — provider deshabilitado explícito (reservado, hoy ninguno lo emite)
+- `config_error` — clave API missing o malformada; downgrades automáticos en dev
+- `rate_limited` — 429 upstream
+- `unavailable` — 5xx / network / timeout / body no parseable
+- `parse_error` — shape inesperado
+
+Cada envelope lleva `warnings[]`, `fetchedAt`, `durationMs` y opcional `error {kind, message}`. **Contrato duro**: un provider jamás devuelve events si `status !== "ok"`.
+
+**Priority constants** (`PROVIDER_PRIORITY`):
+
+- `predicthq: 100` — aggregator canónico (más confianza)
+- `firecrawl: 80` — curated sources (depende de crawl hygiene)
+- `ticketmaster: 60` — venue-authoritative pero menor cobertura
+
+### Implementaciones
+
+#### PredictHQ
+
+[predicthq-provider.ts](../../src/lib/services/local-events/predicthq-provider.ts) — hits `api.predicthq.com/v1/events/` con `within={radius}km@{lat},{lng}` + `active.gte/lte` + `category=concerts,sports,performing-arts,festivals,community,expos,conferences`. Mapping nativo → `le.*` en tabla interna (longest-match). Sin `PREDICTHQ_API_KEY` emite `config_error` sin pegar a la red.
+
+#### Firecrawl
+
+[firecrawl-provider.ts](../../src/lib/services/local-events/firecrawl-provider.ts) — **scrape cache per-instance** (Map keyed por curatedUrl). El scheduler instancia el provider una vez por tick y reutiliza la instancia across propiedades, de modo que una misma URL curada se scrape a lo sumo una vez por tick. Curated URLs vienen de `taxonomies/local_event_sources.json` (scoped por city/region). El LLM extractor produce `{title, startsAt?, endsAt?, venue?, categoryHint?, imageUrl?, sourceUrl}`; se valida con Zod y se descartan items sin `title` o sin `startsAt` parseable.
+
+#### Ticketmaster
+
+[ticketmaster-provider.ts](../../src/lib/services/local-events/ticketmaster-provider.ts) — hits `app.ticketmaster.com/discovery/v2/events.json?latlong={lat},{lng}&radius=&unit=km&startDateTime=&endDateTime=`. TM devuelve URLs de venta directa con deep-link; por eso tiene **sourceUrl exception** en el merge (ver abajo).
+
+### Aggregator
+
+[aggregator.ts](../../src/lib/services/local-events/aggregator.ts):
+
+```ts
+aggregateLocalEvents(providers, params) → {
+  merged: MergedCanonicalEvent[],       // canonicalized + merged (post-merge canonical rows)
+  groups: CanonicalEventGroup[],        // 1:1 con merged, preserva members para persistence
+  sourceReports: AggregatedSourceReport[], // un entry por provider (status, counts, warnings)
+}
+```
+
+**Per-source isolation** vía `Promise.allSettled`: cada provider corre en paralelo; cualquier rejection se captura en `normalizeEnvelope` como envelope sintético `unavailable`, **nunca propaga**. El tick entero siempre produce un report aunque los 3 providers fallen.
+
+**Defense-in-depth window filter**: después del normalize, se dropean candidates con `startsAt` fuera de `[window.from, window.to]` — aunque el provider haya ignorado el window.
+
+### Canonicalize + merge
+
+[canonicalize.ts](../../src/lib/services/local-events/canonicalize.ts) implementa un **3-tier matcher** cross-source:
+
+1. **Strong match** — `normalizeTitle` exacto + mismo `startSlot` (15-minute floor de `startsAt.getTime()`) + igualdad de `normalizeVenue` solo cuando ambos lados lo exponen (si un lado omite venue, title+slot basta).
+2. **Heuristic match** — `startSlot` dentro de ±4 slots (60 min) + Jaccard de tokens de título ≥ 0.60 + acuerdo de venue exacto **o** proximidad geográfica ≤500m (`haversineMeters` desde `places/distance.ts`). Genera warning `heuristically merged ... — verify`.
+3. **No match** — se quedan como canonical groups separados (dedupe conservador: preferimos duplicado visible a merge equivocado).
+
+`canonicalKey` = `createHash("sha256").update(parts).digest("hex").slice(0, 20)` sobre `normalizedTitle|startSlot|normalizedVenue` — estable across ticks mientras el título normalizado, el slot de 15min y el venue normalizado no cambien.
+
+**Merge per-field**:
+
+- `title` / `descriptionMd` / `categoryKey` / `startsAt` / `endsAt` / `venueName` / `venueAddress` / `lat` / `lng` / `priceInfo` → wins el source con mayor priority (PredictHQ).
+- `sourceUrl` → **exception**: TM wins si está presente (deep-links a venta directa son más valiosos que aggregator URLs).
+- `imageUrl` → **exception**: Firecrawl wins si está presente (scraped images suelen ser mejor que stock aggregator).
+- `confidence` → max de los contributors.
+- `contributingSources[]` → union ordenada por priority.
+- `mergeWarnings[]` → accumula cuando dos sources tienen venue distinto pero el matcher los fusionó (señal para revisión manual futura).
+
+### Sync service
+
+[sync.ts](../../src/lib/services/local-events/sync.ts) — `syncLocalEventsForProperty({propertyId, aggregated, tickStartedAt, prisma?})` corre dentro de un único `prisma.$transaction(callback)`:
+
+1. **Pre-load** existing events (`(propertyId, canonicalKey)`) + existing links (`(propertyId, source, sourceExternalId)`) en el scope.
+2. **Classify**: cada `merged[i]` + `groups[i]` produce un upsert de `LocalEvent`. Cross-reference contra pre-loaded para counts `eventsCreated` vs `eventsUpdated`.
+3. **Links upsert**: acumula `tickLinkKeys: Set<source|sourceExternalId>` mientras upserta cada link candidato. Cross-reference contra `existingLinkBySourceKey` preloaded para counts `linksCreated` vs `linksUpdated`.
+4. **Stale-link sweep (property-wide, una sola pasada tras todos los events)**: link stale = `(source, sourceExternalId)` que NO volvió a aparecer en este tick. Scope property-wide a propósito — si la canonicalización movió un link a un `eventId` distinto, su key sigue en `tickLinkKeys` y el link sobrevive. Borrar por `eventId` con el bucket pre-tick mis-borraría links recién reasignados.
+5. **Retention sweep**: `deleteMany LocalEvent where propertyId AND lastSyncedAt < tick AND startsAt >= tick` — borra **solo eventos futuros** no re-surfaced en este tick. Los eventos pasados se conservan como histórico.
+
+**Invariante**: `merged.length === groups.length` — si no, throw. Los groups llevan los `members` (NormalizedEventCandidate originales) necesarios para crear los links.
+
+**JSON semantics**: `priceInfo` usa `value ?? Prisma.DbNull` — cuando falta, persiste SQL NULL en la columna (no un valor JSON `null`, cuya semántica correspondería a `Prisma.JsonNull`).
+
+Report: `{eventsCreated, eventsUpdated, eventsDeleted, linksCreated, linksUpdated, linksDeleted}`.
+
+### Scheduler + cron
+
+[scheduler.ts](../../src/lib/services/local-events/scheduler.ts) — `runLocalEventsTick({now?, horizonDays?, providers?, db?})`:
+
+- **Property scan**: `prisma.property.findMany({where: {latitude: {not: null}, longitude: {not: null}}})`. Properties sin coords se omiten silenciosamente.
+- **Providers instantiated ONCE per tick** (Firecrawl cache reuse). `buildProvidersFromEnv()` siempre devuelve los 3; claves missing producen `config_error` envelopes al llamar `fetch`.
+- **Window**: `[now, now + 60 days]`.
+- **Locale**: `property.defaultLocale === "en" ? "en" : "es"`.
+- **Per-property isolation**: cada propiedad corre en su propio `try/catch`. Un fallo DB en una propiedad produce `perProperty[i].error` sin halt del tick.
+
+Report: `{now, propertiesScanned, perProperty: [{propertyId, propertyNickname, sourceReports, mergedEventsCount, sync, error?}], providersConfigured, horizonDays}`.
+
+[src/app/api/cron/local-events/route.ts](../../src/app/api/cron/local-events/route.ts) — `POST /api/cron/local-events` con `runtime = "nodejs"`, `dynamic = "force-dynamic"`. Mirror exacto del patrón de messaging cron:
+
+- 500 `cron_secret_not_configured` si falta `process.env.CRON_SECRET`
+- 401 `unauthorized` si falta/malformado/mismatch del Bearer
+- 200 `{ok: true, report}` en éxito
+
+Schedule en `vercel.json`: `0 4 * * *` (daily 04:00 UTC).
+
+### Data model (events)
+
+Ver `docs/DATA_MODEL.md` para los modelos `LocalEvent` y `LocalEventSourceLink`.
+
+### Env vars (events sync)
+
+```bash
+# Keys para los 3 sources. Missing keys = non-fatal: provider degrade a
+# config_error envelope y el aggregator continúa con las restantes. Tick
+# con 0 keys válidas sigue siendo 200, report lleva 3 config_error entries
+# por propiedad.
+PREDICTHQ_API_KEY=
+FIRECRAWL_API_KEY=
+TICKETMASTER_API_KEY=
+CRON_SECRET=     # compartido con messaging cron
+```
+
+### Cómo añadir un nuevo source
+
+1. Implementar `LocalEventSourceProvider` en `src/lib/services/local-events/<name>-provider.ts` + mapping nativo → `le.*` en archivo propio.
+2. Añadir entry a `PROVIDER_PRIORITY` en [contracts.ts](../../src/lib/services/local-events/contracts.ts) (decide priority vs. las existentes; si quieres ganar `sourceUrl` o `imageUrl` por encima de TM/Firecrawl, añadir excepción explícita en `canonicalize.ts`).
+3. Extender `buildProvidersFromEnv` en `scheduler.ts` para instanciarlo con su env key.
+4. Añadir entry a `.env.example` con semántica de degradación documentada.
+5. Tests: happy path, config_error sin key, rate_limited, parse_error con body malformado.

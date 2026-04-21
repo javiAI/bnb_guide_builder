@@ -1,0 +1,88 @@
+{
+  "file": "local_event_categories.json",
+  "version": "2026-04-21",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "le.concert",
+      "label": "Concierto",
+      "description": "Conciertos y música en vivo en todos los géneros (rock, pop, jazz, clásica, indie, etc.).",
+      "guestLabel": "Concierto",
+      "icon": "Music",
+      "recommended": true
+    },
+    {
+      "id": "le.sports",
+      "label": "Deporte",
+      "description": "Partidos, competiciones y eventos deportivos abiertos al público.",
+      "guestLabel": "Deporte",
+      "icon": "Trophy",
+      "recommended": true
+    },
+    {
+      "id": "le.arts",
+      "label": "Artes escénicas",
+      "description": "Teatro, danza, ópera y otras artes escénicas en vivo.",
+      "guestLabel": "Artes escénicas",
+      "icon": "Drama",
+      "recommended": true
+    },
+    {
+      "id": "le.family",
+      "label": "Familiar",
+      "description": "Eventos pensados para familias con niños o público infantil.",
+      "guestLabel": "Familiar",
+      "icon": "Users",
+      "recommended": true
+    },
+    {
+      "id": "le.festival",
+      "label": "Festival",
+      "description": "Festivales de varios días de música, cultura, gastronomía o cine.",
+      "guestLabel": "Festival",
+      "icon": "PartyPopper",
+      "recommended": true
+    },
+    {
+      "id": "le.exhibition",
+      "label": "Exposición",
+      "description": "Exposiciones temporales en museos, galerías y centros culturales.",
+      "guestLabel": "Exposición",
+      "icon": "Image",
+      "recommended": false
+    },
+    {
+      "id": "le.community",
+      "label": "Comunidad",
+      "description": "Ferias locales, mercados, actividades de barrio y convocatorias comunitarias.",
+      "guestLabel": "Comunidad",
+      "icon": "Handshake",
+      "recommended": true
+    },
+    {
+      "id": "le.workshop",
+      "label": "Taller",
+      "description": "Talleres, clases y experiencias formativas abiertas al público.",
+      "guestLabel": "Taller",
+      "icon": "GraduationCap",
+      "recommended": false
+    },
+    {
+      "id": "le.nightlife",
+      "label": "Vida nocturna",
+      "description": "Fiestas, sesiones de DJ y eventos de vida nocturna organizados.",
+      "guestLabel": "Vida nocturna",
+      "icon": "Wine",
+      "recommended": false
+    },
+    {
+      "id": "le.other",
+      "label": "Otro",
+      "description": "Otros eventos relevantes que no encajan en categorías anteriores.",
+      "guestLabel": "Otro",
+      "icon": "CalendarDays",
+      "recommended": false
+    }
+  ]
+}

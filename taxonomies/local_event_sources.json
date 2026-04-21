@@ -1,0 +1,38 @@
+{
+  "file": "local_event_sources.json",
+  "version": "2026-04-21",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "key": "teruel_turismo",
+      "sourceUrl": "https://www.turismo.teruel.es/es/agenda",
+      "city": "Teruel",
+      "latitude": 40.3456,
+      "longitude": -1.1065,
+      "radiusKm": 15,
+      "language": "es",
+      "notes": "Agenda oficial de la Oficina de Turismo de Teruel. Caso central: destino pequeño real donde PHQ/TM cubren mal. Verificar disponibilidad del selector en cada refresh del DOM."
+    },
+    {
+      "key": "albarracin_turismo",
+      "sourceUrl": "https://www.turismoalbarracin.com/es/que-hacer/agenda",
+      "city": "Albarracín",
+      "latitude": 40.4075,
+      "longitude": -1.4419,
+      "radiusKm": 15,
+      "language": "es",
+      "notes": "Destino turístico pequeño/rural. Valida coverage donde PHQ/TM típicamente no aparecen. Esperar eventos con fecha variable (ferias, mercados)."
+    },
+    {
+      "key": "valencia_turismo",
+      "sourceUrl": "https://www.visitvalencia.com/es/agenda",
+      "city": "Valencia",
+      "latitude": 39.4699,
+      "longitude": -0.3763,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Ciudad grande con alto solape con PHQ/TM. Mide valor incremental de Firecrawl: ¿añade eventos locales no cubiertos (barrios, barracas, fallas minor)? Contraste contra Teruel/Albarracín."
+    }
+  ]
+}
