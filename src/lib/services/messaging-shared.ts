@@ -9,12 +9,16 @@ export const SENSITIVE_PREARRIVAL_MAX_LEAD_MINUTES =
 export const SENSITIVE_PREARRIVAL_MAX_LEAD_MS =
   SENSITIVE_PREARRIVAL_MAX_LEAD_HOURS * 60 * 60 * 1000;
 
-const TOKEN_REGEX = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+// Canonical template-token pattern: `{{ var_name }}` with optional whitespace.
+// Exported so the variable resolver and any future token-aware tooling share
+// the exact same grammar as the validator/extractor.
+export const TEMPLATE_TOKEN_REGEX =
+  /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
 
 export function extractVariableTokens(body: string): string[] {
   const seen = new Set<string>();
   const ordered: string[] = [];
-  for (const match of body.matchAll(TOKEN_REGEX)) {
+  for (const match of body.matchAll(TEMPLATE_TOKEN_REGEX)) {
     const token = match[1];
     if (!seen.has(token)) {
       seen.add(token);

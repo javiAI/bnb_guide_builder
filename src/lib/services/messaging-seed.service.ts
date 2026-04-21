@@ -227,9 +227,38 @@ export async function applyStarterPack(params: {
       },
     });
 
+    // Build slot map with explicit user > pack precedence. There is no DB
+    // unique constraint on (propertyId, touchpointKey, channelKey, language),
+    // so duplicates are theoretically possible (e.g. a stale pack row next
+    // to a user-promoted row). Any pack duplicates that lose the slot to a
+    // user row — or to another pack row — get cleaned up at the end.
     const existingBySlot = new Map<string, (typeof existing)[number]>();
+    const obsoletePackRowIds: string[] = [];
     for (const row of existing) {
-      existingBySlot.set(slotKey(row), row);
+      const key = slotKey(row);
+      const incumbent = existingBySlot.get(key);
+      if (!incumbent) {
+        existingBySlot.set(key, row);
+        continue;
+      }
+      // User always wins. If both are pack, keep the one matching the new
+      // packId (if any); otherwise keep the first and drop the later one.
+      if (row.origin === ORIGIN_USER && incumbent.origin !== ORIGIN_USER) {
+        existingBySlot.set(key, row);
+        obsoletePackRowIds.push(incumbent.id);
+      } else if (incumbent.origin === ORIGIN_USER) {
+        if (row.origin === ORIGIN_PACK) obsoletePackRowIds.push(row.id);
+      } else {
+        // both pack — prefer the one owned by the pack being applied
+        const incumbentMatches = incumbent.packId === pack.id;
+        const rowMatches = row.packId === pack.id;
+        if (rowMatches && !incumbentMatches) {
+          existingBySlot.set(key, row);
+          obsoletePackRowIds.push(incumbent.id);
+        } else {
+          obsoletePackRowIds.push(row.id);
+        }
+      }
     }
 
     const producedSlots = new Set<string>();
@@ -239,6 +268,7 @@ export async function applyStarterPack(params: {
     let userOwnedSlotsPreserved = 0;
     let automationsCreated = 0;
     let automationsUpdated = 0;
+    let automationsRemovedExtra = 0;
 
     for (const tpl of pack.templates) {
       const resolved = resolveTemplateForPropertyType(
@@ -266,17 +296,40 @@ export async function applyStarterPack(params: {
           current.subjectLine === resolved.subjectLine &&
           current.bodyMd === resolved.bodyTemplate;
 
-        const currentAutomation = await tx.messageAutomation.findFirst({
+        // Reconcile automation duplicates (defense-in-depth: there is no DB
+        // uniqueness on templateId). Keep the oldest, delete the rest.
+        const currentAutomations = await tx.messageAutomation.findMany({
           where: { templateId: current.id },
-          select: { id: true, triggerType: true, sendOffsetMinutes: true },
+          select: {
+            id: true,
+            triggerType: true,
+            sendOffsetMinutes: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "asc" },
         });
+        const canonicalAutomation = currentAutomations[0] ?? null;
+        const duplicateAutomationIds = currentAutomations
+          .slice(1)
+          .map((a) => a.id);
+        if (duplicateAutomationIds.length > 0) {
+          const { count } = await tx.messageAutomation.deleteMany({
+            where: { id: { in: duplicateAutomationIds } },
+          });
+          automationsRemovedExtra += count;
+        }
+
         const automationStable =
-          !!currentAutomation &&
-          currentAutomation.triggerType === resolved.automation.triggerType &&
-          currentAutomation.sendOffsetMinutes ===
+          !!canonicalAutomation &&
+          canonicalAutomation.triggerType === resolved.automation.triggerType &&
+          canonicalAutomation.sendOffsetMinutes ===
             resolved.automation.sendOffsetMinutes;
 
-        if (contentStable && automationStable) {
+        if (
+          contentStable &&
+          automationStable &&
+          duplicateAutomationIds.length === 0
+        ) {
           templatesUnchanged += 1;
           continue;
         }
@@ -294,10 +347,10 @@ export async function applyStarterPack(params: {
           templatesUpdated += 1;
         }
 
-        if (currentAutomation) {
+        if (canonicalAutomation) {
           if (!automationStable) {
             await tx.messageAutomation.update({
-              where: { id: currentAutomation.id },
+              where: { id: canonicalAutomation.id },
               data: {
                 triggerType: resolved.automation.triggerType,
                 sendOffsetMinutes: resolved.automation.sendOffsetMinutes,
@@ -354,13 +407,17 @@ export async function applyStarterPack(params: {
       automationsCreated += 1;
     }
 
-    // Pack-owned rows from a prior pack whose slot is not produced by the new
-    // one are left-overs and must be dropped. User rows are never touched.
-    const obsoletePackIds = existing
+    // Pack-owned rows to drop: (a) prior-pack rows whose slot is not produced
+    // by the new pack, and (b) duplicate pack rows detected while building the
+    // slot map. User rows are never touched.
+    const obsoleteFromSlotDrift = existing
       .filter(
         (row) => row.origin === ORIGIN_PACK && !producedSlots.has(slotKey(row)),
       )
       .map((row) => row.id);
+    const obsoletePackIds = Array.from(
+      new Set<string>([...obsoleteFromSlotDrift, ...obsoletePackRowIds]),
+    );
 
     let templatesRemoved = 0;
     let automationsRemoved = 0;
@@ -384,7 +441,7 @@ export async function applyStarterPack(params: {
       userOwnedSlotsPreserved,
       automationsCreated,
       automationsUpdated,
-      automationsRemoved,
+      automationsRemoved: automationsRemoved + automationsRemovedExtra,
     };
   };
 

@@ -31,7 +31,10 @@ import {
   type ResolverContext,
   type ResolverSourceUsed,
 } from "./messaging-variables-resolvers";
-import { extractVariableTokens } from "./messaging-shared";
+import {
+  extractVariableTokens,
+  TEMPLATE_TOKEN_REGEX,
+} from "./messaging-shared";
 
 // ─── Public API ──────────────────────────────────────────────────────────
 
@@ -191,13 +194,11 @@ export function levenshtein(a: string, b: string): number {
 
 // ─── Output substitution ─────────────────────────────────────────────────
 
-const SUBSTITUTION_REGEX = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
-
 function applySubstitutions(
   body: string,
   states: Record<string, VariableState>,
 ): string {
-  return body.replace(SUBSTITUTION_REGEX, (match, token: string) => {
+  return body.replace(TEMPLATE_TOKEN_REGEX, (match, token: string) => {
     const state = states[token];
     if (!state) return match;
     if (state.status === "resolved") return state.value;

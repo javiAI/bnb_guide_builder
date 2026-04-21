@@ -5,9 +5,10 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { createMock, updateMock } = vi.hoisted(() => ({
+const { createMock, updateMock, findUniqueMock } = vi.hoisted(() => ({
   createMock: vi.fn<(args: unknown) => Promise<unknown>>(),
   updateMock: vi.fn<(args: unknown) => Promise<unknown>>(),
+  findUniqueMock: vi.fn<(args: unknown) => Promise<unknown>>(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -15,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     messageTemplate: {
       create: createMock,
       update: updateMock,
+      findUnique: findUniqueMock,
     },
   },
 }));
@@ -37,8 +39,14 @@ function formData(data: Record<string, string>): FormData {
 beforeEach(() => {
   createMock.mockReset();
   updateMock.mockReset();
+  findUniqueMock.mockReset();
   createMock.mockResolvedValue({ id: "tmpl_new" });
   updateMock.mockResolvedValue({ id: "tmpl_existing" });
+  findUniqueMock.mockResolvedValue({
+    bodyMd: "existing body",
+    subjectLine: null,
+    origin: "pack",
+  });
 });
 
 describe("createMessageTemplateAction — variable gate", () => {
@@ -97,5 +105,74 @@ describe("updateMessageTemplateAction — variable gate", () => {
     const result = await updateMessageTemplateAction(null, fd);
     expect(result.success).toBe(true);
     expect(updateMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("updateMessageTemplateAction — ownership (origin/packId) semantics", () => {
+  it("detaches pack template to origin='user' when body changes", async () => {
+    findUniqueMock.mockResolvedValue({
+      bodyMd: "pack seed body",
+      subjectLine: "pack subject",
+      origin: "pack",
+    });
+    const fd = formData({
+      templateId: "tmpl_existing",
+      propertyId: "prop_1",
+      subjectLine: "pack subject",
+      bodyMd: "host edited body",
+    });
+    const result = await updateMessageTemplateAction(null, fd);
+    expect(result.success).toBe(true);
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    const call = updateMock.mock.calls[0][0] as {
+      data: { origin?: string; packId?: string | null };
+    };
+    expect(call.data.origin).toBe("user");
+    expect(call.data.packId).toBeNull();
+  });
+
+  it("does NOT detach pack template on pure status/channel toggle", async () => {
+    findUniqueMock.mockResolvedValue({
+      bodyMd: "pack seed body",
+      subjectLine: "pack subject",
+      origin: "pack",
+    });
+    const fd = formData({
+      templateId: "tmpl_existing",
+      propertyId: "prop_1",
+      subjectLine: "pack subject",
+      bodyMd: "pack seed body",
+      status: "active",
+    });
+    const result = await updateMessageTemplateAction(null, fd);
+    expect(result.success).toBe(true);
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    const call = updateMock.mock.calls[0][0] as {
+      data: { origin?: string; packId?: string | null; status?: string };
+    };
+    expect(call.data.origin).toBeUndefined();
+    expect(call.data.packId).toBeUndefined();
+    expect(call.data.status).toBe("active");
+  });
+
+  it("detaches pack template when subjectLine changes but body doesn't", async () => {
+    findUniqueMock.mockResolvedValue({
+      bodyMd: "pack seed body",
+      subjectLine: "pack subject",
+      origin: "pack",
+    });
+    const fd = formData({
+      templateId: "tmpl_existing",
+      propertyId: "prop_1",
+      subjectLine: "host rewrote subject",
+      bodyMd: "pack seed body",
+    });
+    const result = await updateMessageTemplateAction(null, fd);
+    expect(result.success).toBe(true);
+    const call = updateMock.mock.calls[0][0] as {
+      data: { origin?: string; packId?: string | null };
+    };
+    expect(call.data.origin).toBe("user");
+    expect(call.data.packId).toBeNull();
   });
 });

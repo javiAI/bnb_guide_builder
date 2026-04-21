@@ -104,10 +104,26 @@ export async function updateMessageTemplateAction(
   const unknownBlock = checkUnknownVariables(result.data.bodyMd);
   if (unknownBlock) return unknownBlock;
 
-  // Host edit → row leaves pack ownership so `applyStarterPack` won't touch it.
+  // Flip to origin="user" only when the host changed the actual copy
+  // (body or subject). Pure status/channel toggles on a pack template must
+  // NOT detach it — otherwise activating a seeded template permanently
+  // removes it from future pack refreshes.
+  const current = await prisma.messageTemplate.findUnique({
+    where: { id: templateId },
+    select: { bodyMd: true, subjectLine: true, origin: true },
+  });
+  const contentChanged =
+    !!current &&
+    (current.bodyMd !== result.data.bodyMd ||
+      (current.subjectLine ?? null) !== (result.data.subjectLine ?? null));
+
+  const ownershipPatch = contentChanged
+    ? { origin: ORIGIN_USER, packId: null }
+    : {};
+
   await prisma.messageTemplate.update({
     where: { id: templateId },
-    data: { ...result.data, origin: ORIGIN_USER, packId: null },
+    data: { ...result.data, ...ownershipPatch },
   });
 
   revalidatePath(`/properties/${propertyId}/messaging`);

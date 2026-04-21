@@ -27,7 +27,7 @@ const { prismaMock } = vi.hoisted(() => {
       update: vi.fn(),
     },
     messageAutomation: {
-      findFirst: vi.fn(),
+      findMany: vi.fn(),
       deleteMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -177,7 +177,7 @@ beforeEach(() => {
   prismaMock.messageTemplate.deleteMany.mockReset();
   prismaMock.messageTemplate.create.mockReset();
   prismaMock.messageTemplate.update.mockReset();
-  prismaMock.messageAutomation.findFirst.mockReset();
+  prismaMock.messageAutomation.findMany.mockReset();
   prismaMock.messageAutomation.deleteMany.mockReset();
   prismaMock.messageAutomation.create.mockReset();
   prismaMock.messageAutomation.update.mockReset();
@@ -456,16 +456,19 @@ describe("applyStarterPack — re-apply same pack is effectively a no-op", () =>
     const existing = rowsFromPack(SHIPPED_PACK);
     prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
 
-    prismaMock.messageAutomation.findFirst.mockImplementation(
+    prismaMock.messageAutomation.findMany.mockImplementation(
       async ({ where }: { where: { templateId: string } }) => {
         const i = existing.findIndex((r) => r.id === where.templateId);
-        if (i < 0) return null;
+        if (i < 0) return [];
         const a = SHIPPED_PACK.templates[i].automation;
-        return {
-          id: `auto_${i}`,
-          triggerType: a.triggerType,
-          sendOffsetMinutes: a.sendOffsetMinutes,
-        };
+        return [
+          {
+            id: `auto_${i}`,
+            triggerType: a.triggerType,
+            sendOffsetMinutes: a.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
       },
     );
 
@@ -494,16 +497,19 @@ describe("applyStarterPack — re-apply same pack is effectively a no-op", () =>
     const existing = rowsFromPack(SHIPPED_PACK);
     existing[0].bodyMd = "drifted body — needs refresh";
     prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
-    prismaMock.messageAutomation.findFirst.mockImplementation(
+    prismaMock.messageAutomation.findMany.mockImplementation(
       async ({ where }: { where: { templateId: string } }) => {
         const i = existing.findIndex((r) => r.id === where.templateId);
-        if (i < 0) return null;
+        if (i < 0) return [];
         const a = SHIPPED_PACK.templates[i].automation;
-        return {
-          id: `auto_${i}`,
-          triggerType: a.triggerType,
-          sendOffsetMinutes: a.sendOffsetMinutes,
-        };
+        return [
+          {
+            id: `auto_${i}`,
+            triggerType: a.triggerType,
+            sendOffsetMinutes: a.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
       },
     );
 
@@ -563,16 +569,19 @@ describe("applyStarterPack — host-edited slot (origin='user') is preserved", (
       })),
     ];
     prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
-    prismaMock.messageAutomation.findFirst.mockImplementation(
+    prismaMock.messageAutomation.findMany.mockImplementation(
       async ({ where }: { where: { templateId: string } }) => {
         const i = existing.findIndex((r) => r.id === where.templateId);
-        if (i <= 0) return null; // user row has no pack automation expected
+        if (i <= 0) return []; // user row has no pack automation expected
         const tpl = SHIPPED_PACK.templates[i];
-        return {
-          id: `auto_${i}`,
-          triggerType: tpl.automation.triggerType,
-          sendOffsetMinutes: tpl.automation.sendOffsetMinutes,
-        };
+        return [
+          {
+            id: `auto_${i}`,
+            triggerType: tpl.automation.triggerType,
+            sendOffsetMinutes: tpl.automation.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
       },
     );
 
@@ -604,7 +613,7 @@ describe("applyStarterPack — swap to a different pack", () => {
       id: `tpl_new_${nextId++}`,
     }));
     prismaMock.messageAutomation.create.mockResolvedValue({});
-    prismaMock.messageAutomation.findFirst.mockResolvedValue(null);
+    prismaMock.messageAutomation.findMany.mockResolvedValue([]);
   });
 
   it("updates overlapping slots in place and removes obsolete pack rows — never touches user rows", async () => {
@@ -627,17 +636,20 @@ describe("applyStarterPack — swap to a different pack", () => {
       ...priorPackRows,
       userRow,
     ]);
-    prismaMock.messageAutomation.findFirst.mockImplementation(
+    prismaMock.messageAutomation.findMany.mockImplementation(
       async ({ where }: { where: { templateId: string } }) => {
         const row = priorPackRows.find((r) => r.id === where.templateId);
-        if (!row) return null;
+        if (!row) return [];
         const i = priorPackRows.indexOf(row);
         const a = SHIPPED_PACK.templates[i].automation;
-        return {
-          id: `auto_prior_${i}`,
-          triggerType: a.triggerType,
-          sendOffsetMinutes: a.sendOffsetMinutes,
-        };
+        return [
+          {
+            id: `auto_prior_${i}`,
+            triggerType: a.triggerType,
+            sendOffsetMinutes: a.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
       },
     );
     prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 0 });
@@ -702,7 +714,7 @@ describe("applyStarterPack — propertyType override selection", () => {
       id: `tpl_${nextId++}`,
     }));
     prismaMock.messageAutomation.create.mockResolvedValue({});
-    prismaMock.messageAutomation.findFirst.mockResolvedValue(null);
+    prismaMock.messageAutomation.findMany.mockResolvedValue([]);
   });
 
   it("picks matching override when propertyType matches", async () => {
@@ -787,5 +799,172 @@ describe("previewPack", () => {
     await expect(
       previewPack("msp.does_not_exist", FIXTURE_PROPERTY.id),
     ).rejects.toThrow(/Unknown starter pack/);
+  });
+});
+
+// ── Duplicate pack rows per slot get cleaned up ──
+
+describe("applyStarterPack — duplicate pack rows for a slot are de-duped", () => {
+  beforeEach(() => {
+    prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
+    prismaMock.messageTemplate.create.mockResolvedValue({ id: "tpl_new" });
+    prismaMock.messageAutomation.create.mockResolvedValue({});
+    prismaMock.messageAutomation.findMany.mockResolvedValue([]);
+    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 0 });
+  });
+
+  it("deletes the duplicate pack row (any packId) when two rows share the same slot", async () => {
+    const canonical = rowsFromPack(SHIPPED_PACK, { idPrefix: "tpl_canon_" });
+    const duplicate = {
+      ...canonical[0],
+      id: "tpl_dup_ghost",
+      packId: "msp.other_pack",
+      bodyMd: "ghost body from a stale pack",
+    };
+    const rows = [...canonical, duplicate];
+    prismaMock.messageTemplate.findMany.mockResolvedValue(rows);
+    prismaMock.messageAutomation.findMany.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        const i = canonical.findIndex((r) => r.id === where.templateId);
+        if (i < 0) return [];
+        const a = SHIPPED_PACK.templates[i].automation;
+        return [
+          {
+            id: `auto_${i}`,
+            triggerType: a.triggerType,
+            sendOffsetMinutes: a.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
+      },
+    );
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 1 });
+
+    await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+
+    expect(prismaMock.messageTemplate.deleteMany).toHaveBeenCalledTimes(1);
+    const deletedIds =
+      prismaMock.messageTemplate.deleteMany.mock.calls[0][0].where.id.in;
+    expect(deletedIds).toContain(duplicate.id);
+    expect(deletedIds).not.toContain(canonical[0].id);
+  });
+
+  it("user row beats a pack duplicate on the same slot (pack row is deleted)", async () => {
+    const firstTpl = SHIPPED_PACK.templates[0];
+    const userRow = {
+      id: "tpl_user_winner",
+      touchpointKey: firstTpl.touchpointKey,
+      channelKey: firstTpl.channelKey,
+      language: SHIPPED_PACK.language,
+      origin: "user" as const,
+      packId: null,
+      subjectLine: "user subj",
+      bodyMd: "user body",
+    };
+    const rivalPackRow = {
+      id: "tpl_pack_rival",
+      touchpointKey: firstTpl.touchpointKey,
+      channelKey: firstTpl.channelKey,
+      language: SHIPPED_PACK.language,
+      origin: "pack" as const,
+      packId: SHIPPED_PACK.id,
+      subjectLine: firstTpl.subjectLine ?? null,
+      bodyMd: firstTpl.bodyTemplate,
+    };
+    prismaMock.messageTemplate.findMany.mockResolvedValue([
+      userRow,
+      rivalPackRow,
+    ]);
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 1 });
+
+    const result = await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+
+    expect(result.userOwnedSlotsPreserved).toBe(1);
+    expect(prismaMock.messageTemplate.deleteMany).toHaveBeenCalledTimes(1);
+    const deletedIds =
+      prismaMock.messageTemplate.deleteMany.mock.calls[0][0].where.id.in;
+    expect(deletedIds).toContain(rivalPackRow.id);
+    expect(deletedIds).not.toContain(userRow.id);
+  });
+});
+
+// ── Automation duplicates for one template are reconciled ──
+
+describe("applyStarterPack — automation duplicates are reconciled", () => {
+  beforeEach(() => {
+    prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
+    prismaMock.messageTemplate.create.mockResolvedValue({ id: "tpl_new" });
+    prismaMock.messageAutomation.create.mockResolvedValue({});
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 0 });
+  });
+
+  it("keeps the oldest automation and deletes the rest", async () => {
+    const existing = rowsFromPack(SHIPPED_PACK);
+    prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
+
+    const firstTplId = existing[0].id;
+    const firstAutomation = SHIPPED_PACK.templates[0].automation;
+
+    prismaMock.messageAutomation.findMany.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        if (where.templateId === firstTplId) {
+          return [
+            {
+              id: "auto_canonical",
+              triggerType: firstAutomation.triggerType,
+              sendOffsetMinutes: firstAutomation.sendOffsetMinutes,
+              createdAt: new Date("2024-01-01"),
+            },
+            {
+              id: "auto_dup_a",
+              triggerType: firstAutomation.triggerType,
+              sendOffsetMinutes: firstAutomation.sendOffsetMinutes,
+              createdAt: new Date("2024-06-01"),
+            },
+            {
+              id: "auto_dup_b",
+              triggerType: firstAutomation.triggerType,
+              sendOffsetMinutes: firstAutomation.sendOffsetMinutes,
+              createdAt: new Date("2024-09-01"),
+            },
+          ];
+        }
+        const i = existing.findIndex((r) => r.id === where.templateId);
+        if (i < 0) return [];
+        const a = SHIPPED_PACK.templates[i].automation;
+        return [
+          {
+            id: `auto_${i}`,
+            triggerType: a.triggerType,
+            sendOffsetMinutes: a.sendOffsetMinutes,
+            createdAt: new Date(),
+          },
+        ];
+      },
+    );
+    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 2 });
+
+    const result = await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+
+    // The deleteMany call for duplicate automations uses id.in (not templateId.in)
+    const autoDeleteCalls = prismaMock.messageAutomation.deleteMany.mock.calls;
+    const dupDeleteCall = autoDeleteCalls.find(
+      (c) => c[0].where.id?.in?.includes?.("auto_dup_a"),
+    );
+    expect(dupDeleteCall).toBeDefined();
+    expect(dupDeleteCall![0].where.id.in).toEqual(
+      expect.arrayContaining(["auto_dup_a", "auto_dup_b"]),
+    );
+    expect(dupDeleteCall![0].where.id.in).not.toContain("auto_canonical");
+    expect(result.automationsRemoved).toBeGreaterThanOrEqual(2);
   });
 });
