@@ -91,7 +91,12 @@ function fromFamily<T>(
 function uniqueContributing(
   candidates: ReadonlyArray<NormalizedEventCandidate>,
 ): string[] {
-  return Array.from(new Set(candidates.map((c) => c.source))).sort();
+  return Array.from(new Set(candidates.map((c) => c.source))).sort((a, b) => {
+    const pa = familyPriority(a);
+    const pb = familyPriority(b);
+    if (pa !== pb) return pb - pa;
+    return a.localeCompare(b);
+  });
 }
 
 // ── Merge ──

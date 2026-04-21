@@ -87,6 +87,12 @@ export async function aggregateLocalEvents(
       aggregatorWarnings,
     );
 
+    if (envelope.source !== provider.source) {
+      aggregatorWarnings.push(
+        `${provider.source} returned envelope with mismatched source "${envelope.source}" — attributing to provider identity`,
+      );
+    }
+
     const inWindow: NormalizedEventCandidate[] = [];
     for (const ev of envelope.events) {
       const t = ev.startsAt.getTime();
@@ -100,7 +106,7 @@ export async function aggregateLocalEvents(
     }
 
     reports.push({
-      source: envelope.source,
+      source: provider.source,
       status: envelope.status,
       candidateCount: inWindow.length,
       warnings: envelope.warnings,

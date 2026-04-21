@@ -105,8 +105,8 @@ export async function syncLocalEventsForProperty(
 
       const existed = existingByCanonicalKey.has(m.canonicalKey);
 
-      const priceInfoForDb: Prisma.InputJsonValue | typeof Prisma.JsonNull =
-        m.priceInfo ? (m.priceInfo as Prisma.InputJsonValue) : Prisma.JsonNull;
+      const priceInfoForDb: Prisma.InputJsonValue | typeof Prisma.DbNull =
+        m.priceInfo ? (m.priceInfo as Prisma.InputJsonValue) : Prisma.DbNull;
 
       const upserted = await tx.localEvent.upsert({
         where: {

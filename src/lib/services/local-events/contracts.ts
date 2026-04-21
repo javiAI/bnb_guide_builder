@@ -230,7 +230,11 @@ export interface LocalEventSourceProvider {
    * uniqueness contract depends on it. Patterns:
    *   - "predicthq"
    *   - "ticketmaster"
-   *   - "firecrawl:<curatedKey>"  (one instance per curated source) */
+   *   - "firecrawl"  (single provider family identifier)
+   *
+   * Note: Firecrawl emits per-curated-source provenance on mapped candidates
+   * as `firecrawl:<curatedKey>`, but the provider's own stable identifier
+   * remains just `"firecrawl"`. */
   readonly source: string;
 
   /** Relative priority used by the aggregator to (a) pick `primarySource`

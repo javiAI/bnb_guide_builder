@@ -118,8 +118,8 @@ describe("aggregateLocalEvents — happy path", () => {
     expect(m.imageUrl).toBe("https://turismoteruel.es/img.jpg");
     expect(m.descriptionMd).toBe("Desc PHQ");
     expect(m.contributingSources).toEqual([
-      "firecrawl:teruel_turismo",
       "predicthq",
+      "firecrawl:teruel_turismo",
       "ticketmaster",
     ]);
     expect(m.confidence).toBeCloseTo(0.9, 3);

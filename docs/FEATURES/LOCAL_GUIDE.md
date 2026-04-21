@@ -138,7 +138,7 @@ Cada envelope lleva `warnings[]`, `fetchedAt`, `durationMs` y opcional `error {k
 
 #### PredictHQ
 
-[predicthq-provider.ts](../../src/lib/services/local-events/predicthq-provider.ts) — hits `api.predicthq.com/v1/events/` con `within={radius}km@{lat},{lng}` + `start.gte/lte` + `category=concerts,festivals,performing-arts,sports,community,expos,public-holidays`. Mapping nativo → `le.*` en tabla interna (longest-match). Sin `PREDICTHQ_API_KEY` emite `config_error` sin pegar a la red.
+[predicthq-provider.ts](../../src/lib/services/local-events/predicthq-provider.ts) — hits `api.predicthq.com/v1/events/` con `within={radius}km@{lat},{lng}` + `active.gte/lte` + `category=concerts,sports,performing-arts,festivals,community,expos,conferences`. Mapping nativo → `le.*` en tabla interna (longest-match). Sin `PREDICTHQ_API_KEY` emite `config_error` sin pegar a la red.
 
 #### Firecrawl
 
@@ -154,9 +154,9 @@ Cada envelope lleva `warnings[]`, `fetchedAt`, `durationMs` y opcional `error {k
 
 ```ts
 aggregateLocalEvents(providers, params) → {
-  merged: NormalizedEventCandidate[],   // canonicalized + merged
+  merged: MergedCanonicalEvent[],       // canonicalized + merged (post-merge canonical rows)
   groups: CanonicalEventGroup[],        // 1:1 con merged, preserva members para persistence
-  sourceReports: SourceReport[],         // un entry por provider (status, counts, warnings)
+  sourceReports: AggregatedSourceReport[], // un entry por provider (status, counts, warnings)
 }
 ```
 
@@ -168,11 +168,11 @@ aggregateLocalEvents(providers, params) → {
 
 [canonicalize.ts](../../src/lib/services/local-events/canonicalize.ts) implementa un **3-tier matcher** cross-source:
 
-1. **Strong match** — mismo `(normalizedTitle, startsAt ±2h, venueName?)` → merge obligatorio.
-2. **Heuristic match** — overlap sobre `(normalizedTitle + startsAt ±6h)` con similarity ≥0.85 → merge si no hay conflicto de venue distinto.
-3. **No match** — se quedan como candidates separados.
+1. **Strong match** — `normalizeTitle` exacto + mismo `startSlot` (15-minute floor de `startsAt.getTime()`) + igualdad de `normalizeVenue` solo cuando ambos lados lo exponen (si un lado omite venue, title+slot basta).
+2. **Heuristic match** — `startSlot` dentro de ±4 slots (60 min) + Jaccard de tokens de título ≥ 0.60 + acuerdo de venue exacto **o** proximidad geográfica ≤500m (`haversineMeters` desde `places/distance.ts`). Genera warning `heuristically merged ... — verify`.
+3. **No match** — se quedan como canonical groups separados (dedupe conservador: preferimos duplicado visible a merge equivocado).
 
-`canonicalKey` = sha256(16) de `{normalizedTitle|startsAtHour|propertyId}` — estable across ticks mientras el título normalizado no cambie.
+`canonicalKey` = `createHash("sha256").update(parts).digest("hex").slice(0, 20)` sobre `normalizedTitle|startSlot|normalizedVenue` — estable across ticks mientras el título normalizado, el slot de 15min y el venue normalizado no cambien.
 
 **Merge per-field**:
 
