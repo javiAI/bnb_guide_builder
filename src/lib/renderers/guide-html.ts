@@ -120,7 +120,16 @@ export function renderHtml(tree: GuideTree): string {
     for (const item of renderable) {
       renderItem(item, out);
     }
-    out.push("</ul></section>");
+    out.push("</ul>");
+    if (section.resolverKey === "local") {
+      // Map and upcoming-events listing are interactive features of the web
+      // guide; the static HTML export notes their existence without
+      // attempting to render tiles or cards offline.
+      out.push(
+        '<p class="gt-note">Mapa y próximos eventos disponibles en la guía online.</p>',
+      );
+    }
+    out.push("</section>");
   }
   out.push("</article>");
   return out.join("");

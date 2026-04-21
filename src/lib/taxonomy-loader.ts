@@ -1017,6 +1017,12 @@ const GuideSectionConfigSchema = z
     resolverKey: z.enum(GUIDE_RESOLVER_KEYS),
     emptyCtaDeepLink: z.string().min(1).nullable(),
     includesMedia: z.boolean(),
+    // Rama 13C: only `gs.local` sets these today. They gate the two
+    // sub-renderers ("map pins + obfuscated zone" and "upcoming events
+    // listing"). Optional/defaulting false keeps other sections unchanged
+    // and the schema additive.
+    includesMap: z.boolean().optional(),
+    includesEvents: z.boolean().optional(),
     offlineCacheTier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     journeyStage: z.enum(GUIDE_JOURNEY_STAGES).optional(),
     isHero: z.boolean().optional(),

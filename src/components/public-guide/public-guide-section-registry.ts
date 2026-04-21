@@ -19,7 +19,14 @@ export type PublicSectionComponent = FC<{
 
 /** Maps a section's `resolverKey` to its renderer. The default `SectionCard`
  * covers "list of items + empty state"; specialized entries only exist when
- * the UX needs more (hero = quick actions, emergency = tappable phone/email). */
+ * the UX needs more (hero = quick actions, emergency = tappable phone/email).
+ *
+ * `local` is special-cased upstream in `guide-renderer.tsx` because it takes
+ * two extra data props (map + events) that no other section consumes — keeping
+ * that registry uniform avoids leaking those optionals into every renderer.
+ * Falling through to `SectionCard` here is a defence-in-depth default for
+ * trees that somehow reach the registry with `resolverKey: "local"` without
+ * the dedicated route (e.g. a future snapshot format change). */
 export const PUBLIC_GUIDE_SECTION_REGISTRY: Record<
   GuideResolverKey,
   PublicSectionComponent

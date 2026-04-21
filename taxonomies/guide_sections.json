@@ -129,6 +129,8 @@
       "resolverKey": "local",
       "emptyCtaDeepLink": "/properties/{propertyId}/local-guide",
       "includesMedia": false,
+      "includesMap": true,
+      "includesEvents": true,
       "offlineCacheTier": 3,
       "journeyStage": "stay",
       "emptyCopy": "Añade lugares cercanos, restaurantes recomendados y consejos del barrio.",

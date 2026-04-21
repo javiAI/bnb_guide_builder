@@ -55,6 +55,7 @@ import {
   loadEntityMedia,
   mediaKey,
 } from "@/lib/services/guide-media.service";
+import { getLocalPlacesForProperty } from "@/lib/services/guide-local-data";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
 const PROPERTY_COVER_LABEL = "La casa";
@@ -227,20 +228,9 @@ async function loadGuideContext(
       visibility: true,
     },
   });
-  const localPlacesPromise = prisma.localPlace.findMany({
-    where: { propertyId },
-    orderBy: [{ name: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      categoryKey: true,
-      name: true,
-      guestDescription: true,
-      aiNotes: true,
-      distanceMeters: true,
-      hoursText: true,
-      visibility: true,
-    },
-  });
+  // Routed through the request-cached helper so the map/events builders
+  // in `guide-map.service.ts` dedupe the query with this resolver.
+  const localPlacesPromise = getLocalPlacesForProperty(propertyId);
 
   // Media load needs property + spaces + amenity instances for entity labels.
   // Wait for those three, then run the media query in parallel with contacts

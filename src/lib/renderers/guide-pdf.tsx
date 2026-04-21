@@ -102,6 +102,11 @@ function GuideDocument({ tree }: { tree: GuideTree }) {
                   <ItemView key={item.id} item={item} depth={0} />
                 ))
               )}
+              {section.resolverKey === "local" ? (
+                <Text style={styles.empty}>
+                  Mapa y próximos eventos disponibles en la guía online.
+                </Text>
+              ) : null}
             </View>
           );
         })}

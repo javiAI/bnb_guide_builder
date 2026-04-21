@@ -1,0 +1,77 @@
+import dynamic from "next/dynamic";
+import type {
+  GuideAudience,
+  GuideItem as GuideItemType,
+  GuideSection,
+} from "@/lib/types/guide-tree";
+import type {
+  GuideLocalEventsData,
+  GuideMapData,
+} from "@/lib/types/guide-map";
+import { resolveEmptyCopy } from "@/lib/renderers/_guide-display";
+import { GuideItem } from "./guide-item";
+import { GuideEmptyState } from "./guide-empty-state";
+import { GuideLocalEventCard } from "./guide-local-event-card";
+
+const GuideMap = dynamic(
+  () => import("../guide-map").then((m) => m.GuideMap),
+  { ssr: false },
+);
+
+interface Props {
+  section: GuideSection;
+  renderable: GuideItemType[];
+  audience: GuideAudience;
+  mapData: GuideMapData | null;
+  eventsData: GuideLocalEventsData;
+}
+
+/** The map is loaded via `dynamic(..., { ssr: false })` — MapLibre touches
+ * `window` on import, so server-rendering it would throw. */
+export function GuideLocalSection({
+  section,
+  renderable,
+  audience,
+  mapData,
+  eventsData,
+}: Props) {
+  const emptyCopy = resolveEmptyCopy(section, audience);
+  const hasMap =
+    mapData !== null && (mapData.anchor !== null || mapData.pins.length > 0);
+  const hasEvents = eventsData.items.length > 0;
+  const hasPlaces = renderable.length > 0;
+
+  return (
+    <section
+      id={section.id}
+      className="guide-section"
+      aria-labelledby={`${section.id}-title`}
+    >
+      <header className="guide-section__header">
+        <h2 id={`${section.id}-title`} className="guide-section__title">
+          {section.label}
+        </h2>
+      </header>
+      <div className="guide-local">
+        {hasMap ? <GuideMap data={mapData} /> : null}
+        {hasPlaces ? (
+          <div className="guide-items">
+            {renderable.map((item) => (
+              <GuideItem key={item.id} item={item} />
+            ))}
+          </div>
+        ) : null}
+        {hasEvents ? (
+          <div className="guide-events" aria-label="Próximos eventos">
+            {eventsData.items.map((event) => (
+              <GuideLocalEventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : null}
+        {!hasMap && !hasPlaces && !hasEvents ? (
+          <GuideEmptyState copy={emptyCopy ?? undefined} />
+        ) : null}
+      </div>
+    </section>
+  );
+}
