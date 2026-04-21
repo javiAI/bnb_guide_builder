@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { deleteLocalPlaceAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
+import { formatDistance } from "@/lib/services/places";
 
 interface LocalPlaceCardProps {
   propertyId: string;
@@ -29,7 +30,7 @@ export function LocalPlaceCard({ propertyId, place }: LocalPlaceCardProps) {
         <div className="mt-0.5 flex gap-3 text-xs text-[var(--color-neutral-500)]">
           {place.shortNote && <span>{place.shortNote}</span>}
           {place.distanceMeters != null && (
-            <span>{place.distanceMeters} m</span>
+            <span>{formatDistance(place.distanceMeters)}</span>
           )}
         </div>
       </div>

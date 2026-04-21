@@ -1,0 +1,120 @@
+{
+  "file": "local_place_categories.json",
+  "version": "2026-04-21",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "lp.restaurant",
+      "label": "Restaurante",
+      "description": "Lugares para comer platos principales, desde casual hasta formal.",
+      "guestLabel": "Restaurante",
+      "icon": "Utensils",
+      "recommended": true
+    },
+    {
+      "id": "lp.cafe",
+      "label": "Cafetería",
+      "description": "Cafeterías, pastelerías y locales de brunch.",
+      "guestLabel": "Cafetería",
+      "icon": "Coffee",
+      "recommended": true
+    },
+    {
+      "id": "lp.bar",
+      "label": "Bar",
+      "description": "Bares, coctelerías y locales de copas.",
+      "guestLabel": "Bar",
+      "icon": "Wine",
+      "recommended": false
+    },
+    {
+      "id": "lp.supermarket",
+      "label": "Supermercado",
+      "description": "Supermercados, tiendas de alimentación y mercados.",
+      "guestLabel": "Supermercado",
+      "icon": "ShoppingCart",
+      "recommended": true
+    },
+    {
+      "id": "lp.pharmacy",
+      "label": "Farmacia",
+      "description": "Farmacias y parafarmacias cercanas.",
+      "guestLabel": "Farmacia",
+      "icon": "Pill",
+      "recommended": true
+    },
+    {
+      "id": "lp.hospital",
+      "label": "Hospital",
+      "description": "Hospitales, clínicas y centros médicos.",
+      "guestLabel": "Hospital",
+      "icon": "Hospital",
+      "recommended": false
+    },
+    {
+      "id": "lp.transport",
+      "label": "Transporte",
+      "description": "Paradas de metro, bus, tren y estaciones cercanas.",
+      "guestLabel": "Transporte",
+      "icon": "TrainFront",
+      "recommended": true
+    },
+    {
+      "id": "lp.parking",
+      "label": "Parking",
+      "description": "Parkings públicos de pago cercanos a la propiedad.",
+      "guestLabel": "Parking",
+      "icon": "Car",
+      "recommended": false
+    },
+    {
+      "id": "lp.attraction",
+      "label": "Atracción",
+      "description": "Atracciones turísticas, monumentos y puntos de interés.",
+      "guestLabel": "Atracción",
+      "icon": "Landmark",
+      "recommended": false
+    },
+    {
+      "id": "lp.beach",
+      "label": "Playa",
+      "description": "Playas, calas y zonas de baño.",
+      "guestLabel": "Playa",
+      "icon": "Umbrella",
+      "recommended": false
+    },
+    {
+      "id": "lp.park",
+      "label": "Parque",
+      "description": "Parques, jardines y zonas verdes.",
+      "guestLabel": "Parque",
+      "icon": "Trees",
+      "recommended": false
+    },
+    {
+      "id": "lp.gym",
+      "label": "Gimnasio",
+      "description": "Gimnasios, estudios de fitness y centros deportivos.",
+      "guestLabel": "Gimnasio",
+      "icon": "Dumbbell",
+      "recommended": false
+    },
+    {
+      "id": "lp.laundry",
+      "label": "Lavandería",
+      "description": "Lavanderías autoservicio y tintorerías.",
+      "guestLabel": "Lavandería",
+      "icon": "WashingMachine",
+      "recommended": false
+    },
+    {
+      "id": "lp.other",
+      "label": "Otro",
+      "description": "Otros lugares relevantes que no encajan en categorías anteriores.",
+      "guestLabel": "Otro",
+      "icon": "MapPin",
+      "recommended": false
+    }
+  ]
+}

@@ -53,6 +53,7 @@
 - `POST /api/properties/:propertyId/local-places`
 - `GET /api/local-places/:localPlaceId`
 - `PATCH /api/local-places/:localPlaceId`
+- `GET /api/properties/:propertyId/places-search?q=<2-120>&limit=<1-15>&lang=es|en` — Host-only typeahead (Rama 13A). Anchor lat/lng derived server-side from `Property.latitude`/`longitude` (never trusted from query). Responses: `200 { suggestions: PoiSuggestion[], provider }`, `400 invalid_query`, `404 not_found`, `409 property_missing_coordinates`, `429 rate_limited` (30 req/60s/propertyId sliding window; `Retry-After` header), `502 provider_unavailable`, `503 provider_not_configured`. `Cache-Control: no-store`. Rate limiter runs **after** the property lookup so 404/409 don't drain the quota. Provider is env-selectable: `LOCAL_POI_PROVIDER` ∈ {`maptiler`, `mock`} (default `maptiler`); missing `MAPTILER_API_KEY` in prod → fail-fast, in dev → degrades to mock.
 
 - `GET /api/properties/:propertyId/ops/checklist`
 - `POST /api/properties/:propertyId/ops/checklist`

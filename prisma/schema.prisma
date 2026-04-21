@@ -436,6 +436,13 @@ model LocalPlace {
   linkUrl          String?         @map("link_url")
   bestFor          String?         @map("best_for")
   seasonalNotes    String?         @map("seasonal_notes")
+  latitude         Float?
+  longitude        Float?
+  address          String?
+  website          String?
+  provider         String?
+  providerPlaceId  String?         @map("provider_place_id")
+  providerMetadata Json?           @map("provider_metadata")
   verifiedAt       DateTime?       @map("verified_at")
   visibility       VisibilityLevel @default(guest)
   createdAt        DateTime        @default(now()) @map("created_at")
@@ -443,6 +450,7 @@ model LocalPlace {
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
+  @@unique([propertyId, provider, providerPlaceId], map: "local_places_property_provider_place_unique")
   @@index([propertyId])
   @@index([propertyId, categoryKey])
   @@map("local_places")

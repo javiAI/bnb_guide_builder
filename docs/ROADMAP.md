@@ -39,7 +39,7 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 | 15 | Liora Design Replatform | 7 | Bloqueada | depende de entrega del paquete de diseño |
 
-**Total plan V2**: 16 ramas ✅ completadas + 11A + 11B + 11C + 11D + 11E + 11F + 12A + 12B + 12C. Siguiente funcional: **Fase 13A** — Guía local.
+**Total plan V2**: 16 ramas ✅ completadas + 11A + 11B + 11C + 11D + 11E + 11F + 12A + 12B + 12C + 13A. Siguiente funcional: **Fase 13B** — eventos locales.
 
 **Fase 15 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-14. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 para scope y ramas 15A-G.
 
@@ -114,7 +114,8 @@ La infraestructura del pipeline guest está completa: `composeGuide → filterBy
 
 ### Progreso Fase 13 (2026-04-17 revisada: 3→4 ramas)
 
-- ⏳ **13A** `feat/local-pois-autosuggest` · **13B** `feat/local-events-sync` · **13C** `feat/guide-maps-embedded` · **13D** `feat/guide-issue-reporting` (nueva — reporte de problemas desde `/g/:slug` con foto, notificación al host y track-URL).
+- ✅ **13A** `feat/local-pois-autosuggest` — provider-agnostic (MapTiler + Mock), host typeahead con geo + provenance en `LocalPlace`.
+- ⏳ **13B** `feat/local-events-sync` · **13C** `feat/guide-maps-embedded` · **13D** `feat/guide-issue-reporting` (nueva — reporte de problemas desde `/g/:slug` con foto, notificación al host y track-URL).
 
 ### Orden sugerido
 

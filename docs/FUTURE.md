@@ -306,3 +306,29 @@ Un paso al final del wizard (o un campo en un paso existente) para preselecciona
 5. Doc en `MESSAGING_AUTOMATION.md §6.4`.
 
 Sin demanda explícita y sin métricas de conversion del empty-state actual, el hook queda pospuesto.
+
+## 17. Google Places provider para POI autosuggest
+
+### Cómo funciona hoy (rama 13A)
+
+El autosuggest de POIs usa `LocalPoiProvider` — una abstracción agnóstica con dos implementaciones: `MapTilerPlacesProvider` (prod) y `MockPlacesProvider` (dev/test). La selección va por `LOCAL_POI_PROVIDER` env var (default `maptiler`). El mapeo de categorías nativas → `lp.*` vive en un archivo aparte (`maptiler-category-mapping.ts`) con patterns priorizados. Ver `docs/FEATURES/LOCAL_GUIDE.md`.
+
+### Qué añadiría Google Places
+
+Implementación paralela `GooglePlacesProvider` para hosts en mercados donde MapTiler tiene baja cobertura de POI (p.ej. LatAm). Google Places Autocomplete + Place Details tiene mejor cobertura absoluta pero pricing por request distinto (≈ $17/1000 autocomplete + details vs MapTiler $0.25/1000 geocoding).
+
+### Scope de implementación
+
+1. `src/lib/services/places/google-provider.ts` — implementa `LocalPoiProvider` con la Autocomplete + Details API (la UI actual espera un solo call con lat/lng resuelto, así que Details es obligatorio).
+2. `src/lib/services/places/google-category-mapping.ts` — mapeo de `types[]` (`restaurant`, `supermarket`, `pharmacy`, ...) → `lp.*`.
+3. `resolveLocalPoiProvider()` extendido con un tercer branch `envChoice === "google"` + fingerprint update (`GOOGLE_PLACES_API_KEY`).
+4. Contract test compartido (`src/test/places-provider-contract.test.ts`) pasando factory de Google.
+5. Tests de parsing + mapeo + error paths (plantilla: `places-maptiler-provider.test.ts`).
+
+### Por qué no está en 13A
+
+- Un solo provider cubre el caso general; añadir Google sin demanda concreta = mantener dos integraciones (rate limit, billing, keys).
+- El contrato provider-agnostic ya está sellado — añadir Google es aditivo, no refactor.
+- La UI y el pipeline ignoran qué provider respondió (solo queda `provider` persistido en `LocalPlace.provider` para auditoría).
+
+Esperar demanda de un mercado concreto antes de escribir el segundo provider.
