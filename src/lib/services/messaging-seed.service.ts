@@ -16,11 +16,9 @@ import {
   resolveVariables,
   type ResolutionResult,
 } from "@/lib/services/messaging-variables.service";
-import { MESSAGE_TEMPLATE_ORIGINS } from "@/lib/services/messaging-shared";
+import { ORIGIN_PACK, ORIGIN_USER } from "@/lib/services/messaging-shared";
 
 type Db = PrismaClient | Prisma.TransactionClient;
-
-const ORIGIN_PACK: (typeof MESSAGE_TEMPLATE_ORIGINS)[1] = "pack";
 
 export interface StarterPackSummary {
   id: string;
@@ -61,9 +59,13 @@ export interface StarterPackPreview {
 export interface ApplyStarterPackResult {
   packId: string;
   templatesCreated: number;
+  templatesUpdated: number;
+  templatesUnchanged: number;
+  templatesRemoved: number;
+  userOwnedSlotsPreserved: number;
   automationsCreated: number;
-  replacedTemplates: number;
-  replacedAutomations: number;
+  automationsUpdated: number;
+  automationsRemoved: number;
 }
 
 function summarise(pack: MessagingStarterPack): StarterPackSummary {
@@ -177,6 +179,18 @@ export async function previewPack(
   };
 }
 
+// Equivalence key for "same slot" — a pack must never compete with a user row,
+// nor duplicate an existing pack row, for the same (touchpoint, channel, language).
+// `channelKey` is nullable at the DB layer; legacy rows without a channel share
+// a distinct slot from any pack template (which always carries a channelKey).
+function slotKey(parts: {
+  touchpointKey: string;
+  channelKey: string | null;
+  language: string;
+}): string {
+  return `${parts.touchpointKey}|${parts.channelKey ?? ""}|${parts.language}`;
+}
+
 export async function applyStarterPack(params: {
   packId: string;
   propertyId: string;
@@ -193,37 +207,122 @@ export async function applyStarterPack(params: {
   const run = async (tx: Db): Promise<ApplyStarterPackResult> => {
     const property = await tx.property.findUnique({
       where: { id: propertyId },
-      select: { id: true, propertyType: true, defaultLocale: true },
+      select: { id: true, propertyType: true },
     });
     if (!property) {
       throw new Error(`Unknown property "${propertyId}"`);
     }
 
-    const previousPackTemplates = await tx.messageTemplate.findMany({
-      where: { propertyId, origin: ORIGIN_PACK },
-      select: { id: true },
+    const existing = await tx.messageTemplate.findMany({
+      where: { propertyId, origin: { in: [ORIGIN_USER, ORIGIN_PACK] } },
+      select: {
+        id: true,
+        touchpointKey: true,
+        channelKey: true,
+        language: true,
+        origin: true,
+        packId: true,
+        subjectLine: true,
+        bodyMd: true,
+      },
     });
-    const previousIds = previousPackTemplates.map((t) => t.id);
 
-    let replacedAutomations = 0;
-    if (previousIds.length > 0) {
-      const { count } = await tx.messageAutomation.deleteMany({
-        where: { templateId: { in: previousIds } },
-      });
-      replacedAutomations = count;
-      await tx.messageTemplate.deleteMany({
-        where: { id: { in: previousIds } },
-      });
+    const existingBySlot = new Map<string, (typeof existing)[number]>();
+    for (const row of existing) {
+      existingBySlot.set(slotKey(row), row);
     }
 
+    const producedSlots = new Set<string>();
     let templatesCreated = 0;
+    let templatesUpdated = 0;
+    let templatesUnchanged = 0;
+    let userOwnedSlotsPreserved = 0;
     let automationsCreated = 0;
+    let automationsUpdated = 0;
 
     for (const tpl of pack.templates) {
       const resolved = resolveTemplateForPropertyType(
         tpl,
         property.propertyType,
       );
+      const key = slotKey({
+        touchpointKey: resolved.touchpointKey,
+        channelKey: resolved.channelKey,
+        language: pack.language,
+      });
+      producedSlots.add(key);
+
+      const current = existingBySlot.get(key);
+
+      // Host owns this slot — never create a competing pack row.
+      if (current?.origin === ORIGIN_USER) {
+        userOwnedSlotsPreserved += 1;
+        continue;
+      }
+
+      if (current?.origin === ORIGIN_PACK) {
+        const contentStable =
+          current.packId === pack.id &&
+          current.subjectLine === resolved.subjectLine &&
+          current.bodyMd === resolved.bodyTemplate;
+
+        const currentAutomation = await tx.messageAutomation.findFirst({
+          where: { templateId: current.id },
+          select: { id: true, triggerType: true, sendOffsetMinutes: true },
+        });
+        const automationStable =
+          !!currentAutomation &&
+          currentAutomation.triggerType === resolved.automation.triggerType &&
+          currentAutomation.sendOffsetMinutes ===
+            resolved.automation.sendOffsetMinutes;
+
+        if (contentStable && automationStable) {
+          templatesUnchanged += 1;
+          continue;
+        }
+
+        if (!contentStable) {
+          await tx.messageTemplate.update({
+            where: { id: current.id },
+            data: {
+              subjectLine: resolved.subjectLine,
+              bodyMd: resolved.bodyTemplate,
+              language: pack.language,
+              packId: pack.id,
+            },
+          });
+          templatesUpdated += 1;
+        }
+
+        if (currentAutomation) {
+          if (!automationStable) {
+            await tx.messageAutomation.update({
+              where: { id: currentAutomation.id },
+              data: {
+                triggerType: resolved.automation.triggerType,
+                sendOffsetMinutes: resolved.automation.sendOffsetMinutes,
+              },
+            });
+            automationsUpdated += 1;
+          }
+        } else {
+          await tx.messageAutomation.create({
+            data: {
+              propertyId,
+              touchpointKey: resolved.touchpointKey,
+              templateId: current.id,
+              channelKey: resolved.channelKey,
+              active: false,
+              triggerType: resolved.automation.triggerType,
+              sendOffsetMinutes: resolved.automation.sendOffsetMinutes,
+              timezoneSource: "property_timezone",
+            },
+          });
+          automationsCreated += 1;
+        }
+        continue;
+      }
+
       const created = await tx.messageTemplate.create({
         data: {
           propertyId,
@@ -255,12 +354,37 @@ export async function applyStarterPack(params: {
       automationsCreated += 1;
     }
 
+    // Pack-owned rows from a prior pack whose slot is not produced by the new
+    // one are left-overs and must be dropped. User rows are never touched.
+    const obsoletePackIds = existing
+      .filter(
+        (row) => row.origin === ORIGIN_PACK && !producedSlots.has(slotKey(row)),
+      )
+      .map((row) => row.id);
+
+    let templatesRemoved = 0;
+    let automationsRemoved = 0;
+    if (obsoletePackIds.length > 0) {
+      const { count: acount } = await tx.messageAutomation.deleteMany({
+        where: { templateId: { in: obsoletePackIds } },
+      });
+      automationsRemoved = acount;
+      const { count: tcount } = await tx.messageTemplate.deleteMany({
+        where: { id: { in: obsoletePackIds } },
+      });
+      templatesRemoved = tcount;
+    }
+
     return {
       packId: pack.id,
       templatesCreated,
+      templatesUpdated,
+      templatesUnchanged,
+      templatesRemoved,
+      userOwnedSlotsPreserved,
       automationsCreated,
-      replacedTemplates: previousIds.length,
-      replacedAutomations,
+      automationsUpdated,
+      automationsRemoved,
     };
   };
 
@@ -268,21 +392,4 @@ export async function applyStarterPack(params: {
     return runner.$transaction((tx) => run(tx as Db));
   }
   return run(runner);
-}
-
-export async function getMessagingBootstrapStatus(
-  propertyId: string,
-  db: Db = defaultPrisma,
-): Promise<{ templateCount: number; automationCount: number; hasPackRows: boolean }> {
-  const [templateCount, automationCount, hasPackRows] = await Promise.all([
-    db.messageTemplate.count({ where: { propertyId } }),
-    db.messageAutomation.count({ where: { propertyId } }),
-    db.messageTemplate
-      .findFirst({
-        where: { propertyId, origin: ORIGIN_PACK },
-        select: { id: true },
-      })
-      .then((row) => row !== null),
-  ]);
-  return { templateCount, automationCount, hasPackRows };
 }

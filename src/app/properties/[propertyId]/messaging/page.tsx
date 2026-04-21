@@ -3,10 +3,8 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { messagingTouchpoints, getItems } from "@/lib/taxonomy-loader";
-import {
-  listAvailablePacks,
-  getMessagingBootstrapStatus,
-} from "@/lib/services/messaging-seed.service";
+import { listAvailablePacks } from "@/lib/services/messaging-seed.service";
+import { ORIGIN_PACK } from "@/lib/services/messaging-shared";
 import { StarterPackPicker } from "@/components/messaging/starter-pack-picker";
 
 const touchpoints = getItems(messagingTouchpoints);
@@ -18,7 +16,7 @@ export default async function MessagingPage({
 }) {
   const { propertyId } = await params;
 
-  const [property, templates, automations, pendingDraftsCount, bootstrapStatus] =
+  const [property, templates, automations, pendingDraftsCount] =
     await Promise.all([
       prisma.property.findUnique({
         where: { id: propertyId },
@@ -26,7 +24,7 @@ export default async function MessagingPage({
       }),
       prisma.messageTemplate.findMany({
         where: { propertyId },
-        select: { touchpointKey: true, status: true },
+        select: { touchpointKey: true, status: true, origin: true },
       }),
       prisma.messageAutomation.findMany({
         where: { propertyId },
@@ -35,12 +33,15 @@ export default async function MessagingPage({
       prisma.messageDraft.count({
         where: { propertyId, status: "pending_review" },
       }),
-      getMessagingBootstrapStatus(propertyId),
     ]);
 
   if (!property) notFound();
 
   const packs = listAvailablePacks();
+  const hasPackRows = templates.some((t) => t.origin === ORIGIN_PACK);
+  const touchpointLabels = Object.fromEntries(
+    touchpoints.map((tp) => [tp.id, tp.label]),
+  );
 
   const templateCountByTouchpoint = new Map<string, number>();
   const activeAutomationByTouchpoint = new Map<string, number>();
@@ -73,7 +74,7 @@ export default async function MessagingPage({
       <div className="mt-6 flex items-center gap-3">
         <Badge label={`${templates.length} plantillas`} tone="neutral" />
         <Badge
-          label={`${automations.filter((a) => a.active).length} automations activas`}
+          label={`${automations.filter((a) => a.active).length} automatizaciones activas`}
           tone={automations.some((a) => a.active) ? "success" : "neutral"}
         />
         <Link
@@ -91,8 +92,9 @@ export default async function MessagingPage({
       <StarterPackPicker
         propertyId={propertyId}
         packs={packs}
-        hasPackRows={bootstrapStatus.hasPackRows}
+        hasPackRows={hasPackRows}
         templateCount={templates.length}
+        touchpointLabels={touchpointLabels}
       />
 
       <div className="mt-8 space-y-3">

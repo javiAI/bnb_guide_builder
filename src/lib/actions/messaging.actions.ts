@@ -23,7 +23,7 @@ import {
   type ApplyStarterPackResult,
   type StarterPackPreview,
 } from "@/lib/services/messaging-seed.service";
-import { MESSAGE_TEMPLATE_ORIGINS } from "@/lib/services/messaging-shared";
+import { ORIGIN_USER } from "@/lib/services/messaging-shared";
 import type { ActionResult } from "@/lib/types/action-result";
 
 // ── Variable validation gate ──
@@ -107,7 +107,7 @@ export async function updateMessageTemplateAction(
   // Host edit → row leaves pack ownership so `applyStarterPack` won't touch it.
   await prisma.messageTemplate.update({
     where: { id: templateId },
-    data: { ...result.data, origin: MESSAGE_TEMPLATE_ORIGINS[0], packId: null },
+    data: { ...result.data, origin: ORIGIN_USER, packId: null },
   });
 
   revalidatePath(`/properties/${propertyId}/messaging`);

@@ -2,14 +2,18 @@
 //  - Boot validator: catalog loads (positive) + rejects adversarial fixtures
 //    (internal_only token, sensitive_prearrival in wrong touchpoint, wrong
 //    trigger, out-of-range offset, unknown propertyType override).
-//  - `applyStarterPack`: creates N templates + N inactive automations with
-//    origin="pack" + packId set.
-//  - Re-apply same pack: deletes previous origin="pack" rows, recreates.
-//  - Apply different pack: only swaps origin="pack" rows (origin="user"
-//    templates are never touched).
+//  - `applyStarterPack` merge-by-slot contract:
+//    * first-time apply seeds N templates + N inactive automations
+//    * re-apply same pack = effective no-op (content-stable rows unchanged)
+//    * host-edited row (origin="user") is never overwritten or duplicated
+//    * applying a different pack updates overlapping pack slots and removes
+//      left-over pack rows whose slot isn't produced by the new pack
 //  - PropertyType override selection.
-//  - `getMessagingBootstrapStatus` booleans drive the UI empty-state CTA.
 //  - 12A variable gate: unknown/internal tokens never ship in a pack body.
+//
+// Slot equivalence key (contract): (propertyId, touchpointKey, channelKey,
+// language). A pack MUST NOT create a competing pack row when a user-owned
+// row exists for the same slot.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -20,24 +24,18 @@ const { prismaMock } = vi.hoisted(() => {
       findMany: vi.fn(),
       deleteMany: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     messageAutomation: {
+      findFirst: vi.fn(),
       deleteMany: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
   };
   const root = {
     ...tx,
     $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)),
-    messageTemplate: {
-      ...tx.messageTemplate,
-      count: vi.fn(),
-      findFirst: vi.fn(),
-    },
-    messageAutomation: {
-      ...tx.messageAutomation,
-      count: vi.fn(),
-    },
   };
   return { prismaMock: root };
 });
@@ -64,7 +62,6 @@ vi.mock("@/lib/services/messaging-variables.service", async () => {
 
 import {
   applyStarterPack,
-  getMessagingBootstrapStatus,
   listAvailablePacks,
   previewPack,
 } from "@/lib/services/messaging-seed.service";
@@ -84,7 +81,6 @@ const OTHER_PACK = messagingStarterPacks.packs.find(
 const FIXTURE_PROPERTY = {
   id: "p_1",
   propertyType: "pt.apartment",
-  defaultLocale: "es",
 };
 
 type AdversarialFixture = {
@@ -112,7 +108,6 @@ type AdversarialFixture = {
   }>;
 };
 
-// Returns a fresh minimal valid pack object for adversarial-fixture tests.
 function baseFixture(): AdversarialFixture {
   return {
     file: "messaging_starter_packs.json",
@@ -143,17 +138,49 @@ function baseFixture(): AdversarialFixture {
   };
 }
 
+// Build a "database row" matching what the pack would produce after apply —
+// used to seed findMany so we can assert merge semantics against the real
+// shipped pack.
+function rowsFromPack(pack: (typeof messagingStarterPacks.packs)[number], opts?: {
+  idPrefix?: string;
+  origin?: "pack" | "user";
+  packId?: string | null;
+}): Array<{
+  id: string;
+  touchpointKey: string;
+  channelKey: string;
+  language: string;
+  origin: "pack" | "user";
+  packId: string | null;
+  subjectLine: string | null;
+  bodyMd: string;
+}> {
+  const prefix = opts?.idPrefix ?? "tpl_existing_";
+  const origin = opts?.origin ?? "pack";
+  const packId = opts?.packId !== undefined ? opts.packId : pack.id;
+  return pack.templates.map((tpl, i) => ({
+    id: `${prefix}${i}`,
+    touchpointKey: tpl.touchpointKey,
+    channelKey: tpl.channelKey,
+    language: pack.language,
+    origin,
+    packId,
+    subjectLine: tpl.subjectLine ?? null,
+    bodyMd: tpl.bodyTemplate,
+  }));
+}
+
 beforeEach(() => {
   prismaMock.$transaction.mockClear();
   prismaMock.property.findUnique.mockReset();
   prismaMock.messageTemplate.findMany.mockReset();
   prismaMock.messageTemplate.deleteMany.mockReset();
   prismaMock.messageTemplate.create.mockReset();
-  prismaMock.messageTemplate.count.mockReset();
-  prismaMock.messageTemplate.findFirst.mockReset();
+  prismaMock.messageTemplate.update.mockReset();
+  prismaMock.messageAutomation.findFirst.mockReset();
   prismaMock.messageAutomation.deleteMany.mockReset();
   prismaMock.messageAutomation.create.mockReset();
-  prismaMock.messageAutomation.count.mockReset();
+  prismaMock.messageAutomation.update.mockReset();
 });
 
 // ── Catalog integrity (positive) ──
@@ -239,13 +266,12 @@ describe("messaging_starter_packs.json — Zod validator rejects adversarial fix
     const fx = baseFixture();
     fx.packs[0].templates[0].bodyTemplate =
       "Hola {{guest_name}}, aquí va: {{wifi_password}}";
-    // touchpointKey remains "mtp.booking_confirmed" → must fail.
     const r = MessagingStarterPacksSchema.safeParse(fx);
     expect(r.success).toBe(false);
     if (!r.success) {
       expect(
         r.error.issues.some((i) =>
-          i.message.includes('mtp.day_of_checkin'),
+          i.message.includes("mtp.day_of_checkin"),
         ),
       ).toBe(true);
     }
@@ -256,13 +282,13 @@ describe("messaging_starter_packs.json — Zod validator rejects adversarial fix
     const tpl = fx.packs[0].templates[0];
     tpl.touchpointKey = "mtp.day_of_checkin";
     tpl.bodyTemplate = "Hola {{guest_name}}, wifi: {{wifi_password}}";
-    tpl.automation.triggerType = "on_booking_confirmed"; // wrong
+    tpl.automation.triggerType = "on_booking_confirmed";
     tpl.automation.sendOffsetMinutes = -120;
     const r = MessagingStarterPacksSchema.safeParse(fx);
     expect(r.success).toBe(false);
     if (!r.success) {
       expect(
-        r.error.issues.some((i) => i.message.includes('day_of_checkin')),
+        r.error.issues.some((i) => i.message.includes("day_of_checkin")),
       ).toBe(true);
     }
   });
@@ -273,14 +299,12 @@ describe("messaging_starter_packs.json — Zod validator rejects adversarial fix
     tpl.touchpointKey = "mtp.day_of_checkin";
     tpl.bodyTemplate = "Hola {{guest_name}}, wifi: {{wifi_password}}";
     tpl.automation.triggerType = "day_of_checkin";
-    tpl.automation.sendOffsetMinutes = 60; // positive → outside window
+    tpl.automation.sendOffsetMinutes = 60;
     const r = MessagingStarterPacksSchema.safeParse(fx);
     expect(r.success).toBe(false);
     if (!r.success) {
       expect(
-        r.error.issues.some((i) =>
-          i.message.includes("sendOffsetMinutes"),
-        ),
+        r.error.issues.some((i) => i.message.includes("sendOffsetMinutes")),
       ).toBe(true);
     }
   });
@@ -304,15 +328,12 @@ describe("messaging_starter_packs.json — Zod validator rejects adversarial fix
 
   it("rejects an unknown variable in body", () => {
     const fx = baseFixture();
-    fx.packs[0].templates[0].bodyTemplate =
-      "Hola {{guest_nmae}}"; // typo
+    fx.packs[0].templates[0].bodyTemplate = "Hola {{guest_nmae}}";
     const r = MessagingStarterPacksSchema.safeParse(fx);
     expect(r.success).toBe(false);
     if (!r.success) {
       expect(
-        r.error.issues.some((i) =>
-          i.message.includes("Unknown variable"),
-        ),
+        r.error.issues.some((i) => i.message.includes("Unknown variable")),
       ).toBe(true);
     }
   });
@@ -349,9 +370,9 @@ describe("listAvailablePacks", () => {
   });
 });
 
-// ── applyStarterPack ──
+// ── applyStarterPack — first-time apply ──
 
-describe("applyStarterPack — first-time apply (no previous pack rows)", () => {
+describe("applyStarterPack — first-time apply (empty property)", () => {
   beforeEach(() => {
     prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
     prismaMock.messageTemplate.findMany.mockResolvedValue([]);
@@ -370,9 +391,11 @@ describe("applyStarterPack — first-time apply (no previous pack rows)", () => 
 
     expect(result.packId).toBe(SHIPPED_PACK.id);
     expect(result.templatesCreated).toBe(SHIPPED_PACK.templates.length);
+    expect(result.templatesUpdated).toBe(0);
+    expect(result.templatesUnchanged).toBe(0);
+    expect(result.templatesRemoved).toBe(0);
+    expect(result.userOwnedSlotsPreserved).toBe(0);
     expect(result.automationsCreated).toBe(SHIPPED_PACK.templates.length);
-    expect(result.replacedTemplates).toBe(0);
-    expect(result.replacedAutomations).toBe(0);
 
     expect(prismaMock.messageTemplate.create).toHaveBeenCalledTimes(
       SHIPPED_PACK.templates.length,
@@ -383,17 +406,9 @@ describe("applyStarterPack — first-time apply (no previous pack rows)", () => 
       expect(call[0].data.status).toBe("draft");
     }
 
-    expect(prismaMock.messageAutomation.create).toHaveBeenCalledTimes(
-      SHIPPED_PACK.templates.length,
-    );
-    for (const call of prismaMock.messageAutomation.create.mock.calls) {
-      expect(call[0].data.active).toBe(false);
-      expect(call[0].data.timezoneSource).toBe("property_timezone");
-    }
-
-    // No deletes since nothing existed.
     expect(prismaMock.messageTemplate.deleteMany).not.toHaveBeenCalled();
     expect(prismaMock.messageAutomation.deleteMany).not.toHaveBeenCalled();
+    expect(prismaMock.messageTemplate.update).not.toHaveBeenCalled();
   });
 
   it("throws when the pack id is unknown", async () => {
@@ -414,59 +429,236 @@ describe("applyStarterPack — first-time apply (no previous pack rows)", () => 
       }),
     ).rejects.toThrow(/Unknown property/);
   });
+
+  it("queries existing rows for both origin=user and origin=pack (never user only)", async () => {
+    await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+    const call = prismaMock.messageTemplate.findMany.mock.calls[0][0];
+    expect(call.where.propertyId).toBe(FIXTURE_PROPERTY.id);
+    expect(call.where.origin).toEqual({ in: ["user", "pack"] });
+  });
 });
 
-describe("applyStarterPack — re-apply + swap semantics", () => {
+// ── Re-apply same pack: effective no-op ──
+
+describe("applyStarterPack — re-apply same pack is effectively a no-op", () => {
   beforeEach(() => {
     prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
-    let nextId = 100;
-    prismaMock.messageTemplate.create.mockImplementation(async () => ({
-      id: `tpl_new_${nextId++}`,
-    }));
+    prismaMock.messageTemplate.create.mockResolvedValue({ id: "tpl_new" });
     prismaMock.messageAutomation.create.mockResolvedValue({});
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 0 });
   });
 
-  it("re-applying the same pack swaps its rows (deletes previous origin='pack' only)", async () => {
-    prismaMock.messageTemplate.findMany.mockResolvedValue([
-      { id: "tpl_old_1" },
-      { id: "tpl_old_2" },
-    ]);
-    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 2 });
-    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 2 });
+  it("no writes when every slot + content + automation is already in sync", async () => {
+    const existing = rowsFromPack(SHIPPED_PACK);
+    prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
+
+    prismaMock.messageAutomation.findFirst.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        const i = existing.findIndex((r) => r.id === where.templateId);
+        if (i < 0) return null;
+        const a = SHIPPED_PACK.templates[i].automation;
+        return {
+          id: `auto_${i}`,
+          triggerType: a.triggerType,
+          sendOffsetMinutes: a.sendOffsetMinutes,
+        };
+      },
+    );
 
     const result = await applyStarterPack({
       packId: SHIPPED_PACK.id,
       propertyId: FIXTURE_PROPERTY.id,
     });
 
-    expect(result.replacedTemplates).toBe(2);
-    expect(result.replacedAutomations).toBe(2);
+    expect(result.templatesCreated).toBe(0);
+    expect(result.templatesUpdated).toBe(0);
+    expect(result.templatesUnchanged).toBe(SHIPPED_PACK.templates.length);
+    expect(result.templatesRemoved).toBe(0);
+    expect(result.userOwnedSlotsPreserved).toBe(0);
+    expect(result.automationsCreated).toBe(0);
+    expect(result.automationsUpdated).toBe(0);
 
-    // The findMany WHERE is scoped to origin="pack" → origin="user" rows are
-    // never surfaced in previousIds and therefore cannot be deleted.
-    expect(prismaMock.messageTemplate.findMany).toHaveBeenCalledWith(
+    expect(prismaMock.messageTemplate.create).not.toHaveBeenCalled();
+    expect(prismaMock.messageTemplate.update).not.toHaveBeenCalled();
+    expect(prismaMock.messageTemplate.deleteMany).not.toHaveBeenCalled();
+    expect(prismaMock.messageAutomation.create).not.toHaveBeenCalled();
+    expect(prismaMock.messageAutomation.update).not.toHaveBeenCalled();
+    expect(prismaMock.messageAutomation.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("updates only the row whose body/subject drifted from the taxonomy", async () => {
+    const existing = rowsFromPack(SHIPPED_PACK);
+    existing[0].bodyMd = "drifted body — needs refresh";
+    prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
+    prismaMock.messageAutomation.findFirst.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        const i = existing.findIndex((r) => r.id === where.templateId);
+        if (i < 0) return null;
+        const a = SHIPPED_PACK.templates[i].automation;
+        return {
+          id: `auto_${i}`,
+          triggerType: a.triggerType,
+          sendOffsetMinutes: a.sendOffsetMinutes,
+        };
+      },
+    );
+
+    const result = await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+
+    expect(result.templatesUpdated).toBe(1);
+    expect(result.templatesUnchanged).toBe(SHIPPED_PACK.templates.length - 1);
+    expect(result.templatesCreated).toBe(0);
+    expect(prismaMock.messageTemplate.update).toHaveBeenCalledTimes(1);
+    expect(prismaMock.messageTemplate.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          propertyId: FIXTURE_PROPERTY.id,
-          origin: "pack",
+        where: { id: existing[0].id },
+        data: expect.objectContaining({
+          bodyMd: SHIPPED_PACK.templates[0].bodyTemplate,
         }),
       }),
     );
+  });
+});
 
-    expect(prismaMock.messageAutomation.deleteMany).toHaveBeenCalledWith({
-      where: { templateId: { in: ["tpl_old_1", "tpl_old_2"] } },
-    });
-    expect(prismaMock.messageTemplate.deleteMany).toHaveBeenCalledWith({
-      where: { id: { in: ["tpl_old_1", "tpl_old_2"] } },
-    });
+// ── User-edited row must not be duplicated / overwritten ──
+
+describe("applyStarterPack — host-edited slot (origin='user') is preserved", () => {
+  beforeEach(() => {
+    prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
+    prismaMock.messageTemplate.create.mockResolvedValue({ id: "tpl_new" });
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.messageAutomation.create.mockResolvedValue({});
   });
 
-  it("applying a different pack swaps only origin='pack' rows", async () => {
+  it("never creates a competing pack row when a user row exists for the same slot", async () => {
+    const [firstTpl, ...rest] = SHIPPED_PACK.templates;
+    const existing = [
+      {
+        id: "tpl_user_edited",
+        touchpointKey: firstTpl.touchpointKey,
+        channelKey: firstTpl.channelKey,
+        language: SHIPPED_PACK.language,
+        origin: "user" as const,
+        packId: null,
+        subjectLine: "host subject",
+        bodyMd: "host-edited body",
+      },
+      ...rest.map((tpl, i) => ({
+        id: `tpl_pack_${i}`,
+        touchpointKey: tpl.touchpointKey,
+        channelKey: tpl.channelKey,
+        language: SHIPPED_PACK.language,
+        origin: "pack" as const,
+        packId: SHIPPED_PACK.id,
+        subjectLine: tpl.subjectLine ?? null,
+        bodyMd: tpl.bodyTemplate,
+      })),
+    ];
+    prismaMock.messageTemplate.findMany.mockResolvedValue(existing);
+    prismaMock.messageAutomation.findFirst.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        const i = existing.findIndex((r) => r.id === where.templateId);
+        if (i <= 0) return null; // user row has no pack automation expected
+        const tpl = SHIPPED_PACK.templates[i];
+        return {
+          id: `auto_${i}`,
+          triggerType: tpl.automation.triggerType,
+          sendOffsetMinutes: tpl.automation.sendOffsetMinutes,
+        };
+      },
+    );
+
+    const result = await applyStarterPack({
+      packId: SHIPPED_PACK.id,
+      propertyId: FIXTURE_PROPERTY.id,
+    });
+
+    expect(result.userOwnedSlotsPreserved).toBe(1);
+    expect(result.templatesCreated).toBe(0);
+    expect(result.templatesUpdated).toBe(0);
+
+    for (const call of prismaMock.messageTemplate.create.mock.calls) {
+      expect(call[0].data.touchpointKey).not.toBe(firstTpl.touchpointKey);
+    }
+    for (const call of prismaMock.messageTemplate.update.mock.calls) {
+      expect(call[0].where.id).not.toBe("tpl_user_edited");
+    }
+  });
+});
+
+// ── Swap to a different pack ──
+
+describe("applyStarterPack — swap to a different pack", () => {
+  beforeEach(() => {
+    prismaMock.property.findUnique.mockResolvedValue(FIXTURE_PROPERTY);
+    let nextId = 500;
+    prismaMock.messageTemplate.create.mockImplementation(async () => ({
+      id: `tpl_new_${nextId++}`,
+    }));
+    prismaMock.messageAutomation.create.mockResolvedValue({});
+    prismaMock.messageAutomation.findFirst.mockResolvedValue(null);
+  });
+
+  it("updates overlapping slots in place and removes obsolete pack rows — never touches user rows", async () => {
+    const priorPackRows = rowsFromPack(SHIPPED_PACK, {
+      idPrefix: "tpl_prior_",
+      packId: SHIPPED_PACK.id,
+    });
+    const userRow = {
+      id: "tpl_user_owned",
+      touchpointKey: "mtp.fake_only_in_no_pack",
+      channelKey: "email",
+      language: "es",
+      origin: "user" as const,
+      packId: null,
+      subjectLine: "user subj",
+      bodyMd: "user-only content",
+    };
+
     prismaMock.messageTemplate.findMany.mockResolvedValue([
-      { id: "tpl_previous_pack_1" },
+      ...priorPackRows,
+      userRow,
     ]);
-    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 1 });
-    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 1 });
+    prismaMock.messageAutomation.findFirst.mockImplementation(
+      async ({ where }: { where: { templateId: string } }) => {
+        const row = priorPackRows.find((r) => r.id === where.templateId);
+        if (!row) return null;
+        const i = priorPackRows.indexOf(row);
+        const a = SHIPPED_PACK.templates[i].automation;
+        return {
+          id: `auto_prior_${i}`,
+          triggerType: a.triggerType,
+          sendOffsetMinutes: a.sendOffsetMinutes,
+        };
+      },
+    );
+    prismaMock.messageTemplate.deleteMany.mockResolvedValue({ count: 0 });
+    prismaMock.messageAutomation.deleteMany.mockResolvedValue({ count: 0 });
+
+    // Slots produced by OTHER_PACK that overlap with SHIPPED_PACK via
+    // (touchpointKey, channelKey, language) get UPDATEd; slots only in
+    // SHIPPED_PACK get REMOVEd; slots only in OTHER_PACK get CREATEd.
+    const shippedSlots = new Set(
+      SHIPPED_PACK.templates.map(
+        (t) => `${t.touchpointKey}|${t.channelKey}|${SHIPPED_PACK.language}`,
+      ),
+    );
+    const otherSlots = new Set(
+      OTHER_PACK.templates.map(
+        (t) => `${t.touchpointKey}|${t.channelKey}|${OTHER_PACK.language}`,
+      ),
+    );
+    const overlap = [...shippedSlots].filter((s) => otherSlots.has(s)).length;
+    const obsolete = [...shippedSlots].filter((s) => !otherSlots.has(s)).length;
+    const fresh = [...otherSlots].filter((s) => !shippedSlots.has(s)).length;
 
     const result = await applyStarterPack({
       packId: OTHER_PACK.id,
@@ -474,22 +666,29 @@ describe("applyStarterPack — re-apply + swap semantics", () => {
     });
 
     expect(result.packId).toBe(OTHER_PACK.id);
-    expect(result.replacedTemplates).toBe(1);
+    expect(result.userOwnedSlotsPreserved).toBe(0); // user row has non-overlapping slot, left alone
+    expect(result.templatesCreated).toBe(fresh);
+    expect(result.templatesRemoved).toBe(obsolete);
+    // The overlap can be either updated (if content differs) or unchanged
+    // (if packs happen to ship identical copy). Together they cover all
+    // overlap slots.
+    expect(result.templatesUpdated + result.templatesUnchanged).toBe(overlap);
+
+    // The user row is never deleted — its slot doesn't appear in the new
+    // pack's produced set but it is not origin="pack", so it stays.
+    if (prismaMock.messageTemplate.deleteMany.mock.calls.length > 0) {
+      const deletedIds =
+        prismaMock.messageTemplate.deleteMany.mock.calls[0][0].where.id.in;
+      expect(deletedIds).not.toContain(userRow.id);
+    }
+
+    // Every update/create references OTHER_PACK.id as packId.
+    for (const call of prismaMock.messageTemplate.update.mock.calls) {
+      expect(call[0].data.packId).toBe(OTHER_PACK.id);
+    }
     for (const call of prismaMock.messageTemplate.create.mock.calls) {
       expect(call[0].data.packId).toBe(OTHER_PACK.id);
     }
-  });
-
-  it("never deletes origin='user' templates (findMany query is scoped to origin='pack')", async () => {
-    prismaMock.messageTemplate.findMany.mockResolvedValue([]);
-    await applyStarterPack({
-      packId: SHIPPED_PACK.id,
-      propertyId: FIXTURE_PROPERTY.id,
-    });
-    for (const call of prismaMock.messageTemplate.findMany.mock.calls) {
-      expect(call[0].where.origin).toBe("pack");
-    }
-    expect(prismaMock.messageTemplate.deleteMany).not.toHaveBeenCalled();
   });
 });
 
@@ -503,15 +702,14 @@ describe("applyStarterPack — propertyType override selection", () => {
       id: `tpl_${nextId++}`,
     }));
     prismaMock.messageAutomation.create.mockResolvedValue({});
+    prismaMock.messageAutomation.findFirst.mockResolvedValue(null);
   });
 
   it("picks matching override when propertyType matches", async () => {
     const packWithOverride = messagingStarterPacks.packs.find((p) =>
-      p.templates.some(
-        (t) => t.overrides && t.overrides.length > 0,
-      ),
+      p.templates.some((t) => t.overrides && t.overrides.length > 0),
     );
-    if (!packWithOverride) return; // no overrides shipped → skip silently
+    if (!packWithOverride) return;
 
     const tplWithOverride = packWithOverride.templates.find(
       (t) => t.overrides && t.overrides.length > 0,
@@ -558,36 +756,6 @@ describe("applyStarterPack — propertyType override selection", () => {
       expect(call).toBeDefined();
       expect(call![0].data.bodyMd).toBe(tpl.bodyTemplate);
     }
-  });
-});
-
-// ── getMessagingBootstrapStatus ──
-
-describe("getMessagingBootstrapStatus", () => {
-  it("returns hasPackRows=true when at least one origin='pack' row exists", async () => {
-    prismaMock.messageTemplate.count.mockResolvedValue(7);
-    prismaMock.messageAutomation.count.mockResolvedValue(7);
-    prismaMock.messageTemplate.findFirst.mockResolvedValue({ id: "tpl_x" });
-
-    const s = await getMessagingBootstrapStatus("p_1");
-    expect(s).toEqual({
-      templateCount: 7,
-      automationCount: 7,
-      hasPackRows: true,
-    });
-    expect(prismaMock.messageTemplate.findFirst).toHaveBeenCalledWith({
-      where: { propertyId: "p_1", origin: "pack" },
-      select: { id: true },
-    });
-  });
-
-  it("returns hasPackRows=false when no origin='pack' rows exist", async () => {
-    prismaMock.messageTemplate.count.mockResolvedValue(0);
-    prismaMock.messageAutomation.count.mockResolvedValue(0);
-    prismaMock.messageTemplate.findFirst.mockResolvedValue(null);
-
-    const s = await getMessagingBootstrapStatus("p_1");
-    expect(s.hasPackRows).toBe(false);
   });
 });
 

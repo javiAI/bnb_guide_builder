@@ -245,20 +245,28 @@ El Zod validator corre al cargar el JSON y **falla build** si:
 - `packId: string?` — `msp.*` cuando `origin = "pack"`, `null` si `origin = "user"`
 - `@@index([propertyId, origin, packId])`
 
-Reglas:
+**Slot equivalencia**: un row "ocupa" un slot identificado por `(propertyId, touchpointKey, channelKey, language)`. El pack nunca crea una row pack que compita con otra row existente (pack o user) en el mismo slot.
 
-1. **Apply** (`applyStarterPack`, `$transaction`):
-   - `findMany { propertyId, origin: "pack" }` → borra automations por `templateId` + borra templates (cualquier `packId`, incluye el que se re-aplica).
-   - Crea `templates.length` rows con `origin: "pack", packId: pack.id, status: "draft"` + `automations` con `active: false, timezoneSource: "property_timezone"`.
-   - Los rows con `origin: "user"` **nunca** se tocan.
-2. **Re-apply mismo pack** → swap en sitio (`replacedTemplates === templatesCreated`).
-3. **Apply distinto pack** → swap de pack-rows, `origin: "user"` queda tal cual.
-4. **Edit host** (`updateMessageTemplateAction`) → flip `origin: "user"` + `packId: null`. El row deja de ser candidato para pack-replace en futuras aplicaciones.
+Reglas (contrato de `applyStarterPack`):
+
+1. **Merge-por-slot, no replace-all**. En una `$transaction`:
+   - `findMany { propertyId, origin: { in: ["user", "pack"] } }` con shape completo (`touchpointKey`, `channelKey`, `language`, `origin`, `packId`, `subjectLine`, `bodyMd`) → se indexa por `slotKey`.
+   - Para cada template del nuevo pack (ya resuelto contra `propertyType`):
+     - si existe row `origin="user"` en ese slot → **skip** (`userOwnedSlotsPreserved++`). Nunca se crea row pack competidora.
+     - si existe row `origin="pack"` en ese slot:
+       - si `packId` + `subjectLine` + `bodyMd` + `automation.triggerType` + `automation.sendOffsetMinutes` coinciden todos → **unchanged** (cero writes).
+       - si difiere el contenido → `update` en sitio (conserva row ID, preserva historial de `messageDraft.templateId`). Si difiere la automation → `update` de la automation o `create` si falta.
+     - si no hay row en ese slot → `create` template + automation (`status: "draft"`, `active: false`, `timezoneSource: "property_timezone"`).
+   - Al cerrar: `deleteMany` las rows `origin="pack"` cuyo slot **no** aparece en el pack nuevo (sobras del pack anterior). Rows `origin="user"` nunca se borran aunque no aparezcan en el pack.
+2. **Re-apply mismo pack** → todos los slots son `templatesUnchanged`. Cero writes.
+3. **Re-apply mismo pack tras edit host** → el slot editado es `userOwnedSlotsPreserved`, el resto `templatesUnchanged`. Nunca se duplica una row pack junto a la user.
+4. **Apply distinto pack** → overlap por slot va a `templatesUpdated` (o `templatesUnchanged` si contenido idéntico entre packs), slots solo en el nuevo son `templatesCreated`, slots solo en el anterior se `deleteMany` (pack-owned). User rows nunca se tocan.
+5. **Edit host** (`updateMessageTemplateAction`) → flip `origin: "user"` + `packId: null`. El row queda fuera del scope de cualquier pack-replace futuro.
 
 ### 6.4 Server actions + UI
 
 - `previewStarterPackAction(propertyId, packId)` — resuelve variables token-por-token contra la property (reservation vars siguen siendo `unresolved_context` en preview, igual que 12A/12B).
-- `applyStarterPackAction(_, FormData)` — lee `propertyId` + `packId`, corre `applyStarterPack`, retorna `ApplyStarterPackResult { packId, templatesCreated, automationsCreated, replacedTemplates, replacedAutomations }`.
+- `applyStarterPackAction(_, FormData)` — lee `propertyId` + `packId`, corre `applyStarterPack`, retorna `ApplyStarterPackResult { packId, templatesCreated, templatesUpdated, templatesUnchanged, templatesRemoved, userOwnedSlotsPreserved, automationsCreated, automationsUpdated, automationsRemoved }`.
 
 `StarterPackPicker` en `src/components/messaging/starter-pack-picker.tsx` (cliente):
 

@@ -24,5 +24,7 @@ export function extractVariableTokens(body: string): string[] {
   return ordered;
 }
 
-export const MESSAGE_TEMPLATE_ORIGINS = ["user", "pack"] as const;
+export const ORIGIN_USER = "user" as const;
+export const ORIGIN_PACK = "pack" as const;
+export const MESSAGE_TEMPLATE_ORIGINS = [ORIGIN_USER, ORIGIN_PACK] as const;
 export type MessageTemplateOrigin = (typeof MESSAGE_TEMPLATE_ORIGINS)[number];

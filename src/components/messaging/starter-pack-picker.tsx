@@ -10,11 +10,6 @@ import type {
   StarterPackSummary,
 } from "@/lib/services/messaging-seed.service";
 import { Badge } from "@/components/ui/badge";
-import { messagingTouchpoints, getItems } from "@/lib/taxonomy-loader";
-
-const TOUCHPOINT_LABEL = new Map(
-  getItems(messagingTouchpoints).map((t) => [t.id, t.label]),
-);
 
 const TONE_LABEL: Record<string, string> = {
   friendly: "Cercano",
@@ -32,6 +27,7 @@ interface StarterPackPickerProps {
   packs: StarterPackSummary[];
   hasPackRows: boolean;
   templateCount: number;
+  touchpointLabels: Record<string, string>;
 }
 
 export function StarterPackPicker({
@@ -39,6 +35,7 @@ export function StarterPackPicker({
   packs,
   hasPackRows,
   templateCount,
+  touchpointLabels,
 }: StarterPackPickerProps) {
   const [open, setOpen] = useState(false);
   const [selectedPackId, setSelectedPackId] = useState<string | null>(null);
@@ -100,11 +97,7 @@ export function StarterPackPicker({
       fd.set("packId", selectedPackId);
       const result = await applyStarterPackAction(null, fd);
       if (result.success && "result" in result && result.result) {
-        const { templatesCreated, replacedTemplates } = result.result;
-        const verb = replacedTemplates > 0 ? "Reemplazado" : "Aplicado";
-        setSuccessMsg(
-          `${verb}: ${templatesCreated} plantillas + automations (inactivas) creadas.`,
-        );
+        setSuccessMsg(formatApplyMessage(result.result));
         closeDrawer();
       } else {
         setError("error" in result && result.error ? result.error : "Error al aplicar");
@@ -129,9 +122,9 @@ export function StarterPackPicker({
             Empieza con un pack
           </h2>
           <p className="mt-1 text-sm text-[var(--color-neutral-600)]">
-            Plantillas pre-escritas por tono e idioma, con automations pre-cableadas
-            (inactivas). Las revisas, editas y activas cuando quieras — no se envía
-            nada sin tu OK.
+            Plantillas pre-escritas por tono e idioma, con automatizaciones
+            pre-cableadas (inactivas). Las revisas, editas y activas cuando
+            quieras — no se envía nada sin tu OK.
           </p>
           <button
             type="button"
@@ -170,8 +163,9 @@ export function StarterPackPicker({
                   Packs de mensajería
                 </h2>
                 <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
-                  Elige tono e idioma. El pack genera plantillas + automations
-                  inactivas; luego las activas desde cada touchpoint.
+                  Elige tono e idioma. El pack genera plantillas +
+                  automatizaciones inactivas; luego las activas desde cada
+                  touchpoint.
                 </p>
               </div>
               <button
@@ -244,7 +238,7 @@ export function StarterPackPicker({
                         </p>
                       )}
                       {preview.templates.map((tpl) => {
-                        const label = TOUCHPOINT_LABEL.get(tpl.touchpointKey) ?? tpl.touchpointKey;
+                        const label = touchpointLabels[tpl.touchpointKey] ?? tpl.touchpointKey;
                         return (
                           <article
                             key={tpl.touchpointKey}
@@ -332,4 +326,43 @@ export function StarterPackPicker({
       )}
     </>
   );
+}
+
+function plural(n: number, one: string, many: string): string {
+  return n === 1 ? one : many;
+}
+
+function formatApplyMessage(
+  result: import("@/lib/services/messaging-seed.service").ApplyStarterPackResult,
+): string {
+  const {
+    templatesCreated,
+    templatesUpdated,
+    templatesUnchanged,
+    templatesRemoved,
+    userOwnedSlotsPreserved,
+  } = result;
+
+  const applied = templatesCreated + templatesUpdated;
+  if (applied === 0 && templatesRemoved === 0 && userOwnedSlotsPreserved === 0) {
+    return `Pack ya al día (${templatesUnchanged} ${plural(templatesUnchanged, "plantilla", "plantillas")} sin cambios).`;
+  }
+
+  const parts: string[] = [];
+  if (templatesCreated > 0) {
+    parts.push(`${templatesCreated} ${plural(templatesCreated, "creada", "creadas")}`);
+  }
+  if (templatesUpdated > 0) {
+    parts.push(`${templatesUpdated} ${plural(templatesUpdated, "actualizada", "actualizadas")}`);
+  }
+  if (templatesUnchanged > 0) {
+    parts.push(`${templatesUnchanged} sin cambios`);
+  }
+  if (templatesRemoved > 0) {
+    parts.push(`${templatesRemoved} ${plural(templatesRemoved, "eliminada del pack anterior", "eliminadas del pack anterior")}`);
+  }
+  if (userOwnedSlotsPreserved > 0) {
+    parts.push(`${userOwnedSlotsPreserved} ${plural(userOwnedSlotsPreserved, "preservada (editada por ti)", "preservadas (editadas por ti)")}`);
+  }
+  return `Pack aplicado: ${parts.join(", ")}.`;
 }
