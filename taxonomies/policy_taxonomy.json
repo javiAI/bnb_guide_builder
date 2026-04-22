@@ -20,7 +20,23 @@
           "default_from_field": "basics.max_guests",
           "dependency_hints": [],
           "journeyStage": "arrival",
-          "journeyTags": ["essential"]
+          "journeyTags": [
+            "essential"
+          ],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "person_capacity",
+              "transform": "number"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "max_occupancy",
+              "transform": "number"
+            }
+          ]
         },
         {
           "id": "pol.quiet_hours",
@@ -36,7 +52,21 @@
             "Si enabled=true, pedir inicio y fin en formato 24 h."
           ],
           "journeyStage": "stay",
-          "journeyTags": ["essential"]
+          "journeyTags": [
+            "essential"
+          ],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "free_text",
+              "field": "house_rules"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         },
         {
           "id": "pol.smoking",
@@ -71,7 +101,23 @@
           ],
           "dependency_hints": [],
           "journeyStage": "arrival",
-          "journeyTags": ["essential"]
+          "journeyTags": [
+            "essential"
+          ],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.smoking_allowed",
+              "transform": "enum"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.smoking",
+              "transform": "enum"
+            }
+          ]
         },
         {
           "id": "pol.events",
@@ -101,6 +147,20 @@
           ],
           "dependency_hints": [
             "Si se permite algún nivel, mostrar límites y condiciones."
+          ],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.events_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.parties",
+              "transform": "bool"
+            }
           ]
         },
         {
@@ -126,7 +186,10 @@
               "label": "Tipos permitidos",
               "description": "Qué tipos de mascotas se admiten.",
               "type": "multi_select",
-              "shown_if": { "field": "allowed", "equals": true },
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              },
               "options": [
                 {
                   "id": "dogs",
@@ -150,7 +213,10 @@
               "label": "Restricción de tamaño",
               "description": "Límite de peso para mascotas admitidas.",
               "type": "enum",
-              "shown_if": { "field": "allowed", "equals": true },
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              },
               "options": [
                 {
                   "id": "none",
@@ -181,14 +247,20 @@
               "type": "number",
               "min": 1,
               "max": 10,
-              "shown_if": { "field": "allowed", "equals": true }
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              }
             },
             {
               "id": "fee_mode",
               "label": "Modo de cargo",
               "description": "Forma de cobro del suplemento de mascotas.",
               "type": "enum",
-              "shown_if": { "field": "allowed", "equals": true },
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              },
               "options": [
                 {
                   "id": "none",
@@ -223,14 +295,20 @@
               "description": "Cantidad económica del cargo, en euros.",
               "type": "money",
               "currency": "EUR",
-              "shown_if": { "field": "allowed", "equals": true }
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              }
             },
             {
               "id": "restrictions",
               "label": "Restricciones adicionales",
               "description": "Límites por zonas, limpieza u otros criterios.",
               "type": "multi_select_optional",
-              "shown_if": { "field": "allowed", "equals": true },
+              "shown_if": {
+                "field": "allowed",
+                "equals": true
+              },
               "options": [
                 {
                   "id": "no_bedrooms",
@@ -274,7 +352,23 @@
             "Si allowed=true, activar plantillas y operación relacionadas con mascotas."
           ],
           "journeyStage": "stay",
-          "journeyTags": ["essential"]
+          "journeyTags": [
+            "essential"
+          ],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.pets_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.pets",
+              "transform": "bool"
+            }
+          ]
         },
         {
           "id": "pol.checkin_checkout",
@@ -286,7 +380,11 @@
           "ref": "arrival.check_in_window + arrival.check_out_time",
           "dependency_hints": [],
           "journeyStage": "checkout",
-          "journeyTags": ["essential"]
+          "journeyTags": [
+            "essential"
+          ],
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.commercial_photography",
@@ -309,7 +407,20 @@
               "description": "Requiere autorización escrita o específica."
             }
           ],
-          "dependency_hints": []
+          "dependency_hints": [],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.commercial_photography_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         },
         {
           "id": "pol.services_in_home",
@@ -365,7 +476,19 @@
               "description": "Otros servicios no incluidos en las categorías anteriores."
             }
           ],
-          "dependency_hints": []
+          "dependency_hints": [],
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "free_text",
+              "field": "house_rules"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         }
       ]
     },
@@ -384,7 +507,21 @@
           "required": false,
           "recommended": false,
           "dependency_hints": [],
-          "journeyStage": "checkout"
+          "journeyStage": "checkout",
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "pricing.cleaning_fee",
+              "transform": "currency"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "fees.cleaning",
+              "transform": "currency"
+            }
+          ]
         },
         {
           "id": "fee.extra_guest",
@@ -397,7 +534,21 @@
           "dependency_hints": [
             "Mostrar solo si existe política diferenciada por ocupación."
           ],
-          "journeyStage": "checkout"
+          "journeyStage": "checkout",
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "pricing.extra_person_fee",
+              "transform": "currency"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "fees.extra_person",
+              "transform": "currency"
+            }
+          ]
         },
         {
           "id": "fee.pet",
@@ -408,7 +559,9 @@
           "required": false,
           "recommended": false,
           "dependency_hints": [],
-          "journeyStage": "checkout"
+          "journeyStage": "checkout",
+          "source": [],
+          "platform_supported": false
         }
       ]
     }

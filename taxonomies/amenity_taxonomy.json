@@ -1362,15 +1362,29 @@
         "wifi.password"
       ],
       "source": [
-        "airbnb:4",
-        "booking:107",
-        "vrbo:wifi"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "4"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "107"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "wifi"
+        }
       ],
       "importanceLevel": "highlight",
       "canonicalOwner": "sys.internet",
       "destination": "derived_from_system",
       "target": "sys.internet",
-      "journeyTags": ["essential"]
+      "journeyTags": [
+        "essential"
+      ]
     },
     {
       "id": "am.kitchen",
@@ -1381,9 +1395,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:8",
-        "booking:20",
-        "vrbo:kitchen"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "8"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "20"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "kitchen"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "derived_from_space"
@@ -1397,9 +1423,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:5",
-        "booking:11",
-        "vrbo:air_conditioning"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "5"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "11"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "air_conditioning"
+        }
       ],
       "importanceLevel": "highlight",
       "canonicalOwner": "sys.cooling",
@@ -1415,9 +1453,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:33",
-        "booking:101",
-        "vrbo:washer"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "33"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "101"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "washer"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -1434,9 +1484,21 @@
         "parking.location"
       ],
       "source": [
-        "airbnb:9",
-        "booking:2",
-        "vrbo:free_parking"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "9"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "2"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "free_parking"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "derived_from_access",
@@ -1451,9 +1513,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:46",
-        "booking:105",
-        "vrbo:iron"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "46"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "105"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "iron"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -1467,9 +1541,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:37",
-        "booking:86",
-        "vrbo:bathtub"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "37"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "86"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "bathtub"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1483,8 +1569,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:767",
-        "booking:193"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "767"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "193"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1498,7 +1592,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:769"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "769"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1512,7 +1610,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:770"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "770"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1526,7 +1628,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:771"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "771"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1540,9 +1646,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:45",
-        "booking:109",
-        "vrbo:hair_dryer"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "45"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "109"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "hair_dryer"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "derived_from_space"
@@ -1556,8 +1674,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:30",
-        "booking:106"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "30"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "106"
+        }
       ],
       "importanceLevel": "highlight",
       "canonicalOwner": "sys.hot_water",
@@ -1573,7 +1699,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:773"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "773"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1587,8 +1717,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:41",
-        "booking:108"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "41"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "108"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "derived_from_space"
@@ -1602,7 +1740,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:774"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "774"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1617,7 +1759,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.bed_linens",
@@ -1628,8 +1771,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:775",
-        "booking:111"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "775"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "111"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -1643,7 +1794,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:776"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "776"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1657,9 +1812,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:34",
-        "booking:102",
-        "vrbo:dryer"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "34"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "102"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "dryer"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1673,7 +1840,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:777"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "777"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1687,7 +1858,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:40"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "40"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -1701,7 +1876,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:39"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "39"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1715,7 +1894,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:44"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "44"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1729,7 +1912,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:778"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "778"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1743,7 +1930,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:779"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "779"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1757,8 +1948,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:780",
-        "booking:17"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "780"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "17"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -1773,7 +1972,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.arcade_games",
@@ -1785,7 +1985,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.batting_cage",
@@ -1797,7 +1998,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.books_reading",
@@ -1808,7 +2010,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:785"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "785"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1823,7 +2029,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.climbing_wall",
@@ -1835,7 +2042,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.ethernet",
@@ -1846,7 +2054,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:781"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "781"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1860,8 +2072,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:782",
-        "booking:121"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "782"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "121"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1875,7 +2095,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:783"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "783"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -1890,7 +2114,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.life_size_games",
@@ -1902,7 +2127,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.mini_golf",
@@ -1914,7 +2140,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.movie_theater",
@@ -1925,7 +2152,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:790"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "790"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -1939,7 +2170,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:788"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "788"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -1953,7 +2188,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:787"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "787"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -1967,7 +2206,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:786"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "786"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -1981,7 +2224,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:789"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "789"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -1996,7 +2243,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.sound_system",
@@ -2007,7 +2255,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:784"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "784"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2022,7 +2274,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.tv",
@@ -2033,9 +2286,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:1",
-        "booking:8",
-        "vrbo:tv"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "1"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "8"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "tv"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2049,7 +2314,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:792"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "792"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2063,7 +2332,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:793"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "793"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2077,7 +2350,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:794"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "794"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2091,7 +2368,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:795"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "795"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2105,7 +2386,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:791"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "791"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2119,7 +2404,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:796"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "796"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2134,7 +2423,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.childrens_bikes",
@@ -2146,7 +2436,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.childrens_books_toys",
@@ -2157,7 +2448,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:797"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "797"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2171,7 +2466,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:798"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "798"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2185,9 +2484,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:286",
-        "booking:15",
-        "vrbo:crib"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "286"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "15"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "crib"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2201,7 +2512,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:804"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "804"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2215,8 +2530,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:799",
-        "booking:22"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "799"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "22"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2231,7 +2554,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.outlet_covers",
@@ -2242,7 +2566,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:800"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "800"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2256,7 +2584,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:801"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "801"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2270,7 +2602,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:802"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "802"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2284,7 +2620,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:803"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "803"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2298,7 +2638,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:805"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "805"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2312,9 +2656,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:30",
-        "booking:80",
-        "vrbo:heating"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "30"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "80"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "heating"
+        }
       ],
       "importanceLevel": "highlight",
       "canonicalOwner": "sys.heating",
@@ -2330,8 +2686,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:110",
-        "booking:83"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "110"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "83"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -2345,7 +2709,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:806"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "806"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2360,7 +2728,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.humidifier",
@@ -2372,7 +2741,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.dehumidifier",
@@ -2384,7 +2754,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.co_alarm",
@@ -2395,7 +2766,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:807"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "807"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "moved_to_system",
@@ -2410,8 +2785,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:35",
-        "booking:120"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "35"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "120"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "moved_to_system",
@@ -2426,8 +2809,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:36",
-        "booking:118"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "36"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "118"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "moved_to_system",
@@ -2442,8 +2833,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:808",
-        "booking:119"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "808"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "119"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "moved_to_system",
@@ -2458,8 +2857,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:47",
-        "booking:211"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "47"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "211"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "derived_from_space"
@@ -2473,7 +2880,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:809"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "809"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2487,7 +2898,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:828"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "828"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2501,7 +2916,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:829"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "829"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2515,7 +2934,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:826"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "826"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2529,7 +2952,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:827"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "827"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2543,7 +2970,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:811"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "811"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2560,8 +2991,16 @@
         "coffee_maker.instructions"
       ],
       "source": [
-        "airbnb:810",
-        "booking:16"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "810"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "16"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2575,7 +3014,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:812"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "812"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2589,7 +3032,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:813"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "813"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space"
@@ -2603,7 +3050,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:42"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "42"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2617,9 +3068,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:814",
-        "booking:103",
-        "vrbo:dishwasher"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "814"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "103"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "dishwasher"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2633,8 +3096,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:815",
-        "booking:104"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "815"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "104"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2648,8 +3119,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:816",
-        "booking:110"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "816"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "110"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2663,8 +3142,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:817",
-        "booking:21"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "817"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "21"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space",
@@ -2679,9 +3166,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:818",
-        "booking:13",
-        "vrbo:microwave"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "818"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "13"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "microwave"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2695,8 +3194,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:819",
-        "booking:6"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "819"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "6"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2710,8 +3217,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:820",
-        "booking:14"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "820"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "14"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2725,9 +3240,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:821",
-        "booking:5",
-        "vrbo:refrigerator"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "821"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "5"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "refrigerator"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2741,7 +3268,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:822"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "822"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2755,8 +3286,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:823",
-        "booking:12"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "823"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "12"
+        }
       ],
       "importanceLevel": "highlight",
       "destination": "amenity_configurable"
@@ -2770,7 +3309,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:824"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "824"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2784,7 +3327,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:830"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "830"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2798,7 +3345,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:825"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "825"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -2813,7 +3364,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.cork_screw",
@@ -2825,7 +3377,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.dish_soap",
@@ -2837,7 +3390,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.beach_access",
@@ -2848,8 +3402,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:831",
-        "booking:64"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "831"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "64"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_property_attribute",
@@ -2864,7 +3426,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:832"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "832"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_property_attribute",
@@ -2879,7 +3445,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:833"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "833"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_guide_content",
@@ -2894,7 +3464,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:834"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "834"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_property_attribute",
@@ -2909,7 +3483,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:835"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "835"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_property_attribute",
@@ -2924,8 +3502,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:836",
-        "booking:65"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "836"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "65"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_property_attribute",
@@ -2940,7 +3526,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:837"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "837"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_property_attribute",
@@ -2955,7 +3545,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:838"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "838"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space",
@@ -2973,9 +3567,21 @@
         "bbq.fuel_type"
       ],
       "source": [
-        "airbnb:111",
-        "booking:115",
-        "vrbo:bbq_grill"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "111"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "115"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "bbq_grill"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -2989,7 +3595,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:839"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "839"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3003,8 +3613,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:840",
-        "booking:116"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "840"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "116"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3018,7 +3636,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:841"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "841"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3032,7 +3654,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:842"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "842"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3046,7 +3672,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:843"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "843"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3060,7 +3690,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:844"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "844"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3074,7 +3708,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:845"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "845"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3088,7 +3726,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:846"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "846"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3102,7 +3744,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:847"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "847"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3116,8 +3762,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:848",
-        "booking:33"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "848"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "33"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "derived_from_space",
@@ -3132,7 +3786,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:849"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "849"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3146,9 +3804,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:850",
-        "booking:4",
-        "vrbo:elevator"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "850"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "4"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "elevator"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "derived_from_system",
@@ -3166,8 +3836,16 @@
         "ev.socket_type"
       ],
       "source": [
-        "airbnb:851",
-        "booking:212"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "851"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "212"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3184,8 +3862,16 @@
         "parking.clearance_m"
       ],
       "source": [
-        "airbnb:9",
-        "booking:2"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "9"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "2"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
@@ -3202,7 +3888,11 @@
         "parking.reliability"
       ],
       "source": [
-        "airbnb:852"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "852"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
@@ -3217,9 +3907,21 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:15",
-        "booking:7",
-        "vrbo:gym"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "15"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "7"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "gym"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3234,7 +3936,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.hot_tub",
@@ -3248,9 +3951,21 @@
         "hot_tub.rules"
       ],
       "source": [
-        "airbnb:25",
-        "booking:87",
-        "vrbo:hot_tub"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "25"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "87"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "hot_tub"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3267,7 +3982,11 @@
         "parking.cost_eur"
       ],
       "source": [
-        "airbnb:853"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "853"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
@@ -3285,7 +4004,11 @@
         "parking.cost_eur"
       ],
       "source": [
-        "airbnb:854"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "854"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
@@ -3304,9 +4027,21 @@
         "pool.rules"
       ],
       "source": [
-        "airbnb:7",
-        "booking:3",
-        "vrbo:pool"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "7"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "3"
+        },
+        {
+          "platform": "vrbo",
+          "kind": "external_id",
+          "external_id": "pool"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "derived_from_space"
@@ -3320,7 +4055,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:858"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "858"
+        }
       ],
       "importanceLevel": "standard",
       "destination": "amenity_configurable"
@@ -3334,8 +4073,16 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:856",
-        "booking:88"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "856"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "88"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "amenity_configurable"
@@ -3349,7 +4096,11 @@
       "defaults": {},
       "dependency_hints": [],
       "source": [
-        "airbnb:857"
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "857"
+        }
       ],
       "importanceLevel": "bonus",
       "destination": "moved_to_access",
@@ -3366,7 +4117,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.step_free_guest_entrance",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.step_free_guest_entrance"
@@ -3382,7 +4140,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.guest_entrance_wide_81cm",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.guest_entrance_wide_81cm"
@@ -3398,7 +4163,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.accessible_parking_spot",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.accessible_parking_spot"
@@ -3414,7 +4186,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.step_free_path_to_entrance",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.step_free_path_to_entrance"
@@ -3430,7 +4209,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.step_free_bedroom_access",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.step_free_bedroom_access"
@@ -3446,7 +4232,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.bedroom_entrance_wide_81cm",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.bedroom_entrance_wide_81cm"
@@ -3462,7 +4255,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.step_free_bathroom_access",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.step_free_bathroom_access"
@@ -3478,7 +4278,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.bathroom_entrance_wide_81cm",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.bathroom_entrance_wide_81cm"
@@ -3493,7 +4300,14 @@
       "dependency_hints": [
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.shower_grab_bar",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.shower_grab_bar"
@@ -3508,7 +4322,14 @@
       "dependency_hints": [
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.toilet_grab_bar",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.toilet_grab_bar"
@@ -3524,7 +4345,14 @@
         "accessibility.measurements_cm",
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.step_free_shower",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.step_free_shower"
@@ -3539,7 +4367,14 @@
       "dependency_hints": [
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.shower_bath_chair",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.shower_bath_chair"
@@ -3554,7 +4389,14 @@
       "dependency_hints": [
         "accessibility.photo_required"
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "accessibility_features.ceiling_mobile_hoist",
+          "transform": "bool"
+        }
+      ],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
       "target": "ax.ceiling_mobile_hoist"

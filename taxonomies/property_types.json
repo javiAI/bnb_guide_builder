@@ -16,6 +16,14 @@
       "requiresBuildingAccess": true,
       "dependency_hints": [],
       "source": [
+        { "platform": "airbnb", "kind": "external_id", "external_id": "apartment" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "condominium" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "serviced_apartment" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "loft" },
+        { "platform": "booking", "kind": "external_id", "external_id": "3" },
+        { "platform": "booking", "kind": "external_id", "external_id": "13" }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -31,6 +39,25 @@
       "requiresBuildingAccess": false,
       "dependency_hints": [],
       "source": [
+        { "platform": "airbnb", "kind": "external_id", "external_id": "house" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "townhouse" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "bungalow" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "cottage" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "chalet" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "cabin" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "villa" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "tiny_house" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "farm_stay" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "casa_particular" },
+        { "platform": "booking", "kind": "external_id", "external_id": "7" },
+        { "platform": "booking", "kind": "external_id", "external_id": "8" },
+        { "platform": "booking", "kind": "external_id", "external_id": "27" },
+        { "platform": "booking", "kind": "external_id", "external_id": "30" },
+        { "platform": "booking", "kind": "external_id", "external_id": "31" },
+        { "platform": "booking", "kind": "external_id", "external_id": "32" },
+        { "platform": "booking", "kind": "external_id", "external_id": "44" }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -48,6 +75,12 @@
         "Sugerir aclarar si la entrada es privada o compartida en Arrival & access."
       ],
       "source": [
+        { "platform": "airbnb", "kind": "external_id", "external_id": "guest_suite" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "guesthouse" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "in_law" },
+        { "platform": "booking", "kind": "external_id", "external_id": "40" }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -65,6 +98,28 @@
         "Activar campos adicionales de contexto y seguridad."
       ],
       "source": [
+        { "platform": "airbnb", "kind": "external_id", "external_id": "castle" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "treehouse" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "earth_house" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "dome_house" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "yurt" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "tent" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "tipi" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "cave" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "igloo" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "lighthouse" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "windmill" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "barn" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "houseboat" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "boat" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "rv_camper" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "plane" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "train" },
+        { "platform": "booking", "kind": "external_id", "external_id": "29" },
+        { "platform": "booking", "kind": "external_id", "external_id": "16" },
+        { "platform": "booking", "kind": "external_id", "external_id": "34" }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -82,6 +137,14 @@
         "Mostrar hotel_room como opción cuando aplique."
       ],
       "source": [
+        { "platform": "airbnb", "kind": "external_id", "external_id": "bed_and_breakfast" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "ryokan" },
+        { "platform": "airbnb", "kind": "external_id", "external_id": "nature_lodge" },
+        { "platform": "booking", "kind": "external_id", "external_id": "4" },
+        { "platform": "booking", "kind": "external_id", "external_id": "11" },
+        { "platform": "booking", "kind": "external_id", "external_id": "18" }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -99,6 +162,18 @@
         "Habilitar hotel_room y políticas de front desk / building staff."
       ],
       "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "boutique_hotel"
+        },
+        {
+          "platform": "booking",
+          "kind": "external_id",
+          "external_id": "20"
+        }
+      ],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -113,7 +188,8 @@
       "dependency_hints": [
         "Recoger título y descripción personalizados."
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     }
   ],
   "source_refs": {

@@ -1,0 +1,59 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://developer.airbnb.com/docs/listings/api-reference (property_type_category enum)",
+    "https://www.airbnb.com/help/article/2503"
+  ],
+  "scope": "v1",
+  "notes": "Airbnb exposes property_type_category as a broad enum. Many values collapse semantically onto our 7 buckets via multi-external_id mapping on the canonical taxonomy item (see collapsed_to).",
+  "entries": [
+    { "id": "apartment", "label_en": "Apartment", "relevance": "covered", "collapsed_to": "pt.apartment" },
+    { "id": "condominium", "label_en": "Condominium", "relevance": "covered", "collapsed_to": "pt.apartment" },
+    { "id": "serviced_apartment", "label_en": "Serviced apartment", "relevance": "covered", "collapsed_to": "pt.apartment" },
+    { "id": "loft", "label_en": "Loft", "relevance": "covered", "collapsed_to": "pt.apartment" },
+
+    { "id": "house", "label_en": "House", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "townhouse", "label_en": "Townhouse", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "bungalow", "label_en": "Bungalow", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "cottage", "label_en": "Cottage", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "chalet", "label_en": "Chalet", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "cabin", "label_en": "Cabin", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "villa", "label_en": "Villa", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "tiny_house", "label_en": "Tiny house", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "farm_stay", "label_en": "Farm stay", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "casa_particular", "label_en": "Casa particular", "relevance": "covered", "collapsed_to": "pt.house" },
+
+    { "id": "bed_and_breakfast", "label_en": "Bed and breakfast", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+    { "id": "ryokan", "label_en": "Ryokan", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+    { "id": "nature_lodge", "label_en": "Nature lodge", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+
+    { "id": "boutique_hotel", "label_en": "Boutique hotel", "relevance": "covered", "collapsed_to": "pt.boutique_hotel" },
+
+    { "id": "guest_suite", "label_en": "Guest suite", "relevance": "covered", "collapsed_to": "pt.secondary_unit" },
+    { "id": "guesthouse", "label_en": "Guesthouse", "relevance": "covered", "collapsed_to": "pt.secondary_unit" },
+    { "id": "in_law", "label_en": "In-law", "relevance": "covered", "collapsed_to": "pt.secondary_unit" },
+
+    { "id": "castle", "label_en": "Castle", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "treehouse", "label_en": "Treehouse", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "earth_house", "label_en": "Earth house", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "dome_house", "label_en": "Dome house", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "yurt", "label_en": "Yurt", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "tent", "label_en": "Tent", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "tipi", "label_en": "Tipi", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "cave", "label_en": "Cave", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "igloo", "label_en": "Igloo", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "lighthouse", "label_en": "Lighthouse", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "windmill", "label_en": "Windmill", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "barn", "label_en": "Barn", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "houseboat", "label_en": "Houseboat", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "boat", "label_en": "Boat", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "rv_camper", "label_en": "RV / camper", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "plane", "label_en": "Plane", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "train", "label_en": "Train", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+
+    { "id": "hotel", "label_en": "Hotel", "relevance": "out_of_scope", "reason": "hotel_only", "notes": "Full-size hotels outside STR product scope; pt.boutique_hotel covers small-hotel cases." },
+    { "id": "resort", "label_en": "Resort", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "hostel", "label_en": "Hostel", "relevance": "out_of_scope", "reason": "not_relevant_to_str", "notes": "Shared-dorm model with per-bed billing not supported by our data model." },
+    { "id": "aparthotel", "label_en": "Aparthotel", "relevance": "out_of_scope", "reason": "hotel_only" }
+  ]
+}

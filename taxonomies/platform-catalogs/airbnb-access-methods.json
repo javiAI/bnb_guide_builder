@@ -1,0 +1,46 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://www.airbnb.com/help/article/828",
+    "https://developer.airbnb.com/docs/listings/api-reference (check_in_method enum)"
+  ],
+  "scope": "v1",
+  "notes": "Airbnb's check_in_method enum on listings. Booking does not expose an equivalent catalog — access method for Booking is captured as free-text in checkin_instructions (see booking-structured-fields.json).",
+  "entries": [
+    {
+      "id": "smart_lock",
+      "label_en": "Smart lock",
+      "category": "check_in_method",
+      "relevance": "covered",
+      "collapsed_to": "am.smart_lock"
+    },
+    {
+      "id": "keypad",
+      "label_en": "Keypad",
+      "category": "check_in_method",
+      "relevance": "covered",
+      "collapsed_to": "am.keypad"
+    },
+    {
+      "id": "lockbox",
+      "label_en": "Lockbox",
+      "category": "check_in_method",
+      "relevance": "covered",
+      "collapsed_to": "am.lockbox"
+    },
+    {
+      "id": "in_person_greeting",
+      "label_en": "Host greets you in person",
+      "category": "check_in_method",
+      "relevance": "covered",
+      "collapsed_to": "am.in_person"
+    },
+    {
+      "id": "building_staff",
+      "label_en": "Building staff",
+      "category": "check_in_method",
+      "relevance": "covered",
+      "collapsed_to": "am.key_pickup"
+    }
+  ]
+}

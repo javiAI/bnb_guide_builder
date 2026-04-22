@@ -56,17 +56,17 @@ Independientemente del nivel elegido, **arrancar siempre por Nivel 0**.
 
 - Export: serializar Property + Spaces + Amenities + Policies a schemas Airbnb y Booking.
 - Import: lectura inversa con reconciliación (detectar conflictos, no sobrescribir a ciegas).
-- Mappings: todas las taxonomías ya tienen campos `source: [{platform: airbnb, external_id: …}]`; falta auditar cobertura.
+- Mappings: **auditoría real completada en rama 14A (reformulada)** — 194 ítems clasificables en las 5 taxonomías mappables, **161 con mapping real a Airbnb o Booking (83%)** y **33 con `platform_supported: false`** justificado por concepto-no-en-OTA. Shape canónico: `PlatformMapping` como union discriminada por `kind` — `external_id` (catálogo), `structured_field` + `transform` (campo del listing), `free_text` (bucket de texto libre), `room_counter` (contribuye a bedrooms/bathrooms/beds). Helpers completos: `getAirbnbMapping` / `getBookingMapping` (devuelven el mapping completo para que 14B/14C hagan switch sobre `kind`); sugar legacy `getAirbnbId` / `getBookingId` sólo resuelve a string cuando `kind === "external_id"`. Invariante protegida por `src/test/platform-mappings-coverage.test.ts` (28 tests) con `ALLOWED_KINDS` per-taxonomía.
 
 ### Pre-requisitos
 
 - Fases 8-11 estables (core + outputs + knowledge).
 - Credenciales y aprobación de partners API.
-- Auditoría de mappings: confirmar que el 100% de IDs en `amenity_taxonomy`, `property_types`, `space_types`, `access_methods`, `policy_taxonomy` tienen equivalente documentado.
+- ✅ Auditoría real de mappings (rama 14A reformulada): `amenity_taxonomy` (129 Airbnb / 46 Booking / 21 unsupp de 150), `property_types` (6/4/1 de 7 — Booking PCT codes verificados), `space_types` (12/12/8 de 20 — bedroom/bathroom vía `room_counter`, kitchen/living/amenities vía `structured_field`, compuestos inexistentes en OTA quedan unsupp), `access_methods` (5/5/1 de 6 — Airbnb catálogo + Booking `free_text: checkin_instructions`), `policy_taxonomy` (9/9/2 de 11 — policies exportan como `structured_field` en `listing_policies.*` / `policies.*` / `pricing.*` / `fees.*`, o como `free_text` en `house_rules` cuando no hay campo estructurado; los 2 unsupp son `type:ref` aliases).
 
 ### Ramas previstas (Fase 14 en MASTER_PLAN_V2)
 
-- `feat/platform-mappings-audit` — completar `source[]` donde falte
+- ✅ `feat/platform-mappings-audit` — completado (rama 14A)
 - `feat/airbnb-export` — serializer + validación contra schema Airbnb
 - `feat/booking-export` — idem Booking
 - `feat/platform-import` — reconciliación bidireccional

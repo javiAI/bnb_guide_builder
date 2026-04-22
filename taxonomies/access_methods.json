@@ -17,15 +17,18 @@
       "dependency_hints": [
         "Pedir marca, modelo, batería, dependencia de wifi y backup."
       ],
-      "mappings": {
-        "airbnb": {
-          "checkin_method": "smart_lock"
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "smart_lock"
         },
-        "booking_hint": [
-          "digital_key",
-          "contactless_checkin"
-        ]
-      }
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
+        }
+      ]
     },
     {
       "id": "am.keypad",
@@ -40,11 +43,18 @@
       "dependency_hints": [
         "Pedir código, ubicación e instrucciones de fallo."
       ],
-      "mappings": {
-        "airbnb": {
-          "checkin_method": "keypad"
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "keypad"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
-      }
+      ]
     },
     {
       "id": "am.lockbox",
@@ -59,15 +69,18 @@
       "dependency_hints": [
         "Pedir ubicación exacta, foto contextual y procedimiento alternativo."
       ],
-      "mappings": {
-        "airbnb": {
-          "checkin_method": "lockbox"
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "lockbox"
         },
-        "booking_hint": [
-          "lockbox_key_collection_at_property",
-          "lockbox_key_collection_at_separate_location"
-        ]
-      }
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
+        }
+      ]
     },
     {
       "id": "am.in_person",
@@ -80,11 +93,18 @@
       "dependency_hints": [
         "Pedir ventana horaria, responsable y punto de encuentro."
       ],
-      "mappings": {
-        "airbnb": {
-          "checkin_method": "in_person_greeting"
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "in_person_greeting"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
-      }
+      ]
     },
     {
       "id": "am.key_pickup",
@@ -97,7 +117,18 @@
       "dependency_hints": [
         "Pedir nombre y dirección del establecimiento, horario de recogida."
       ],
-      "mappings": {}
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "building_staff"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
+        }
+      ]
     },
     {
       "id": "am.other",
@@ -110,7 +141,8 @@
       "dependency_hints": [
         "Pedir descripción estructurada y razón de uso."
       ],
-      "mappings": {}
+      "source": [],
+      "platform_supported": false
     }
   ],
   "source_refs": {
