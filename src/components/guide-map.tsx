@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
+// NOTE: the MapLibre stylesheet is imported once from `app/g/[slug]/layout.tsx`
+// so it loads for the whole public-guide subtree and no global CSS is pulled
+// in from this client component.
 import type { GuideMapData, GuideMapPin } from "@/lib/types/guide-map";
 import { escapeHtml } from "@/lib/utils/html-escape";
 import { formatDistance } from "@/lib/services/places";
@@ -382,8 +384,13 @@ function buildPopupHtml(pin: GuideMapPin): string {
 }
 
 function formatDate(iso: string): string {
+  // `new Date(iso)` never throws — an unparseable input produces an Invalid
+  // Date whose `toLocaleString` returns the literal "Invalid Date". Guard
+  // with `Number.isNaN(getTime())` so bad input falls back to the raw ISO.
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
   try {
-    return new Date(iso).toLocaleString("es-ES", {
+    return d.toLocaleString("es-ES", {
       day: "2-digit",
       month: "short",
       hour: "2-digit",
