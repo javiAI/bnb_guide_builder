@@ -1805,6 +1805,21 @@ function resolveItem(taxonomy: MappableTaxonomy, id: string): TaxonomyItem {
   return item;
 }
 
+/**
+ * Return the first well-formed mapping whose `platform` matches.
+ *
+ * When an item carries multiple mappings for the same platform (e.g. a
+ * property type that collapses several Airbnb `property_type_category`
+ * tokens into one, or an amenity with both an `external_id` and a
+ * `structured_field` alias), **JSON ordering is canonical**: the first
+ * matching entry in `source[]` is the primary outbound mapping used by
+ * exporters. Additional entries after it are aliases — inbound importers
+ * resolve them back to the same taxonomy item, but they are never
+ * surfaced outbound via this helper.
+ *
+ * Callers that need every mapping (e.g. exhaustive inbound resolution)
+ * must iterate `source[]` directly instead of calling this helper.
+ */
 function findPlatformMapping(
   item: TaxonomyItem,
   platform: "airbnb" | "booking",

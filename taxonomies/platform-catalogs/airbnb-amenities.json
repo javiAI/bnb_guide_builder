@@ -9,7 +9,7 @@
   "entries": [
     {
       "id": "1",
-      "label_en": "Televisión",
+      "label_en": "TV",
       "relevance": "covered",
       "collapsed_to": "am.tv"
     },
@@ -21,255 +21,255 @@
     },
     {
       "id": "5",
-      "label_en": "Aire acondicionado",
+      "label_en": "Air conditioning",
       "relevance": "covered",
       "collapsed_to": "am.air_conditioning"
     },
     {
       "id": "7",
-      "label_en": "Piscina",
+      "label_en": "Pool",
       "relevance": "covered",
       "collapsed_to": "am.pool"
     },
     {
       "id": "8",
-      "label_en": "Cocina",
+      "label_en": "Kitchen",
       "relevance": "covered",
       "collapsed_to": "am.kitchen"
     },
     {
       "id": "9",
-      "label_en": "Aparcamiento gratuito",
+      "label_en": "Free parking",
       "relevance": "covered",
       "collapsed_to": "am.free_parking",
       "notes": "Also referenced by: am.free_parking_premises"
     },
     {
       "id": "15",
-      "label_en": "Gimnasio",
+      "label_en": "Gym",
       "relevance": "covered",
       "collapsed_to": "am.gym"
     },
     {
       "id": "25",
-      "label_en": "Jacuzzi",
+      "label_en": "Hot tub",
       "relevance": "covered",
       "collapsed_to": "am.hot_tub"
     },
     {
       "id": "30",
-      "label_en": "Agua caliente",
+      "label_en": "Hot water",
       "relevance": "covered",
       "collapsed_to": "am.hot_water",
       "notes": "Also referenced by: am.heating"
     },
     {
       "id": "33",
-      "label_en": "Lavadora",
+      "label_en": "Washer",
       "relevance": "covered",
       "collapsed_to": "am.washer"
     },
     {
       "id": "34",
-      "label_en": "Secadora",
+      "label_en": "Dryer",
       "relevance": "covered",
       "collapsed_to": "am.dryer"
     },
     {
       "id": "35",
-      "label_en": "Extintor",
+      "label_en": "Fire extinguisher",
       "relevance": "covered",
       "collapsed_to": "am.fire_extinguisher"
     },
     {
       "id": "36",
-      "label_en": "Botiquín",
+      "label_en": "First aid kit",
       "relevance": "covered",
       "collapsed_to": "am.first_aid_kit"
     },
     {
       "id": "37",
-      "label_en": "Bañera",
+      "label_en": "Bathtub",
       "relevance": "covered",
       "collapsed_to": "am.bathtub"
     },
     {
       "id": "39",
-      "label_en": "Almohadas y mantas extra",
+      "label_en": "Extra pillows and blankets",
       "relevance": "covered",
       "collapsed_to": "am.extra_pillows_blankets"
     },
     {
       "id": "40",
-      "label_en": "Elementos básicos",
+      "label_en": "Essentials",
       "relevance": "covered",
       "collapsed_to": "am.essentials"
     },
     {
       "id": "41",
-      "label_en": "Champú",
+      "label_en": "Shampoo",
       "relevance": "covered",
       "collapsed_to": "am.shampoo"
     },
     {
       "id": "42",
-      "label_en": "Vajilla y cubiertos",
+      "label_en": "Dishes and silverware",
       "relevance": "covered",
       "collapsed_to": "am.dishes_silverware"
     },
     {
       "id": "44",
-      "label_en": "Perchas",
+      "label_en": "Hangers",
       "relevance": "covered",
       "collapsed_to": "am.hangers"
     },
     {
       "id": "45",
-      "label_en": "Secador de pelo",
+      "label_en": "Hair dryer",
       "relevance": "covered",
       "collapsed_to": "am.hair_dryer"
     },
     {
       "id": "46",
-      "label_en": "Plancha",
+      "label_en": "Iron",
       "relevance": "covered",
       "collapsed_to": "am.iron"
     },
     {
       "id": "47",
-      "label_en": "Espacio de trabajo",
+      "label_en": "Dedicated workspace",
       "relevance": "covered",
       "collapsed_to": "am.dedicated_workspace"
     },
     {
       "id": "110",
-      "label_en": "Chimenea interior",
+      "label_en": "Indoor fireplace",
       "relevance": "covered",
       "collapsed_to": "am.indoor_fireplace"
     },
     {
       "id": "111",
-      "label_en": "Barbacoa",
+      "label_en": "BBQ grill",
       "relevance": "covered",
       "collapsed_to": "am.bbq_grill"
     },
     {
       "id": "286",
-      "label_en": "Cuna",
+      "label_en": "Crib",
       "relevance": "covered",
       "collapsed_to": "am.crib"
     },
     {
       "id": "767",
-      "label_en": "Bidé",
+      "label_en": "Bidet",
       "relevance": "covered",
       "collapsed_to": "am.bidet"
     },
     {
       "id": "769",
-      "label_en": "Jabón corporal",
+      "label_en": "Body soap",
       "relevance": "covered",
       "collapsed_to": "am.body_soap"
     },
     {
       "id": "770",
-      "label_en": "Productos de limpieza",
+      "label_en": "Cleaning products",
       "relevance": "covered",
       "collapsed_to": "am.cleaning_products"
     },
     {
       "id": "771",
-      "label_en": "Acondicionador",
+      "label_en": "Conditioner",
       "relevance": "covered",
       "collapsed_to": "am.conditioner"
     },
     {
       "id": "773",
-      "label_en": "Ducha exterior",
+      "label_en": "Outdoor shower",
       "relevance": "covered",
       "collapsed_to": "am.outdoor_shower"
     },
     {
       "id": "774",
-      "label_en": "Gel de ducha",
+      "label_en": "Shower gel",
       "relevance": "covered",
       "collapsed_to": "am.shower_gel"
     },
     {
       "id": "775",
-      "label_en": "Ropa de cama",
+      "label_en": "Bed linens",
       "relevance": "covered",
       "collapsed_to": "am.bed_linens"
     },
     {
       "id": "776",
-      "label_en": "Almacenaje de ropa",
+      "label_en": "Clothing storage",
       "relevance": "covered",
       "collapsed_to": "am.clothing_storage"
     },
     {
       "id": "777",
-      "label_en": "Tendedero",
+      "label_en": "Drying rack",
       "relevance": "covered",
       "collapsed_to": "am.drying_rack"
     },
     {
       "id": "778",
-      "label_en": "Mosquitera",
+      "label_en": "Mosquito net",
       "relevance": "covered",
       "collapsed_to": "am.mosquito_net"
     },
     {
       "id": "779",
-      "label_en": "Persianas opacas",
+      "label_en": "Room-darkening shades",
       "relevance": "covered",
       "collapsed_to": "am.room_darkening_shades"
     },
     {
       "id": "780",
-      "label_en": "Caja fuerte",
+      "label_en": "Safe",
       "relevance": "covered",
       "collapsed_to": "am.safe"
     },
     {
       "id": "781",
-      "label_en": "Conexión Ethernet",
+      "label_en": "Ethernet connection",
       "relevance": "covered",
       "collapsed_to": "am.ethernet"
     },
     {
       "id": "782",
-      "label_en": "Equipamiento de ejercicio",
+      "label_en": "Exercise equipment",
       "relevance": "covered",
       "collapsed_to": "am.exercise_equipment"
     },
     {
       "id": "783",
-      "label_en": "Consola de videojuegos",
+      "label_en": "Game console",
       "relevance": "covered",
       "collapsed_to": "am.game_console"
     },
     {
       "id": "784",
-      "label_en": "Equipo de sonido",
+      "label_en": "Sound system",
       "relevance": "covered",
       "collapsed_to": "am.sound_system"
     },
     {
       "id": "785",
-      "label_en": "Libros y material de lectura",
+      "label_en": "Books and reading material",
       "relevance": "covered",
       "collapsed_to": "am.books_reading"
     },
     {
       "id": "786",
-      "label_en": "Mesa de billar",
+      "label_en": "Pool table",
       "relevance": "covered",
       "collapsed_to": "am.pool_table"
     },
     {
       "id": "787",
-      "label_en": "Mesa de ping-pong",
+      "label_en": "Ping-pong table",
       "relevance": "covered",
       "collapsed_to": "am.ping_pong"
     },
@@ -281,169 +281,169 @@
     },
     {
       "id": "789",
-      "label_en": "Tocadiscos",
+      "label_en": "Record player",
       "relevance": "covered",
       "collapsed_to": "am.record_player"
     },
     {
       "id": "790",
-      "label_en": "Sala de cine",
+      "label_en": "Movie theater",
       "relevance": "covered",
       "collapsed_to": "am.movie_theater"
     },
     {
       "id": "791",
-      "label_en": "Juegos de mesa",
+      "label_en": "Board games",
       "relevance": "covered",
       "collapsed_to": "am.board_games"
     },
     {
       "id": "792",
-      "label_en": "Bañera para bebé",
+      "label_en": "Baby bath",
       "relevance": "covered",
       "collapsed_to": "am.baby_bath"
     },
     {
       "id": "793",
-      "label_en": "Vigilabebés",
+      "label_en": "Baby monitor",
       "relevance": "covered",
       "collapsed_to": "am.baby_monitor"
     },
     {
       "id": "794",
-      "label_en": "Barreras de seguridad para bebés",
+      "label_en": "Baby safety gates",
       "relevance": "covered",
       "collapsed_to": "am.baby_safety_gates"
     },
     {
       "id": "795",
-      "label_en": "Recomendaciones de canguro",
+      "label_en": "Babysitter recommendations",
       "relevance": "covered",
       "collapsed_to": "am.babysitter_recs"
     },
     {
       "id": "796",
-      "label_en": "Cambiador",
+      "label_en": "Changing table",
       "relevance": "covered",
       "collapsed_to": "am.changing_table"
     },
     {
       "id": "797",
-      "label_en": "Libros y juguetes infantiles",
+      "label_en": "Children's books and toys",
       "relevance": "covered",
       "collapsed_to": "am.childrens_books_toys"
     },
     {
       "id": "798",
-      "label_en": "Vajilla infantil",
+      "label_en": "Children's dinnerware",
       "relevance": "covered",
       "collapsed_to": "am.childrens_dinnerware"
     },
     {
       "id": "799",
-      "label_en": "Trona",
+      "label_en": "High chair",
       "relevance": "covered",
       "collapsed_to": "am.high_chair"
     },
     {
       "id": "800",
-      "label_en": "Protectores de enchufes",
+      "label_en": "Outlet covers",
       "relevance": "covered",
       "collapsed_to": "am.outlet_covers"
     },
     {
       "id": "801",
-      "label_en": "Cuna de viaje",
+      "label_en": "Pack 'n Play / travel crib",
       "relevance": "covered",
       "collapsed_to": "am.pack_n_play"
     },
     {
       "id": "802",
-      "label_en": "Protectores de esquinas",
+      "label_en": "Table corner guards",
       "relevance": "covered",
       "collapsed_to": "am.table_corner_guards"
     },
     {
       "id": "803",
-      "label_en": "Protectores de ventanas",
+      "label_en": "Window guards",
       "relevance": "covered",
       "collapsed_to": "am.window_guards"
     },
     {
       "id": "804",
-      "label_en": "Pantalla para chimenea",
+      "label_en": "Fireplace screen",
       "relevance": "covered",
       "collapsed_to": "am.fire_screen"
     },
     {
       "id": "805",
-      "label_en": "Ventilador de techo",
+      "label_en": "Ceiling fan",
       "relevance": "covered",
       "collapsed_to": "am.ceiling_fan"
     },
     {
       "id": "806",
-      "label_en": "Ventiladores portátiles",
+      "label_en": "Portable fans",
       "relevance": "covered",
       "collapsed_to": "am.portable_fans"
     },
     {
       "id": "807",
-      "label_en": "Detector de monóxido de carbono",
+      "label_en": "Carbon monoxide alarm",
       "relevance": "covered",
       "collapsed_to": "am.co_alarm"
     },
     {
       "id": "808",
-      "label_en": "Detector de humo",
+      "label_en": "Smoke alarm",
       "relevance": "covered",
       "collapsed_to": "am.smoke_alarm"
     },
     {
       "id": "809",
-      "label_en": "Wifi portátil",
+      "label_en": "Pocket wifi",
       "relevance": "covered",
       "collapsed_to": "am.pocket_wifi"
     },
     {
       "id": "810",
-      "label_en": "Cafetera",
+      "label_en": "Coffee maker",
       "relevance": "covered",
       "collapsed_to": "am.coffee_maker"
     },
     {
       "id": "811",
-      "label_en": "Café disponible",
+      "label_en": "Coffee",
       "relevance": "covered",
       "collapsed_to": "am.coffee"
     },
     {
       "id": "812",
-      "label_en": "Básicos de cocina",
+      "label_en": "Cooking basics",
       "relevance": "covered",
       "collapsed_to": "am.cooking_basics"
     },
     {
       "id": "813",
-      "label_en": "Mesa de comedor",
+      "label_en": "Dining table",
       "relevance": "covered",
       "collapsed_to": "am.dining_table"
     },
     {
       "id": "814",
-      "label_en": "Lavavajillas",
+      "label_en": "Dishwasher",
       "relevance": "covered",
       "collapsed_to": "am.dishwasher"
     },
     {
       "id": "815",
-      "label_en": "Congelador",
+      "label_en": "Freezer",
       "relevance": "covered",
       "collapsed_to": "am.freezer"
     },
     {
       "id": "816",
-      "label_en": "Hervidor de agua",
+      "label_en": "Kettle",
       "relevance": "covered",
       "collapsed_to": "am.kettle"
     },
@@ -455,157 +455,157 @@
     },
     {
       "id": "818",
-      "label_en": "Microondas",
+      "label_en": "Microwave",
       "relevance": "covered",
       "collapsed_to": "am.microwave"
     },
     {
       "id": "819",
-      "label_en": "Mini nevera",
+      "label_en": "Mini fridge",
       "relevance": "covered",
       "collapsed_to": "am.mini_fridge"
     },
     {
       "id": "820",
-      "label_en": "Horno",
+      "label_en": "Oven",
       "relevance": "covered",
       "collapsed_to": "am.oven"
     },
     {
       "id": "821",
-      "label_en": "Nevera",
+      "label_en": "Refrigerator",
       "relevance": "covered",
       "collapsed_to": "am.refrigerator"
     },
     {
       "id": "822",
-      "label_en": "Arrocera",
+      "label_en": "Rice maker",
       "relevance": "covered",
       "collapsed_to": "am.rice_maker"
     },
     {
       "id": "823",
-      "label_en": "Placa de cocina",
+      "label_en": "Stove",
       "relevance": "covered",
       "collapsed_to": "am.stove"
     },
     {
       "id": "824",
-      "label_en": "Tostadora",
+      "label_en": "Toaster",
       "relevance": "covered",
       "collapsed_to": "am.toaster"
     },
     {
       "id": "825",
-      "label_en": "Copas de vino",
+      "label_en": "Wine glasses",
       "relevance": "covered",
       "collapsed_to": "am.wine_glasses"
     },
     {
       "id": "826",
-      "label_en": "Batidora",
+      "label_en": "Blender",
       "relevance": "covered",
       "collapsed_to": "am.blender"
     },
     {
       "id": "827",
-      "label_en": "Panificadora",
+      "label_en": "Bread maker",
       "relevance": "covered",
       "collapsed_to": "am.bread_maker"
     },
     {
       "id": "828",
-      "label_en": "Bandeja de horno",
+      "label_en": "Baking sheet",
       "relevance": "covered",
       "collapsed_to": "am.baking_sheet"
     },
     {
       "id": "829",
-      "label_en": "Utensilios de barbacoa",
+      "label_en": "BBQ utensils",
       "relevance": "covered",
       "collapsed_to": "am.bbq_utensils"
     },
     {
       "id": "830",
-      "label_en": "Compactador de basura",
+      "label_en": "Trash compactor",
       "relevance": "covered",
       "collapsed_to": "am.trash_compactor"
     },
     {
       "id": "831",
-      "label_en": "Acceso a playa",
+      "label_en": "Beach access",
       "relevance": "covered",
       "collapsed_to": "am.beach_access"
     },
     {
       "id": "832",
-      "label_en": "Acceso a lago",
+      "label_en": "Lake access",
       "relevance": "covered",
       "collapsed_to": "am.lake_access"
     },
     {
       "id": "833",
-      "label_en": "Lavandería cercana",
+      "label_en": "Laundromat nearby",
       "relevance": "covered",
       "collapsed_to": "am.laundromat_nearby"
     },
     {
       "id": "834",
-      "label_en": "Entrada privada",
+      "label_en": "Private entrance",
       "relevance": "covered",
       "collapsed_to": "am.private_entrance"
     },
     {
       "id": "835",
-      "label_en": "Acceso a resort",
+      "label_en": "Resort access",
       "relevance": "covered",
       "collapsed_to": "am.resort_access"
     },
     {
       "id": "836",
-      "label_en": "Acceso directo a pistas",
+      "label_en": "Ski in/out access",
       "relevance": "covered",
       "collapsed_to": "am.ski_in_out"
     },
     {
       "id": "837",
-      "label_en": "Primera línea de agua",
+      "label_en": "Waterfront",
       "relevance": "covered",
       "collapsed_to": "am.waterfront"
     },
     {
       "id": "838",
-      "label_en": "Patio / jardín trasero",
+      "label_en": "Backyard",
       "relevance": "covered",
       "collapsed_to": "am.backyard"
     },
     {
       "id": "839",
-      "label_en": "Elementos de playa",
+      "label_en": "Beach essentials",
       "relevance": "covered",
       "collapsed_to": "am.beach_essentials"
     },
     {
       "id": "840",
-      "label_en": "Bicicletas",
+      "label_en": "Bikes",
       "relevance": "covered",
       "collapsed_to": "am.bikes"
     },
     {
       "id": "841",
-      "label_en": "Amarre para barco",
+      "label_en": "Boat slip",
       "relevance": "covered",
       "collapsed_to": "am.boat_slip"
     },
     {
       "id": "842",
-      "label_en": "Brasero exterior",
+      "label_en": "Fire pit",
       "relevance": "covered",
       "collapsed_to": "am.fire_pit"
     },
     {
       "id": "843",
-      "label_en": "Hamaca",
+      "label_en": "Hammock",
       "relevance": "covered",
       "collapsed_to": "am.hammock"
     },
@@ -617,61 +617,61 @@
     },
     {
       "id": "845",
-      "label_en": "Comedor exterior",
+      "label_en": "Outdoor dining area",
       "relevance": "covered",
       "collapsed_to": "am.outdoor_dining_area"
     },
     {
       "id": "846",
-      "label_en": "Mobiliario exterior",
+      "label_en": "Outdoor furniture",
       "relevance": "covered",
       "collapsed_to": "am.outdoor_furniture"
     },
     {
       "id": "847",
-      "label_en": "Cocina exterior",
+      "label_en": "Outdoor kitchen",
       "relevance": "covered",
       "collapsed_to": "am.outdoor_kitchen"
     },
     {
       "id": "848",
-      "label_en": "Patio o balcón",
+      "label_en": "Patio or balcony",
       "relevance": "covered",
       "collapsed_to": "am.patio_balcony"
     },
     {
       "id": "849",
-      "label_en": "Tumbonas",
+      "label_en": "Sun loungers",
       "relevance": "covered",
       "collapsed_to": "am.sun_loungers"
     },
     {
       "id": "850",
-      "label_en": "Ascensor",
+      "label_en": "Elevator",
       "relevance": "covered",
       "collapsed_to": "am.elevator"
     },
     {
       "id": "851",
-      "label_en": "Cargador de vehículo eléctrico",
+      "label_en": "EV charger",
       "relevance": "covered",
       "collapsed_to": "am.ev_charger"
     },
     {
       "id": "852",
-      "label_en": "Aparcamiento gratuito en la calle",
+      "label_en": "Free street parking",
       "relevance": "covered",
       "collapsed_to": "am.free_street_parking"
     },
     {
       "id": "853",
-      "label_en": "Aparcamiento de pago fuera de la propiedad",
+      "label_en": "Paid parking off premises",
       "relevance": "covered",
       "collapsed_to": "am.paid_parking_off_premises"
     },
     {
       "id": "854",
-      "label_en": "Aparcamiento de pago en la propiedad",
+      "label_en": "Paid parking on premises",
       "relevance": "covered",
       "collapsed_to": "am.paid_parking_on_premises"
     },
@@ -683,13 +683,13 @@
     },
     {
       "id": "857",
-      "label_en": "Vivienda en una sola planta",
+      "label_en": "Single-level home",
       "relevance": "covered",
       "collapsed_to": "am.single_level_home"
     },
     {
       "id": "858",
-      "label_en": "Salón privado",
+      "label_en": "Private living room",
       "relevance": "covered",
       "collapsed_to": "am.private_living_room"
     },

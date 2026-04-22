@@ -320,6 +320,16 @@ describe("Platform reverse coverage — schema invariants", () => {
         expect(deferred.length, `deferred entries in ${name}`).toBe(0);
       });
 
+      it("every entry has relevance in {covered, out_of_scope}", () => {
+        const bad = doc.entries.filter(
+          (e) => !ALLOWED_RELEVANCE.has(e.relevance),
+        );
+        expect(
+          bad.map((e) => `${e.kind}:${e.field ?? e.counter}=${e.relevance}`),
+          `bad relevance in ${name}`,
+        ).toEqual([]);
+      });
+
       it("every out_of_scope entry has a normalized reason", () => {
         const bad: string[] = [];
         for (const entry of doc.entries) {
