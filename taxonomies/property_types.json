@@ -15,7 +15,12 @@
       },
       "requiresBuildingAccess": true,
       "dependency_hints": [],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "apartment"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -31,7 +36,12 @@
       },
       "requiresBuildingAccess": false,
       "dependency_hints": [],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "house"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -49,7 +59,12 @@
       "dependency_hints": [
         "Sugerir aclarar si la entrada es privada o compartida en Arrival & access."
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "secondary_unit"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -67,7 +82,12 @@
       "dependency_hints": [
         "Activar campos adicionales de contexto y seguridad."
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "unique_space"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -85,7 +105,12 @@
       "dependency_hints": [
         "Mostrar hotel_room como opción cuando aplique."
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "bed_and_breakfast"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -103,7 +128,12 @@
       "dependency_hints": [
         "Habilitar hotel_room y políticas de front desk / building staff."
       ],
-      "source": [],
+      "source": [
+        {
+          "platform": "airbnb",
+          "external_id": "boutique_hotel"
+        }
+      ],
       "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
@@ -119,7 +149,8 @@
       "dependency_hints": [
         "Recoger título y descripción personalizados."
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     }
   ],
   "source_refs": {

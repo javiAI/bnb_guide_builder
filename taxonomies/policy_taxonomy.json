@@ -23,7 +23,8 @@
           "journeyTags": [
             "essential"
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.quiet_hours",
@@ -42,7 +43,8 @@
           "journeyTags": [
             "essential"
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.smoking",
@@ -80,7 +82,8 @@
           "journeyTags": [
             "essential"
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.events",
@@ -111,7 +114,8 @@
           "dependency_hints": [
             "Si se permite algún nivel, mostrar límites y condiciones."
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.pets",
@@ -305,7 +309,8 @@
           "journeyTags": [
             "essential"
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.checkin_checkout",
@@ -320,7 +325,8 @@
           "journeyTags": [
             "essential"
           ],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.commercial_photography",
@@ -344,7 +350,8 @@
             }
           ],
           "dependency_hints": [],
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "pol.services_in_home",
@@ -401,7 +408,8 @@
             }
           ],
           "dependency_hints": [],
-          "source": []
+          "source": [],
+          "platform_supported": false
         }
       ]
     },
@@ -421,7 +429,8 @@
           "recommended": false,
           "dependency_hints": [],
           "journeyStage": "checkout",
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "fee.extra_guest",
@@ -435,7 +444,8 @@
             "Mostrar solo si existe política diferenciada por ocupación."
           ],
           "journeyStage": "checkout",
-          "source": []
+          "source": [],
+          "platform_supported": false
         },
         {
           "id": "fee.pet",
@@ -447,7 +457,8 @@
           "recommended": false,
           "dependency_hints": [],
           "journeyStage": "checkout",
-          "source": []
+          "source": [],
+          "platform_supported": false
         }
       ]
     }

@@ -1724,7 +1724,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.bed_linens",
@@ -1922,7 +1923,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.arcade_games",
@@ -1934,7 +1936,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.batting_cage",
@@ -1946,7 +1949,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.books_reading",
@@ -1975,7 +1979,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.climbing_wall",
@@ -1987,7 +1992,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.ethernet",
@@ -2054,7 +2060,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.life_size_games",
@@ -2066,7 +2073,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.mini_golf",
@@ -2078,7 +2086,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.movie_theater",
@@ -2175,7 +2184,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.sound_system",
@@ -2204,7 +2214,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.tv",
@@ -2343,7 +2354,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.childrens_bikes",
@@ -2355,7 +2367,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.childrens_books_toys",
@@ -2464,7 +2477,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.outlet_covers",
@@ -2626,7 +2640,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.humidifier",
@@ -2638,7 +2653,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.dehumidifier",
@@ -2650,7 +2666,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.co_alarm",
@@ -3214,7 +3231,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.cork_screw",
@@ -3226,7 +3244,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.dish_soap",
@@ -3238,7 +3257,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.beach_access",
@@ -3746,7 +3766,8 @@
       "dependency_hints": [],
       "source": [],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "amenity_configurable",
+      "platform_supported": false
     },
     {
       "id": "am.hot_tub",
@@ -3917,7 +3938,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.step_free_guest_entrance"
+      "target": "ax.step_free_guest_entrance",
+      "platform_supported": false
     },
     {
       "id": "ax.guest_entrance_wide_81cm",
@@ -3933,7 +3955,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.guest_entrance_wide_81cm"
+      "target": "ax.guest_entrance_wide_81cm",
+      "platform_supported": false
     },
     {
       "id": "ax.accessible_parking_spot",
@@ -3949,7 +3972,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.accessible_parking_spot"
+      "target": "ax.accessible_parking_spot",
+      "platform_supported": false
     },
     {
       "id": "ax.step_free_path_to_entrance",
@@ -3965,7 +3989,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.step_free_path_to_entrance"
+      "target": "ax.step_free_path_to_entrance",
+      "platform_supported": false
     },
     {
       "id": "ax.step_free_bedroom_access",
@@ -3981,7 +4006,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.step_free_bedroom_access"
+      "target": "ax.step_free_bedroom_access",
+      "platform_supported": false
     },
     {
       "id": "ax.bedroom_entrance_wide_81cm",
@@ -3997,7 +4023,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.bedroom_entrance_wide_81cm"
+      "target": "ax.bedroom_entrance_wide_81cm",
+      "platform_supported": false
     },
     {
       "id": "ax.step_free_bathroom_access",
@@ -4013,7 +4040,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.step_free_bathroom_access"
+      "target": "ax.step_free_bathroom_access",
+      "platform_supported": false
     },
     {
       "id": "ax.bathroom_entrance_wide_81cm",
@@ -4029,7 +4057,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.bathroom_entrance_wide_81cm"
+      "target": "ax.bathroom_entrance_wide_81cm",
+      "platform_supported": false
     },
     {
       "id": "ax.shower_grab_bar",
@@ -4044,7 +4073,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.shower_grab_bar"
+      "target": "ax.shower_grab_bar",
+      "platform_supported": false
     },
     {
       "id": "ax.toilet_grab_bar",
@@ -4059,7 +4089,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.toilet_grab_bar"
+      "target": "ax.toilet_grab_bar",
+      "platform_supported": false
     },
     {
       "id": "ax.step_free_shower",
@@ -4075,7 +4106,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.step_free_shower"
+      "target": "ax.step_free_shower",
+      "platform_supported": false
     },
     {
       "id": "ax.shower_bath_chair",
@@ -4090,7 +4122,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.shower_bath_chair"
+      "target": "ax.shower_bath_chair",
+      "platform_supported": false
     },
     {
       "id": "ax.ceiling_mobile_hoist",
@@ -4105,7 +4138,8 @@
       "source": [],
       "importanceLevel": "standard",
       "destination": "moved_to_access",
-      "target": "ax.ceiling_mobile_hoist"
+      "target": "ax.ceiling_mobile_hoist",
+      "platform_supported": false
     }
   ],
   "source_refs": {

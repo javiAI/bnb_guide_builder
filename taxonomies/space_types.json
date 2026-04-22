@@ -20,7 +20,8 @@
         "rt.private_room",
         "rt.hotel_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.bathroom",
@@ -39,7 +40,8 @@
         "rt.hotel_room",
         "rt.other"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.kitchen",
@@ -58,7 +60,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.living_room",
@@ -79,7 +82,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.dining",
@@ -97,7 +101,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.office",
@@ -113,7 +118,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.laundry",
@@ -129,7 +135,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.balcony",
@@ -146,7 +153,8 @@
         "rt.private_room",
         "rt.hotel_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.patio",
@@ -162,7 +170,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.garden",
@@ -178,7 +187,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.garage",
@@ -194,7 +204,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.storage",
@@ -210,7 +221,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.studio",
@@ -237,7 +249,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.loft",
@@ -262,7 +275,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.open_plan",
@@ -286,7 +300,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.kitchen_living",
@@ -311,7 +326,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.kitchen_dining_living",
@@ -336,7 +352,8 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.pool",
@@ -352,7 +369,8 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.shared_area",
@@ -369,7 +387,8 @@
         "rt.shared_room",
         "rt.hotel_room"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     },
     {
       "id": "sp.other",
@@ -388,7 +407,8 @@
         "rt.hotel_room",
         "rt.other"
       ],
-      "source": []
+      "source": [],
+      "platform_supported": false
     }
   ]
 }
