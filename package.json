@@ -14,6 +14,7 @@
     "test:e2e:dev": "E2E_MODE=dev playwright test",
     "apply-amenity-destinations": "tsx scripts/apply-amenity-destinations.ts",
     "embed:backfill": "tsx src/lib/jobs/knowledge-embed-backfill.ts",
+    "firecrawl:dry-run": "tsx src/lib/jobs/local-events-firecrawl-dry-run.ts",
     "eval:assistant": "vitest run --config vitest.evals.config.ts",
     "eval:assistant:refresh": "tsx scripts/refresh-eval-embeddings.ts"
   },

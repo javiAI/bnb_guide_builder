@@ -1,18 +1,158 @@
 {
   "file": "local_event_sources.json",
-  "version": "2026-04-21",
+  "version": "2026-04-22",
   "locale": "es-ES",
   "units_system": "metric",
   "items": [
+    {
+      "key": "madrid_esmadrid",
+      "sourceUrl": "https://www.esmadrid.com/agenda",
+      "city": "Madrid",
+      "latitude": 40.4168,
+      "longitude": -3.7038,
+      "radiusKm": 40,
+      "language": "es",
+      "notes": "Agenda oficial del Ayuntamiento de Madrid (esMadrid). Cobertura amplia: conciertos, exposiciones, ferias, eventos de barrio. Extenso solape con Ticketmaster/PHQ en eventos grandes — valor incremental en hyperlocal municipal."
+    },
+    {
+      "key": "barcelona_timeout",
+      "sourceUrl": "https://www.timeout.es/barcelona/es/agenda",
+      "city": "Barcelona",
+      "latitude": 41.3851,
+      "longitude": 2.1734,
+      "radiusKm": 35,
+      "language": "es",
+      "notes": "Agenda curada para Barcelona (Time Out). Editorial fuerte en cultura/nocturno. Radio amplio para cubrir Hospitalet, Badalona, Sant Cugat."
+    },
+    {
+      "key": "sevilla_turismo",
+      "sourceUrl": "https://www.visitasevilla.es/agenda",
+      "city": "Sevilla",
+      "latitude": 37.3891,
+      "longitude": -5.9845,
+      "radiusKm": 30,
+      "language": "es",
+      "notes": "Agenda oficial de Turismo de Sevilla. Alto peso de eventos culturales/patrimoniales que PHQ puntúa mal."
+    },
+    {
+      "key": "malaga_turismo",
+      "sourceUrl": "https://www.malagaturismo.com/es/eventos",
+      "city": "Málaga",
+      "latitude": 36.7213,
+      "longitude": -4.4214,
+      "radiusKm": 40,
+      "language": "es",
+      "notes": "Agenda oficial de Málaga. Radio extendido para cubrir Costa del Sol (Torremolinos, Benalmádena, Fuengirola, Marbella cercana)."
+    },
+    {
+      "key": "bilbao_turismo",
+      "sourceUrl": "https://www.bilbaoturismo.net/BilbaoTurismo/es/agenda",
+      "city": "Bilbao",
+      "latitude": 43.2630,
+      "longitude": -2.9350,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Agenda oficial de Bilbao. Radio cubre Getxo, Portugalete y zona metropolitana."
+    },
+    {
+      "key": "granada_turismo",
+      "sourceUrl": "https://www.granadatur.com/agenda/",
+      "city": "Granada",
+      "latitude": 37.1773,
+      "longitude": -3.5986,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Agenda oficial de Turismo de Granada. Valor alto en flamenco/patrimonio/festivales locales."
+    },
+    {
+      "key": "san_sebastian_turismo",
+      "sourceUrl": "https://www.sansebastianturismoa.eus/es/que-hacer/agenda",
+      "city": "San Sebastián",
+      "latitude": 43.3183,
+      "longitude": -1.9812,
+      "radiusKm": 20,
+      "language": "es",
+      "notes": "Agenda oficial Donostia Turismoa. Festivales de cine/jazz, gastronomía, cultura vasca."
+    },
+    {
+      "key": "valencia_visitvalencia",
+      "sourceUrl": "https://www.visitvalencia.com/es/agenda",
+      "city": "Valencia",
+      "latitude": 39.4699,
+      "longitude": -0.3763,
+      "radiusKm": 30,
+      "language": "es",
+      "notes": "Agenda oficial de Valencia. Fuerte cobertura de fiestas tradicionales (Fallas, Tomatina cercana), fútbol, conciertos municipales."
+    },
+    {
+      "key": "zaragoza_turismo",
+      "sourceUrl": "https://www.zaragoza.es/sede/portal/turismo/agenda/",
+      "city": "Zaragoza",
+      "latitude": 41.6488,
+      "longitude": -0.8891,
+      "radiusKm": 30,
+      "language": "es",
+      "notes": "Agenda oficial del Ayuntamiento de Zaragoza. Pilar, fiestas de barrio, ferias municipales."
+    },
+    {
+      "key": "palma_mallorca_turismo",
+      "sourceUrl": "https://visitpalma.com/agenda/",
+      "city": "Palma",
+      "latitude": 39.5696,
+      "longitude": 2.6502,
+      "radiusKm": 45,
+      "language": "es",
+      "notes": "Agenda oficial Visit Palma. Radio extendido para cubrir costa mallorquina (Santa Ponça, Magaluf, Alcúdia cercana)."
+    },
+    {
+      "key": "santander_turismo",
+      "sourceUrl": "https://turismo.santander.es/agenda/",
+      "city": "Santander",
+      "latitude": 43.4623,
+      "longitude": -3.8099,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Agenda oficial de Santander. Cobertura Cantabria turística (Santillana, Comillas, Noja cercanas)."
+    },
+    {
+      "key": "cordoba_turismo",
+      "sourceUrl": "https://www.turismodecordoba.org/agenda",
+      "city": "Córdoba",
+      "latitude": 37.8882,
+      "longitude": -4.7794,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Agenda oficial de Turismo de Córdoba. Patios, festivales flamencos, ferias municipales."
+    },
+    {
+      "key": "toledo_turismo",
+      "sourceUrl": "https://www.toledo-turismo.com/agenda",
+      "city": "Toledo",
+      "latitude": 39.8628,
+      "longitude": -4.0273,
+      "radiusKm": 20,
+      "language": "es",
+      "notes": "Agenda oficial Turismo de Toledo. Eventos patrimoniales, visitas temáticas, Corpus Christi."
+    },
+    {
+      "key": "salamanca_turismo",
+      "sourceUrl": "https://salamanca.es/es/agenda",
+      "city": "Salamanca",
+      "latitude": 40.9701,
+      "longitude": -5.6635,
+      "radiusKm": 20,
+      "language": "es",
+      "notes": "Agenda oficial Ayuntamiento de Salamanca. Festivales universitarios, ferias, eventos municipales."
+    },
     {
       "key": "teruel_turismo",
       "sourceUrl": "https://www.turismo.teruel.es/es/agenda",
       "city": "Teruel",
       "latitude": 40.3456,
       "longitude": -1.1065,
-      "radiusKm": 15,
+      "radiusKm": 25,
       "language": "es",
-      "notes": "Agenda oficial de la Oficina de Turismo de Teruel. Caso central: destino pequeño real donde PHQ/TM cubren mal. Verificar disponibilidad del selector en cada refresh del DOM."
+      "notes": "Agenda oficial de la Oficina de Turismo de Teruel. Destino pequeño real donde PHQ/TM cubren mal — validador de cobertura hyperlocal."
     },
     {
       "key": "albarracin_turismo",
@@ -20,19 +160,49 @@
       "city": "Albarracín",
       "latitude": 40.4075,
       "longitude": -1.4419,
-      "radiusKm": 15,
+      "radiusKm": 20,
       "language": "es",
-      "notes": "Destino turístico pequeño/rural. Valida coverage donde PHQ/TM típicamente no aparecen. Esperar eventos con fecha variable (ferias, mercados)."
+      "notes": "Destino turístico pequeño/rural. Valida cobertura donde PHQ/TM típicamente no aparecen. Ferias y mercados con fecha variable."
     },
     {
-      "key": "valencia_turismo",
-      "sourceUrl": "https://www.visitvalencia.com/es/agenda",
-      "city": "Valencia",
-      "latitude": 39.4699,
-      "longitude": -0.3763,
+      "key": "cuenca_turismo",
+      "sourceUrl": "https://turismo.cuenca.es/agenda",
+      "city": "Cuenca",
+      "latitude": 40.0704,
+      "longitude": -2.1374,
       "radiusKm": 25,
       "language": "es",
-      "notes": "Ciudad grande con alto solape con PHQ/TM. Mide valor incremental de Firecrawl: ¿añade eventos locales no cubiertos (barrios, barracas, fallas minor)? Contraste contra Teruel/Albarracín."
+      "notes": "Agenda oficial Turismo Cuenca. Destino pequeño con eventos patrimoniales y musicales (Semana de Música Religiosa)."
+    },
+    {
+      "key": "oviedo_turismo",
+      "sourceUrl": "https://www.oviedo.es/agenda",
+      "city": "Oviedo",
+      "latitude": 43.3619,
+      "longitude": -5.8494,
+      "radiusKm": 30,
+      "language": "es",
+      "notes": "Agenda oficial Ayuntamiento de Oviedo. Festivales asturianos, San Mateo, eventos de cuenca minera cercana."
+    },
+    {
+      "key": "gijon_turismo",
+      "sourceUrl": "https://turismo.gijon.es/agenda",
+      "city": "Gijón",
+      "latitude": 43.5357,
+      "longitude": -5.6615,
+      "radiusKm": 25,
+      "language": "es",
+      "notes": "Agenda oficial Turismo Gijón. Semana Negra, festivales de verano, eventos costa asturiana."
+    },
+    {
+      "key": "cadiz_turismo",
+      "sourceUrl": "https://turismo.cadiz.es/es/agenda",
+      "city": "Cádiz",
+      "latitude": 36.5298,
+      "longitude": -6.2923,
+      "radiusKm": 30,
+      "language": "es",
+      "notes": "Agenda oficial Ayuntamiento de Cádiz. Carnaval de Cádiz (febrero), festivales flamencos, eventos bahía gaditana."
     }
   ]
 }

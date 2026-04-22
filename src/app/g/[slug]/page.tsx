@@ -3,9 +3,17 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { buildGuestPresentationLayer } from "@/lib/services/guest-presentation-pipeline";
 import {
+  buildGuideLocalEventsData,
+  buildGuideMapData,
+} from "@/lib/services/guide-map.service";
+import {
   GUIDE_TREE_SCHEMA_VERSION,
   type GuideTree,
 } from "@/lib/types/guide-tree";
+import type {
+  GuideLocalEventsData,
+  GuideMapData,
+} from "@/lib/types/guide-map";
 import type { GuideSearchIndex } from "@/lib/types/guide-search-hit";
 import { GuideRenderer } from "@/components/public-guide/guide-renderer";
 import { GuideNotAvailable } from "./not-available";
@@ -24,22 +32,41 @@ const resolveGuide = cache(async (slug: string): Promise<{
   property: { propertyNickname: string } | null;
   tree: GuideTree | null;
   searchIndex: GuideSearchIndex | null;
+  mapData: GuideMapData | null;
+  eventsData: GuideLocalEventsData;
 }> => {
   const property = await prisma.property.findUnique({
     where: { publicSlug: slug },
     select: {
       id: true,
       propertyNickname: true,
+      latitude: true,
+      longitude: true,
+      localEventsRadiusKm: true,
     },
   });
-  if (!property) return { property: null, tree: null, searchIndex: null };
+  if (!property)
+    return {
+      property: null,
+      tree: null,
+      searchIndex: null,
+      mapData: null,
+      eventsData: { items: [] },
+    };
 
   const published = await prisma.guideVersion.findFirst({
     where: { propertyId: property.id, status: "published" },
     orderBy: { version: "desc" },
     select: { treeJson: true, treeSchemaVersion: true },
   });
-  if (!published?.treeJson) return { property, tree: null, searchIndex: null };
+  if (!published?.treeJson)
+    return {
+      property,
+      tree: null,
+      searchIndex: null,
+      mapData: null,
+      eventsData: { items: [] },
+    };
 
   // Log once per request when rendering a pre-v3 snapshot. v3 introduced the
   // presentation layer (rama 10F); pre-v3 snapshots may still have raw
@@ -57,7 +84,20 @@ const resolveGuide = cache(async (slug: string): Promise<{
     published.treeJson as unknown as GuideTree,
   );
 
-  return { property, tree: guestTree, searchIndex };
+  // Build map + events data for `gs.local` only when that section is actually
+  // present in the tree. The helpers are cheap but each hits the DB, and an
+  // older published tree without local content shouldn't pay for queries.
+  const hasLocalSection = guestTree.sections.some(
+    (s) => s.resolverKey === "local",
+  );
+  const [mapData, eventsData] = hasLocalSection
+    ? await Promise.all([
+        buildGuideMapData(property.id, "guest", { property }),
+        buildGuideLocalEventsData(property.id, "guest"),
+      ])
+    : [null, { items: [] } as GuideLocalEventsData];
+
+  return { property, tree: guestTree, searchIndex, mapData, eventsData };
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -82,7 +122,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicGuidePage({ params }: Props) {
   const { slug } = await params;
-  const { property, tree, searchIndex } = await resolveGuide(slug);
+  const { property, tree, searchIndex, mapData, eventsData } =
+    await resolveGuide(slug);
 
   if (!property || !tree || !searchIndex) {
     return <GuideNotAvailable />;
@@ -94,6 +135,8 @@ export default async function PublicGuidePage({ params }: Props) {
       propertyTitle={property.propertyNickname}
       searchIndex={searchIndex}
       slug={slug}
+      mapData={mapData}
+      eventsData={eventsData}
     />
   );
 }

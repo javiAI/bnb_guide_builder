@@ -154,7 +154,7 @@ export class PredictHqEventsProvider implements LocalEventSourceProvider {
     const url = new URL(`${this.baseUrl}/v1/events/`);
     url.searchParams.set(
       "within",
-      `${this.defaultRadiusKm}km@${params.anchor.latitude},${params.anchor.longitude}`,
+      `${params.radiusKm ?? this.defaultRadiusKm}km@${params.anchor.latitude},${params.anchor.longitude}`,
     );
     url.searchParams.set("active.gte", toPhqInstant(params.window.from));
     url.searchParams.set("active.lte", toPhqInstant(params.window.to));

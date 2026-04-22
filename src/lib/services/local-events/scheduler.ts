@@ -57,6 +57,9 @@ export interface RunLocalEventsTickOptions {
   providers?: ReadonlyArray<LocalEventSourceProvider>;
   /** DI hook for tests. */
   db?: typeof prisma;
+  /** When set, scan only this property (admin "sync now" action). Omit for
+   * the full tick across all geo-anchored properties. */
+  propertyId?: string;
 }
 
 export async function runLocalEventsTick(
@@ -76,6 +79,7 @@ export async function runLocalEventsTick(
     where: {
       latitude: { not: null },
       longitude: { not: null },
+      ...(options.propertyId ? { id: options.propertyId } : {}),
     },
     select: {
       id: true,
@@ -84,6 +88,7 @@ export async function runLocalEventsTick(
       longitude: true,
       city: true,
       defaultLocale: true,
+      localEventsRadiusKm: true,
     },
   });
 
@@ -100,6 +105,7 @@ export async function runLocalEventsTick(
           locale,
           city: p.city,
           window: { from: windowFrom, to: windowTo },
+          radiusKm: p.localEventsRadiusKm,
         },
         providers,
         propertyId: p.id,

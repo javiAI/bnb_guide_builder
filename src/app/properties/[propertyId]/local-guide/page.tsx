@@ -2,8 +2,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { localPlaceCategories, findLocalPlaceCategory } from "@/lib/taxonomy-loader";
+import { getLocalEventsForPropertyAdmin } from "@/lib/services/guide-local-data";
 import { CreateLocalPlaceForm } from "./create-local-place-form";
 import { LocalPlaceCard } from "./local-place-card";
+import { LocalEventsRadiusForm } from "./local-events-radius-form";
+import { SyncEventsButton } from "./sync-events-button";
+import { LocalEventsList } from "./local-events-list";
 
 const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
   value: c.id,
@@ -19,15 +23,18 @@ export default async function LocalGuidePage({
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true },
+    select: { id: true, localEventsRadiusKm: true },
   });
 
   if (!property) notFound();
 
-  const places = await prisma.localPlace.findMany({
-    where: { propertyId },
-    orderBy: { createdAt: "desc" },
-  });
+  const [places, events] = await Promise.all([
+    prisma.localPlace.findMany({
+      where: { propertyId },
+      orderBy: { createdAt: "desc" },
+    }),
+    getLocalEventsForPropertyAdmin(propertyId),
+  ]);
 
   // Group by category
   const grouped = new Map<string, typeof places>();
@@ -45,6 +52,20 @@ export default async function LocalGuidePage({
       <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
         Recomendaciones cercanas para huéspedes.
       </p>
+
+      <div className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-[var(--foreground)]">
+          Eventos automáticos
+        </h2>
+        <div className="space-y-3">
+          <LocalEventsRadiusForm
+            propertyId={propertyId}
+            initialRadiusKm={property.localEventsRadiusKm}
+          />
+          <SyncEventsButton propertyId={propertyId} />
+          <LocalEventsList events={events} />
+        </div>
+      </div>
 
       <div className="mt-8">
         {places.length === 0 ? (

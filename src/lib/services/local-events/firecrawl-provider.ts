@@ -5,7 +5,7 @@ import {
   localEventSources,
   type LocalEventSource,
 } from "@/lib/taxonomy-loader";
-import { stripAccents } from "./canonicalize";
+import { startSlot, stripAccents } from "./canonicalize";
 import {
   NormalizedEventCandidateSchema,
   PROVIDER_PRIORITY,
@@ -14,6 +14,7 @@ import {
   type NormalizedEventCandidate,
   type SourceFetchParams,
   type SourceFetchResult,
+  type SourceFetchStatus,
 } from "./contracts";
 import { isHttpUrl } from "./url-utils";
 
@@ -84,18 +85,27 @@ const FirecrawlExtractedEventSchema = z
   })
   .passthrough();
 
+// The envelope validator accepts raw `unknown[]` for the events array; per-item
+// validation happens in `scrapeSource` with `safeParse` so one bad item drops
+// with a warning instead of rejecting the whole scrape. Firecrawl regularly
+// produces 1–2 malformed entries per page (empty title rows from hidden
+// carousels, etc.) — strict-arraying this was the root cause of the
+// "Too small: expected string to have >=1 characters" dry-run failures.
 const FirecrawlScrapeResponseSchema = z
   .object({
     success: z.boolean().optional(),
     data: z
       .object({
         extract: z
-          .object({ events: z.array(FirecrawlExtractedEventSchema) })
+          .object({ events: z.array(z.unknown()).optional() })
+          .passthrough()
           .optional(),
         json: z
-          .object({ events: z.array(FirecrawlExtractedEventSchema) })
+          .object({ events: z.array(z.unknown()).optional() })
+          .passthrough()
           .optional(),
       })
+      .passthrough()
       .optional(),
   })
   .passthrough();
@@ -154,10 +164,9 @@ export function deriveFirecrawlExternalId(params: {
   venueName?: string;
   detailUrl?: string;
 }): string {
-  const slot = Math.floor(params.startsAt.getTime() / (15 * 60 * 1000));
   const parts = [
     normalizeForHash(params.title),
-    String(slot),
+    String(startSlot(params.startsAt)),
     normalizeForHash(params.venueName),
     params.detailUrl ?? "",
   ].join("|");
@@ -173,7 +182,7 @@ export function deriveFirecrawlExternalId(params: {
 
 export function selectApplicableSources(
   all: ReadonlyArray<LocalEventSource>,
-  params: Pick<SourceFetchParams, "anchor" | "city">,
+  params: Pick<SourceFetchParams, "anchor" | "city" | "radiusKm">,
 ): LocalEventSource[] {
   const cityNorm = params.city ? normalizeForHash(params.city) : null;
   return all.filter((s) => {
@@ -182,7 +191,16 @@ export function selectApplicableSources(
       latitude: s.latitude,
       longitude: s.longitude,
     });
-    return meters <= s.radiusKm * 1000;
+    // Two-way applicability: the source covers us if its own curated radius
+    // reaches the property, OR if the property's configured search radius
+    // reaches the source. Setting a wider radius in the property editor
+    // explicitly opts into scraping farther curated agendas (the user asked
+    // for radius to be configurable; this is where it takes effect for
+    // Firecrawl coverage).
+    const propertyRadiusMeters =
+      params.radiusKm !== undefined ? params.radiusKm * 1000 : 0;
+    const effectiveRadiusMeters = Math.max(s.radiusKm * 1000, propertyRadiusMeters);
+    return meters <= effectiveRadiusMeters;
   });
 }
 
@@ -263,11 +281,18 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
 
     const applicable = selectApplicableSources(this.sources, params);
     if (applicable.length === 0) {
+      // Distinct status from `ok` (scraped → 0 events) and from failure
+      // statuses. Operators reading a tick report need to see whether they
+      // got 0 events because Firecrawl ran and the pages were empty, or
+      // because no curated source covers this property — the remediation
+      // is different (extend taxonomy vs. investigate scraper).
       return SourceFetchResultSchema.parse({
         source: this.source,
-        status: "ok",
+        status: "no_sources_applicable",
         events: [],
-        warnings: ["no curated sources applicable to property anchor/city"],
+        warnings: [
+          `no curated sources applicable to property anchor (${params.anchor.latitude.toFixed(3)}, ${params.anchor.longitude.toFixed(3)})${params.city ? ` / city="${params.city}"` : ""}`,
+        ],
         fetchedAt,
         durationMs: Date.now() - startedAt,
       });
@@ -304,7 +329,7 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
 
     // If every applicable source failed, bubble the error kind on the envelope.
     if (failedCount > 0 && scrapedCount === 0 && allCandidates.length === 0 && lastError) {
-      const status =
+      const status: SourceFetchStatus =
         lastError.kind === "rate_limit" ? "rate_limited" :
         lastError.kind === "parse" ? "parse_error" :
         "unavailable";
@@ -354,13 +379,23 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
     params: SourceFetchParams,
     fetchedAt: string,
   ): Promise<ScrapeCacheEntry> {
+    // Municipal tourism agendas are heavily JS-rendered and often paint the
+    // event cards after DOMContentLoaded. Without `waitFor` the scrape sees
+    // the skeleton page (the dry-run evidence showed `extract.events` with
+    // empty title/startDate). Do not set `onlyMainContent: true`: many of
+    // these sites put the agenda in a sidebar aside from "main". The prompt
+    // accepts date-only strings so calendars without a specific time still
+    // produce usable `YYYY-MM-DD` output.
     const body = {
       url: src.sourceUrl,
       formats: ["extract"],
+      onlyMainContent: false,
+      waitFor: 5000,
+      timeout: 60000,
       extract: {
         schema: FIRECRAWL_EXTRACT_JSON_SCHEMA,
         prompt:
-          "Extract every scheduled event listed on this page. For each event return a title, an ISO-8601 startDate, and whatever structured fields the page exposes (endDate, venueName, venueAddress, imageUrl, detailUrl, category, priceText). Skip navigation entries, adverts, pagination controls and purely archival content.",
+          "You are extracting an event agenda from a Spanish tourism or municipal website. Scan the entire rendered page — including agenda cards, lists, tables, calendar widgets and sidebars — and return every scheduled event with a specific date. For each event MUST include (a) 'title' with the event's actual name (never 'Evento', never an empty string); and (b) 'startDate' as ISO-8601 (accept YYYY-MM-DD when no specific time is shown). Also include whenever available: endDate, venueName, venueAddress, imageUrl, detailUrl, category, priceText. DO NOT invent events. DO NOT emit navigation menu entries, category filters, pagination controls, newsletter prompts, cookie banners, or generic 'más información' links. If the page has no dated events, return an empty 'events' array.",
       },
     };
 
@@ -399,12 +434,19 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
     }
 
     const extractBlock = parsed.data.data?.extract ?? parsed.data.data?.json;
-    const events = extractBlock?.events ?? [];
+    const rawEvents = extractBlock?.events ?? [];
 
     const candidates: NormalizedEventCandidate[] = [];
     const warnings: string[] = [];
+    let malformedCount = 0;
 
-    for (const ev of events) {
+    for (const rawEv of rawEvents) {
+      const evParsed = FirecrawlExtractedEventSchema.safeParse(rawEv);
+      if (!evParsed.success) {
+        malformedCount += 1;
+        continue;
+      }
+      const ev = evParsed.data;
       const startsAt = parseDate(ev.startDate);
       if (!startsAt) {
         warnings.push(`firecrawl:${src.key} skipped event (unparseable startDate): ${ev.title}`);
@@ -456,6 +498,12 @@ export class FirecrawlLocalEventsProvider implements LocalEventSourceProvider {
         continue;
       }
       candidates.push(validated.data);
+    }
+
+    if (malformedCount > 0) {
+      warnings.push(
+        `firecrawl:${src.key} dropped ${malformedCount} malformed extract item(s) (missing title/startDate)`,
+      );
     }
 
     return { candidates, warnings };

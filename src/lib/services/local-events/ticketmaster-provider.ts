@@ -247,7 +247,10 @@ export class TicketmasterEventsProvider implements LocalEventSourceProvider {
       "latlong",
       `${params.anchor.latitude},${params.anchor.longitude}`,
     );
-    url.searchParams.set("radius", String(this.defaultRadiusKm));
+    url.searchParams.set(
+      "radius",
+      String(params.radiusKm ?? this.defaultRadiusKm),
+    );
     url.searchParams.set("unit", "km");
     url.searchParams.set("locale", params.locale === "es" ? "es" : "en");
     url.searchParams.set("startDateTime", toTmInstant(params.window.from));

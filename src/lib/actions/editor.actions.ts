@@ -1109,6 +1109,127 @@ export async function updateLocalPlaceAction(
   return { success: true };
 }
 
+/** Update the per-property event-search radius (km). Applied to PHQ/TM as
+ * the upstream geo radius and to Firecrawl as a widening factor over each
+ * curated source's curated radius. Clamped to [1, 200] to avoid degenerate
+ * queries (TM refuses radius > 19999 miles but also returns tiny result
+ * sets past ~50km; 200km is a pragmatic upper bound for rural stays). */
+export async function updateLocalEventsRadiusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string | null;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+  const raw = formData.get("radiusKm");
+  const parsed = Number.parseInt(String(raw ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 200) {
+    return {
+      success: false,
+      fieldErrors: { radiusKm: ["Introduce un radio entre 1 y 200 km"] },
+    };
+  }
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: { localEventsRadiusKm: parsed },
+  });
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  return { success: true };
+}
+
+/** Manually trigger the event sync for a single property. Same code path as
+ * the nightly cron (`runLocalEventsTick`) but scoped to one property via
+ * the `propertyId` filter — lets hosts see freshly-aggregated events without
+ * waiting for the cron. Returns merge stats so the UI can show what was
+ * found. Newly-created events are `published:false` — the host decides. */
+export interface SyncLocalEventsStats {
+  mergedEventsCount: number;
+  eventsCreated: number;
+  eventsUpdated: number;
+  eventsDeleted: number;
+  sourceReportsSummary: Array<{
+    source: string;
+    status: string;
+    candidatesCount: number;
+    error?: string;
+  }>;
+}
+
+export async function syncLocalEventsForPropertyAction(
+  _prev: ActionResult<SyncLocalEventsStats> | null,
+  formData: FormData,
+): Promise<ActionResult<SyncLocalEventsStats>> {
+  const propertyId = formData.get("propertyId") as string | null;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, publicSlug: true, latitude: true, longitude: true },
+  });
+  if (!property) return { success: false, error: "Propiedad no encontrada" };
+  if (property.latitude == null || property.longitude == null) {
+    return {
+      success: false,
+      error: "La propiedad no tiene coordenadas — ajusta la ubicación antes de sincronizar.",
+    };
+  }
+
+  const { runLocalEventsTick } = await import(
+    "@/lib/services/local-events/scheduler"
+  );
+  const report = await runLocalEventsTick({ propertyId });
+  const per = report.perProperty[0];
+  if (per?.error) return { success: false, error: per.error };
+
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  if (property.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
+
+  const stats: SyncLocalEventsStats = {
+    mergedEventsCount: per?.mergedEventsCount ?? 0,
+    eventsCreated: per?.sync?.eventsCreated ?? 0,
+    eventsUpdated: per?.sync?.eventsUpdated ?? 0,
+    eventsDeleted: per?.sync?.eventsDeleted ?? 0,
+    sourceReportsSummary: (per?.sourceReports ?? []).map((r) => ({
+      source: r.source,
+      status: r.status,
+      candidatesCount: r.candidateCount,
+      ...(r.error ? { error: r.error.message } : {}),
+    })),
+  };
+  return { success: true, data: stats };
+}
+
+/** Host curation toggle. Events sync into local_events with published=false;
+ * this action flips the flag so the row surfaces in `/g/[slug]`. Upserts on
+ * the next sync tick preserve this value — the host's decision survives. */
+export async function toggleLocalEventPublishedAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const eventId = formData.get("eventId") as string | null;
+  const rawPublished = formData.get("published");
+  if (!eventId) return { success: false, error: "Falta el ID del evento" };
+  const published = rawPublished === "true" || rawPublished === "1";
+
+  const event = await prisma.localEvent.findUnique({
+    where: { id: eventId },
+    select: { id: true, propertyId: true },
+  });
+  if (!event) return { success: false, error: "Evento no encontrado" };
+
+  await prisma.localEvent.update({
+    where: { id: eventId },
+    data: { published },
+  });
+
+  const property = await prisma.property.findUnique({
+    where: { id: event.propertyId },
+    select: { publicSlug: true },
+  });
+  revalidatePath(`/properties/${event.propertyId}/local-guide`);
+  if (property?.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
+  return { success: true };
+}
+
 export async function deleteLocalPlaceAction(
   _prev: ActionResult | null,
   formData: FormData,

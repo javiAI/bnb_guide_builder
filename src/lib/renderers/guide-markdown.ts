@@ -98,6 +98,12 @@ export function renderMarkdown(tree: GuideTree): string {
     for (const item of renderable) {
       renderItem(item, 0, out);
     }
+    if (section.resolverKey === "local") {
+      // Map + events are interactive in the web guide; in the static
+      // markdown export we note their existence.
+      out.push("");
+      out.push("> _Mapa y próximos eventos disponibles en la guía online._");
+    }
     out.push("");
   }
   return out.join("\n").trimEnd() + "\n";

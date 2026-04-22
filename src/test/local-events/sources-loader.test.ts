@@ -5,11 +5,12 @@ import {
 } from "@/lib/taxonomy-loader";
 
 describe("local_event_sources.json", () => {
-  it("ships the bootstrap triad (Teruel, Albarracin, Valencia)", () => {
+  it("ships curated sources for key Spanish destinations", () => {
     const keys = new Set(localEventSources.items.map((s) => s.key));
     expect(keys.has("teruel_turismo")).toBe(true);
     expect(keys.has("albarracin_turismo")).toBe(true);
-    expect(keys.has("valencia_turismo")).toBe(true);
+    expect(keys.has("valencia_visitvalencia")).toBe(true);
+    expect(keys.has("madrid_esmadrid")).toBe(true);
   });
 
   it("has no duplicate keys", () => {

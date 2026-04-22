@@ -111,6 +111,11 @@ model Property {
   brandLogoUrl            String?  @map("brand_logo_url")
   brandPaletteKey         String?  @map("brand_palette_key")
   defaultLocale           String   @default("es") @map("default_locale")
+  // Search radius (km) used by the local-events sync (Rama 13C). Passed to
+  // PHQ/TM as their geo radius and to Firecrawl as a widening factor over
+  // per-source curated radii. Host-configurable from the local-guide editor;
+  // default 25 km covers typical urban stays without excess noise.
+  localEventsRadiusKm     Int      @default(25) @map("local_events_radius_km")
   status                  String   @default("draft")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
@@ -491,6 +496,10 @@ model LocalEvent {
   contributingSources String[]  @default([]) @map("contributing_sources")
   mergeWarnings       String[]  @default([]) @map("merge_warnings")
   lastSyncedAt        DateTime  @map("last_synced_at")
+  /// Host curation flag. Events surface in the public guide only when true.
+  /// Sync upserts default to false on create and never touch this on update,
+  /// so host decisions survive re-syncs.
+  published           Boolean   @default(false)
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -500,6 +509,7 @@ model LocalEvent {
   @@unique([propertyId, canonicalKey], map: "local_events_property_canonical_unique")
   @@index([propertyId, startsAt])
   @@index([propertyId, categoryKey])
+  @@index([propertyId, published])
   @@map("local_events")
 }
 

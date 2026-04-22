@@ -243,3 +243,39 @@ CRON_SECRET=     # compartido con messaging cron
 3. Extender `buildProvidersFromEnv` en `scheduler.ts` para instanciarlo con su env key.
 4. Añadir entry a `.env.example` con semántica de degradación documentada.
 5. Tests: happy path, config_error sin key, rate_limited, parse_error con body malformado.
+
+## Embedded maps + event listing (Rama 13C — `feat/guide-maps-embedded`)
+
+`gs.local` en `/g/[slug]` se renderiza con dos sub-componentes adicionales además de los `LocalPlace` cards existentes:
+
+1. **Mapa interactivo** (`<GuideMap>`, client island con MapLibre) — zona obfuscada de la propiedad + pines de lugares y eventos.
+2. **Listado temporal de eventos** (`<GuideLocalEventCard>`) — eventos en ventana `[-24h, +30d]`, ordenados por `startsAt` ASC, incluye eventos sin coords (marcados "Sin ubicación exacta").
+
+### Invariantes de seguridad
+
+- `Property.latitude/longitude` **nunca** llegan al cliente para `audience=guest`/`ai`. `buildGuideMapData` (en [src/lib/services/guide-map.service.ts](../../src/lib/services/guide-map.service.ts)) llama a `obfuscateAnchor` (ver `map-obfuscation.ts`), que genera un offset radial determinístico `[0.31r, r]` por `propertyId` (radio por defecto 300 m) con corrección `cos(lat)` para mantener distancias reales en metros a cualquier latitud. El tipo `GuideMapAnchor` es una unión discriminada: `{obfuscated: true, lat, lng, radiusMeters} | {obfuscated: false, lat, lng}` — `radiusMeters` solo existe en la variante obfuscada.
+- `audience=sensitive` corta antes: `buildGuideMapData` retorna `null`, `buildGuideLocalEventsData` retorna `{items: []}`.
+- `LocalPlace` pasa por `isVisibleForAudience(place.visibility, audience)` (defense-in-depth aunque el row ya tenga `visibility: guest`).
+- `LocalEvent` no tiene columna `visibility` hoy. Se trata como implícitamente guest-visible porque el sync solo lee proveedores públicos (§ Events data model). Si se añadieran eventos privados en el futuro, habría que añadir columna + filtro — documentado arriba en `docs/SECURITY_AND_AUDIT.md` §2.
+
+### Ventana temporal
+
+Pines de eventos y listado comparten la misma ventana: `[now - 24h, now + 30d]`. El lower bound de -24h preserva festivales de varios días que ya empezaron. Constantes `EVENT_WINDOW_PAST_MS` / `EVENT_WINDOW_FUTURE_MS` en `guide-map.service.ts`.
+
+### Pipeline de datos
+
+- `buildGuideMapData(propertyId, audience, opts?)` — spatial: anchor + pines con coords en ventana. `GuideMapPin` es unión discriminada por `kind`: `"place"` lleva `distanceMeters` opcional; `"event"` lleva `startsAt` (ISO). El tipo garantiza que `startsAt` no aparece en pines de lugar.
+- `buildGuideLocalEventsData(propertyId, audience, opts?)` — temporal: mismos eventos en ventana, incluyendo los sin coords, con `hasCoords` boolean + sort ASC defensivo.
+- Ambas funciones llaman a helpers cacheados (`React.cache`) en [guide-local-data.ts](../../src/lib/services/guide-local-data.ts); el resolver interno (`resolveLocal` en `guide-rendering.service.ts`) usa los mismos helpers, por lo que un render de `/g/[slug]` hace **una** query por tabla (`LocalPlace` + `LocalEvent`) aunque dos subsistemas la consuman.
+
+### Tiles + fallback
+
+MapLibre consume `/api/geo/tiles-config`. Sin `MAPTILER_API_KEY` el endpoint responde 503 y el client island degrada a un fallback textual ("Mapa no disponible") sin romper el render del resto de la sección. La key se comparte con el autosuggest (rama 13A) — una única cuenta MapTiler cubre geocoding + tiles.
+
+### Flags de taxonomía
+
+`taxonomies/guide_sections.json` entry `gs.local` lleva `"includesMap": true` + `"includesEvents": true`. Los flags están en el schema de `GuideSectionConfigSchema` (opcionales + default false) para permitir activar/desactivar cada sub-componente sin tocar código en el futuro.
+
+### Renderers string (HTML/Markdown/PDF)
+
+Los exportadores estáticos no intentan renderizar tiles ni cards de eventos: emiten un placeholder textual "Mapa y próximos eventos disponibles en la guía online." después de los `LocalPlace` items cuando `section.resolverKey === "local"`.

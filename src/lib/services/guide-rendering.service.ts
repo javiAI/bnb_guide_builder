@@ -55,6 +55,11 @@ import {
   loadEntityMedia,
   mediaKey,
 } from "@/lib/services/guide-media.service";
+import { getLocalPlacesForProperty } from "@/lib/services/guide-local-data";
+import {
+  bucketizeDistance,
+  distanceBucketLabel,
+} from "@/lib/services/places/distance-bucket";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
 const PROPERTY_COVER_LABEL = "La casa";
@@ -227,20 +232,9 @@ async function loadGuideContext(
       visibility: true,
     },
   });
-  const localPlacesPromise = prisma.localPlace.findMany({
-    where: { propertyId },
-    orderBy: [{ name: "asc" }, { id: "asc" }],
-    select: {
-      id: true,
-      categoryKey: true,
-      name: true,
-      guestDescription: true,
-      aiNotes: true,
-      distanceMeters: true,
-      hoursText: true,
-      visibility: true,
-    },
-  });
+  // Routed through the request-cached helper so the map/events builders
+  // in `guide-map.service.ts` dedupe the query with this resolver.
+  const localPlacesPromise = getLocalPlacesForProperty(propertyId);
 
   // Media load needs property + spaces + amenity instances for entity labels.
   // Wait for those three, then run the media query in parallel with contacts
@@ -919,11 +913,22 @@ function contactToGuideItem(
 function resolveLocal(ctx: GuideContext): GuideItem[] {
   return ctx.localPlaces.map((lp) => {
     const fields: GuideItemField[] = [];
+    // SECURITY — triangulation: exact meters at `visibility: "guest"` would
+    // let a client recover the property's obfuscated-away coordinates by
+    // intersecting circles around three or more places. Guests see a coarse
+    // bucket (<200m / 200–500m / 500m–1km / >1km); ops/internal see the
+    // exact value separately.
     if (lp.distanceMeters != null) {
+      const bucketKey = bucketizeDistance(lp.distanceMeters);
       fields.push({
         label: "Distancia",
-        value: `${lp.distanceMeters} m`,
+        value: distanceBucketLabel(bucketKey),
         visibility: "guest",
+      });
+      fields.push({
+        label: "Distancia exacta",
+        value: `${lp.distanceMeters} m`,
+        visibility: "internal",
       });
     }
     if (lp.hoursText) {
@@ -1070,6 +1075,8 @@ export async function composeGuide(
       emptyCopyGuest: cfg.emptyCopyGuest,
       hideWhenEmptyForGuest: cfg.hideWhenEmptyForGuest,
       quickActionKeys: cfg.quickActionKeys,
+      includesMap: cfg.includesMap,
+      includesEvents: cfg.includesEvents,
     });
   }
   const tree: GuideTree = {

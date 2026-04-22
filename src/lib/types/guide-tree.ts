@@ -155,6 +155,14 @@ export interface GuideSection {
   emptyCopyGuest?: string;
   /** When true, empty sections are omitted entirely from guest-facing output. */
   hideWhenEmptyForGuest?: boolean;
+  /** Config-driven gate for the embedded map sub-renderer (Rama 13C). Only
+   * `gs.local` sets this today. `GuideLocalSection` consults the flag to
+   * decide whether to mount `<GuideMap>` — a new section that wants the map
+   * flips this to `true` instead of forking the section component. */
+  includesMap?: boolean;
+  /** Config-driven gate for the upcoming-events sub-renderer (Rama 13C).
+   * See `includesMap` for rationale. */
+  includesEvents?: boolean;
 }
 
 export interface GuideTree {

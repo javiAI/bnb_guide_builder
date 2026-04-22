@@ -2,6 +2,12 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { ServiceWorkerRegister } from "@/lib/client/service-worker-register";
 import { InstallNudge } from "@/components/public-guide/install-nudge";
+// MapLibre's stylesheet is a node_modules global CSS file consumed by the
+// `<GuideMap>` island inside this subtree. Next.js prefers global CSS to be
+// imported from a layout/entry rather than a client component so the style
+// is loaded once for the whole subtree; this keeps the map island free of
+// side-effect CSS imports.
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface Props {
   params: Promise<{ slug: string }>;
