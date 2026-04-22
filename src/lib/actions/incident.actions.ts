@@ -246,6 +246,47 @@ export async function deleteIncidentAction(
   return { success: true };
 }
 
+// Rama 13D — status change from the guest-incidents panel (list + detail
+// views). Accepts the finite set of statuses tracked in the schema and
+// auto-stamps `resolvedAt` when entering `resolved`, clearing it on exit.
+const ALLOWED_STATUSES = ["open", "in_progress", "resolved", "cancelled"] as const;
+type IncidentStatus = (typeof ALLOWED_STATUSES)[number];
+
+export async function changeIncidentStatusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const incidentId = formData.get("incidentId") as string;
+  const nextStatus = formData.get("status") as string;
+  if (!incidentId) return { success: false, error: "Falta el ID de la incidencia" };
+  if (!ALLOWED_STATUSES.includes(nextStatus as IncidentStatus)) {
+    return { success: false, error: "Estado no válido" };
+  }
+
+  const incident = await prisma.incident.findUnique({
+    where: { id: incidentId },
+    select: { propertyId: true, status: true, resolvedAt: true },
+  });
+  if (!incident) return { success: false, error: "Incidencia no encontrada" };
+
+  // resolvedAt: stamp on entry, clear on exit, preserve otherwise.
+  let resolvedAt: Date | null = incident.resolvedAt;
+  if (nextStatus === "resolved" && incident.status !== "resolved") {
+    resolvedAt = new Date();
+  } else if (nextStatus !== "resolved" && incident.status === "resolved") {
+    resolvedAt = null;
+  }
+
+  await prisma.incident.update({
+    where: { id: incidentId },
+    data: { status: nextStatus, resolvedAt },
+  });
+
+  revalidatePath(`/properties/${incident.propertyId}/incidents`);
+  revalidatePath(`/properties/${incident.propertyId}/incidents/${incidentId}`);
+  return { success: true };
+}
+
 export async function resolveIncidentAction(
   _prev: ActionResult | null,
   formData: FormData,

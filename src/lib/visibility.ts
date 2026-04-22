@@ -84,3 +84,37 @@ export const SENSITIVITY_LABELS_EN: Record<VisibilityLevel, string> = {
   internal: "high",
   sensitive: "maximum",
 };
+
+// ── Incident field-level visibility (Rama 13D) ──
+//
+// A guest who reports an issue through the public guide can check its status
+// via a slug-scoped, cookie-authenticated read path. The fields they may see
+// are a fixed whitelist — adding a column to `Incident` never exposes it to
+// the guest automatically.
+//
+// Rationale for whitelist vs blacklist: Incident carries free-form `notes`
+// written by operators, `playbookId`, severity escalations, and future
+// operational fields. Any blacklist forgetting to add a new sensitive field
+// leaks it; a whitelist fails closed.
+export const GUEST_INCIDENT_READABLE_FIELDS = [
+  "id",
+  "status",
+  "categoryKey",
+  "createdAt",
+  "resolvedAt",
+] as const;
+
+export type GuestReadableIncidentField =
+  (typeof GUEST_INCIDENT_READABLE_FIELDS)[number];
+
+const GUEST_INCIDENT_READABLE_FIELD_SET: ReadonlySet<string> = new Set(
+  GUEST_INCIDENT_READABLE_FIELDS,
+);
+
+/** True when `field` is in the fixed whitelist of Incident columns that a
+ *  guest reporter may see about their own report. Consumers MUST use this to
+ *  project before serializing any Incident to a guest-facing response — never
+ *  filter by exclusion. */
+export function guestCanReadIncidentField(field: string): boolean {
+  return GUEST_INCIDENT_READABLE_FIELD_SET.has(field);
+}

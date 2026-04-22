@@ -12,6 +12,7 @@ import {
 import { GuideBrandHeader } from "./guide-brand-header";
 import { GuideToc, type GuideTocEntry } from "./guide-toc";
 import { GuideSearch } from "./guide-search";
+import { IssueReporter } from "./issue-reporter";
 import { GuideLocalSection } from "./guide-local-section";
 import { getPublicSectionComponent } from "./public-guide-section-registry";
 import "./guide.css";
@@ -65,7 +66,10 @@ export function GuideRenderer({
       }
     >
       <GuideBrandHeader title={propertyTitle} logoUrl={tree.brandLogoUrl}>
-        <GuideSearch index={searchIndex} slug={slug} />
+        <div className="guide-brand-header__actions">
+          <GuideSearch index={searchIndex} slug={slug} />
+          <IssueReporter slug={slug} />
+        </div>
       </GuideBrandHeader>
       <div className="guide-layout">
         <GuideToc entries={tocEntries} />
