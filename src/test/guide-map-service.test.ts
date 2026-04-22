@@ -83,6 +83,7 @@ beforeEach(() => {
     id: "p1",
     latitude: MADRID_LAT,
     longitude: MADRID_LNG,
+    localEventsRadiusKm: 25,
   });
   mockPlaces.mockResolvedValue([]);
   mockEvents.mockResolvedValue([]);
@@ -120,6 +121,28 @@ describe("buildGuideMapData — audience gate on anchor", () => {
     expect(out).toBeNull();
   });
 
+  it("threads localEventsRadiusKm through as eventSearchRadiusMeters", async () => {
+    mockProperty.mockResolvedValueOnce({
+      id: "p1",
+      latitude: MADRID_LAT,
+      longitude: MADRID_LNG,
+      localEventsRadiusKm: 42,
+    });
+    const out = await buildGuideMapData("p1", "guest", { now: NOW });
+    expect(out!.eventSearchRadiusMeters).toBe(42_000);
+  });
+
+  it("eventSearchRadiusMeters is null when anchor is null", async () => {
+    mockProperty.mockResolvedValueOnce({
+      id: "p1",
+      latitude: null,
+      longitude: null,
+      localEventsRadiusKm: 25,
+    });
+    const out = await buildGuideMapData("p1", "guest", { now: NOW });
+    expect(out!.eventSearchRadiusMeters).toBeNull();
+  });
+
   it("returns null when the property does not exist", async () => {
     mockProperty.mockResolvedValueOnce(null);
     const out = await buildGuideMapData("p-missing", "guest", { now: NOW });
@@ -127,7 +150,12 @@ describe("buildGuideMapData — audience gate on anchor", () => {
   });
 
   it("emits anchor=null when the property has no coordinates but still builds pins", async () => {
-    mockProperty.mockResolvedValueOnce({ id: "p1", latitude: null, longitude: null });
+    mockProperty.mockResolvedValueOnce({
+      id: "p1",
+      latitude: null,
+      longitude: null,
+      localEventsRadiusKm: 25,
+    });
     mockPlaces.mockResolvedValueOnce([
       placeRow({ id: "pl-1", latitude: 40.4, longitude: -3.7 }),
     ]);

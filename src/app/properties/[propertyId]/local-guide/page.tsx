@@ -5,6 +5,7 @@ import { localPlaceCategories, findLocalPlaceCategory } from "@/lib/taxonomy-loa
 import { CreateLocalPlaceForm } from "./create-local-place-form";
 import { LocalPlaceCard } from "./local-place-card";
 import { LocalEventsRadiusForm } from "./local-events-radius-form";
+import { SyncEventsButton } from "./sync-events-button";
 
 const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
   value: c.id,
@@ -51,10 +52,13 @@ export default async function LocalGuidePage({
         <h2 className="mb-2 text-sm font-semibold text-[var(--foreground)]">
           Eventos automáticos
         </h2>
-        <LocalEventsRadiusForm
-          propertyId={propertyId}
-          initialRadiusKm={property.localEventsRadiusKm}
-        />
+        <div className="space-y-3">
+          <LocalEventsRadiusForm
+            propertyId={propertyId}
+            initialRadiusKm={property.localEventsRadiusKm}
+          />
+          <SyncEventsButton propertyId={propertyId} />
+        </div>
       </div>
 
       <div className="mt-8">

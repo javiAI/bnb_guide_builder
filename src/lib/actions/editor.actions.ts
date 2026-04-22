@@ -1136,6 +1136,41 @@ export async function updateLocalEventsRadiusAction(
   return { success: true };
 }
 
+/** Manually trigger the event sync for a single property. Same code path as
+ * the nightly cron (`runLocalEventsTick`) but scoped to one property via
+ * the `propertyId` filter — lets hosts see freshly-aggregated events without
+ * waiting for the cron. Revalidates the public guide so new rows surface. */
+export async function syncLocalEventsForPropertyAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const propertyId = formData.get("propertyId") as string | null;
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, publicSlug: true, latitude: true, longitude: true },
+  });
+  if (!property) return { success: false, error: "Propiedad no encontrada" };
+  if (property.latitude == null || property.longitude == null) {
+    return {
+      success: false,
+      error: "La propiedad no tiene coordenadas — ajusta la ubicación antes de sincronizar.",
+    };
+  }
+
+  const { runLocalEventsTick } = await import(
+    "@/lib/services/local-events/scheduler"
+  );
+  const report = await runLocalEventsTick({ propertyId });
+  const per = report.perProperty[0];
+  if (per?.error) return { success: false, error: per.error };
+
+  revalidatePath(`/properties/${propertyId}/local-guide`);
+  if (property.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
+  return { success: true };
+}
+
 export async function deleteLocalPlaceAction(
   _prev: ActionResult | null,
   formData: FormData,

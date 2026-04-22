@@ -79,6 +79,11 @@ export interface GuideMapData {
   anchor: GuideMapAnchor | null;
   /** Mixed places + events; the UI toggle filters by `kind`. */
   pins: GuideMapPin[];
+  /** Event-search radius in meters, mirroring `Property.localEventsRadiusKm`.
+   * Drawn on the map as a second (outer) circle so the guest can see the
+   * area from which upcoming events are aggregated. `null` when no anchor
+   * is available. */
+  eventSearchRadiusMeters: number | null;
 }
 
 export interface GuideLocalEventItem {

@@ -19,6 +19,8 @@ const CIRCLE_SEGMENTS = 64;
 const ANCHOR_SOURCE_ID = "guide-anchor-zone";
 const ANCHOR_FILL_LAYER_ID = "guide-anchor-zone-fill";
 const ANCHOR_LINE_LAYER_ID = "guide-anchor-zone-line";
+const SEARCH_RADIUS_SOURCE_ID = "guide-search-radius-zone";
+const SEARCH_RADIUS_LINE_LAYER_ID = "guide-search-radius-zone-line";
 
 /**
  * Client island for `gs.local`. Never SSR-imported — MapLibre touches
@@ -216,15 +218,33 @@ function pickInitialView(data: GuideMapData): {
   zoom: number;
 } {
   if (data.anchor) {
-    return { center: [data.anchor.lng, data.anchor.lat], zoom: 14 };
+    // Pick a zoom that accommodates the event-search radius so the dashed
+    // outer circle is visible on first paint. Fallback to zoom 14 when no
+    // radius is configured.
+    const zoom = zoomForRadius(data.eventSearchRadiusMeters);
+    return { center: [data.anchor.lng, data.anchor.lat], zoom };
   }
   if (data.pins.length > 0) {
     const first = data.pins[0];
     return { center: [first.lng, first.lat], zoom: 13 };
   }
-  // Should not happen — caller gates rendering on non-empty data — but keep
-  // a safe default.
   return { center: [-3.7, 40.4], zoom: 5 };
+}
+
+// Maps an event-search radius in meters to a map zoom level that fits the
+// full diameter with a margin. Derived empirically from Web Mercator scale
+// (~156543 m/px at z=0 at the equator); each zoom level doubles resolution.
+// Clamped to [9, 14] so extreme configured values don't produce unusable
+// global or street-level views.
+function zoomForRadius(radiusMeters: number | null): number {
+  if (radiusMeters == null || radiusMeters <= 0) return 14;
+  if (radiusMeters <= 1_000) return 14;
+  if (radiusMeters <= 2_500) return 13;
+  if (radiusMeters <= 5_000) return 12;
+  if (radiusMeters <= 10_000) return 11;
+  if (radiusMeters <= 25_000) return 10;
+  if (radiusMeters <= 50_000) return 9;
+  return 9;
 }
 
 function collectCoords(
@@ -249,43 +269,58 @@ function fitToCoords(map: maplibregl.Map, coords: [number, number][]) {
 function drawAnchorZone(map: maplibregl.Map, data: GuideMapData) {
   if (!data.anchor) return;
   if (!data.anchor.obfuscated) {
-    // Internal audience: a single "exact" marker is more legible than a
-    // filled disk. We use a distinct class so ops can see it's the unmasked
-    // variant.
     const el = document.createElement("div");
     el.className = "guide-map__pin guide-map__pin--anchor-exact";
     new maplibregl.Marker({ element: el })
       .setLngLat([data.anchor.lng, data.anchor.lat])
       .addTo(map);
-    return;
+  } else {
+    const circle = buildCircleGeoJSON(
+      data.anchor.lat,
+      data.anchor.lng,
+      data.anchor.radiusMeters,
+    );
+    map.addSource(ANCHOR_SOURCE_ID, { type: "geojson", data: circle });
+    map.addLayer({
+      id: ANCHOR_FILL_LAYER_ID,
+      type: "fill",
+      source: ANCHOR_SOURCE_ID,
+      paint: { "fill-color": "#6366f1", "fill-opacity": 0.15 },
+    });
+    map.addLayer({
+      id: ANCHOR_LINE_LAYER_ID,
+      type: "line",
+      source: ANCHOR_SOURCE_ID,
+      paint: { "line-color": "#4f46e5", "line-width": 2, "line-opacity": 0.6 },
+    });
   }
 
-  const circle = buildCircleGeoJSON(
-    data.anchor.lat,
-    data.anchor.lng,
-    data.anchor.radiusMeters,
-  );
-
-  map.addSource(ANCHOR_SOURCE_ID, { type: "geojson", data: circle });
-  map.addLayer({
-    id: ANCHOR_FILL_LAYER_ID,
-    type: "fill",
-    source: ANCHOR_SOURCE_ID,
-    paint: {
-      "fill-color": "#6366f1",
-      "fill-opacity": 0.15,
-    },
-  });
-  map.addLayer({
-    id: ANCHOR_LINE_LAYER_ID,
-    type: "line",
-    source: ANCHOR_SOURCE_ID,
-    paint: {
-      "line-color": "#4f46e5",
-      "line-width": 2,
-      "line-opacity": 0.6,
-    },
-  });
+  // Outer ring: event-search radius (configured per property). Always shown
+  // when available so the guest understands the area from which upcoming
+  // events are aggregated. Drawn as a dashed line without fill to not
+  // compete visually with the inner obfuscation disk.
+  if (data.eventSearchRadiusMeters != null && data.eventSearchRadiusMeters > 0) {
+    const searchCircle = buildCircleGeoJSON(
+      data.anchor.lat,
+      data.anchor.lng,
+      data.eventSearchRadiusMeters,
+    );
+    map.addSource(SEARCH_RADIUS_SOURCE_ID, {
+      type: "geojson",
+      data: searchCircle,
+    });
+    map.addLayer({
+      id: SEARCH_RADIUS_LINE_LAYER_ID,
+      type: "line",
+      source: SEARCH_RADIUS_SOURCE_ID,
+      paint: {
+        "line-color": "#0ea5e9",
+        "line-width": 1.5,
+        "line-opacity": 0.55,
+        "line-dasharray": [3, 3],
+      },
+    });
+  }
 }
 
 function buildCircleGeoJSON(

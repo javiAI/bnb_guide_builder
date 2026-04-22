@@ -42,6 +42,7 @@ const resolveGuide = cache(async (slug: string): Promise<{
       propertyNickname: true,
       latitude: true,
       longitude: true,
+      localEventsRadiusKm: true,
     },
   });
   if (!property)

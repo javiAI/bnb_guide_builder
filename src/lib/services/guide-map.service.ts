@@ -50,6 +50,7 @@ interface PropertyAnchorInput {
   id: string;
   latitude: number | null;
   longitude: number | null;
+  localEventsRadiusKm?: number;
 }
 
 /** Temporal window applied identically to map pins and listing items:
@@ -79,7 +80,12 @@ export async function buildGuideMapData(
       ? Promise.resolve(opts.property)
       : prisma.property.findUnique({
           where: { id: propertyId },
-          select: { id: true, latitude: true, longitude: true },
+          select: {
+            id: true,
+            latitude: true,
+            longitude: true,
+            localEventsRadiusKm: true,
+          },
         }),
     getLocalPlacesForProperty(propertyId),
     getLocalEventsForProperty(propertyId),
@@ -133,7 +139,12 @@ export async function buildGuideMapData(
     });
   }
 
-  return { anchor, pins };
+  const eventSearchRadiusMeters =
+    anchor && typeof property.localEventsRadiusKm === "number"
+      ? property.localEventsRadiusKm * 1000
+      : null;
+
+  return { anchor, pins, eventSearchRadiusMeters };
 }
 
 export async function buildGuideLocalEventsData(
