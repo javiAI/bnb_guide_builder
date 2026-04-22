@@ -257,15 +257,21 @@ export async function changeIncidentStatusAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const incidentId = formData.get("incidentId") as string;
+  const propertyId = formData.get("propertyId") as string;
   const nextStatus = formData.get("status") as string;
   if (!incidentId) return { success: false, error: "Falta el ID de la incidencia" };
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
   if (!ALLOWED_STATUSES.includes(nextStatus as IncidentStatus)) {
     return { success: false, error: "Estado no válido" };
   }
 
-  const incident = await prisma.incident.findUnique({
-    where: { id: incidentId },
-    select: { propertyId: true, status: true, resolvedAt: true },
+  // Scope the read+write to the propertyId from the form context so a
+  // tampered incidentId from a different property never targets another
+  // property's row. `findFirst` with the composite filter returns null for
+  // cross-property attempts, collapsing them to "not found".
+  const incident = await prisma.incident.findFirst({
+    where: { id: incidentId, propertyId },
+    select: { status: true, resolvedAt: true },
   });
   if (!incident) return { success: false, error: "Incidencia no encontrada" };
 
@@ -277,13 +283,15 @@ export async function changeIncidentStatusAction(
     resolvedAt = null;
   }
 
-  await prisma.incident.update({
-    where: { id: incidentId },
+  // updateMany with the composite filter ensures the write only lands if the
+  // row still belongs to the same property — matches the ownership gate.
+  await prisma.incident.updateMany({
+    where: { id: incidentId, propertyId },
     data: { status: nextStatus, resolvedAt },
   });
 
-  revalidatePath(`/properties/${incident.propertyId}/incidents`);
-  revalidatePath(`/properties/${incident.propertyId}/incidents/${incidentId}`);
+  revalidatePath(`/properties/${propertyId}/incidents`);
+  revalidatePath(`/properties/${propertyId}/incidents/${incidentId}`);
   return { success: true };
 }
 

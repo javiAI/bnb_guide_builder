@@ -193,6 +193,7 @@ export default async function IncidentDetailPage({ params }: Props) {
         </h2>
         <IncidentStatusForm
           incidentId={incident.id}
+          propertyId={propertyId}
           currentStatus={incident.status}
         />
       </section>

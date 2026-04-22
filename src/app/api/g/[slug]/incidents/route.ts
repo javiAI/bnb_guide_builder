@@ -134,7 +134,12 @@ export async function POST(
     response.cookies.set({
       name: cookieName,
       value: nextCookieValue,
-      path: `/g/${slug}`,
+      // Path must cover both the API (`/api/g/:slug/incidents/*`) and the
+      // tracking page (`/g/:slug/incidents/:id`). Cookie-path matching is
+      // prefix-based with no common prefix beyond `/`, so we scope at the
+      // root. Slug isolation stays intact via the cookie name (one cookie
+      // per slug) and the HMAC payload, which rejects cross-slug values.
+      path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

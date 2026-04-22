@@ -7,6 +7,7 @@ import type { ActionResult } from "@/lib/types/action-result";
 
 interface Props {
   incidentId: string;
+  propertyId: string;
   currentStatus: string;
 }
 
@@ -17,7 +18,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "cancelled", label: "Cancelada" },
 ];
 
-export function IncidentStatusForm({ incidentId, currentStatus }: Props) {
+export function IncidentStatusForm({ incidentId, propertyId, currentStatus }: Props) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     changeIncidentStatusAction,
     null,
@@ -26,6 +27,7 @@ export function IncidentStatusForm({ incidentId, currentStatus }: Props) {
   return (
     <form action={formAction} className="mt-3 flex flex-wrap items-center gap-3">
       <input type="hidden" name="incidentId" value={incidentId} />
+      <input type="hidden" name="propertyId" value={propertyId} />
       <label className="flex items-center gap-2 text-sm">
         <span className="text-[var(--color-neutral-600)]">Estado</span>
         <select

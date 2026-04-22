@@ -3,7 +3,7 @@
  * of the incidents they reported via the public guide (Rama 13D).
  *
  * Design:
- *   - One cookie per slug (`guide-incidents:<slug>`). Isolating per-slug means
+ *   - One cookie per slug (`guide-incidents-<slug>`). Isolating per-slug means
  *     a device that has the guide open for two different properties never
  *     lets one property's guest read the other's incidents.
  *   - Payload is a JSON object `{ slug, ids, iat }` with `ids` capped at 10
@@ -21,7 +21,9 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const GUEST_INCIDENT_COOKIE_PREFIX = "guide-incidents:";
+// Cookie-name prefix. Using only RFC 6265 token-safe characters (`-`, letters,
+// digits) so proxies/clients never drop the cookie over delimiter weirdness.
+export const GUEST_INCIDENT_COOKIE_PREFIX = "guide-incidents-";
 export const GUEST_INCIDENT_COOKIE_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const MAX_IDS_PER_COOKIE = 10;
 
