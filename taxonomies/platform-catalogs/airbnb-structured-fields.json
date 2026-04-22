@@ -1,0 +1,50 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://developer.airbnb.com/docs/listings/api-reference (listing_policies, pricing, accessibility_features, shared_spaces, amenities, house_rules, person_capacity)"
+  ],
+  "scope": "v1",
+  "notes": "Manifest (not a catalog). Declares the Airbnb listing structured fields we integrate against. Every entry MUST be referenced by at least one taxonomy item mapping; otherwise the manifest drifted from the taxonomies. Kind semantics match PlatformMapping discriminated union in src/lib/types/taxonomy.ts.",
+  "entries": [
+    { "kind": "room_counter", "counter": "bedrooms", "target_taxonomy": "space_types", "semantics": "Number of bedrooms declared on the listing.", "relevance": "covered" },
+    { "kind": "room_counter", "counter": "bathrooms", "target_taxonomy": "space_types", "semantics": "Number of bathrooms declared on the listing.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "shared_spaces.kitchen", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Kitchen present as a shared space.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "shared_spaces.living_room", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Living room present as a shared space.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "shared_spaces.dining", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Dining area present as a shared space.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "amenities.workspace", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Dedicated workspace in the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.laundry_area", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Laundry area available at the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.balcony", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private balcony.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.patio", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private patio.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.garden", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private garden.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.garage", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private garage.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.pool", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private pool.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "accessibility_features.step_free_guest_entrance", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Guest entrance has no steps.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.guest_entrance_wide_81cm", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Guest entrance is at least 81cm wide.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.accessible_parking_spot", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Accessible parking spot.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.step_free_path_to_entrance", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Path to entrance has no steps.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.step_free_bedroom_access", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Bedroom access has no steps.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.bedroom_entrance_wide_81cm", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Bedroom entrance is at least 81cm wide.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.step_free_bathroom_access", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Bathroom access has no steps.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.bathroom_entrance_wide_81cm", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Bathroom entrance is at least 81cm wide.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.shower_grab_bar", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Shower grab bar.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.toilet_grab_bar", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Toilet grab bar.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.step_free_shower", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Step-free shower.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.shower_bath_chair", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Shower or bath chair.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "accessibility_features.ceiling_mobile_hoist", "transform": "bool", "target_taxonomy": "amenities", "semantics": "Ceiling or mobile hoist.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "listing_policies.smoking_allowed", "transform": "enum", "target_taxonomy": "policies", "semantics": "Smoking policy on the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "listing_policies.events_allowed", "transform": "bool", "target_taxonomy": "policies", "semantics": "Events / parties allowed.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "listing_policies.pets_allowed", "transform": "bool", "target_taxonomy": "policies", "semantics": "Pets allowed.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "listing_policies.commercial_photography_allowed", "transform": "bool", "target_taxonomy": "policies", "semantics": "Commercial photography allowed.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "pricing.cleaning_fee", "transform": "currency", "target_taxonomy": "policies", "semantics": "Cleaning fee.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "pricing.extra_person_fee", "transform": "currency", "target_taxonomy": "policies", "semantics": "Extra-person fee.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "person_capacity", "transform": "number", "target_taxonomy": "policies", "semantics": "Max guest capacity.", "relevance": "covered" },
+
+    { "kind": "free_text", "field": "house_rules", "target_taxonomy": "policies", "semantics": "House rules free-text bucket (quiet hours, services-in-home, etc.).", "relevance": "covered" }
+  ]
+}

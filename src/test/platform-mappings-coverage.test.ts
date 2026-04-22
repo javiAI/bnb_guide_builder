@@ -183,8 +183,9 @@ describe("Platform mapping helpers", () => {
     expect(getAirbnbId("policies", "pol.pets")).toBeNull();
     // room_counter is not a catalog ID either
     expect(getAirbnbId("space_types", "sp.bedroom")).toBeNull();
-    // no mapping for that platform
-    expect(getBookingId("property_types", "pt.house")).toBeNull();
+    // no mapping for that platform (pt.other is platform_supported:false)
+    expect(getBookingId("property_types", "pt.other")).toBeNull();
+    expect(getAirbnbId("property_types", "pt.other")).toBeNull();
   });
 
   it("throws on unknown ids so callers can't silently mismatch", () => {

@@ -1,0 +1,48 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://developers.booking.com/connectivity/docs/new-property-api (accommodation type codes)",
+    "https://developers.booking.com/connectivity/docs (PCT reference)"
+  ],
+  "scope": "v1",
+  "notes": "Booking Content API accommodation/property type codes. Subset-v1 focused on STR-relevant codes. Hotel-class codes (resort, motel, hotel proper) are out_of_scope unless they map to our boutique_hotel via collapse.",
+  "entries": [
+    { "id": "3", "label_en": "Apartment", "relevance": "covered", "collapsed_to": "pt.apartment" },
+    { "id": "13", "label_en": "Self-catering accommodation", "relevance": "covered", "collapsed_to": "pt.apartment" },
+    { "id": "23", "label_en": "Aparthotel", "relevance": "out_of_scope", "reason": "hotel_only", "notes": "Aparthotels operate as managed multi-unit properties outside individual STR scope." },
+
+    { "id": "4", "label_en": "Bed & Breakfast", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+    { "id": "11", "label_en": "Agriculture / Farmhouse", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+    { "id": "18", "label_en": "Ryokan", "relevance": "covered", "collapsed_to": "pt.bed_and_breakfast" },
+
+    { "id": "7", "label_en": "Villa", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "8", "label_en": "Chalet", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "27", "label_en": "Gite", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "30", "label_en": "Cottage", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "31", "label_en": "Townhouse", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "32", "label_en": "Bungalow", "relevance": "covered", "collapsed_to": "pt.house" },
+    { "id": "44", "label_en": "Private vacation home", "relevance": "covered", "collapsed_to": "pt.house" },
+
+    { "id": "20", "label_en": "Boutique hotel", "relevance": "covered", "collapsed_to": "pt.boutique_hotel" },
+
+    { "id": "40", "label_en": "Guest house", "relevance": "covered", "collapsed_to": "pt.secondary_unit" },
+
+    { "id": "29", "label_en": "Castle", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "16", "label_en": "Boat / Houseboat", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+    { "id": "34", "label_en": "Mobile home", "relevance": "covered", "collapsed_to": "pt.unique_space" },
+
+    { "id": "1", "label_en": "Hotel", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "2", "label_en": "Motel", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "5", "label_en": "Resort", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "6", "label_en": "Inn", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "9", "label_en": "Hostel", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "14", "label_en": "Capsule hotel", "relevance": "out_of_scope", "reason": "hotel_only" },
+    { "id": "15", "label_en": "Campground", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "17", "label_en": "Caravan park", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "19", "label_en": "Hostel (family)", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "24", "label_en": "Cruise", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "33", "label_en": "Monastery", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "35", "label_en": "Camping", "relevance": "out_of_scope", "reason": "not_relevant_to_str" },
+    { "id": "37", "label_en": "Hunting lodge", "relevance": "out_of_scope", "reason": "not_relevant_to_str" }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://developers.booking.com/connectivity/docs (policies, fees, max_occupancy, house_rules_text, checkin_instructions, shared_spaces, amenities)"
+  ],
+  "scope": "v1",
+  "notes": "Manifest (not a catalog). Declares the Booking listing structured fields we integrate against. Booking has no access_methods enum catalog — check-in method is captured via free_text field `checkin_instructions`. Every entry MUST be referenced by at least one taxonomy item mapping.",
+  "entries": [
+    { "kind": "room_counter", "counter": "bedrooms", "target_taxonomy": "space_types", "semantics": "Number of bedrooms declared on the listing.", "relevance": "covered" },
+    { "kind": "room_counter", "counter": "bathrooms", "target_taxonomy": "space_types", "semantics": "Number of bathrooms declared on the listing.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "shared_spaces.kitchen", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Kitchen present as a shared space.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "shared_spaces.living_room", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Living room present as a shared space.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "shared_spaces.dining", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Dining area present as a shared space.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "amenities.workspace", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Dedicated workspace in the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.laundry_area", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Laundry area available at the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.balcony", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private balcony.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.patio", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private patio.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.garden", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private garden.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.garage", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private garage.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "amenities.pool", "transform": "bool", "target_taxonomy": "space_types", "semantics": "Private pool.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "policies.smoking", "transform": "enum", "target_taxonomy": "policies", "semantics": "Smoking policy on the listing.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "policies.parties", "transform": "bool", "target_taxonomy": "policies", "semantics": "Parties / events allowed.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "policies.pets", "transform": "bool", "target_taxonomy": "policies", "semantics": "Pets allowed.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "fees.cleaning", "transform": "currency", "target_taxonomy": "policies", "semantics": "Cleaning fee.", "relevance": "covered" },
+    { "kind": "structured_field", "field": "fees.extra_person", "transform": "currency", "target_taxonomy": "policies", "semantics": "Extra-person fee.", "relevance": "covered" },
+
+    { "kind": "structured_field", "field": "max_occupancy", "transform": "number", "target_taxonomy": "policies", "semantics": "Max guest capacity.", "relevance": "covered" },
+
+    { "kind": "free_text", "field": "house_rules_text", "target_taxonomy": "policies", "semantics": "House rules free-text bucket (quiet hours, services-in-home, commercial photography, etc.).", "relevance": "covered" },
+    { "kind": "free_text", "field": "checkin_instructions", "target_taxonomy": "access_methods", "semantics": "Check-in method described as free text (Booking has no enum equivalent).", "relevance": "covered" }
+  ]
+}

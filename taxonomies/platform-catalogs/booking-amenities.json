@@ -1,0 +1,434 @@
+{
+  "pinned_at": "2026-04-22",
+  "source_urls": [
+    "https://developers.booking.com/connectivity/docs/room-api#hotel-amenity-codes (HAC reference)",
+    "OTA 2014B hotel amenity codes"
+  ],
+  "scope": "v1",
+  "notes": "Booking Hotel Amenity Codes (HAC) scope-v1. Booking HAC is hotel-centric; covered set mirrors what amenity_taxonomy.json maps today (45 HAC codes). out_of_scope entries are STR-irrelevant service-style HAC codes (front desk, concierge, valet, restaurant, etc.) triaged to keep the reverse invariant honest rather than marked as gaps.",
+  "entries": [
+    {
+      "id": "1",
+      "label_en": "Restaurant",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "2",
+      "label_en": "Aparcamiento gratuito",
+      "relevance": "covered",
+      "collapsed_to": "am.free_parking",
+      "notes": "Also referenced by: am.free_parking_premises"
+    },
+    {
+      "id": "3",
+      "label_en": "Piscina",
+      "relevance": "covered",
+      "collapsed_to": "am.pool"
+    },
+    {
+      "id": "4",
+      "label_en": "Ascensor",
+      "relevance": "covered",
+      "collapsed_to": "am.elevator"
+    },
+    {
+      "id": "5",
+      "label_en": "Nevera",
+      "relevance": "covered",
+      "collapsed_to": "am.refrigerator"
+    },
+    {
+      "id": "6",
+      "label_en": "Mini nevera",
+      "relevance": "covered",
+      "collapsed_to": "am.mini_fridge"
+    },
+    {
+      "id": "7",
+      "label_en": "Gimnasio",
+      "relevance": "covered",
+      "collapsed_to": "am.gym"
+    },
+    {
+      "id": "8",
+      "label_en": "Televisión",
+      "relevance": "covered",
+      "collapsed_to": "am.tv"
+    },
+    {
+      "id": "9",
+      "label_en": "24-hour front desk",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "10",
+      "label_en": "Room service",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "11",
+      "label_en": "Aire acondicionado",
+      "relevance": "covered",
+      "collapsed_to": "am.air_conditioning"
+    },
+    {
+      "id": "12",
+      "label_en": "Placa de cocina",
+      "relevance": "covered",
+      "collapsed_to": "am.stove"
+    },
+    {
+      "id": "13",
+      "label_en": "Microondas",
+      "relevance": "covered",
+      "collapsed_to": "am.microwave"
+    },
+    {
+      "id": "14",
+      "label_en": "Horno",
+      "relevance": "covered",
+      "collapsed_to": "am.oven"
+    },
+    {
+      "id": "15",
+      "label_en": "Cuna",
+      "relevance": "covered",
+      "collapsed_to": "am.crib"
+    },
+    {
+      "id": "16",
+      "label_en": "Cafetera",
+      "relevance": "covered",
+      "collapsed_to": "am.coffee_maker"
+    },
+    {
+      "id": "17",
+      "label_en": "Caja fuerte",
+      "relevance": "covered",
+      "collapsed_to": "am.safe"
+    },
+    {
+      "id": "18",
+      "label_en": "Concierge",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "19",
+      "label_en": "Airport shuttle",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "20",
+      "label_en": "Cocina",
+      "relevance": "covered",
+      "collapsed_to": "am.kitchen"
+    },
+    {
+      "id": "21",
+      "label_en": "Kitchenette",
+      "relevance": "covered",
+      "collapsed_to": "am.kitchenette"
+    },
+    {
+      "id": "22",
+      "label_en": "Trona",
+      "relevance": "covered",
+      "collapsed_to": "am.high_chair"
+    },
+    {
+      "id": "23",
+      "label_en": "Valet parking",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "28",
+      "label_en": "Laundry service",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "29",
+      "label_en": "Dry cleaning service",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "30",
+      "label_en": "Ironing service",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "31",
+      "label_en": "Daily housekeeping",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "33",
+      "label_en": "Patio o balcón",
+      "relevance": "covered",
+      "collapsed_to": "am.patio_balcony"
+    },
+    {
+      "id": "47",
+      "label_en": "Breakfast included",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "48",
+      "label_en": "Bar / lounge",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "54",
+      "label_en": "Meeting/banquet facilities",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "55",
+      "label_en": "Business centre",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "64",
+      "label_en": "Acceso a playa",
+      "relevance": "covered",
+      "collapsed_to": "am.beach_access"
+    },
+    {
+      "id": "65",
+      "label_en": "Acceso directo a pistas",
+      "relevance": "covered",
+      "collapsed_to": "am.ski_in_out"
+    },
+    {
+      "id": "70",
+      "label_en": "Wake-up service",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "71",
+      "label_en": "Newspaper",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "72",
+      "label_en": "Tour desk",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "73",
+      "label_en": "Currency exchange",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "80",
+      "label_en": "Calefacción",
+      "relevance": "covered",
+      "collapsed_to": "am.heating"
+    },
+    {
+      "id": "81",
+      "label_en": "Shared lounge",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "82",
+      "label_en": "Luggage storage",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "83",
+      "label_en": "Chimenea interior",
+      "relevance": "covered",
+      "collapsed_to": "am.indoor_fireplace"
+    },
+    {
+      "id": "86",
+      "label_en": "Bañera",
+      "relevance": "covered",
+      "collapsed_to": "am.bathtub"
+    },
+    {
+      "id": "87",
+      "label_en": "Jacuzzi",
+      "relevance": "covered",
+      "collapsed_to": "am.hot_tub"
+    },
+    {
+      "id": "88",
+      "label_en": "Sauna",
+      "relevance": "covered",
+      "collapsed_to": "am.sauna"
+    },
+    {
+      "id": "91",
+      "label_en": "Non-smoking rooms",
+      "relevance": "out_of_scope",
+      "reason": "platform_not_actionable",
+      "notes": "Superseded by policies.smoking structured field (see pol.smoking coverage)."
+    },
+    {
+      "id": "101",
+      "label_en": "Lavadora",
+      "relevance": "covered",
+      "collapsed_to": "am.washer"
+    },
+    {
+      "id": "102",
+      "label_en": "Secadora",
+      "relevance": "covered",
+      "collapsed_to": "am.dryer"
+    },
+    {
+      "id": "103",
+      "label_en": "Lavavajillas",
+      "relevance": "covered",
+      "collapsed_to": "am.dishwasher"
+    },
+    {
+      "id": "104",
+      "label_en": "Congelador",
+      "relevance": "covered",
+      "collapsed_to": "am.freezer"
+    },
+    {
+      "id": "105",
+      "label_en": "Plancha",
+      "relevance": "covered",
+      "collapsed_to": "am.iron"
+    },
+    {
+      "id": "106",
+      "label_en": "Agua caliente",
+      "relevance": "covered",
+      "collapsed_to": "am.hot_water"
+    },
+    {
+      "id": "107",
+      "label_en": "Wifi",
+      "relevance": "covered",
+      "collapsed_to": "am.wifi"
+    },
+    {
+      "id": "108",
+      "label_en": "Champú",
+      "relevance": "covered",
+      "collapsed_to": "am.shampoo"
+    },
+    {
+      "id": "109",
+      "label_en": "Secador de pelo",
+      "relevance": "covered",
+      "collapsed_to": "am.hair_dryer"
+    },
+    {
+      "id": "110",
+      "label_en": "Hervidor de agua",
+      "relevance": "covered",
+      "collapsed_to": "am.kettle"
+    },
+    {
+      "id": "111",
+      "label_en": "Ropa de cama",
+      "relevance": "covered",
+      "collapsed_to": "am.bed_linens"
+    },
+    {
+      "id": "115",
+      "label_en": "Barbacoa",
+      "relevance": "covered",
+      "collapsed_to": "am.bbq_grill"
+    },
+    {
+      "id": "116",
+      "label_en": "Bicicletas",
+      "relevance": "covered",
+      "collapsed_to": "am.bikes"
+    },
+    {
+      "id": "117",
+      "label_en": "Pets allowed (HAC)",
+      "relevance": "out_of_scope",
+      "reason": "platform_not_actionable",
+      "notes": "Superseded by policies.pets structured field (see pol.pets coverage)."
+    },
+    {
+      "id": "118",
+      "label_en": "Botiquín",
+      "relevance": "covered",
+      "collapsed_to": "am.first_aid_kit"
+    },
+    {
+      "id": "119",
+      "label_en": "Detector de humo",
+      "relevance": "covered",
+      "collapsed_to": "am.smoke_alarm"
+    },
+    {
+      "id": "120",
+      "label_en": "Extintor",
+      "relevance": "covered",
+      "collapsed_to": "am.fire_extinguisher"
+    },
+    {
+      "id": "121",
+      "label_en": "Equipamiento de ejercicio",
+      "relevance": "covered",
+      "collapsed_to": "am.exercise_equipment"
+    },
+    {
+      "id": "185",
+      "label_en": "Spa / wellness centre",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "193",
+      "label_en": "Bidé",
+      "relevance": "covered",
+      "collapsed_to": "am.bidet"
+    },
+    {
+      "id": "195",
+      "label_en": "Massage",
+      "relevance": "out_of_scope",
+      "reason": "hotel_only"
+    },
+    {
+      "id": "198",
+      "label_en": "Fax/photocopying",
+      "relevance": "out_of_scope",
+      "reason": "not_relevant_to_str"
+    },
+    {
+      "id": "211",
+      "label_en": "Espacio de trabajo",
+      "relevance": "covered",
+      "collapsed_to": "am.dedicated_workspace"
+    },
+    {
+      "id": "212",
+      "label_en": "Cargador de vehículo eléctrico",
+      "relevance": "covered",
+      "collapsed_to": "am.ev_charger"
+    }
+  ]
+}
