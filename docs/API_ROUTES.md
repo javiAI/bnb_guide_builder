@@ -99,6 +99,23 @@
 
   Mapping `entityType → sectionId` vive en `taxonomies/guide_sections.json` (`entityTypes[]`). Override: `journeyStage==='checkout'` re-homa a `gs.checkout`. Items sin sección asignable se dropean del payload.
 
+- `POST /api/g/:slug/incidents` — **público, sin autenticación** (rama 13D). Crea un `Incident` con `origin='guest_guide'`, `reporterType='guest'`, `visibility='internal'` (hardcoded — guest nunca produce incidents con visibility superior). Body Zod-validated `{ categoryKey, summary (≤500), guestContactOptional? (≤200) }`. `categoryKey` debe existir en `taxonomies/incident_categories.json` (9 categorías). Rate-limit sliding-window 3 req/60s por `(slug + IP)` (helper compartido `sliding-window-rate-limit.ts` — mismo contrato que `guide-search`). Side-effects: (a) `Set-Cookie: guide-incidents-<slug>=<hmac-signed payload>; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800` (7d TTL), payload `{slug, ids[≤10], iat}` firmado con `GUEST_INCIDENT_COOKIE_SECRET`; (b) disparo async a `EmailProvider.notifyHostOfIncident(...)` — en 13D el provider es no-op stub (errores swallowed, nunca degrada el response).
+
+  Status codes:
+  - `201` — `{ incidentId, trackUrl }`. `trackUrl` = `/g/:slug/incidents/:id` (pointer a la tracking page).
+  - `400 validation_error` — categoryKey desconocido, summary vacío/>500, contact >200.
+  - `410 gone` — slug sin `Property` o sin `GuideVersion` publicado (la guía no está disponible).
+  - `429 rate_limited` — body `{ error: "rate_limited", retryAfterSeconds }` + header `Retry-After`.
+  - `500 internal_error` — errores de DB.
+
+  `Cache-Control: no-store`.
+
+- `GET /api/g/:slug/incidents/:id` — **público, cookie-gated** (rama 13D). Lee un incident creado por el mismo device (mismo browser, misma slug-scoped cookie HMAC). Validación: (1) cookie `guide-incidents-<slug>` presente, firma HMAC válida, no expirada, `slug` del payload = slug de la URL, (2) `id` ∈ `cookie.ids`, (3) incident existe con `origin='guest_guide'` y `propertyId` matching `Property.publicSlug=<slug>`. Projection de campos a guest: **solo** `{ id, status, categoryKey, createdAt, resolvedAt }` (whitelist en `src/lib/visibility.ts`). `summary`, `guestContactOptional`, `notes`, `reporterUserId` NUNCA se sirven al guest (visibility=`internal`).
+
+  Status codes:
+  - `200` — `{ incident: { id, status, categoryKey, createdAt, resolvedAt } }`.
+  - `404 not_found` — cookie ausente/tampered/expired, id no en cookie.ids, incident inexistente, o cross-property attempt (IDOR defense).
+
 ### Messaging and automation
 
 - `GET /api/properties/:propertyId/message-templates`

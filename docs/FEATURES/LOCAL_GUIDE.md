@@ -279,3 +279,67 @@ MapLibre consume `/api/geo/tiles-config`. Sin `MAPTILER_API_KEY` el endpoint res
 ### Renderers string (HTML/Markdown/PDF)
 
 Los exportadores estáticos no intentan renderizar tiles ni cards de eventos: emiten un placeholder textual "Mapa y próximos eventos disponibles en la guía online." después de los `LocalPlace` items cuando `section.resolverKey === "local"`.
+
+---
+
+## Issue reporting (Rama 13D — `feat/guide-issue-reporting`)
+
+Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D: formulario corto (categoría + summary + contacto opcional), sin fotos, cookie HMAC para que el mismo device pueda ver el estado después, panel interno para el host.
+
+### Flujo
+
+1. Huésped pulsa "Reportar problema" en el header del renderer (`IssueReporter` junto a `GuideSearch`).
+2. Drawer Radix Dialog con 3 campos: chip de categoría (desde `taxonomies/incident_categories.json`), textarea summary (≤500), input contact opcional (≤200).
+3. Submit → `POST /api/g/:slug/incidents`.
+4. Backend crea `Incident { origin: "guest_guide", reporterType: "guest", visibility: "internal", categoryKey, summary, guestContactOptional }` + escribe cookie `guide-incidents-<slug>` (HMAC, slug-scoped) + dispara `EmailProvider.notifyHostOfIncident(...)` (no-op stub en 13D).
+5. UI success muestra `<a href="/g/:slug/incidents/:id">Ver seguimiento</a>`.
+6. Tracking page `/g/:slug/incidents/:id` valida la cookie (HMAC + `expectedSlug` + `id ∈ ids`) y renderiza `{ categoryKey, status, createdAt, resolvedAt }` — nada más.
+7. Host en `/properties/:id/incidents` ve la list + detail + puede cambiar status via `changeIncidentStatusAction` (IDOR-protected por composite `{id, propertyId}`).
+
+### Issue reporting — taxonomía
+
+[taxonomies/incident_categories.json](../../taxonomies/incident_categories.json) — 9 entries `ic.<slug>` (wifi, access, appliance, cleaning, safety, noise, supplies, plumbing, other). Cargada por `loadIncidentCategories()` en [src/lib/taxonomy-loader.ts](../../src/lib/taxonomy-loader.ts) con Zod fail-loud. Helpers: `findIncidentCategory(id)`, `isIncidentCategoryKey(id)`. Campos: `id`, `label` (host-facing, ES), `guestLabel` (neutro para guest), `description`, `icon`, `hostDefaultSeverity`.
+
+### Issue reporting — piezas
+
+| Archivo | Responsabilidad |
+|---|---|
+| [src/components/public-guide/issue-reporter.tsx](../../src/components/public-guide/issue-reporter.tsx) | Drawer Radix con chip/summary/contact + state machine idle/loading/ok/error |
+| [src/app/api/g/[slug]/incidents/route.ts](../../src/app/api/g/[slug]/incidents/route.ts) | POST (create) — Zod valida → `incident-from-guest.service.ts` → cookie + email |
+| [src/app/api/g/[slug]/incidents/[id]/route.ts](../../src/app/api/g/[slug]/incidents/[id]/route.ts) | GET (read) — cookie-gated, field whitelist |
+| [src/app/g/[slug]/incidents/[id]/page.tsx](../../src/app/g/[slug]/incidents/[id]/page.tsx) | Tracking page (server component, cookie-gated via `parseGuestIncidentCookieValue`) |
+| [src/lib/services/guest-incident-cookie.ts](../../src/lib/services/guest-incident-cookie.ts) | HMAC-SHA256 build/parse/append — slug-scoped, 7d TTL, clock skew guard ±5min, tamper = drop |
+| [src/lib/services/incident-from-guest.service.ts](../../src/lib/services/incident-from-guest.service.ts) | Encapsula invariantes: `origin/reporterType/visibility` hardcoded |
+| [src/lib/services/incident-notification.service.ts](../../src/lib/services/incident-notification.service.ts) | `EmailProvider` interface + no-op stub (swallow errors) |
+| [src/lib/services/sliding-window-rate-limit.ts](../../src/lib/services/sliding-window-rate-limit.ts) | Refactor compartido desde `guide-search` — 3 req/60s/(slug+IP) |
+| [src/app/properties/[propertyId]/incidents/page.tsx](../../src/app/properties/[propertyId]/incidents/page.tsx) | Host panel list con filtros origin/status |
+| [src/app/properties/[propertyId]/incidents/[id]/page.tsx](../../src/app/properties/[propertyId]/incidents/[id]/page.tsx) | Host panel detail |
+| [src/app/properties/[propertyId]/incidents/[id]/status-form.tsx](../../src/app/properties/[propertyId]/incidents/[id]/status-form.tsx) | Status change client form — plumbs `propertyId` hidden input para IDOR defense |
+| [src/lib/actions/incident.actions.ts](../../src/lib/actions/incident.actions.ts) `changeIncidentStatusAction` | Composite `{id, propertyId}` read + write |
+
+### Cookie
+
+- **Nombre**: `guide-incidents-<slug>` (RFC 6265 token-safe, prefix `guide-incidents-`). Una cookie por slug para que un device con la guía de dos propiedades abiertas no deje que una autorice lectura de la otra.
+- **Payload**: `{ slug, ids: string[≤10], iat: number }` → JSON → base64url → HMAC-SHA256 → `"<payload>.<sig>"`.
+- **Secret**: `GUEST_INCIDENT_COOKIE_SECRET` (≥16 chars). Prod fail-fast si falta. Dev fallback determinístico (nunca usado en prod — la guardia throws primero). Rotarlo invalida todas las track URLs — aceptable (huéspedes pueden reportar nueva).
+- **TTL**: 7 días. Clock skew guard ±5 min para cookies "del futuro".
+- **Path**: `/` — cookie-path matching es prefix-based. Necesitamos que la cookie viaje tanto a `/api/g/:slug/incidents/*` como a `/g/:slug/incidents/:id`, que no comparten prefix más específico que `/`. Isolation cross-slug se preserva por el nombre (una cookie por slug) + el `expectedSlug` check del HMAC (una cookie de slug A nunca autoriza slug B aunque se monte manualmente).
+- **Cap ids**: 10 por cookie. Un stay legítimo nunca produce tantos; el cap bloquea inflado malicioso de headers.
+- **On tamper/expiry**: DROP silencioso (tratar como si no hubiera cookie). La tracking page resuelve `notFound()`. Nunca 403 — la cookie sólo añade autoridad de lectura; sin ella, tampoco hay nada que negar.
+
+### Issue reporting — rate limit
+
+Helper compartido `sliding-window-rate-limit.ts`, extraído desde el de `guide-search` en 13D. 3 req / 60 s / `(slug + IP)`, bucket LRU con cap 256. Falla con `429 rate_limited` + `Retry-After`. Key incluye slug para que drenar quota en una propiedad no afecte a otras.
+
+### Invariantes duras
+
+- `visibility='internal'` hardcoded en el service (no se toma del input). Un incident creado por guest nunca emerge como `public`/`guest`.
+- Guest solo lee `{ id, status, categoryKey, createdAt, resolvedAt }` via la tracking page. `summary`, `guestContactOptional`, `notes`, `reporterUserId`, `targetId`, `playbookId` NUNCA en `/g/*`. Whitelist en [src/lib/visibility.ts](../../src/lib/visibility.ts), test en `src/test/incidents/guest-incident-visibility.test.ts`.
+- IDOR defense host-side: `changeIncidentStatusAction` requiere `propertyId` + `{id, propertyId}` composite filter en `findFirst` y `updateMany`. Tampered `incidentId` cross-property colapsa a "not found".
+- Unpublished slug → `410 Gone` en POST (la guía ya no está disponible). 404 suele implicar "no existe"; 410 comunica "existió, ya no".
+
+### Qué queda fuera de 13D
+
+- **Fotos**: no se acepta adjunto. Requiere endpoint público de upload que no existe. Diferido.
+- **Email real**: `EmailProvider` es stub. Provider real (Resend/Postmark) es rama futura.
+- **Audit log**: no se emite `AuditLog` por incident. La tabla `Incident` (con `origin` + `createdAt`) es el registro primario.
