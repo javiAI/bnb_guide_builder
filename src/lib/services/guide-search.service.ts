@@ -22,6 +22,7 @@ import {
 } from "@/lib/services/assistant/retriever";
 import { getSectionIdForEntity, getGuideSectionConfig } from "@/lib/taxonomy-loader";
 import type { EntityType } from "@/lib/types/knowledge";
+import { checkSlidingWindowLimit } from "@/lib/services/sliding-window-rate-limit";
 
 // Anchor contract:
 //   Sections render with `id={section.id}` (e.g. `gs.arrival`) — there is no
@@ -67,53 +68,11 @@ const TOP_K = 5;
 const SNIPPET_MAX_LENGTH = 180;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_BUCKETS_SOFT_CAP = 256;
 
 // In-memory rate limit is sufficient for the MVP (single Next process per
 // region, read-only abuse risk). Multi-region → Redis.
-
 const rateBuckets = new Map<string, number[]>();
-
-function checkRateLimit(slug: string, now: number): {
-  allowed: boolean;
-  retryAfterSeconds: number;
-} {
-  const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  const existing = rateBuckets.get(slug);
-  const pruned = existing ? existing.filter((t) => t > windowStart) : [];
-  if (pruned.length >= RATE_LIMIT_MAX_REQUESTS) {
-    rateBuckets.set(slug, pruned);
-    const oldest = pruned[0];
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((oldest + RATE_LIMIT_WINDOW_MS - now) / 1000),
-    );
-    return { allowed: false, retryAfterSeconds };
-  }
-  pruned.push(now);
-  rateBuckets.set(slug, pruned);
-  return { allowed: true, retryAfterSeconds: 0 };
-}
-
-const RATE_BUCKETS_SOFT_CAP = 256;
-
-// Drop buckets whose latest entry has aged out, then if we're still over the
-// cap (crawler hitting many distinct slugs within the same window), evict the
-// oldest-touched buckets until we're back under the cap. Without the hard
-// eviction step, a crawler keeps the Map growing indefinitely because no
-// bucket is "idle" yet.
-function enforceBucketCap(now: number): void {
-  const windowStart = now - RATE_LIMIT_WINDOW_MS;
-  for (const [slug, timestamps] of rateBuckets) {
-    const latest = timestamps[timestamps.length - 1];
-    if (latest === undefined || latest <= windowStart) rateBuckets.delete(slug);
-  }
-  if (rateBuckets.size <= RATE_BUCKETS_SOFT_CAP) return;
-  const byLatest = [...rateBuckets.entries()]
-    .map(([s, ts]) => [s, ts[ts.length - 1] ?? 0] as const)
-    .sort((a, b) => a[1] - b[1]);
-  const excess = rateBuckets.size - RATE_BUCKETS_SOFT_CAP;
-  for (let i = 0; i < excess; i += 1) rateBuckets.delete(byLatest[i][0]);
-}
 
 /** Test-only: clear the rate-limit window for a specific slug (or all). */
 export function __resetRateLimitForTests(slug?: string): void {
@@ -150,10 +109,11 @@ export async function guideSemanticSearch(
   input: GuideSemanticSearchInput,
 ): Promise<GuideSemanticSearchResult> {
   const now = Date.now();
-  const gate = checkRateLimit(input.slug, now);
-  // Enforce after the insert: a brand-new slug can grow the map from exactly
-  // the cap to cap+1 inside `checkRateLimit`, and a pre-check misses that.
-  if (rateBuckets.size > RATE_BUCKETS_SOFT_CAP) enforceBucketCap(now);
+  const gate = checkSlidingWindowLimit(rateBuckets, input.slug, now, {
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    maxRequests: RATE_LIMIT_MAX_REQUESTS,
+    bucketsSoftCap: RATE_BUCKETS_SOFT_CAP,
+  });
   if (!gate.allowed) {
     return { kind: "rate-limited", retryAfterSeconds: gate.retryAfterSeconds };
   }

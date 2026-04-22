@@ -72,6 +72,7 @@ import messagingStarterPacksJson from "../../taxonomies/messaging_starter_packs.
 import localPlaceCategoriesJson from "../../taxonomies/local_place_categories.json";
 import localEventCategoriesJson from "../../taxonomies/local_event_categories.json";
 import localEventSourcesJson from "../../taxonomies/local_event_sources.json";
+import incidentCategoriesJson from "../../taxonomies/incident_categories.json";
 import { CONTACT_CHANNELS } from "./contact-actions";
 import {
   extractVariableTokens,
@@ -408,6 +409,86 @@ const LOCAL_EVENT_SOURCE_BY_KEY: ReadonlyMap<string, LocalEventSource> =
 
 export function findLocalEventSource(key: string): LocalEventSource | undefined {
   return LOCAL_EVENT_SOURCE_BY_KEY.get(key);
+}
+
+// ── Incident categories (Rama 13D) ──
+// Guest-facing chips in the public-guide issue reporter. `defaultTargetType`
+// seeds `Incident.targetType` when the guest doesn't report against a specific
+// entity; `defaultSeverity` seeds `Incident.severity`. Both are overridable by
+// the host after the fact.
+
+const INCIDENT_TARGET_TYPES = [
+  "system",
+  "amenity",
+  "space",
+  "access",
+  "property",
+] as const;
+export type IncidentTargetType = (typeof INCIDENT_TARGET_TYPES)[number];
+
+const INCIDENT_SEVERITIES = ["low", "medium", "high"] as const;
+export type IncidentSeverity = (typeof INCIDENT_SEVERITIES)[number];
+
+const IncidentCategorySchema = z
+  .object({
+    id: z.string().regex(/^ic\.[a-z_]+$/, {
+      message: "incident category id must match `ic.<snake_case>`",
+    }),
+    label: z.string().min(1),
+    description: z.string().min(1),
+    guestLabel: z.string().min(1),
+    icon: z.string().min(1),
+    defaultSeverity: z.enum(INCIDENT_SEVERITIES),
+    defaultTargetType: z.enum(INCIDENT_TARGET_TYPES),
+  })
+  .strict();
+
+const IncidentCategoriesFileSchema = z
+  .object({
+    file: z.string(),
+    version: z.string(),
+    locale: z.string(),
+    units_system: z.string(),
+    items: z.array(IncidentCategorySchema).min(1),
+  })
+  .strict();
+
+export type IncidentCategory = z.infer<typeof IncidentCategorySchema>;
+export type IncidentCategoriesFile = z.infer<
+  typeof IncidentCategoriesFileSchema
+>;
+
+function loadIncidentCategories(): IncidentCategoriesFile {
+  const parsed = IncidentCategoriesFileSchema.safeParse(incidentCategoriesJson);
+  if (!parsed.success) {
+    const details = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("\n");
+    throw new Error(`Invalid taxonomies/incident_categories.json:\n${details}`);
+  }
+  const ids = parsed.data.items.map((i) => i.id);
+  const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
+  if (duplicates.length > 0) {
+    throw new Error(
+      `Duplicate incident category ids: ${Array.from(new Set(duplicates)).join(", ")}`,
+    );
+  }
+  return parsed.data;
+}
+
+export const incidentCategories: IncidentCategoriesFile =
+  loadIncidentCategories();
+
+const INCIDENT_CATEGORY_BY_ID: ReadonlyMap<string, IncidentCategory> = new Map(
+  incidentCategories.items.map((item) => [item.id, item]),
+);
+
+export function findIncidentCategory(id: string): IncidentCategory | undefined {
+  return INCIDENT_CATEGORY_BY_ID.get(id);
+}
+
+export function isIncidentCategoryKey(id: string): boolean {
+  return INCIDENT_CATEGORY_BY_ID.has(id);
 }
 
 // ── Messaging variables ──

@@ -246,6 +246,55 @@ export async function deleteIncidentAction(
   return { success: true };
 }
 
+// Rama 13D — status change from the guest-incidents panel (list + detail
+// views). Accepts the finite set of statuses tracked in the schema and
+// auto-stamps `resolvedAt` when entering `resolved`, clearing it on exit.
+const ALLOWED_STATUSES = ["open", "in_progress", "resolved", "cancelled"] as const;
+type IncidentStatus = (typeof ALLOWED_STATUSES)[number];
+
+export async function changeIncidentStatusAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const incidentId = formData.get("incidentId") as string;
+  const propertyId = formData.get("propertyId") as string;
+  const nextStatus = formData.get("status") as string;
+  if (!incidentId) return { success: false, error: "Falta el ID de la incidencia" };
+  if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
+  if (!ALLOWED_STATUSES.includes(nextStatus as IncidentStatus)) {
+    return { success: false, error: "Estado no válido" };
+  }
+
+  // Scope the read+write to the propertyId from the form context so a
+  // tampered incidentId from a different property never targets another
+  // property's row. `findFirst` with the composite filter returns null for
+  // cross-property attempts, collapsing them to "not found".
+  const incident = await prisma.incident.findFirst({
+    where: { id: incidentId, propertyId },
+    select: { status: true, resolvedAt: true },
+  });
+  if (!incident) return { success: false, error: "Incidencia no encontrada" };
+
+  // resolvedAt: stamp on entry, clear on exit, preserve otherwise.
+  let resolvedAt: Date | null = incident.resolvedAt;
+  if (nextStatus === "resolved" && incident.status !== "resolved") {
+    resolvedAt = new Date();
+  } else if (nextStatus !== "resolved" && incident.status === "resolved") {
+    resolvedAt = null;
+  }
+
+  // updateMany with the composite filter ensures the write only lands if the
+  // row still belongs to the same property — matches the ownership gate.
+  await prisma.incident.updateMany({
+    where: { id: incidentId, propertyId },
+    data: { status: nextStatus, resolvedAt },
+  });
+
+  revalidatePath(`/properties/${propertyId}/incidents`);
+  revalidatePath(`/properties/${propertyId}/incidents/${incidentId}`);
+  return { success: true };
+}
+
 export async function resolveIncidentAction(
   _prev: ActionResult | null,
   formData: FormData,

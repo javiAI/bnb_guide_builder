@@ -405,20 +405,31 @@ model TroubleshootingPlaybook {
 }
 
 model Incident {
-  id         String          @id @default(cuid())
-  propertyId String          @map("property_id")
-  title      String
-  severity   String          @default("medium")
-  status     String          @default("open") // open | in_progress | resolved | cancelled
-  targetType String          @map("target_type") // system | amenity | space | access | property
-  targetId   String?         @map("target_id")
-  playbookId String?         @map("playbook_id")
-  notes      String?
-  visibility VisibilityLevel @default(internal)
-  occurredAt DateTime        @map("occurred_at")
-  resolvedAt DateTime?       @map("resolved_at")
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
+  id                   String          @id @default(cuid())
+  propertyId           String          @map("property_id")
+  title                String
+  severity             String          @default("medium")
+  status               String          @default("open") // open | in_progress | resolved | cancelled
+  targetType           String          @map("target_type") // system | amenity | space | access | property
+  targetId             String?         @map("target_id")
+  playbookId           String?         @map("playbook_id")
+  notes                String?
+  // origin: "internal" = operations/troubleshooting flow; "guest_guide" = reported
+  // from the public guide. Drives visibility of notes/fields and notification path.
+  origin               String          @default("internal")
+  // reporterType: "host" (operator in dashboard) or "guest" (public guide). Guest
+  // reports carry extra handling (cookie-scoped read, whitelisted fields).
+  reporterType         String          @default("host") @map("reporter_type")
+  // Taxonomy key from `incident_categories.json` (ic.*). Set for origin="guest_guide";
+  // NULL for legacy/internal incidents that predate the taxonomy.
+  categoryKey          String?         @map("category_key")
+  // Opt-in guest contact (email or phone) for follow-up. Never required.
+  guestContactOptional String?         @map("guest_contact_optional")
+  visibility           VisibilityLevel @default(internal)
+  occurredAt           DateTime        @map("occurred_at")
+  resolvedAt           DateTime?       @map("resolved_at")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
 
   property Property                 @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   playbook TroubleshootingPlaybook? @relation(fields: [playbookId], references: [id], onDelete: SetNull)
@@ -426,6 +437,7 @@ model Incident {
   @@index([propertyId])
   @@index([propertyId, status])
   @@index([propertyId, targetType, targetId])
+  @@index([propertyId, origin, status])
   @@index([playbookId])
   @@map("incidents")
 }

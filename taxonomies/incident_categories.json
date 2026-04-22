@@ -1,0 +1,62 @@
+{
+  "file": "incident_categories.json",
+  "version": "2026-04-22",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "items": [
+    {
+      "id": "ic.wifi",
+      "label": "Wifi / internet",
+      "description": "Problemas de conectividad, velocidad o señal de wifi.",
+      "guestLabel": "Wifi / internet",
+      "icon": "Wifi",
+      "defaultSeverity": "medium",
+      "defaultTargetType": "system"
+    },
+    {
+      "id": "ic.appliance",
+      "label": "Electrodoméstico",
+      "description": "Cocina, lavadora, nevera, microondas, horno u otros electrodomésticos que no funcionan correctamente.",
+      "guestLabel": "Electrodoméstico",
+      "icon": "Utensils",
+      "defaultSeverity": "medium",
+      "defaultTargetType": "amenity"
+    },
+    {
+      "id": "ic.cleaning",
+      "label": "Limpieza",
+      "description": "Falta de limpieza al check-in, suciedad puntual o ropa de cama no preparada.",
+      "guestLabel": "Limpieza",
+      "icon": "Sparkles",
+      "defaultSeverity": "medium",
+      "defaultTargetType": "property"
+    },
+    {
+      "id": "ic.noise",
+      "label": "Ruido",
+      "description": "Ruido excesivo, de vecinos o externo que afecta a la estancia.",
+      "guestLabel": "Ruido",
+      "icon": "Volume2",
+      "defaultSeverity": "low",
+      "defaultTargetType": "property"
+    },
+    {
+      "id": "ic.access",
+      "label": "Acceso",
+      "description": "Problemas con llaves, cerraduras, código de acceso o entrada al edificio.",
+      "guestLabel": "Acceso",
+      "icon": "KeyRound",
+      "defaultSeverity": "high",
+      "defaultTargetType": "access"
+    },
+    {
+      "id": "ic.other",
+      "label": "Otro",
+      "description": "Cualquier incidencia que no encaja en las categorías anteriores.",
+      "guestLabel": "Otro",
+      "icon": "HelpCircle",
+      "defaultSeverity": "medium",
+      "defaultTargetType": "property"
+    }
+  ]
+}

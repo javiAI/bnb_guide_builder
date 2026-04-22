@@ -41,6 +41,14 @@
   justify-self: end;
 }
 
+.guide-brand-header__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .guide-brand-header__logo {
   width: 3rem;
   height: 3rem;
@@ -625,6 +633,245 @@
 @keyframes guideSearchFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Issue reporter (Rama 13D) — piggybacks on `guide-search__dialog` for
+ * surface/overlay tokens and animation, then adds its own inner layout.
+ * Liora (FASE 15) will restyle in-place. */
+
+.guide-reporter__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.875rem;
+  border: 1px solid var(--guide-border);
+  border-radius: 999px;
+  background: var(--guide-surface);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.guide-reporter__trigger:hover,
+.guide-reporter__trigger:focus-visible {
+  border-color: var(--guide-brand);
+  outline: none;
+}
+
+.guide-reporter__trigger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+}
+
+.guide-reporter__trigger-label {
+  color: var(--guide-muted);
+}
+
+@media (max-width: 540px) {
+  .guide-reporter__trigger-label {
+    display: none;
+  }
+}
+
+.guide-reporter__dialog {
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+@media (min-width: 640px) {
+  .guide-reporter__dialog {
+    max-height: 80vh;
+  }
+}
+
+.guide-reporter__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.guide-reporter__description {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--guide-muted);
+  line-height: 1.4;
+}
+
+.guide-reporter__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+.guide-reporter__fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.guide-reporter__legend {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+  padding: 0;
+}
+
+.guide-reporter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.guide-reporter__chip {
+  min-height: 44px;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--guide-border);
+  border-radius: 999px;
+  background: var(--guide-surface);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.guide-reporter__chip:hover,
+.guide-reporter__chip:focus-visible {
+  border-color: var(--guide-brand);
+  outline: none;
+}
+
+.guide-reporter__chip:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+}
+
+.guide-reporter__chip--selected {
+  background: var(--guide-brand);
+  color: var(--guide-brand-contrast);
+  border-color: var(--guide-brand);
+}
+
+.guide-reporter__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.guide-reporter__label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.guide-reporter__textarea,
+.guide-reporter__input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--guide-border);
+  border-radius: 0.5rem;
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.guide-reporter__textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.guide-reporter__input {
+  min-height: 44px;
+}
+
+.guide-reporter__textarea:focus-visible,
+.guide-reporter__input:focus-visible {
+  border-color: var(--guide-brand);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+}
+
+.guide-reporter__counter,
+.guide-reporter__hint {
+  font-size: 0.8125rem;
+  color: var(--guide-muted);
+}
+
+.guide-reporter__error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-danger-500, #b91c1c) 12%, transparent);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+}
+
+.guide-reporter__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.guide-reporter__primary,
+.guide-reporter__secondary {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.guide-reporter__primary {
+  background: var(--guide-brand);
+  color: var(--guide-brand-contrast);
+}
+
+.guide-reporter__primary:disabled,
+.guide-reporter__primary[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.guide-reporter__secondary {
+  background: transparent;
+  color: var(--foreground);
+  border-color: var(--guide-border);
+}
+
+.guide-reporter__primary:focus-visible,
+.guide-reporter__secondary:focus-visible {
+  outline: 2px solid var(--guide-brand);
+  outline-offset: 2px;
+}
+
+.guide-reporter__success {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.guide-reporter__success-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.guide-reporter__success-copy {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--guide-muted);
+  line-height: 1.4;
 }
 
 /* Install nudge (Rama 10I) — bottom-anchored A2HS panel. Sober + neutral
