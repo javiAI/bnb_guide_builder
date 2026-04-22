@@ -23,8 +23,20 @@
           "journeyTags": [
             "essential"
           ],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "person_capacity",
+              "transform": "number"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "max_occupancy",
+              "transform": "number"
+            }
+          ]
         },
         {
           "id": "pol.quiet_hours",
@@ -43,8 +55,18 @@
           "journeyTags": [
             "essential"
           ],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "free_text",
+              "field": "house_rules"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         },
         {
           "id": "pol.smoking",
@@ -82,8 +104,20 @@
           "journeyTags": [
             "essential"
           ],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.smoking_allowed",
+              "transform": "enum"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.smoking",
+              "transform": "enum"
+            }
+          ]
         },
         {
           "id": "pol.events",
@@ -114,8 +148,20 @@
           "dependency_hints": [
             "Si se permite algún nivel, mostrar límites y condiciones."
           ],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.events_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.parties",
+              "transform": "bool"
+            }
+          ]
         },
         {
           "id": "pol.pets",
@@ -309,8 +355,20 @@
           "journeyTags": [
             "essential"
           ],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.pets_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "policies.pets",
+              "transform": "bool"
+            }
+          ]
         },
         {
           "id": "pol.checkin_checkout",
@@ -350,8 +408,19 @@
             }
           ],
           "dependency_hints": [],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "listing_policies.commercial_photography_allowed",
+              "transform": "bool"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         },
         {
           "id": "pol.services_in_home",
@@ -408,8 +477,18 @@
             }
           ],
           "dependency_hints": [],
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "free_text",
+              "field": "house_rules"
+            },
+            {
+              "platform": "booking",
+              "kind": "free_text",
+              "field": "house_rules_text"
+            }
+          ]
         }
       ]
     },
@@ -429,8 +508,20 @@
           "recommended": false,
           "dependency_hints": [],
           "journeyStage": "checkout",
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "pricing.cleaning_fee",
+              "transform": "currency"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "fees.cleaning",
+              "transform": "currency"
+            }
+          ]
         },
         {
           "id": "fee.extra_guest",
@@ -444,8 +535,20 @@
             "Mostrar solo si existe política diferenciada por ocupación."
           ],
           "journeyStage": "checkout",
-          "source": [],
-          "platform_supported": false
+          "source": [
+            {
+              "platform": "airbnb",
+              "kind": "structured_field",
+              "field": "pricing.extra_person_fee",
+              "transform": "currency"
+            },
+            {
+              "platform": "booking",
+              "kind": "structured_field",
+              "field": "fees.extra_person",
+              "transform": "currency"
+            }
+          ]
         },
         {
           "id": "fee.pet",

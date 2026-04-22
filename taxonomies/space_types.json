@@ -20,8 +20,18 @@
         "rt.private_room",
         "rt.hotel_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "room_counter",
+          "counter": "bedrooms"
+        },
+        {
+          "platform": "booking",
+          "kind": "room_counter",
+          "counter": "bedrooms"
+        }
+      ]
     },
     {
       "id": "sp.bathroom",
@@ -40,8 +50,18 @@
         "rt.hotel_room",
         "rt.other"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "room_counter",
+          "counter": "bathrooms"
+        },
+        {
+          "platform": "booking",
+          "kind": "room_counter",
+          "counter": "bathrooms"
+        }
+      ]
     },
     {
       "id": "sp.kitchen",
@@ -60,8 +80,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "shared_spaces.kitchen",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "shared_spaces.kitchen",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.living_room",
@@ -82,8 +114,20 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "shared_spaces.living_room",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "shared_spaces.living_room",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.dining",
@@ -101,8 +145,20 @@
       "applicableRoomTypes": [
         "rt.entire_place"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "shared_spaces.dining",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "shared_spaces.dining",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.office",
@@ -118,8 +174,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.workspace",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.workspace",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.laundry",
@@ -135,8 +203,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.laundry_area",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.laundry_area",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.balcony",
@@ -153,8 +233,20 @@
         "rt.private_room",
         "rt.hotel_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.balcony",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.balcony",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.patio",
@@ -170,8 +262,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.patio",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.patio",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.garden",
@@ -187,8 +291,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.garden",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.garden",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.garage",
@@ -204,8 +320,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.garage",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.garage",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.storage",
@@ -369,8 +497,20 @@
         "rt.entire_place",
         "rt.private_room"
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "structured_field",
+          "field": "amenities.pool",
+          "transform": "bool"
+        },
+        {
+          "platform": "booking",
+          "kind": "structured_field",
+          "field": "amenities.pool",
+          "transform": "bool"
+        }
+      ]
     },
     {
       "id": "sp.shared_area",

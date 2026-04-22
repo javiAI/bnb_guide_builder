@@ -20,7 +20,13 @@
       "source": [
         {
           "platform": "airbnb",
+          "kind": "external_id",
           "external_id": "smart_lock"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
       ]
     },
@@ -40,7 +46,13 @@
       "source": [
         {
           "platform": "airbnb",
+          "kind": "external_id",
           "external_id": "keypad"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
       ]
     },
@@ -60,7 +72,13 @@
       "source": [
         {
           "platform": "airbnb",
+          "kind": "external_id",
           "external_id": "lockbox"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
       ]
     },
@@ -78,7 +96,13 @@
       "source": [
         {
           "platform": "airbnb",
+          "kind": "external_id",
           "external_id": "in_person_greeting"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
         }
       ]
     },
@@ -93,8 +117,18 @@
       "dependency_hints": [
         "Pedir nombre y dirección del establecimiento, horario de recogida."
       ],
-      "source": [],
-      "platform_supported": false
+      "source": [
+        {
+          "platform": "airbnb",
+          "kind": "external_id",
+          "external_id": "building_staff"
+        },
+        {
+          "platform": "booking",
+          "kind": "free_text",
+          "field": "checkin_instructions"
+        }
+      ]
     },
     {
       "id": "am.other",

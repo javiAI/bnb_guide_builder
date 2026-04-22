@@ -26,6 +26,7 @@ import type {
   AmenityScopePolicyEntry,
   AmenityDestination,
   AmenityItem,
+  PlatformMapping,
 } from "./types/taxonomy";
 import { z } from "zod";
 import { evaluateFieldCondition } from "./conditional-engine/evaluator";
@@ -1688,12 +1689,23 @@ export function amenityRequiresPlacement(amenityId: string): boolean {
 
 // ── Platform mapping helpers (rama 14A) ──
 //
-// Contract: every classifiable item in the five taxonomies below has either
-// (a) at least one `{platform, external_id}` entry in `source[]`, or (b)
-// `platform_supported: false`. `getAirbnbId` / `getBookingId` resolve the
-// external code for a given taxonomy ID, returning `null` when the item has
-// no mapping for that platform and throwing for unknown IDs so call sites
-// can't silently mismatch. The coverage test is the authoritative gate.
+// Contract: every classifiable item in the five mappable taxonomies below
+// has either (a) at least one discriminated `PlatformMapping` entry in
+// `source[]` whose `platform` is `"airbnb"` or `"booking"`, or
+// (b) `platform_supported: false`. VRBO-only entries are allowed in the
+// schema but do **not** satisfy the invariant — the gate and these helpers
+// only resolve the two platforms 14B/14C exporters target.
+//
+// Exporters consume the full mapping via `getAirbnbMapping` /
+// `getBookingMapping` and switch on `kind` (external_id | structured_field
+// | free_text | room_counter). `getAirbnbId` / `getBookingId` are sugar
+// that return the external_id only when `kind === "external_id"` — they
+// return `null` for non-catalog mappings (a `structured_field` is not an
+// ID and must be resolved via the full mapping). All four helpers throw
+// for unknown taxonomy IDs.
+//
+// The coverage test `src/test/platform-mappings-coverage.test.ts` is the
+// authoritative gate.
 
 export type MappableTaxonomy =
   | "amenities"
@@ -1717,40 +1729,118 @@ const _mappableItemsByTaxonomy: Record<
   ),
 };
 
-function resolvePlatformId(
-  taxonomy: MappableTaxonomy,
-  id: string,
-  platform: "airbnb" | "booking",
-): string | null {
+const _VALID_PLATFORMS: ReadonlySet<string> = new Set([
+  "airbnb",
+  "booking",
+  "vrbo",
+]);
+
+const _VALID_TRANSFORMS: ReadonlySet<string> = new Set([
+  "bool",
+  "currency",
+  "minutes",
+  "enum",
+  "number",
+]);
+
+const _VALID_COUNTERS: ReadonlySet<string> = new Set([
+  "bedrooms",
+  "bathrooms",
+  "beds",
+]);
+
+/**
+ * Validate a `source[]` entry against the discriminated `PlatformMapping`
+ * union. Returns `null` when the entry is a valid mapping, or a string
+ * describing why it is not. Single source of truth — consumed by
+ * `findPlatformMapping` (runtime narrowing) and by the coverage test
+ * (invariant gate).
+ */
+export function validatePlatformMapping(entry: unknown): string | null {
+  if (!entry || typeof entry !== "object") return "not an object";
+  const rec = entry as Record<string, unknown>;
+  if (typeof rec.platform !== "string" || !_VALID_PLATFORMS.has(rec.platform)) {
+    return `invalid platform: ${String(rec.platform)}`;
+  }
+  if (typeof rec.kind !== "string") return "missing kind";
+  switch (rec.kind) {
+    case "external_id":
+      if (typeof rec.external_id !== "string" || rec.external_id.length === 0) {
+        return "external_id must be non-empty string";
+      }
+      return null;
+    case "structured_field":
+      if (typeof rec.field !== "string" || rec.field.length === 0) {
+        return "structured_field.field must be non-empty string";
+      }
+      if (
+        typeof rec.transform !== "string" ||
+        !_VALID_TRANSFORMS.has(rec.transform)
+      ) {
+        return `structured_field.transform invalid: ${String(rec.transform)}`;
+      }
+      return null;
+    case "free_text":
+      if (typeof rec.field !== "string" || rec.field.length === 0) {
+        return "free_text.field must be non-empty string";
+      }
+      return null;
+    case "room_counter":
+      if (typeof rec.counter !== "string" || !_VALID_COUNTERS.has(rec.counter)) {
+        return `room_counter.counter invalid: ${String(rec.counter)}`;
+      }
+      return null;
+    default:
+      return `unknown kind: ${String(rec.kind)}`;
+  }
+}
+
+function resolveItem(taxonomy: MappableTaxonomy, id: string): TaxonomyItem {
   const item = _mappableItemsByTaxonomy[taxonomy].get(id);
   if (!item) {
     throw new Error(
       `Unknown ${taxonomy} id: "${id}" — check taxonomy JSON or call site.`,
     );
   }
+  return item;
+}
+
+function findPlatformMapping(
+  item: TaxonomyItem,
+  platform: "airbnb" | "booking",
+): PlatformMapping | null {
   const source = item.source;
   if (!Array.isArray(source)) return null;
   for (const entry of source) {
-    if (
-      entry &&
-      typeof entry === "object" &&
-      "platform" in entry &&
-      "external_id" in entry &&
-      entry.platform === platform &&
-      typeof entry.external_id === "string"
-    ) {
-      return entry.external_id;
-    }
+    if (validatePlatformMapping(entry) !== null) continue;
+    const mapping = entry as PlatformMapping;
+    if (mapping.platform === platform) return mapping;
   }
   return null;
 }
 
+export function getAirbnbMapping(
+  taxonomy: MappableTaxonomy,
+  id: string,
+): PlatformMapping | null {
+  return findPlatformMapping(resolveItem(taxonomy, id), "airbnb");
+}
+
+export function getBookingMapping(
+  taxonomy: MappableTaxonomy,
+  id: string,
+): PlatformMapping | null {
+  return findPlatformMapping(resolveItem(taxonomy, id), "booking");
+}
+
 export function getAirbnbId(taxonomy: MappableTaxonomy, id: string): string | null {
-  return resolvePlatformId(taxonomy, id, "airbnb");
+  const m = getAirbnbMapping(taxonomy, id);
+  return m && m.kind === "external_id" ? m.external_id : null;
 }
 
 export function getBookingId(taxonomy: MappableTaxonomy, id: string): string | null {
-  return resolvePlatformId(taxonomy, id, "booking");
+  const m = getBookingMapping(taxonomy, id);
+  return m && m.kind === "external_id" ? m.external_id : null;
 }
 
 // ── Rule helpers ──

@@ -61,16 +61,44 @@ export type AmenityDestination =
 export type TaxonomyJourneyStage = "arrival" | "stay" | "checkout" | "help";
 
 /**
- * Platform mapping target (rama 14A). Identifies how a taxonomy ID maps
- * to an external OTA catalog entry. `external_id` is always a string
- * (including numeric codes — `"4"` not `4`) so downstream serializers
- * never hit type surprises.
+ * Platform mapping (rama 14A, reformulated). Discriminated union by `kind`
+ * because OTA vocabulary is heterogeneous — some concepts are catalog IDs,
+ * others are structured listing fields, others go into free-text buckets,
+ * others contribute to counters. `external_id` is always a string (numeric
+ * codes serialize as `"3"` not `3`).
+ *
+ * Exporters (14B/14C) consume via `getAirbnbMapping` / `getBookingMapping`
+ * and switch on `kind`. Legacy sugar `getAirbnbId` / `getBookingId` returns
+ * the external_id only when `kind === "external_id"`.
+ *
+ * Allowed kinds per taxonomy (enforced by the coverage test):
+ * - amenities:      external_id | structured_field
+ * - property_types: external_id
+ * - access_methods: external_id | free_text
+ * - space_types:    room_counter | structured_field
+ * - policies:       structured_field | free_text
  */
 export type PlatformId = "airbnb" | "booking" | "vrbo";
-export interface PlatformMapping {
-  platform: PlatformId;
-  external_id: string;
-}
+
+export type PlatformMappingTransform =
+  | "bool"
+  | "currency"
+  | "minutes"
+  | "enum"
+  | "number";
+
+export type PlatformRoomCounter = "bedrooms" | "bathrooms" | "beds";
+
+export type PlatformMapping =
+  | { platform: PlatformId; kind: "external_id"; external_id: string }
+  | {
+      platform: PlatformId;
+      kind: "structured_field";
+      field: string;
+      transform: PlatformMappingTransform;
+    }
+  | { platform: PlatformId; kind: "free_text"; field: string }
+  | { platform: PlatformId; kind: "room_counter"; counter: PlatformRoomCounter };
 
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
@@ -89,10 +117,12 @@ export interface TaxonomyItem {
    */
   source?: PlatformMapping[] | string[];
   /**
-   * Explicit "does not map to any platform" flag (rama 14A). Set to `true`
-   * only for items whose concept does not exist in the OTA vocabulary.
-   * The platform-mappings-coverage test accepts this as an alternative
-   * to having at least one mapping in `source`.
+   * Explicit "does not map to Airbnb or Booking" flag (rama 14A). Set to
+   * `false` only for items whose concept does not exist in either platform's
+   * OTA vocabulary. The platform-mappings-coverage test accepts this as an
+   * alternative to having at least one Airbnb/Booking mapping in `source`.
+   * `false` is the only allowed literal — the field is a one-sided sentinel,
+   * not a boolean (absence means "mapped").
    */
   platform_supported?: false;
   /**
