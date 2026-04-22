@@ -75,8 +75,12 @@ export function obfuscateAnchor({
 
 function seedUniformFloats(input: string): [number, number] {
   const hash = createHash("sha256").update(input).digest();
-  // Two independent big-endian u32 reads → two uniform draws in [0, 1).
-  const u1 = hash.readUInt32BE(0) / 0x1_0000_0000;
-  const u2 = hash.readUInt32BE(4) / 0x1_0000_0000;
+  // Two independent big-endian u32 reads → two uniform draws in the OPEN
+  // interval (0, 1). A closed-interval draw at 0, 0.25, 0.5 or 0.75 would
+  // land `theta = 2π · u2` exactly on an axis, forcing one of `offsetEast`
+  // or `offsetNorth` to zero and leaking that coordinate unchanged. The
+  // `+ 0.5` midpoint shift bounds u away from both endpoints.
+  const u1 = (hash.readUInt32BE(0) + 0.5) / 0x1_0000_0000;
+  const u2 = (hash.readUInt32BE(4) + 0.5) / 0x1_0000_0000;
   return [u1, u2];
 }

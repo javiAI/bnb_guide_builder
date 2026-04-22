@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { GuideMapData, GuideMapPin } from "@/lib/types/guide-map";
-import { escapeHtml } from "@/lib/renderers/guide-html";
+import { escapeHtml } from "@/lib/utils/html-escape";
 import { formatDistance } from "@/lib/services/places";
 import { distanceBucketLabel } from "@/lib/services/places/distance-bucket";
 
@@ -256,7 +256,14 @@ function collectCoords(
 }
 
 function fitToCoords(map: maplibregl.Map, coords: [number, number][]) {
-  if (coords.length < 2) return;
+  if (coords.length === 0) return;
+  // `fitBounds` over a zero-area bounds produces undefined zoom in MapLibre
+  // — `jumpTo` at a sensible zoom is the correct recovery for filter modes
+  // that leave exactly one visible pin (e.g. "events" with a single event).
+  if (coords.length === 1) {
+    map.jumpTo({ center: coords[0], zoom: 14 });
+    return;
+  }
   const bounds = coords.reduce(
     (acc, c) => acc.extend(c),
     new maplibregl.LngLatBounds(coords[0], coords[0]),

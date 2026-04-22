@@ -3,6 +3,7 @@
 import type { GuideLocalEventItem } from "@/lib/types/guide-map";
 import { findLocalEventCategory } from "@/lib/taxonomy-loader";
 import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
+import { isHttpUrl } from "@/lib/services/local-events/url-utils";
 
 interface Props {
   event: GuideLocalEventItem;
@@ -34,6 +35,11 @@ export function GuideLocalEventCard({ event }: Props) {
     (s) => s !== event.primarySource,
   );
 
+  // Defence in depth against script-scheme URLs: the candidate schema already
+  // refines on isHttpUrl, but a provider that bypasses it (or a legacy row)
+  // must not produce a guest <a href> pointing at `javascript:` or similar.
+  const safeSourceUrl = isHttpUrl(event.sourceUrl) ? event.sourceUrl : null;
+
   return (
     <article className="guide-event">
       <div className="guide-event__date" aria-hidden="true">
@@ -60,14 +66,16 @@ export function GuideLocalEventCard({ event }: Props) {
           <p className="guide-event__desc">{description}</p>
         ) : null}
         <div className="guide-event__footer">
-          <a
-            className="guide-event__source"
-            href={event.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Ver detalles ↗
-          </a>
+          {safeSourceUrl ? (
+            <a
+              className="guide-event__source"
+              href={safeSourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver detalles ↗
+            </a>
+          ) : null}
           <span
             className="guide-event__origin"
             title={

@@ -50,7 +50,10 @@ interface PropertyAnchorInput {
   id: string;
   latitude: number | null;
   longitude: number | null;
-  localEventsRadiusKm?: number;
+  /** Required so callers can't silently omit it and get `eventSearchRadiusMeters=null`
+   * while the DB-fetched path gets the real value. `Property.localEventsRadiusKm` has
+   * a Prisma default of 25, so every row has a number; the type mirrors that. */
+  localEventsRadiusKm: number;
 }
 
 /** Temporal window applied identically to map pins and listing items:
@@ -140,7 +143,7 @@ export async function buildGuideMapData(
   }
 
   const eventSearchRadiusMeters =
-    anchor && typeof property.localEventsRadiusKm === "number"
+    anchor && property.localEventsRadiusKm > 0
       ? property.localEventsRadiusKm * 1000
       : null;
 

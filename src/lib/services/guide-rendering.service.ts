@@ -1075,6 +1075,8 @@ export async function composeGuide(
       emptyCopyGuest: cfg.emptyCopyGuest,
       hideWhenEmptyForGuest: cfg.hideWhenEmptyForGuest,
       quickActionKeys: cfg.quickActionKeys,
+      includesMap: cfg.includesMap,
+      includesEvents: cfg.includesEvents,
     });
   }
   const tree: GuideTree = {

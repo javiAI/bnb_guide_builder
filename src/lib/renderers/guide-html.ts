@@ -14,21 +14,16 @@ import {
   resolveEmptyCopy,
   shouldHideSection,
 } from "./_guide-display";
+import { escapeHtml } from "@/lib/utils/html-escape";
 
 /** Cap inline images per item — keeps markup lean; lightbox gallery comes in 10E. */
 const INLINE_MEDIA_CAP = 3;
 
-const HTML_ESCAPE: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-export function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (ch) => HTML_ESCAPE[ch]);
-}
+// Re-exported for callers already importing from this module (historical).
+// New consumers should import from `@/lib/utils/html-escape` directly —
+// the renderer is server-only and pulling it into a client bundle adds
+// a couple of KB of unreachable code.
+export { escapeHtml };
 
 function isSafeUrl(url: string): boolean {
   // Relative paths into the public guide media proxy (`/g/<slug>/media/...`)

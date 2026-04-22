@@ -29,9 +29,17 @@ export function GuideLocalSection({
   eventsData,
 }: Props) {
   const emptyCopy = resolveEmptyCopy(section, audience);
+  // Config-driven gates: the section renders the map only when its taxonomy
+  // entry declares `includesMap: true`, and the events list only when
+  // `includesEvents: true`. Flipping these in `guide_sections.json` is the
+  // supported way to enable/disable the sub-renderers.
+  const mapEnabled = section.includesMap === true;
+  const eventsEnabled = section.includesEvents === true;
   const hasMap =
-    mapData !== null && (mapData.anchor !== null || mapData.pins.length > 0);
-  const hasEvents = eventsData.items.length > 0;
+    mapEnabled &&
+    mapData !== null &&
+    (mapData.anchor !== null || mapData.pins.length > 0);
+  const hasEvents = eventsEnabled && eventsData.items.length > 0;
   const hasPlaces = renderable.length > 0;
 
   return (

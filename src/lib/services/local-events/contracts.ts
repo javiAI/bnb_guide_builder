@@ -1,5 +1,16 @@
 import { z } from "zod";
 import { isLocalEventCategoryKey } from "@/lib/taxonomy-loader";
+import { isHttpUrl } from "./url-utils";
+
+// `z.string().url()` accepts `javascript:` and other non-http schemes. We
+// render `sourceUrl` directly into guest-facing `<a href>`; refining against
+// `isHttpUrl` is the schema-level boundary that prevents a compromised or
+// misbehaving provider from persisting a script URL candidate. `imageUrl`
+// gets the same treatment for consistency (used as `<img src>` in future).
+const HttpUrl = z
+  .string()
+  .url()
+  .refine(isHttpUrl, { message: "url must use http: or https:" });
 
 // ── Rama 13B invariants (keep in sync with docs/FEATURES/LOCAL_GUIDE.md) ──
 //
@@ -127,7 +138,7 @@ export const NormalizedEventCandidateSchema = z
      * a hash derived from normalized title+startsAt+venue+url — stable as
      * long as the upstream representation doesn't meaningfully change. */
     sourceExternalId: z.string().min(1),
-    sourceUrl: z.string().url(),
+    sourceUrl: HttpUrl,
     title: z.string().min(1),
     descriptionMd: z.string().min(1).optional(),
     categoryKey: z.string().refine(isLocalEventCategoryKey, {
@@ -139,7 +150,7 @@ export const NormalizedEventCandidateSchema = z
     venueAddress: z.string().min(1).optional(),
     latitude: z.number().gte(-90).lte(90).optional(),
     longitude: z.number().gte(-180).lte(180).optional(),
-    imageUrl: z.string().url().optional(),
+    imageUrl: HttpUrl.optional(),
     priceInfo: PriceInfoSchema.optional(),
     /** Aggregated/native confidence in [0,1]. Used by `merge.ts` to break
      * ties on per-field merge rules and by the aggregator to pick

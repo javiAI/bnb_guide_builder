@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toggleLocalEventPublishedAction } from "@/lib/actions/editor.actions";
 import { findLocalEventCategory } from "@/lib/taxonomy-loader";
 import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
+import { isHttpUrl } from "@/lib/services/local-events/url-utils";
 import type { LocalEventForAdmin } from "@/lib/services/guide-local-data";
 
 interface Props {
@@ -88,15 +89,19 @@ function LocalEventRow({ event }: { event: LocalEventForAdmin }) {
           {event.contributingSources.length > 1
             ? ` (+${event.contributingSources.length - 1})`
             : ""}
-          {" · "}
-          <a
-            href={event.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-[var(--color-primary-600)]"
-          >
-            Ver detalles ↗
-          </a>
+          {isHttpUrl(event.sourceUrl) ? (
+            <>
+              {" · "}
+              <a
+                href={event.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-[var(--color-primary-600)]"
+              >
+                Ver detalles ↗
+              </a>
+            </>
+          ) : null}
         </p>
         {error ? (
           <p className="text-xs text-[var(--color-danger-600,#dc2626)]">
