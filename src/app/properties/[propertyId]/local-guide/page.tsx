@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { localPlaceCategories, findLocalPlaceCategory } from "@/lib/taxonomy-loader";
+import { getLocalEventsForPropertyAdmin } from "@/lib/services/guide-local-data";
 import { CreateLocalPlaceForm } from "./create-local-place-form";
 import { LocalPlaceCard } from "./local-place-card";
 import { LocalEventsRadiusForm } from "./local-events-radius-form";
 import { SyncEventsButton } from "./sync-events-button";
+import { LocalEventsList } from "./local-events-list";
 
 const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
   value: c.id,
@@ -26,10 +28,13 @@ export default async function LocalGuidePage({
 
   if (!property) notFound();
 
-  const places = await prisma.localPlace.findMany({
-    where: { propertyId },
-    orderBy: { createdAt: "desc" },
-  });
+  const [places, events] = await Promise.all([
+    prisma.localPlace.findMany({
+      where: { propertyId },
+      orderBy: { createdAt: "desc" },
+    }),
+    getLocalEventsForPropertyAdmin(propertyId),
+  ]);
 
   // Group by category
   const grouped = new Map<string, typeof places>();
@@ -58,6 +63,7 @@ export default async function LocalGuidePage({
             initialRadiusKm={property.localEventsRadiusKm}
           />
           <SyncEventsButton propertyId={propertyId} />
+          <LocalEventsList events={events} />
         </div>
       </div>
 

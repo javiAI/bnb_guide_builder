@@ -1139,11 +1139,25 @@ export async function updateLocalEventsRadiusAction(
 /** Manually trigger the event sync for a single property. Same code path as
  * the nightly cron (`runLocalEventsTick`) but scoped to one property via
  * the `propertyId` filter — lets hosts see freshly-aggregated events without
- * waiting for the cron. Revalidates the public guide so new rows surface. */
+ * waiting for the cron. Returns merge stats so the UI can show what was
+ * found. Newly-created events are `published:false` — the host decides. */
+export interface SyncLocalEventsStats {
+  mergedEventsCount: number;
+  eventsCreated: number;
+  eventsUpdated: number;
+  eventsDeleted: number;
+  sourceReportsSummary: Array<{
+    source: string;
+    status: string;
+    candidatesCount: number;
+    error?: string;
+  }>;
+}
+
 export async function syncLocalEventsForPropertyAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<SyncLocalEventsStats> | null,
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<ActionResult<SyncLocalEventsStats>> {
   const propertyId = formData.get("propertyId") as string | null;
   if (!propertyId) return { success: false, error: "Falta el ID de la propiedad" };
 
@@ -1168,6 +1182,51 @@ export async function syncLocalEventsForPropertyAction(
 
   revalidatePath(`/properties/${propertyId}/local-guide`);
   if (property.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
+
+  const stats: SyncLocalEventsStats = {
+    mergedEventsCount: per?.mergedEventsCount ?? 0,
+    eventsCreated: per?.sync?.eventsCreated ?? 0,
+    eventsUpdated: per?.sync?.eventsUpdated ?? 0,
+    eventsDeleted: per?.sync?.eventsDeleted ?? 0,
+    sourceReportsSummary: (per?.sourceReports ?? []).map((r) => ({
+      source: r.source,
+      status: r.status,
+      candidatesCount: r.candidateCount,
+      ...(r.error ? { error: r.error.message } : {}),
+    })),
+  };
+  return { success: true, data: stats };
+}
+
+/** Host curation toggle. Events sync into local_events with published=false;
+ * this action flips the flag so the row surfaces in `/g/[slug]`. Upserts on
+ * the next sync tick preserve this value — the host's decision survives. */
+export async function toggleLocalEventPublishedAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const eventId = formData.get("eventId") as string | null;
+  const rawPublished = formData.get("published");
+  if (!eventId) return { success: false, error: "Falta el ID del evento" };
+  const published = rawPublished === "true" || rawPublished === "1";
+
+  const event = await prisma.localEvent.findUnique({
+    where: { id: eventId },
+    select: { id: true, propertyId: true },
+  });
+  if (!event) return { success: false, error: "Evento no encontrado" };
+
+  await prisma.localEvent.update({
+    where: { id: eventId },
+    data: { published },
+  });
+
+  const property = await prisma.property.findUnique({
+    where: { id: event.propertyId },
+    select: { publicSlug: true },
+  });
+  revalidatePath(`/properties/${event.propertyId}/local-guide`);
+  if (property?.publicSlug) revalidatePath(`/g/${property.publicSlug}`);
   return { success: true };
 }
 

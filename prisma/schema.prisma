@@ -496,6 +496,10 @@ model LocalEvent {
   contributingSources String[]  @default([]) @map("contributing_sources")
   mergeWarnings       String[]  @default([]) @map("merge_warnings")
   lastSyncedAt        DateTime  @map("last_synced_at")
+  /// Host curation flag. Events surface in the public guide only when true.
+  /// Sync upserts default to false on create and never touch this on update,
+  /// so host decisions survive re-syncs.
+  published           Boolean   @default(false)
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -505,6 +509,7 @@ model LocalEvent {
   @@unique([propertyId, canonicalKey], map: "local_events_property_canonical_unique")
   @@index([propertyId, startsAt])
   @@index([propertyId, categoryKey])
+  @@index([propertyId, published])
   @@map("local_events")
 }
 

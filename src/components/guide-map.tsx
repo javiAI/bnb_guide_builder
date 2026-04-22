@@ -16,11 +16,9 @@ interface Props {
 
 const METERS_PER_DEG_LAT = 111320;
 const CIRCLE_SEGMENTS = 64;
-const ANCHOR_SOURCE_ID = "guide-anchor-zone";
-const ANCHOR_FILL_LAYER_ID = "guide-anchor-zone-fill";
-const ANCHOR_LINE_LAYER_ID = "guide-anchor-zone-line";
-const SEARCH_RADIUS_SOURCE_ID = "guide-search-radius-zone";
-const SEARCH_RADIUS_LINE_LAYER_ID = "guide-search-radius-zone-line";
+const ZONE_SOURCE_ID = "guide-zone";
+const ZONE_FILL_LAYER_ID = "guide-zone-fill";
+const ZONE_LINE_LAYER_ID = "guide-zone-line";
 
 /**
  * Client island for `gs.local`. Never SSR-imported — MapLibre touches
@@ -268,59 +266,48 @@ function fitToCoords(map: maplibregl.Map, coords: [number, number][]) {
 
 function drawAnchorZone(map: maplibregl.Map, data: GuideMapData) {
   if (!data.anchor) return;
+
+  // Internal audience keeps a precise pin for operator use. Guest/AI never
+  // get an exact-coord marker — `data.anchor.obfuscated` is true for them
+  // and the anchor lat/lng are already jittered by `obfuscateAnchor`.
   if (!data.anchor.obfuscated) {
     const el = document.createElement("div");
     el.className = "guide-map__pin guide-map__pin--anchor-exact";
     new maplibregl.Marker({ element: el })
       .setLngLat([data.anchor.lng, data.anchor.lat])
       .addTo(map);
-  } else {
-    const circle = buildCircleGeoJSON(
-      data.anchor.lat,
-      data.anchor.lng,
-      data.anchor.radiusMeters,
-    );
-    map.addSource(ANCHOR_SOURCE_ID, { type: "geojson", data: circle });
-    map.addLayer({
-      id: ANCHOR_FILL_LAYER_ID,
-      type: "fill",
-      source: ANCHOR_SOURCE_ID,
-      paint: { "fill-color": "#6366f1", "fill-opacity": 0.15 },
-    });
-    map.addLayer({
-      id: ANCHOR_LINE_LAYER_ID,
-      type: "line",
-      source: ANCHOR_SOURCE_ID,
-      paint: { "line-color": "#4f46e5", "line-width": 2, "line-opacity": 0.6 },
-    });
   }
 
-  // Outer ring: event-search radius (configured per property). Always shown
-  // when available so the guest understands the area from which upcoming
-  // events are aggregated. Drawn as a dashed line without fill to not
-  // compete visually with the inner obfuscation disk.
-  if (data.eventSearchRadiusMeters != null && data.eventSearchRadiusMeters > 0) {
-    const searchCircle = buildCircleGeoJSON(
-      data.anchor.lat,
-      data.anchor.lng,
-      data.eventSearchRadiusMeters,
-    );
-    map.addSource(SEARCH_RADIUS_SOURCE_ID, {
-      type: "geojson",
-      data: searchCircle,
-    });
-    map.addLayer({
-      id: SEARCH_RADIUS_LINE_LAYER_ID,
-      type: "line",
-      source: SEARCH_RADIUS_SOURCE_ID,
-      paint: {
-        "line-color": "#0ea5e9",
-        "line-width": 1.5,
-        "line-opacity": 0.55,
-        "line-dasharray": [3, 3],
-      },
-    });
-  }
+  // One solid filled zone. Represents the configured event-search radius
+  // when available (so the guest sees the area from which upcoming events
+  // are drawn); falls back to the obfuscation-disk radius when the host
+  // hasn't set a radius — which is enough to convey approximate location.
+  const zoneRadiusMeters =
+    data.eventSearchRadiusMeters && data.eventSearchRadiusMeters > 0
+      ? data.eventSearchRadiusMeters
+      : data.anchor.obfuscated
+        ? data.anchor.radiusMeters
+        : null;
+  if (zoneRadiusMeters == null) return;
+
+  const circle = buildCircleGeoJSON(
+    data.anchor.lat,
+    data.anchor.lng,
+    zoneRadiusMeters,
+  );
+  map.addSource(ZONE_SOURCE_ID, { type: "geojson", data: circle });
+  map.addLayer({
+    id: ZONE_FILL_LAYER_ID,
+    type: "fill",
+    source: ZONE_SOURCE_ID,
+    paint: { "fill-color": "#6366f1", "fill-opacity": 0.15 },
+  });
+  map.addLayer({
+    id: ZONE_LINE_LAYER_ID,
+    type: "line",
+    source: ZONE_SOURCE_ID,
+    paint: { "line-color": "#4f46e5", "line-width": 2, "line-opacity": 0.6 },
+  });
 }
 
 function buildCircleGeoJSON(

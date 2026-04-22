@@ -2,6 +2,7 @@
 
 import type { GuideLocalEventItem } from "@/lib/types/guide-map";
 import { findLocalEventCategory } from "@/lib/taxonomy-loader";
+import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
 
 interface Props {
   event: GuideLocalEventItem;
@@ -28,7 +29,7 @@ export function GuideLocalEventCard({ event }: Props) {
     ? truncate(event.descriptionMd, 180)
     : null;
 
-  const sourceLabel = formatSourceLabel(event.primarySource);
+  const sourceLabel = formatLocalEventSourceLabel(event.primarySource);
   const extraSources = event.contributingSources.filter(
     (s) => s !== event.primarySource,
   );
@@ -71,7 +72,7 @@ export function GuideLocalEventCard({ event }: Props) {
             className="guide-event__origin"
             title={
               extraSources.length > 0
-                ? `También en: ${extraSources.map(formatSourceLabel).join(", ")}`
+                ? `También en: ${extraSources.map(formatLocalEventSourceLabel).join(", ")}`
                 : undefined
             }
           >
@@ -87,17 +88,4 @@ export function GuideLocalEventCard({ event }: Props) {
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max).trimEnd()}…`;
-}
-
-// Provider identifiers are stable technical strings (`predicthq`,
-// `ticketmaster`, `firecrawl:<source_key>`). Render friendlier labels without
-// hiding the underlying provider — that's the whole point of surfacing this.
-function formatSourceLabel(source: string): string {
-  if (source.startsWith("firecrawl:")) {
-    const key = source.slice("firecrawl:".length);
-    return `Firecrawl (${key})`;
-  }
-  if (source === "predicthq") return "PredictHQ";
-  if (source === "ticketmaster") return "Ticketmaster";
-  return source;
 }

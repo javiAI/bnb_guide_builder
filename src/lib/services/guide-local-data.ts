@@ -41,7 +41,12 @@ export type LocalPlaceForGuide = Awaited<
 export const getLocalEventsForProperty = cache(
   async (propertyId: string) =>
     prisma.localEvent.findMany({
-      where: { propertyId },
+      // Guest-facing fetcher. `published: true` is the host curation gate —
+      // events enter the DB unpublished after sync and only surface here once
+      // the host opts in on the admin page. The `(propertyId, published)`
+      // composite index keeps this cheap even when thousands of unpublished
+      // candidates exist.
+      where: { propertyId, published: true },
       orderBy: [{ startsAt: "asc" }],
       select: {
         id: true,
@@ -62,4 +67,34 @@ export const getLocalEventsForProperty = cache(
 
 export type LocalEventForGuide = Awaited<
   ReturnType<typeof getLocalEventsForProperty>
+>[number];
+
+/** Admin-only fetcher: returns ALL events (published + unpublished) with the
+ * `published` flag so the host's local-guide page can render both and toggle. */
+export async function getLocalEventsForPropertyAdmin(propertyId: string) {
+  return prisma.localEvent.findMany({
+    where: { propertyId },
+    orderBy: [{ startsAt: "asc" }],
+    select: {
+      id: true,
+      title: true,
+      descriptionMd: true,
+      categoryKey: true,
+      startsAt: true,
+      endsAt: true,
+      venueName: true,
+      venueAddress: true,
+      latitude: true,
+      longitude: true,
+      sourceUrl: true,
+      primarySource: true,
+      contributingSources: true,
+      published: true,
+      lastSyncedAt: true,
+    },
+  });
+}
+
+export type LocalEventForAdmin = Awaited<
+  ReturnType<typeof getLocalEventsForPropertyAdmin>
 >[number];
