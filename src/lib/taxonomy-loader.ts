@@ -1686,6 +1686,73 @@ export function amenityRequiresPlacement(amenityId: string): boolean {
   return getAmenityScopePolicy(amenityId)?.scopePolicy !== "property_only";
 }
 
+// ── Platform mapping helpers (rama 14A) ──
+//
+// Contract: every classifiable item in the five taxonomies below has either
+// (a) at least one `{platform, external_id}` entry in `source[]`, or (b)
+// `platform_supported: false`. `getAirbnbId` / `getBookingId` resolve the
+// external code for a given taxonomy ID, returning `null` when the item has
+// no mapping for that platform and throwing for unknown IDs so call sites
+// can't silently mismatch. The coverage test is the authoritative gate.
+
+export type MappableTaxonomy =
+  | "amenities"
+  | "property_types"
+  | "space_types"
+  | "access_methods"
+  | "policies";
+
+const _mappableItemsByTaxonomy: Record<
+  MappableTaxonomy,
+  ReadonlyMap<string, TaxonomyItem>
+> = {
+  amenities: _amenityItemsById,
+  property_types: new Map(propertyTypes.items.map((i) => [i.id, i])),
+  space_types: new Map(spaceTypes.items.map((i) => [i.id, i])),
+  access_methods: new Map(accessMethods.items.map((i) => [i.id, i])),
+  policies: new Map(
+    policyTaxonomy.groups.flatMap((g) =>
+      Array.isArray(g.items) ? g.items.map((i) => [i.id, i] as const) : [],
+    ),
+  ),
+};
+
+function resolvePlatformId(
+  taxonomy: MappableTaxonomy,
+  id: string,
+  platform: "airbnb" | "booking",
+): string | null {
+  const item = _mappableItemsByTaxonomy[taxonomy].get(id);
+  if (!item) {
+    throw new Error(
+      `Unknown ${taxonomy} id: "${id}" — check taxonomy JSON or call site.`,
+    );
+  }
+  const source = item.source;
+  if (!Array.isArray(source)) return null;
+  for (const entry of source) {
+    if (
+      entry &&
+      typeof entry === "object" &&
+      "platform" in entry &&
+      "external_id" in entry &&
+      entry.platform === platform &&
+      typeof entry.external_id === "string"
+    ) {
+      return entry.external_id;
+    }
+  }
+  return null;
+}
+
+export function getAirbnbId(taxonomy: MappableTaxonomy, id: string): string | null {
+  return resolvePlatformId(taxonomy, id, "airbnb");
+}
+
+export function getBookingId(taxonomy: MappableTaxonomy, id: string): string | null {
+  return resolvePlatformId(taxonomy, id, "booking");
+}
+
 // ── Rule helpers ──
 
 export function getRulesForTrigger(trigger: string): DynamicFieldRule[] {
