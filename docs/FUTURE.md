@@ -56,17 +56,17 @@ Independientemente del nivel elegido, **arrancar siempre por Nivel 0**.
 
 - Export: serializar Property + Spaces + Amenities + Policies a schemas Airbnb y Booking.
 - Import: lectura inversa con reconciliación (detectar conflictos, no sobrescribir a ciegas).
-- Mappings: todas las taxonomías ya tienen campos `source: [{platform: airbnb, external_id: …}]`; falta auditar cobertura.
+- Mappings: **auditoría completada en rama 14A** — 194 ítems clasificables en las 5 taxonomías mappables están resueltos a mapping explícito o `platform_supported: false`. Shape canónico: `source: [{platform: "airbnb"|"booking"|"vrbo", external_id: string}]`. Helpers `getAirbnbId` / `getBookingId` en `src/lib/taxonomy-loader.ts`; invariante protegida por `src/test/platform-mappings-coverage.test.ts`.
 
 ### Pre-requisitos
 
 - Fases 8-11 estables (core + outputs + knowledge).
 - Credenciales y aprobación de partners API.
-- Auditoría de mappings: confirmar que el 100% de IDs en `amenity_taxonomy`, `property_types`, `space_types`, `access_methods`, `policy_taxonomy` tienen equivalente documentado.
+- ✅ Auditoría de mappings (rama 14A): `amenity_taxonomy` (116 mapped / 34 unsupp), `property_types` (6/1), `space_types` (0/20 — plataformas modelan espacios como rooms, no catálogo plano), `access_methods` (4/2), `policy_taxonomy` (0/11 — policies exportan como campos del listing, no códigos de taxonomía).
 
 ### Ramas previstas (Fase 14 en MASTER_PLAN_V2)
 
-- `feat/platform-mappings-audit` — completar `source[]` donde falte
+- ✅ `feat/platform-mappings-audit` — completado (rama 14A)
 - `feat/airbnb-export` — serializer + validación contra schema Airbnb
 - `feat/booking-export` — idem Booking
 - `feat/platform-import` — reconciliación bidireccional
