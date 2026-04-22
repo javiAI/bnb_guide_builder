@@ -15,7 +15,12 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.hotel_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room",
+        "rt.hotel_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.bathroom",
@@ -27,7 +32,14 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.shared_room", "rt.hotel_room", "rt.other"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room",
+        "rt.shared_room",
+        "rt.hotel_room",
+        "rt.other"
+      ],
+      "source": []
     },
     {
       "id": "sp.kitchen",
@@ -38,8 +50,15 @@
       "allowsSleeping": false,
       "isComposite": false,
       "derivedByLayoutKeys": [],
-      "mutuallyExclusiveWith": ["sp.kitchen_living", "sp.kitchen_dining_living"],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "mutuallyExclusiveWith": [
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.living_room",
@@ -50,8 +69,17 @@
       "allowsSleeping": true,
       "isComposite": false,
       "derivedByLayoutKeys": [],
-      "mutuallyExclusiveWith": ["sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living", "sp.studio", "sp.loft"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "mutuallyExclusiveWith": [
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.dining",
@@ -62,8 +90,14 @@
       "allowsSleeping": false,
       "isComposite": false,
       "derivedByLayoutKeys": [],
-      "mutuallyExclusiveWith": ["sp.open_plan", "sp.kitchen_dining_living"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "mutuallyExclusiveWith": [
+        "sp.open_plan",
+        "sp.kitchen_dining_living"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.office",
@@ -75,7 +109,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.laundry",
@@ -87,7 +125,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.balcony",
@@ -99,7 +141,12 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.hotel_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room",
+        "rt.hotel_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.patio",
@@ -111,7 +158,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.garden",
@@ -123,7 +174,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.garage",
@@ -135,7 +190,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.storage",
@@ -147,7 +206,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.studio",
@@ -158,9 +221,23 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": ["layout.studio"],
-      "mutuallyExclusiveWith": ["sp.bedroom", "sp.living_room", "sp.kitchen", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "derivedByLayoutKeys": [
+        "layout.studio"
+      ],
+      "mutuallyExclusiveWith": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.kitchen",
+        "sp.loft",
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.loft",
@@ -171,9 +248,21 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": ["layout.loft"],
-      "mutuallyExclusiveWith": ["sp.bedroom", "sp.living_room", "sp.studio", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "derivedByLayoutKeys": [
+        "layout.loft"
+      ],
+      "mutuallyExclusiveWith": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.studio",
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.open_plan",
@@ -183,9 +272,21 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": true,
-      "derivedByLayoutKeys": ["layout.open_plan_living_dining"],
-      "mutuallyExclusiveWith": ["sp.living_room", "sp.dining", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "derivedByLayoutKeys": [
+        "layout.open_plan_living_dining"
+      ],
+      "mutuallyExclusiveWith": [
+        "sp.living_room",
+        "sp.dining",
+        "sp.studio",
+        "sp.loft",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.kitchen_living",
@@ -196,9 +297,21 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": ["layout.kitchen_living"],
-      "mutuallyExclusiveWith": ["sp.kitchen", "sp.living_room", "sp.studio", "sp.loft", "sp.kitchen_dining_living", "sp.open_plan"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "derivedByLayoutKeys": [
+        "layout.kitchen_living"
+      ],
+      "mutuallyExclusiveWith": [
+        "sp.kitchen",
+        "sp.living_room",
+        "sp.studio",
+        "sp.loft",
+        "sp.kitchen_dining_living",
+        "sp.open_plan"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.kitchen_dining_living",
@@ -208,9 +321,22 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": true,
-      "derivedByLayoutKeys": ["layout.kitchen_dining_living"],
-      "mutuallyExclusiveWith": ["sp.kitchen", "sp.living_room", "sp.dining", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.open_plan"],
-      "applicableRoomTypes": ["rt.entire_place"]
+      "derivedByLayoutKeys": [
+        "layout.kitchen_dining_living"
+      ],
+      "mutuallyExclusiveWith": [
+        "sp.kitchen",
+        "sp.living_room",
+        "sp.dining",
+        "sp.studio",
+        "sp.loft",
+        "sp.kitchen_living",
+        "sp.open_plan"
+      ],
+      "applicableRoomTypes": [
+        "rt.entire_place"
+      ],
+      "source": []
     },
     {
       "id": "sp.pool",
@@ -222,7 +348,11 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.shared_area",
@@ -234,7 +364,12 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.private_room", "rt.shared_room", "rt.hotel_room"]
+      "applicableRoomTypes": [
+        "rt.private_room",
+        "rt.shared_room",
+        "rt.hotel_room"
+      ],
+      "source": []
     },
     {
       "id": "sp.other",
@@ -246,7 +381,14 @@
       "isComposite": false,
       "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
-      "applicableRoomTypes": ["rt.entire_place", "rt.private_room", "rt.shared_room", "rt.hotel_room", "rt.other"]
+      "applicableRoomTypes": [
+        "rt.entire_place",
+        "rt.private_room",
+        "rt.shared_room",
+        "rt.hotel_room",
+        "rt.other"
+      ],
+      "source": []
     }
   ]
 }

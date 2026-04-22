@@ -60,6 +60,18 @@ export type AmenityDestination =
  * `gs.essentials` aggregator. */
 export type TaxonomyJourneyStage = "arrival" | "stay" | "checkout" | "help";
 
+/**
+ * Platform mapping target (rama 14A). Identifies how a taxonomy ID maps
+ * to an external OTA catalog entry. `external_id` is always a string
+ * (including numeric codes — `"4"` not `4`) so downstream serializers
+ * never hit type surprises.
+ */
+export type PlatformId = "airbnb" | "booking" | "vrbo";
+export interface PlatformMapping {
+  platform: PlatformId;
+  external_id: string;
+}
+
 // Shared item shape used by most taxonomies
 export interface TaxonomyItem {
   id: string;
@@ -69,7 +81,26 @@ export interface TaxonomyItem {
   recommended?: boolean;
   defaults?: Record<string, string | undefined>;
   dependency_hints?: string[];
-  source?: string[];
+  /**
+   * Platform mappings for Airbnb/Booking/VRBO (rama 14A canonical shape).
+   * Legacy `string[]` shape is accepted to keep out-of-scope taxonomies
+   * (`bed_types`, `room_types`, `space_features`, `system_taxonomy`)
+   * compiling without a forced rewrite.
+   */
+  source?: PlatformMapping[] | string[];
+  /**
+   * Explicit "does not map to any platform" flag (rama 14A). Set to `true`
+   * only for items whose concept does not exist in the OTA vocabulary.
+   * The platform-mappings-coverage test accepts this as an alternative
+   * to having at least one mapping in `source`.
+   */
+  platform_supported?: false;
+  /**
+   * Documentation references (doc provenance) — lookup keys into the
+   * taxonomy file's `source_refs` map. Separate from `source` so that
+   * platform mappings never mix with doc URLs.
+   */
+  doc_refs?: string[];
   // Amenity-specific
   importanceLevel?: ImportanceLevel;
   canonicalOwner?: string;

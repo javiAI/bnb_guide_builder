@@ -15,7 +15,8 @@
       },
       "requiresBuildingAccess": true,
       "dependency_hints": [],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -30,7 +31,8 @@
       },
       "requiresBuildingAccess": false,
       "dependency_hints": [],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -47,7 +49,8 @@
       "dependency_hints": [
         "Sugerir aclarar si la entrada es privada o compartida en Arrival & access."
       ],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -64,7 +67,8 @@
       "dependency_hints": [
         "Activar campos adicionales de contexto y seguridad."
       ],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -81,7 +85,8 @@
       "dependency_hints": [
         "Mostrar hotel_room como opción cuando aplique."
       ],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
@@ -98,7 +103,8 @@
       "dependency_hints": [
         "Habilitar hotel_room y políticas de front desk / building staff."
       ],
-      "source": [
+      "source": [],
+      "doc_refs": [
         "airbnb_property_type_resource_center"
       ]
     },
