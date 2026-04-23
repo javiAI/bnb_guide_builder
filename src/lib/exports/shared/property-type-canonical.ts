@@ -4,10 +4,12 @@ import {
 } from "@/lib/taxonomy-loader";
 import type { PlatformMapping } from "@/lib/types/taxonomy";
 
+export type ExportPlatform = "airbnb" | "booking";
+
 export interface PropertyTypeCanonicalResolution {
-  /** First Airbnb external_id in `source[]`, treated as the canonical outbound value. */
+  /** First external_id in `source[]` for the target platform — canonical outbound value. */
   canonical: string | null;
-  /** Remaining Airbnb external_ids in `source[]` after the canonical (semantic aliases). */
+  /** Remaining external_ids in `source[]` after the canonical (semantic aliases). */
   alternatives: string[];
   /** True when the item exists but is explicitly `platform_supported: false`. */
   platformUnsupported: boolean;
@@ -15,12 +17,13 @@ export interface PropertyTypeCanonicalResolution {
   unknown: boolean;
 }
 
-// Rule: the first Airbnb mapping in `source[]` is the canonical outbound value.
-// Isolated from `getAirbnbId` so the rule can evolve (explicit primary field,
-// host-picked alias, etc.) without touching the engine, and so the orchestrator
-// can emit a warning listing the skipped alternatives.
+// Rule: the first per-platform mapping in `source[]` is the canonical outbound
+// value. Isolated from `getAirbnbId`/`getBookingId` so the rule can evolve
+// (explicit primary field, host-picked alias, etc.) without touching the engine,
+// and so the orchestrator can emit a warning listing the skipped alternatives.
 export function resolvePropertyTypeCanonical(
   propertyTypeId: string | null | undefined,
+  platform: ExportPlatform,
 ): PropertyTypeCanonicalResolution {
   if (!propertyTypeId) {
     return { canonical: null, alternatives: [], platformUnsupported: false, unknown: true };
@@ -40,19 +43,19 @@ export function resolvePropertyTypeCanonical(
     };
   }
 
-  const airbnbExternalIds: string[] = [];
+  const externalIds: string[] = [];
   for (const entry of item.source ?? []) {
     if (validatePlatformMapping(entry) !== null) continue;
     const mapping = entry as PlatformMapping;
-    if (mapping.platform === "airbnb" && mapping.kind === "external_id") {
-      airbnbExternalIds.push(mapping.external_id);
+    if (mapping.platform === platform && mapping.kind === "external_id") {
+      externalIds.push(mapping.external_id);
     }
   }
 
-  if (airbnbExternalIds.length === 0) {
+  if (externalIds.length === 0) {
     return { canonical: null, alternatives: [], platformUnsupported: false, unknown: false };
   }
 
-  const [canonical, ...alternatives] = airbnbExternalIds;
+  const [canonical, ...alternatives] = externalIds;
   return { canonical, alternatives, platformUnsupported: false, unknown: false };
 }

@@ -1,4 +1,4 @@
-import type { AirbnbListingPayload } from "@/lib/schemas/airbnb-listing";
+import type { BookingListingPayload } from "@/lib/schemas/booking-listing";
 import type { ExportWarning } from "../shared/types";
 
 export type {
@@ -6,8 +6,8 @@ export type {
   ExportWarningCode,
 } from "../shared/types";
 
-export interface AirbnbExportResult {
-  payload: AirbnbListingPayload;
+export interface BookingExportResult {
+  payload: BookingListingPayload;
   warnings: ExportWarning[];
   generatedAt: string;
   taxonomyVersion: string;
