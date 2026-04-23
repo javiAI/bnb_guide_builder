@@ -6,22 +6,30 @@ platforms (Airbnb today, Booking.com later).
 ## 1. Status
 
 - **Airbnb export (rama 14B)**: implemented as `GET /api/properties/[propertyId]/export/airbnb`. Returns `{ payload, warnings, generatedAt, taxonomyVersion }`.
-- **Schema status — best-effort, not officially confirmed**: `airbnbListingPayloadSchema` is an internal Zod representation we wrote against the public Airbnb developer docs (`developer.airbnb.com/docs/listings/api-reference`). It is **not** a contractually validated representation of the Listings API payload. Field shapes, enum vocabularies, and required-vs-optional flags may diverge from Airbnb's actual contract. Treat the output as a structured draft, not a wire-ready POST body.
-- **Booking.com export**: not implemented. Manifest + helpers exist in `taxonomies/platform-catalogs/booking-*.json` (delivered in 14A) but no serializer yet.
+- **Booking.com export (rama 14C)**: implemented as `GET /api/properties/[propertyId]/export/booking`. Same envelope as Airbnb; payload shape diverges (see §2 below).
+- **Schema status — best-effort, not officially confirmed**: both `airbnbListingPayloadSchema` and `bookingListingPayloadSchema` are internal Zod representations derived from public developer docs (`developer.airbnb.com/docs/listings/api-reference` and Booking Connectivity API docs respectively). They are **not** contractually validated against either platform's API. Field shapes, enum vocabularies, and required-vs-optional flags may diverge from the real contracts. Treat the output as a structured draft, not a wire-ready POST body.
 
 ## 2. Architecture
 
+Both exporters share a thin context loader and warning vocabulary in
+`src/lib/exports/shared/`. The per-platform engine + reducers + schema remain
+separate — Booking has enough semantic divergence from Airbnb (no structured
+`check_in_method` enum, commercial_photography folds into free-text, no
+`accessibility_features` namespace, renamed top-level fields) that a shared
+engine would be a forced abstraction.
+
 ```
 Property (DB)
-  ↓ loadPropertyContext (Prisma, visibility:guest only)
+  ↓ loadPropertyContext (shared/, Prisma, visibility:guest only)
 PropertyExportContext  ← pure shape, no internal/sensitive surface
-  ↓ buildAirbnbPayload
-  │   ├─ resolvePropertyTypeCanonical (isolated)
-  │   ├─ getAirbnbId("access_methods", …)  (direct external_id lookup)
+  ↓ build{Airbnb|Booking}Payload
+  │   ├─ resolvePropertyTypeCanonical (isolated, per platform)
+  │   ├─ [Airbnb only] getAirbnbId("access_methods", …)  (direct external_id)
   │   ├─ manifest walk (data-driven dispatch)
   │   │   ├─ structured_field {bool|enum|number|currency}
   │   │   ├─ room_counter
-  │   │   └─ free_text
+  │   │   └─ free_text  (Booking: house_rules_text + checkin_instructions;
+  │   │                  Airbnb: house_rules only)
   │   └─ reduceAmenityExternalIds  (flat amenity_ids[])
   ↓
 { payload (Zod-validated), warnings[] }
@@ -29,13 +37,45 @@ PropertyExportContext  ← pure shape, no internal/sensitive surface
 
 ### Key files
 
-- `src/lib/exports/airbnb/serialize.ts` — orchestrator + Prisma loader
+**Shared:**
+
+- `src/lib/exports/shared/load-property.ts` — `PropertyExportContext` + Prisma loader (visibility:guest scoping)
+- `src/lib/exports/shared/types.ts` — `ExportWarning`, `ExportWarningCode`, `PropertyNotFoundError`
+
+**Airbnb (rama 14B):**
+
+- `src/lib/exports/airbnb/serialize.ts` — orchestrator
 - `src/lib/exports/airbnb/engine.ts` — manifest index, reducers, dispatcher
 - `src/lib/exports/airbnb/manifest.ts` — Zod-parsed manifest loader
-- `src/lib/exports/airbnb/property-type-canonical.ts` — isolated property-type rule
 - `src/lib/schemas/airbnb-listing.ts` — Zod schema (best-effort)
-- `src/lib/exports/airbnb/types.ts` — `AirbnbExportResult`, `ExportWarning`, `ExportWarningCode`
 - `src/app/api/properties/[propertyId]/export/airbnb/route.ts` — HTTP entrypoint
+
+**Booking (rama 14C):**
+
+- `src/lib/exports/booking/serialize.ts` — orchestrator
+- `src/lib/exports/booking/engine.ts` — manifest index, reducers, dispatcher
+- `src/lib/exports/booking/manifest.ts` — Zod-parsed manifest loader
+- `src/lib/schemas/booking-listing.ts` — Zod schema (best-effort)
+- `src/app/api/properties/[propertyId]/export/booking/route.ts` — HTTP entrypoint
+
+**Shared resolver (used by both):**
+
+- `src/lib/exports/shared/property-type-canonical.ts` — platform-parameterized first-mapping-canonical rule. Each platform barrel (`airbnb.ts`, `booking.ts`) exposes a 1-arg wrapper bound to its platform.
+
+### 2.1 Booking payload shape — divergences from Airbnb
+
+The Booking Zod schema intentionally differs from Airbnb's where the upstream
+platform contracts differ:
+
+| Field | Airbnb | Booking |
+|---|---|---|
+| Occupancy | `person_capacity` | `max_occupancy` |
+| Policy bag | `listing_policies.*` | `policies.*` |
+| Pricing bag | `pricing.{cleaning_fee, extra_person_fee}` | `fees.{cleaning, extra_person}` |
+| House rules | `house_rules` | `house_rules_text` |
+| Check-in | `check_in_method` (enum, external_id) | `checkin_instructions` (free-text) |
+| Accessibility | `accessibility_features.*` bools | — (no namespace in Booking manifest) |
+| Commercial photography | `listing_policies.commercial_photography_allowed` bool | folded into `house_rules_text` free-text only when `with_permission` |
 
 ## 3. Data sources
 
@@ -53,102 +93,137 @@ loader rejects any drift on boot.
 
 ## 4. Coverage rules (forward + reverse)
 
-Two test gates close the loop between our taxonomies and the manifest:
+Two test gates close the loop between our taxonomies and each platform manifest:
 
 - **Reverse coverage (rama 14A, `platform-reverse-coverage.test.ts`)** — every
-  taxonomy item with a `source[platform="airbnb"]` mapping points at a real
-  manifest entry. Catches typos / removed Airbnb fields.
-- **Forward coverage (rama 14B, `airbnb-export-manifest-coverage.test.ts`)** —
-  every manifest entry with `relevance: "covered"` has at least one taxonomy
-  item targeting it. Catches silent omissions (manifest declares a field we
-  never populate).
+  taxonomy item with a `source[platform="airbnb"|"booking"]` mapping points at
+  a real manifest entry. Catches typos / removed platform fields.
+- **Forward coverage — per platform.**
+  - `airbnb-export-manifest-coverage.test.ts` (rama 14B)
+  - `booking-export-manifest-coverage.test.ts` (rama 14C)
 
-Together: no covered Airbnb concept lacks an internal item, and no internal
+  Each asserts that every manifest entry with `relevance: "covered"` has at
+  least one taxonomy item targeting it. Catches silent omissions (manifest
+  declares a field we never populate).
+
+Together: no covered platform concept lacks an internal item, and no internal
 mapping points at a phantom field.
 
 ## 5. Conventions
 
 ### 5.1 Property type — first-mapping-canonical rule
 
-Internal `pt.*` items can collapse multiple Airbnb categories (e.g.
-`pt.house → ["house", "townhouse", "cottage", …]`). The export picks the
-**first** Airbnb `external_id` in the JSON `source[]` order as canonical and
-emits a `no_mapping` warning listing the alternatives.
+Internal `pt.*` items can collapse multiple platform categories on either side
+(e.g. `pt.house → ["house", "townhouse", "cottage", …]` for Airbnb, or a set
+of Booking PCT codes like `["7", "8", "27", …]`). Each export picks the
+**first** external_id for its platform in the JSON `source[]` order as
+canonical and emits a `no_mapping` warning listing the alternatives.
 
-This rule is isolated in `resolvePropertyTypeCanonical()` and pinned by
-`airbnb-export-property-type-canonical.test.ts` so it can be evolved
-independently (e.g. host-side picker for the canonical alias) without
-touching the engine.
+Centralized in shared `resolvePropertyTypeCanonical(id, platform)` at
+`src/lib/exports/shared/property-type-canonical.ts`, with 1-arg per-platform
+wrappers exposed via the platform barrels (`airbnb.ts`, `booking.ts`). Pinned
+by `airbnb-export-property-type-canonical.test.ts` and
+`booking-export-property-type-canonical.test.ts` so the rule can evolve
+(e.g. host-side picker for the canonical alias) without touching the engines.
 
 ### 5.2 Pricing fields — always omitted with warning (v1)
 
-`pricing.cleaning_fee` and `pricing.extra_person_fee` are declared `covered` in
-the manifest but always emit `missing_pricing_currency` warnings and are never
-populated. Reason: `policiesJson.supplements.{cleaning,extraGuest}.amount`
-exists, but no `currency` field is available on Property in the current schema.
-Lifting this requires a property-level `currency` decision (out of 14B scope).
+Airbnb `pricing.{cleaning_fee, extra_person_fee}` and Booking
+`fees.{cleaning, extra_person}` are declared `covered` in their manifests but
+always emit `missing_pricing_currency` warnings and are never populated.
+Reason: `policiesJson.supplements.{cleaning,extraGuest}.amount` exists, but no
+`currency` field is available on Property in the current schema. Lifting this
+requires a property-level `currency` decision (out of 14B/14C scope).
 
 ### 5.3 Smoking enum — passthrough with warning
 
 Our smoking vocabulary (`not_allowed | outdoors_only | designated_area | no_restriction`)
-does not map cleanly to Airbnb's. The reducer passes the value through and
-emits `enum_value_passthrough` so the host knows manual adjustment may be needed.
+does not map cleanly to either platform's option set. Both exporters pass the
+value through and emit `enum_value_passthrough` so the host knows manual
+adjustment may be needed.
 
 ### 5.4 House rules — free text aggregation
 
-`house_rules` is composed in Spanish from `policiesJson` (quiet hours, smoking,
-events, pets, services). One `free_text_passthrough` warning is emitted
-unconditionally to flag that the host may want to localize / edit.
-Commercial-photography policy is emitted separately as the structured field
-`listing_policies.commercial_photography_allowed`, not inside `house_rules`.
+Composed in Spanish from `policiesJson` (quiet hours, smoking, events, pets,
+services). One `free_text_passthrough` warning is emitted unconditionally to
+flag that the host may want to localize / edit.
 
-### 5.5 No-leak invariant
+- **Airbnb** — emits the aggregated text as `house_rules`.
+  Commercial-photography goes into the structured bool
+  `listing_policies.commercial_photography_allowed` (not into the free-text).
+- **Booking** — emits as `house_rules_text`. Booking has no structured
+  commercial_photography bool, so `with_permission` folds into the free-text
+  as an extra line; `not_allowed` adds nothing (redundant with default).
 
-`loadPropertyContext` filters Prisma reads by `visibility: "guest"` for
-`spaces` and `amenityInstances`. The `PropertyExportContext` type itself does
-not carry visibility-tagged fields, so the leak surface is zero by construction.
-`airbnbListingPayloadSchema.strict()` rejects unknown keys at validation time.
-Pinned by `airbnb-export-no-leak.test.ts`.
+### 5.5 Check-in instructions (Booking-only free-text)
+
+Booking has no structured `check_in_method` enum. The `checkin_instructions`
+free-text field is composed from `primaryAccessMethod` (taxonomy label) and
+`customAccessMethodLabel` as `Método de acceso: {label} — {custom}.`. Emits a
+`free_text_passthrough` warning. Airbnb keeps its structured
+`check_in_method` external_id (direct `getAirbnbId` lookup, bypassing the
+manifest).
+
+### 5.6 No-leak invariant
+
+`loadPropertyContext` (shared) filters Prisma reads by `visibility: "guest"`
+for `spaces` and `amenityInstances`. The `PropertyExportContext` type itself
+does not carry visibility-tagged fields, so the leak surface is zero by
+construction. Both `airbnbListingPayloadSchema` and `bookingListingPayloadSchema`
+are `.strict()`, rejecting unknown keys at validation time. Pinned by
+`airbnb-export-no-leak.test.ts` and `booking-export-no-leak.test.ts`.
 
 ## 6. Warning codes
 
+Shared vocabulary (`ExportWarningCode` in `src/lib/exports/shared/types.ts`):
+
 | Code | When |
 |---|---|
-| `no_mapping` | Taxonomy id has no Airbnb mapping, or property type has multiple Airbnb aliases |
+| `no_mapping` | Taxonomy id has no mapping for the target platform, or property type has multiple platform aliases |
 | `platform_not_supported` | Taxonomy item has `platform_supported: false` |
 | `custom_value_unmapped` | Host supplied a custom label (e.g. property type, access method) and we omitted the field |
 | `missing_pricing_currency` | Pricing field always omitted in v1 (no `currency` on Property) |
-| `enum_value_passthrough` | Enum value (e.g. smoking) emitted as-is; vocabulary may not match Airbnb |
-| `free_text_passthrough` | Free-text field (e.g. house_rules) emitted; host may want to edit |
+| `enum_value_passthrough` | Enum value (e.g. smoking) emitted as-is; vocabulary may not match the platform |
+| `free_text_passthrough` | Free-text field (e.g. house_rules / house_rules_text / checkin_instructions) emitted; host may want to edit |
 | `schema_validation_failed` | Zod validation failed; payload returned as defensive empty fallback |
 
 ## 7. Testing
+
+**Airbnb (rama 14B):**
 
 - `src/test/airbnb-export-property-type-canonical.test.ts` — pins the first-mapping-canonical rule.
 - `src/test/airbnb-export-manifest-coverage.test.ts` — forward coverage gate.
 - `src/test/airbnb-export.test.ts` — `buildAirbnbPayload` happy path, partial context, custom values, room-counter fallback, events policy boolean.
 - `src/test/airbnb-export-no-leak.test.ts` — Prisma scoping, schema strictness, output sentinel-substring scan.
 
+**Booking (rama 14C):**
+
+- `src/test/booking-export-property-type-canonical.test.ts` — pins the first-mapping-canonical rule for Booking PCT codes.
+- `src/test/booking-export-manifest-coverage.test.ts` — forward coverage gate for the Booking manifest.
+- `src/test/booking-export.test.ts` — `buildBookingPayload` happy path, partial context, custom values, room-counter fallback, events policy boolean, commercial_photography asymmetry, checkin_instructions.
+- `src/test/booking-export-no-leak.test.ts` — Prisma scoping, schema strictness, output sentinel-substring scan.
+
 ## 8. Deferred / out of scope
 
-- Booking.com serializer (manifest + helpers exist; no engine yet).
-- Pricing fields (need property-level `currency`).
-- Round-trip / inbound import (this branch is export-only).
-- Direct POST to Airbnb API (this branch produces a JSON draft; transport is a separate concern).
-- LLM-assisted vocabulary mapping for enum passthroughs.
+- Pricing fields (need property-level `currency` — both platforms).
+- Round-trip / inbound import (14B + 14C are export-only).
+- Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
+- LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
+- Accessibility coverage for Booking (Booking manifest does not declare an `accessibility_features.*` namespace in v1; internal `ax.*` items map through the Airbnb side only).
+- Structured check-in vocabulary for Booking (no platform enum; folded into `checkin_instructions` free-text).
 
 ## 9. Auth / access control status
 
-**This endpoint is not hardened.** `GET /api/properties/:propertyId/export/airbnb` follows the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
+**Neither export endpoint is hardened.** `GET /api/properties/:propertyId/export/airbnb` and `GET /api/properties/:propertyId/export/booking` follow the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
 
-This is **not** an oversight specific to the export route — it reflects the current state of the entire codebase. No auth library is installed, no middleware resolves sessions, and the `Workspace` / `WorkspaceMembership` / `User` Prisma models are unused by any route handler or Server Action. A reviewer on PR #82 (Rama 14B) asked for "the same auth/ownership pattern used in other `/api/properties/[propertyId]/...` routes" — that pattern does not exist.
+This is **not** an oversight specific to the export routes — it reflects the current state of the entire codebase. No auth library is installed, no middleware resolves sessions, and the `Workspace` / `WorkspaceMembership` / `User` Prisma models are unused by any route handler or Server Action. A reviewer on PR #82 (Rama 14B) asked for "the same auth/ownership pattern used in other `/api/properties/[propertyId]/...` routes" — that pattern does not exist.
 
-This endpoint **must not be treated as protected** by anyone reading its output. Consumers should assume that anyone who knows a `propertyId` can call it. Sensitive surfacing is already mitigated at the **data layer** by:
+These endpoints **must not be treated as protected** by anyone reading their output. Consumers should assume that anyone who knows a `propertyId` can call them. Sensitive surfacing is already mitigated at the **data layer** by:
 
-- The `visibility: "guest"` Prisma filter in [`loadPropertyContext`](../../src/lib/exports/airbnb/serialize.ts) — internal and sensitive rows never enter the export pipeline.
-- The `.strict()` Zod schema on `airbnbListingPayloadSchema` — unknown keys cannot be serialized even if a reducer tried.
-- The substring/schema invariants in `src/test/airbnb-export-no-leak.test.ts`.
+- The `visibility: "guest"` Prisma filter in [`loadPropertyContext`](../../src/lib/exports/shared/load-property.ts) — internal and sensitive rows never enter either export pipeline.
+- The `.strict()` Zod schemas `airbnbListingPayloadSchema` and `bookingListingPayloadSchema` — unknown keys cannot be serialized even if a reducer tried.
+- The substring/schema invariants in `src/test/airbnb-export-no-leak.test.ts` and `src/test/booking-export-no-leak.test.ts`.
 
-These are defense-in-depth against data leaks, not authorization. Restricting who can **call** the endpoint is the job of the transversal **Fase 16 — Auth & access control foundation** (see `docs/MASTER_PLAN_V2.md`). Rama 16B applies guards to every operator-facing route, including this one.
+These are defense-in-depth against data leaks, not authorization. Restricting who can **call** the endpoints is the job of the transversal **Fase 16 — Auth & access control foundation** (see `docs/MASTER_PLAN_V2.md`). Rama 16B applies guards to every operator-facing route, including both of these.
 
-Until Fase 16 lands, any feature or doc that references this export route must not describe it as "secured", "protected", or "operator-only" — it's gated only by knowledge of the `propertyId`, same as every other route under `/api/properties/[propertyId]/...`.
+Until Fase 16 lands, any feature or doc that references these export routes must not describe them as "secured", "protected", or "operator-only" — they're gated only by knowledge of the `propertyId`, same as every other route under `/api/properties/[propertyId]/...`.

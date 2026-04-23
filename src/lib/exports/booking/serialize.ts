@@ -1,10 +1,9 @@
 import {
-  airbnbListingPayloadSchema,
-  type AirbnbListingPayload,
-} from "@/lib/schemas/airbnb-listing";
-import { getAirbnbId } from "@/lib/taxonomy-loader";
+  bookingListingPayloadSchema,
+  type BookingListingPayload,
+} from "@/lib/schemas/booking-listing";
 import {
-  airbnbStructuredManifest,
+  bookingStructuredManifest,
   coveredManifestEntries,
 } from "./manifest";
 import {
@@ -21,37 +20,35 @@ import {
 } from "./engine";
 import { resolvePropertyTypeCanonical } from "../shared/property-type-canonical";
 import { loadPropertyContext } from "../shared/load-property";
-import type { AirbnbExportResult, ExportWarning } from "./types";
+import type { BookingExportResult, ExportWarning } from "./types";
 
 interface BuildResult {
-  payload: AirbnbListingPayload;
+  payload: BookingListingPayload;
   warnings: ExportWarning[];
 }
 
-export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
+export function buildBookingPayload(ctx: PropertyExportContext): BuildResult {
   const warnings: ExportWarning[] = [];
   const sharedSpaces: Record<string, boolean> = {};
   const amenities: Record<string, boolean> = {};
-  const accessibilityFeatures: Record<string, boolean> = {};
-  const listingPolicies: Record<string, boolean | string> = {};
+  const policies: Record<string, boolean | string> = {};
 
   const draft: {
     property_type_category?: string;
-    person_capacity?: number;
+    max_occupancy?: number;
     bedrooms?: number;
     bathrooms?: number;
-    check_in_method?: string;
     amenity_ids: string[];
     shared_spaces?: Record<string, boolean>;
     amenities?: Record<string, boolean>;
-    accessibility_features?: Record<string, boolean>;
-    listing_policies?: Record<string, boolean | string>;
-    house_rules?: string;
+    policies?: Record<string, boolean | string>;
+    house_rules_text?: string;
+    checkin_instructions?: string;
     locale?: string;
   } = { amenity_ids: [] };
 
   // ── Property type (canonical resolver) ────────────────────────────────
-  const ptResolution = resolvePropertyTypeCanonical(ctx.propertyType, "airbnb");
+  const ptResolution = resolvePropertyTypeCanonical(ctx.propertyType, "booking");
   if (ptResolution.unknown && ctx.propertyType) {
     warnings.push({
       code: "no_mapping",
@@ -69,7 +66,7 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
       warnings.push({
         code: "custom_value_unmapped",
         taxonomyKey: ctx.propertyType ?? undefined,
-        message: `Custom property type "${ctx.customPropertyTypeLabel}" has no Airbnb mapping; field omitted.`,
+        message: `Custom property type "${ctx.customPropertyTypeLabel}" has no Booking mapping; field omitted.`,
       });
     }
   } else {
@@ -78,35 +75,7 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
       warnings.push({
         code: "no_mapping",
         taxonomyKey: ctx.propertyType ?? undefined,
-        message: `Property type "${ctx.propertyType}" has multiple Airbnb aliases (${ptResolution.alternatives.join(", ")}); using canonical "${ptResolution.canonical}".`,
-      });
-    }
-  }
-
-  // ── check_in_method (direct external_id, not in manifest) ─────────────
-  if (ctx.primaryAccessMethod) {
-    try {
-      const externalId = getAirbnbId("access_methods", ctx.primaryAccessMethod);
-      if (externalId) {
-        draft.check_in_method = externalId;
-      } else if (ctx.customAccessMethodLabel) {
-        warnings.push({
-          code: "custom_value_unmapped",
-          taxonomyKey: ctx.primaryAccessMethod,
-          message: `Custom access method "${ctx.customAccessMethodLabel}" has no Airbnb mapping; field omitted.`,
-        });
-      } else {
-        warnings.push({
-          code: "no_mapping",
-          taxonomyKey: ctx.primaryAccessMethod,
-          message: `Access method "${ctx.primaryAccessMethod}" has no Airbnb external_id.`,
-        });
-      }
-    } catch {
-      warnings.push({
-        code: "no_mapping",
-        taxonomyKey: ctx.primaryAccessMethod,
-        message: `Unknown access method id "${ctx.primaryAccessMethod}".`,
+        message: `Property type "${ctx.propertyType}" has multiple Booking aliases (${ptResolution.alternatives.join(", ")}); using canonical "${ptResolution.canonical}".`,
       });
     }
   }
@@ -129,7 +98,8 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
       const out = reduceFreeText(entry, items, ctx);
       warnings.push(...out.warnings);
       if (out.value === undefined) continue;
-      if (entry.field === "house_rules") draft.house_rules = out.value;
+      if (entry.field === "house_rules_text") draft.house_rules_text = out.value;
+      else if (entry.field === "checkin_instructions") draft.checkin_instructions = out.value;
       continue;
     }
 
@@ -138,14 +108,7 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
       const out = reduceStructuredBool(entry, items, ctx);
       warnings.push(...out.warnings);
       if (out.value === undefined) continue;
-      assignStructuredBool(
-        entry.field,
-        out.value,
-        sharedSpaces,
-        amenities,
-        accessibilityFeatures,
-        listingPolicies,
-      );
+      assignStructuredBool(entry.field, out.value, sharedSpaces, amenities, policies);
       continue;
     }
     if (entry.transform === "enum") {
@@ -153,14 +116,14 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
       warnings.push(...out.warnings);
       if (out.value === undefined) continue;
       const leaf = leafField(entry.field);
-      if (entry.field.startsWith("listing_policies.")) listingPolicies[leaf] = out.value;
+      if (entry.field.startsWith("policies.")) policies[leaf] = out.value;
       continue;
     }
     if (entry.transform === "number") {
       const out = reduceStructuredNumber(entry, items, ctx);
       warnings.push(...out.warnings);
       if (out.value === undefined) continue;
-      if (entry.field === "person_capacity") draft.person_capacity = out.value;
+      if (entry.field === "max_occupancy") draft.max_occupancy = out.value;
       continue;
     }
     if (entry.transform === "currency") {
@@ -178,13 +141,10 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
   // ── Assemble nested maps if non-empty ─────────────────────────────────
   if (Object.keys(sharedSpaces).length > 0) draft.shared_spaces = sharedSpaces;
   if (Object.keys(amenities).length > 0) draft.amenities = amenities;
-  if (Object.keys(accessibilityFeatures).length > 0) {
-    draft.accessibility_features = accessibilityFeatures;
-  }
-  if (Object.keys(listingPolicies).length > 0) draft.listing_policies = listingPolicies;
+  if (Object.keys(policies).length > 0) draft.policies = policies;
   draft.locale = ctx.defaultLocale;
 
-  const parsed = airbnbListingPayloadSchema.safeParse(draft);
+  const parsed = bookingListingPayloadSchema.safeParse(draft);
   if (!parsed.success) {
     warnings.push({
       code: "schema_validation_failed",
@@ -192,7 +152,6 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
         .map((i) => `${i.path.join(".")}: ${i.message}`)
         .join("; ")}`,
     });
-    // Return an empty-but-valid payload as a defensive fallback.
     return {
       payload: { amenity_ids: [] },
       warnings,
@@ -200,6 +159,19 @@ export function buildAirbnbPayload(ctx: PropertyExportContext): BuildResult {
   }
 
   return { payload: parsed.data, warnings };
+}
+
+export async function serializeForBooking(
+  propertyId: string,
+): Promise<BookingExportResult> {
+  const ctx = await loadPropertyContext(propertyId);
+  const { payload, warnings } = buildBookingPayload(ctx);
+  return {
+    payload,
+    warnings,
+    generatedAt: new Date().toISOString(),
+    taxonomyVersion: bookingStructuredManifest.pinned_at,
+  };
 }
 
 function leafField(field: string): string {
@@ -212,25 +184,10 @@ function assignStructuredBool(
   value: boolean,
   sharedSpaces: Record<string, boolean>,
   amenities: Record<string, boolean>,
-  accessibilityFeatures: Record<string, boolean>,
-  listingPolicies: Record<string, boolean | string>,
+  policies: Record<string, boolean | string>,
 ): void {
   const leaf = leafField(field);
   if (field.startsWith("shared_spaces.")) sharedSpaces[leaf] = value;
   else if (field.startsWith("amenities.")) amenities[leaf] = value;
-  else if (field.startsWith("accessibility_features.")) accessibilityFeatures[leaf] = value;
-  else if (field.startsWith("listing_policies.")) listingPolicies[leaf] = value;
-}
-
-export async function serializeForAirbnb(
-  propertyId: string,
-): Promise<AirbnbExportResult> {
-  const ctx = await loadPropertyContext(propertyId);
-  const { payload, warnings } = buildAirbnbPayload(ctx);
-  return {
-    payload,
-    warnings,
-    generatedAt: new Date().toISOString(),
-    taxonomyVersion: airbnbStructuredManifest.pinned_at,
-  };
+  else if (field.startsWith("policies.")) policies[leaf] = value;
 }

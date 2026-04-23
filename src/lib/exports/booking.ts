@@ -1,14 +1,14 @@
 import { resolvePropertyTypeCanonical as resolve } from "./shared/property-type-canonical";
 
-export { serializeForAirbnb, buildAirbnbPayload } from "./airbnb/serialize";
+export { serializeForBooking, buildBookingPayload } from "./booking/serialize";
 export { PropertyNotFoundError } from "./shared/types";
 export type { PropertyExportContext } from "./shared/load-property";
 export type {
-  AirbnbExportResult,
+  BookingExportResult,
   ExportWarning,
   ExportWarningCode,
-} from "./airbnb/types";
+} from "./booking/types";
 
 export const resolvePropertyTypeCanonical = (
   propertyTypeId: string | null | undefined,
-) => resolve(propertyTypeId, "airbnb");
+) => resolve(propertyTypeId, "booking");
