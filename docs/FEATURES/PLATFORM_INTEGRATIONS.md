@@ -41,11 +41,11 @@ PropertyExportContext  ← pure shape, no internal/sensitive surface
 
 Five taxonomies feed the export via their `source[]` platform mappings:
 
-- `taxonomies/amenities.json` (incl. `ax.*` accessibility items)
+- `taxonomies/amenity_taxonomy.json` (incl. `ax.*` accessibility items)
 - `taxonomies/property_types.json`
 - `taxonomies/space_types.json`
 - `taxonomies/access_methods.json`
-- `taxonomies/policies.json` (used implicitly via `policiesJson` reducers)
+- `taxonomies/policy_taxonomy.json` (used implicitly via `policiesJson` reducers)
 
 Pinned platform manifests live in `taxonomies/platform-catalogs/`. The Airbnb
 structured-fields manifest enumerates every field we serialize; the Zod-validated
@@ -55,9 +55,9 @@ loader rejects any drift on boot.
 
 Two test gates close the loop between our taxonomies and the manifest:
 
-- **Reverse coverage (rama 14A, `airbnb-mappings.test.ts`)** — every taxonomy
-  item with a `source[platform="airbnb"]` mapping points at a real manifest
-  entry. Catches typos / removed Airbnb fields.
+- **Reverse coverage (rama 14A, `platform-reverse-coverage.test.ts`)** — every
+  taxonomy item with a `source[platform="airbnb"]` mapping points at a real
+  manifest entry. Catches typos / removed Airbnb fields.
 - **Forward coverage (rama 14B, `airbnb-export-manifest-coverage.test.ts`)** —
   every manifest entry with `relevance: "covered"` has at least one taxonomy
   item targeting it. Catches silent omissions (manifest declares a field we
@@ -97,9 +97,10 @@ emits `enum_value_passthrough` so the host knows manual adjustment may be needed
 ### 5.4 House rules — free text aggregation
 
 `house_rules` is composed in Spanish from `policiesJson` (quiet hours, smoking,
-events, pets, commercial photography, services). One `free_text_passthrough`
-warning is emitted unconditionally to flag that the host may want to localize /
-edit.
+events, pets, services). One `free_text_passthrough` warning is emitted
+unconditionally to flag that the host may want to localize / edit.
+Commercial-photography policy is emitted separately as the structured field
+`listing_policies.commercial_photography_allowed`, not inside `house_rules`.
 
 ### 5.5 No-leak invariant
 

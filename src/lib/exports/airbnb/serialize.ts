@@ -4,7 +4,7 @@ import {
   type AirbnbListingPayload,
 } from "@/lib/schemas/airbnb-listing";
 import { getAirbnbId } from "@/lib/taxonomy-loader";
-import { visibilityLevels, type VisibilityLevel } from "@/lib/visibility";
+import type { VisibilityLevel } from "@/lib/visibility";
 import {
   airbnbStructuredManifest,
   coveredManifestEntries,
@@ -24,7 +24,10 @@ import {
 import { resolvePropertyTypeCanonical } from "./property-type-canonical";
 import type { AirbnbExportResult, ExportWarning } from "./types";
 
-const GUEST_VISIBILITY: VisibilityLevel = visibilityLevels[0];
+// Security-sensitive scope: the Prisma filter that keeps internal/sensitive
+// rows out of the export pipeline. Pinned to the literal "guest" so a future
+// reorder of `visibilityLevels` cannot silently widen what the export sees.
+const GUEST_VISIBILITY: VisibilityLevel = "guest";
 
 export class PropertyNotFoundError extends Error {
   constructor(propertyId: string) {
@@ -80,7 +83,9 @@ async function loadPropertyContext(
     primaryAccessMethod: property.primaryAccessMethod,
     customAccessMethodLabel: property.customAccessMethodLabel,
     policiesJson:
-      property.policiesJson && typeof property.policiesJson === "object"
+      property.policiesJson &&
+      typeof property.policiesJson === "object" &&
+      !Array.isArray(property.policiesJson)
         ? (property.policiesJson as Record<string, unknown>)
         : null,
     defaultLocale: property.defaultLocale,
