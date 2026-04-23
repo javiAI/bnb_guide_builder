@@ -40,25 +40,14 @@ describe("resolvePropertyTypeCanonical (booking)", () => {
   });
 
   it("returns canonical:null for an item with platform_supported:false", () => {
-    const synthetic = {
-      id: "pt.synthetic_unsupported_booking",
-      label: "synth",
-      description: "test only",
-      platform_supported: false as const,
-    };
-    const real = propertyTypes.items;
-    real.push(synthetic as (typeof real)[number]);
-    try {
-      const result = resolvePropertyTypeCanonical("pt.synthetic_unsupported_booking");
-      expect(result).toEqual({
-        canonical: null,
-        alternatives: [],
-        platformUnsupported: true,
-        unknown: false,
-      });
-    } finally {
-      const idx = real.findIndex((i) => i.id === "pt.synthetic_unsupported_booking");
-      if (idx >= 0) real.splice(idx, 1);
-    }
+    const unsupported = propertyTypes.items.find((i) => i.platform_supported === false);
+    expect(unsupported).toBeDefined();
+    const result = resolvePropertyTypeCanonical(unsupported!.id);
+    expect(result).toEqual({
+      canonical: null,
+      alternatives: [],
+      platformUnsupported: true,
+      unknown: false,
+    });
   });
 });

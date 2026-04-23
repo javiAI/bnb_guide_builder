@@ -47,7 +47,6 @@ PropertyExportContext  ← pure shape, no internal/sensitive surface
 - `src/lib/exports/airbnb/serialize.ts` — orchestrator
 - `src/lib/exports/airbnb/engine.ts` — manifest index, reducers, dispatcher
 - `src/lib/exports/airbnb/manifest.ts` — Zod-parsed manifest loader
-- `src/lib/exports/airbnb/property-type-canonical.ts` — first-mapping-canonical rule (Airbnb)
 - `src/lib/schemas/airbnb-listing.ts` — Zod schema (best-effort)
 - `src/app/api/properties/[propertyId]/export/airbnb/route.ts` — HTTP entrypoint
 
@@ -56,9 +55,12 @@ PropertyExportContext  ← pure shape, no internal/sensitive surface
 - `src/lib/exports/booking/serialize.ts` — orchestrator
 - `src/lib/exports/booking/engine.ts` — manifest index, reducers, dispatcher
 - `src/lib/exports/booking/manifest.ts` — Zod-parsed manifest loader
-- `src/lib/exports/booking/property-type-canonical.ts` — first-mapping-canonical rule (Booking PCT codes)
 - `src/lib/schemas/booking-listing.ts` — Zod schema (best-effort)
 - `src/app/api/properties/[propertyId]/export/booking/route.ts` — HTTP entrypoint
+
+**Shared resolver (used by both):**
+
+- `src/lib/exports/shared/property-type-canonical.ts` — platform-parameterized first-mapping-canonical rule. Each platform barrel (`airbnb.ts`, `booking.ts`) exposes a 1-arg wrapper bound to its platform.
 
 ### 2.1 Booking payload shape — divergences from Airbnb
 
@@ -117,12 +119,12 @@ of Booking PCT codes like `["7", "8", "27", …]`). Each export picks the
 **first** external_id for its platform in the JSON `source[]` order as
 canonical and emits a `no_mapping` warning listing the alternatives.
 
-Isolated per platform in `resolvePropertyTypeCanonical()` inside
-`airbnb/property-type-canonical.ts` and `booking/property-type-canonical.ts`
-respectively. Pinned by `airbnb-export-property-type-canonical.test.ts` and
+Centralized in shared `resolvePropertyTypeCanonical(id, platform)` at
+`src/lib/exports/shared/property-type-canonical.ts`, with 1-arg per-platform
+wrappers exposed via the platform barrels (`airbnb.ts`, `booking.ts`). Pinned
+by `airbnb-export-property-type-canonical.test.ts` and
 `booking-export-property-type-canonical.test.ts` so the rule can evolve
-independently (e.g. host-side picker for the canonical alias) without
-touching the engines.
+(e.g. host-side picker for the canonical alias) without touching the engines.
 
 ### 5.2 Pricing fields — always omitted with warning (v1)
 
