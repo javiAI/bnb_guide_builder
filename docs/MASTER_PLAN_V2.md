@@ -1956,6 +1956,159 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
+## FASE 16 — Auth & access control foundation
+
+**Estado**: **no iniciada**. Iniciativa transversal que falta hoy en el repo. Surgió como hallazgo duro durante la review de Rama 14B: el reviewer pidió un guard de auth/ownership en `GET /api/properties/[propertyId]/export/airbnb` y la auditoría confirmó que **el patrón pedido no existe**. Todas las rutas `/api/properties/[propertyId]/...` actuales (`/derived`, `/guide`, `/assistant/ask`, `/places-search`, `/export/airbnb`) usan un único check: `prisma.property.findUnique → 404 si no existe`. No hay sesiones, no hay membership check, no hay identidad del actor.
+
+**Prerrequisito duro de qué**: de **cualquier** feature operator-facing que toque datos privados — exports (14B+), incident panel del host (parte de 13D ya mergeada sin guard), messaging review (12B), settings/wizard, assistant console, media. La ausencia de guards no se mitiga por feature; se mitiga una sola vez a nivel de plataforma.
+
+**Principio rector**: esta fase **separa** dos problemas que hoy en el código se mezclan:
+
+1. **Auth del operador/host** — sesiones tradicionales, identidad del usuario, workspace ownership, guards server-side en rutas autenticadas. Modelo mental: "¿este `userId` tiene derecho a ver/modificar esta `Property`?".
+2. **Capacidades de la guía pública** — la guía (`/g/:slug`) y sus flujos guest-originated **no** usan login tradicional. Ya hay un precedente: la cookie HMAC de `incident-cookie.service.ts` (rama 13D) firma `{slug, ids[], iat}` con `GUEST_INCIDENT_COOKIE_SECRET`. Ese patrón necesita generalizarse a un modelo de capacidades firmadas para todo guest write/read flow.
+
+Mezclar los dos modelos bajo el mismo "auth" es lo que bloqueó el análisis de 14B. **Separar** es requisito — cada rama aquí se etiqueta claramente como operador o público.
+
+**Qué falta hoy, exhaustivo**:
+
+- Login / registro / recuperación de contraseña del host.
+- Sesiones server-side (cookie + DB-backed o JWT firmado — decisión pendiente).
+- Middleware Next.js que pueble un contexto de request con `{userId, workspaceId, role}`.
+- Guards reutilizables para Server Actions y route handlers: `requireOperator()`, `requireOwnership(propertyId)`, `requireWorkspaceRole(role)`.
+- Authorization por `WorkspaceMembership` — los modelos Prisma existen (`Workspace`, `WorkspaceMembership`, `User`) pero ningún caller los consulta.
+- Audit log de quién hace qué (hoy `AuditLog` existe en schema `docs/SECURITY_AND_AUDIT.md` §4 pero no hay escritores reales).
+- Capability tokens para guest flows que no sean simple read (lectura ya resuelta por `publicSlug` + `published GuideVersion`, ver 10D).
+- Revocación / expiración / scope de capabilities del huésped.
+- Test harness de auth — fixture de `userA vs userB trying to access propertyOfA` debe vivir al mismo nivel que las 5 invariantes anti-leak de 10F.
+
+**No bloquea ramas funcionales en vuelo**: Fases 11-15 avanzan con el patrón actual (`findUnique → 404`). Esta fase se intercala cuando producto/seguridad decidan priorizar — o cuando un incidente fuerce la decisión. Mientras tanto **ninguna PR puede presentar su endpoint como "seguro" ni "protegido"**; la documentación de feature (p. ej. `docs/FEATURES/PLATFORM_INTEGRATIONS.md`) debe explicitar que sigue el status quo del repo.
+
+**Orden de las ramas** (dependencias secuenciales — 16A es prerrequisito de 16B, etc.):
+
+### Rama 16A — `feat/operator-auth-foundation`
+
+**Propósito**: levantar la infraestructura de sesiones del host. Sin esto, 16B no tiene a quién preguntar "¿eres miembro del workspace?".
+
+**Decisiones pendientes antes de arrancar (Fase -1)**:
+- Librería: NextAuth/Auth.js v5 vs Lucia vs Better-Auth vs custom. Criterios: compat con Next 15 App Router + cookie SSR + mantenimiento activo + footprint minimal.
+- Session storage: DB-backed (tabla `Session` en Prisma) vs JWT firmado. DB-backed permite revocación real; JWT es más barato. La política de "nunca tokens/secretos en KnowledgeItem" (SECURITY_AND_AUDIT §3) sesga hacia DB-backed.
+- Password hash: argon2id (default moderno) vs bcrypt. Si se elige argon2, documentar parámetros (t=3, m=64MB típico).
+- Flows incluidos: password login + email verification + password reset. Magic link y OAuth (Google/Apple) diferidos salvo decisión estratégica contraria.
+
+**Archivos a crear** (exhaustivo tras Fase -1):
+- `src/lib/auth/` (servicio, tipos, config del provider elegido).
+- `src/middleware.ts` o equivalente — resuelve sesión → `request context`.
+- `src/app/(auth)/login`, `/(auth)/register`, `/(auth)/verify`, `/(auth)/reset` — superficies mínimas en texto (no polish visual; Liora lo retoca después).
+- Server Actions para cada flow en `src/lib/actions/auth.actions.ts`.
+- Migración Prisma si hace falta: añadir `password_hash`, `email_verified_at`, `Session`, `PasswordResetToken` a User.
+
+**Tests**:
+- `src/test/auth-foundation.test.ts` — register → verify → login → logout end-to-end sobre fixture DB.
+- `src/test/auth-session.test.ts` — expired session → 401; tampered cookie → 401; revoked session → 401.
+
+**Criterio de done**: un usuario puede registrarse, verificar email, iniciar sesión y cerrar sesión. **Ningún endpoint protegido todavía** — eso lo hace 16B. El deliverable es la infra limpia.
+
+**Preparación**:
+- **Contexto a leer**: `prisma/schema.prisma` (modelos `User`, `Workspace`, `WorkspaceMembership` ya existentes), `docs/SECURITY_AND_AUDIT.md` §3 (secret policy), `docs/ARCHITECTURE_OVERVIEW.md`.
+- **Docs a actualizar al terminar**: `docs/SECURITY_AND_AUDIT.md` (nueva sección "Auth de la app"), `docs/ARCHITECTURE_OVERVIEW.md` (si la middleware introduce una nueva capa), `docs/DATA_MODEL.md` (si hay migración).
+- **Skills/tools específicos**: `/feature-dev` para la superficie, `/pre-commit-review` y `/simplify` obligatorios.
+
+---
+
+### Rama 16B — `feat/route-guards-and-ownership`
+
+**Propósito**: aplicar guards de auth + workspace ownership a **todas** las rutas operator-facing existentes. 16A entrega identidad; 16B la consume.
+
+**Pre-auditoría obligatoria (Fase -1)**: enumerar exhaustivamente qué endpoints y Server Actions son operator-facing. Catálogo inicial (no exhaustivo, debe completarse en Fase -1):
+- Todas las rutas bajo `src/app/api/properties/[propertyId]/...` (hoy 7: `derived`, `guide`, `export/airbnb`, `assistant/{ask, debug/retrieve, conversations}`, `places-search`).
+- Server Actions en `src/lib/actions/{editor, wizard, guide, incident, messaging, ops, knowledge}.actions.ts`.
+- Panel del host bajo `src/app/properties/[propertyId]/*`.
+
+**Archivos a crear**:
+- `src/lib/auth/guards.ts` — helpers `requireOperator()`, `requireOwnership(propertyId)`, `requireWorkspaceRole(role)`. Cada uno retorna `{userId, workspaceId}` o lanza 401/403.
+- `src/test/auth-guards.test.ts` — para cada guard: happy path, no session, wrong workspace, wrong role.
+- `src/test/auth-route-coverage.test.ts` — gate automático: cualquier route handler bajo `src/app/api/properties/[propertyId]/...` que **no** invoque un guard falla el test. Evita regresión silenciosa cuando se añaden nuevas rutas.
+
+**Archivos a modificar** (exhaustivo tras auditoría):
+- Cada route handler del catálogo — añadir guard como primera operación.
+- Cada Server Action del catálogo — guard antes de parsear FormData.
+
+**Distinción crítica**: 404 vs 403. 404 cuando el recurso **no existe o no es visible al actor** (default seguro — no revela existencia cross-workspace); 403 cuando existe, es visible pero el actor no tiene el rol requerido. El helper lo resuelve — los callers no discriminan a mano.
+
+**Tests**:
+- Matriz user-property: `userA ∈ workspaceA`, `userB ∈ workspaceB`; cada endpoint exponga `propertyOfA` a A con 2xx y a B con 404.
+- Session-less request → 401 en todos los operator endpoints.
+
+**Criterio de done**: 100% de los endpoints operator-facing tienen guard. Gate automático verde. PR description incluye tabla `endpoint → guard invocado`.
+
+**Preparación**:
+- **Contexto a leer**: 16A, catálogo de la Fase -1, `prisma/schema.prisma` (relaciones `Property.workspaceId`).
+- **Docs a actualizar al terminar**: `docs/API_ROUTES.md` (marcar guards por endpoint), `docs/SECURITY_AND_AUDIT.md` (sección "Guards server-side"), `docs/FEATURES/PLATFORM_INTEGRATIONS.md` (actualizar nota de status quo — 14B queda protegida a partir de aquí).
+- **Skills/tools específicos**: **Agent code-explorer** para auditar exhaustivamente qué rutas son operator-facing (evita que una quede sin guard).
+
+---
+
+### Rama 16C — `feat/public-guide-capabilities`
+
+**Propósito**: modelo unificado de capabilities firmadas para `/g/:slug` — lo que hoy resuelve ad-hoc la cookie HMAC de `incident-cookie.service.ts` (rama 13D) generalizado a todo guest write/read scope que exceda la lectura trivial de la guía publicada.
+
+**No es login tradicional**. La guía pública no tiene cuenta de huésped; el huésped se identifica por:
+- `publicSlug` en la URL (access control de lectura — ya existe).
+- Cookie HMAC firmada que carga capacidades (actualmente solo `incident_ids`; generalizar a un modelo `{slug, capabilities[], expiresAt}`).
+
+**Decisiones Fase -1**:
+- ¿JWT estándar (ES256/HS256) vs HMAC ad-hoc como 13D? JWT tiene ecosystema (`jose`) y revocation list conocida; ad-hoc es lo que ya hay. Voto sesgado: generalizar el ad-hoc a un helper común (`capability-token.service.ts`) porque ya está probado y evita peso del ecosystema JWT para nuestro caso scope-limited.
+- Alcance inicial de capacidades: `incident_report`, `incident_read`, ¿`guide_feedback`? ¿`booking_extension_request`? Cerrar catálogo antes de implementar.
+- Revocación: on-demand por slug (invalida cookies de ese slug) y por expiración (default 7d, mismo que 13D).
+
+**Archivos a crear**:
+- `src/lib/auth/guest-capability.service.ts` — `signCapability({slug, capabilities, ttlMs})`, `verifyCapability(cookie)`. Refactor del HMAC de 13D como caso particular.
+- `src/lib/auth/guest-capability-registry.ts` — catálogo tipado `GuestCapability` (string union) + contract de verificación por cada tipo.
+- Migración: cookie name convention (`guide-capabilities-<slug>` reemplaza `guide-incidents-<slug>` de 13D con retrocompat por un release).
+
+**Archivos a modificar**:
+- `src/lib/services/incident-cookie.service.ts` — delegar a `guest-capability.service.ts`.
+- `src/app/api/g/:slug/incidents/route.ts` — usar el verifier común.
+
+**Tests**:
+- `src/test/guest-capability-service.test.ts` — sign/verify round-trip, tampered payload, expired TTL, clock-skew guard (±5min como 13D), `timingSafeEqual`.
+- `src/test/guest-capability-isolation.test.ts` — cookie de `slugA` nunca autoriza en `slugB`; cookie con `capability:incident_read` nunca autoriza `capability:incident_write`.
+
+**Criterio de done**: 13D funciona idéntico sobre el nuevo servicio común. Al menos un segundo caso de uso (p. ej. `guide_feedback`) adoptado o documentado como próximo. Cookie retrocompat durante ≥1 release.
+
+**Preparación**:
+- **Contexto a leer**: `src/lib/services/incident-cookie.service.ts`, `docs/SECURITY_AND_AUDIT.md` §3.1 (guest-originated writes), rama 13D commit history.
+- **Docs a actualizar al terminar**: `docs/SECURITY_AND_AUDIT.md` §3.1 expandida, `docs/FEATURES/GUEST_GUIDE_UX.md` si aplica.
+- **Skills/tools específicos**: `/pre-commit-review`.
+
+---
+
+### Rama 16D — `chore/auth-hardening-and-audit`
+
+**Propósito**: cerrar el loop con (a) AuditLog escritor real integrado en los guards de 16B, (b) test harness cross-workspace / cross-user / cross-slug que vive al nivel de invariante bloqueante, (c) rate-limiting por actor en endpoints operator-facing (hoy solo existe por slug/IP en endpoints públicos).
+
+**Archivos a crear**:
+- `src/lib/audit/audit-log.service.ts` — writer que los guards invocan para mutaciones relevantes. Diff seguro (nunca serializa `password_hash`, tokens, secretos).
+- `src/test/auth-invariants.test.ts` — gate bloqueante en CI (`.github/workflows/ci.yml`). Matriz cross-workspace × cross-slug × cross-capability; si algún endpoint permite una combinación prohibida, CI rojo.
+- `src/lib/auth/rate-limit-per-actor.ts` — reusa `sliding-window-rate-limit.ts` (ya existe de 13A/13D) con key `actorId`.
+
+**Archivos a modificar**:
+- Guards de 16B — emit `AuditLog` en mutaciones.
+- Endpoints sensibles (export, incident status change, messaging send) — rate-limit por actor.
+
+**Tests**:
+- `AuditLog` escribe con `actor`, `entidad`, `acción`, `diff seguro` (el shape declarado en `docs/SECURITY_AND_AUDIT.md` §4).
+- Rate-limit dispara 429 con `Retry-After`.
+
+**Criterio de done**: invariantes anti-cross-workspace bloqueantes en CI; AuditLog poblado por cada mutación relevante; panel minimal de audit (read-only) para inspección en desarrollo.
+
+**Preparación**:
+- **Contexto a leer**: 16A + 16B + 16C, `docs/SECURITY_AND_AUDIT.md` §4, `src/lib/services/sliding-window-rate-limit.ts`.
+- **Docs a actualizar al terminar**: `docs/SECURITY_AND_AUDIT.md` completar, `docs/QA_AND_RELEASE.md` (nueva suite de invariantes).
+- **Skills/tools específicos**: **Agent code-reviewer** como pase independiente antes de merge — esta rama es la más cercana a producción-crítica del plan.
+
+---
+
 ## 4. Checklist de ejecución por PR
 
 Complementa el Protocolo (§2). Antes de merge:
@@ -2033,6 +2186,15 @@ Fase 15 (requiere entrega del paquete de diseño Liora; NO bloquea 10G/H/I ni 11
   15A tokens → 15B primitivos → 15C guest → 15D shell operador → 15E módulos operador
                                                                → 15F messaging/assistant (requiere Fase 11 y/o 12)
                                                                → 15G cleanup legacy (último, siempre)
+
+Fase 16 (iniciativa transversal; NO bloquea ramas funcionales en vuelo; se intercala según prioridad de producto/seguridad)
+  16A operator auth foundation (sessions/login, sin guards aún)
+        ▼
+  16B route guards + workspace ownership (aplica guards a TODO el catálogo operator-facing)
+        ▼
+  16C public-guide capabilities (generaliza HMAC de 13D; ortogonal a 16A/B)
+        ▼
+  16D hardening: AuditLog writer + cross-workspace invariants en CI + rate-limit por actor
 ```
 
 ---
@@ -2047,6 +2209,8 @@ Fase 15 (requiere entrega del paquete de diseño Liora; NO bloquea 10G/H/I ni 11
 | Evals del assistant degradadas por cambio de modelo | CI gate en 11D bloquea regresiones |
 | Platform APIs cambian schema | Contract tests en 14B/14C; fallback a snapshot validation |
 | Import sobrescribe datos del host | Diff visible + confirmación explícita; audit log de cambios |
+| **Endpoints operator-facing sin auth real** (hallazgo de review 14B) | Fase 16 transversal — ninguna PR puede declarar su endpoint "seguro" hasta 16B; documentación de feature explicita el status quo |
+| Cookie HMAC de guest flows (13D) escalará a múltiples capabilities | Fase 16C generaliza el patrón a un servicio común con registro de capacidades + retrocompat ≥1 release |
 
 ---
 
@@ -2060,8 +2224,9 @@ Fase 15 (requiere entrega del paquete de diseño Liora; NO bloquea 10G/H/I ni 11
 - Fase 13: 4 PRs; 13A/B/C paralelizables, 13D depende de 10E → 2 semanas
 - Fase 14: depende de decisión estratégica; 4 PRs secuenciales → 6-8 semanas
 - Fase 15: 7 PRs, bloqueadas por entrega del paquete Liora. Duración no estimable hoy (depende del alcance del paquete). Se intercala en el calendario cuando la entrega ocurra; no desplaza las fases funcionales en vuelo.
+- Fase 16: 4 PRs secuenciales (16A → 16B → 16C → 16D) → 3-4 semanas. 16B es la más costosa (audita y protege todo el catálogo operator-facing actual + gate automático). Priorización fuera del timeline funcional — se intercala cuando producto/seguridad decidan o cuando un incidente fuerce la decisión.
 
-**Total plan**: 41 ramas (14 ✅ completadas, 27 pendientes de las cuales 7 son Fase 15 con prerrequisito externo). Orden óptimo funcional: 10G/H/I en secuencia, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica. Fase 15 se activa con entrega de diseño.
+**Total plan**: 45 ramas (14 ✅ completadas, 31 pendientes de las cuales 7 son Fase 15 con prerrequisito externo y 4 son Fase 16 con prerrequisito de priorización). Orden óptimo funcional: 10G/H/I en secuencia, 11 en dedicated sprint, 12+13 en paralelo, 14 según demanda estratégica. Fase 15 se activa con entrega de diseño. Fase 16 se activa cuando producto/seguridad lo prioricen — no bloquea 10–15.
 
 ---
 
@@ -2079,6 +2244,10 @@ Fase 15 (requiere entrega del paquete de diseño Liora; NO bloquea 10G/H/I ni 11
 10. **Events provider (Fase 13B)**: Eventbrite vs Ticketmaster vs scraping. Decidir antes de 13B.
 11. **Platform integrations (Fase 14)**: ¿arrancar con Airbnb, Booking, o ambos? Decisión estratégica previa.
 12. **Liora Design Replatform (Fase 15)**: entrega del paquete de diseño (tokens + primitivos + superficies) + confirmación del scope inicial (superficies a migrar primero). Sin entrega, Fase 15 no arranca. Mientras tanto aplican las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 a **todas** las ramas en vuelo.
+13. **Auth foundation library (Fase 16A)**: NextAuth/Auth.js v5 vs Lucia vs Better-Auth vs custom. Decidir antes de arrancar 16A (Fase -1 de esa rama).
+14. **Session storage (Fase 16A)**: DB-backed (tabla `Session` en Prisma, permite revocación real) vs JWT firmado (más barato). Sesgado hacia DB-backed por política de secret management (SECURITY_AND_AUDIT §3).
+15. **Guest capability token format (Fase 16C)**: generalizar HMAC ad-hoc de 13D (`GUEST_INCIDENT_COOKIE_SECRET`) vs adoptar JWT estándar (`jose`). Decidir antes de 16C.
+16. **Prioridad transversal de Fase 16**: ¿arrancar tras 14B, tras 14 completa, o esperar a incidente? Decisión de producto/seguridad — no está en el camino crítico de ningún entregable funcional.
 
 ---
 

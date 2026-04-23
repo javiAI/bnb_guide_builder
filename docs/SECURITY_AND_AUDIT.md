@@ -1,5 +1,56 @@
 # SECURITY_VISIBILITY_AND_AUDIT
 
+## 0. Auth & access control — estado actual y deuda abierta
+
+Este documento cubre **visibilidad de datos** (qué campo puede salir a qué audiencia) y **audit log** (qué se registra de las mutaciones). Una tercera dimensión — **autenticación y autorización del actor que ejecuta la request** — no está resuelta en el repo todavía. Esta sección es explícita sobre qué hay y qué falta para que ninguna PR se presente como "protegida" sin que lo esté.
+
+### 0.1 Qué existe hoy
+
+- **Modelos Prisma declarados pero inactivos**: `User`, `Workspace`, `WorkspaceMembership`. Existen como tablas; ningún route handler ni Server Action los consulta para decidir acceso.
+- **Patrón único de access control en rutas operator-facing**: `prisma.property.findUnique → 404 si no existe`. Aplica a las 7 rutas bajo `src/app/api/properties/[propertyId]/...` (`derived`, `guide`, `export/airbnb`, `assistant/{ask, debug/retrieve, conversations}`, `places-search`). No hay sesión, no hay identidad del actor, no hay membership check.
+- **Guest flows con capability ad-hoc**: la rama 13D introdujo HMAC cookie firmada (`guide-incidents-<slug>`, `GUEST_INCIDENT_COOKIE_SECRET`, payload `{slug, ids[≤10], iat}`, TTL 7d, `timingSafeEqual`, clock-skew guard ±5min). Es el **único** patrón de authorization activo en producción, y está scopeado a un caso de uso (incident tracking por huésped).
+- **Lectura de guía pública**: gated por `publicSlug` + `GuideVersion.published ≥ 1`. Ver `docs/FEATURES/MEDIA_ASSETS.md` §7 y `src/app/g/[slug]/*`. Esto funciona como access control de lectura pero no extiende a write flows.
+
+### 0.2 Qué falta, explícito
+
+**Auth de operator/host** (autenticación tradicional con cuenta):
+
+- Login / registro / verificación de email / password reset.
+- Sesiones server-side (cookie + DB-backed o JWT firmado — decisión pendiente).
+- Middleware Next.js que resuelva la sesión y popule `{userId, workspaceId, role}` en el request context.
+- Guards reutilizables: `requireOperator()`, `requireOwnership(propertyId)`, `requireWorkspaceRole(role)`.
+- Authorization por `WorkspaceMembership` — decidir qué significa "propietario de la propiedad X" en términos de workspace + rol.
+- Test harness cross-user / cross-workspace como gate bloqueante en CI.
+
+**Capabilities para guest flows** (no es login — es autorización de acciones firmadas):
+
+- Generalización del HMAC de 13D a un servicio común `guest-capability.service.ts` con registro de capacidades tipado.
+- Catálogo de capacidades (inicial: `incident_report`, `incident_read`; candidatos: `guide_feedback`, `booking_extension_request`).
+- Revocación on-demand por slug y por expiración (default 7d como 13D).
+- Aislamiento cross-slug y cross-capability (cookie de `slugA` nunca autoriza en `slugB`; cookie con `incident_read` nunca autoriza `incident_write`).
+
+**Hardening + audit real**:
+
+- Integrar `AuditLog` (declarado en §4) con escritor real invocado desde los guards.
+- Rate-limit por actor en endpoints operator-facing (hoy solo existe por slug/IP en endpoints públicos — ver `src/lib/services/sliding-window-rate-limit.ts`).
+- Invariantes cross-workspace / cross-capability como test bloqueante en `.github/workflows/ci.yml`.
+
+### 0.3 Por qué no se resuelve endpoint-by-endpoint
+
+Tentación recurrente durante code review: "añade un guard de auth a esta ruta específica". Si el patrón no existe transversalmente:
+
+- Cada PR inventa su propio mini-modelo de auth. Inconsistencia garantizada.
+- Env-tokens temporales o guards ad-hoc quedan como deuda silenciosa que nadie mapea después.
+- La superficie a proteger crece con cada feature — mientras tanto las features ya en producción (13D incident panel, export 14B, messaging review 12B) siguen sin guard.
+
+La solución es **una sola iniciativa transversal** que cierre los tres frentes (operator auth, guest capabilities, hardening) y un gate automático que impida regresión. Ese es el objetivo de la **Fase 16** del `docs/MASTER_PLAN_V2.md`.
+
+### 0.4 Regla dura mientras Fase 16 no arranque
+
+Ninguna PR puede declarar su endpoint operator-facing "seguro" o "protegido" en su description, docs o mensajes de commit. Las features nuevas que toquen endpoints operator-facing documentan que **siguen el status quo del repo** (`findUnique → 404`) y que la auth/authorization real está pendiente de Fase 16. Ejemplo: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` §9.
+
+---
+
 ## 1. Visibility levels
 
 - `public`

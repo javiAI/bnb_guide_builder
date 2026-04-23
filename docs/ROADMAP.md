@@ -38,10 +38,13 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
 | 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
 | 15 | Liora Design Replatform | 7 | Bloqueada | depende de entrega del paquete de diseño |
+| 16 | Auth & access control foundation | 4 | Alto | transversal — priorización de producto/seguridad |
 
 **Total plan V2**: 16 ramas ✅ completadas + 11A + 11B + 11C + 11D + 11E + 11F + 12A + 12B + 12C + 13A + 13B + 13C + 13D + 14A. Siguiente funcional: **Fase 14B** — Airbnb export.
 
 **Fase 15 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-14. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 para scope y ramas 15A-G.
+
+**Fase 16 (Auth & access control foundation)** es una iniciativa **transversal** que falta hoy en el repo (hallazgo duro durante review de 14B). Todas las rutas `/api/properties/[propertyId]/...` actuales siguen el patrón `findUnique → 404` sin sesión ni workspace ownership check. Fase 16 cubre (a) operator auth, (b) route guards + ownership, (c) public-guide capabilities generalizando el HMAC de 13D, (d) hardening + AuditLog real. **No bloquea** las Fases 10-15 en vuelo; mientras tanto, ninguna PR declara su endpoint operator-facing "seguro" — la doc de feature explicita el status quo. Ver `docs/MASTER_PLAN_V2.md` § FASE 16 y `docs/SECURITY_AND_AUDIT.md` §0.
 
 ### Estado y problema actual (post-10I 2026-04-19)
 
