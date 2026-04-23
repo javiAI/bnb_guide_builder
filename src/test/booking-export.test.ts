@@ -218,4 +218,19 @@ describe("buildBookingPayload — checkin_instructions free-text", () => {
     const { payload } = buildBookingPayload(ctx);
     expect(payload.checkin_instructions).toBeUndefined();
   });
+
+  it("emits no_mapping warning when primaryAccessMethod id is unknown", () => {
+    const ctx = baseContext({
+      primaryAccessMethod: "am.does_not_exist",
+      customAccessMethodLabel: null,
+    });
+    const { payload, warnings } = buildBookingPayload(ctx);
+    expect(payload.checkin_instructions).toBeUndefined();
+    expect(warnings).toContainEqual(
+      expect.objectContaining({
+        code: "no_mapping",
+        taxonomyKey: "am.does_not_exist",
+      }),
+    );
+  });
 });

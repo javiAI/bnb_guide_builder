@@ -306,10 +306,13 @@ export function reduceFreeText(
   }
   if (entry.field === "checkin_instructions") {
     const rendered = renderCheckinInstructions(ctx);
-    if (!rendered) return { value: undefined, warnings: [] };
+    if (rendered.value === undefined) {
+      return { value: undefined, warnings: rendered.warnings };
+    }
     return {
-      value: rendered,
+      value: rendered.value,
       warnings: [
+        ...rendered.warnings,
         {
           code: "free_text_passthrough",
           field: "checkin_instructions",
@@ -321,15 +324,25 @@ export function reduceFreeText(
   return { value: undefined, warnings: [] };
 }
 
-function renderCheckinInstructions(ctx: PropertyExportContext): string | null {
-  if (!ctx.primaryAccessMethod) return null;
+function renderCheckinInstructions(ctx: PropertyExportContext): ReducerOutput<string> {
+  if (!ctx.primaryAccessMethod) return { value: undefined, warnings: [] };
   const item = accessMethodItemById.get(ctx.primaryAccessMethod);
-  const label = item?.label;
+  const warnings: ExportWarning[] = [];
+  if (!item) {
+    warnings.push({
+      code: "no_mapping",
+      taxonomyKey: ctx.primaryAccessMethod,
+      message: `Unknown access method id "${ctx.primaryAccessMethod}".`,
+    });
+  }
   const parts: string[] = [];
-  if (label) parts.push(label);
+  if (item?.label) parts.push(item.label);
   if (ctx.customAccessMethodLabel) parts.push(ctx.customAccessMethodLabel);
-  if (parts.length === 0) return null;
-  return `Método de acceso: ${parts.join(" — ")}.`;
+  if (parts.length === 0) return { value: undefined, warnings };
+  return {
+    value: `Método de acceso: ${parts.join(" — ")}.`,
+    warnings,
+  };
 }
 
 // ── Amenities — emit external_ids that are not part of the manifest ──────

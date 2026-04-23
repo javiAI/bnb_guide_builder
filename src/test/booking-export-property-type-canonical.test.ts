@@ -40,9 +40,10 @@ describe("resolvePropertyTypeCanonical (booking)", () => {
   });
 
   it("returns canonical:null for an item with platform_supported:false", () => {
-    const unsupported = propertyTypes.items.find((i) => i.platform_supported === false);
+    const unsupported = propertyTypes.items.find((i) => i.id === "pt.other");
     expect(unsupported).toBeDefined();
-    const result = resolvePropertyTypeCanonical(unsupported!.id);
+    expect(unsupported!.platform_supported).toBe(false);
+    const result = resolvePropertyTypeCanonical("pt.other");
     expect(result).toEqual({
       canonical: null,
       alternatives: [],
