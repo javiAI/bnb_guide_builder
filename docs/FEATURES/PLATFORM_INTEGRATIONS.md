@@ -135,3 +135,19 @@ Pinned by `airbnb-export-no-leak.test.ts`.
 - Round-trip / inbound import (this branch is export-only).
 - Direct POST to Airbnb API (this branch produces a JSON draft; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs.
+
+## 9. Auth / access control status
+
+**This endpoint is not hardened.** `GET /api/properties/:propertyId/export/airbnb` follows the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
+
+This is **not** an oversight specific to the export route — it reflects the current state of the entire codebase. No auth library is installed, no middleware resolves sessions, and the `Workspace` / `WorkspaceMembership` / `User` Prisma models are unused by any route handler or Server Action. A reviewer on PR #82 (Rama 14B) asked for "the same auth/ownership pattern used in other `/api/properties/[propertyId]/...` routes" — that pattern does not exist.
+
+This endpoint **must not be treated as protected** by anyone reading its output. Consumers should assume that anyone who knows a `propertyId` can call it. Sensitive surfacing is already mitigated at the **data layer** by:
+
+- The `visibility: "guest"` Prisma filter in [`loadPropertyContext`](../../src/lib/exports/airbnb/serialize.ts) — internal and sensitive rows never enter the export pipeline.
+- The `.strict()` Zod schema on `airbnbListingPayloadSchema` — unknown keys cannot be serialized even if a reducer tried.
+- The substring/schema invariants in `src/test/airbnb-export-no-leak.test.ts`.
+
+These are defense-in-depth against data leaks, not authorization. Restricting who can **call** the endpoint is the job of the transversal **Fase 16 — Auth & access control foundation** (see `docs/MASTER_PLAN_V2.md`). Rama 16B applies guards to every operator-facing route, including this one.
+
+Until Fase 16 lands, any feature or doc that references this export route must not describe it as "secured", "protected", or "operator-only" — it's gated only by knowledge of the `propertyId`, same as every other route under `/api/properties/[propertyId]/...`.

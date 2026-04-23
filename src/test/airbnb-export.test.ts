@@ -23,6 +23,12 @@ function baseContext(
       services: { allowed: true },
     },
     presentSpaceTypes: new Set(["sp.bedroom", "sp.bathroom", "sp.kitchen", "sp.living_room"]),
+    spaceTypeCounts: {
+      "sp.bedroom": 3,
+      "sp.bathroom": 2,
+      "sp.kitchen": 1,
+      "sp.living_room": 1,
+    },
     presentAmenityKeys: new Set([
       "am.wifi",
       "am.kitchen",
@@ -76,6 +82,7 @@ describe("buildAirbnbPayload — partial context", () => {
       primaryAccessMethod: null,
       policiesJson: null,
       presentSpaceTypes: new Set(),
+      spaceTypeCounts: {},
       presentAmenityKeys: new Set(),
     });
     const { payload, warnings } = buildAirbnbPayload(ctx);
@@ -121,19 +128,34 @@ describe("buildAirbnbPayload — custom values", () => {
 });
 
 describe("buildAirbnbPayload — room counter fallback", () => {
-  it("falls back to counting present space types when bedroomsCount is null", () => {
+  it("sums spaceTypeCounts across matching taxonomy items when explicit counts are null", () => {
     const ctx = baseContext({
       bedroomsCount: null,
       bathroomsCount: null,
-      // 4 bedrooms, 2 bathrooms inferred from presence
-      presentSpaceTypes: new Set([
-        "sp.bedroom",
-        "sp.bathroom",
-      ]),
+      // 4 bedrooms and 2 bathrooms configured as guest-visible Space rows.
+      // The fallback must surface these real counts — not the number of
+      // distinct `sp.*` types (which would cap at 1).
+      presentSpaceTypes: new Set(["sp.bedroom", "sp.bathroom"]),
+      spaceTypeCounts: {
+        "sp.bedroom": 4,
+        "sp.bathroom": 2,
+      },
     });
     const { payload } = buildAirbnbPayload(ctx);
-    expect(payload.bedrooms).toBe(1);
-    expect(payload.bathrooms).toBe(1);
+    expect(payload.bedrooms).toBe(4);
+    expect(payload.bathrooms).toBe(2);
+  });
+
+  it("omits counters when spaceTypeCounts is empty and explicit counts are null", () => {
+    const ctx = baseContext({
+      bedroomsCount: null,
+      bathroomsCount: null,
+      presentSpaceTypes: new Set(),
+      spaceTypeCounts: {},
+    });
+    const { payload } = buildAirbnbPayload(ctx);
+    expect(payload.bedrooms).toBeUndefined();
+    expect(payload.bathrooms).toBeUndefined();
   });
 });
 

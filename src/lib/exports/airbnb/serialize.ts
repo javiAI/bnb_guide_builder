@@ -66,6 +66,11 @@ async function loadPropertyContext(
   const personCapacity =
     property.maxGuests ?? property.maxAdults + property.maxChildren;
 
+  const spaceTypeCounts: Record<string, number> = {};
+  for (const s of property.spaces) {
+    spaceTypeCounts[s.spaceType] = (spaceTypeCounts[s.spaceType] ?? 0) + 1;
+  }
+
   return {
     propertyType: property.propertyType,
     customPropertyTypeLabel: property.customPropertyTypeLabel,
@@ -79,7 +84,8 @@ async function loadPropertyContext(
         ? (property.policiesJson as Record<string, unknown>)
         : null,
     defaultLocale: property.defaultLocale,
-    presentSpaceTypes: new Set(property.spaces.map((s) => s.spaceType)),
+    presentSpaceTypes: new Set(Object.keys(spaceTypeCounts)),
+    spaceTypeCounts,
     presentAmenityKeys: new Set(property.amenityInstances.map((a) => a.amenityKey)),
   };
 }

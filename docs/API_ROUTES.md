@@ -137,7 +137,7 @@
 
 ### Platform exports
 
-- `GET /api/properties/:propertyId/export/airbnb` — operator-only, serializes a Property to an Airbnb-compatible JSON draft (rama 14B). Returns `200 { payload: AirbnbListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND` (property missing), `500 EXPORT_ERROR` (unexpected). The Zod schema is **best-effort, not officially confirmed** against Airbnb's Listings API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). The loader scopes Prisma reads to `visibility: "guest"` for spaces and amenities (no-leak invariant pinned by `airbnb-export-no-leak.test.ts`).
+- `GET /api/properties/:propertyId/export/airbnb` — serializes a Property to an Airbnb-compatible JSON draft (rama 14B). Returns `200 { payload: AirbnbListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND` (property missing), `500 EXPORT_ERROR` (unexpected). The Zod schema is **best-effort, not officially confirmed** against Airbnb's Listings API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). **Access control**: follows the repo-wide status quo (`findUnique → 404`); no session or workspace-ownership check. Data-layer defense: the loader scopes Prisma reads to `visibility: "guest"` for spaces and amenities (no-leak invariant pinned by `airbnb-export-no-leak.test.ts`). Operator-scoped gating is pending **Fase 16B** — see `docs/SECURITY_AND_AUDIT.md` §0 and `docs/FEATURES/PLATFORM_INTEGRATIONS.md` §9.
 
 ### Ops and audit
 

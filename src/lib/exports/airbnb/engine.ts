@@ -24,8 +24,17 @@ export interface PropertyExportContext {
   primaryAccessMethod: string | null;
   customAccessMethodLabel: string | null;
   policiesJson: Record<string, unknown> | null;
-  /** sp.* taxonomy ids of Spaces with `visibility === "guest"`. */
+  /**
+   * sp.* taxonomy ids of Spaces with `visibility === "guest"`. Used for
+   * boolean presence signals (shared_spaces, amenities-by-space).
+   */
   presentSpaceTypes: ReadonlySet<string>;
+  /**
+   * sp.* taxonomy id → number of matching Spaces with `visibility === "guest"`.
+   * Used by room counters (bedrooms, bathrooms) to recover multiplicity that
+   * `presentSpaceTypes` collapses. Keys are always `sp.*`; missing keys mean 0.
+   */
+  spaceTypeCounts: Readonly<Record<string, number>>;
   /** am.* / ax.* taxonomy ids of PropertyAmenityInstance with `visibility === "guest"`. */
   presentAmenityKeys: ReadonlySet<string>;
   defaultLocale: string;
@@ -69,7 +78,11 @@ function mappingMatchesEntry(
   if (mapping.platform !== "airbnb") return false;
   if (mapping.kind !== entry.kind) return false;
   if (mapping.kind === "structured_field" && entry.kind === "structured_field") {
-    return mapping.field === entry.field;
+    // Match both `field` AND `transform`: a taxonomy mapping that declares the
+    // wrong transform (e.g. `bool` for a field the manifest treats as `enum`)
+    // is semantically incorrect and must not count as coverage. Forward-gate
+    // in `airbnb-export-manifest-coverage.test.ts` relies on this.
+    return mapping.field === entry.field && mapping.transform === entry.transform;
   }
   if (mapping.kind === "room_counter" && entry.kind === "room_counter") {
     return mapping.counter === entry.counter;
@@ -318,7 +331,13 @@ export function reduceRoomCounter(
     : undefined;
   if (direct === undefined) return { value: undefined, warnings: [] };
   if (typeof direct === "number") return { value: direct, warnings: [] };
-  const fallback = items.filter((i) => ctx.presentSpaceTypes.has(i.id)).length;
+  // Fallback: sum real space counts (multiplicity-aware) across taxonomy
+  // items that target this counter. `presentSpaceTypes` would cap out at the
+  // number of distinct matching types (typically 1), so it's not usable here.
+  let fallback = 0;
+  for (const i of items) {
+    fallback += ctx.spaceTypeCounts[i.id] ?? 0;
+  }
   return { value: fallback > 0 ? fallback : undefined, warnings: [] };
 }
 

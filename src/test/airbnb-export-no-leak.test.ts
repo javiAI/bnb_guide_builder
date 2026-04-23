@@ -56,6 +56,12 @@ function fullyPopulatedGuestContext(): PropertyExportContext {
       services: { allowed: true },
     },
     presentSpaceTypes: new Set(["sp.bedroom", "sp.bathroom", "sp.kitchen", "sp.living_room"]),
+    spaceTypeCounts: {
+      "sp.bedroom": 3,
+      "sp.bathroom": 2,
+      "sp.kitchen": 1,
+      "sp.living_room": 1,
+    },
     presentAmenityKeys: new Set([
       "am.wifi",
       "am.kitchen",

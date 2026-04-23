@@ -4,6 +4,12 @@ import {
   PropertyNotFoundError,
 } from "@/lib/exports/airbnb";
 
+// Access control: status quo of the repo — knowledge of `propertyId` is the
+// only gate. No session / workspace-ownership check exists on any route under
+// /api/properties/[propertyId]/... today. The transversal fix is Fase 16 of
+// docs/MASTER_PLAN_V2.md (see docs/SECURITY_AND_AUDIT.md §0 and
+// docs/FEATURES/PLATFORM_INTEGRATIONS.md §9). Until 16B applies guards
+// everywhere, this endpoint must not be described as "secured" or "protected".
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ propertyId: string }> },
