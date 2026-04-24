@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { SettingsForm } from "./settings-form";
+import { AirbnbImportPreview } from "./airbnb-import-preview";
 
 export default async function SettingsPage({
   params,
@@ -51,6 +52,8 @@ export default async function SettingsPage({
           currentStatus={property.status}
         />
       </div>
+
+      <AirbnbImportPreview propertyId={propertyId} />
 
       {/* Danger zone */}
       <div className="mt-10 rounded-[var(--radius-lg)] border border-[var(--color-danger-200)] bg-[var(--color-danger-50)] p-5">
