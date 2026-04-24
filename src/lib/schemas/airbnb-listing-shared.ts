@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 /**
- * Shared sub-schemas used by both airbnb-listing.ts (export) and
- * airbnb-listing-input.ts (import). Defined once to prevent drift.
+ * Shared sub-schemas extracted from airbnb-listing-input.ts (import).
+ * Defined once to prevent drift between import and export schemas once export also adopts them.
  */
 
 export const accessibilityFeaturesSchema = z

@@ -285,7 +285,7 @@ handler returns a diff + warnings; apply is out of scope. Pinned by
 
 ## 8.5 Auth / access control
 
-See §9 below — same status quo as exports: knowledge of `propertyId` is the only gate until Fase 16.
+See §10 below — same status quo as exports: knowledge of `propertyId` is the only gate until Fase 16.
 
 ## 9. Deferred / out of scope
 

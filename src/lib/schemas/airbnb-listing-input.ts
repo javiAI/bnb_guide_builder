@@ -37,7 +37,7 @@ export const airbnbListingInputSchema = z
     bedrooms: z.number().int().min(0).optional(),
     bathrooms: z.number().int().min(0).optional(),
     check_in_method: z.string().min(1).optional(),
-    amenity_ids: z.array(z.string().min(1)).optional(),
+    amenity_ids: z.array(z.string().min(1)),
     shared_spaces: sharedSpacesSchema.optional(),
     amenities: amenitiesStructuredSchema.optional(),
     accessibility_features: accessibilityFeaturesSchema.optional(),

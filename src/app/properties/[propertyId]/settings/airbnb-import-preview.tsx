@@ -119,6 +119,7 @@ export function AirbnbImportPreview({ propertyId }: Props) {
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <textarea
+          aria-label="Airbnb listing JSON"
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
           rows={10}
@@ -185,7 +186,7 @@ function WarningsList({ warnings }: { warnings: ReadonlyArray<ImportWarning> }) 
         {warnings.map((w, i) => (
           <li key={`${w.code}-${w.field ?? i}`}>
             <Banner
-              type={w.code.includes("parse_error") ? "danger" : "warning"}
+              type="warning"
               message={`[${w.code}${w.field ? ` · ${w.field}` : ""}] ${w.message}`}
             />
           </li>

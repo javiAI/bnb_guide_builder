@@ -64,7 +64,7 @@ export function airbnbToCanonical(input: AirbnbListingInput): {
     labelEn: string | null;
   }> = [];
 
-  for (const externalId of input.amenity_ids ?? []) {
+  for (const externalId of input.amenity_ids) {
     const lookup = resolveAirbnbAmenity(externalId);
     if (lookup.outcome === "resolved") {
       amenityKeys.add(lookup.taxonomyId);
