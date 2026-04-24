@@ -203,16 +203,101 @@ Shared vocabulary (`ExportWarningCode` in `src/lib/exports/shared/types.ts`):
 - `src/test/booking-export.test.ts` — `buildBookingPayload` happy path, partial context, custom values, room-counter fallback, events policy boolean, commercial_photography asymmetry, checkin_instructions.
 - `src/test/booking-export-no-leak.test.ts` — Prisma scoping, schema strictness, output sentinel-substring scan.
 
-## 8. Deferred / out of scope
+## 8. Import — Airbnb preview (rama 14D)
+
+Preview-only inbound reconciliation. No mutations. Rama 14D accepts an Airbnb
+listing JSON, parses it, loads the current Property state, and returns a
+structured diff showing conflicts, unactionable fields, and fallback suggestions.
+The reconciler itself is provider-agnostic; Airbnb-specific details stay in the
+parser + catalogs.
+
+**Status**: Airbnb preview only (Booking preview deferred to 14E).
+
+**Flow**:
+
+```
+Airbnb JSON (via UI textarea)
+  ↓ POST /api/properties/[propertyId]/import/airbnb/preview
+  ├─ Zod validation (strict)
+  ├─ airbnbToCanonical (Airbnb-specific parser, catalog lookups)
+  ├─ loadPropertyContext (current state, visibility:guest scoping)
+  └─ computeImportDiff (provider-agnostic reconciler)
+    ↓
+{ diff: { scalar, policies, presence, amenities, freeText, customs }, warnings[] }
+```
+
+**Key files:**
+
+- `src/lib/imports/shared/types.ts` — canonical `PropertyImportContext`, `ImportDiff`, `UnactionableReason`, `ImportWarning`
+- `src/lib/imports/shared/diff-engine.ts` — `computeImportDiff` (6 reconciliation categories)
+- `src/lib/imports/airbnb/catalogs.ts` — reverse index (external_id → taxonomy_id) from 14A platform catalogs
+- `src/lib/imports/airbnb/parser.ts` — `airbnbToCanonical` (Zod → canonical context)
+- `src/lib/imports/airbnb/serialize.ts` — `previewAirbnbImport` (orchestrator)
+- `src/lib/schemas/airbnb-listing-input.ts` — Zod input schema (strict, superset of export)
+- `src/app/api/properties/[propertyId]/import/airbnb/preview/route.ts` — HTTP entrypoint
+- `src/app/properties/[propertyId]/settings/airbnb-import-preview.tsx` — UI (textarea + diff table)
+
+### 8.1 Reconciliation categories
+
+**scalar** — `propertyType`, `primaryAccessMethod`, `bedroomsCount`, `bathroomsCount`, `personCapacity`. Standard 3-state: fresh (incoming value, current null), identical, conflict (both set, different). Suggested action always reflects DB-first philosophy: `take_import` only for fresh, `keep_db` otherwise.
+
+**policies** — Sub-keys of `policiesJson`. Same 3-state logic except:
+
+- `events.policy` triggers `lossy_projection` when DB has granularity > binary (e.g. "allowed_quiet" vs incoming "allowed"). Binary-to-binary is normal 3-state.
+
+**presence** — Booleans for shared_spaces, amenity shells, accessibility features. Always unactionable with reason `presence_signal_only` (inbound signal cannot reconstruct entity identity).
+
+**amenities** — Set diff (add/remove/identical) on taxonomy IDs. No state; taxonomy labels are read from the taxonomy itself, not the diff.
+
+**freeText** — diff-only category (no status). Current always null (no pre-rendered house_rules in DB). Shown side-by-side for host inspection only.
+
+**customs** — Fallback suggestions for external_ids that did not resolve to any taxonomy item. Never auto-resolved. Reason: `no_matching_taxonomy_item`.
+
+### 8.2 Unactionable reasons
+
+| Reason | When |
+| --- | --- |
+| `presence_signal_only` | Inbound presence bool cannot create/delete Spaces or amenity shells |
+| `lossy_projection` | Incoming mapping degrades DB granularity (e.g. Airbnb binary → DB "allowed_quiet") |
+| `requires_currency_decision` | Pricing value arrived but Property has no `currency` field |
+| `requires_entity_identity` | (reserved for future; not emitted by 14D) |
+
+### 8.3 Warnings
+
+Shared `ImportWarningCode`:
+
+| Code | When |
+| --- | --- |
+| `unresolved_external_id` | external_id in payload does not match any taxonomy or catalog entry |
+| `platform_not_supported` | external_id matched a catalog entry marked `relevance: "out_of_scope"` |
+| `payload_parse_error` | Zod validation failed; invalid JSON structure or type mismatch |
+| `locale_mismatch` | Payload locale differs from property `defaultLocale` (impacts house_rules interpretation) |
+| `free_text_not_reconciled` | Reminder: house_rules cannot be reconciled field-by-field; diff-only |
+| `requires_currency_for_fees` | Pricing fields arrived without `currency` — see unactionable category |
+| `enum_value_passthrough` | Smoking or other enum passed through verbatim (vocabulary mismatch risk) |
+
+### 8.4 No-mutate invariant
+
+Rama 14D is preview-only. The entire `src/lib/imports/` tree and the endpoint
+make zero calls to `prisma.*.{create,update,delete,upsert,execute*}`. The route
+handler returns a diff + warnings; apply is out of scope. Pinned by
+`src/test/import-preview-no-mutate.test.ts`.
+
+## 8.5 Auth / access control
+
+See §9 below — same status quo as exports: knowledge of `propertyId` is the only gate until Fase 16.
+
+## 9. Deferred / out of scope
 
 - Pricing fields (need property-level `currency` — both platforms).
-- Round-trip / inbound import (14B + 14C are export-only).
+- Import apply / mutation (rama 14F, requires reconciliation UX + audit log design).
+- Booking inbound import (14E, after Airbnb 14D proven).
 - Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
 - Accessibility coverage for Booking (Booking manifest does not declare an `accessibility_features.*` namespace in v1; internal `ax.*` items map through the Airbnb side only).
 - Structured check-in vocabulary for Booking (no platform enum; folded into `checkin_instructions` free-text).
 
-## 9. Auth / access control status
+## 10. Auth / access control status
 
 **Neither export endpoint is hardened.** `GET /api/properties/:propertyId/export/airbnb` and `GET /api/properties/:propertyId/export/booking` follow the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
 
