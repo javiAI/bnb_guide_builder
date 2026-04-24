@@ -22,6 +22,8 @@ const MUTATION_PATTERNS = [
   /prisma\.[a-zA-Z_]+\.deleteMany\b/,
   /\$executeRaw/,
   /\$executeRawUnsafe/,
+  /\$queryRaw/,
+  /\$queryRawUnsafe/,
 ];
 
 function walk(dir: string, acc: string[] = []): string[] {

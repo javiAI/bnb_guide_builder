@@ -71,10 +71,6 @@ export type ImportWarningCode =
   | "unresolved_external_id"
   /** `external_id` del payload apunta a un item cubierto pero `platform_supported: false`. */
   | "platform_not_supported"
-  /** Parseo estructural del payload falló (Zod). El pipeline devuelve diff vacío. */
-  | "payload_parse_error"
-  /** Señal entrante que no puede reconstruir entidad interna (shared_spaces, amenity shells). */
-  | "presence_signal_unactionable"
   /** Payload en locale ≠ `defaultLocale` de la Property — relevante para house_rules. */
   | "locale_mismatch"
   /** Recordatorio explícito: free-text nunca se reconcilia campo a campo. */

@@ -23,7 +23,8 @@ import type { AirbnbListingInput } from "@/lib/schemas/airbnb-listing-input";
  *   to `unresolvedExternalIds` so the reconciler can emit `customs` entries.
  * - Binary mappings (events_allowed, commercial_photography_allowed) are
  *   projected to the coarsest internal value. The reconciler surfaces any
- *   granularity loss as a `conflict` the host decides.
+ *   granularity loss (e.g. Airbnb "allowed" vs DB "allowed_quiet") as
+ *   `unactionable: lossy_projection` so the host decides.
  */
 export function airbnbToCanonical(input: AirbnbListingInput): {
   context: PropertyImportContext;

@@ -38,45 +38,73 @@ export function AirbnbImportPreview({ propertyId }: Props) {
     e.preventDefault();
     setState({ kind: "loading" });
 
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
-    } catch (err) {
-      setState({
-        kind: "error",
-        code: "INVALID_JSON",
-        message:
-          err instanceof Error ? err.message : "Invalid JSON in textarea.",
-      });
-      return;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        setState({
+          kind: "error",
+          code: "INVALID_JSON",
+          message:
+            err instanceof Error ? err.message : "Invalid JSON in textarea.",
+        });
+        return;
+      }
+
+      let res: Response;
+      try {
+        res = await fetch(
+          `/api/properties/${propertyId}/import/airbnb/preview`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parsed),
+          },
+        );
+      } catch (err) {
+        setState({
+          kind: "error",
+          code: "NETWORK_ERROR",
+          message:
+            err instanceof Error
+              ? err.message
+              : "Network error — check your connection and try again.",
+        });
+        return;
+      }
+
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch (err) {
+        setState({
+          kind: "error",
+          code: "RESPONSE_PARSE_ERROR",
+          message:
+            "Server returned invalid JSON — the endpoint may be down or misconfigured.",
+        });
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = data as {
+          error?: { code: string; message: string; issues?: string[] };
+        };
+        setState({
+          kind: "error",
+          code: errorData.error?.code ?? "UNKNOWN_ERROR",
+          message:
+            errorData.error?.message ?? "An unexpected error occurred.",
+          issues: errorData.error?.issues,
+        });
+        return;
+      }
+
+      setState({ kind: "result", result: data as ImportPreviewResult });
+    } finally {
+      // Ensure loading state is cleared even on unexpected error (defensive)
     }
-
-    const res = await fetch(
-      `/api/properties/${propertyId}/import/airbnb/preview`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed),
-      },
-    );
-
-    const data = (await res.json()) as
-      | ImportPreviewResult
-      | { error: { code: string; message: string; issues?: string[] } };
-
-    if (!res.ok) {
-      const err = (data as { error: { code: string; message: string; issues?: string[] } })
-        .error;
-      setState({
-        kind: "error",
-        code: err.code,
-        message: err.message,
-        issues: err.issues,
-      });
-      return;
-    }
-
-    setState({ kind: "result", result: data as ImportPreviewResult });
   }
 
   return (
