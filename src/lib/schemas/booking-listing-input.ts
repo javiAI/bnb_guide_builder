@@ -3,19 +3,16 @@ import { z } from "zod";
 /**
  * Input schema for Booking.com listing preview import (Rama 14E).
  *
- * This schema is a SUPERSET that accepts heterogeneous Booking.com payloads:
- * - Exports from our system (14C pipeline)
- * - Real/raw payloads pasted manually by users (from Booking API, spreadsheets, etc.)
- * - Partial or malformed payloads
+ * **Superset-curated**: accepts heterogeneous Booking.com payloads by using
+ * `.passthrough()` at the **top level** (unknown fields are silently ignored),
+ * while sub-objects (policies, shared_spaces, amenities, fees) remain `.strict()`
+ * within their known shapes to validate internal structure.
  *
- * Strategy: `.passthrough()` at top level allows extra fields without failing;
- * we validate only the fields we care about. Sub-objects (policies, shared_spaces, etc.)
- * that are known remain `.strict()` to catch schema mismatches early.
- *
- * Divergences from Booking export schema (14C):
- * - Input accepts extra fields (Booking API may include metadata, locale, etc.)
- * - Policies, shared_spaces, amenities remain strict within their known shapes
- * - Empty/malformed sub-objects are allowed to pass, warnings emit later in parser
+ * This allows hosts to paste real Booking API payloads (which may carry extra fields)
+ * without failing validation, while still catching schema errors in the parts we care about.
+ * Examples:
+ * - Top-level extra field `metadata: {...}` → ignored (passthrough)
+ * - Malformed `policies.smoking` value → fails validation (strict)
  */
 
 const propertyTypeCategorySchema = z.string().min(1);

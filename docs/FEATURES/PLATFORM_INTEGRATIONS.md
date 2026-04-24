@@ -211,7 +211,7 @@ structured diff showing conflicts, unactionable fields, and fallback suggestions
 The reconciler itself is provider-agnostic; Airbnb-specific details stay in the
 parser + catalogs.
 
-**Status**: Airbnb preview ✅ (Rama 14D merged). Booking preview ✅ (Rama 14E merged).
+**Status**: Airbnb preview ✅ (Rama 14D merged). Booking preview (Rama 14E, PR #85 in review).
 
 **Flow**:
 
@@ -329,7 +329,7 @@ Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkIn
 - Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
 
-## 10. Auth / access control status
+## 11. Auth / access control status
 
 **Neither export endpoint is hardened.** `GET /api/properties/:propertyId/export/airbnb` and `GET /api/properties/:propertyId/export/booking` follow the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
 
