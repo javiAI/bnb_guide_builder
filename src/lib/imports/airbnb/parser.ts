@@ -160,6 +160,7 @@ export function airbnbToCanonical(input: AirbnbListingInput): {
     presencePings,
     freeText: {
       houseRules: input.house_rules ?? null,
+      checkInInstructions: null, // Airbnb has no check_in_instructions field
     },
     pricing,
     unresolvedExternalIds: [

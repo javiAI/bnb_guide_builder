@@ -50,10 +50,21 @@ describe("import preview — no-mutate invariants", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("the preview API route contains zero Prisma mutation calls", () => {
+  it("the Airbnb preview API route contains zero Prisma mutation calls", () => {
     const route = join(
       process.cwd(),
       "src/app/api/properties/[propertyId]/import/airbnb/preview/route.ts",
+    );
+    const text = readFileSync(route, "utf8");
+    for (const pattern of MUTATION_PATTERNS) {
+      expect(text).not.toMatch(pattern);
+    }
+  });
+
+  it("the Booking preview API route contains zero Prisma mutation calls", () => {
+    const route = join(
+      process.cwd(),
+      "src/app/api/properties/[propertyId]/import/booking/preview/route.ts",
     );
     const text = readFileSync(route, "utf8");
     for (const pattern of MUTATION_PATTERNS) {

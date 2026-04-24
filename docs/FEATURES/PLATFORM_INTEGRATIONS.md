@@ -211,7 +211,7 @@ structured diff showing conflicts, unactionable fields, and fallback suggestions
 The reconciler itself is provider-agnostic; Airbnb-specific details stay in the
 parser + catalogs.
 
-**Status**: Airbnb preview only (Booking preview deferred to 14E).
+**Status**: Airbnb preview ✅ (Rama 14D merged). Booking preview ✅ (Rama 14E merged).
 
 **Flow**:
 
@@ -287,15 +287,47 @@ handler returns a diff + warnings; apply is out of scope. Pinned by
 
 See §10 below — same status quo as exports: knowledge of `propertyId` is the only gate until Fase 16.
 
-## 9. Deferred / out of scope
+## 9. Import — Booking preview (rama 14E)
+
+Symmetric to §8 (Airbnb), preview-only inbound reconciliation for Booking.com payloads.
+Reuses the shared `PropertyImportContext` type, `computeImportDiff` engine, and diff UI
+component from 14D. Parser is Booking-specific; catalogs, reconciliation, warnings are
+provider-agnostic.
+
+**Divergences from Airbnb (14D) shape**:
+
+- `max_occupancy` (int) → `personCapacity` (no `person_capacity` field in Booking)
+- `fees.{cleaning, extra_person}` → matches Airbnb `pricing.*` semantically but different field names
+- `policies.*` shape: `smoking` (string enum), `parties` (bool), `pets` (bool) — simpler than Airbnb's nested `listing_policies`
+- `house_rules_text` (string) and `checkin_instructions` (string) — both free-text, no enum for check-in method
+- No `accessibility_features.*` namespace (Booking manifest does not declare any; silent drop in parser)
+- No `commercial_photography_allowed` (folded into house_rules during export; silent drop in parser)
+
+**Key files**:
+
+- `src/lib/imports/booking/catalogs.ts` — reverse index (Booking PCT codes + amenities → internal IDs)
+- `src/lib/imports/booking/parser.ts` — `bookingToCanonical` (maps Booking-specific divergences)
+- `src/lib/imports/booking/serialize.ts` — `previewBookingImport` (orchestrator)
+- `src/lib/schemas/booking-listing-input.ts` — **superset curated**: accepts heterogeneous Booking payloads; validates only critical fields
+- `src/app/api/properties/[propertyId]/import/booking/preview/route.ts` — HTTP endpoint
+- `src/app/properties/[propertyId]/settings/booking-import-preview.tsx` — UI (mirrors Airbnb component)
+
+**Free-text handling (14E adjustment)**:
+
+Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkInInstructions` because Booking has no enum for check-in method. Both are diff-only (unreconcilable); host decides manually if they absorb the text. See `src/lib/imports/shared/diff-engine.ts` for the second free-text block.
+
+**Parser schema strategy**:
+
+`booking-listing-input.ts` uses `.passthrough()` at the top level instead of `.strict()`, allowing hosts to paste heterogeneous Booking payloads directly from the platform (not just our exports). Sub-objects (policies, shared_spaces, amenities, fees) remain `.strict()` to validate internal shape. Unknown top-level fields are silently ignored; parse errors only on malformed critical fields.
+
+**No-mutate invariant**: Same as 14D — zero Prisma mutations. Pinned by `src/test/import-preview-no-mutate.test.ts`.
+
+## 10. Deferred / out of scope
 
 - Pricing fields (need property-level `currency` — both platforms).
 - Import apply / mutation (rama 14F, requires reconciliation UX + audit log design).
-- Booking inbound import (14E, after Airbnb 14D proven).
 - Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
-- Accessibility coverage for Booking (Booking manifest does not declare an `accessibility_features.*` namespace in v1; internal `ax.*` items map through the Airbnb side only).
-- Structured check-in vocabulary for Booking (no platform enum; folded into `checkin_instructions` free-text).
 
 ## 10. Auth / access control status
 

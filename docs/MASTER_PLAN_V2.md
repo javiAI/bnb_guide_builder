@@ -1807,6 +1807,142 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - **Skills/tools específicos**:
   - **Agent code-architect** para diseñar la estrategia de reconciliación (overwrite vs merge vs skip) antes de codear.
 
+### Rama 14E — `feat/booking-import-preview`
+
+**Propósito**: simetría Booking a 14D. Preview-only reconciliation para Booking.com payloads con el mismo diff framework que Airbnb.
+
+**Archivos a crear**:
+- `src/lib/imports/booking/catalogs.ts` — reverse indices (booking-property-types, booking-amenities) desde 14A platform catalogs
+- `src/lib/imports/booking/parser.ts` — parseBookingToCanonical, análogo a `airbnbToCanonical` pero mapea divergencias Booking (no `check_in_method` enum → `checkin_instructions` free-text, no `accessibility_features` namespace, `max_occupancy` no `person_capacity`, `policies.*` no `listing_policies.*`, `fees.*` no `pricing.*`)
+- `src/lib/imports/booking/serialize.ts` — orquestador (validate → parse → load context → diff)
+- `src/lib/schemas/booking-listing-input.ts` — strict Zod schema para inbound Booking JSON (derivado de `src/lib/schemas/booking-listing.ts` export schema pero como input superset)
+
+**Archivos a modificar**:
+- `src/app/api/properties/[propertyId]/import/booking/preview/route.ts` — POST endpoint análogo a Airbnb
+- `src/app/properties/[propertyId]/settings/page.tsx` — importar + render BookingImportPreview component
+- `src/app/properties/[propertyId]/settings/booking-import-preview.tsx` — UI simétrica a `airbnb-import-preview.tsx` pero adaptada a shape Booking
+- `docs/FEATURES/PLATFORM_INTEGRATIONS.md` — § Import de Booking, divergencias vs Airbnb
+
+**Tests**:
+- `src/test/booking-import-parser.test.ts` — Booking payload → canonical + warnings (unresolved IDs, schema divergences)
+- `src/test/import-diff-engine.test.ts` — extends existing (reusa engine, valida que Booking context poblada correctamente)
+- `src/test/import-preview-no-mutate.test.ts` — extends existing (añade ruta `/booking/preview`)
+
+**Criterio de done**:
+- Booking JSON → diff rendering sin mutations, paridad UX con Airbnb preview
+- Divergencias documentadas claramente (missing check_in_method, no accessibility, etc.)
+- Tests: parser happy path + unresolved + missing fields, no-mutate gate
+- Docs: sección 14E en PLATFORM_INTEGRATIONS.md explain Booking-specific shape + reconciliation behavior
+
+**Reutiliza de 14D**:
+- `PropertyImportContext` (type compartido, fields aplicables)
+- `computeImportDiff` (engine provider-agnostic, sin cambios)
+- `ImportDiff` + `ImportWarning` types
+- `diff-engine.ts` lógica (scalar/policies/presence/amenities/freeText/customs igual)
+- Pattern de UI preview (textarea + sections rendering)
+
+**Cambia por Booking shape**:
+- `max_occupancy` mapeado a `personCapacity` (1:1)
+- `fees.{cleaning, extra_person}` → `pricing.{cleaningFee, extraPersonFee}` (nombre cambio, semántica igual)
+- `policies.*` → `policiesJson` (field nombre, structure igual)
+- `house_rules_text` (no split per sección como Airbnb)
+- `checkin_instructions` → presencePings.checkInInstructions (no enum, libre-text)
+- Ningún `accessibility_features.*` (dropped en parser, warnings emit)
+- Ningún `commercial_photography` (not in Booking manifest)
+- `propertyType` mapeo via 14A catalogs pero denominación PCT (Booking Property Classification Types) vs Airbnb direct IDs
+
+**No-alcance**:
+- No apply (deferred a 14F)
+- No API credentials reales (manual JSON input only)
+- No auditoría persistente
+- No sincronización automática
+
+**Preparación**:
+- **Contexto a leer**:
+  - 14D implementación (airbnb parser/catalogs/UI)
+  - 14C export (Booking shape divergences)
+  - 14A platform catalogs (Booking reverse mapping)
+  - `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § Booking
+- **Docs a actualizar al terminar**: PLATFORM_INTEGRATIONS.md § 8 "Import — Booking preview"
+- **Skills/tools específicos**: ninguno (architecture reusa de 14D)
+
+---
+
+### Rama 14F — `feat/platform-import-apply`
+
+**Propósito**: introduce mutaciones reales en DB para aplicar diffs validados. Cierra el ciclo de import: preview → decision → apply.
+
+**Archivos a crear**:
+- `src/lib/imports/shared/apply-strategies.ts` — estrategias de resolución para cada categoría de diff (overwrite / keep_current / take_import / skip)
+- `src/lib/imports/shared/import-applier.service.ts` — orquestador que toma `ImportDiff` + resolución-por-entrada y ejecuta mutations en transaction
+- `src/lib/services/audit-integration.ts` — log writer para import apply (quién, qué, cuándo, resultado) usando `AuditLog` schema
+- `src/app/api/properties/[propertyId]/import/{airbnb|booking}/apply/route.ts` — POST endpoints (Airbnb + Booking)
+- `src/lib/actions/import-apply.action.ts` — server action wrapper para UI
+
+**Archivos a modificar**:
+- `src/app/properties/[propertyId]/settings/airbnb-import-preview.tsx` — añadir botón "Aplicar" + modal de resolución de conflictos
+- `src/app/properties/[propertyId]/settings/booking-import-preview.tsx` — mismo patrón
+- `docs/FEATURES/PLATFORM_INTEGRATIONS.md` — § Apply (estrategias, auditoría, idempotencia)
+- `docs/SECURITY_AND_AUDIT.md` — audit log contract para imports (actor, propertyId, payload hash, decisions, result)
+
+**Tests**:
+- `src/test/import-applier-strategies.test.ts` — validar cada estrategia (overwrite crea versiones de Spaces, keep skips, take imports con warnings, skip emite noop)
+- `src/test/import-apply-idempotence.test.ts` — re-apply same import = zero new mutations
+- `src/test/import-apply-no-partial.test.ts` — transaction rollback si error mid-apply (atomicity)
+- `src/test/import-audit-log.test.ts` — every apply logs actor + propertyId + payload hash + decisions + result
+- E2E: reconcile diff → resolve conflicts → apply → verify DB + audit log
+
+**Criterio de done**:
+- Apply endpoint accepts `{diff, resolutions: {[field]: strategy}}` payload
+- Mutaciones aplicadas en $transaction (atomicity guaranteed)
+- Audit log entries para cada apply (quién, propertyId, payload fingerprint, decisions, timestamp, result)
+- Idempotence validated: re-apply same import = 1 log entry, 0 additional mutations
+- UI modal resolve conflicts + progress feedback
+- Docs explain strategy semantics + audit contract + idempotence guarantee
+
+**Estrategias (por entrada DiffEntry)**:
+- **overwrite**: incoming replaces current (fresh/conflict → take_import)
+- **keep_current**: skip incoming (conflict → keep_db)
+- **take_import**: only if fresh (default suggested)
+- **skip**: noop, emit info warning
+- **per-category rules** (opcional para 14F): policies `lossy_projection` default skip + warning; presence always skip + warning
+
+**Mutaciones en DB** (alcance):
+- Top-level scalar mutations: propertyType, primaryAccessMethod, bedroomsCount, bathroomsCount, personCapacity
+- policiesJson sub-updates (merge-mode: incoming + current unresolved stay)
+- Amenity list mutations: create/delete Amenities (shell instances via import, future: Space-scoped via future UI)
+- No Spaces creation (requires entity identity, out of scope per 14D invariant)
+- No scheduled tasks / automations (separate concern)
+
+**Auditoría**:
+- `AuditLog` entry per apply: `{ propertyId, actor (userId from session), action: "import_apply", resourceType: "property", resourceId, payload: {platformType, payloadHash, strategyDecisions, appliedCount}, timestamp, result: "success"|"partial"|"failed" }`
+- Hash of incoming payload (SHA-256 12-char fingerprint) for idempotence check
+- Log searchable by propertyId + action + timestamp
+- Rollback audit: if transaction fails, log entry with result="failed" + errorMessage
+
+**Dependencias / Riesgos**:
+- ⚠ **Requiere Fase 16A (sessions)**: apply endpoint needs `userId` from `requireOperator()` guard. If 16A not merged, apply endpoint returns 401 until 16B gates are in place. Plan: merge 16A minimally (sessions only, no full ownership checks) before 14F, or use stub `userId="system"` in dev/test.
+- ⚠ **Property versioning**: imports can conflict with concurrent wizard/API edits. Mitigated by: (a) transaction isolation (Postgres READ_COMMITTED default), (b) optimistic lock via version field if added later, (c) clear user feedback that import is an offline batch operation.
+- ⚠ **Audit log performance**: AuditLog inserts should not block apply. Plan: use async `emailProvider` pattern if audit events trigger notifications.
+
+**No-alcance de 14F**:
+- No async background jobs (apply is synchronous, immediate feedback)
+- No scheduler/cron sync (external fetch of platform listings)
+- No "sync previous imports" history / "undo apply" (versioning feature, future scope)
+- No SmartDiff recommendations (AI-assisted conflict resolution, future)
+
+**Preparación**:
+- **Contexto a leer**:
+  - 14D + 14E preview pipelines (diff shape)
+  - `docs/SECURITY_AND_AUDIT.md` (audit log contract, AuditLog schema)
+  - `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § reconciliation semantics
+  - Prisma transaction patterns in codebase (e.g., `completeWizardAction`)
+  - Session pattern from 16A (minimal: `userId` in request context)
+- **Docs a actualizar al terminar**: PLATFORM_INTEGRATIONS.md § 9 "Apply & audit", SECURITY_AND_AUDIT.md audit log section, ROADMAP.md
+- **Skills/tools específicos**: 
+  - **Agent code-architect** para estrategias de resolución y patrón de transaction (múltiples opciones si aplica)
+  - **Agent code-explorer** para tracing de audit log usage en codebase
+
 ---
 
 ## FASE 15 — Liora Design Replatform

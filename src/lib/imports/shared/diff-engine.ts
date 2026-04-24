@@ -239,6 +239,21 @@ export function computeImportDiff(
     });
   }
 
+  // ── Free text: checkInInstructions (Booking provider) ──────────────────
+  if (incoming.freeText.checkInInstructions !== null) {
+    freeText.push({
+      field: "checkInInstructions",
+      current: null,
+      incoming: incoming.freeText.checkInInstructions,
+    });
+    warnings.push({
+      code: "free_text_not_reconciled",
+      field: "checkInInstructions",
+      message:
+        "Check-in instructions are diff-only. Incoming text is shown for reference — host updates presencePings.checkInInstructions manually if desired.",
+    });
+  }
+
   // ── Customs — only when external_id had no internal match ───────────
   if (
     incoming.propertyType &&
