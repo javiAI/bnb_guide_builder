@@ -54,7 +54,7 @@ function incomingCtx(
       amenitiesShellBools: {},
       accessibilityFeatures: {},
     },
-    freeText: { houseRules: null },
+    freeText: { houseRules: null, checkInInstructions: null },
     pricing: { cleaningFee: null, extraPersonFee: null, currency: null },
     unresolvedExternalIds: [],
     incomingLocale: "es",
@@ -245,10 +245,10 @@ describe("computeImportDiff — customs for unresolved scalars", () => {
 });
 
 describe("computeImportDiff — free text diff-only", () => {
-  it("emits freeText entry with current=null and a warning", () => {
+  it("emits freeText entry for houseRules with current=null and a warning", () => {
     const { diff, warnings } = computeImportDiff(
       currentCtx(),
-      incomingCtx({ freeText: { houseRules: "No pets please." } }),
+      incomingCtx({ freeText: { houseRules: "No pets please.", checkInInstructions: null } }),
       { payloadShape: "airbnb-v1" },
     );
     expect(diff.freeText).toHaveLength(1);
@@ -256,6 +256,23 @@ describe("computeImportDiff — free text diff-only", () => {
       field: "houseRules",
       current: null,
       incoming: "No pets please.",
+    });
+    expect(warnings.some((w) => w.code === "free_text_not_reconciled")).toBe(
+      true,
+    );
+  });
+
+  it("emits freeText entry for checkInInstructions (Rama 14E Booking)", () => {
+    const { diff, warnings } = computeImportDiff(
+      currentCtx(),
+      incomingCtx({ freeText: { houseRules: null, checkInInstructions: "Ring the bell." } }),
+      { payloadShape: "booking-v1" },
+    );
+    expect(diff.freeText).toHaveLength(1);
+    expect(diff.freeText[0]).toEqual({
+      field: "checkInInstructions",
+      current: null,
+      incoming: "Ring the bell.",
     });
     expect(warnings.some((w) => w.code === "free_text_not_reconciled")).toBe(
       true,

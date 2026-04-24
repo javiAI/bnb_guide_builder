@@ -47,6 +47,7 @@ export interface PropertyImportContext {
   /** Free-text entrante. No reconciliable — aparece en el diff como `freeText`. */
   freeText: {
     houseRules: string | null;
+    checkInInstructions: string | null; // Booking check-in instructions
   };
   /** Pricing entrante. Si llega sin currency → `requires_currency_decision`. */
   pricing: {
@@ -144,7 +145,7 @@ export interface AmenitiesDiff {
 
 /** Free text: siempre diff-only (no reconciliable), sin status. */
 export interface FreeTextDiffEntry {
-  field: "houseRules";
+  field: "houseRules" | "checkInInstructions";
   current: string | null;
   incoming: string | null;
 }
@@ -161,7 +162,7 @@ export interface CustomsDiffEntry {
 
 export interface ImportDiffMeta {
   generatedAt: string;
-  payloadShape: "airbnb-v1";
+  payloadShape: "airbnb-v1" | "booking-v1";
   currentLocale: string;
   incomingLocale: string | null;
 }
