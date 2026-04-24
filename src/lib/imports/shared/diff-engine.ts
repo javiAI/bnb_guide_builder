@@ -250,7 +250,7 @@ export function computeImportDiff(
       code: "free_text_not_reconciled",
       field: "checkInInstructions",
       message:
-        "Check-in instructions are diff-only. Incoming text is shown for reference — host updates presencePings.checkInInstructions manually if desired.",
+        "Check-in instructions are diff-only. Incoming text is shown for reference — host manually applies any parts that match their setup.",
     });
   }
 

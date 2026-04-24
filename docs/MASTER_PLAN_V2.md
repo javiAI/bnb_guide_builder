@@ -1846,8 +1846,8 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 - `fees.{cleaning, extra_person}` → `pricing.{cleaningFee, extraPersonFee}` (nombre cambio, semántica igual)
 - `policies.*` → `policiesJson` (field nombre, structure igual)
 - `house_rules_text` (no split per sección como Airbnb)
-- `checkin_instructions` → presencePings.checkInInstructions (no enum, libre-text)
-- Ningún `accessibility_features.*` (dropped en parser, warnings emit)
+- `checkin_instructions` → freeText.checkInInstructions (no enum, diff-only libre-text)
+- Ningún `accessibility_features.*` (silent drop en parser, sin warnings)
 - Ningún `commercial_photography` (not in Booking manifest)
 - `propertyType` mapeo via 14A catalogs pero denominación PCT (Booking Property Classification Types) vs Airbnb direct IDs
 
