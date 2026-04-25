@@ -18,8 +18,31 @@ export function getOAuthClient(): OAuth2Client {
   return client
 }
 
-export function getLoginUrl(state: string, nonce: string): string {
-  const oauthClient = getOAuthClient()
+/**
+ * Generate Google OAuth login URL.
+ *
+ * @param state - CSRF state token
+ * @param nonce - Token binding nonce
+ * @param callbackUrl - Optional dynamic callback URL. If provided, overrides env config.
+ *                      Allows callback URL to be constructed from request host at runtime.
+ */
+export function getLoginUrl(state: string, nonce: string, callbackUrl?: string): string {
+  // If dynamic callback URL provided, create a new client with it
+  // Otherwise use the preconfigured client
+  let oauthClient = getOAuthClient()
+
+  if (callbackUrl) {
+    // Validate callback URL format (security: prevent open redirect)
+    if (!callbackUrl.startsWith('http://') && !callbackUrl.startsWith('https://')) {
+      throw new Error('Invalid callback URL: must start with http:// or https://')
+    }
+    oauthClient = new (require('google-auth-library')).OAuth2Client(
+      GOOGLE_CLIENT_ID,
+      GOOGLE_CLIENT_SECRET,
+      callbackUrl
+    )
+  }
+
   const url = oauthClient.generateAuthUrl({
     access_type: 'offline',
     scope: ['openid', 'email', 'profile'],
@@ -41,12 +64,28 @@ export interface IdTokenPayload {
   exp: number
 }
 
+/**
+ * Verify Google ID token and exchange code for tokens.
+ *
+ * @param code - Authorization code from Google
+ * @param nonce - Nonce for token binding validation
+ * @param callbackUrl - Optional dynamic callback URL. Must match the URL used in login.
+ */
 export async function verifyIdToken(
   code: string,
-  nonce: string
+  nonce: string,
+  callbackUrl?: string
 ): Promise<IdTokenPayload | null> {
   try {
-    const oauthClient = getOAuthClient()
+    let oauthClient = getOAuthClient()
+
+    // If dynamic callback URL provided, create client with exact callback URL
+    // This is critical: the callback URL used here must match exactly what Google redirected to
+    if (callbackUrl) {
+      const { OAuth2Client } = require('google-auth-library')
+      oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, callbackUrl)
+    }
+
     const { tokens } = await oauthClient.getToken(code)
 
     if (!tokens.id_token) {

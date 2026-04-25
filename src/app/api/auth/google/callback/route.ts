@@ -44,8 +44,20 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Reconstruct callback URL from request host (must match exactly what Google redirected to)
+  const host = request.headers.get('host')
+  if (!host) {
+    return createOAuthErrorResponse(
+      { error: 'missing_host', message: 'Missing host header' },
+      400
+    )
+  }
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  const callbackUrl = `${protocol}://${host}/api/auth/google/callback`
+
   // Verify ID token against the nonce value originally stored by the server
-  const idTokenPayload = await verifyIdToken(code, storedNonce)
+  // Pass dynamic callback URL so OAuth client uses exact same redirect URI as login
+  const idTokenPayload = await verifyIdToken(code, storedNonce, callbackUrl)
   if (!idTokenPayload) {
     return createOAuthErrorResponse(
       {
