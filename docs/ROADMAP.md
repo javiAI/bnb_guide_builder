@@ -42,9 +42,9 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 
 **Total plan V2**: 16 ramas ✅ completadas + 11A + 11B + 11C + 11D + 11E + 11F + 12A + 12B + 12C + 13A + 13B + 13C + 13D + 14A + 14B + 14C. Siguiente funcional: **Fase 14D** — Platform import (reverse pipeline + reconciliación).
 
-**Fase 15 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-14. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 para scope y ramas 15A-G.
+**Fase 15 (Auth & access control foundation)** es una iniciativa **transversal** crítica que **bloquea** a 15E (import-apply). Todas las rutas `/api/properties/[propertyId]/...` actuales siguen el patrón `findUnique → 404` sin sesión ni workspace ownership check. Fase 15 cubre (a) operator auth + sessions, (b) route guards + ownership, (c) public-guide capabilities generalizando el HMAC de 13D, (d) hardening + AuditLog real. Rama 15E (import-apply) depende críticamente de 15A-15D. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 y `docs/SECURITY_AND_AUDIT.md` §0.
 
-**Fase 16 (Auth & access control foundation)** es una iniciativa **transversal** que falta hoy en el repo (hallazgo duro durante review de 14B). Todas las rutas `/api/properties/[propertyId]/...` actuales siguen el patrón `findUnique → 404` sin sesión ni workspace ownership check. Fase 16 cubre (a) operator auth, (b) route guards + ownership, (c) public-guide capabilities generalizando el HMAC de 13D, (d) hardening + AuditLog real. **No bloquea** las Fases 10-15 en vuelo; mientras tanto, ninguna PR declara su endpoint operator-facing "seguro" — la doc de feature explicita el status quo. Ver `docs/MASTER_PLAN_V2.md` § FASE 16 y `docs/SECURITY_AND_AUDIT.md` §0.
+**Fase 16 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-15. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 16 para scope y ramas 16A-G.
 
 ### Estado y problema actual (post-10I 2026-04-19)
 

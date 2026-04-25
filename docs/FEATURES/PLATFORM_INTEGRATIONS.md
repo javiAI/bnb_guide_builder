@@ -325,7 +325,7 @@ Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkIn
 ## 10. Deferred / out of scope
 
 - Pricing fields (need property-level `currency` — both platforms).
-- Import apply / mutation (rama 14F, requires reconciliation UX + audit log design).
+- Import apply / mutation (rama 15E, requires auth/sessions foundation from Fase 15A-15D + audit log + reconciliation UX).
 - Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
 
