@@ -58,7 +58,10 @@ export async function verifyIdToken(
       audience: GOOGLE_CLIENT_ID,
     })
 
-    const payload = ticket.getPayload() as IdTokenPayload
+    const payload = ticket.getPayload()
+    if (!payload || !payload.email) {
+      return null
+    }
 
     // Verify nonce
     if (payload.nonce !== nonce) {
@@ -70,7 +73,7 @@ export async function verifyIdToken(
       return null
     }
 
-    return payload
+    return payload as IdTokenPayload
   } catch (error) {
     console.error('ID token verification error:', error)
     return null

@@ -39,8 +39,9 @@ export async function requireOperator(): Promise<OperatorContext> {
     throw new Error('Unauthorized: invalid or expired session')
   }
 
-  // Check cache
-  const cached = sessionCache.get(session.userId)
+  // Check cache (keyed by userId:workspaceId to handle multi-workspace users)
+  const cacheKey = `${session.userId}:${session.workspaceId}`
+  const cached = sessionCache.get(cacheKey)
   if (cached && Date.now() - cached.cachedAt < SESSION_CACHE_TTL) {
     return cached.data
   }
@@ -57,12 +58,12 @@ export async function requireOperator(): Promise<OperatorContext> {
   })
 
   if (!user) {
-    sessionCache.delete(session.userId)
+    sessionCache.delete(cacheKey)
     throw new Error('Unauthorized: user not found')
   }
 
   if (!user.memberships.length) {
-    sessionCache.delete(session.userId)
+    sessionCache.delete(cacheKey)
     throw new Error('Forbidden: no membership in workspace')
   }
 
@@ -77,8 +78,11 @@ export async function requireOperator(): Promise<OperatorContext> {
     memberships: user.memberships,
   }
 
-  // Cache result
-  sessionCache.set(session.userId, {
+  // Cache result (with simple overflow protection: clear if map grows too large)
+  if (sessionCache.size > 10000) {
+    sessionCache.clear()
+  }
+  sessionCache.set(cacheKey, {
     data: context,
     cachedAt: Date.now(),
   })

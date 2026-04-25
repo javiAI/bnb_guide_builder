@@ -12,12 +12,13 @@ export function parseSessionFromCookies(cookieHeader: string | null): SessionCon
   }
 
   try {
-    const sessionMatch = cookieHeader.match(/session=([^;]+)/)
+    // Match session cookie with proper boundary (start of string or after "; ")
+    const sessionMatch = cookieHeader.match(/(^|;\s*)session=([^;]+)/)
     if (!sessionMatch) {
       return { userId: null, workspaceId: null, valid: false }
     }
 
-    const encrypted = decodeURIComponent(sessionMatch[1])
+    const encrypted = decodeURIComponent(sessionMatch[2])
     const session = decryptSession(encrypted)
 
     if (!session) {

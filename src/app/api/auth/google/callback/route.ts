@@ -56,6 +56,17 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Require verified email for operator account creation
+  if (!idTokenPayload.email_verified) {
+    return createOAuthErrorResponse(
+      {
+        error: 'email_not_verified',
+        message: 'Email must be verified with Google to create an operator account',
+      },
+      403
+    )
+  }
+
   try {
     // Lookup or create user
     let user = await prisma.user.findUnique({
@@ -121,13 +132,19 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get workspace (should have at least one from above logic)
-    const membership = user.memberships[0]
+    // Get workspace membership (MVP: expect exactly one; select first for safety)
+    const membership = user.memberships.length > 0 ? user.memberships[0] : null
     if (!membership) {
-      throw new Error('User has no workspace membership')
+      return NextResponse.json(
+        {
+          error: 'no_workspace_membership',
+          message: 'User has no workspace membership. Contact administrator.',
+        },
+        { status: 403 }
+      )
     }
 
-    // Create session
+    // Create session with selected workspace
     const sessionPayload = createSessionPayload(user.id, membership.workspaceId)
     const encryptedSession = encryptSession(sessionPayload)
 

@@ -49,7 +49,6 @@ model User {
   memberships WorkspaceMembership[]
   mediaAssets MediaAsset[]
 
-  @@index([email])
   @@map("users")
 }
 

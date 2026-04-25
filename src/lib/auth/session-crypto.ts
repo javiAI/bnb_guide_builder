@@ -38,8 +38,15 @@ export function decryptSession(encrypted: string): SessionPayload | null {
     const hmac = crypto.createHmac('sha256', HMAC_KEY)
     hmac.update(payloadB64)
     const expectedSignature = hmac.digest('base64url')
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf-8')
+    const actualBuffer = Buffer.from(signatureB64, 'utf-8')
 
-    if (signatureB64 !== expectedSignature) {
+    // Ensure equal length before timing-safe comparison to prevent length-based attacks
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return null
+    }
+
+    if (!crypto.timingSafeEqual(expectedBuffer, actualBuffer)) {
       return null
     }
 
