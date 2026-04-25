@@ -2048,19 +2048,19 @@ model User {
 
 **State anti-CSRF**:
 
-- En `/login` (GET): generate `state = base64url(randomBytes(32))`, store en `sessionStorage` (client-side, no server)
+- En `/login` (GET): generate `state = base64url(randomBytes(32))`, store en cookie segura (HttpOnly, Secure, SameSite=Lax, max-age=600)
 - Redirect a Google con `state` param
-- En callback handler: extract `state` from query, compare con `sessionStorage` exactamente
-- Si mismatch → 400 error ("invalid_state")
-- Mitigation: CSRF attack requires attacker to know the random state (stored in user's browser, not accessible cross-origin)
+- En callback handler: extract `state` from query, compare contra el valor del cookie
+- Si mismatch → 403 error ("invalid_state")
+- Mitigation: CSRF attack requires attacker to know the random state (stored in secure cookie, server-readable only)
 
 **Nonce (OIDC)**:
 - Google OAuth 2.0 con OpenID Connect: ID token incluye `nonce` claim
-- En `/login`: generate `nonce = base64url(randomBytes(32))`, threadea en `localStorage` (no server state)
-- Redirect con `nonce` param
-- En callback: verificar que `decodeIdToken(idToken).nonce === localStorage.nonce`
-- Si mismatch → 400 error ("invalid_nonce")
-- Protege contra token interception/replay attacks
+- En `/login`: generate `nonce = base64url(randomBytes(32))`, store en cookie segura (HttpOnly, Secure, SameSite=Lax, max-age=600)
+- Redirect a Google con `nonce` param
+- En callback: verificar que `decodeIdToken(idToken).nonce === nonce` almacenado en cookie
+- Si mismatch → 403 error ("invalid_nonce")
+- Protege contra token interception/replay attacks; limpiar/invalidar cookies de `state`/`nonce` tras callback exitoso o fallo terminal
 
 **Callback validation**:
 
