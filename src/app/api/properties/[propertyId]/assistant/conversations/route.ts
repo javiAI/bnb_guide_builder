@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createConversationSchema } from "@/lib/schemas/assistant.schema";
 import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import {
-  AuthRequiredError,
-  PropertyNotFoundError,
-  PropertyForbiddenError,
-} from "@/lib/auth/errors";
+import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +11,6 @@ export async function GET(
   const { propertyId } = await params;
 
   try {
-    // Verify ownership
     await loadOwnedProperty(propertyId);
 
     const conversations = await prisma.assistantConversation.findMany({
@@ -38,23 +33,13 @@ export async function GET(
       })),
     });
   } catch (err) {
-    if (err instanceof AuthRequiredError) {
-      return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: err.message } },
-        { status: 401 },
-      );
-    }
-    if (err instanceof PropertyNotFoundError) {
-      return NextResponse.json(
-        { error: { code: "NOT_FOUND", message: err.message } },
-        { status: 404 },
-      );
-    }
-    if (err instanceof PropertyForbiddenError) {
-      return NextResponse.json(
-        { error: { code: "FORBIDDEN", message: err.message } },
-        { status: 403 },
-      );
+    if (
+      err instanceof Error &&
+      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
+        err.name,
+      )
+    ) {
+      return handleOwnershipApiError(err);
     }
     throw err;
   }
@@ -67,7 +52,6 @@ export async function POST(
   const { propertyId } = await params;
 
   try {
-    // Verify ownership
     await loadOwnedProperty(propertyId);
 
     let body: unknown;
@@ -116,23 +100,13 @@ export async function POST(
       { status: 201 },
     );
   } catch (err) {
-    if (err instanceof AuthRequiredError) {
-      return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: err.message } },
-        { status: 401 },
-      );
-    }
-    if (err instanceof PropertyNotFoundError) {
-      return NextResponse.json(
-        { error: { code: "NOT_FOUND", message: err.message } },
-        { status: 404 },
-      );
-    }
-    if (err instanceof PropertyForbiddenError) {
-      return NextResponse.json(
-        { error: { code: "FORBIDDEN", message: err.message } },
-        { status: 403 },
-      );
+    if (
+      err instanceof Error &&
+      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
+        err.name,
+      )
+    ) {
+      return handleOwnershipApiError(err);
     }
     throw err;
   }

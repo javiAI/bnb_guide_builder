@@ -5,11 +5,7 @@ import { renderMarkdown } from "@/lib/renderers/guide-markdown";
 import { renderHtml } from "@/lib/renderers/guide-html";
 import { renderPdf } from "@/lib/renderers/guide-pdf";
 import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import {
-  AuthRequiredError,
-  PropertyNotFoundError,
-  PropertyForbiddenError,
-} from "@/lib/auth/errors";
+import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
 
 const querySchema = z.object({
   audience: z.enum(["guest", "ai", "internal"]).default("guest"),
@@ -23,7 +19,6 @@ export async function GET(
   const { propertyId } = await params;
 
   try {
-    // Load and verify ownership
     const { property } = await loadOwnedProperty(propertyId);
 
     const searchParams = new URL(request.url).searchParams;
@@ -72,27 +67,15 @@ export async function GET(
       }
     }
   } catch (err) {
-    // Handle ownership/auth errors
-    if (err instanceof AuthRequiredError) {
-      return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: err.message } },
-        { status: 401 },
-      );
-    }
-    if (err instanceof PropertyNotFoundError) {
-      return NextResponse.json(
-        { error: { code: "NOT_FOUND", message: err.message } },
-        { status: 404 },
-      );
-    }
-    if (err instanceof PropertyForbiddenError) {
-      return NextResponse.json(
-        { error: { code: "FORBIDDEN", message: err.message } },
-        { status: 403 },
-      );
+    if (
+      err instanceof Error &&
+      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
+        err.name,
+      )
+    ) {
+      return handleOwnershipApiError(err);
     }
 
-    // Generic render errors
     console.error("Failed to render property guide", { propertyId, error: err });
     return NextResponse.json(
       { error: { code: "RENDER_ERROR", message: "Failed to render guide" } },
