@@ -5,37 +5,54 @@ import { encryptSession, createSessionPayload } from '@/lib/auth/session-crypto'
 
 export const runtime = 'nodejs'
 
+function createOAuthErrorResponse(
+  body: { error: string; message: string },
+  status: number
+) {
+  const response = NextResponse.json(body, { status })
+  response.cookies.delete('oauth_state')
+  response.cookies.delete('oauth_nonce')
+  return response
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const state = searchParams.get('state')
-  const nonce = searchParams.get('nonce')
 
-  if (!code || !state || !nonce) {
-    return NextResponse.json(
-      { error: 'missing_params', message: 'code, state, and nonce are required' },
-      { status: 400 }
+  if (!code || !state) {
+    return createOAuthErrorResponse(
+      { error: 'missing_params', message: 'code and state are required' },
+      400
     )
   }
 
-  // Verify state (nonce is verified in verifyIdToken)
+  // Verify state and use the stored nonce for ID token verification
   const storedState = request.cookies.get('oauth_state')?.value
+  const storedNonce = request.cookies.get('oauth_nonce')?.value
   if (state !== storedState) {
-    return NextResponse.json(
+    return createOAuthErrorResponse(
       { error: 'invalid_state', message: 'state parameter mismatch' },
-      { status: 403 }
+      403
     )
   }
 
-  // Verify ID token
-  const idTokenPayload = await verifyIdToken(code, nonce)
+  if (!storedNonce) {
+    return createOAuthErrorResponse(
+      { error: 'invalid_nonce', message: 'nonce cookie missing or invalid' },
+      403
+    )
+  }
+
+  // Verify ID token against the nonce value originally stored by the server
+  const idTokenPayload = await verifyIdToken(code, storedNonce)
   if (!idTokenPayload) {
-    return NextResponse.json(
+    return createOAuthErrorResponse(
       {
         error: 'token_verification_failed',
         message: 'Failed to verify Google ID token',
       },
-      { status: 401 }
+      401
     )
   }
 
@@ -78,7 +95,14 @@ export async function GET(request: NextRequest) {
       })
 
       if (!defaultWorkspace) {
-        throw new Error('No default workspace found')
+        return createOAuthErrorResponse(
+          {
+            error: 'workspace_bootstrap_required',
+            message:
+              'No workspace exists yet. Initialize the application by creating a workspace before signing in.',
+          },
+          503
+        )
       }
 
       user = await prisma.user.create({
