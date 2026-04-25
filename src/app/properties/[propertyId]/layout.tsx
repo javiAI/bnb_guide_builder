@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { AppShell } from "@/components/layout/app-shell";
+import { loadOwnedProperty } from "@/lib/auth/owned-property";
+import { handleOwnershipPageError } from "@/lib/auth/page-helpers";
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode;
@@ -13,12 +13,12 @@ export default async function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const { propertyId } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { propertyNickname: true },
-  });
-
-  if (!property) notFound();
+  let property;
+  try {
+    ({ property } = await loadOwnedProperty(propertyId));
+  } catch (err) {
+    handleOwnershipPageError(err);
+  }
 
   return (
     <AppShell propertyId={propertyId} propertyNickname={property.propertyNickname}>
