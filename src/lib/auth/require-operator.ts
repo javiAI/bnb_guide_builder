@@ -90,6 +90,15 @@ export async function requireOperator(): Promise<OperatorContext> {
   return context
 }
 
-export function clearOperatorCache(userId: string): void {
-  sessionCache.delete(userId)
+export function clearOperatorCache(userId?: string): void {
+  if (userId) {
+    // Clear all entries for this user across all workspaces
+    for (const key of sessionCache.keys()) {
+      if (key.startsWith(userId + ':')) {
+        sessionCache.delete(key)
+      }
+    }
+  } else {
+    sessionCache.clear()
+  }
 }
