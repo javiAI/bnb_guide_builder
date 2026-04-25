@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { renderMarkdown } from "@/lib/renderers/guide-markdown";
 import { renderHtml } from "@/lib/renderers/guide-html";
 import { renderPdf } from "@/lib/renderers/guide-pdf";
+import { loadOwnedProperty } from "@/lib/auth/owned-property";
+import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
 
 const querySchema = z.object({
   audience: z.enum(["guest", "ai", "internal"]).default("guest"),
@@ -17,37 +18,28 @@ export async function GET(
 ) {
   const { propertyId } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true, publicSlug: true },
-  });
-  if (!property) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Property not found" } },
-      { status: 404 },
-    );
-  }
-
-  const searchParams = new URL(request.url).searchParams;
-  const parsed = querySchema.safeParse({
-    audience: searchParams.get("audience") ?? undefined,
-    format: searchParams.get("format") ?? undefined,
-  });
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          code: "VALIDATION_ERROR",
-          message: "Invalid query params",
-          details: { fieldErrors: parsed.error.flatten().fieldErrors },
-        },
-      },
-      { status: 400 },
-    );
-  }
-  const { audience, format } = parsed.data;
-
   try {
+    const { property } = await loadOwnedProperty(propertyId);
+
+    const searchParams = new URL(request.url).searchParams;
+    const parsed = querySchema.safeParse({
+      audience: searchParams.get("audience") ?? undefined,
+      format: searchParams.get("format") ?? undefined,
+    });
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid query params",
+            details: { fieldErrors: parsed.error.flatten().fieldErrors },
+          },
+        },
+        { status: 400 },
+      );
+    }
+    const { audience, format } = parsed.data;
+
     const tree = await composeGuide(propertyId, audience, property.publicSlug);
 
     switch (format) {
@@ -75,7 +67,16 @@ export async function GET(
       }
     }
   } catch (err) {
-    console.error("Failed to render property guide", { propertyId, audience, format, error: err });
+    if (
+      err instanceof Error &&
+      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
+        err.name,
+      )
+    ) {
+      return handleOwnershipApiError(err);
+    }
+
+    console.error("Failed to render property guide", { propertyId, error: err });
     return NextResponse.json(
       { error: { code: "RENDER_ERROR", message: "Failed to render guide" } },
       { status: 500 },

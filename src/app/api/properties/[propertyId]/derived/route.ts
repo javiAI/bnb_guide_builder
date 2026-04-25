@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getDerived } from "@/lib/services/property-derived.service";
+import { loadOwnedProperty } from "@/lib/auth/owned-property";
+import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
 
 export async function GET(
   _request: Request,
@@ -8,17 +9,19 @@ export async function GET(
 ) {
   const { propertyId } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true },
-  });
-  if (!property) {
-    return NextResponse.json(
-      { error: { code: "NOT_FOUND", message: "Property not found" } },
-      { status: 404 },
-    );
+  try {
+    await loadOwnedProperty(propertyId);
+    const payload = await getDerived(propertyId);
+    return NextResponse.json({ data: payload });
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
+        err.name,
+      )
+    ) {
+      return handleOwnershipApiError(err);
+    }
+    throw err;
   }
-
-  const payload = await getDerived(propertyId);
-  return NextResponse.json({ data: payload });
 }

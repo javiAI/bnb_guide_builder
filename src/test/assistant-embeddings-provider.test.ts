@@ -14,6 +14,7 @@ describe("embeddings provider — mock fallback", () => {
 
   it("returns deterministic L2-normalized 512-d vectors", async () => {
     __setEmbeddingProviderForTests(null);
+    vi.stubEnv("VOYAGE_API_KEY", "");
     const provider = resolveEmbeddingProvider();
     expect(provider.modelId).toBe("mock:hash-v1");
     expect(provider.dimension).toBe(EMBEDDING_DIMENSION);

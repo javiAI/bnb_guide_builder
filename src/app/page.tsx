@@ -1,9 +1,11 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { PrimaryCta } from "@/components/ui/primary-cta";
 import { STATUS_LABELS, STATUS_TONES, type PropertyStatus } from "@/lib/types";
 import { DeletePropertyButton } from "./delete-property-button";
 import { DeleteDraftButton } from "./delete-draft-button";
+import { requireOperator } from "@/lib/auth/require-operator";
 
 const STEP_PATHS = [
   "/properties/new/step-1",
@@ -98,6 +100,13 @@ function EmptyState() {
 }
 
 export default async function DashboardPage() {
+  // Require valid session — redirect to login if not authenticated
+  try {
+    await requireOperator();
+  } catch {
+    redirect("/login");
+  }
+
   const [properties, draftSessions] = await Promise.all([
     prisma.property.findMany({
       orderBy: { createdAt: "desc" },
