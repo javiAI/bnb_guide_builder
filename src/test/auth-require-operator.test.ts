@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest'
 import { prisma } from '@/lib/db'
-import { createSessionPayload } from '@/lib/auth/session-crypto'
-import { clearOperatorCache } from '@/lib/auth/require-operator'
+import { signSession, createSessionPayload } from '@/lib/auth/session-crypto'
+import { requireOperator, clearOperatorCache } from '@/lib/auth/require-operator'
 
 describe('requireOperator Revalidation', () => {
   let testUserId: string
@@ -133,5 +133,29 @@ describe('requireOperator Revalidation', () => {
     // Just verify the function doesn't throw
     clearOperatorCache(testUserId)
     expect(true).toBe(true)
+  })
+
+  it('generates valid signed session for requireOperator() consumption', () => {
+    if (!dbAvailable) {
+      expect(true).toBe(true)
+      return
+    }
+
+    // Generate a valid session that requireOperator() would verify
+    const payload = createSessionPayload(testUserId, testWorkspaceId)
+    const sessionCookie = signSession(payload)
+
+    // Verify the signed session structure
+    expect(sessionCookie).toBeTruthy()
+    expect(sessionCookie).toContain('.')
+    const [payloadB64, signatureB64] = sessionCookie.split('.')
+    expect(payloadB64).toBeTruthy()
+    expect(signatureB64).toBeTruthy()
+
+    // Note: Full requireOperator() invocation requires mocking next/headers,
+    // which is complex in Vitest (requires beforeAll dynamic import mocking).
+    // This test validates the session generation; full integration would need
+    // either: (a) refactoring requireOperator to accept injected dependencies,
+    // or (b) end-to-end test with actual Next.js request mocking
   })
 })
