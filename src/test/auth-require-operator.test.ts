@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { prisma } from '@/lib/db'
-import { encryptSession, createSessionPayload } from '@/lib/auth/session-crypto'
+import { createSessionPayload } from '@/lib/auth/session-crypto'
 import { clearOperatorCache } from '@/lib/auth/require-operator'
 
 describe('requireOperator Revalidation', () => {

@@ -53,7 +53,7 @@ export function decryptSession(encrypted: string): SessionPayload | null {
     }
 
     return payload
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }

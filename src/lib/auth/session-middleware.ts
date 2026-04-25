@@ -29,7 +29,7 @@ export function parseSessionFromCookies(cookieHeader: string | null): SessionCon
       workspaceId: session.workspaceId,
       valid: true,
     }
-  } catch (error) {
+  } catch (_error) {
     return { userId: null, workspaceId: null, valid: false }
   }
 }
