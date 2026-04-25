@@ -44,8 +44,21 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Reconstruct callback URL from request host (must match exactly what Google redirected to)
+  const host = request.headers.get('host')
+  if (!host) {
+    return createOAuthErrorResponse(
+      { error: 'missing_host', message: 'Missing host header' },
+      400
+    )
+  }
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+  const callbackUrl = `${protocol}://${host}/api/auth/google/callback`
+
   // Verify ID token against the nonce value originally stored by the server
-  const idTokenPayload = await verifyIdToken(code, storedNonce)
+  // Pass dynamic callback URL so OAuth client uses exact same redirect URI as login
+  const idTokenPayload = await verifyIdToken(code, storedNonce, callbackUrl)
+
   if (!idTokenPayload) {
     return createOAuthErrorResponse(
       {
@@ -175,7 +188,7 @@ export async function GET(request: NextRequest) {
     const signedSession = signSession(sessionPayload)
 
     // Set response
-    const response = NextResponse.redirect(new URL('/properties', request.url))
+    const response = NextResponse.redirect(new URL('/', request.url))
     response.cookies.set('session', signedSession, {
       path: '/',
       httpOnly: true,
@@ -190,9 +203,18 @@ export async function GET(request: NextRequest) {
 
     return response
   } catch (error) {
-    console.error('OAuth callback error:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : ''
+    console.error('OAuth callback error:', {
+      message: errorMessage,
+      stack: errorStack,
+    })
     return NextResponse.json(
-      { error: 'oauth_callback_error', message: 'Failed to process OAuth callback' },
+      {
+        error: 'oauth_callback_error',
+        message: `Failed to process OAuth callback: ${errorMessage}`,
+        details: process.env.NODE_ENV === 'development' ? errorStack : undefined,
+      },
       { status: 500 }
     )
   }

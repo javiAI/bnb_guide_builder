@@ -6,6 +6,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/require-operator", () => ({
+  requireOperator: vi.fn().mockResolvedValue({
+    userId: "test-user",
+    workspaceId: "ws-1",
+  }),
+}));
+
 import { prisma } from "@/lib/db";
 import { GET } from "@/app/api/properties/[propertyId]/places-search/route";
 import { __resetPlacesRateLimitForTests } from "@/lib/services/places/rate-limit";
@@ -40,6 +47,12 @@ afterEach(() => {
 
 describe("GET /api/properties/:propertyId/places-search", () => {
   it("returns 400 on missing query", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1",
+      workspaceId: "ws-1",
+      latitude: 41.385,
+      longitude: 2.173,
+    });
     const res = await GET(
       req("http://x/api/properties/p1/places-search"),
       ctx("p1"),
@@ -50,6 +63,12 @@ describe("GET /api/properties/:propertyId/places-search", () => {
   });
 
   it("returns 400 on query shorter than 2 chars", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1",
+      workspaceId: "ws-1",
+      latitude: 41.385,
+      longitude: 2.173,
+    });
     const res = await GET(
       req("http://x/api/properties/p1/places-search?q=r"),
       ctx("p1"),
@@ -64,12 +83,14 @@ describe("GET /api/properties/:propertyId/places-search", () => {
       ctx("p1"),
     );
     expect(res.status).toBe(404);
-    expect((await res.json()).error).toBe("not_found");
+    const body = await res.json();
+    expect(body.error.code).toBe("NOT_FOUND");
   });
 
   it("returns 409 when property has no coordinates", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
+      workspaceId: "ws-1",
       latitude: null,
       longitude: null,
     });
@@ -84,6 +105,7 @@ describe("GET /api/properties/:propertyId/places-search", () => {
   it("returns 200 with suggestions from the configured provider", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
+      workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });
@@ -106,6 +128,7 @@ describe("GET /api/properties/:propertyId/places-search", () => {
   it("returns 502 when the provider throws PoiProviderUnavailableError", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
+      workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });
@@ -128,6 +151,7 @@ describe("GET /api/properties/:propertyId/places-search", () => {
   it("rate-limits after 30 requests within the window", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
+      workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });
@@ -152,6 +176,7 @@ describe("GET /api/properties/:propertyId/places-search", () => {
   it("scopes rate limit per propertyId", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
+      workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });
@@ -163,6 +188,7 @@ describe("GET /api/properties/:propertyId/places-search", () => {
     }
     findUnique.mockResolvedValue({
       id: "p2",
+      workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });

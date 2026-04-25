@@ -10,6 +10,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/require-operator", () => ({
+  requireOperator: vi.fn().mockResolvedValue({
+    userId: "test-user",
+    workspaceId: "ws-1",
+  }),
+}));
+
 // Skip the heavy PDF renderer — smoke-tests don't need a real PDF binary.
 vi.mock("@/lib/renderers/guide-pdf", () => ({
   renderPdf: vi.fn(async () => Buffer.from("%PDF-1.4 fake", "utf8")),
@@ -34,12 +41,14 @@ beforeEach(() => {
   fn("contact", "findMany").mockResolvedValue([]);
   fn("localPlace", "findMany").mockResolvedValue([]);
   fn("property", "findUnique").mockImplementation(async (args: { where?: { id?: string }; select?: unknown }) => {
-    // First call = existence check (only `select.id`); second = full property load.
-    if (args.select && !("checkInStart" in (args.select as Record<string, unknown>))) {
-      return args.where?.id ? { id: args.where.id } : null;
+    // First call = ownership check (findUnique with no select); second = full property load.
+    if (!args.select) {
+      return args.where?.id ? { id: args.where.id, workspaceId: "ws-1" } : null;
     }
+    // Full property load for guide rendering
     return {
       id: args.where?.id ?? "p1",
+      workspaceId: "ws-1",
       checkInStart: null,
       checkInEnd: null,
       checkOutTime: null,
