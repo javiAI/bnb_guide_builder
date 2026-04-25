@@ -2044,6 +2044,100 @@ model User {
 
 ---
 
+## 7. OAUTH SECURITY (EXPLICIT)
+
+**State anti-CSRF**:
+
+- En `/login` (GET): generate `state = base64url(randomBytes(32))`, store en `sessionStorage` (client-side, no server)
+- Redirect a Google con `state` param
+- En callback handler: extract `state` from query, compare con `sessionStorage` exactamente
+- Si mismatch → 400 error ("invalid_state")
+- Mitigation: CSRF attack requires attacker to know the random state (stored in user's browser, not accessible cross-origin)
+
+**Nonce (OIDC)**:
+- Google OAuth 2.0 con OpenID Connect: ID token incluye `nonce` claim
+- En `/login`: generate `nonce = base64url(randomBytes(32))`, threadea en `localStorage` (no server state)
+- Redirect con `nonce` param
+- En callback: verificar que `decodeIdToken(idToken).nonce === localStorage.nonce`
+- Si mismatch → 400 error ("invalid_nonce")
+- Protege contra token interception/replay attacks
+
+**Callback validation**:
+
+- Query params: `code` (required, ≤500 chars), `state` (required, matches above)
+- Server-side: `code` exchange a Google, validar `exp < now`, validar ID token signature (via google-auth-library)
+- TTL: Google `code` valid 10 min (standard OAuth). Accept código si `exp - now > 0` (no grace period)
+- Error responses: 400 (bad params), 401 (code expired, invalid signature), 403 (nonce/state mismatch)
+- No retry on code-reuse (one-time use per Google spec)
+
+---
+
+## 8. EMAIL CONFLICT RESOLUTION (EXPLICIT RULE)
+
+**Scenario**: Callback recibe `email = X` + `googleSubject = Y`.
+
+Lookup: `User.findUnique({where: {email: X}})`
+
+**Cases**:
+
+- **Case 1: No user exists** (normal case) → Create user {googleSubject: Y, email: X, ...}, set session, redirect to app
+
+- **Case 2: User exists + `googleSubject == Y`** (re-auth) → Update lastLogin (future audit), reuse session, redirect to app
+
+- **Case 3: User exists + `googleSubject == null`** (legacy/bootstrap) → **DO NOT auto-link**. Error 409: `{error: "email_exists_without_google"}`. UI: "Email already exists. Contact support to link." Operator must resolve manually (future admin panel).
+
+- **Case 4: User exists + `googleSubject != Y`** (different Google account) → **DO NOT auto-link** (prevent account takeover). Error 409: `{error: "email_exists_with_different_google"}`. UI: "Email linked to different Google account. Use that account or contact support."
+
+**Rule**: No ambiguity, no implicit resolution. 409 Conflict on edge cases. Manual resolution deferred to future.
+
+---
+
+## 9. SESSION CACHE (EXPLICIT)
+
+**Cache key**: `session:${userId}` (string, simple lookup)
+
+**Cached data**:
+
+```typescript
+{
+  userId: string
+  workspaceId: string
+  user: {
+    id: string
+    email: string
+    name?: string
+  }
+  memberships: {
+    workspaceId: string
+    role: string
+  }[]
+  cachedAt: number  // timestamp
+}
+```
+
+**TTL**: 60 seconds (absolute, not sliding)
+
+**Store**: `globalThis.sessionCache = new Map()` in dev/test, Redis in prod (future)
+
+**Eviction**:
+
+- Manual: `sessionCache.delete(userId)` after membership change, user delete
+- Automatic: check `cachedAt < now - 60000` on every access, delete if stale
+
+**Latency implication**:
+- Membership removed at T=0 → user still has valid session for up to 60s
+- Delete user at T=0 → user still has valid session for up to 60s
+- Password/2FA change (future) → same 60s window
+- **This is a conscious MVP decision**: simplified revalidation without real-time revocation
+
+**Tests**:
+
+- Cache hit (within 60s) → no DB query
+- Cache miss (>60s) → DB query executed
+- Membership change → cache invalidated immediately (or tests accept up-to 60s delay)
+
+---
+
 **Archivos a crear**:
 
 - `src/lib/auth/google-oauth.ts` — Google client, ID token verification
