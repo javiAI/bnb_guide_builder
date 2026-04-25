@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest'
 import { prisma } from '@/lib/db'
 import { createSessionPayload } from '@/lib/auth/session-crypto'
 import { clearOperatorCache } from '@/lib/auth/require-operator'
@@ -38,6 +38,13 @@ describe('requireOperator Revalidation', () => {
       },
     })
     testUserId = user.id
+  })
+
+  afterEach(async () => {
+    if (!dbAvailable) return
+    // Clean up test data
+    await prisma.user.deleteMany({ where: { id: testUserId } })
+    await prisma.workspace.deleteMany({ where: { id: testWorkspaceId } })
   })
 
   it('should accept valid session with existing user + membership', async () => {

@@ -2048,19 +2048,20 @@ model User {
 
 **State anti-CSRF**:
 
-- En `/login` (GET): generate `state = base64url(randomBytes(32))`, store en cookie segura (HttpOnly, Secure, SameSite=Lax, max-age=600)
-- Redirect a Google con `state` param
-- En callback handler: extract `state` from query, compare contra el valor del cookie
+- En `/api/auth/google/login` (GET, servidor): generate `state = base64url(randomBytes(32))`, `nonce = base64url(randomBytes(32))`
+- Set ambos en cookies HttpOnly, Secure, SameSite=Lax, max-age=600 (10 min)
+- Redirect a Google auth URL (query params: `state` param, `nonce` param, `client_id`, etc.)
+- En callback handler: extract `state` from query string, compare contra cookie `oauth_state`
 - Si mismatch → 403 error ("invalid_state")
-- Mitigation: CSRF attack requires attacker to know the random state (stored in secure cookie, server-readable only)
+- Mitigation: CSRF attack requires attacker to know the random state (stored in secure HttpOnly cookie, server-readable only)
 
 **Nonce (OIDC)**:
 - Google OAuth 2.0 con OpenID Connect: ID token incluye `nonce` claim
-- En `/login`: generate `nonce = base64url(randomBytes(32))`, store en cookie segura (HttpOnly, Secure, SameSite=Lax, max-age=600)
-- Redirect a Google con `nonce` param
-- En callback: verificar que `decodeIdToken(idToken).nonce === nonce` almacenado en cookie
+- El servidor generó y almacenó `nonce` en cookie en `/api/auth/google/login`
+- En callback: leer `nonce` desde cookie `oauth_nonce`, verificar que `idToken.nonce === nonce`
 - Si mismatch → 403 error ("invalid_nonce")
-- Protege contra token interception/replay attacks; limpiar/invalidar cookies de `state`/`nonce` tras callback exitoso o fallo terminal
+- Protege contra token interception/replay attacks
+- Limpiar cookies de `oauth_state` + `oauth_nonce` tras callback exitoso o fallo terminal (usar `createOAuthErrorResponse` que las borra automáticamente)
 
 **Callback validation**:
 
@@ -2080,13 +2081,11 @@ Lookup: `User.findUnique({where: {email: X}})`
 
 **Cases**:
 
-- **Case 1: No user exists** (normal case) → Create user {googleSubject: Y, email: X, ...}, set session, redirect to app
+- **Case 1: No user exists** (normal case) → Create user {googleSubject: Y, email: X, ...}, assign to default workspace as owner, set session, redirect to app
 
-- **Case 2: User exists + `googleSubject == Y`** (re-auth) → Update lastLogin (future audit), reuse session, redirect to app
+- **Case 2: User exists + `googleSubject == Y`** (re-auth) → Reuse session, redirect to app (no user update needed)
 
-- **Case 3: User exists + `googleSubject == null`** (legacy/bootstrap) → **DO NOT auto-link**. Error 409: `{error: "email_exists_without_google"}`. UI: "Email already exists. Contact support to link." Operator must resolve manually (future admin panel).
-
-- **Case 4: User exists + `googleSubject != Y`** (different Google account) → **DO NOT auto-link** (prevent account takeover). Error 409: `{error: "email_exists_with_different_google"}`. UI: "Email linked to different Google account. Use that account or contact support."
+- **Case 3: User exists + `googleSubject != Y`** (different Google account) → **DO NOT auto-link** (prevent account takeover). Error 409: `{error: "email_exists_with_different_google"}`. UI: "Email linked to different Google account. Use that account or contact support." Operator must resolve manually (future admin panel).
 
 **Rule**: No ambiguity, no implicit resolution. 409 Conflict on edge cases. Manual resolution deferred to future.
 
@@ -2094,7 +2093,7 @@ Lookup: `User.findUnique({where: {email: X}})`
 
 ## 9. SESSION CACHE (EXPLICIT)
 
-**Cache key**: `session:${userId}` (string, simple lookup)
+**Cache key**: `${userId}:${workspaceId}` (string, scoped by workspace to handle multi-workspace users)
 
 **Cached data**:
 
@@ -2117,12 +2116,13 @@ Lookup: `User.findUnique({where: {email: X}})`
 
 **TTL**: 60 seconds (absolute, not sliding)
 
-**Store**: `globalThis.sessionCache = new Map()` in dev/test, Redis in prod (future)
+**Store**: Module-level `new Map()` in `src/lib/auth/require-operator.ts` (in-memory, dev/test/single-instance). Overflow protection: if size > 10k entries, clear entire cache (crude eviction for long-lived processes)
 
 **Eviction**:
 
-- Manual: `sessionCache.delete(userId)` after membership change, user delete
+- Manual: `clearOperatorCache(userId)` after membership change, user delete (clears all workspaces for that user)
 - Automatic: check `cachedAt < now - 60000` on every access, delete if stale
+- Overflow: if cache grows > 10k entries, clear entire map
 
 **Latency implication**:
 - Membership removed at T=0 → user still has valid session for up to 60s
@@ -2142,11 +2142,12 @@ Lookup: `User.findUnique({where: {email: X}})`
 
 - `src/lib/auth/google-oauth.ts` — Google client, ID token verification
 - `src/lib/auth/session-middleware.ts` — cookie validation + revalidation caching
-- `src/lib/auth/require-operator.ts` — `requireOperator()` with DB revalidation
-- `src/lib/auth/session-crypto.ts` — HMAC signing/verification
-- `src/app/api/auth/google/callback/route.ts` — OAuth callback
-- `src/app/api/auth/logout/route.ts` — cookie clear
-- `src/app/login/page.tsx` — login page (stub HTML)
+- `src/lib/auth/require-operator.ts` — `requireOperator()` with DB revalidation + in-memory cache
+- `src/lib/auth/session-crypto.ts` — HMAC-SHA256 signing/verification with timing-safe comparison
+- `src/app/api/auth/google/login/route.ts` — Generate state/nonce (server-side), set secure cookies, redirect to Google
+- `src/app/api/auth/google/callback/route.ts` — OAuth callback, validate state/nonce, handle 4 email conflict cases, create/find user, set session cookie
+- `src/app/api/auth/logout/route.ts` — Clear session cookie
+- `src/app/login/page.tsx` — Client component with button linking to `/api/auth/google/login`
 - `scripts/seed-dev.ts` — demo user + workspace
 - `src/test/auth-google-flow.test.ts` — callback, token verify, revalidation
 - `src/test/fixtures/auth-users.ts` — test fixture

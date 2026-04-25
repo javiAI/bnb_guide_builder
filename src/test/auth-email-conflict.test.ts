@@ -82,26 +82,7 @@ describe('Email Conflict Resolution', () => {
     expect(found?.id).toBe(created.id)
   })
 
-  it('Case 3: Should reject if user exists without googleSubject (legacy)', async () => {
-    if (!dbAvailable) {
-      expect(true).toBe(true)
-      return
-    }
-    const workspace = await prisma.workspace.findFirst()
-    if (!workspace) throw new Error('No workspace found')
-
-    // Create legacy user without googleSubject (cannot happen in schema now, but testing logic)
-    // This case is prevented by the NOT NULL constraint on googleSubject in newer migrations
-    // but the code should handle it gracefully
-    const user = await prisma.user.findUnique({
-      where: { email: testEmail },
-    })
-
-    // If user doesn't exist, that's expected
-    expect(user).toBeNull()
-  })
-
-  it('Case 4: Should reject if user exists with different googleSubject', async () => {
+  it('Case 3: Should reject if user exists with different googleSubject', async () => {
     if (!dbAvailable) {
       expect(true).toBe(true)
       return

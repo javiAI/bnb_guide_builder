@@ -1,37 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { getLoginUrl } from '@/lib/auth/google-oauth'
+import { useState } from 'react'
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleGoogleSignIn = useCallback(async () => {
+  const handleGoogleSignIn = () => {
     try {
       setLoading(true)
       setError(null)
-
-      // Generate state and nonce
-      const state = btoa(crypto.getRandomValues(new Uint8Array(32)).toString())
-      const nonce = btoa(crypto.getRandomValues(new Uint8Array(32)).toString())
-
-      // Store in cookies (client-side)
-      document.cookie = `oauth_state=${state}; path=/; max-age=600`
-      document.cookie = `oauth_nonce=${nonce}; path=/; max-age=600`
-
-      // Also store in sessionStorage for validation
-      sessionStorage.setItem('oauth_state', state)
-      sessionStorage.setItem('oauth_nonce', nonce)
-
-      // Get login URL and redirect
-      const loginUrl = getLoginUrl(state, nonce)
-      window.location.href = loginUrl
+      // Redirect to server-side login initiation (generates state/nonce, sets secure cookies)
+      window.location.href = '/api/auth/google/login'
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to initiate login')
       setLoading(false)
     }
-  }, [])
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

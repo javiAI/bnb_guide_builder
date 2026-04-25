@@ -79,24 +79,14 @@ export async function GET(request: NextRequest) {
       if (user.googleSubject === idTokenPayload.sub) {
         // Re-auth, session refreshes
       }
-      // Case 3: User exists + no googleSubject (legacy)
-      else if (user.googleSubject === null) {
-        return NextResponse.json(
-          {
-            error: 'email_exists_without_google',
-            message: 'Email already exists. Please contact support to link Google account.',
-          },
-          { status: 409 }
-        )
-      }
-      // Case 4: User exists + different googleSubject
+      // Case 3: User exists + different googleSubject
       else {
-        return NextResponse.json(
+        return createOAuthErrorResponse(
           {
             error: 'email_exists_with_different_google',
             message: 'Email linked to different Google account. Use that account or contact support.',
           },
-          { status: 409 }
+          409
         )
       }
     } else {
@@ -132,9 +122,10 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get workspace membership (MVP: expect exactly one; select first for safety)
-    const membership = user.memberships.length > 0 ? user.memberships[0] : null
-    if (!membership) {
+    // Get workspace membership deterministically
+    let membership = null
+
+    if (user.memberships.length === 0) {
       return NextResponse.json(
         {
           error: 'no_workspace_membership',
@@ -142,6 +133,41 @@ export async function GET(request: NextRequest) {
         },
         { status: 403 }
       )
+    }
+
+    if (user.memberships.length === 1) {
+      membership = user.memberships[0]
+    } else {
+      // Multiple memberships: select for default workspace
+      const defaultWorkspace = await prisma.workspace.findFirst({
+        orderBy: { createdAt: 'asc' },
+      })
+
+      if (!defaultWorkspace) {
+        return createOAuthErrorResponse(
+          {
+            error: 'no_default_workspace',
+            message: 'Default workspace not found.',
+          },
+          500
+        )
+      }
+
+      membership =
+        user.memberships.find(
+          (candidateMembership) =>
+            candidateMembership.workspaceId === defaultWorkspace.id
+        ) ?? null
+
+      if (!membership) {
+        return createOAuthErrorResponse(
+          {
+            error: 'user_not_in_default_workspace',
+            message: 'User is not a member of the default workspace.',
+          },
+          403
+        )
+      }
     }
 
     // Create session with selected workspace
