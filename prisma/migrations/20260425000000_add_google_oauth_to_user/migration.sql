@@ -1,5 +1,5 @@
 -- AddColumn google_subject to users
-ALTER TABLE "users" ADD COLUMN "google_subject" TEXT;
+ALTER TABLE "users" ADD COLUMN "google_subject" TEXT NOT NULL DEFAULT 'temp_' || gen_random_uuid()::text;
 
 -- CreateIndex on google_subject (unique)
 CREATE UNIQUE INDEX "users_google_subject_key" ON "users"("google_subject");
