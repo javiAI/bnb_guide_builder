@@ -13,6 +13,14 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// Mock requireOperator to simulate authenticated session
+vi.mock("@/lib/auth/require-operator", () => ({
+  requireOperator: vi.fn().mockResolvedValue({
+    userId: "test-user",
+    workspaceId: "ws-1",
+  }),
+}));
+
 import { prisma } from "@/lib/db";
 import DashboardPage from "@/app/page";
 
