@@ -8,12 +8,15 @@ let client: OAuth2Client | null = null
 
 export function getOAuthClient(): OAuth2Client {
   if (!client) {
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_CALLBACK_URL) {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       throw new Error(
-        'Google OAuth env vars not configured: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL'
+        'Google OAuth env vars not configured: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET'
       )
     }
-    client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL)
+    // GOOGLE_CALLBACK_URL is now optional — constructed dynamically at runtime
+    // Use fallback empty string if not provided
+    const callbackUrl = GOOGLE_CALLBACK_URL || 'http://localhost:3000/api/auth/google/callback'
+    client = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, callbackUrl)
   }
   return client
 }
@@ -29,18 +32,16 @@ export function getOAuthClient(): OAuth2Client {
 export function getLoginUrl(state: string, nonce: string, callbackUrl?: string): string {
   // If dynamic callback URL provided, create a new client with it
   // Otherwise use the preconfigured client
-  let oauthClient = getOAuthClient()
+  let oauthClient: OAuth2Client
 
   if (callbackUrl) {
     // Validate callback URL format (security: prevent open redirect)
     if (!callbackUrl.startsWith('http://') && !callbackUrl.startsWith('https://')) {
       throw new Error('Invalid callback URL: must start with http:// or https://')
     }
-    oauthClient = new (require('google-auth-library')).OAuth2Client(
-      GOOGLE_CLIENT_ID,
-      GOOGLE_CLIENT_SECRET,
-      callbackUrl
-    )
+    oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, callbackUrl)
+  } else {
+    oauthClient = getOAuthClient()
   }
 
   const url = oauthClient.generateAuthUrl({
@@ -77,13 +78,14 @@ export async function verifyIdToken(
   callbackUrl?: string
 ): Promise<IdTokenPayload | null> {
   try {
-    let oauthClient = getOAuthClient()
+    let oauthClient: OAuth2Client
 
     // If dynamic callback URL provided, create client with exact callback URL
     // This is critical: the callback URL used here must match exactly what Google redirected to
     if (callbackUrl) {
-      const { OAuth2Client } = require('google-auth-library')
       oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, callbackUrl)
+    } else {
+      oauthClient = getOAuthClient()
     }
 
     const { tokens } = await oauthClient.getToken(code)
