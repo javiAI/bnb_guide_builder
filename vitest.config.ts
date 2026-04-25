@@ -1,25 +1,23 @@
-import { defineConfig, configDefaults } from "vitest/config";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig, configDefaults } from 'vitest/config'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: "jsdom",
+    environment: 'jsdom',
     globals: true,
-    setupFiles: ["./src/test/setup.ts"],
-    // Skip Playwright specs (npm run test:e2e) and the assistant eval bank
-    // (npm run eval:assistant — needs a live pgvector Postgres).
+    setupFiles: ['./vitest.setup.ts', './src/test/setup.ts'],
     exclude: [
       ...configDefaults.exclude,
-      "**/.next/**",
-      "**/e2e/**",
-      "**/assistant-evals/**",
+      '**/.next/**',
+      '**/e2e/**',
+      '**/assistant-evals/**',
     ],
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
-});
+})

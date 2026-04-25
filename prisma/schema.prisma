@@ -60,8 +60,8 @@ model WorkspaceMembership {
   role        String   @default("owner")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
-  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
   @@map("workspace_memberships")
