@@ -1884,9 +1884,257 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ---
 
-### Rama 15A — `feat/operator-auth-foundation`
+### Rama 15A — `feat/operator-auth-google-oauth`
 
-[Auth rama content...]
+**Dirección de producto**: Google OAuth / OIDC como login principal de producción. Sesión interna propia de la app vía cookie segura después del callback. Esta autenticación aplica **solamente** a la operator surface (`/properties/...`, `/api/properties/...`). La guest guide pública (`/g/:slug/...`) permanece completamente sin auth. Sin password reset, MFA, account linking en 15A.
+
+**Propósito**: Establece la infraestructura de autenticación + sesiones para operadores. Todo operador que acceda a `/api/properties/...` y `/properties/...` debe tener un `userId` identificable en sesión + workspace, revalidado en cada request. Prerequisito duro para 15B (guards), 15D (audit), 15E (apply).
+
+---
+
+## 1. REVALIDACIÓN SERVER-SIDE EN REQUESTS PROTEGIDAS
+
+**Principio**: Cookie es **self-contained pero no de confianza ciega**. En cada request protegido, se valida el estado actual en DB.
+
+**Flow de validación** (en `requireOperator()`):
+
+```typescript
+// 1. Extract + verify cookie signature (HMAC)
+const session = decryptSession(request.cookies.get('session'))
+if (!session.valid) throw 401
+
+// 2. Revalidate state en DB (cached 60s per userId)
+const user = await prisma.user.findUnique({
+  where: {id: session.userId},
+  include: {memberships: {where: {workspaceId: session.workspaceId}}}
+})
+
+// Validations:
+if (!user) throw 401  // usuario fue borrado
+if (!user.memberships.length) throw 403  // perdió workspace membership
+
+// 3. Return validated context
+return {userId: session.userId, workspaceId: session.workspaceId, user}
+```
+
+**Caching**: Cache en `globalThis.sessionCache` (TTL 60s). Miss → DB hit. Balance: stateless + light revalidation sin quemar DB.
+
+---
+
+## 2. WORKSPACE SEMANTICS (EXPLÍCITO)
+
+**Decisión MVP**: **Un workspace por usuario** (sesión carries singular workspaceId).
+
+**Semantics en login/callback**:
+- Si user es nuevo: `User.create({googleSubject, email, ...})`
+- Lookup default workspace: `Workspace.findFirst({orderBy: {createdAt: 'asc'}})`
+- Si no existe: `Workspace.create({name: "My Workspace"})`
+- Upsert membership: `WorkspaceMembership.upsert({where: {workspaceId_userId}, update: {}, create: {role: 'owner'}})`
+- Session payload: `{userId, workspaceId: membership.workspaceId}`
+
+**Regla anti-magic**: Nunca `memberships[0]`. Siempre explícitamente findFirstOrThrow + workspace validation.
+
+**Future**: 15B+ puede introducir multi-workspace + selector si es requerido.
+
+---
+
+## 3. COOKIE / SESSION CONTRACT (EXACTO)
+
+**Payload**:
+
+```typescript
+interface SessionPayload {
+  userId: string        // cuid, e.g. "clkq1234567890"
+  workspaceId: string   // cuid, e.g. "clkq9876543210"
+  iat: number          // issued-at (seconds)
+  exp: number          // expiration (iat + 604800)
+  version: 1           // for rotation/invalidation future
+}
+```
+
+**Firma**: HMAC-SHA256, key = `process.env.HMAC_KEY` (32 bytes min)
+
+**Set-Cookie header**:
+
+```bash
+Set-Cookie: session={signed_payload}; 
+  Path=/; 
+  HttpOnly; 
+  Secure; 
+  SameSite=Lax; 
+  Max-Age=604800
+```
+
+---
+
+## 4. DEV / BOOTSTRAP PATH (EXPLÍCITO)
+
+**No presets, dos paths claros**:
+
+### Path A: Local dev
+
+```bash
+npm run seed:dev
+```
+
+`scripts/seed-dev.ts` crea: User + Workspace + Membership (en DB, sin sesión preset).
+
+Local development: usa Google Cloud credentials (test project) o `GOOGLE_OAUTH_MOCK=true` (mock provider).
+
+### Path B: CI / E2E
+
+```typescript
+// src/test/fixtures/auth-users.ts
+export async function seedTestUser() {
+  return await prisma.user.create({...})
+}
+
+// In test: fake session manually
+function createSessionCookie(userId, workspaceId): string {...}
+```
+
+**Explícito, no mágico.**
+
+---
+
+## 5. MODELO DE DATOS FINAL
+
+**User model**:
+
+```prisma
+model User {
+  id              String   @id @default(cuid())
+  googleSubject   String   @unique  // primary identity
+  email           String   @unique  // verified by Google
+  name            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  memberships     WorkspaceMembership[]
+  mediaAssets     MediaAsset[]
+  
+  @@index([email])
+  @@map("users")
+}
+```
+
+**Changes**:
+- ❌ `passwordHash` — removed completely
+- ❌ `emailVerified` — not modeled (implicit from Google)
+- ✅ `googleSubject` — unique, primary identity
+- ✅ `email` — unique, verified by Google
+- ✅ `name` — optional
+
+**Migration**: `20260425000000_add_google_oauth_to_user`
+
+---
+
+## 6. IMPACTO DOWNSTREAM (CONFIRMADO)
+
+| Component | Change? | Impact | Blocked? |
+| --- | --- | --- | --- |
+| Middleware | None | extracts + validates cookie | ❌ |
+| `requireOperator()` | None | reads session, revalidates | ❌ |
+| Workspace scoping | Explicit (singular) | session.workspaceId (unchanged) | ❌ |
+| 15B guards | — | guards validate ownership | Ready |
+| 15D audit | — | audit logs session.userId | Ready |
+| 15E apply | — | apply reads userId | Ready |
+
+**Auth method (Google) es ortogonal a todo downstream.** Cambiar a email/password = no breaks nada.
+
+---
+
+**Archivos a crear**:
+
+- `src/lib/auth/google-oauth.ts` — Google client, ID token verification
+- `src/lib/auth/session-middleware.ts` — cookie validation + revalidation caching
+- `src/lib/auth/require-operator.ts` — `requireOperator()` with DB revalidation
+- `src/lib/auth/session-crypto.ts` — HMAC signing/verification
+- `src/app/api/auth/google/callback/route.ts` — OAuth callback
+- `src/app/api/auth/logout/route.ts` — cookie clear
+- `src/app/login/page.tsx` — login page (stub HTML)
+- `scripts/seed-dev.ts` — demo user + workspace
+- `src/test/auth-google-flow.test.ts` — callback, token verify, revalidation
+- `src/test/fixtures/auth-users.ts` — test fixture
+
+**Archivos a modificar**:
+
+- `prisma/schema.prisma` — User (googleSubject, email, name)
+- `.env.example` — GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL, HMAC_KEY
+- `CLAUDE.md` — pattern docs
+
+**Tests** (15):
+
+- OAuth callback code exchange success
+- OAuth new user creation + default workspace
+- OAuth existing user reauth
+- ID token signature validation
+- ID token expiry
+- HMAC cookie signature validation
+- Session TTL validation
+- Revalidation: user exists
+- Revalidation: user deleted (403)
+- Revalidation: membership removed (403)
+- Revalidation: cache hit
+- Revalidation: cache miss (DB query)
+- Logout clears cookie
+- requireOperator() valid
+- requireOperator() missing (401)
+
+**Criterio de done**:
+
+- ✅ `/login` → "Sign in with Google" CTA
+- ✅ OAuth callback → session cookie (HttpOnly, Secure, SameSite=Lax, 7d)
+- ✅ Each request validates: user exists + membership exists (60s cache)
+- ✅ User deleted → 401 next request
+- ✅ Membership removed → 403 next request
+- ✅ `requireOperator()` returns validated context
+- ✅ Logout clears cookie
+- ✅ Seed dev creates user + workspace (explicit)
+- ✅ Session payload: userId, workspaceId, iat, exp, version
+- ✅ Schema: googleSubject, email, name (no passwordHash)
+- ✅ 15 tests pass
+- ✅ Prisma valid
+
+**Restricciones**:
+
+- ❌ Password reset
+- ❌ Email/password
+- ❌ 2FA / MFA
+- ❌ Account linking
+- ❌ Multi-workspace selector
+
+**Dependencias / Riesgos**:
+
+- ⚠️ **Google Cloud setup**: GOOGLE_CLIENT_ID / SECRET / CALLBACK_URL required. Mitigation: .env.example documented.
+- ⚠️ **HMAC_KEY rotation**: Invalidates all sessions. Plan: <1h downtime acceptable in 15A.
+- ⚠️ **Revalidation DB load**: 60s cache mitigates. If miss rate >30%, increase TTL to 5min in 15D.
+- ⚠️ **Google outage**: No new logins, existing sessions still valid.
+
+**No-alcance**:
+
+- No password reset
+- No email/password fallback
+- No 2FA / MFA
+- No social logins besides Google
+- No session storage in Redis
+- No multi-workspace UI
+
+**Preparación**:
+
+- **Contexto**:
+  - Google OAuth 2.0 Authorization Code flow
+  - JWT basics (ID token structure)
+  - OWASP session management
+  - Prisma transactions
+  - Cookie security (HttpOnly, Secure, SameSite)
+
+- **Docs a actualizar**:
+  - `docs/SECURITY_AND_AUDIT.md` § "Auth foundation"
+  - `CLAUDE.md` § "Patrones — Auth"
+  - `docs/ROADMAP.md` Fase 15
+
+- **Skills**: Ninguno (vanilla Next.js)
 
 ---
 
