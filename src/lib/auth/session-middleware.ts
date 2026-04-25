@@ -1,4 +1,4 @@
-import { decryptSession } from './session-crypto'
+import { verifySession } from './session-crypto'
 
 export interface SessionContext {
   userId: string | null
@@ -19,7 +19,7 @@ export function parseSessionFromCookies(cookieHeader: string | null): SessionCon
     }
 
     const encrypted = decodeURIComponent(sessionMatch[2])
-    const session = decryptSession(encrypted)
+    const session = verifySession(encrypted)
 
     if (!session) {
       return { userId: null, workspaceId: null, valid: false }

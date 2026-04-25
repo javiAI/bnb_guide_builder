@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/db'
-import { decryptSession } from './session-crypto'
+import { verifySession } from './session-crypto'
 
 const SESSION_CACHE_TTL = 60 * 1000 // 60 seconds
 const sessionCache = new Map<
@@ -33,7 +33,7 @@ export async function requireOperator(): Promise<OperatorContext> {
     throw new Error('Unauthorized: no session cookie')
   }
 
-  const session = decryptSession(sessionCookie)
+  const session = verifySession(sessionCookie)
 
   if (!session) {
     throw new Error('Unauthorized: invalid or expired session')

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { parseSessionFromCookies } from '@/lib/auth/session-middleware'
-import { encryptSession, createSessionPayload } from '@/lib/auth/session-crypto'
+import { signSession, createSessionPayload } from '@/lib/auth/session-crypto'
 
 describe('Session Middleware', () => {
   it('should parse valid session from cookie header', () => {
     const payload = createSessionPayload('user_123', 'workspace_456')
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
     const cookieHeader = `session=${encrypted}; Path=/; HttpOnly`
 
     const session = parseSessionFromCookies(cookieHeader)
@@ -35,7 +35,7 @@ describe('Session Middleware', () => {
 
   it('should return invalid if session is tampered', () => {
     const payload = createSessionPayload('user_123', 'workspace_456')
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
     const [payloadB64, _] = encrypted.split('.')
 
     const tamperedSession = `${payloadB64}.invalidsignature`
@@ -56,7 +56,7 @@ describe('Session Middleware', () => {
       version: 1 as const,
     }
 
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
     const cookieHeader = `session=${encrypted}`
 
     const session = parseSessionFromCookies(cookieHeader)
@@ -66,7 +66,7 @@ describe('Session Middleware', () => {
 
   it('should parse session with multiple cookies in header', () => {
     const payload = createSessionPayload('user_123', 'workspace_456')
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
     const cookieHeader = `other=value; session=${encrypted}; another=test`
 
     const session = parseSessionFromCookies(cookieHeader)

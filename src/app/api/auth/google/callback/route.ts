@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyIdToken } from '@/lib/auth/google-oauth'
-import { encryptSession, createSessionPayload } from '@/lib/auth/session-crypto'
+import { signSession, createSessionPayload } from '@/lib/auth/session-crypto'
 
 export const runtime = 'nodejs'
 
@@ -172,11 +172,11 @@ export async function GET(request: NextRequest) {
 
     // Create session with selected workspace
     const sessionPayload = createSessionPayload(user.id, membership.workspaceId)
-    const encryptedSession = encryptSession(sessionPayload)
+    const signedSession = signSession(sessionPayload)
 
     // Set response
     const response = NextResponse.redirect(new URL('/properties', request.url))
-    response.cookies.set('session', encryptedSession, {
+    response.cookies.set('session', signedSession, {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

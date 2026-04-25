@@ -11,7 +11,7 @@ export interface SessionPayload {
 const HMAC_KEY = process.env.HMAC_KEY || ''
 const SESSION_TTL = 7 * 24 * 60 * 60 // 7 days in seconds
 
-export function encryptSession(payload: SessionPayload): string {
+export function signSession(payload: SessionPayload): string {
   if (!HMAC_KEY) {
     throw new Error('HMAC_KEY env var not set')
   }
@@ -25,13 +25,13 @@ export function encryptSession(payload: SessionPayload): string {
   return `${payloadB64}.${signatureB64}`
 }
 
-export function decryptSession(encrypted: string): SessionPayload | null {
+export function verifySession(signed: string): SessionPayload | null {
   if (!HMAC_KEY) {
     throw new Error('HMAC_KEY env var not set')
   }
 
   try {
-    const [payloadB64, signatureB64] = encrypted.split('.')
+    const [payloadB64, signatureB64] = signed.split('.')
     if (!payloadB64 || !signatureB64) return null
 
     // Verify signature

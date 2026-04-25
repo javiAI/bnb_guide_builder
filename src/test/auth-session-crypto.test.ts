@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import {
-  encryptSession,
-  decryptSession,
+  signSession,
+  verifySession,
   createSessionPayload,
 } from '@/lib/auth/session-crypto'
 
 describe('Session Crypto', () => {
   it('should encrypt and decrypt session', () => {
     const payload = createSessionPayload('user_123', 'workspace_456')
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
 
     expect(encrypted).toContain('.')
     expect(encrypted.split('.').length).toBe(2)
 
-    const decrypted = decryptSession(encrypted)
+    const decrypted = verifySession(encrypted)
     expect(decrypted).not.toBeNull()
     expect(decrypted?.userId).toBe('user_123')
     expect(decrypted?.workspaceId).toBe('workspace_456')
@@ -22,11 +22,11 @@ describe('Session Crypto', () => {
 
   it('should reject tampered signature', () => {
     const payload = createSessionPayload('user_123', 'workspace_456')
-    const encrypted = encryptSession(payload)
+    const encrypted = signSession(payload)
     const [payloadB64, _] = encrypted.split('.')
 
     const tampered = `${payloadB64}.invalidsignature`
-    const decrypted = decryptSession(tampered)
+    const decrypted = verifySession(tampered)
 
     expect(decrypted).toBeNull()
   })
@@ -41,8 +41,8 @@ describe('Session Crypto', () => {
       version: 1 as const,
     }
 
-    const encrypted = encryptSession(payload)
-    const decrypted = decryptSession(encrypted)
+    const encrypted = signSession(payload)
+    const decrypted = verifySession(encrypted)
 
     expect(decrypted).toBeNull()
   })
@@ -57,8 +57,8 @@ describe('Session Crypto', () => {
       version: 1 as const,
     }
 
-    const encrypted = encryptSession(payload)
-    const decrypted = decryptSession(encrypted)
+    const encrypted = signSession(payload)
+    const decrypted = verifySession(encrypted)
 
     expect(decrypted).not.toBeNull()
     expect(decrypted?.userId).toBe('user_123')
