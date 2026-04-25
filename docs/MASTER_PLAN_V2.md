@@ -1985,7 +1985,7 @@ La reordenación refleja una dependencia arquitectónica real, no una preferenci
   - `docs/SECURITY_AND_AUDIT.md` (audit log contract, AuditLog schema)
   - `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § reconciliation semantics
   - Prisma transaction patterns in codebase (e.g., `completeWizardAction`)
-  - Session pattern from 16A (minimal: `userId` in request context)
+  - Session pattern from 15A (minimal: `userId` in request context)
 - **Docs a actualizar al terminar**: PLATFORM_INTEGRATIONS.md § 9 "Apply & audit", SECURITY_AND_AUDIT.md audit log section, ROADMAP.md
 - **Skills/tools específicos**: 
   - **Agent code-architect** para estrategias de resolución y patrón de transaction (múltiples opciones si aplica)
@@ -1994,14 +1994,14 @@ La reordenación refleja una dependencia arquitectónica real, no una preferenci
 
 **Estado**: bloqueada por entrega del paquete de diseño Liora. Las ramas están definidas a nivel de alcance y dependencia, pero **sin archivos concretos** hasta que el paquete llegue.
 
-**Prerrequisito duro**: entrega del paquete de diseño Liora (tokens, primitivos, superficies). Sin paquete, ninguna rama 15A-G arranca.
+**Prerrequisito duro**: entrega del paquete de diseño Liora (tokens, primitivos, superficies). Sin paquete, ninguna rama 16A-G arranca.
 
 **No bloquea** el flujo funcional en vuelo: 10G/H/I, Fase 11, Fase 12, Fase 13, Fase 14 avanzan con independencia. Fase 16 se intercala cuando la entrega ocurra.
 
 **Artefactos que se crean al arrancar Rama 16A** (no antes):
 - `docs/LIORA_DESIGN_ADOPTION_PLAN.md` — mapa tokens Liora ↔ `src/config/design-tokens.ts` + orden de rollout por superficie.
 - `docs/LIORA_MIGRATION_RULES.md` — extensión operativa de las reglas anti-legacy (ver `docs/ARCHITECTURE_OVERVIEW.md` §14) con criterios específicos del paquete.
-- `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` — plantilla de tabla `componente → reused | reskinned | rewritten | deleted` que cada PR 15B-F rellena.
+- `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` — plantilla de tabla `componente → reused | reskinned | rewritten | deleted` que cada PR 16B-F rellena.
 - `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` — orden de migración por superficie con dependencias entre primitivos y shells.
 - Skills/prompts específicos en `.claude/commands/` si se necesitan (ej: `/liora-component-map`). No se anticipan hoy.
 
