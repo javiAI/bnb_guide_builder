@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db'
+import { Property } from '@prisma/client'
 import { requireOperator, type OperatorContext } from './require-operator'
 import {
   AuthRequiredError,
@@ -7,11 +8,7 @@ import {
 } from './errors'
 
 export interface OwnedPropertyResult {
-  property: {
-    id: string
-    workspaceId: string
-    [key: string]: unknown
-  }
+  property: Property
   operator: OperatorContext
 }
 
@@ -40,7 +37,7 @@ export async function loadOwnedProperty(
     throw new AuthRequiredError('Valid session required to access property')
   }
 
-  // Step 2: Load property from DB
+  // Step 2: Load property from DB (all fields)
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
   })
