@@ -1917,7 +1917,7 @@ if (!user.memberships.length) throw 403  // perdió workspace membership
 return {userId: session.userId, workspaceId: session.workspaceId, user}
 ```
 
-**Caching**: Cache en `globalThis.sessionCache` (TTL 60s). Miss → DB hit. Balance: stateless + light revalidation sin quemar DB.
+**Caching**: Cache en memoria a nivel de módulo (TTL 60s). Miss → DB hit. Balance: stateless + light revalidation sin quemar DB. Cache key: `${userId}:${workspaceId}` para soportar multi-workspace. Overflow protection: si cache.size > 10000, clear.
 
 ---
 
@@ -1932,7 +1932,7 @@ return {userId: session.userId, workspaceId: session.workspaceId, user}
 - Upsert membership: `WorkspaceMembership.upsert({where: {workspaceId_userId}, update: {}, create: {role: 'owner'}})`
 - Session payload: `{userId, workspaceId: membership.workspaceId}`
 
-**Regla anti-magic**: Nunca `memberships[0]`. Siempre explícitamente findFirstOrThrow + workspace validation.
+**Regla anti-magic**: En MVP (un workspace por usuario), el callback puede derivar `workspaceId` desde la única membership (incluyendo `memberships[0]` si la relación viene precargada). Añadir validación explícita: si `memberships.length === 0`, error; si `> 1`, select por default workspace con findFirst + validate. Nunca asumir `memberships[0]` en futuros multi-workspace sin refactorizar.
 
 **Future**: 15B+ puede introducir multi-workspace + selector si es requerido.
 

@@ -126,12 +126,12 @@ export async function GET(request: NextRequest) {
     let membership = null
 
     if (user.memberships.length === 0) {
-      return NextResponse.json(
+      return createOAuthErrorResponse(
         {
           error: 'no_workspace_membership',
           message: 'User has no workspace membership. Contact administrator.',
         },
-        { status: 403 }
+        403
       )
     }
 
