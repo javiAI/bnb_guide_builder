@@ -1,5 +1,19 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest'
 import { prisma } from '@/lib/db'
+
+/**
+ * OAuth Callback Integration Tests
+ *
+ * Note: These tests cover the email conflict resolution logic via direct Prisma queries.
+ * For full integration testing of the callback route handler (GET /api/auth/google/callback),
+ * a more sophisticated setup would be required:
+ * - Mock verifyIdToken from google-oauth
+ * - Mock next/headers for cookie access
+ * - Mock Prisma operations
+ * - Invoke the actual GET handler
+ *
+ * Current tests validate the conflict detection logic at the database level.
+ */
 
 describe('OAuth Callback Integration', () => {
   const testEmail = 'oauth@example.com'
@@ -7,7 +21,6 @@ describe('OAuth Callback Integration', () => {
   let dbAvailable = true
 
   beforeAll(async () => {
-    // Check if database is available
     try {
       await prisma.workspace.count()
     } catch (_error) {
@@ -17,7 +30,11 @@ describe('OAuth Callback Integration', () => {
 
   beforeEach(async () => {
     if (!dbAvailable) return
-    // Clean up
+    await prisma.user.deleteMany({ where: { email: testEmail } })
+  })
+
+  afterEach(async () => {
+    if (!dbAvailable) return
     await prisma.user.deleteMany({ where: { email: testEmail } })
   })
 
@@ -29,7 +46,7 @@ describe('OAuth Callback Integration', () => {
     const workspace = await prisma.workspace.findFirst()
     if (!workspace) throw new Error('No workspace')
 
-    // Simulate callback logic
+    // Simulate callback logic: user doesn't exist, create with default workspace
     let user = await prisma.user.findUnique({
       where: { email: testEmail },
       include: { memberships: true },
@@ -80,7 +97,7 @@ describe('OAuth Callback Integration', () => {
       },
     })
 
-    // Simulate re-auth: find user, session refreshes
+    // Simulate re-auth: find user with same subject
     const found = await prisma.user.findUnique({
       where: { email: testEmail },
       include: { memberships: true },
@@ -91,7 +108,7 @@ describe('OAuth Callback Integration', () => {
     expect(found?.memberships[0].workspaceId).toBe(workspace.id)
   })
 
-  it('Case 3/4: Should NOT auto-link different googleSubject', async () => {
+  it('Case 3: Should NOT auto-link different googleSubject (409 conflict)', async () => {
     if (!dbAvailable) {
       expect(true).toBe(true)
       return
@@ -114,16 +131,17 @@ describe('OAuth Callback Integration', () => {
       },
     })
 
-    // Simulate login with subject B
+    // Simulate login attempt with subject B (different account)
     const subjectB = 'google_subject_b'
     const existing = await prisma.user.findUnique({
       where: { email: testEmail },
     })
 
+    // Verify conflict: email exists with different googleSubject
     if (existing && existing.googleSubject !== subjectB) {
-      // Should return 409 Conflict in API layer
       expect(existing.googleSubject).toBe(subjectA)
       expect(existing.googleSubject).not.toBe(subjectB)
+      // In real handler, this would return 409 Conflict
     }
   })
 })
