@@ -45,8 +45,61 @@ Cada una de las ramas sigue este ciclo. Las herramientas listadas aquí son el *
 5. **Iteración**: el usuario puede pedir ajustes. Repetir el ciclo (nuevo resumen técnico/conceptual + nuevas preguntas) hasta aprobación.
 6. **Actualización de documentación si hay cambios acordados**: si la iteración modifica el alcance, actualizar `MASTER_PLAN_V2.md` de la rama (y otros docs relevantes) **antes** de crear la rama. Si el cambio es grande, seguir §2.8 (PR de plan aparte antes de empezar).
 7. **Aprobación explícita del usuario** ("ok, adelante", "procede", equivalente). Sin ella, no se pasa a Fase 0.
+8. **Llenado del cuerpo del § en MASTER_PLAN_V2.md** (obligatorio, no se salta). Tras la aprobación de Fase -1 y **antes** de crear el marker o la rama:
+   - Si el § correspondiente a la rama está vacío o como placeholder (`[<…> rama content...]`), el hook `pre-branch-gate.sh` lo bloquea y **inyecta un template canónico** in-place (ver `### Plantilla canónica` abajo).
+   - Claude rellena el template con el contenido derivado de Fase -1 (propósito, archivos, tests, criterio de done, restricciones, no-alcance) **commiteando el cambio en la propia rama** que está por crearse — el plan vive como spec ejecutable, no como historial post-hoc.
+   - Si el § ya tenía contenido sustantivo (no placeholder), el hook no inyecta nada; Claude lo actualiza solo si Fase -1 produjo cambios de alcance respecto del contenido previo.
+   - El cuerpo del § debe reflejar **lo que se va a ejecutar**, no lo aspiracional. Si durante la ejecución surge un cambio de alcance, se actualiza inline (la rama es el sitio canónico) y se comunica en la PR description.
 
-Este gate no se salta nunca, ni siquiera en ramas "triviales". Si la rama es realmente trivial, el resumen será corto — pero existe.
+Este gate no se salta nunca, ni siquiera en ramas "triviales". Si la rama es realmente trivial, el resumen y el cuerpo del § serán cortos — pero existen.
+
+#### Plantilla canónica del § Rama
+
+Cuando una rama no tiene cuerpo (placeholder o vacío), el hook inyecta esta plantilla **exactamente** debajo del header `### Rama {ID} — {branch-name}` (los `[TODO ...]` son marcadores que Claude reemplaza con el contenido aprobado en Fase -1; `grep TODO` antes de commitear el cuerpo verifica que no quedaron sin rellenar):
+
+```markdown
+**Propósito**: [TODO Fase -1: 1-2 líneas — qué cierra esta rama, prerequisito de qué]
+
+**Archivos a crear**:
+
+- [TODO]
+
+**Archivos a modificar**:
+
+- [TODO]
+
+**Tests**:
+
+- [TODO]
+
+**Criterio de done**:
+
+- [TODO ✅ items verificables]
+
+**Restricciones**:
+
+- [TODO ❌ qué patrones NO se introducen]
+
+**Dependencias / Riesgos**:
+
+- [TODO ⚠️ qué bloquea, qué puede salir mal]
+
+**No-alcance**:
+
+- [TODO qué NO se implementa aunque parezca relacionado]
+
+**Preparación**:
+
+- **Contexto a leer**: [TODO]
+- **Docs a actualizar al terminar**: [TODO]
+- **Skills**: [TODO]
+```
+
+Secciones opcionales según rama:
+
+- `**Archivos a eliminar**` — si la rama hace cutover duro de código existente.
+- `**Contrato del primitivo**` / `**API mínima**` — si introduce un módulo de bajo nivel reutilizable.
+- Sub-§ numeradas (`## 1. ...`, `## 2. ...`) — si el § es largo y requiere navegación interna (ver Rama 15A como ejemplo).
 
 ### 2.2 Fase 0 — Antes de crear la rama
 
@@ -2235,13 +2288,223 @@ Lookup: `User.findUnique({where: {email: X}})`
 
 ### Rama 15B — `feat/route-guards-and-ownership`
 
-[Guards rama content...]
+**Propósito**: Una vez 15A garantiza que toda request operator-facing porta `userId` + `workspaceId` en la sesión, 15B introduce la primera capa de **autorización**: ningún endpoint ni page bajo `/properties/[propertyId]/...` puede leer/mutar una `Property` sin (a) sesión válida, (b) que la `Property` exista y (c) que la `WorkspaceMembership` del operator cubra el `workspaceId` de la `Property`. Cierra el gap transversal documentado en `SECURITY_AND_AUDIT.md` §0.2 ("ninguna PR podía declarar su endpoint protegido"). Prerequisito duro para 15D (audit) y 15E (apply).
+
+**Errores tipados** (`src/lib/auth/errors.ts`):
+
+- `AuthRequiredError` — no hay sesión válida. → 401 (API) / redirect a `/login` (page).
+- `PropertyNotFoundError` — propertyId no existe. → 404 en ambos casos.
+- `PropertyForbiddenError` — propiedad existe pero pertenece a otro workspace. → 404 en ambos casos (defense en profundidad: no revelar existencia al actor no autorizado, paridad con el patrón `findUnique → 404` previo).
+
+**Primitivo único** (`src/lib/auth/owned-property.ts`):
+
+```typescript
+export async function loadOwnedProperty(propertyId: string): Promise<{
+  property: Property
+  session: SessionContext
+}> {
+  // 1. requireOperator() (15A) → AuthRequiredError si no hay sesión
+  // 2. prisma.property.findUnique → PropertyNotFoundError si null
+  // 3. WorkspaceMembership covering property.workspaceId → PropertyForbiddenError si no
+  // 4. Return { property, session }
+}
+```
+
+Toda ruta/página operator-facing que necesite una `Property` por id pasa por aquí. No hay ruta exenta. Las tres validaciones son secuenciales por diseño (no paralelas) — el orden importa para la semántica de errores: sesión > existencia > ownership.
+
+**Helpers de respuesta separados** (no se mezcla HTTP con navegación):
+
+- `src/lib/auth/route-helpers.ts` — `handleOwnershipApiError(err): NextResponse` (401/404 + JSON).
+- `src/lib/auth/page-helpers.ts` — `handleOwnershipPageError(err): never` (redirect a `/login` o `notFound()`, nunca devuelve).
+
+Cada call site escoge el helper que corresponda a su superficie (route handler vs server component). Esto evita el anti-patrón de un único `handle*` polimórfico que tendría que detectar runtime.
+
+**Archivos a crear**:
+
+- `src/lib/auth/errors.ts` — 3 typed errors (clases que extienden `Error` con `name` discriminator).
+- `src/lib/auth/owned-property.ts` — `loadOwnedProperty(propertyId)` primitive.
+- `src/lib/auth/route-helpers.ts` — `handleOwnershipApiError(err)` mapper a `NextResponse`.
+- `src/lib/auth/page-helpers.ts` — `handleOwnershipPageError(err)` con `redirect()` / `notFound()`.
+- `src/test/owned-property.test.ts` — invariantes: missing session → 401, missing property → 404, cross-workspace → 404, valid → resolve.
+
+**Archivos a modificar**:
+
+- 10 routes bajo `src/app/api/properties/[propertyId]/...`:
+  - `assistant/{ask, conversations, debug/retrieve}/route.ts`
+  - `derived/route.ts`
+  - `export/{airbnb, booking}/route.ts`
+  - `guide/route.ts`
+  - `import/{airbnb, booking}/preview/route.ts`
+  - `places-search/route.ts`
+- `src/app/properties/[propertyId]/layout.tsx` — guard único en el layout cubre las 29 child pages bajo ese segmento.
+- `src/app/page.tsx` — dashboard root: `requireOperator()` redirige a `/login` si no hay sesión.
+- `src/app/api/auth/google/login/route.ts` + `.../callback/route.ts` — derivar `OAUTH_CALLBACK_URL` del `request.url` host (zero-config en dev/test/prod sin tocar `.env`).
+- `src/lib/auth/google-oauth.ts` — aceptar callback URL dinámica.
+- Tests adyacentes: `src/test/dashboard.test.tsx`, `src/test/guide-api-route.test.ts`, `src/test/places-search-route.test.ts` actualizados al nuevo contrato.
+
+**Tests** (`src/test/owned-property.test.ts`, +adyacentes actualizados):
+
+- `loadOwnedProperty` con sesión faltante → throws `AuthRequiredError`.
+- Property no existe → throws `PropertyNotFoundError`.
+- Property existe en otro workspace → throws `PropertyForbiddenError`.
+- Property válida → returns `{property, session}`.
+- `handleOwnershipApiError` mapea cada error al status correcto (401, 404, 404).
+- `handleOwnershipPageError` redirige (`/login`) vs `notFound()` según el tipo.
+
+**Criterio de done**:
+
+- ✅ 10 API routes + layout `/properties/[propertyId]/` + dashboard root pasan por `loadOwnedProperty` o `requireOperator`.
+- ✅ Cross-workspace probe → 404 (no 403, no 200 con datos del otro workspace).
+- ✅ Tests adyacentes pasan tras refactor (no regresión).
+- ✅ OAuth callback funciona en cualquier puerto sin tocar env vars (dev 3000/3001/3002, CI random port, prod).
+- ✅ `tsc --noEmit` y `vitest run` verdes.
+
+**Restricciones**:
+
+- ❌ Sin `if (!session) return 401` ad-hoc por ruta — siempre vía `loadOwnedProperty` o `requireOperator`.
+- ❌ Sin polimorfismo runtime entre HTTP / navigation handlers — helpers separados por superficie.
+- ❌ Sin try/catch dentro del helper de errors — el helper transforma errors tipados, no los swallowea.
+
+**Dependencias / Riesgos**:
+
+- ⚠️ **15A (sessions)** — bloqueante hard. Sin `requireOperator()` no hay nada que enchufar.
+- ⚠️ **Layout guard precedence** — cuidado con que el layout `/properties/[propertyId]/` no se evalúe antes que child pages que necesiten sesión pero **no** propertyId (ej. `/properties/new`). Verificar segmentación.
+- ⚠️ **Test refactor surface** — 3 test files adyacentes mockean el contrato anterior; cambiarlos sin perder cobertura requiere atención.
+
+**No-alcance**:
+
+- No `WorkspaceMembership` con roles más finos (todo membership = puede leer/escribir). Roles diferenciados son trabajo posterior.
+- No rate-limit por actor (15D).
+- No audit log on access (15D).
+- No multi-property batch ownership check (no hay endpoint que lo requiera todavía).
+
+**Preparación**:
+
+- **Contexto a leer**:
+  - `src/lib/auth/require-operator.ts` (15A) — cómo se materializa la sesión.
+  - `prisma/schema.prisma` — `User`, `Workspace`, `WorkspaceMembership`, `Property.workspaceId`.
+  - `docs/SECURITY_AND_AUDIT.md` §0.2 — gap que cierra esta rama.
+- **Docs a actualizar al terminar**:
+  - `docs/SECURITY_AND_AUDIT.md` §0.1 ("Qué existe hoy") — pasar el gap de 0.2 a 0.1.
+  - `docs/ROADMAP.md` Fase 15 — marcar 15B ✅.
+  - `CLAUDE.md` § "Patrones de Sistemas" — patrón `loadOwnedProperty` cuando aplique.
+- **Skills**: `/pre-commit-review`, `/simplify`.
 
 ---
 
 ### Rama 15C — `feat/public-guide-capabilities`
 
-[Public guide rama content...]
+**Propósito**: Generaliza el HMAC ad-hoc de Rama 13D (`guide-incidents-<slug>`, single-purpose para `incident_read`) en un primitivo tipado y reutilizable parametrizado por `(capability, slug, payload)`. La forma criptográfica es la misma que 13D — solo el envelope se generaliza — para no incurrir en deuda al añadir capacidades futuras (`guide_feedback`, `local_recommendation`, `booking_extension_request`). Cierra una pieza de `SECURITY_AND_AUDIT.md` §0.2 ("Capabilities para guest flows").
+
+**Contrato del primitivo** (extracto — completo en `SECURITY_AND_AUDIT.md` §0.5):
+
+- **Envelope firmado**: `{cap, slug, iat, payload, v}` codificado base64url; HMAC-SHA256 sobre el envelope ya codificado. Wire format: `<base64url envelope>.<base64url hmac>`.
+- **Single shared secret**: `PUBLIC_CAPABILITY_SECRET` (≥16 chars en prod, dev fallback determinístico). Aislamiento cross-capability se enforce **dentro** del envelope firmado (`obj.cap === capability`), no por per-cap secrets.
+- **Cookie name**: `gc-<capability>-<slug>` (RFC 6265 token-safe, verificado en module-load).
+- **Per-capability TTL** (`DEFAULT_CAPABILITY_TTL_SECONDS = 7d` para `incident_read`).
+- **Versionado del envelope**: `PUBLIC_CAPABILITY_VERSION = 1`. Bumpear = rotación dura (todas las cookies pendientes invalidan).
+- **Clock-skew guard (solo futuro)**: 5 min. `iat` >5 min en el futuro se rechaza; antigüedad bound por TTL.
+- **Per-capability payload schema (Zod)**: validado en sign **y** verify (defensa en profundidad contra forge).
+- **Drop-silent semantics**: cualquier fallo (firma, version, slug, capability, TTL, schema, parse) → `null`. Nunca throw, nunca 401/403.
+
+**API mínima**:
+
+```text
+signPublicCapability({ capability, slug, payload, nowSeconds? }) → string
+verifyPublicCapability({ raw, capability, slug, nowSeconds? }) → { payload } | null
+publicCapabilityCookieName(capability, slug) → string
+readPublicCapabilityFromCookie({ cookies, capability, slug, nowSeconds? }) → { payload } | null
+setPublicCapabilityCookie({ response, capability, slug, signedValue }) → void
+isRegisteredCapability(key) → key is CapabilityKey
+```
+
+**Por qué TS const y no JSON taxonomy**: las taxonomías JSON modelan **dominio de producto** (qué amenities, qué categorías de incidente existen) — el registry de capabilities modela el **mecanismo de autorización**. Cuatro razones (detalle en `SECURITY_AND_AUDIT.md` §0.5): (1) infrastructure code-coupled, (2) no editable por operadores, (3) content vs mechanism, (4) per-capability type inference.
+
+**Catálogo activo en 15C**: una sola capability — `incident_read` (TTL 7d, payload `{ ids: string[] (≤10) }`, consumida por `GET /api/g/:slug/incidents/:id` migrada de 13D). Candidatos diferidos (no implementados, listados en §0.5): `guide_feedback`, `local_recommendation`, `booking_extension_request`. Política: una capability nueva siempre aterriza junto con su consumer en la misma PR — nunca especulativa.
+
+**Archivos a crear**:
+
+- `src/lib/auth/public-capability-registry.ts` — typed registry. Exporta `PUBLIC_CAPABILITIES`, `CapabilityKey`, `CapabilityPayload<C>`, `isRegisteredCapability`, `PUBLIC_CAPABILITY_VERSION`, `DEFAULT_CAPABILITY_TTL_SECONDS`, `MAX_INCIDENT_IDS_PER_COOKIE`.
+- `src/lib/auth/public-capability.ts` — sign/verify/cookie I/O. Module-load RFC 6265 token check sobre `PUBLIC_CAPABILITIES` keys.
+- `src/test/auth-public-capability.test.ts` — 27 invariantes (round-trip, cross-slug, cross-capability, sig tampering, TTL + skew, version, payload schema, cookie helpers, registry).
+
+**Archivos a modificar**:
+
+- `src/app/api/g/[slug]/incidents/route.ts` (POST) — sign + set cookie via nuevo API.
+- `src/app/api/g/[slug]/incidents/[id]/route.ts` (GET) — `readPublicCapabilityFromCookie`.
+- `src/app/g/[slug]/incidents/[id]/page.tsx` — tracking page migrada al mismo helper.
+- `.env.example` — `GUEST_INCIDENT_COOKIE_SECRET` → `PUBLIC_CAPABILITY_SECRET`.
+- `docs/SECURITY_AND_AUDIT.md` — §0.1 + §0.2 + nuevo §0.5 (catálogo + contrato + rationale TS-vs-JSON + candidatos diferidos).
+- `docs/API_ROUTES.md` — POST/GET incident endpoints reflejan la nueva cookie.
+- `docs/FEATURES/LOCAL_GUIDE.md` — flujo, piezas y sección de cookie reescritas.
+- `docs/ROADMAP.md` — entrada ✅ Fase 15 → 15C.
+
+**Archivos a eliminar (cutover duro, sin retención legacy)**:
+
+- `src/lib/services/guest-incident-cookie.ts`.
+- `src/test/incidents/guest-incident-cookie.test.ts`.
+
+**Tests**:
+
+- 27 invariantes en `src/test/auth-public-capability.test.ts`:
+  - Round-trip: sign + verify; malformed (no dot, empty sig).
+  - Cross-slug isolation.
+  - Sig tampering (signature flip, payload flip-with-original-sig).
+  - TTL + clock skew (older than TTL, inside TTL window, future > 5 min, future ≤ 5 min).
+  - Cross-capability isolation (forged `cap` field, non-string `cap`).
+  - Envelope version (wrong v, missing v).
+  - Payload schema (sign-time throw at >cap; verify-time reject malformed; verify-time reject over-cap).
+  - Cookie name (slug isolation, RFC 6265 token-safe).
+  - `readPublicCapabilityFromCookie` (one-call wrapper).
+  - `setPublicCapabilityCookie` (canonical attributes).
+  - Registry coverage.
+- Suite incident existente intacta y verde.
+
+**Criterio de done**:
+
+- ✅ 27 invariantes verdes.
+- ✅ Suite global verde (1846 passed / 1 skipped).
+- ✅ `tsc --noEmit` verde.
+- ✅ Cookie vieja `guide-incidents-<slug>` no existe en código (grep negativo).
+- ✅ `GUEST_INCIDENT_COOKIE_SECRET` ya no se lee (grep negativo).
+- ✅ Nueva cookie `gc-incident_read-<slug>` se firma + valida en happy path manual.
+- ✅ Tracking page con cookie tampered → 404 (drop-silent).
+- ✅ Cross-slug attempt (cookie de slug A en URL slug B) → 404.
+
+**Restricciones**:
+
+- ❌ No retención legacy. `guest-incident-cookie.ts` + `GUEST_INCIDENT_COOKIE_SECRET` eliminados (cookies viejas drop-silent — huéspedes con tracking page abierta re-reportan).
+- ❌ No catálogo especulativo. Solo `incident_read` activa. Las demás se documentan como diferidas.
+- ❌ No per-capability secrets. Single `PUBLIC_CAPABILITY_SECRET` + envelope-bound isolation.
+- ❌ No throws en `verifyPublicCapability`. Drop-silent siempre.
+
+**Dependencias / Riesgos**:
+
+- ⚠️ **Cutover duro de secret + cookie name** — al rollout, todas las cookies de tracking pendientes invalidan en el momento. Mitigación: el flujo de re-reporte es trivial (un huésped con la tracking page abierta reportaría de nuevo), y la auditoría del impacto está acotada (la cookie es de duración 7d).
+- ⚠️ **RFC 6265 token check at module load** — si una futura capability key contiene caracteres no-token (espacios, `:`), la app no arranca. Mitigación deliberada — fail-loud antes que silenciar el problema.
+- ⚠️ **Single shared secret** — rotar invalida toda capacity de guest pendiente en una sola operación. Trade-off vs per-cap secrets: simplificación operativa a coste de blast radius. Aceptado para 15C; rotación per-cap se difiere si surge necesidad real.
+
+**No-alcance**:
+
+- No nuevas capabilities activas (solo migración de `incident_read` existente).
+- No revocación on-demand (`revokePublicCapability`) — diferido. El TTL de 7d es la única invalidación natural; rotación de secret es la nuca.
+- No fingerprint en payload para detección de replay cross-device — diferido.
+- No `AuditLog` integration al firmar/revocar — diferido a 15D.
+- No widget admin de cookies de capability — diferido (no hay caso de uso operativo aún).
+
+**Preparación**:
+
+- **Contexto a leer**:
+  - `src/lib/services/guest-incident-cookie.ts` (13D, a eliminar) — la forma criptográfica que se generaliza.
+  - `docs/SECURITY_AND_AUDIT.md` §0.2 — gap que cierra esta rama.
+  - `src/lib/auth/session-crypto.ts` (15A) — patrón `timingSafeEqual` + `Buffer.toString('base64url')` reusable.
+- **Docs a actualizar al terminar**:
+  - `docs/SECURITY_AND_AUDIT.md` (§0.1 + §0.2 + nuevo §0.5).
+  - `docs/API_ROUTES.md` (POST/GET incident).
+  - `docs/FEATURES/LOCAL_GUIDE.md` (flujo + piezas + cookie).
+  - `docs/ROADMAP.md` (Fase 15).
+  - `.env.example`.
+- **Skills**: `/pre-commit-review`, `/simplify`, `/review-pr-comments` (post-PR).
 
 ---
 
