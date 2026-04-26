@@ -6,13 +6,13 @@
 
 ## 1. Snapshot en 30 segundos
 
-- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). 14 ramas ✅ (hasta 10J). Siguiente funcional: **10G `feat/guide-hero-quick-actions`** (primer consumidor del harness 10J). La Fase 15 (Liora Design Replatform, 7 ramas) existe en el plan pero está **bloqueada por entrega del paquete de diseño** y no bloquea el flujo funcional. Reglas anti-legacy aplicables desde ya: `docs/ARCHITECTURE_OVERVIEW.md` §14.
+- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). Estado: Fases 8–15 ✅ cerradas (hasta 15E, PR #92, `fc39482`). Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`**. Fase 16 (Liora Design Replatform, 7 ramas 16A-G) está **bloqueada por entrega del paquete de diseño** y no bloquea ningún trabajo funcional restante. Reglas anti-legacy aplicables desde ya: `docs/ARCHITECTURE_OVERVIEW.md` §14.
 - Estado vivo: [ROADMAP.md](ROADMAP.md) (tabla + "Progreso Fase X" por rama).
 - Research base congelado v1.0 (referenciar por línea, no copiar):
   - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md)
   - [research/AI_KNOWLEDGE_BASE_SPEC.md](research/AI_KNOWLEDGE_BASE_SPEC.md)
   - [research/IMPLEMENTATION_PLAN.md](research/IMPLEMENTATION_PLAN.md)
-  - [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — origen de rev.4; la rama 10F resolvió la frontera de presentación. 10J (harness E2E+axe) queda como rama formal siguiente antes de 10G/H/I.
+  - [research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md) — origen de rev.4 del pipeline guest (Fase 10 cerrada).
 - Diferido (no confundir con roadmap): [FUTURE.md](FUTURE.md).
 
 ---
@@ -112,7 +112,7 @@ Subagentes: `Explore` (búsqueda cross-archivo >3 queries), `code-explorer` (tra
 
 Context7 (MCP) se activa auto — no invocar explícitamente salvo que falle.
 
-**Skills `/liora-*`**: **no disponibles**. Se crean al arrancar rama 15A junto con los docs `docs/LIORA_*.md`. Ver `docs/MASTER_PLAN_V2.md` § FASE 15.
+**Skills `/liora-*`**: **no disponibles**. Se crean al arrancar rama 16A junto con los docs `docs/LIORA_*.md`. Ver `docs/MASTER_PLAN_V2.md` § FASE 16.
 
 ---
 
@@ -130,19 +130,23 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 
 ## 10. Próxima rama (mantener actualizado al hacer merge)
 
-**Rama 10G — `feat/guide-hero-quick-actions`** (primer consumidor del harness 10J ya mergeado). Ver `MASTER_PLAN_V2.md § Rama 10G` para scope + Fase -1.
+**Estado tras merge de `chore/post-fase-15-docs-sync`**: wait-state explícito hasta entrega del paquete Liora. La fila funcional del plan original está esencialmente cerrada — Fases 8–15 ✅ completas, Fase 16 bloqueada.
 
-**Por qué 10G ahora**: 10F selló la frontera de presentación (`normalizeGuideForPresentation`, presenter registry, 5 invariantes anti-leak). 10J desbloqueó el gate compartido E2E + axe. 10G consume `heroEligible` + `quickActionEligible` + `displayValue` (ya listos en taxonomías + normalizer) y es el único que falta antes de poder medir UX guest de punta a punta.
+**Candidata funcional preferida**: **Rama 13C — `feat/guide-maps-embedded`**. Única rama del plan original sin cerrar (sigue ⏳ en `Progreso Fase 13`). Reusa `buildGuideMapData` + `obfuscateAnchor` ya entregados en 13B y consume el surface de presentación de 10F. Encaja con la regla anti-Liora: estructura/comportamiento/a11y sobre fidelidad visual. Esfuerzo estimado 1-2 semanas, riesgo bajo.
 
-**Lectura mínima para arrancar**:
+**Alternativa corta de alto leverage**: **FUTURE.md §1 Nivel 0 — script `taxonomy:lint`** (1 día, validación + diff + impacto antes de tocar `taxonomies/*.json`). Cero dependencia de Liora.
 
-- [MASTER_PLAN_V2.md § Rama 10G](MASTER_PLAN_V2.md) — entera.
-- [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md) — `L5-31` (journey), `L104-160` (UX patterns hero), `L211-234` (interactividad quick-actions).
-- `docs/FEATURES/GUEST_GUIDE_UX.md` — cards + targets + a11y.
-- `src/lib/services/guide-presentation.service.ts`, `taxonomies/policy_taxonomy.json` + `taxonomies/contact_roles.json` (flags `heroEligible` / `quickActionEligible`).
-- `src/components/public-guide/*` — renderer React de 10E (`guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, etc.).
-- `docs/ARCHITECTURE_OVERVIEW.md` §14 — reglas anti-legacy aplicables (no consolidar polish visual final; Liora Fase 15 supersedes eventualmente).
+**Wait-state estricto**: si producto no quiere abrir 13C ni la alternativa, esta rama de docs-sync deja el repo coherente. La siguiente sesión arranca con `git fetch origin main` + esperar entrega Liora.
 
-**Restricción de Fase 15 vigente**: 10G prioriza estructura, comportamiento, a11y y reuse de primitivos existentes en `src/components/ui/` (`collapsible-section.tsx`, `primary-cta.tsx`, `info-tooltip.tsx`, etc.) y de la spec `docs/FEATURES/GUEST_GUIDE_UX.md` (`HeroCard`, `EssentialCard` etc. son nombres de spec a materializar vía composición, no archivos existentes hoy). No consolidar paleta, microcopy ni iconografía como definitivos — Liora los supersede cuando llegue el paquete de diseño.
+**Lectura mínima para arrancar 13C** (cuando se decida ejecutar):
 
-Tras merge: actualizar este apartado + "Progreso Fase 10" en ROADMAP.md. Próxima por orden óptimo: **10H `feat/guide-client-search`**.
+- [MASTER_PLAN_V2.md § Rama 13C](MASTER_PLAN_V2.md) — sección entera.
+- [docs/FEATURES/LOCAL_GUIDE.md](FEATURES/LOCAL_GUIDE.md) — POIs (13A), events (13B), issue reporting (13D), capability cookie (15C).
+- [docs/SECURITY_AND_AUDIT.md §2](SECURITY_AND_AUDIT.md) — invariante de obfuscación de coordenadas para `audience=guest|ai`.
+- `src/lib/services/guide-map.service.ts` (helpers `buildGuideMapData`, `obfuscateAnchor`).
+- `src/components/public-guide/*` — renderer React + tokens existentes.
+- `docs/ARCHITECTURE_OVERVIEW.md` §14 — reglas anti-legacy (Liora Fase 16 supersede eventualmente; no consolidar polish visual final).
+
+**Restricción de Fase 16 vigente**: 13C prioriza estructura, comportamiento y a11y sobre fidelidad visual. Reusa primitivos de `src/components/ui/`. No introduce duplicados `*V2`/`New*`/`Better*` ni convivencias legacy sin plan de retirada.
+
+Tras merge de 13C: actualizar este apartado (volver a wait-state Liora si no hay otra rama funcional planificada) + marcar 13C en ROADMAP.md.

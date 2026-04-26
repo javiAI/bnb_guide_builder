@@ -6,7 +6,7 @@ Este documento cubre **visibilidad de datos** (qué campo puede salir a qué aud
 
 ### 0.1 Qué existe hoy
 
-- **Auth de operator activa (Ramas 15A–15D)**: Google OAuth login (15A), guards de ownership por workspace en API routes y server pages (15B), capability primitive tipado para guest flows (15C), audit writer real + per-actor rate-limit + invariantes CI bloqueantes (15D).
+- **Auth de operator activa (Ramas 15A–15E)**: Google OAuth login (15A), guards de ownership por workspace en API routes y server pages (15B), capability primitive tipado para guest flows (15C), audit writer real + per-actor rate-limit + invariantes CI bloqueantes (15D), closed-loop apply de imports Airbnb/Booking con audit `import.apply` + idempotency fingerprint (15E).
 - **Wrapper transversal `withOperatorGuards`**: las 10 rutas bajo `src/app/api/properties/[propertyId]/...` componen `requireOperator()` + `loadOwnedProperty(propertyId)` + `applyOperatorRateLimit(bucket)` en un solo punto. El wrapper NO escribe audit — `writeAudit()` queda explícito en cada call site de mutación (decisión Fase -1 de 15D para no opacar el wrapper). Pinneado por `src/test/auth/operator-route-coverage.test.ts`.
 - **AuditLog writer real (Rama 15D)**: `src/lib/services/audit.service.ts` expone `writeAudit({propertyId, actor, entityType, entityId, action, diff?})` append-only y fail-soft. `propertyId` es nullable en el schema para soportar audits globales (`session.start`/`session.end`). Acciones whitelisted en `AUDIT_ACTIONS` con runtime guard `assertAuditAction()`. Actor format `user:<id> | guest:<slug> | system:<job>` pinneado por `audit-actor-format.test.ts`. Diffs pasan por `redactSecretsForAudit()` (recursivo, con cap de profundidad y detección de ciclos) antes de persistirse — ver §3.
 - **Per-actor rate limit (Rama 15D)**: `src/lib/services/operator-rate-limit.ts`, tres buckets pinneados:
@@ -44,7 +44,7 @@ Este documento cubre **visibilidad de datos** (qué campo puede salir a qué aud
 
 ### 0.3 Por qué se resolvió transversalmente
 
-La trampa que se quería evitar: cada PR inventando su propio mini-modelo de auth, env-tokens temporales que se vuelven deuda silenciosa, surface protegida solo a trozos. Las cuatro ramas de Fase 15 (15A → 15D) cerraron los tres frentes (operator auth, guest capabilities, audit/rate-limit) sobre **un único primitivo transversal** (`withOperatorGuards`) que cualquier ruta nueva en `src/app/api/properties/[propertyId]/...` debe usar — el test `operator-route-coverage.test.ts` falla en CI si una ruta nueva omite el wrapper sin marcar `// guards:manual <razón>`.
+La trampa que se quería evitar: cada PR inventando su propio mini-modelo de auth, env-tokens temporales que se vuelven deuda silenciosa, surface protegida solo a trozos. Las cinco ramas de Fase 15 (15A → 15E) cerraron los tres frentes (operator auth, guest capabilities, audit/rate-limit) sobre **un único primitivo transversal** (`withOperatorGuards`) que cualquier ruta nueva en `src/app/api/properties/[propertyId]/...` debe usar — el test `operator-route-coverage.test.ts` falla en CI si una ruta nueva omite el wrapper sin marcar `// guards:manual <razón>`. 15E cerró el bucle de imports (Airbnb + Booking) bajo el mismo primitivo, escribiendo `action=import.apply` con fingerprint idempotente.
 
 ### 0.4 Regla dura para nuevas rutas operator-facing
 

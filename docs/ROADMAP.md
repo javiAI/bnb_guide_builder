@@ -2,7 +2,7 @@
 
 Estado actual y próximos pasos. Este documento es el punto de entrada rápido; el detalle ejecutable vive en `MASTER_PLAN_V2.md`.
 
-## Donde estamos (2026-04-17)
+## Donde estamos (2026-04-26)
 
 ### Completado — MASTER_PLAN v1 (fases 1A-7B, 20 PRs)
 
@@ -24,54 +24,44 @@ Solo `7C — completeness calibration`, measurement-dependent. Ver `FUTURE.md`.
 
 ---
 
-## Siguiente — MASTER_PLAN v2 (fases 8-14)
+## Siguiente — MASTER_PLAN v2
 
 Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref sesión: [HANDOFF.md](HANDOFF.md).
 
-| Fase | Título | Ramas | Riesgo | Esfuerzo |
-|---|---|---:|---|---|
-| 8 ✅ | Deuda técnica pre-output | 3 | Bajo | completada |
-| 9 ✅ | Guest Guide v2 (output principal) | 4 | Medio | completada |
-| 10 | Media + Guide Renderer + Presentation layer + PWA + E2E harness | 10 | Medio | 10A–G/J ✅; 10H/I 1-2 sem |
-| 11 | Knowledge + Assistant + i18n | 6 | Alto | 4-5 sem |
-| 12 | Messaging con variables | 3 | Medio | 1-2 sem |
-| 13 | Guía local + issue reporting | 4 | Bajo | 2 sem |
-| 14 | Platform integrations (Airbnb/Booking) | 4 | Alto | multi-mes |
-| 15 | Liora Design Replatform | 7 | Bloqueada | depende de entrega del paquete de diseño |
-| 16 | Auth & access control foundation | 4 | Alto | transversal — priorización de producto/seguridad |
+| Fase | Título | Ramas | Estado |
+|---|---|---:|---|
+| 8 | Deuda técnica pre-output | 3 | ✅ cerrada |
+| 9 | Guest Guide v2 (output principal) | 4 | ✅ cerrada |
+| 10 | Media + Guide Renderer + Presentation layer + PWA + E2E harness | 10 | ✅ cerrada |
+| 11 | Knowledge + Assistant + i18n | 6 | ✅ cerrada |
+| 12 | Messaging con variables | 3 | ✅ cerrada |
+| 13 | Guía local + issue reporting | 4 | ⏳ parcial — 13A/13B/13D ✅, 13C `feat/guide-maps-embedded` pendiente |
+| 14 | Platform integrations (Airbnb/Booking) | 5 | ✅ cerrada (14A–14E) |
+| 15 | Auth & access control foundation | 5 | ✅ cerrada (15A–15E) |
+| 16 | Liora Design Replatform | 7 | ⏳ bloqueada por entrega del paquete de diseño |
 
-**Total plan V2**: 16 ramas ✅ completadas + 11A + 11B + 11C + 11D + 11E + 11F + 12A + 12B + 12C + 13A + 13B + 13C + 13D + 14A + 14B + 14C. Siguiente funcional: **Fase 14D** — Platform import (reverse pipeline + reconciliación).
+**Estado actual**: Fase 15 cerrada con 15E (PR #92, `fc39482`). Fase 16 (Liora) bloqueada hasta que llegue el paquete de diseño. Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`** — siguiente candidata recomendada.
 
-**Fase 15 (Auth & access control foundation)** es una iniciativa **transversal** crítica que **bloquea** a 15E (import-apply). Todas las rutas `/api/properties/[propertyId]/...` actuales siguen el patrón `findUnique → 404` sin sesión ni workspace ownership check. Fase 15 cubre (a) operator auth + sessions, (b) route guards + ownership, (c) public-guide capabilities generalizando el HMAC de 13D, (d) hardening + AuditLog real. Rama 15E (import-apply) depende críticamente de 15A-15D. Ver `docs/MASTER_PLAN_V2.md` § FASE 15 y `docs/SECURITY_AND_AUDIT.md` §0.
+**Fase 15 (Auth & access control foundation)** cubrió de forma transversal (a) operator OAuth + sessions (15A), (b) route guards + ownership cross-workspace (15B), (c) public-guide capability primitive generalizando el HMAC de 13D (15C), (d) hardening + AuditLog real + per-actor rate-limit (15D), (e) closed-loop import apply para Airbnb + Booking (15E). Toda ruta nueva bajo `/api/properties/[propertyId]/...` se escribe con `withOperatorGuards<P>(handler, { rateLimit })`. Ver `docs/SECURITY_AND_AUDIT.md` §0 para el contrato vivo + deuda explícita post-15D (audit reads UI, retention policy, audit en cron jobs).
 
-**Fase 16 (Liora Design Replatform)** existe en el plan como prep condicional: está bloqueada por la entrega del paquete de diseño y **no bloquea** a 10H/I ni a las Fases 11-15. Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 16 para scope y ramas 16A-G.
+**Fase 16 (Liora Design Replatform)** existe en el plan como prep condicional: bloqueada por la entrega del paquete de diseño. **No bloquea** ningún trabajo funcional restante (13C, items diferidos de FUTURE.md). Las reglas anti-legacy de `docs/ARCHITECTURE_OVERVIEW.md` §14 aplican desde ya a toda rama en vuelo. Ver `docs/MASTER_PLAN_V2.md` § FASE 16 para scope y ramas 16A-G.
 
-### Estado y problema actual (post-10I 2026-04-19)
+### Estado actual (post-15E, 2026-04-26)
 
-La infraestructura del pipeline guest está completa: `composeGuide → filterByAudience → normalizeGuideForPresentation → render` con tipos sólidos, media proxy estable (10D), renderer React (10E), **capa de presentación terminal (10F)** que sella la frontera entre modelo interno y salida guest, **harness E2E + axe-core compartido (10J)** que ejecuta smoke + anti-leak + a11y sobre `/g/:slug` en 4 viewports × 3 fixtures como gate bloqueante en CI, **hero operativo con 5 quick actions universales (10G)** con degradación grácil, **client search instant con Fuse.js (10H)** sobre el surface de presentación, y **PWA instalable + offline 3-tier (10I)** con SW per-slug versionado por `buildVersion` de 10H.
+Producto en punto naturalmente estable tras cerrar Fase 15:
 
-**Qué queda pendiente del pliegue guest**: nada — Fase 10 completada. Siguiente: Fase 11 (Knowledge + Assistant + i18n).
+- **Guest guide premium**: pipeline `composeGuide → filterByAudience → normalizeGuideForPresentation → render` (10F) + media proxy content-addressable (10D) + renderer React (10E) + hero + 5 quick actions (10G) + client search Fuse.js (10H) + PWA offline 3-tier (10I) + harness E2E + axe-core (10J).
+- **Knowledge + Assistant**: extracción AI completa con i18n (11A/B), pipeline RAG production (pgvector + BM25 + RRF + Cohere rerank + Sonnet synthesizer, 11C), escalation handoff con cascada 3-tier (11D), release gate de evals deterministas (11E), búsqueda semántica pública para huésped (11F).
+- **Messaging**: variables resolver con 4 estados (12A), automations + scheduler con safety gates de sensitive-prearrival (12B), starter packs merge-by-slot (12C).
+- **Guía local**: POIs autosuggest provider-agnostic (13A), events sync diario multi-source (13B), issue reporting end-to-end con cookie HMAC (13D — generalizado a capability primitive en 15C). **13C `feat/guide-maps-embedded` sigue ⏳**.
+- **Platform integrations**: mappings audit forward+reverse (14A), exports Airbnb (14B) + Booking (14C), import preview Airbnb (14D) + Booking (14E), apply atomic con idempotencia + audit (15E).
+- **Auth & access control**: operator OAuth (15A), route guards + ownership (15B), public capability primitive (15C), hardening + audit + rate-limit (15D), closed-loop import apply (15E).
 
-**Qué está bien**:
+**Siguiente funcional defendible**: **13C `feat/guide-maps-embedded`** — única rama del plan original sin cerrar. Reusa `buildGuideMapData`/`obfuscateAnchor` de 13B y consume el surface de presentación de 10F. Encaja con la regla anti-Liora (estructura/comportamiento/a11y sobre fidelidad visual).
 
-- Composición y filtrado (9A) + presentation layer (10F) con presenter registry + 5 invariantes anti-leak blindadas.
-- Media proxy content-addressable con ETag escopado a variante (10D).
-- `includesMedia` per sección evita queries vacías.
-- `GUIDE_TREE_SCHEMA_VERSION = 3` con pre-v3 normalization al servir (`snapshotPreV3`).
+**Alternativa corta de alto leverage** (mientras Liora bloquea): **FUTURE.md §1 Nivel 0 — script `taxonomy:lint`** (1 día, validación + diff + impacto antes de tocar `taxonomies/*.json`).
 
-**Prioridades reales (orden óptimo)**:
-
-1. **10H client search** — 0.5 semana. Indexa sobre `displayValue` / `displayFields.value`.
-2. **10I PWA offline** — 1 semana. Cachea el tree ya normalizado.
-3. **Fase 11** — Knowledge + Assistant + i18n.
-4. **Fase 12/13/14** — Messaging, Guía local + issue reporting, Platform integrations.
-
-**Orden sugerido (actualizado)**:
-
-- Ahora: **10H search** (Fuse.js instant, consume `displayValue`/`displayFields` del pipeline 10F).
-- Después: 10I PWA.
-- Siguiente: **Fase 11** — Knowledge + Assistant + i18n.
-- Luego: **Fase 12** → **Fase 13** → **Fase 14** según demanda estratégica.
+**Wait-state explícito**: si producto no quiere abrir 13C ni la alternativa, el repo queda coherente y la siguiente sesión arranca con `git fetch + esperar entrega Liora`.
 
 ### Progreso Fase 8
 
@@ -137,14 +127,6 @@ La infraestructura del pipeline guest está completa: `composeGuide → filterBy
 - ✅ **15C** `feat/public-guide-capabilities` — generaliza el HMAC ad-hoc de 13D a un primitivo tipado `signPublicCapability` / `verifyPublicCapability` parametrizado por `(capability, slug, payload)` en `src/lib/auth/public-capability.ts` + registro tipado en `public-capability-registry.ts` (envelope `{cap, slug, iat, payload, v}`, single shared `PUBLIC_CAPABILITY_SECRET`, cookie `gc-<cap>-<slug>`, drop-silent). Aislamiento cross-slug + cross-capability enforced dentro del payload firmado (no por nombre de cookie ni per-cap secret). Schema Zod por capability validado en sign **y** verify. Catálogo activo en 15C: única `incident_read` (TTL 7d, payload `{ids[≤10]}`). 13D incident routes + tracking page migradas; `guest-incident-cookie.ts` + su test borrados (cutover duro — `GUEST_INCIDENT_COOKIE_SECRET` reemplazado por `PUBLIC_CAPABILITY_SECRET`, cookies viejas drop-silent). SECURITY_AND_AUDIT.md §0.5 documenta contrato + rationale TS-vs-JSON + candidatos diferidos (`guide_feedback`, `booking_extension_request`).
 - ✅ **15E** `feat/platform-import-apply` — cierra el loop import preview→decision→apply (14D/14E + 15D). `applyImportDiff` en `src/lib/imports/shared/import-applier.service.ts` es el único punto de mutación bajo `src/lib/imports/**` (whitelist en `import-preview-no-mutate.test.ts`). Endpoints `POST /api/properties/:propertyId/import/{airbnb,booking}/apply` con `withOperatorGuards({ rateLimit: "mutate" })`. Server-recomputed diff (nunca confía en diff cliente), 3 estrategias por campo (`take_import|keep_current|skip`), prefijos `presence.*`/`freeText.*`/`customs.*` rechazados como `INVALID_RESOLUTION`, policies `unactionable` server-skipped + warning. Transacción única con `SELECT … FOR UPDATE` sobre `properties` (defensa contra merge concurrente de `policiesJson` bajo READ_COMMITTED). Idempotencia por `payloadFingerprint` (SHA-256 truncado a 16 hex sobre canonical JSON de `(platform, payload, resolutions)`); replay con misma tripleta → `result:noop` sin tocar Property ni audit row (solo `console.info`). Audit envelope `{platform, payloadFingerprint, applied[], skipped[], warnings[]}` para success y `{...failed:true, error}` para failed; `entityType:Property`, `action:import.apply` (extiende `AUDIT_ACTIONS`). Filas `failed:true` no bloquean re-apply. UI inline en preview panels (Airbnb + Booking) con `<ImportApplyPanel>` (3-radio strategy picker, fetch directo, surface inline de los 5 estados). 9 test files nuevos (25 tests): planApply puro, idempotencia, atomicidad, audit envelope, server-rejects-unactionable, lossy-skip, stale-resolutions, trusts-server-diff, cross-workspace 403. Total 1908/1908 unit + typecheck verdes.
 - ✅ **15D** `chore/auth-hardening-and-audit` — wrapper transversal `withOperatorGuards<P>(handler, { rateLimit })` componiendo `requireOperator()` + `loadOwnedProperty()` + `applyOperatorRateLimit()` aplicado a las 10 rutas `/api/properties/[propertyId]/...`. AuditLog writer real `writeAudit({propertyId, actor, entityType, entityId, action, diff?})` append-only fail-soft (`src/lib/services/audit.service.ts`); `propertyId` nullable para audits globales (migración `audit_log_property_optional`); whitelist de acciones via `AUDIT_ACTIONS` + `assertAuditAction()`; redacción recursiva (depth cap 8, WeakSet ciclos) de `access_code`/`smart_lock_*`/`X-Amz-*`/R2 URLs. Per-actor rate-limit en tres buckets (`read` 60, `mutate` 20, `expensive` 10 req/60s) sobre el sliding-window de 13D; `places-search` mantiene su limiter por-property en cascada. Wirings de `writeAudit`: 3 acciones de `guide.actions` (publish/unpublish/rollback), 5 acciones de `incident.actions`, `createIncidentFromGuest` con `actor:guest:<slug>` (slug threadeado desde la API route), OAuth callback `session.start`, logout `session.end` (solo si la cookie verifica). 5 invariantes CI bloqueantes + 2 unit tests (`src/test/auth/*`): operator-route-coverage (todo route.ts usa el wrapper o anota `// guards:manual`), audit-mutation-coverage (TARGETS list pinneada por nombre de función), audit-redaction (8 patrones), audit-actor-format (regex), cross-workspace-invariants (≥1 scope-guard por `requireOperator()`), audit-writer (6 tests), operator-rate-limit (7 tests). 1885/1885 unit verdes + typecheck clean. Decisión Fase -1: wrapper NO escribe audit — `writeAudit()` queda explícito en cada call site para no opacar la composición. Audit reads, retention policy y audit en cron jobs documentados como deuda explícita en `SECURITY_AND_AUDIT.md` §6.
-
-### Orden sugerido
-
-1. **Ahora**: Fase 8 (desbloquea todo lo demás barato)
-2. **Sprint siguiente**: 9 + 10 en paralelo (output + media se necesitan juntos)
-3. **Mes 2**: 11 (Knowledge + Assistant — diferenciador del producto)
-4. **Mes 3**: 12 + 13 en paralelo
-5. **Q siguiente**: 14 si hay decisión estratégica de plataformas
 
 ---
 

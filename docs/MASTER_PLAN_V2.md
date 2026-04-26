@@ -1,8 +1,8 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-18 (rev. 5 — Fase 16 Liora Design Replatform añadida como prep condicional: 7 ramas bloqueadas por entrega del paquete de diseño; no bloquean 10G/H/I ni Fases 11-14)
+Versión: 2026-04-26 (rev. 6 — Fases 8–15 cerradas; 13C `feat/guide-maps-embedded` queda como única rama funcional pendiente del plan original; Fase 16 Liora Design Replatform sigue bloqueada por entrega del paquete de diseño y no bloquea 13C)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
-Alcance: 8 fases, 41 ramas, ~41 PRs independientes y revisables
+Alcance: 9 fases (8–16), 47 ramas, ~47 PRs independientes y revisables
 
 Este documento es **fuente de verdad ejecutable y viva**. Antes de cada rama, leer su sección entera y seguir el **Protocolo de ejecución por rama**. Las actualizaciones al plan se hacen en PRs aparte y auditadas (ver §2.10).
 
@@ -205,17 +205,19 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 
 ## 3. Resumen de fases
 
-| Fase | Título | Ramas | Riesgo | Valor | Breaking? |
-|---|---|---:|---|---|---|
-| 8 | Deuda técnica pre-output | 3 | Bajo | Medio | No |
-| 9 | Guest Guide v2 | 4 | Medio | Alto | No |
-| 10 | Media + Guide Renderer + Presentation layer + PWA | 9 | Medio | Alto | Sí (storage, media URLs, `GuideTree` schema v3) |
-| 11 | Knowledge + Assistant + i18n | 6 | Alto | Alto | No |
-| 12 | Messaging con variables | 3 | Medio | Alto | No |
-| 13 | Guía local + issue reporting | 4 | Bajo | Medio | No |
-| 14 | Platform integrations | 4 | Alto | Alto | Posible |
+| Fase | Título | Ramas | Riesgo | Valor | Breaking? | Estado |
+|---|---|---:|---|---|---|---|
+| 8 | Deuda técnica pre-output | 3 | Bajo | Medio | No | ✅ cerrada |
+| 9 | Guest Guide v2 | 4 | Medio | Alto | No | ✅ cerrada |
+| 10 | Media + Guide Renderer + Presentation layer + PWA | 10 | Medio | Alto | Sí (storage, media URLs, `GuideTree` schema v3) | ✅ cerrada (10A–10J) |
+| 11 | Knowledge + Assistant + i18n | 6 | Alto | Alto | No | ✅ cerrada |
+| 12 | Messaging con variables | 3 | Medio | Alto | No | ✅ cerrada |
+| 13 | Guía local + issue reporting | 4 | Bajo | Medio | No | ⏳ parcial — 13A/13B/13D ✅, 13C `feat/guide-maps-embedded` pendiente |
+| 14 | Platform integrations | 5 | Alto | Alto | Posible | ✅ cerrada (14A–14E) |
+| 15 | Auth & access control | 5 | Alto | Alto | Sí (NextAuth + per-property scope) | ✅ cerrada (15A–15E) |
+| 16 | Liora Design Replatform | 7 | Alto | Alto | Sí (componentes UI) | ⏳ bloqueada — espera entrega del paquete de diseño |
 
-**Total**: 33 ramas (12 ✅ completadas hasta 10E; 21 pendientes). Math: Fase 8 (3) + Fase 9 (4) + 10A–10E (5) = 12. La rama `refactor/shared-action-result` (PR #55) queda **fuera** de este recuento del plan por ser refactor interno, no rama numerada. El alta de la rama 10F `fix/guest-presentation-layer` (rev. 4, [HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md](research/HANDOFF_GUEST_GUIDE_AUDIT_AND_REPLAN.md)) separa **presentación** de **modelo** antes de abrir la senda de UX premium (hero, search, PWA).
+**Estado actual (post-15E, 2026-04-26)**: la fila funcional del plan original está esencialmente cerrada. Única rama del plan original sin cerrar: **13C `feat/guide-maps-embedded`** (mapa embebido en la guía pública, reusando `buildGuideMapData` + `obfuscateAnchor` de 13B + capability primitive de 15C). Fase 16 (Liora) sigue bloqueada por entrega externa del paquete de diseño y **no bloquea** ni 13C ni los items de `FUTURE.md`. Las reglas anti-legacy de Liora (`docs/ARCHITECTURE_OVERVIEW.md` §14) aplican a todo trabajo funcional desde ya.
 
 ---
 
@@ -1505,7 +1507,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
   - Sharding del rate-limit en Redis (multi-region) — seguirá in-memory mientras 11 viva en un solo proceso.
   - ANN index sobre `knowledge_items.embedding` — no necesario al scope `propertyId + locale + visibility`.
   - E2E playwright del CTA/semantic-list — 10J cubre shell + anti-leak + axe; la search pipe se cubre con 30 unit tests.
-  - Polish visual de la CTA y la lista semántica — explícitamente diferido a FASE 15 (Liora Design Replatform).
+  - Polish visual de la CTA y la lista semántica — explícitamente diferido a FASE 16 (Liora Design Replatform).
 
 ---
 
@@ -2764,7 +2766,13 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 
 ## FASE 16 — Liora Design Replatform
 
-[Contenido de introducción de Fase 16 — Liora — aquí omitido por brevedad; las ramas 16A-16G están listadas abajo]
+**Objetivo**: replatform visual integral del producto sobre el sistema de diseño Liora (tokens, componentes UI, superficies). Cero cambios funcionales — la replatform se hace **componente a componente** y **superficie a superficie**, manteniendo paridad de comportamiento, accesibilidad y telemetría con el estado pre-rama.
+
+**Estado actual**: ⏳ **bloqueada** — espera entrega externa del paquete de diseño Liora (tokens completos, primitivos, especificación por superficie). La fase no arranca hasta que esa entrega esté en el repo y revisada. Las 7 ramas 16A–16G se planifican como secuencia con dependencias internas, no se abren en paralelo.
+
+**Por qué Fase 16 no bloquea trabajo funcional pendiente**: las reglas duras de `docs/ARCHITECTURE_OVERVIEW.md` §14 y `CLAUDE.md` § "Replatform de diseño (Liora)" se aplican desde ya en toda rama funcional (incluida 13C). Con esa disciplina, el trabajo funcional construido antes de Liora se replatformará por superficie sin reabrir scope. El único item realmente bloqueado por la entrega del paquete es Fase 16 misma — no 13C, no FUTURE.
+
+**Preparación al arrancar (rama 16A)**: crear los docs `docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_COMPONENT_MAPPING.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` y los skills `/liora-*` que aparezcan necesarios. Hoy no existen.
 
 ---
 

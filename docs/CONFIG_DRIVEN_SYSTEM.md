@@ -445,10 +445,10 @@ Nunca un input de texto libre cuando hay taxonomía aplicable.
 
 ### Punto de inyección del replatform visual
 
-El sistema config-driven está diseñado para sobrevivir a un replatform visual integral (Fase 15 Liora) sin tocar taxonomías, engines ni resolvers. El punto de inyección es triple:
+El sistema config-driven está diseñado para sobrevivir a un replatform visual integral (Fase 16 Liora) sin tocar taxonomías, engines ni resolvers. El punto de inyección es triple:
 
 - **Tokens** — `src/config/design-tokens.ts` es la única fuente de declaración de variables CSS. Cambiar skin = swap de tokens + re-skin de primitivos.
 - **Registries** — `renderer-registry`, `presenter-registry`, `media-registry` mapean `resolverKey`/`taxonomyKey`/`mimeType` a renderers/presenters. Un nuevo skin sustituye el renderer React, **nunca** la clave taxonómica ni el presenter de salida.
-- **Primitivos compartidos** — hoy los primitivos viven en `src/components/ui/` (kebab-case: `collapsible-section.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `checkbox-card-group.tsx`, `info-tooltip.tsx`, `number-stepper.tsx`, `badge.tsx`, `banner.tsx`, `tooltip.tsx`, `delete-confirmation-button.tsx`, `inline-save-status.tsx`, `location-map.tsx`) y los renderers guest en `src/components/public-guide/` (`guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, etc.). Los nombres spec de `docs/FEATURES/GUEST_GUIDE_UX.md` (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`) son placeholders a materializar por composición en rama 15A/B. Estos cambian de look en un replatform; sus consumidores (section editors, guide renderers) no cambian.
+- **Primitivos compartidos** — hoy los primitivos viven en `src/components/ui/` (kebab-case: `collapsible-section.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `checkbox-card-group.tsx`, `info-tooltip.tsx`, `number-stepper.tsx`, `badge.tsx`, `banner.tsx`, `tooltip.tsx`, `delete-confirmation-button.tsx`, `inline-save-status.tsx`, `location-map.tsx`) y los renderers guest en `src/components/public-guide/` (`guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, etc.). Los nombres spec de `docs/FEATURES/GUEST_GUIDE_UX.md` (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`) son placeholders a materializar por composición en rama 16A/B. Estos cambian de look en un replatform; sus consumidores (section editors, guide renderers) no cambian.
 
 Reglas anti-legacy que protegen esta frontera: ver `docs/ARCHITECTURE_OVERVIEW.md` §14.
