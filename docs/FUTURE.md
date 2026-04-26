@@ -49,29 +49,21 @@ Independientemente del nivel elegido, **arrancar siempre por Nivel 0**.
 
 ## 2. Platform integrations (Airbnb / Booking.com)
 
-**Estado**: diferido.
-**Trigger para activar**: decisión de producto sobre distribución multi-plataforma.
+**Estado**: ✅ **Fase 14 cerrada** (14A–14E) + closed-loop apply en 15E. Documentación viva en [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). Lo que queda en este apartado es solo el work diferido más allá del MVP.
 
-### Alcance
+### Lo que ya hay
 
-- Export: serializar Property + Spaces + Amenities + Policies a schemas Airbnb y Booking.
-- Import: lectura inversa con reconciliación (detectar conflictos, no sobrescribir a ciegas).
-- Mappings: **auditoría real completada en rama 14A (reformulada)** — 194 ítems clasificables en las 5 taxonomías mappables, **161 con mapping real a Airbnb o Booking (83%)** y **33 con `platform_supported: false`** justificado por concepto-no-en-OTA. Shape canónico: `PlatformMapping` como union discriminada por `kind` — `external_id` (catálogo), `structured_field` + `transform` (campo del listing), `free_text` (bucket de texto libre), `room_counter` (contribuye a bedrooms/bathrooms/beds). Helpers completos: `getAirbnbMapping` / `getBookingMapping` (devuelven el mapping completo para que 14B/14C hagan switch sobre `kind`); sugar legacy `getAirbnbId` / `getBookingId` sólo resuelve a string cuando `kind === "external_id"`. Invariante protegida por `src/test/platform-mappings-coverage.test.ts` (28 tests) con `ALLOWED_KINDS` per-taxonomía.
+- 14A — auditoría real de mappings (194 ítems, 161 con mapping a Airbnb o Booking, 33 `platform_supported: false`). Shape `PlatformMapping` (`external_id` / `structured_field` / `free_text` / `room_counter`). Invariante en `src/test/platform-mappings-coverage.test.ts`.
+- 14B/14C — exports Airbnb + Booking (serializers contra schema, validación, snapshot tests).
+- 14D — import reader + diff bidireccional (detecta conflictos, no sobrescribe a ciegas).
+- 14E — UI de import en dashboard.
+- 15E — closed-loop `applyImportDiff` con audit `action=import.apply` + idempotency fingerprint, gateado por `withOperatorGuards`.
 
-### Pre-requisitos
+### Diferido a futuro
 
-- Fases 8-11 estables (core + outputs + knowledge).
-- Credenciales y aprobación de partners API.
-- ✅ Auditoría real de mappings (rama 14A reformulada): `amenity_taxonomy` (129 Airbnb / 46 Booking / 21 unsupp de 150), `property_types` (6/4/1 de 7 — Booking PCT codes verificados), `space_types` (12/12/8 de 20 — bedroom/bathroom vía `room_counter`, kitchen/living/amenities vía `structured_field`, compuestos inexistentes en OTA quedan unsupp), `access_methods` (5/5/1 de 6 — Airbnb catálogo + Booking `free_text: checkin_instructions`), `policy_taxonomy` (9/9/2 de 11 — policies exportan como `structured_field` en `listing_policies.*` / `policies.*` / `pricing.*` / `fees.*`, o como `free_text` en `house_rules` cuando no hay campo estructurado; los 2 unsupp son `type:ref` aliases).
-
-### Ramas previstas (Fase 14 en MASTER_PLAN_V2)
-
-- ✅ `feat/platform-mappings-audit` — completado (rama 14A)
-- `feat/airbnb-export` — serializer + validación contra schema Airbnb
-- `feat/booking-export` — idem Booking
-- `feat/platform-import` — reconciliación bidireccional
-
-Esfuerzo estimado: XL (6-8 semanas en total).
+- **OAuth real con Airbnb/Booking**: hoy el import usa subida manual del JSON. Trigger: aprobación de partners API + decisión de producto sobre tier de hosts profesionales.
+- **Sync periódico bidireccional**: hoy es export-on-publish + import-on-demand. Trigger: hosts gestionando >5 propiedades pidiendo refresh automático.
+- **Reconciliación cross-platform** (mismo listing en Airbnb + Booking): detectar divergencias entre las dos OTAs y proponer reconciliación. No prioritario.
 
 ---
 
@@ -150,10 +142,10 @@ Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + va
 
 ## 11. Liora Design Replatform
 
-**Estado**: preparado — plan de ejecución completo en [MASTER_PLAN_V2.md § FASE 15](MASTER_PLAN_V2.md) (7 ramas 15A-G).
+**Estado**: preparado — plan de ejecución completo en [MASTER_PLAN_V2.md § FASE 16](MASTER_PLAN_V2.md) (7 ramas 16A-G).
 **Trigger para activar**: entrega del paquete de diseño Liora (tokens + primitivos + superficies).
 
-Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 15A junto con el paquete de diseño.
+Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 16A junto con el paquete de diseño.
 
 ---
 
@@ -295,7 +287,7 @@ Un paso al final del wizard (o un campo en un paso existente) para preselecciona
 
 - El scope aprobado de 12C fue explícitamente "solo CTA en `/messaging`, wizard hook diferido". Añadirlo ahora tocaría `wizard-steps.ts`, `wizard.schema.ts`, `wizard.actions.ts`, más tests de regresión del wizard — sin datos de usage que confirmen que acelera el onboarding.
 - El empty-state CTA en messaging ya cubre el caso. Cero fricción extra para hosts que no quieran auto-seed.
-- El hook pierde valor si el wizard cambia de estructura (rama 15 — Liora replatform) y habría que rehacerlo.
+- El hook pierde valor si el wizard cambia de estructura (Fase 16 — Liora replatform) y habría que rehacerlo.
 
 ### Qué cubriría la implementación del wizard hook
 

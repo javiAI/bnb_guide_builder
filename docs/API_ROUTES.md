@@ -1,6 +1,6 @@
 # API_CONTRACTS
 
-## 0. Auth, ownership y rate-limit por ruta (Rama 15A–15D)
+## 0. Auth, ownership y rate-limit por ruta (Rama 15A–15E)
 
 Toda ruta bajo `src/app/api/properties/[propertyId]/...` se construye con `withOperatorGuards<P>(handler, { rateLimit })` (`src/lib/auth/operator-guards.ts`). El wrapper aplica, en orden: (1) `requireOperator()` → 401 si no hay sesión, (2) `loadOwnedProperty(propertyId)` → 404 si la propiedad no pertenece al workspace del operador, (3) `applyOperatorRateLimit({ userId, bucket })` → 429 con `Retry-After`. Cada ruta declara su bucket (`read`/`mutate`/`expensive`); el test `operator-route-coverage.test.ts` falla en CI si una ruta nueva omite el wrapper sin marcar `// guards:manual <razón>`.
 

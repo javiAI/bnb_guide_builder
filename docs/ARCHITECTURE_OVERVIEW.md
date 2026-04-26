@@ -307,7 +307,7 @@ Capa de instalación + caché que extiende la guía pública sin tocar el modelo
 - **Manifest dinámico**: `src/app/g/[slug]/manifest.webmanifest/route.ts` resuelve `propertyNickname` + `brandPaletteKey` por Prisma y delega en `buildGuidePwaManifest()`. `theme_color` se deriva de `getBrandPair(brandPaletteKey).light` — cada guía instala con su brand. `start_url` y `scope` son slug-scoped. iOS captura el `theme_color` al instalar; un cambio posterior solo se refleja al re-instalar (nota Liora).
 - **Install nudge** (`src/components/public-guide/install-nudge.tsx`): aparece cuando el huésped supera `VISIT_THRESHOLD = 2` visitas o `TIME_THRESHOLD_MS = 90s` acumulados (whichever first). En Chromium/Edge/Android captura `beforeinstallprompt` y llama `prompt()` al click; en iOS Safari (sin evento) abre un panel manual con instrucciones del share sheet. `localStorage` persistente per-slug (`guide-install-nudge:<slug>`) silencia el nudge tras `dismissedAt` o `installedAt`. Nunca overlay sobre el fold.
 - **Offline page** (`src/app/g/[slug]/offline/page.tsx`): shell estático precached en `install`, devuelto por `handleNavigation()` cuando red + cache fallan. Sober, sin datos slug-específicos — el SW captura lo que el route devuelva en el momento del install.
-- **Liora freeze**: nudge + offline page son intencionalmente neutros. El comportamiento (triggers, persistencia, timing, scope) es load-bearing y no se renegocia en Fase 15; el skin (CSS classes ya enumeradas en `guide.css`) sí. Replatform reescribe los selectors `guide-install-nudge*` sin tocar el componente.
+- **Liora freeze**: nudge + offline page son intencionalmente neutros. El comportamiento (triggers, persistencia, timing, scope) es load-bearing y no se renegocia en Fase 16; el skin (CSS classes ya enumeradas en `guide.css`) sí. Replatform reescribe los selectors `guide-install-nudge*` sin tocar el componente.
 - **Tests**: 5 invariantes en vitest — `guide-pwa-manifest.test.ts` (shape + theme_color + short_name truncation), `guide-sw-template.test.ts` (placeholder substitution + presencia de SLUG/VERSION en el template), `guide-sw-precache-manifest.test.ts` (todo path en `GUIDE_PWA_STATIC_ASSETS` existe en disk), `guide-sections-cache-tier.test.ts` (toda sección declara `offlineCacheTier`, los 4 críticos están en tier 1), `guide-install-nudge.test.tsx` (threshold + persistencia). E2E en `e2e/guide-pwa-offline.spec.ts` cubre HTTP de manifest/sw/offline + DOM del nudge + axe. SW lifecycle (install/fetch/offline replay) deliberadamente no se testea en headless — flake típico; las unit tests cubren la fuente del template y los route handlers.
 
 ### AI view
@@ -324,7 +324,7 @@ Capa de instalación + caché que extiende la guía pública sin tocar el modelo
 
 Reglas operativas duras. Cada una tiene una consecuencia concreta ("la PR no mergea"); sin esas consecuencias, la regla no existe.
 
-El motor de render (composiciones, presenter registry, renderers) es **agnóstico del skin** — sobrevive a cualquier replatform visual (Fase 15 Liora y futuros). Estas reglas protegen esa frontera.
+El motor de render (composiciones, presenter registry, renderers) es **agnóstico del skin** — sobrevive a cualquier replatform visual (Fase 16 Liora y futuros). Estas reglas protegen esa frontera.
 
 1. **Duplicados por versión: prohibidos en `main`.**
    Nada de `*V2`, `*V3`, `New*`, `Next*`, `Better*`, `*Alt`, `*Redesign`, `*Old`, `legacy-*` como identificador de componente, módulo, archivo o export.
@@ -351,5 +351,5 @@ El motor de render (composiciones, presenter registry, renderers) es **agnóstic
    **Consecuencia**: axe-core con violaciones `serious|critical > 0` bloquea el merge directamente (ya enforced por el harness E2E de 10J).
 
 7. **Tokens y mock-ups son MVP mientras Liora no esté activo.**
-   Los tokens actuales en `src/config/design-tokens.ts` y los mock-ups en `docs/FEATURES/GUEST_GUIDE_UX.md` son referencias operativas — no ground-truth congelado. Las ramas funcionales en vuelo (10G/H/I, 11, 12, 13) **no consolidan decisiones visuales finales** y priorizan arquitectura + comportamiento + a11y + reuse de primitivos existentes sobre fidelidad visual.
+   Los tokens actuales en `src/config/design-tokens.ts` y los mock-ups en `docs/FEATURES/GUEST_GUIDE_UX.md` son referencias operativas — no ground-truth congelado. Las ramas funcionales en vuelo (hoy: 13C `feat/guide-maps-embedded`, items futuros de `FUTURE.md`) **no consolidan decisiones visuales finales** y priorizan arquitectura + comportamiento + a11y + reuse de primitivos existentes sobre fidelidad visual.
    **Consecuencia**: una PR rechazada "por no seguir paleta futura" es un rechazo inválido. Una PR que introduce una familia nueva de componentes para consolidar visual MVP sí es motivo de rechazo (viola regla 1).

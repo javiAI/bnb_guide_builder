@@ -330,19 +330,19 @@ Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkIn
 
 ## 11. Auth / access control status
 
-**Neither export endpoint is hardened.** `GET /api/properties/:propertyId/export/airbnb` and `GET /api/properties/:propertyId/export/booking` follow the same access-control pattern as every other route under `/api/properties/[propertyId]/...` in this repo: `prisma.property.findUnique → 404 if missing`. There is no session check, no workspace-membership check, no identity of the actor.
+**Endpoints hardened (Fase 15 closed)**. Source of truth: [docs/SECURITY_AND_AUDIT.md §0](../SECURITY_AND_AUDIT.md). Resumen aplicable a los endpoints de esta feature:
 
-This is **not** an oversight specific to the export routes — it reflects the current state of the entire codebase. No auth library is installed, no middleware resolves sessions, and the `Workspace` / `WorkspaceMembership` / `User` Prisma models are unused by any route handler or Server Action. A reviewer on PR #82 (Rama 14B) asked for "the same auth/ownership pattern used in other `/api/properties/[propertyId]/...` routes" — that pattern does not exist.
+- `GET /api/properties/:propertyId/export/airbnb` y `GET /api/properties/:propertyId/export/booking` están envueltos en `withOperatorGuards({ rateLimit: "expensive" })` (10 req/60s per actor) — 15B aplicó la composición session + workspace ownership.
+- `POST /api/properties/:propertyId/import/airbnb/preview` y `POST /api/properties/:propertyId/import/booking/preview` (14D/14E) — `withOperatorGuards({ rateLimit: "mutate" })`.
+- `POST /api/properties/:propertyId/import/airbnb/apply` y `POST /api/properties/:propertyId/import/booking/apply` (15E) — `withOperatorGuards({ rateLimit: "mutate" })` + `writeAudit({ action: "import.apply", actor: "user:<id>", diff })` con idempotency fingerprint. Ver §12.
 
-These endpoints **must not be treated as protected** by anyone reading their output. Consumers should assume that anyone who knows a `propertyId` can call them. Sensitive surfacing is already mitigated at the **data layer** by:
+Defense-in-depth a nivel de datos (siguen vigentes):
 
-- The `visibility: "guest"` Prisma filter in [`loadPropertyContext`](../../src/lib/exports/shared/load-property.ts) — internal and sensitive rows never enter either export pipeline.
-- The `.strict()` Zod schemas `airbnbListingPayloadSchema` and `bookingListingPayloadSchema` — unknown keys cannot be serialized even if a reducer tried.
-- The substring/schema invariants in `src/test/airbnb-export-no-leak.test.ts` and `src/test/booking-export-no-leak.test.ts`.
+- `visibility: "guest"` filter en [`loadPropertyContext`](../../src/lib/exports/shared/load-property.ts) — internal/sensitive rows nunca entran al pipeline de export.
+- `.strict()` Zod schemas `airbnbListingPayloadSchema` y `bookingListingPayloadSchema` — unknown keys no se serializan.
+- Invariantes en `src/test/airbnb-export-no-leak.test.ts` y `src/test/booking-export-no-leak.test.ts`.
 
-These are defense-in-depth against data leaks, not authorization. Restricting who can **call** the endpoints is the job of the transversal **Fase 16 — Auth & access control foundation** (see `docs/MASTER_PLAN_V2.md`). Rama 16B applies guards to every operator-facing route, including both of these.
-
-Until Fase 16 lands, any feature or doc that references these export routes must not describe them as "secured", "protected", or "operator-only" — they're gated only by knowledge of the `propertyId`, same as every other route under `/api/properties/[propertyId]/...`.
+Para el contrato del wrapper, buckets de rate-limit, audit writer y reglas duras de nuevas rutas, ver `docs/SECURITY_AND_AUDIT.md` §0.1–§0.4. No describir endpoints de esta feature en términos de auth fuera de ese doc — el patrón canónico vive ahí.
 
 ## 12. Apply (rama 15E)
 
