@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import {
-  parseGuestIncidentCookieValue,
-  guestIncidentCookieName,
-} from "@/lib/services/guest-incident-cookie";
+import { readPublicCapabilityFromCookie } from "@/lib/auth/public-capability";
 import {
   GUEST_INCIDENT_READABLE_FIELDS,
   type GuestReadableIncidentField,
@@ -43,15 +40,17 @@ export async function GET(
 ): Promise<NextResponse> {
   const { slug, id } = await params;
 
-  // Cookie-scoped authorization: the guest can read an incident only if its
-  // id appears in the slug-specific signed cookie they received at creation
-  // time. No cookie / tampered cookie / wrong slug → 404 (not 401/403 — we
-  // don't want to confirm the id exists to an unauthorized caller).
-  const cookieRaw = req.cookies.get(guestIncidentCookieName(slug))?.value ?? null;
-  const parsedCookie = cookieRaw
-    ? parseGuestIncidentCookieValue(cookieRaw, slug)
-    : null;
-  if (!parsedCookie || !parsedCookie.ids.includes(id)) {
+  // Capability-scoped authorization: the guest can read an incident only if
+  // its id appears in the slug-specific signed `incident_read` capability
+  // cookie they received at creation time. No cookie / tampered cookie /
+  // wrong slug → 404 (not 401/403 — we don't want to confirm the id exists
+  // to an unauthorized caller).
+  const capability = readPublicCapabilityFromCookie({
+    cookies: req.cookies,
+    capability: "incident_read",
+    slug,
+  });
+  if (!capability || !capability.payload.ids.includes(id)) {
     return NextResponse.json(
       { error: "not_found" },
       { status: 404, headers: { "Cache-Control": "no-store" } },

@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import {
-  parseGuestIncidentCookieValue,
-  guestIncidentCookieName,
-} from "@/lib/services/guest-incident-cookie";
+import { readPublicCapabilityFromCookie } from "@/lib/auth/public-capability";
 import { findIncidentCategory } from "@/lib/taxonomy-loader";
 import "@/components/public-guide/guide.css";
 
@@ -41,12 +38,12 @@ function formatDate(date: Date | null): string {
 export default async function GuestIncidentTrackingPage({ params }: Props) {
   const { slug, id } = await params;
   const cookieStore = await cookies();
-  const cookieRaw =
-    cookieStore.get(guestIncidentCookieName(slug))?.value ?? null;
-  const parsed = cookieRaw
-    ? parseGuestIncidentCookieValue(cookieRaw, slug)
-    : null;
-  if (!parsed || !parsed.ids.includes(id)) {
+  const capability = readPublicCapabilityFromCookie({
+    cookies: cookieStore,
+    capability: "incident_read",
+    slug,
+  });
+  if (!capability || !capability.payload.ids.includes(id)) {
     notFound();
   }
 

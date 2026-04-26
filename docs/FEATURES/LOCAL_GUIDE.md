@@ -291,7 +291,7 @@ Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D
 1. Huésped pulsa "Reportar problema" en el header del renderer (`IssueReporter` junto a `GuideSearch`).
 2. Drawer Radix Dialog con 3 campos: chip de categoría (desde `taxonomies/incident_categories.json`), textarea summary (≤500), input contact opcional (≤200).
 3. Submit → `POST /api/g/:slug/incidents`.
-4. Backend crea `Incident { origin: "guest_guide", reporterType: "guest", visibility: "internal", categoryKey, summary, guestContactOptional }` + escribe cookie `guide-incidents-<slug>` (HMAC, slug-scoped) + dispara `EmailProvider.notifyHostOfIncident(...)` (no-op stub en 13D).
+4. Backend crea `Incident { origin: "guest_guide", reporterType: "guest", visibility: "internal", categoryKey, summary, guestContactOptional }` + escribe cookie `gc-incident_read-<slug>` (HMAC capability, slug-scoped — generalizada en 15C) + dispara `EmailProvider.notifyHostOfIncident(...)` (no-op stub en 13D).
 5. UI success muestra `<a href="/g/:slug/incidents/:id">Ver seguimiento</a>`.
 6. Tracking page `/g/:slug/incidents/:id` valida la cookie (HMAC + `expectedSlug` + `id ∈ ids`) y renderiza `{ categoryKey, status, createdAt, resolvedAt }` — nada más.
 7. Host en `/properties/:id/incidents` ve la list + detail + puede cambiar status via `changeIncidentStatusAction` (IDOR-protected por composite `{id, propertyId}`).
@@ -307,8 +307,9 @@ Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D
 | [src/components/public-guide/issue-reporter.tsx](../../src/components/public-guide/issue-reporter.tsx) | Drawer Radix con chip/summary/contact + state machine idle/loading/ok/error |
 | [src/app/api/g/[slug]/incidents/route.ts](../../src/app/api/g/[slug]/incidents/route.ts) | POST (create) — Zod valida → `incident-from-guest.service.ts` → cookie + email |
 | [src/app/api/g/[slug]/incidents/[id]/route.ts](../../src/app/api/g/[slug]/incidents/[id]/route.ts) | GET (read) — cookie-gated, field whitelist |
-| [src/app/g/[slug]/incidents/[id]/page.tsx](../../src/app/g/[slug]/incidents/[id]/page.tsx) | Tracking page (server component, cookie-gated via `parseGuestIncidentCookieValue`) |
-| [src/lib/services/guest-incident-cookie.ts](../../src/lib/services/guest-incident-cookie.ts) | HMAC-SHA256 build/parse/append — slug-scoped, 7d TTL, clock skew guard ±5min, tamper = drop |
+| [src/app/g/[slug]/incidents/[id]/page.tsx](../../src/app/g/[slug]/incidents/[id]/page.tsx) | Tracking page (server component, capability-gated via `readPublicCapabilityFromCookie`) |
+| [src/lib/auth/public-capability.ts](../../src/lib/auth/public-capability.ts) | Sign/verify/cookie I/O del primitivo capability (Rama 15C — sustituye al `guest-incident-cookie` de 13D) |
+| [src/lib/auth/public-capability-registry.ts](../../src/lib/auth/public-capability-registry.ts) | Registry tipado de capacidades públicas (15C). `incident_read` con TTL 7d + payload schema `{ids[≤10]}` |
 | [src/lib/services/incident-from-guest.service.ts](../../src/lib/services/incident-from-guest.service.ts) | Encapsula invariantes: `origin/reporterType/visibility` hardcoded |
 | [src/lib/services/incident-notification.service.ts](../../src/lib/services/incident-notification.service.ts) | `EmailProvider` interface + no-op stub (swallow errors) |
 | [src/lib/services/sliding-window-rate-limit.ts](../../src/lib/services/sliding-window-rate-limit.ts) | Refactor compartido desde `guide-search` — 3 req/60s/(slug+IP) |
@@ -317,15 +318,17 @@ Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D
 | [src/app/properties/[propertyId]/incidents/[id]/status-form.tsx](../../src/app/properties/[propertyId]/incidents/[id]/status-form.tsx) | Status change client form — plumbs `propertyId` hidden input para IDOR defense |
 | [src/lib/actions/incident.actions.ts](../../src/lib/actions/incident.actions.ts) `changeIncidentStatusAction` | Composite `{id, propertyId}` read + write |
 
-### Cookie
+### Cookie (capability `incident_read`, generalizada en Rama 15C)
 
-- **Nombre**: `guide-incidents-<slug>` (RFC 6265 token-safe, prefix `guide-incidents-`). Una cookie por slug para que un device con la guía de dos propiedades abiertas no deje que una autorice lectura de la otra.
-- **Payload**: `{ slug, ids: string[≤10], iat: number }` → JSON → base64url → HMAC-SHA256 → `"<payload>.<sig>"`.
-- **Secret**: `GUEST_INCIDENT_COOKIE_SECRET` (≥16 chars). Prod fail-fast si falta. Dev fallback determinístico (nunca usado en prod — la guardia throws primero). Rotarlo invalida todas las track URLs — aceptable (huéspedes pueden reportar nueva).
-- **TTL**: 7 días. Clock skew guard ±5 min para cookies "del futuro".
-- **Path**: `/` — cookie-path matching es prefix-based. Necesitamos que la cookie viaje tanto a `/api/g/:slug/incidents/*` como a `/g/:slug/incidents/:id`, que no comparten prefix más específico que `/`. Isolation cross-slug se preserva por el nombre (una cookie por slug) + el `expectedSlug` check del HMAC (una cookie de slug A nunca autoriza slug B aunque se monte manualmente).
-- **Cap ids**: 10 por cookie. Un stay legítimo nunca produce tantos; el cap bloquea inflado malicioso de headers.
-- **On tamper/expiry**: DROP silencioso (tratar como si no hubiera cookie). La tracking page resuelve `notFound()`. Nunca 403 — la cookie sólo añade autoridad de lectura; sin ella, tampoco hay nada que negar.
+13D introdujo el patrón ad-hoc; 15C lo extrae al primitivo tipado `public-capability` (ver `docs/SECURITY_AND_AUDIT.md` §0.5). Para `incident_read` los detalles son:
+
+- **Nombre**: `gc-incident_read-<slug>` (RFC 6265 token-safe, prefix `gc-`, token de capability inline). Una cookie por `(capability, slug)` — un device con dos guías abiertas nunca cruza autoridad de lectura entre propiedades, ni entre capacidades distintas.
+- **Envelope firmado**: `{ cap: 'incident_read', slug, iat, payload: { ids: string[≤MAX_INCIDENT_IDS_PER_COOKIE=10] }, v: PUBLIC_CAPABILITY_VERSION }` → JSON → base64url → HMAC-SHA256 → `"<envelope>.<sig>"`. El `cap` y `slug` se chequean en verify de forma independiente al nombre de la cookie (cross-cap + cross-slug isolation por payload firmado, no solo por nombre).
+- **Secret**: `PUBLIC_CAPABILITY_SECRET` (≥16 chars, único compartido por todas las capabilities). Prod fail-fast si falta. Dev fallback determinístico. Rotarlo invalida **todas** las cookies de capability pendientes — aceptable: huéspedes pueden re-reportar para re-ganar autoridad.
+- **TTL**: 7 días (`DEFAULT_CAPABILITY_TTL_SECONDS`). Clock skew guard ±5 min (`CLOCK_SKEW_TOLERANCE_SECONDS`).
+- **Path**: `/` — cookie-path matching es prefix-based. La cookie debe viajar tanto a `/api/g/:slug/incidents/*` como a `/g/:slug/incidents/:id`, sin prefix común más específico. Slug isolation por nombre + payload; capability isolation por payload.
+- **Cap ids**: `MAX_INCIDENT_IDS_PER_COOKIE = 10` por cookie. Un stay legítimo nunca produce tantos; el cap bloquea inflado malicioso de headers y mantiene acotado el trabajo de schema en verify.
+- **On tamper/expiry**: DROP silencioso (`verifyPublicCapability` retorna `null`). La tracking page resuelve `notFound()`. Nunca 403 — la cookie sólo añade autoridad de lectura; sin ella, tampoco hay nada que negar.
 
 ### Issue reporting — rate limit
 
