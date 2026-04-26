@@ -121,6 +121,7 @@ export async function POST(
   try {
     const { incidentId } = await createIncidentFromGuest({
       propertyId: property.id,
+      slug,
       payload: parsed.data,
     });
 

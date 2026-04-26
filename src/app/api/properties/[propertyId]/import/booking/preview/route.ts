@@ -1,17 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { previewBookingImport } from "@/lib/imports/booking";
-import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
+import { withOperatorGuards } from "@/lib/auth/operator-guards";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ propertyId: string }> },
-) {
-  const { propertyId } = await params;
-
-  try {
-    await loadOwnedProperty(propertyId);
-
+export const POST = withOperatorGuards<{ propertyId: string }>(
+  async (request, { params }) => {
     let body: unknown;
     try {
       body = await request.json();
@@ -22,17 +14,8 @@ export async function POST(
       );
     }
 
-    const result = await previewBookingImport(propertyId, body);
+    const result = await previewBookingImport(params.propertyId, body);
     return NextResponse.json({ data: result });
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
-        err.name,
-      )
-    ) {
-      return handleOwnershipApiError(err);
-    }
-    throw err;
-  }
-}
+  },
+  { rateLimit: "mutate" },
+);

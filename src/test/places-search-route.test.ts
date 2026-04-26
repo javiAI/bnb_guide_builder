@@ -16,6 +16,7 @@ vi.mock("@/lib/auth/require-operator", () => ({
 import { prisma } from "@/lib/db";
 import { GET } from "@/app/api/properties/[propertyId]/places-search/route";
 import { __resetPlacesRateLimitForTests } from "@/lib/services/places/rate-limit";
+import { __resetOperatorRateLimitForTests } from "@/lib/services/operator-rate-limit";
 import {
   __setLocalPoiProviderForTests,
   PoiProviderUnavailableError,
@@ -37,6 +38,7 @@ function ctx(propertyId: string) {
 
 beforeEach(() => {
   __resetPlacesRateLimitForTests();
+  __resetOperatorRateLimitForTests();
   __setLocalPoiProviderForTests(new MockPlacesProvider());
   findUnique.mockReset();
 });
@@ -148,14 +150,14 @@ describe("GET /api/properties/:propertyId/places-search", () => {
     expect((await res.json()).error).toBe("provider_unavailable");
   });
 
-  it("rate-limits after 30 requests within the window", async () => {
+  it("per-actor expensive bucket caps at 10 (wrapper applies before per-property)", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
       workspaceId: "ws-1",
       latitude: 41.385,
       longitude: 2.173,
     });
-    for (let i = 0; i < 30; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const ok = await GET(
         req("http://x/api/properties/p1/places-search?q=cafe"),
         ctx("p1"),
@@ -167,13 +169,38 @@ describe("GET /api/properties/:propertyId/places-search", () => {
       ctx("p1"),
     );
     expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBeTruthy();
+  });
+
+  it("per-property limiter (30/60s) gates cross-actor bursts after wrapper passes", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1",
+      workspaceId: "ws-1",
+      latitude: 41.385,
+      longitude: 2.173,
+    });
+    // Reset the per-actor budget between hits to isolate the per-property layer.
+    for (let i = 0; i < 30; i += 1) {
+      __resetOperatorRateLimitForTests();
+      const ok = await GET(
+        req("http://x/api/properties/p1/places-search?q=cafe"),
+        ctx("p1"),
+      );
+      expect(ok.status).toBe(200);
+    }
+    __resetOperatorRateLimitForTests();
+    const res = await GET(
+      req("http://x/api/properties/p1/places-search?q=cafe"),
+      ctx("p1"),
+    );
+    expect(res.status).toBe(429);
     const body = await res.json();
     expect(body.error).toBe("rate_limited");
     expect(typeof body.retryAfterSeconds).toBe("number");
     expect(res.headers.get("Retry-After")).toBeTruthy();
   });
 
-  it("scopes rate limit per propertyId", async () => {
+  it("per-property limiter is scoped per propertyId — exhausting p1 does not block p2", async () => {
     findUnique.mockResolvedValue({
       id: "p1",
       workspaceId: "ws-1",
@@ -181,11 +208,13 @@ describe("GET /api/properties/:propertyId/places-search", () => {
       longitude: 2.173,
     });
     for (let i = 0; i < 30; i += 1) {
+      __resetOperatorRateLimitForTests();
       await GET(
         req("http://x/api/properties/p1/places-search?q=cafe"),
         ctx("p1"),
       );
     }
+    __resetOperatorRateLimitForTests();
     findUnique.mockResolvedValue({
       id: "p2",
       workspaceId: "ws-1",

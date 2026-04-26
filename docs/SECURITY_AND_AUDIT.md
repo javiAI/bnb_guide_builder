@@ -6,46 +6,49 @@ Este documento cubre **visibilidad de datos** (qué campo puede salir a qué aud
 
 ### 0.1 Qué existe hoy
 
-- **Modelos Prisma declarados pero inactivos**: `User`, `Workspace`, `WorkspaceMembership`. Existen como tablas; ningún route handler ni Server Action los consulta para decidir acceso.
-- **Patrón único de access control en rutas operator-facing**: `prisma.property.findUnique → 404 si no existe`. Aplica a las 7 rutas bajo `src/app/api/properties/[propertyId]/...` (`derived`, `guide`, `export/airbnb`, `assistant/{ask, debug/retrieve, conversations}`, `places-search`). No hay sesión, no hay identidad del actor, no hay membership check.
-- **Guest flows con capability tipada (Rama 15C)**: el patrón ad-hoc de 13D (`guide-incidents-<slug>`) se generalizó a un primitivo tipado `signPublicCapability` / `verifyPublicCapability` parametrizado por `(capability, slug, payload)`. Cookie name `gc-<capability>-<slug>`, single shared secret `PUBLIC_CAPABILITY_SECRET` (≥16 chars en prod), envelope `{cap, slug, iat, payload, v}` con HMAC-SHA256 sobre el envelope ya codificado, `timingSafeEqual` constant-time, guard que rechaza `iat` >5 min en el futuro (la antigüedad se controla por TTL), drop-silent (null) en cualquier fallo. Catálogo activo y rationale en §0.5.
-- **Lectura de guía pública**: gated por `publicSlug` + `GuideVersion.published ≥ 1`. Ver `docs/FEATURES/MEDIA_ASSETS.md` §7 y `src/app/g/[slug]/*`. Esto funciona como access control de lectura pero no extiende a write flows.
+- **Auth de operator activa (Ramas 15A–15D)**: Google OAuth login (15A), guards de ownership por workspace en API routes y server pages (15B), capability primitive tipado para guest flows (15C), audit writer real + per-actor rate-limit + invariantes CI bloqueantes (15D).
+- **Wrapper transversal `withOperatorGuards`**: las 10 rutas bajo `src/app/api/properties/[propertyId]/...` componen `requireOperator()` + `loadOwnedProperty(propertyId)` + `applyOperatorRateLimit(bucket)` en un solo punto. El wrapper NO escribe audit — `writeAudit()` queda explícito en cada call site de mutación (decisión Fase -1 de 15D para no opacar el wrapper). Pinneado por `src/test/auth/operator-route-coverage.test.ts`.
+- **AuditLog writer real (Rama 15D)**: `src/lib/services/audit.service.ts` expone `writeAudit({propertyId, actor, entityType, entityId, action, diff?})` append-only y fail-soft. `propertyId` es nullable en el schema para soportar audits globales (`session.start`/`session.end`). Acciones whitelisted en `AUDIT_ACTIONS` con runtime guard `assertAuditAction()`. Actor format `user:<id> | guest:<slug> | system:<job>` pinneado por `audit-actor-format.test.ts`. Diffs pasan por `redactSecretsForAudit()` (recursivo, con cap de profundidad y detección de ciclos) antes de persistirse — ver §3.
+- **Per-actor rate limit (Rama 15D)**: `src/lib/services/operator-rate-limit.ts`, tres buckets pinneados:
+  - `read` — 60 req/60s (GETs, list endpoints).
+  - `mutate` — 20 req/60s (POST/PATCH/DELETE).
+  - `expensive` — 10 req/60s (LLM/RAG/Places API).
+  Backed por el sliding-window helper de 13D, single-process. Multi-region requeriría un backend Redis detrás de la misma surface.
+- **Coexistencia de limitadores**: `places-search` mantiene su limiter por-property de 13D (30/60s, protege bursts cross-property anónimos) **además** del per-actor del wrapper. El wrapper aplica primero — el per-property capa por debajo.
+- **Guest flows con capability tipada (Rama 15C)**: primitivo tipado `signPublicCapability` / `verifyPublicCapability` parametrizado por `(capability, slug, payload)`. Cookie name `gc-<capability>-<slug>`, single shared secret `PUBLIC_CAPABILITY_SECRET` (≥16 chars en prod), envelope `{cap, slug, iat, payload, v}` con HMAC-SHA256 sobre el envelope ya codificado, `timingSafeEqual` constant-time, guard que rechaza `iat` >5 min en el futuro (la antigüedad se controla por TTL), drop-silent (null) en cualquier fallo. Catálogo activo y rationale en §0.5.
+- **Lectura de guía pública**: gated por `publicSlug` + `GuideVersion.published ≥ 1`. Ver `docs/FEATURES/MEDIA_ASSETS.md` §7 y `src/app/g/[slug]/*`.
 
 ### 0.2 Qué falta, explícito
 
 **Auth de operator/host** (autenticación tradicional con cuenta):
 
-- Login / registro / verificación de email / password reset.
-- Sesiones server-side (cookie + DB-backed o JWT firmado — decisión pendiente).
-- Middleware Next.js que resuelva la sesión y popule `{userId, workspaceId, role}` en el request context.
-- Guards reutilizables: `requireOperator()`, `requireOwnership(propertyId)`, `requireWorkspaceRole(role)`.
-- Authorization por `WorkspaceMembership` — decidir qué significa "propietario de la propiedad X" en términos de workspace + rol.
-- Test harness cross-user / cross-workspace como gate bloqueante en CI.
+- ✅ Google OAuth login (15A).
+- ✅ Sesiones HMAC-SHA256 firmadas en cookie (`session-crypto.ts`, 7d TTL).
+- ✅ Middleware Next.js + `requireOperator()` + `loadOwnedProperty(propertyId)` (15A/15B).
+- ✅ Guards reutilizables vía `withOperatorGuards()` para API routes y `loadOwnedPropertyForPage()` para server pages.
+- ⏳ Diferido a Fase 16+: roles granulares dentro de un workspace (hoy `owner` es el único rol que materialmente decide algo), MFA, password reset path para email/password fallback (no urgente — OAuth-only es aceptable mientras el producto siga siendo single-channel).
 
 **Capabilities para guest flows** (no es login — es autorización de acciones firmadas):
 
 - ✅ **Rama 15C cerrada**: primitivo tipado en `src/lib/auth/public-capability.ts` + registro en `src/lib/auth/public-capability-registry.ts`. Catálogo, contrato y rationale en §0.5.
-- ⏳ Pendiente: catálogo no-trivial (más de un consumer real), `AuditLog` integration al firmar/revocar, `revokePublicCapability` para invalidación on-demand sin esperar TTL, fingerprint en signed payload para detección de replay cross-device.
+- ⏳ Pendiente: catálogo no-trivial (más de un consumer real), `revokePublicCapability` para invalidación on-demand sin esperar TTL, fingerprint en signed payload para detección de replay cross-device.
 
 **Hardening + audit real**:
 
-- Integrar `AuditLog` (declarado en §4) con escritor real invocado desde los guards.
-- Rate-limit por actor en endpoints operator-facing (hoy solo existe por slug/IP en endpoints públicos — ver `src/lib/services/sliding-window-rate-limit.ts`).
-- Invariantes cross-workspace / cross-capability como test bloqueante en `.github/workflows/ci.yml`.
+- ✅ `AuditLog` writer real invocado desde mutaciones (15D — guide.actions, incident.actions, incident-from-guest, OAuth callback, logout). Append-only, fail-soft, secretos redactados antes de persistir.
+- ✅ Rate-limit per-actor con tres buckets (`read`/`mutate`/`expensive`) en `withOperatorGuards`.
+- ✅ Invariantes cross-workspace + route-coverage + audit-coverage + redaction + actor-format en `src/test/auth/*` (5 tests bloqueantes para CI).
+- ⏳ **Audit reads / queries del operator** (filtrar AuditLog por entidad, exportar a CSV) — diferido. La capa de persistencia está; falta UI/API.
+- ⏳ **Retention policy** del AuditLog — hoy crece sin truncate. Plan: cron mensual que archive rows >365d a un blob storage frío + delete. Diferido a Fase 16+ por no ser bloqueante en estado actual de tráfico.
+- ⏳ **Audit en cron jobs internos** (`embed-backfill`, sync de places, etc.) — los jobs internos no llaman `writeAudit({type:"system", job:"<name>"})` todavía. Cuando se ejecuten en prod con cualquier cadencia regular, deben emitir audit rows con `actor: system:<job>`. Diferido.
 
-### 0.3 Por qué no se resuelve endpoint-by-endpoint
+### 0.3 Por qué se resolvió transversalmente
 
-Tentación recurrente durante code review: "añade un guard de auth a esta ruta específica". Si el patrón no existe transversalmente:
+La trampa que se quería evitar: cada PR inventando su propio mini-modelo de auth, env-tokens temporales que se vuelven deuda silenciosa, surface protegida solo a trozos. Las cuatro ramas de Fase 15 (15A → 15D) cerraron los tres frentes (operator auth, guest capabilities, audit/rate-limit) sobre **un único primitivo transversal** (`withOperatorGuards`) que cualquier ruta nueva en `src/app/api/properties/[propertyId]/...` debe usar — el test `operator-route-coverage.test.ts` falla en CI si una ruta nueva omite el wrapper sin marcar `// guards:manual <razón>`.
 
-- Cada PR inventa su propio mini-modelo de auth. Inconsistencia garantizada.
-- Env-tokens temporales o guards ad-hoc quedan como deuda silenciosa que nadie mapea después.
-- La superficie a proteger crece con cada feature — mientras tanto las features ya en producción (13D incident panel, export 14B, messaging review 12B) siguen sin guard.
+### 0.4 Regla dura para nuevas rutas operator-facing
 
-La solución es **una sola iniciativa transversal** que cierre los tres frentes (operator auth, guest capabilities, hardening) y un gate automático que impida regresión. Ese es el objetivo de la **Fase 16** del `docs/MASTER_PLAN_V2.md`.
-
-### 0.4 Regla dura mientras Fase 16 no arranque
-
-Ninguna PR puede declarar su endpoint operator-facing "seguro" o "protegido" en su description, docs o mensajes de commit. Las features nuevas que toquen endpoints operator-facing documentan que **siguen el status quo del repo** (`findUnique → 404`) y que la auth/authorization real está pendiente de Fase 16. Ejemplo: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` §9.
+Toda ruta nueva bajo `src/app/api/properties/[propertyId]/...` se escribe con `withOperatorGuards<P>(handler, { rateLimit })` y declara su bucket. Toda mutación nueva sobre entidades auditables (GuideVersion, Incident, Property, Workspace, Session, Membership) llama `writeAudit({propertyId, actor, entityType, entityId, action, diff?})` después del write exitoso. Ambos contratos están pinneados por tests invariantes en `src/test/auth/*`. El escape hatch `// guards:manual <razón>` existe para casos legítimos (webhooks externos firmados con su propio secret, p. ej.) — debe documentar la razón inline.
 
 ### 0.5 Public guide capabilities (Rama 15C)
 
@@ -134,7 +137,9 @@ No deben:
 - aparecer en logs o diffs sin sanitizar
 - **incrustarse en HTML cacheado por CDN/ISR** — las URLs presignadas caducan en 1h mientras el HTML puede vivir días o semanas. Regla: toda media pública se referencia por la ruta estable `/g/:slug/media/:assetId-:hashPrefix/:variant` (ver `docs/FEATURES/MEDIA_ASSETS.md` §7). Invariantes en `src/test/guide-rendering-proxy-urls.test.ts` fallan si `composeGuide` emite `r2.cloudflarestorage.com` o `X-Amz-*` en `GuideTree`.
 
-## 3.1 Guest-originated writes (rama 13D)
+**Redaction de diffs en AuditLog (Rama 15D)**: `redactSecretsForAudit()` aplica antes de persistir. Patrones key-name redactados (case-insensitive): `access[_-]?code`, `access[_-]?token`, `password`, `secret`, `api[_-]?key`, `authorization`, `smart[_-]?lock[_-]?(code|key|credential)`, `key[_-]?location`, `hidden[_-]?key`, `^x-amz-`. Patrones value redactados: `r2.cloudflarestorage.com`, `[?&]X-Amz-`. Recursive con cap de profundidad 8 y `WeakSet` para ciclos. Pinneado por `src/test/auth/audit-redaction.test.ts` — añadir un nuevo tipo de secreto al modelo de datos requiere extender ambas listas + el test en la misma PR.
+
+## 3.1 Guest-originated writes (rama 13D + 15D)
 
 Rama 13D introduce el primer endpoint público con side-effects de escritura (`POST /api/g/:slug/incidents`). Regla dura: los writes originados por huésped nunca pueden producir filas con `visibility > internal`. Garantías por capa:
 
@@ -142,20 +147,42 @@ Rama 13D introduce el primer endpoint público con side-effects de escritura (`P
 - **Field whitelist al leer**: `GET /api/g/:slug/incidents/:id` y la tracking page `/g/:slug/incidents/:id` proyectan solo `{ id, status, categoryKey, createdAt, resolvedAt }`. Los campos sensibles del incident (`summary`, `guestContactOptional`, `notes`, `reporterUserId`, `targetId`, `playbookId`) nunca se serializan en rutas `/g/*`. Whitelist centralizada en `src/lib/visibility.ts` con test anti-leak.
 - **Rate limit**: sliding-window 3 req/60s por `(slug + IP)` en el POST, bucket LRU 256 slugs. Key incluye slug para que un atacante no pueda drenar quota cross-property. El helper compartido `sliding-window-rate-limit.ts` es el mismo de `guide-search` y `places-search` — un solo contrato de limiter para todo write/read público.
 - **Cross-property IDOR defense**: la tracking page + el GET API scope-an la lectura por `propertyId` derivado del slug (no del client); el envelope HMAC además fija `slug` en el payload firmado (`obj.slug !== slug` rechaza en `verifyPublicCapability`). Una cookie de slug A nunca autoriza lectura en slug B.
-- **Host side cross-property defense**: `changeIncidentStatusAction` requiere `propertyId` en el form y scope-a read+write por composite `{id, propertyId}` (`findFirst` + `updateMany`). Un `incidentId` tampered que pertenezca a otra propiedad colapsa a "not found" — nunca impacta la row.
+- **Host side cross-property defense**: `changeIncidentStatusAction` requiere `propertyId` en el form y scope-a read+write por composite `{id, propertyId, property: { workspaceId: operator.workspaceId }}` (`findFirst` + `updateMany`). Un `incidentId` tampered que pertenezca a otra propiedad o workspace colapsa a "not found" — nunca impacta la row.
 - **Cookie de autorización (Rama 15C)**: `gc-incident_read-<slug>` emitida por `setPublicCapabilityCookie` y leída por `readPublicCapabilityFromCookie`. Ver §0.5 para el contrato general. La cookie solo AÑADE autoridad de lectura, nunca 403 — drop-silent en cualquier fallo de verify.
-- **No audit log expansion**: 13D NO persiste AuditLog por cada incident creado por guest (decisión Fase -1). La tabla `Incident` misma (con `origin='guest_guide'` + `createdAt`) es el registro primario. Si en el futuro se necesita diff de cambios de status del host, el pattern de `AuditLog` ya existe (§4).
+- **AuditLog para guest writes (Rama 15D)**: `createIncidentFromGuest` emite `writeAudit({propertyId, actor:"guest:<slug>", entityType:"Incident", entityId, action:"create", diff:{origin, categoryKey, severity, targetType}})`. El slug es el único handle estable para un huésped no autenticado — se threadea desde la API route, no se mira en DB para mantener el servicio puro.
 - **EmailProvider stub**: la notificación al host es fire-and-forget. Errores del provider se swallow-ean (log, nunca degradan la response del guest). Provider real (Resend/Postmark) queda para una rama futura.
 
 ## 4. Audit model
 
-`AuditLog` debe registrar:
+Schema (rama 15D — `prisma/schema.prisma::AuditLog`):
 
-- actor
-- entidad
-- acción
-- diff seguro
-- fecha
+| Columna | Tipo | Notas |
+| --- | --- | --- |
+| `id` | `String` | cuid |
+| `propertyId` | `String?` | nullable para audits globales (`session.start`, `session.end`); FK CASCADE cuando hay scope |
+| `actor` | `String` | shape obligatorio: `user:<id>` \| `guest:<slug>` \| `system:<job>` (ver `formatActor`) |
+| `entityType` | `String` | nombre del modelo (`Incident`, `GuideVersion`, `Property`, `Session`, `Membership`, …) |
+| `entityId` | `String` | id de la fila afectada |
+| `action` | `String` | whitelist en `AUDIT_ACTIONS`: `create`, `update`, `delete`, `publish`, `unpublish`, `rollback`, `session.start`, `session.end` |
+| `diffJson` | `Json?` | ya redactado por `redactSecretsForAudit` antes de persistir |
+| `createdAt` | `DateTime` | `@default(now())` |
+
+**Garantías**:
+
+- **Append-only**: nunca se hace `update` ni `delete` sobre filas. Retention por borrado masivo programado (debt §6).
+- **Fail-soft**: errores del writer se logean (`console.error`) y NO propagan a la response. Una caída de la DB de audit nunca degrada un mutation success.
+- **Diff redaction**: pasa por `redactSecretsForAudit` (ver §3) — keys con patrones secretos → `[REDACTED]`, valores con presigned R2 / X-Amz → `[REDACTED]`.
+- **Action whitelist**: `assertAuditAction()` throwa en runtime si el caller pasa una acción no registrada — fail-soft también atrapa este throw, así que un caller mal codificado pierde el audit pero no rompe la UX.
+
+**Cuándo se llama `writeAudit`** (lista mantenida por `audit-mutation-coverage.test.ts`):
+
+- `publishGuideVersionAction` / `unpublishVersionAction` / `rollbackToVersionAction` (`GuideVersion` publish/unpublish/rollback)
+- `createIncidentAction` / `updateIncidentAction` / `deleteIncidentAction` / `changeIncidentStatusAction` / `resolveIncidentAction`
+- `createIncidentFromGuest` (`actor: guest:<slug>`)
+- `GET /api/auth/google/callback` (`session.start`)
+- `POST /api/auth/logout` (`session.end`, solo si la cookie verifica)
+
+Añadir un mutation entry point nuevo a esa lista requiere wirear `writeAudit()` y, si entra en otro archivo, extender `TARGETS` en `audit-mutation-coverage.test.ts`.
 
 ## 5. Review queue
 
@@ -166,3 +193,39 @@ La review queue es derivada y debe cubrir:
 - missing media
 - missing publish requirements
 - unresolved visibility issues
+
+## 6. Deuda explícita post-15D
+
+Items deliberadamente fuera del alcance de 15D para no inflar la rama. Cada uno tiene un trigger conocido — no se mueven a "diferido indefinido" sin re-discusión.
+
+### 6.1 Retention policy del AuditLog
+
+Hoy el `AuditLog` crece sin truncate. La tabla soporta `audit-mutation-coverage.test.ts` y debug forense de incidentes — no es buffer caliente. Plan cuando el tráfico lo amerite:
+
+- Cron mensual `archive-audit-log` (`actor: system:audit-archive`) que mueve rows con `createdAt < now() - 365 days` a un blob storage frío (R2 bucket separado, JSON-lines particionado por `propertyId/YYYY-MM`) y luego `DELETE`.
+- Hot read window queda en 365 d; queries históricas pasan por una UI de exporte (§6.2) que pueda leer del archivo frío.
+- Nunca update-in-place — append-only es contractual.
+
+Trigger: el momento en que `pg_total_relation_size('"AuditLog"')` cruce ~1 GB en prod, o el primer pedido legal de retención justifique el cron. No antes.
+
+### 6.2 Audit reads / queries del operator
+
+`writeAudit()` está vivo, pero no hay UI ni API para leer. El endpoint declarado en `API_ROUTES.md §2 Ops and audit` (`GET /api/properties/:propertyId/audit-log`) NO está implementado todavía. Plan:
+
+- `GET /api/properties/[propertyId]/audit-log?entityType=&entityId=&actor=&since=&until=&cursor=` con `withOperatorGuards({ rateLimit: "read" })` — filtros indexados, pagination cursor por `(createdAt, id)`.
+- UI bajo `/properties/[propertyId]/audit` (timeline read-only por entidad). Diff renderer reutiliza el redactado guardado — nunca re-resuelve secretos.
+- Export CSV: en el mismo endpoint con `?format=csv`.
+
+Bloqueado por: nadie pidió la UI todavía. La capa de persistencia ya respeta las invariantes (redaction, append-only) — la UI puede llegar en una rama posterior sin tocar el writer.
+
+### 6.3 Audit en cron jobs internos
+
+Los jobs internos (`embed-backfill`, `local-events-sync`, `messaging-cron`, `archive-audit-log` cuando exista) NO emiten audit rows hoy. Cuando se ejecuten en prod con cadencia regular, deben llamar `writeAudit({propertyId, actor: formatActor({type:"system", job:"<name>"}), entityType, entityId, action, diff?})` en cada side-effect persistido.
+
+Patrón canónico:
+
+- `actor` siempre `system:<job-slug>` (`formatActor({type:"system", job})`); el job-slug debe matchear el regex `^[a-z][A-Za-z0-9_-]*$` (pinneado por `audit-actor-format.test.ts`).
+- `propertyId` cuando el job opera scoped a una propiedad; `null` para barridos globales (`session.start/end` ya usa este path).
+- Acciones nuevas para jobs (e.g. `chunk.embed`, `event.sync`) requieren entry en `AUDIT_ACTIONS` + el guard `assertAuditAction()` ya throwa en runtime sobre cualquier string desconocido.
+
+Trigger: el primer job que se programe en `vercel.json` (o equivalente) con cadencia >= diaria en prod. Hoy `embed-backfill` corre manual y `local-events-sync` solo escribe `LocalEvent`, no audita.

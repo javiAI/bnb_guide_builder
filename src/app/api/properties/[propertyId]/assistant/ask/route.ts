@@ -1,19 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { askRequestSchema } from "@/lib/schemas/assistant.schema";
 import { ask } from "@/lib/services/assistant/pipeline";
 import { coerceJourneyStage } from "@/lib/types/knowledge";
-import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
+import { withOperatorGuards } from "@/lib/auth/operator-guards";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ propertyId: string }> },
-) {
-  const { propertyId } = await params;
-
-  try {
-    await loadOwnedProperty(propertyId);
-
+export const POST = withOperatorGuards<{ propertyId: string }>(
+  async (request, { params }) => {
     let body: unknown;
     try {
       body = await request.json();
@@ -42,7 +34,7 @@ export async function POST(
     const stage = coerceJourneyStage(journeyStage);
 
     const result = await ask({
-      propertyId,
+      propertyId: params.propertyId,
       question,
       language,
       audience,
@@ -62,15 +54,6 @@ export async function POST(
         conversationId: result.conversationId,
       },
     });
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
-        err.name,
-      )
-    ) {
-      return handleOwnershipApiError(err);
-    }
-    throw err;
-  }
-}
+  },
+  { rateLimit: "expensive" },
+);

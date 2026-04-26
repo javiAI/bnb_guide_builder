@@ -1,20 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createConversationSchema } from "@/lib/schemas/assistant.schema";
-import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
+import { withOperatorGuards } from "@/lib/auth/operator-guards";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ propertyId: string }> },
-) {
-  const { propertyId } = await params;
-
-  try {
-    await loadOwnedProperty(propertyId);
-
+export const GET = withOperatorGuards<{ propertyId: string }>(
+  async (_request, { params }) => {
     const conversations = await prisma.assistantConversation.findMany({
-      where: { propertyId },
+      where: { propertyId: params.propertyId },
       orderBy: { updatedAt: "desc" },
       include: {
         _count: { select: { messages: true } },
@@ -32,28 +24,12 @@ export async function GET(
         updatedAt: c.updatedAt.toISOString(),
       })),
     });
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
-        err.name,
-      )
-    ) {
-      return handleOwnershipApiError(err);
-    }
-    throw err;
-  }
-}
+  },
+  { rateLimit: "read" },
+);
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ propertyId: string }> },
-) {
-  const { propertyId } = await params;
-
-  try {
-    await loadOwnedProperty(propertyId);
-
+export const POST = withOperatorGuards<{ propertyId: string }>(
+  async (request, { params }) => {
     let body: unknown;
     try {
       body = await request.json();
@@ -80,7 +56,7 @@ export async function POST(
 
     const conversation = await prisma.assistantConversation.create({
       data: {
-        property: { connect: { id: propertyId } },
+        property: { connect: { id: params.propertyId } },
         actorType: parsed.data.actorType,
         audience: parsed.data.audience,
         language: parsed.data.language,
@@ -99,15 +75,6 @@ export async function POST(
       },
       { status: 201 },
     );
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
-        err.name,
-      )
-    ) {
-      return handleOwnershipApiError(err);
-    }
-    throw err;
-  }
-}
+  },
+  { rateLimit: "mutate" },
+);

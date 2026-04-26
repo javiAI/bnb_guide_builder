@@ -10,6 +10,12 @@ import {
 import { zonedLocalToUTC } from "@/lib/property-timezone";
 import { accessMethods, findItem } from "@/lib/taxonomy-loader";
 import type { ActionResult } from "@/lib/types/action-result";
+import { requireOperator } from "@/lib/auth/require-operator";
+import {
+  AUDIT_ACTIONS,
+  formatActor,
+  writeAudit,
+} from "@/lib/services/audit.service";
 
 function normalizeTarget(
   targetType: IncidentTargetType,
@@ -76,8 +82,15 @@ export async function createIncidentAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "Falta propertyId" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const property = await prisma.property.findUnique({
-    where: { id: propertyId },
+    where: { id: propertyId, workspaceId: operator.workspaceId },
     select: { id: true, timezone: true },
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
@@ -110,7 +123,7 @@ export async function createIncidentAction(
   const pbErr = await assertPlaybookBelongsToProperty(propertyId, playbookId);
   if (pbErr) return { success: false, error: pbErr };
 
-  await prisma.incident.create({
+  const created = await prisma.incident.create({
     data: {
       propertyId,
       title: result.data.title,
@@ -122,6 +135,22 @@ export async function createIncidentAction(
       notes: result.data.notes,
       visibility: result.data.visibility ?? "internal",
       occurredAt: zonedLocalToUTC(result.data.occurredAt, property.timezone),
+    },
+    select: { id: true, status: true, severity: true, visibility: true },
+  });
+
+  await writeAudit({
+    propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "Incident",
+    entityId: created.id,
+    action: AUDIT_ACTIONS.create,
+    diff: {
+      title: result.data.title,
+      severity: created.severity,
+      status: created.status,
+      visibility: created.visibility,
+      targetType,
     },
   });
 
@@ -136,6 +165,13 @@ export async function updateIncidentAction(
   const incidentId = formData.get("incidentId") as string;
   if (!incidentId) return { success: false, error: "Falta el ID de la ocurrencia" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
     select: {
@@ -144,10 +180,13 @@ export async function updateIncidentAction(
       resolvedAt: true,
       visibility: true,
       playbookId: true,
-      property: { select: { timezone: true } },
+      property: { select: { timezone: true, workspaceId: true } },
     },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
+  if (incident.property.workspaceId !== operator.workspaceId) {
+    return { success: false, error: "Ocurrencia no encontrada" };
+  }
   const propertyTimezone = incident.property.timezone;
 
   const playbookRaw = formData.get("playbookId");
@@ -224,6 +263,22 @@ export async function updateIncidentAction(
     },
   });
 
+  await writeAudit({
+    propertyId: incident.propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "Incident",
+    entityId: incidentId,
+    action: AUDIT_ACTIONS.update,
+    diff: {
+      title: result.data.title,
+      severity: result.data.severity,
+      status: result.data.status,
+      visibility,
+      targetType,
+      previousStatus: incident.status,
+    },
+  });
+
   revalidatePath(`/properties/${incident.propertyId}/troubleshooting/incidents`);
   return { success: true };
 }
@@ -235,13 +290,38 @@ export async function deleteIncidentAction(
   const incidentId = formData.get("incidentId") as string;
   if (!incidentId) return { success: false, error: "Falta el ID de la ocurrencia" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
-    select: { propertyId: true },
+    select: {
+      propertyId: true,
+      title: true,
+      status: true,
+      property: { select: { workspaceId: true } },
+    },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
+  if (incident.property.workspaceId !== operator.workspaceId) {
+    return { success: false, error: "Ocurrencia no encontrada" };
+  }
 
   await prisma.incident.delete({ where: { id: incidentId } });
+
+  await writeAudit({
+    propertyId: incident.propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "Incident",
+    entityId: incidentId,
+    action: AUDIT_ACTIONS.delete,
+    diff: { title: incident.title, status: incident.status },
+  });
+
   revalidatePath(`/properties/${incident.propertyId}/troubleshooting/incidents`);
   return { success: true };
 }
@@ -265,12 +345,18 @@ export async function changeIncidentStatusAction(
     return { success: false, error: "Estado no válido" };
   }
 
-  // Scope the read+write to the propertyId from the form context so a
-  // tampered incidentId from a different property never targets another
-  // property's row. `findFirst` with the composite filter returns null for
-  // cross-property attempts, collapsing them to "not found".
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
+  // Scope the read+write to the propertyId from the form context AND the
+  // operator's workspace so a tampered incidentId from a different property
+  // (or workspace) never targets another property's row.
   const incident = await prisma.incident.findFirst({
-    where: { id: incidentId, propertyId },
+    where: { id: incidentId, propertyId, property: { workspaceId: operator.workspaceId } },
     select: { status: true, resolvedAt: true },
   });
   if (!incident) return { success: false, error: "Incidencia no encontrada" };
@@ -290,6 +376,15 @@ export async function changeIncidentStatusAction(
     data: { status: nextStatus, resolvedAt },
   });
 
+  await writeAudit({
+    propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "Incident",
+    entityId: incidentId,
+    action: AUDIT_ACTIONS.update,
+    diff: { status: nextStatus, previousStatus: incident.status },
+  });
+
   revalidatePath(`/properties/${propertyId}/incidents`);
   revalidatePath(`/properties/${propertyId}/incidents/${incidentId}`);
   return { success: true };
@@ -302,16 +397,40 @@ export async function resolveIncidentAction(
   const incidentId = formData.get("incidentId") as string;
   if (!incidentId) return { success: false, error: "Falta el ID de la ocurrencia" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const incident = await prisma.incident.findUnique({
     where: { id: incidentId },
-    select: { propertyId: true },
+    select: {
+      propertyId: true,
+      status: true,
+      property: { select: { workspaceId: true } },
+    },
   });
   if (!incident) return { success: false, error: "Ocurrencia no encontrada" };
+  if (incident.property.workspaceId !== operator.workspaceId) {
+    return { success: false, error: "Ocurrencia no encontrada" };
+  }
 
   await prisma.incident.update({
     where: { id: incidentId },
     data: { status: "resolved", resolvedAt: new Date() },
   });
+
+  await writeAudit({
+    propertyId: incident.propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "Incident",
+    entityId: incidentId,
+    action: AUDIT_ACTIONS.update,
+    diff: { status: "resolved", previousStatus: incident.status },
+  });
+
   revalidatePath(`/properties/${incident.propertyId}/troubleshooting/incidents`);
   return { success: true };
 }

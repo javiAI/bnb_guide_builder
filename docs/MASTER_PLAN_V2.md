@@ -2510,7 +2510,101 @@ isRegisteredCapability(key) → key is CapabilityKey
 
 ### Rama 15D — `chore/auth-hardening-and-audit`
 
-[Hardening rama content...]
+**Propósito**: cierra los tres frentes que `SECURITY_AND_AUDIT.md` §0.2 ("Hardening + audit real") deja pendientes tras 15A/B/C — escritor real de `AuditLog`, rate-limit por actor en endpoints operator-facing, e invariantes CI bloqueantes que impiden regresiones de auth/ownership/cross-workspace. Prerequisito duro de 15E (apply): apply audita cada mutación, pero sin writer real ese audit es no-op silencioso.
+
+**Archivos a crear**:
+
+- `src/lib/services/audit.service.ts` — `writeAudit({ propertyId, actor, entityType, entityId, action, diff?, request? })` + `redactSecretsForAudit(obj)` + `formatActor(input)` + constante `AUDIT_ACTIONS` (strings controlados) + `assertAuditAction(action)` (validación). Append-only, fail-soft (errores de write se loggean y no degradan la response del actor).
+- `src/lib/services/operator-rate-limit.ts` — wrapper sobre `checkSlidingWindowLimit` con tres buckets `read` (60/60s), `mutate` (20/60s), `expensive` (10/60s). Helper `applyOperatorRateLimit({ userId, bucket })` retorna `{ ok: true } | { ok: false, retryAfterSeconds }`.
+- `src/lib/auth/operator-guards.ts` — wrapper `withOperatorGuards(handler, { rateLimit })` que compone `loadOwnedProperty` + `applyOperatorRateLimit`. **No mete audit dentro del wrapper** — el writer queda explícito en cada call site de mutación para evitar magia opaca; el wrapper es solo auth + ownership + rate-limit.
+- `src/test/auth/cross-workspace-invariants.test.ts` — fixture user A vs user B, recorre las 10 rutas operator-facing + entry pages bajo `/properties/[propertyId]/...` y asserta 404 cross-workspace en todas.
+- `src/test/auth/operator-route-coverage.test.ts` — AST/grep scan: cada `route.ts` bajo `src/app/api/properties/[propertyId]/...` debe usar `withOperatorGuards` o, si la ruta requiere flujo distinto, importar `loadOwnedProperty` + `applyOperatorRateLimit` con flag `// guards:manual <reason>`.
+- `src/test/auth/audit-mutation-coverage.test.ts` — AST scan: server actions y services con `prisma.<model>.{update|delete|publish}` sobre modelos auditables (Property, GuideVersion, Incident, MediaAsset, KnowledgeItem, MessageTemplate, MessageAutomation, OpsChecklistItem, StockItem, MaintenanceTask, Space, PropertyAmenityInstance, TroubleshootingPlaybook, LocalPlace) deben llamar a `writeAudit` en el mismo scope o llevar `// audit:skip <reason>`.
+- `src/test/auth/audit-redaction.test.ts` — fixtures con secrets de §3 (códigos acceso, ubicaciones llaves, passwords, tokens, URLs `r2.cloudflarestorage.com`/`X-Amz-*`). Asserta que `redactSecretsForAudit` los strip-ea.
+- `src/test/auth/audit-actor-format.test.ts` — el formato de `actor` matchea `^(user:[a-z0-9]+|guest:[a-z0-9-]+|system:[a-z][a-z0-9_-]+)$`. Verifica el output de `formatActor()` para los tres tipos + asserta el regex sobre fixtures de uso real.
+
+**Archivos a modificar**:
+
+- Las 10 rutas `src/app/api/properties/[propertyId]/...` (`assistant/{ask,conversations,debug/retrieve}`, `derived`, `export/{airbnb,booking}`, `guide`, `import/{airbnb,booking}/preview`, `places-search`) — refactor a `withOperatorGuards`. Buckets: `assistant/ask` y `places-search` → `expensive`; resto de GETs → `read`; `assistant/conversations POST` y futuras mutaciones → `mutate`.
+- `src/lib/actions/guide/publish-guide-version.action.ts` (y simétricas) — añadir `writeAudit({ entityType: "GuideVersion", action: "publish", diff: { version, audience, slug } })` tras success.
+- `src/lib/actions/incident/change-incident-status.action.ts` — `writeAudit({ entityType: "Incident", action: "update", diff: { from, to } })`.
+- `src/lib/services/incident-from-guest.service.ts` — `writeAudit({ actor: "guest:<slug>", entityType: "Incident", action: "create" })`.
+- `src/app/api/auth/google/callback/route.ts` — `writeAudit({ actor: "user:<userId>", entityType: "Session", action: "session.start" })`. **Sin propertyId**: la sesión es property-agnostic; el writer acepta `propertyId: null` para audits de scope global. (Nota: el modelo `AuditLog` exige `propertyId` no-null hoy — ver "Dependencias / Riesgos" para la decisión).
+- `src/app/api/auth/logout/route.ts` — `session.end`, solo si había sesión válida (no log spam).
+- `src/lib/actions/properties/*` — server actions que mutan Property/Space/AmenityInstance: `writeAudit` con la action correspondiente (`create`/`update`/`delete`).
+- `docs/SECURITY_AND_AUDIT.md` — §0.1 (mover el ítem de "hardening + audit real" desde §0.2), §3.1 (revisar nota "No audit log expansion" — ahora 13D sí audita guest writes), nueva §6 con: (a) contrato de `writeAudit`, (b) catálogo de actions, (c) política de redaction, (d) deuda explícita de retention, (e) deuda explícita de cron endpoints sin guard de actor.
+- `docs/API_ROUTES.md` — anotar los buckets de rate-limit por endpoint operator-facing.
+- `docs/ROADMAP.md` — entrada ✅ Fase 15 → 15D al cerrar.
+- `CLAUDE.md` — sección "Patrones de Sistemas": patrón `withOperatorGuards` + `writeAudit` para nuevas rutas/mutaciones.
+- Tests adyacentes que mockean la firma actual de las rutas operator-facing (`src/test/guide-api-route.test.ts`, `src/test/places-search-route.test.ts`, etc.) — refactor controlado para ajustar al nuevo wrapper sin perder cobertura.
+
+**Tests**:
+
+- 5 nuevos tests invariantes bajo `src/test/auth/`:
+  1. `cross-workspace-invariants.test.ts` — user A intentando read/write de property de user B → 404 en todas las rutas.
+  2. `operator-route-coverage.test.ts` — AST scan + grep, falla si una ruta nueva olvida el guard.
+  3. `audit-mutation-coverage.test.ts` — AST scan, falla si una mutación crítica no escribe audit.
+  4. `audit-redaction.test.ts` — fixtures con secrets, asserta que `redactSecretsForAudit` los strip-ea (incluye URLs presignadas R2 + `X-Amz-*` headers + lista de §3).
+  5. `audit-actor-format.test.ts` — regex `^(user:|guest:|system:)` enforced sobre el output de `formatActor()` y sobre fixtures reales.
+- Tests unitarios del rate-limiter: 60/60s (read), 20/60s (mutate), 10/60s (expensive); cross-user isolation; `Retry-After` en respuesta 429.
+- Tests unitarios del writer: append-only (no `update`/`delete` paths existen), fail-soft (write a DB que falla no propaga error), redaction integrada.
+- Tests adyacentes verdes tras refactor (cobertura no cae).
+
+**Criterio de done**:
+
+- ✅ Página `/properties/[id]/activity` muestra entries reales tras un publish, un login y un incidente (smoke manual).
+- ✅ 21ª request en 60s desde el mismo `userId` a `/api/properties/<id>/derived` → 429 con `Retry-After`. Cross-user con otra sesión válida → 200 (cap por usuario, no global).
+- ✅ Las 5 specs de invariantes verdes en main; añadir manualmente una ruta sin guard rompe CI (verificación pre-merge).
+- ✅ Ningún secret de §3 aparece en `diffJson` para una mutación que los lleve en su payload (asserción explícita del test).
+- ✅ Cron endpoints (`/api/cron/messaging`, `/api/cron/local-events`) **explícitamente NO modificados** y la deuda documentada en `SECURITY_AND_AUDIT.md` §0.2.
+- ✅ `tsc --noEmit` y `vitest run` verdes.
+- ✅ Suite global no regresa.
+
+**Restricciones**:
+
+- ❌ Sin mega-wrapper. `withOperatorGuards` cubre auth + ownership + rate-limit únicamente. `writeAudit` queda explícito en cada call site de mutación.
+- ❌ Sin audit en reads. `loadOwnedProperty` no escribe audit (sería ruido).
+- ❌ Sin audit de reads sensibles (`assistant/debug/retrieve`) en 15D — diferido.
+- ❌ Sin Redis-backed rate-limit. Memory map mientras single-process; documentado para multi-region.
+- ❌ Sin admin UI para audit log más allá de la página existente.
+- ❌ Sin retention policy implementada — declarada como deuda.
+- ❌ Sin enum-de-actions sobrediseñado: `AUDIT_ACTIONS` es un objeto-as-const con strings + `assertAuditAction(action)` runtime guard. Sin `zod`, sin generadores, sin clases.
+
+**Dependencias / Riesgos**:
+
+- ⚠️ **15A/B/C cerradas** — bloqueante hard. Sin `requireOperator`/`loadOwnedProperty` no hay nada que enchufar.
+- ⚠️ **`AuditLog.propertyId` no-null**: el schema actual exige propertyId. Para audits de session.start/end no hay propertyId natural. Decisión: **permitir null** vía migration menor que cambia `propertyId String` a `propertyId String?` (o usar un valor sentinel `"_global"`). Recomendado: nullable + índice ajustado. Si la migration añade fricción inesperada, fallback a sentinel sin migration. Decidir on-the-fly en Fase 2 según lo que cuesta.
+- ⚠️ **Test refactor surface** — las 10 rutas pasan a `withOperatorGuards`. Tests adyacentes que mockean la firma actual deben refactor sin perder cobertura. Mitigación: hacerlo ruta por ruta con verificación verde después de cada una.
+- ⚠️ **AST coverage tests pueden quedar fragiles**: scan basado en grep textual de `prisma.<model>.{update|delete}` puede dar falsos positivos (e.g. en comentarios/strings). Mitigación: usar `@typescript-eslint/parser` o un parser AST mínimo; escapar a regex con anchors solo si AST es excesivo. Decidir según coste.
+- ⚠️ **Volumetría del audit log** — propiedad activa puede generar miles de filas/día. Página actual con `take: 100` es suficiente; retention policy diferida.
+- ⚠️ **Cron endpoints sin guard de actor** — explícitamente fuera de alcance, deuda documentada. Riesgo aceptado: bearer token en infra es la protección actual.
+
+**No-alcance**:
+
+- No cron endpoint hardening (bearer token actual sigue siendo la única defensa).
+- No audit de reads sensibles (`assistant/debug/retrieve`) — diferido (15E o post).
+- No retention policy del audit log — deuda documentada.
+- No admin UI con filtros/export del audit log.
+- No multi-workspace ni roles diferenciados.
+- No Redis-backed rate-limit — diferido a multi-region.
+- No `revokePublicCapability` ni rotación de secrets — diferido.
+
+**Preparación**:
+
+- **Contexto a leer**:
+  - `src/lib/auth/owned-property.ts` (15B), `src/lib/auth/require-operator.ts` (15A), `src/lib/auth/route-helpers.ts` — primitivos a componer.
+  - `src/lib/services/sliding-window-rate-limit.ts` (13D) — limiter base reutilizable.
+  - `src/lib/repositories/audit.repository.ts` — interface mínima existente.
+  - `src/app/properties/[propertyId]/activity/page.tsx` — consumer actual del audit log.
+  - `prisma/schema.prisma` líneas 926-942 — modelo `AuditLog`.
+  - `docs/SECURITY_AND_AUDIT.md` §0.2 + §3 + §3.1 + §4 — gaps que cierra esta rama.
+  - Las 10 rutas actuales bajo `src/app/api/properties/[propertyId]/...` — superficie a refactor.
+- **Docs a actualizar al terminar**:
+  - `docs/SECURITY_AND_AUDIT.md` (§0.1, §0.2, §3.1, nueva §6).
+  - `docs/API_ROUTES.md` (buckets por endpoint).
+  - `docs/ROADMAP.md` (Fase 15 → 15D ✅).
+  - `CLAUDE.md` § "Patrones de Sistemas" (patrón `withOperatorGuards` + `writeAudit`).
+- **Skills**: `/pre-commit-review`, `/simplify`, `/review-pr-comments` (post-PR).
 
 ---
 
