@@ -3,14 +3,15 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Invariant gate for Rama 14D preview-only contract.
+ * Invariant gate scoped to preview code (Rama 14D + 15E).
  *
- * `src/lib/imports/**` must never contain calls that mutate DB state. The
- * preview endpoint reads (loadPropertyContext) and computes a diff; apply is
- * out of scope (14D). This test enforces that contract at the source level so
- * a future change that adds a mutation call without the proper apply design
- * round-trips through a loud CI failure.
+ * Everything under `src/lib/imports/**` is preview-only EXCEPT the applier
+ * service introduced in 15E (`shared/import-applier.service.ts`), which is
+ * the single authorized mutation point. Any other file gaining mutations
+ * means we leaked DB writes into the preview pipeline.
  */
+
+const APPLIER_WHITELIST = "shared/import-applier.service.ts";
 
 const MUTATION_PATTERNS = [
   /prisma\.[a-zA-Z_]+\.create\b/,
@@ -20,6 +21,13 @@ const MUTATION_PATTERNS = [
   /prisma\.[a-zA-Z_]+\.upsert\b/,
   /prisma\.[a-zA-Z_]+\.delete\b/,
   /prisma\.[a-zA-Z_]+\.deleteMany\b/,
+  /\btx\.[a-zA-Z_]+\.create\b/,
+  /\btx\.[a-zA-Z_]+\.createMany\b/,
+  /\btx\.[a-zA-Z_]+\.update\b/,
+  /\btx\.[a-zA-Z_]+\.updateMany\b/,
+  /\btx\.[a-zA-Z_]+\.upsert\b/,
+  /\btx\.[a-zA-Z_]+\.delete\b/,
+  /\btx\.[a-zA-Z_]+\.deleteMany\b/,
   /\$executeRaw/,
   /\$executeRawUnsafe/,
 ];
@@ -35,12 +43,14 @@ function walk(dir: string, acc: string[] = []): string[] {
 }
 
 describe("import preview — no-mutate invariants", () => {
-  it("src/lib/imports/** contains zero Prisma mutation calls", () => {
-    const files = walk(join(process.cwd(), "src/lib/imports"));
+  it("src/lib/imports/** contains zero Prisma mutation calls (except the applier)", () => {
+    const root = join(process.cwd(), "src/lib/imports");
+    const files = walk(root);
     expect(files.length).toBeGreaterThan(0);
 
     const offenders: Array<{ file: string; match: string }> = [];
     for (const file of files) {
+      if (file.endsWith(APPLIER_WHITELIST)) continue;
       const text = readFileSync(file, "utf8");
       for (const pattern of MUTATION_PATTERNS) {
         const m = text.match(pattern);

@@ -14,12 +14,9 @@ import type {
   ImportWarning,
   UnactionableDiffEntry,
 } from "@/lib/imports/airbnb";
+import { ImportApplyPanel } from "./import-apply-panel";
+import { formatValue } from "./import-format";
 
-/**
- * Preview-only UI (Rama 14D). Host pastes an Airbnb listing JSON, we POST to
- * `/api/properties/[propertyId]/import/airbnb/preview`, and render the diff +
- * warnings. NO apply button — the reconciler output is diagnostic only.
- */
 interface Props {
   propertyId: string;
 }
@@ -27,7 +24,7 @@ interface Props {
 type ViewState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "result"; result: ImportPreviewResult }
+  | { kind: "result"; result: ImportPreviewResult; payload: unknown }
   | { kind: "error"; code: string; message: string; issues?: string[] };
 
 export function AirbnbImportPreview({ propertyId }: Props) {
@@ -77,7 +74,7 @@ export function AirbnbImportPreview({ propertyId }: Props) {
       let data: unknown;
       try {
         data = await res.json();
-      } catch (err) {
+      } catch {
         setState({
           kind: "error",
           code: "RESPONSE_PARSE_ERROR",
@@ -101,9 +98,19 @@ export function AirbnbImportPreview({ propertyId }: Props) {
         return;
       }
 
-      setState({ kind: "result", result: data as ImportPreviewResult });
-    } finally {
-      // Ensure loading state is cleared even on unexpected error (defensive)
+      setState({
+        kind: "result",
+        result: data as ImportPreviewResult,
+        payload: parsed,
+      });
+    } catch (err) {
+      console.error("Unexpected error in airbnb import preview", err);
+      setState({
+        kind: "error",
+        code: "UNKNOWN_ERROR",
+        message:
+          err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
     }
   }
 
@@ -113,8 +120,9 @@ export function AirbnbImportPreview({ propertyId }: Props) {
         Import desde Airbnb (preview)
       </h2>
       <p className="mt-2 text-xs text-[var(--color-neutral-500)]">
-        Pega un listing JSON de Airbnb. Mostramos qué cambiaría sin tocar la
-        base de datos — esta vista es solo de diagnóstico.
+        Pega un listing JSON de Airbnb. Primero verás un preview en solo
+        lectura del diff. Después podrás elegir qué aplicar y persistirlo
+        desde el panel inferior.
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -135,7 +143,8 @@ export function AirbnbImportPreview({ propertyId }: Props) {
             {state.kind === "loading" ? "Procesando..." : "Previsualizar"}
           </button>
           <span className="text-xs text-[var(--color-neutral-400)]">
-            Nunca se escribe nada en la base de datos desde esta vista.
+            Previsualizar es solo lectura — la escritura ocurre al pulsar
+            Aplicar en el panel inferior.
           </span>
         </div>
       </form>
@@ -154,7 +163,14 @@ export function AirbnbImportPreview({ propertyId }: Props) {
       )}
 
       {state.kind === "result" && (
-        <PreviewResult result={state.result} />
+        <>
+          <PreviewResult result={state.result} />
+          <ImportApplyPanel
+            endpoint={`/api/properties/${propertyId}/import/airbnb/apply`}
+            preview={state.result}
+            payload={state.payload}
+          />
+        </>
       )}
     </div>
   );
@@ -423,9 +439,3 @@ function MetaLine({ meta }: { meta: ImportDiff["meta"] }) {
   );
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}

@@ -325,7 +325,6 @@ Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkIn
 ## 10. Deferred / out of scope
 
 - Pricing fields (need property-level `currency` — both platforms).
-- Import apply / mutation (rama 15E, requires auth/sessions foundation from Fase 15A-15D + audit log + reconciliation UX).
 - Direct POST to platform APIs (produces JSON drafts; transport is a separate concern).
 - LLM-assisted vocabulary mapping for enum passthroughs (smoking on both platforms; Booking options catalogue overall).
 
@@ -344,3 +343,49 @@ These endpoints **must not be treated as protected** by anyone reading their out
 These are defense-in-depth against data leaks, not authorization. Restricting who can **call** the endpoints is the job of the transversal **Fase 16 — Auth & access control foundation** (see `docs/MASTER_PLAN_V2.md`). Rama 16B applies guards to every operator-facing route, including both of these.
 
 Until Fase 16 lands, any feature or doc that references these export routes must not describe them as "secured", "protected", or "operator-only" — they're gated only by knowledge of the `propertyId`, same as every other route under `/api/properties/[propertyId]/...`.
+
+## 12. Apply (rama 15E)
+
+The apply endpoints close the import loop opened by 14D/14E preview: take a previewed payload + per-field user resolutions, recompute the diff server-side, and mutate the Property in a single transaction with a row lock + idempotent audit envelope.
+
+**Endpoints**: `POST /api/properties/:propertyId/import/airbnb/apply` and `POST /api/properties/:propertyId/import/booking/apply`. Wrapped in `withOperatorGuards({ rateLimit: "mutate" })` so 15A–15D guards apply (session + workspace ownership + 20 req/60s per actor).
+
+**Body shape**:
+
+```json
+{
+  "payload": { /* same payload that the matching /preview accepted */ },
+  "resolutions": {
+    "scalar.bedroomsCount": "take_import",
+    "policies.cancellation.policy": "keep_current",
+    "amenities.add.am.wifi": "skip"
+  }
+}
+```
+
+**Strategies**: `take_import` (overwrite current with incoming), `keep_current` (no-op for that field), `skip` (no-op + recorded in `skipped[]`). No `overwrite` keyword — `take_import` covers it.
+
+**Field naming**:
+
+- `scalar.<field>` for scalars (`bedroomsCount`, `bathroomsCount`, `personCapacity`, …).
+- `policies.<dot.path>` for policies (already prefixed by the diff entry).
+- `amenities.add.<taxonomyId>` and `amenities.remove.<taxonomyId>` for amenity instances.
+- `presence.*`, `freeText.*`, `customs.*` are **non-actionable** — passing a resolution that targets one of those prefixes returns `400 INVALID_RESOLUTION` with `reason: "non_actionable_category"`. The applier never mutates these categories; preview surfaces them for review only.
+
+**Server-recomputed diff**: the applier never trusts the client's preview snapshot. It re-invokes `previewAirbnbImport` / `previewBookingImport` against the persisted Property, then reconciles `resolutions` against that fresh diff. A resolution that references a field absent from the recomputed diff returns `409 STALE_RESOLUTIONS` with `{ diff, missingFields[] }` so the UI can re-render the picker against the new diff.
+
+**Server-forced skips**: policy entries with `status: "unactionable"` (e.g. `lossy_projection`, `requires_currency_decision`) are forcibly skipped server-side and surfaced in `skipped[]` + `warnings[]`. A client `take_import` resolution on those fields is silently ignored — the user cannot override.
+
+**Transaction model**: a single `prisma.$transaction` opens with a row lock —
+
+```ts
+await tx.$executeRaw`SELECT id FROM properties WHERE id = ${propertyId} FOR UPDATE`;
+```
+
+— without that lock, two concurrent applies could read+merge stale `policiesJson` snapshots under default READ_COMMITTED isolation. Inside the tx: scalar `tx.property.update`, policies merged via read+setDeep+write, amenity shells via `propertyAmenityInstance.createMany({ skipDuplicates: true })` / `deleteMany`. The audit row is written **outside** the tx (fail-soft), so an audit DB hiccup never rolls back a successful mutation.
+
+**Idempotency**: every input `(platform, payload, resolutions)` produces a stable 16-char fingerprint (SHA-256 over canonical JSON, sorted keys recursively). Before the tx, the applier looks for a prior `AuditLog` row with `action=import.apply` + matching fingerprint where `failed != true`. If found → returns `result: "noop"` without touching the Property and without writing a new audit row (logged via `console.info`). Failed rows do NOT block re-apply, so a transient DB error → retry → success scenario works as expected. Caveat: an audit failure that occurs *after* the tx commits leaves the mutation persisted with no audit trail; a re-apply would mutate again at the value level (idempotent) but would emit a duplicate audit row. Acceptable tradeoff per Fase -1 of 15E.
+
+**Audit envelope**: `diff: { platform, payloadFingerprint, applied, skipped, warnings }` on success; `diff: { platform, payloadFingerprint, failed: true, error }` on failure. `entityType: "Property"`, `entityId: propertyId`, `action: "import.apply"`, `actor: "user:<id>"`. Diff redaction (`redactSecretsForAudit`) applies as for every other audit row.
+
+**UI integration**: the Airbnb and Booking preview panels in `src/app/properties/[propertyId]/settings/` render `<ImportApplyPanel endpoint=... preview=... payload=... />` after a successful preview. The panel renders a 3-radio strategy picker per actionable field, POSTs `{payload, resolutions}` to the apply endpoint, and surfaces `success` / `noop` / `stale` / `invalid` / `failed` inline. No modal, no server action wrapper — direct `fetch()`.

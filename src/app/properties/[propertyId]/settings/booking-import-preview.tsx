@@ -14,12 +14,9 @@ import type {
   ImportWarning,
   UnactionableDiffEntry,
 } from "@/lib/imports/booking";
+import { ImportApplyPanel } from "./import-apply-panel";
+import { formatValue } from "./import-format";
 
-/**
- * Preview-only UI (Rama 14E). Host pastes a Booking listing JSON, we POST to
- * `/api/properties/[propertyId]/import/booking/preview`, and render the diff +
- * warnings. NO apply button — the reconciler output is diagnostic only.
- */
 interface Props {
   propertyId: string;
 }
@@ -27,7 +24,7 @@ interface Props {
 type ViewState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "result"; result: ImportPreviewResult }
+  | { kind: "result"; result: ImportPreviewResult; payload: unknown }
   | { kind: "error"; code: string; message: string; issues?: string[] };
 
 export function BookingImportPreview({ propertyId }: Props) {
@@ -77,7 +74,7 @@ export function BookingImportPreview({ propertyId }: Props) {
       let data: unknown;
       try {
         data = await res.json();
-      } catch (err) {
+      } catch {
         setState({
           kind: "error",
           code: "RESPONSE_PARSE_ERROR",
@@ -101,7 +98,11 @@ export function BookingImportPreview({ propertyId }: Props) {
         return;
       }
 
-      setState({ kind: "result", result: data as ImportPreviewResult });
+      setState({
+        kind: "result",
+        result: data as ImportPreviewResult,
+        payload: parsed,
+      });
     } catch (err) {
       console.error("Unexpected error in booking import preview", err);
       setState({
@@ -118,8 +119,9 @@ export function BookingImportPreview({ propertyId }: Props) {
         Import desde Booking (preview)
       </h2>
       <p className="mt-2 text-xs text-[var(--color-neutral-500)]">
-        Pega un listing JSON de Booking. Mostramos qué cambiaría sin tocar la
-        base de datos — esta vista es solo de diagnóstico.
+        Pega un listing JSON de Booking. Primero verás un preview en solo
+        lectura del diff. Después podrás elegir qué aplicar y persistirlo
+        desde el panel inferior.
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -140,7 +142,8 @@ export function BookingImportPreview({ propertyId }: Props) {
             {state.kind === "loading" ? "Procesando..." : "Previsualizar"}
           </button>
           <span className="text-xs text-[var(--color-neutral-400)]">
-            Nunca se escribe nada en la base de datos desde esta vista.
+            Previsualizar es solo lectura — la escritura ocurre al pulsar
+            Aplicar en el panel inferior.
           </span>
         </div>
       </form>
@@ -159,7 +162,14 @@ export function BookingImportPreview({ propertyId }: Props) {
       )}
 
       {state.kind === "result" && (
-        <PreviewResult result={state.result} />
+        <>
+          <PreviewResult result={state.result} />
+          <ImportApplyPanel
+            endpoint={`/api/properties/${propertyId}/import/booking/apply`}
+            preview={state.result}
+            payload={state.payload}
+          />
+        </>
       )}
     </div>
   );
@@ -428,9 +438,3 @@ function MetaLine({ meta }: { meta: ImportDiff["meta"] }) {
   );
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}
