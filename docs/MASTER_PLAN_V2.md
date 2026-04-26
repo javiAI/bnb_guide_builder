@@ -55,31 +55,44 @@ Este gate no se salta nunca, ni siquiera en ramas "triviales". Si la rama es rea
 
 #### Plantilla canónica del § Rama
 
-Cuando una rama no tiene cuerpo (placeholder o vacío), el hook inyecta esta plantilla en `MASTER_PLAN_V2.md`. Claude la rellena con el contenido aprobado en Fase -1:
+Cuando una rama no tiene cuerpo (placeholder o vacío), el hook inyecta esta plantilla **exactamente** debajo del header `### Rama {ID} — {branch-name}` (los `[TODO ...]` son marcadores que Claude reemplaza con el contenido aprobado en Fase -1; `grep TODO` antes de commitear el cuerpo verifica que no quedaron sin rellenar):
 
 ```markdown
-### Rama <ID> — `<branch-name>`
+**Propósito**: [TODO Fase -1: 1-2 líneas — qué cierra esta rama, prerequisito de qué]
 
-**Propósito**: [1-2 líneas — qué cierra esta rama, prerequisito de qué]
+**Archivos a crear**:
 
-**Archivos a crear**: [lista de paths nuevos con responsabilidad de cada uno]
+- [TODO]
 
-**Archivos a modificar**: [lista de paths existentes y qué cambia]
+**Archivos a modificar**:
 
-**Tests**: [lista de tests con la invariante que cubre cada uno]
+- [TODO]
 
-**Criterio de done**: [✅ items verificables — verde / pasa / no aparece]
+**Tests**:
 
-**Restricciones**: [❌ qué patrones NO se introducen en esta rama]
+- [TODO]
 
-**Dependencias / Riesgos**: [⚠️ qué bloquea, qué puede salir mal, mitigaciones]
+**Criterio de done**:
 
-**No-alcance**: [qué NO se implementa aunque parezca relacionado — diferido]
+- [TODO ✅ items verificables]
+
+**Restricciones**:
+
+- [TODO ❌ qué patrones NO se introducen]
+
+**Dependencias / Riesgos**:
+
+- [TODO ⚠️ qué bloquea, qué puede salir mal]
+
+**No-alcance**:
+
+- [TODO qué NO se implementa aunque parezca relacionado]
 
 **Preparación**:
-- **Contexto a leer**: [archivos/§ docs a leer antes]
-- **Docs a actualizar al terminar**: [docs que se tocan en post-merge — Fase 6]
-- **Skills**: [/pre-commit-review, /simplify, etc.]
+
+- **Contexto a leer**: [TODO]
+- **Docs a actualizar al terminar**: [TODO]
+- **Skills**: [TODO]
 ```
 
 Secciones opcionales según rama:
