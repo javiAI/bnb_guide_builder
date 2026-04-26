@@ -293,7 +293,7 @@ Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D
 3. Submit → `POST /api/g/:slug/incidents`.
 4. Backend crea `Incident { origin: "guest_guide", reporterType: "guest", visibility: "internal", categoryKey, summary, guestContactOptional }` + escribe cookie `gc-incident_read-<slug>` (HMAC capability, slug-scoped — generalizada en 15C) + dispara `EmailProvider.notifyHostOfIncident(...)` (no-op stub en 13D).
 5. UI success muestra `<a href="/g/:slug/incidents/:id">Ver seguimiento</a>`.
-6. Tracking page `/g/:slug/incidents/:id` valida la cookie (HMAC + `expectedSlug` + `id ∈ ids`) y renderiza `{ categoryKey, status, createdAt, resolvedAt }` — nada más.
+6. Tracking page `/g/:slug/incidents/:id` lee la capability pública desde la cookie con `readPublicCapabilityFromCookie({capability:'incident_read', slug})`, valida envelope HMAC + `cap` + `slug` + TTL + payload schema, y exige `id ∈ payload.ids` antes de renderizar `{ categoryKey, status, createdAt, resolvedAt }` — nada más.
 7. Host en `/properties/:id/incidents` ve la list + detail + puede cambiar status via `changeIncidentStatusAction` (IDOR-protected por composite `{id, propertyId}`).
 
 ### Issue reporting — taxonomía
@@ -325,7 +325,7 @@ Reporte de incidencias por el huésped desde `/g/:slug`. El scope mínimo de 13D
 - **Nombre**: `gc-incident_read-<slug>` (RFC 6265 token-safe, prefix `gc-`, token de capability inline). Una cookie por `(capability, slug)` — un device con dos guías abiertas nunca cruza autoridad de lectura entre propiedades, ni entre capacidades distintas.
 - **Envelope firmado**: `{ cap: 'incident_read', slug, iat, payload: { ids: string[≤MAX_INCIDENT_IDS_PER_COOKIE=10] }, v: PUBLIC_CAPABILITY_VERSION }` → JSON → base64url → HMAC-SHA256 → `"<envelope>.<sig>"`. El `cap` y `slug` se chequean en verify de forma independiente al nombre de la cookie (cross-cap + cross-slug isolation por payload firmado, no solo por nombre).
 - **Secret**: `PUBLIC_CAPABILITY_SECRET` (≥16 chars, único compartido por todas las capabilities). Prod fail-fast si falta. Dev fallback determinístico. Rotarlo invalida **todas** las cookies de capability pendientes — aceptable: huéspedes pueden re-reportar para re-ganar autoridad.
-- **TTL**: 7 días (`DEFAULT_CAPABILITY_TTL_SECONDS`). Clock skew guard ±5 min (`CLOCK_SKEW_TOLERANCE_SECONDS`).
+- **TTL**: 7 días (`DEFAULT_CAPABILITY_TTL_SECONDS`). Clock skew guard: rechaza solo `iat` a más de 5 min en el futuro (`CLOCK_SKEW_TOLERANCE_SECONDS`).
 - **Path**: `/` — cookie-path matching es prefix-based. La cookie debe viajar tanto a `/api/g/:slug/incidents/*` como a `/g/:slug/incidents/:id`, sin prefix común más específico. Slug isolation por nombre + payload; capability isolation por payload.
 - **Cap ids**: `MAX_INCIDENT_IDS_PER_COOKIE = 10` por cookie. Un stay legítimo nunca produce tantos; el cap bloquea inflado malicioso de headers y mantiene acotado el trabajo de schema en verify.
 - **On tamper/expiry**: DROP silencioso (`verifyPublicCapability` retorna `null`). La tracking page resuelve `notFound()`. Nunca 403 — la cookie sólo añade autoridad de lectura; sin ella, tampoco hay nada que negar.

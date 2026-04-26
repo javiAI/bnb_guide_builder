@@ -39,8 +39,9 @@ const CLOCK_SKEW_TOLERANCE_SECONDS = 5 * 60
 /**
  * RFC 6265 §2.2 cookie-name token charset. Used to fail loudly at module load
  * if any registered capability key would produce a cookie name that proxies
- * or clients could legally drop. Slugs are validated upstream (kebab-case
- * URL-safe), so we only need to check the capability key here.
+ * or clients could legally drop. Slugs are produced by the platform's
+ * base62 generator (`guide-slug.service.ts`) and are RFC 6265 token-safe by
+ * construction; only the capability key portion needs runtime validation here.
  */
 const RFC_6265_TOKEN_RE = /^[A-Za-z0-9!#$%&'*+\-.^_`|~]+$/
 

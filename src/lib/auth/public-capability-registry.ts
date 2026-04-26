@@ -30,9 +30,10 @@
  *    would return `unknown` and force manual casts at every call site, losing
  *    cross-capability isolation guarantees at the type level.
  *
- * The coverage test (`public-capability.test.ts`) asserts that every
- * `signPublicCapability({capability, ...})` call site references a key
- * present in `PUBLIC_CAPABILITIES`. Same principle as `field-type-coverage.test.ts`.
+ * `src/test/auth-public-capability.test.ts` exercises this registry's key
+ * set, RFC 6265 token-safety, payload schema validation, and
+ * `isRegisteredCapability` narrowing. Same guard-rail principle as
+ * `field-type-coverage.test.ts`.
  */
 
 import { z } from 'zod'
