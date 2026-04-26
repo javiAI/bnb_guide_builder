@@ -5,10 +5,11 @@ import {
   GuestIncidentPayloadSchema,
 } from "@/lib/services/incident-from-guest.service";
 import {
-  appendIncidentIdToCookie,
-  guestIncidentCookieName,
-  GUEST_INCIDENT_COOKIE_TTL_SECONDS,
-} from "@/lib/services/guest-incident-cookie";
+  signPublicCapability,
+  readPublicCapabilityFromCookie,
+  setPublicCapabilityCookie,
+} from "@/lib/auth/public-capability";
+import { MAX_INCIDENT_IDS_PER_COOKIE } from "@/lib/auth/public-capability-registry";
 import { checkSlidingWindowLimit } from "@/lib/services/sliding-window-rate-limit";
 
 export const runtime = "nodejs";
@@ -123,27 +124,35 @@ export async function POST(
       payload: parsed.data,
     });
 
-    const cookieName = guestIncidentCookieName(slug);
-    const existing = req.cookies.get(cookieName)?.value ?? null;
-    const nextCookieValue = appendIncidentIdToCookie(slug, existing, incidentId);
+    // Re-verify the existing capability cookie (drop-silent) and merge the
+    // new incident id into its `ids` payload. A tampered/expired cookie is
+    // treated as missing — the guest just starts fresh with the new id only.
+    const existing = readPublicCapabilityFromCookie({
+      cookies: req.cookies,
+      capability: "incident_read",
+      slug,
+    });
+    const allIds = existing
+      ? [...existing.payload.ids, incidentId]
+      : [incidentId];
+    const nextIds = Array.from(new Set(allIds)).slice(
+      -MAX_INCIDENT_IDS_PER_COOKIE,
+    );
+    const signedValue = signPublicCapability({
+      capability: "incident_read",
+      slug,
+      payload: { ids: nextIds },
+    });
 
     const response = NextResponse.json(
       { incidentId, trackUrl: `/g/${slug}/incidents/${incidentId}` },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
-    response.cookies.set({
-      name: cookieName,
-      value: nextCookieValue,
-      // Path must cover both the API (`/api/g/:slug/incidents/*`) and the
-      // tracking page (`/g/:slug/incidents/:id`). Cookie-path matching is
-      // prefix-based with no common prefix beyond `/`, so we scope at the
-      // root. Slug isolation stays intact via the cookie name (one cookie
-      // per slug) and the HMAC payload, which rejects cross-slug values.
-      path: "/",
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: GUEST_INCIDENT_COOKIE_TTL_SECONDS,
+    setPublicCapabilityCookie({
+      response,
+      capability: "incident_read",
+      slug,
+      signedValue,
     });
     return response;
   } catch (err) {
