@@ -333,7 +333,7 @@ Unlike 14D which only has `freeText.houseRules`, Rama 14E adds `freeText.checkIn
 **Endpoints hardened (Fase 15 closed)**. Source of truth: [docs/SECURITY_AND_AUDIT.md §0](../SECURITY_AND_AUDIT.md). Resumen aplicable a los endpoints de esta feature:
 
 - `GET /api/properties/:propertyId/export/airbnb` y `GET /api/properties/:propertyId/export/booking` están envueltos en `withOperatorGuards({ rateLimit: "expensive" })` (10 req/60s per actor) — 15B aplicó la composición session + workspace ownership.
-- `POST /api/properties/:propertyId/import/airbnb/preview` y `POST /api/properties/:propertyId/import/booking/preview` (14D) — `withOperatorGuards({ rateLimit: "mutate" })`.
+- `POST /api/properties/:propertyId/import/airbnb/preview` y `POST /api/properties/:propertyId/import/booking/preview` (14D/14E) — `withOperatorGuards({ rateLimit: "mutate" })`.
 - `POST /api/properties/:propertyId/import/airbnb/apply` y `POST /api/properties/:propertyId/import/booking/apply` (15E) — `withOperatorGuards({ rateLimit: "mutate" })` + `writeAudit({ action: "import.apply", actor: "user:<id>", diff })` con idempotency fingerprint. Ver §12.
 
 Defense-in-depth a nivel de datos (siguen vigentes):
