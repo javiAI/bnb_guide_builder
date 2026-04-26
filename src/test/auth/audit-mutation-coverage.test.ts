@@ -46,6 +46,10 @@ const TARGETS: Target[] = [
     required: ["createIncidentFromGuest"],
   },
   {
+    path: "src/lib/imports/shared/import-applier.service.ts",
+    required: ["applyImportDiff"],
+  },
+  {
     path: "src/app/api/auth/google/callback/route.ts",
     required: ["GET"],
   },

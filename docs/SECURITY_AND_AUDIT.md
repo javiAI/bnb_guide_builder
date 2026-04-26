@@ -35,7 +35,7 @@ Este documento cubre **visibilidad de datos** (qué campo puede salir a qué aud
 
 **Hardening + audit real**:
 
-- ✅ `AuditLog` writer real invocado desde mutaciones (15D — guide.actions, incident.actions, incident-from-guest, OAuth callback, logout). Append-only, fail-soft, secretos redactados antes de persistir.
+- ✅ `AuditLog` writer real invocado desde mutaciones (15D — guide.actions, incident.actions, incident-from-guest, OAuth callback, logout; 15E — `applyImportDiff` con `action=import.apply`). Append-only, fail-soft, secretos redactados antes de persistir.
 - ✅ Rate-limit per-actor con tres buckets (`read`/`mutate`/`expensive`) en `withOperatorGuards`.
 - ✅ Invariantes cross-workspace + route-coverage + audit-coverage + redaction + actor-format en `src/test/auth/*` (5 tests bloqueantes para CI).
 - ⏳ **Audit reads / queries del operator** (filtrar AuditLog por entidad, exportar a CSV) — diferido. La capa de persistencia está; falta UI/API.
@@ -163,7 +163,7 @@ Schema (rama 15D — `prisma/schema.prisma::AuditLog`):
 | `actor` | `String` | shape obligatorio: `user:<id>` \| `guest:<slug>` \| `system:<job>` (ver `formatActor`) |
 | `entityType` | `String` | nombre del modelo (`Incident`, `GuideVersion`, `Property`, `Session`, `Membership`, …) |
 | `entityId` | `String` | id de la fila afectada |
-| `action` | `String` | whitelist en `AUDIT_ACTIONS`: `create`, `update`, `delete`, `publish`, `unpublish`, `rollback`, `session.start`, `session.end` |
+| `action` | `String` | whitelist en `AUDIT_ACTIONS`: `create`, `update`, `delete`, `publish`, `unpublish`, `rollback`, `session.start`, `session.end`, `import.apply` |
 | `diffJson` | `Json?` | ya redactado por `redactSecretsForAudit` antes de persistir |
 | `createdAt` | `DateTime` | `@default(now())` |
 
@@ -181,6 +181,7 @@ Schema (rama 15D — `prisma/schema.prisma::AuditLog`):
 - `createIncidentFromGuest` (`actor: guest:<slug>`)
 - `GET /api/auth/google/callback` (`session.start`)
 - `POST /api/auth/logout` (`session.end`, solo si la cookie verifica)
+- `applyImportDiff` en `src/lib/imports/shared/import-applier.service.ts` (`import.apply`, ramas 15E). Audita success **y** failed (con `failed:true` en el `diff`); el caso `noop` (replay idempotente) NO escribe row — solo `console.info`. Cada row lleva `payloadFingerprint` (SHA-256 truncado a 16 hex sobre `(platform, payload, resolutions)` en JSON canónico) que es la clave de idempotencia: una segunda llamada con misma tripleta encuentra la row pre-existente y retorna `noop`. Filas con `failed:true` NO bloquean re-apply (el writer las excluye del pre-check).
 
 Añadir un mutation entry point nuevo a esa lista requiere wirear `writeAudit()` y, si entra en otro archivo, extender `TARGETS` en `audit-mutation-coverage.test.ts`.
 

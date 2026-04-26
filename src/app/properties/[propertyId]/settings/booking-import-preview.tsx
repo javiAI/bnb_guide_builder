@@ -14,6 +14,7 @@ import type {
   ImportWarning,
   UnactionableDiffEntry,
 } from "@/lib/imports/booking";
+import { ImportApplyPanel } from "./import-apply-panel";
 
 /**
  * Preview-only UI (Rama 14E). Host pastes a Booking listing JSON, we POST to
@@ -27,7 +28,7 @@ interface Props {
 type ViewState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "result"; result: ImportPreviewResult }
+  | { kind: "result"; result: ImportPreviewResult; payload: unknown }
   | { kind: "error"; code: string; message: string; issues?: string[] };
 
 export function BookingImportPreview({ propertyId }: Props) {
@@ -77,7 +78,7 @@ export function BookingImportPreview({ propertyId }: Props) {
       let data: unknown;
       try {
         data = await res.json();
-      } catch (err) {
+      } catch {
         setState({
           kind: "error",
           code: "RESPONSE_PARSE_ERROR",
@@ -101,7 +102,11 @@ export function BookingImportPreview({ propertyId }: Props) {
         return;
       }
 
-      setState({ kind: "result", result: data as ImportPreviewResult });
+      setState({
+        kind: "result",
+        result: data as ImportPreviewResult,
+        payload: parsed,
+      });
     } catch (err) {
       console.error("Unexpected error in booking import preview", err);
       setState({
@@ -159,7 +164,14 @@ export function BookingImportPreview({ propertyId }: Props) {
       )}
 
       {state.kind === "result" && (
-        <PreviewResult result={state.result} />
+        <>
+          <PreviewResult result={state.result} />
+          <ImportApplyPanel
+            endpoint={`/api/properties/${propertyId}/import/booking/apply`}
+            preview={state.result}
+            payload={state.payload}
+          />
+        </>
       )}
     </div>
   );

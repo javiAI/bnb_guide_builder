@@ -10,6 +10,7 @@ export const AUDIT_ACTIONS = {
   rollback: "rollback",
   sessionStart: "session.start",
   sessionEnd: "session.end",
+  importApply: "import.apply",
 } as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
