@@ -15,6 +15,7 @@ import type {
   UnactionableDiffEntry,
 } from "@/lib/imports/airbnb";
 import { ImportApplyPanel } from "./import-apply-panel";
+import { formatValue } from "./import-format";
 
 interface Props {
   propertyId: string;
@@ -436,9 +437,3 @@ function MetaLine({ meta }: { meta: ImportDiff["meta"] }) {
   );
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}

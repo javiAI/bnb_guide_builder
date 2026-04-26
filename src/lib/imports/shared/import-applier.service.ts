@@ -16,6 +16,8 @@ import { previewBookingImport } from "../booking/serialize";
 import { computePayloadFingerprint } from "./payload-fingerprint";
 import {
   InvalidResolutionError,
+  POLICIES_PREFIX,
+  SCALAR_PREFIX,
   StaleResolutionError,
   planApply,
   type AppliedMutation,
@@ -69,11 +71,37 @@ export type ApplyImportResult =
 export async function applyImportDiff(
   input: ApplyImportInput,
 ): Promise<ApplyImportResult> {
-  const preview =
-    input.platform === "airbnb"
-      ? await previewAirbnbImport(input.propertyId, input.payload)
-      : await previewBookingImport(input.propertyId, input.payload);
+  // Fingerprint and the idempotency lookup don't depend on the diff —
+  // start the lookup concurrently with the preview to drop one round-trip
+  // from the serial chain.
+  const fingerprint = computePayloadFingerprint({
+    platform: input.platform,
+    payload: input.payload,
+    resolutions: input.resolutions,
+  });
 
+  const previewP =
+    input.platform === "airbnb"
+      ? previewAirbnbImport(input.propertyId, input.payload)
+      : previewBookingImport(input.propertyId, input.payload);
+
+  const existingP = prisma.auditLog.findFirst({
+    where: {
+      propertyId: input.propertyId,
+      action: AUDIT_ACTIONS.importApply,
+      AND: [
+        { diffJson: { path: ["payloadFingerprint"], equals: fingerprint } },
+        { NOT: { diffJson: { path: ["failed"], equals: true } } },
+      ],
+    },
+    select: { id: true },
+  });
+  // If the preview throws or planApply rejects first, the lookup is
+  // orphaned — silence the unhandled-rejection warning. The real await
+  // below still throws if the lookup itself failed.
+  existingP.catch(() => undefined);
+
+  const preview = await previewP;
   const serverDiff = preview.diff;
   const serverWarnings = preview.warnings;
 
@@ -99,23 +127,7 @@ export async function applyImportDiff(
     throw err;
   }
 
-  const fingerprint = computePayloadFingerprint({
-    platform: input.platform,
-    payload: input.payload,
-    resolutions: input.resolutions,
-  });
-
-  const existing = await prisma.auditLog.findFirst({
-    where: {
-      propertyId: input.propertyId,
-      action: AUDIT_ACTIONS.importApply,
-      AND: [
-        { diffJson: { path: ["payloadFingerprint"], equals: fingerprint } },
-        { NOT: { diffJson: { path: ["failed"], equals: true } } },
-      ],
-    },
-    select: { id: true },
-  });
+  const existing = await existingP;
   if (existing) {
     console.info("[import.apply] noop", {
       propertyId: input.propertyId,
@@ -151,7 +163,7 @@ export async function applyImportDiff(
             ? structuredClone(property.policiesJson as Record<string, unknown>)
             : {};
         for (const m of policyApplied) {
-          const path = m.field.replace(/^policies\./, "").split(".");
+          const path = m.field.slice(POLICIES_PREFIX.length).split(".");
           setDeep(current, path, m.value);
         }
         policiesPatch = current;
@@ -249,8 +261,7 @@ function collectScalarPatch(
   const patch: Record<string, unknown> = {};
   for (const m of applied) {
     if (m.category !== "scalar") continue;
-    const subfield = m.field.replace(/^scalar\./, "");
-    patch[subfield] = m.value;
+    patch[m.field.slice(SCALAR_PREFIX.length)] = m.value;
   }
   return patch;
 }

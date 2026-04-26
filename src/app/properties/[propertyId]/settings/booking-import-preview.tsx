@@ -15,12 +15,8 @@ import type {
   UnactionableDiffEntry,
 } from "@/lib/imports/booking";
 import { ImportApplyPanel } from "./import-apply-panel";
+import { formatValue } from "./import-format";
 
-/**
- * Preview-only UI (Rama 14E). Host pastes a Booking listing JSON, we POST to
- * `/api/properties/[propertyId]/import/booking/preview`, and render the diff +
- * warnings. NO apply button — the reconciler output is diagnostic only.
- */
 interface Props {
   propertyId: string;
 }
@@ -440,9 +436,3 @@ function MetaLine({ meta }: { meta: ImportDiff["meta"] }) {
   );
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}

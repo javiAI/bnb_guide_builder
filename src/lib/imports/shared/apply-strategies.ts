@@ -60,9 +60,10 @@ export class StaleResolutionError extends Error {
   }
 }
 
-const SCALAR_PREFIX = "scalar.";
-const AMENITIES_ADD_PREFIX = "amenities.add.";
-const AMENITIES_REMOVE_PREFIX = "amenities.remove.";
+export const SCALAR_PREFIX = "scalar.";
+export const POLICIES_PREFIX = "policies.";
+export const AMENITIES_ADD_PREFIX = "amenities.add.";
+export const AMENITIES_REMOVE_PREFIX = "amenities.remove.";
 
 const NON_ACTIONABLE_PREFIXES = ["presence.", "freeText.", "customs."] as const;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Banner } from "@/components/ui/banner";
 import {
@@ -14,6 +14,7 @@ import {
   type ResolutionStrategy,
   type SkippedMutation,
 } from "@/lib/imports/airbnb";
+import { formatValue } from "./import-format";
 
 type ApplySuccess = {
   result: "success";
@@ -41,16 +42,13 @@ interface Props {
   payload: unknown;
 }
 
-/**
- * Inline resolution UI on top of the preview output (Rama 15E). Hosts pick a
- * strategy per actionable entry, then POST `{payload, resolutions}` to the
- * apply endpoint. The server recomputes its own diff — the UI never sends
- * `current`/`incoming` values back; only field IDs and strategies.
- */
 export function ImportApplyPanel({ endpoint, preview, payload }: Props) {
+  const actionableEntries = useMemo(() => collectActionable(preview), [preview]);
   const [resolutions, setResolutions] = useState<
     Record<string, ResolutionStrategy>
-  >(() => buildInitialResolutions(preview));
+  >(() =>
+    Object.fromEntries(actionableEntries.map((e) => [e.field, e.defaultStrategy])),
+  );
   const [state, setState] = useState<ApplyState>({ kind: "idle" });
 
   function setStrategy(field: string, strategy: ResolutionStrategy) {
@@ -114,8 +112,6 @@ export function ImportApplyPanel({ endpoint, preview, payload }: Props) {
     const okBody = data as { data: ApplySuccess | ApplyNoop };
     setState({ kind: "done", payload: okBody.data });
   }
-
-  const actionableEntries = collectActionable(preview);
 
   return (
     <section className="mt-6 space-y-4 rounded-[var(--radius-md)] border border-[var(--color-neutral-200)] p-4">
@@ -313,30 +309,3 @@ function scalarSummary(entry: DiffEntry): string {
   return `${formatValue(entry.current)} → ${formatValue(entry.incoming)}`;
 }
 
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value);
-}
-
-function buildInitialResolutions(
-  preview: ImportPreviewResult,
-): Record<string, ResolutionStrategy> {
-  const out: Record<string, ResolutionStrategy> = {};
-  for (const entry of preview.diff.scalar) {
-    if (entry.status === "unactionable" || entry.status === "identical") continue;
-    out[`scalar.${entry.field}`] = defaultResolutionForEntry(entry);
-  }
-  for (const entry of preview.diff.policies) {
-    if (entry.status === "unactionable" || entry.status === "identical") continue;
-    out[entry.field] = defaultResolutionForEntry(entry);
-  }
-  for (const a of preview.diff.amenities.add) {
-    out[`amenities.add.${a.taxonomyId}`] = defaultResolutionForAmenityAdd();
-  }
-  for (const r of preview.diff.amenities.remove) {
-    out[`amenities.remove.${r.taxonomyId}`] = defaultResolutionForAmenityRemove();
-  }
-  return out;
-}
