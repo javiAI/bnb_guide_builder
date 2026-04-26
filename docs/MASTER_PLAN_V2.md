@@ -2618,78 +2618,131 @@ Originalmente diseñada como `14F`, esta rama se ha movido a `15E` porque **appl
 
 La reordenación refleja una dependencia arquitectónica real, no una preferencia. Apply sin auth base es un anti-patrón.
 
-**Propósito**: introduce mutaciones reales en DB para aplicar diffs validados. Cierra el ciclo de import: preview → decision → apply.
+**Propósito**: cierra el ciclo de import (preview → decisión → apply). Introduce las primeras mutaciones reales en DB sobre `Property` y `AmenityInstance` originadas desde un payload externo, con atomicidad por `$transaction`, idempotencia por fingerprint y audit completo bajo el contrato de 15D.
 
 **Archivos a crear**:
-- `src/lib/imports/shared/apply-strategies.ts` — estrategias de resolución para cada categoría de diff (overwrite / keep_current / take_import / skip)
-- `src/lib/imports/shared/import-applier.service.ts` — orquestador que toma `ImportDiff` + resolución-por-entrada y ejecuta mutations en transaction
-- `src/lib/services/audit-integration.ts` — log writer para import apply (quién, qué, cuándo, resultado) usando `AuditLog` schema
-- `src/app/api/properties/[propertyId]/import/{airbnb|booking}/apply/route.ts` — POST endpoints (Airbnb + Booking)
-- `src/lib/actions/import-apply.action.ts` — server action wrapper para UI
+
+- `src/lib/imports/shared/payload-fingerprint.ts` — `computePayloadFingerprint({platform, payload, resolutions}) → string`. Canonical-JSON con orden de claves estable + SHA-256 hex truncado a 16 chars. Determinístico, sin dependencias.
+- `src/lib/imports/shared/apply-strategies.ts` — funciones puras `resolveEntry(entry, strategy) → AppliedMutation | SkippedMutation`. Estrategias finales: `take_import | keep_current | skip` (3, no `overwrite`). Server enforcement: rechaza con `INVALID_RESOLUTION` cualquier resolution sobre entries de categorías `presence`, `freeText`, `customs`.
+- `src/lib/imports/shared/import-applier.service.ts` — orquestador `applyImportDiff({propertyId, platform, payload, resolutions, operator}) → ApplyResult`. Pasos: (1) re-corre `previewImport(propertyId, payload)` para reconstruir un `diff` autoritativo server-side, (2) valida que cada `resolutions[field]` matchea un entry server-side (si no, 409 `STALE_RESOLUTIONS` con el diff actualizado), (3) computa fingerprint y consulta `AuditLog` para idempotencia, (4) abre `prisma.$transaction` con `SELECT … FOR UPDATE`, aplica scalars + policies merge + amenityInstance shell create/delete, (5) escribe `writeAudit` **fuera** del tx tras commit (success) o tras catch (failed). En noop **no** escribe audit (solo `console.info`).
+- `src/app/api/properties/[propertyId]/import/airbnb/apply/route.ts` — `POST` con `withOperatorGuards({ rateLimit: "mutate" })`. Body `{ payload, resolutions }` (no `diff` — el server lo recomputa).
+- `src/app/api/properties/[propertyId]/import/booking/apply/route.ts` — gemelo simétrico.
+- `src/test/import-applier-strategies.test.ts` — matriz 3 estrategias × 6 categorías. `take_import` muta solo lo aplicable, `keep_current` no muta, `skip` no muta + warning.
+- `src/test/import-apply-idempotence.test.ts` — re-apply mismo `(payload, resolutions)` → primer call escribe 1 audit row + N mutaciones; segundo call retorna `{result: "noop"}` con 0 audit rows nuevos, 0 mutaciones.
+- `src/test/import-apply-atomicity.test.ts` — inyecta failure mid-tx (mock `tx.amenityInstance.createMany` reject) → DB sin cambios + 1 audit row con `failed: true` y `error`.
+- `src/test/import-apply-audit.test.ts` — happy path: audit row tiene `entityType: "Property"`, `entityId: propertyId`, `action: "import.apply"`, `actor: user:<id>`, `diff: {platform, payloadFingerprint, applied[], skipped[], warnings[]}`.
+- `src/test/import-apply-cross-workspace.test.ts` — operator de WS-A → property de WS-B → 404 (cubre la composición del wrapper también desde el call site).
+- `src/test/import-apply-server-rejects-unactionable.test.ts` — POST con `resolutions` apuntando a `field` de categoría `presence`/`freeText`/`customs` → 400 `INVALID_RESOLUTION`. Defensa server contra UI mal codificado o cliente adversarial.
+- `src/test/import-apply-policies-lossy-skip.test.ts` — payload que produce entry policies `unactionable` por `lossy_projection` → applier la salta + emite warning, no falla la request.
+- `src/test/import-apply-stale-resolutions.test.ts` — entre preview y apply el state cambió (otro editor mutó la propiedad) → server-recomputed diff omite un `field` que el cliente envió → 409 `STALE_RESOLUTIONS` con el diff actualizado en el body.
+- `src/test/import-apply-trusts-server-diff.test.ts` — invariante de seguridad: el applier ignora cualquier `current`/`incoming` que el cliente envíe; solo `(payload, resolutions)` dirigen el outcome. Tampering del cliente sobre el shape de input no altera el state final.
 
 **Archivos a modificar**:
-- `src/app/properties/[propertyId]/settings/airbnb-import-preview.tsx` — añadir botón "Aplicar" + modal de resolución de conflictos
-- `src/app/properties/[propertyId]/settings/booking-import-preview.tsx` — mismo patrón
-- `docs/FEATURES/PLATFORM_INTEGRATIONS.md` — § Apply (estrategias, auditoría, idempotencia)
-- `docs/SECURITY_AND_AUDIT.md` — audit log contract para imports (actor, propertyId, payload hash, decisions, result)
 
-**Tests**:
-- `src/test/import-applier-strategies.test.ts` — validar cada estrategia (overwrite crea versiones de Spaces, keep skips, take imports con warnings, skip emite noop)
-- `src/test/import-apply-idempotence.test.ts` — re-apply same import = zero new mutations
-- `src/test/import-apply-no-partial.test.ts` — transaction rollback si error mid-apply (atomicity)
-- `src/test/import-audit-log.test.ts` — every apply logs actor + propertyId + payload hash + decisions + result
-- E2E: reconcile diff → resolve conflicts → apply → verify DB + audit log
+- `src/lib/services/audit.service.ts` — añadir `importApply: "import.apply"` a `AUDIT_ACTIONS`. (entry whitelist; el writer no cambia.)
+- `src/test/auth/audit-mutation-coverage.test.ts` — extender `TARGETS` con `applyImportDiff` en `import-applier.service.ts`.
+- `src/app/properties/[propertyId]/settings/airbnb-import-preview.tsx` — añadir resolución inline (radio per-entry sobre scalars/policies/amenities, default = `suggestedAction`) + botón "Aplicar" + handlers de success/409/error. Mantiene fetch directo a la API (sin server action wrapper).
+- `src/app/properties/[propertyId]/settings/booking-import-preview.tsx` — mismo patrón simétrico.
+- `docs/FEATURES/PLATFORM_INTEGRATIONS.md` — nueva § "12. Apply (rama 15E)" con contrato de la API, estrategias, atomicidad, idempotencia, mapping per-categoría.
+- `docs/SECURITY_AND_AUDIT.md` § 4 — añadir `import.apply` al action whitelist + nota de fingerprint en `diffJson`. § 0.2 → mover bullet de import-apply a "✅ Rama 15E".
+- `docs/API_ROUTES.md` — entradas `POST .../import/airbnb/apply` y `.../import/booking/apply` con bucket `mutate`.
+- `docs/ROADMAP.md` — al cerrar la rama, marcar 15E ✅ con resumen de un párrafo.
+
+**Tests**: ver lista exhaustiva arriba (8 archivos nuevos). Suite global debe pasar verde antes de PR.
 
 **Criterio de done**:
-- Apply endpoint accepts `{diff, resolutions: {[field]: strategy}}` payload
-- Mutaciones aplicadas en $transaction (atomicity guaranteed)
-- Audit log entries para cada apply (quién, propertyId, payload fingerprint, decisions, timestamp, result)
-- Idempotence validated: re-apply same import = 1 log entry, 0 additional mutations
-- UI modal resolve conflicts + progress feedback
-- Docs explain strategy semantics + audit contract + idempotence guarantee
 
-**Estrategias (por entrada DiffEntry)**:
-- **overwrite**: incoming replaces current (fresh/conflict → take_import)
-- **keep_current**: skip incoming (conflict → keep_db)
-- **take_import**: only if fresh (default suggested)
-- **skip**: noop, emit info warning
-- **per-category rules** (opcional para 15E): policies `lossy_projection` default skip + warning; presence always skip + warning
+- Endpoint POST acepta `{ payload, resolutions: Record<string, "take_import"|"keep_current"|"skip"> }` y devuelve `{ result: "success"|"failed"|"noop", payloadFingerprint, applied?, skipped?, warnings?, error? }`.
+- Mutaciones aplicadas dentro de un único `prisma.$transaction` con `SELECT … FOR UPDATE` sobre la Property — atomicidad garantizada, sin estado parcial.
+- Audit lifecycle: success → 1 row, failed → 1 row con `failed: true` + `error`, noop → 0 rows + `console.info`.
+- Idempotencia: re-apply con mismo fingerprint detectado pre-tx → return `{result: "noop"}` sin tx ni audit.
+- Server recomputa su propio diff desde `payload`; resolutions sobre fields ausentes en el server-diff → 409 `STALE_RESOLUTIONS` con diff actualizado.
+- Server rechaza resolutions sobre entries de categorías unactionable (`presence`, `freeText`, `customs`) → 400 `INVALID_RESOLUTION`.
+- UI inline (sin modal full-screen) permite cambiar resolución per-entry y feedback claro post-apply (success / 409 / error).
+- Docs actualizados con el contrato de la API, estrategias, mapping per-categoría y audit lifecycle.
 
-**Mutaciones en DB** (alcance):
-- Top-level scalar mutations: propertyType, primaryAccessMethod, bedroomsCount, bathroomsCount, personCapacity
-- policiesJson sub-updates (merge-mode: incoming + current unresolved stay)
-- Amenity list mutations: create/delete Amenities (shell instances via import, future: Space-scoped via future UI)
-- No Spaces creation (requires entity identity, out of scope per 14D invariant)
-- No scheduled tasks / automations (separate concern)
+**Restricciones**:
 
-**Auditoría**:
-- `AuditLog` entry per apply: `{ propertyId, actor (userId from session), action: "import_apply", resourceType: "property", resourceId, payload: {platformType, payloadHash, strategyDecisions, appliedCount}, timestamp, result: "success"|"partial"|"failed" }`
-- Hash of incoming payload (SHA-256 12-char fingerprint) for idempotence check
-- Log searchable by propertyId + action + timestamp
-- Rollback audit: if transaction fails, log entry with result="failed" + errorMessage
+- ❌ No estrategia `overwrite` — colapsada a `take_import` (cliente decide explícitamente per-entry).
+- ❌ No `entityType: "ImportApply"` en el audit (no existe modelo) — siempre `entityType: "Property"` con detalle en `diffJson`.
+- ❌ No tabla nueva `ImportApply` para idempotencia — query sobre `AuditLog.diffJson->payloadFingerprint`.
+- ❌ No apply granular por categoría en requests separadas — un POST = un tx atómico.
+- ❌ No `result: "partial"` en el vocabulario — `success | failed | noop`, nada intermedio.
+- ❌ No server action wrapper — UI usa `fetch()` directo (consistencia con preview de 14D/14E).
+- ❌ No modal full-screen — resolución inline en el componente preview existente.
+- ❌ No apply de `freeText` (no hay campo destino en `Property`) ni de `customs` (siempre decisión manual fuera del flow de import).
+- ❌ No mutaciones a `featuresJson`/`configJson`/`subtype` en `amenityInstance` creados desde import — siempre shells.
 
 **Dependencias / Riesgos**:
-- ⚠ **Requiere Fase 15A (sessions)**: apply endpoint needs `userId` from `requireOperator()` guard. If 15A not merged, apply endpoint returns 401 until 15B gates are in place. Plan: merge 15A minimally (sessions only, no full ownership checks) before 15E, or use stub `userId="system"` in dev/test.
-- ⚠ **Property versioning**: imports can conflict with concurrent wizard/API edits. Mitigated by: (a) transaction isolation (Postgres READ_COMMITTED default), (b) optimistic lock via version field if added later, (c) clear user feedback that import is an offline batch operation.
-- ⚠ **Audit log performance**: AuditLog inserts should not block apply. Plan: use async `emailProvider` pattern if audit events trigger notifications.
 
-**No-alcance de 15E**:
-- No async background jobs (apply is synchronous, immediate feedback)
-- No scheduler/cron sync (external fetch of platform listings)
-- No "sync previous imports" history / "undo apply" (versioning feature, future scope)
-- No SmartDiff recommendations (AI-assisted conflict resolution, future)
+- ⚠️ **Lost update sobre `policiesJson`**: dos writers concurrentes (apply + wizard) leen current, mergean, escriben. Mitigado por `SELECT … FOR UPDATE` sobre la Property al inicio del tx — Postgres `READ_COMMITTED` default no protege merge JSON sin lock explícito.
+- ⚠️ **Audit fail-soft vs idempotencia**: si la DB de audit cae *después* del commit del tx, no hay row → el siguiente apply no detecta el duplicado → re-aplica. Convergencia es segura (mutaciones idempotentes a nivel de valor) pero queda doble row de audit. Aceptable; el contrato fail-soft de 15D no se rompe.
+- ⚠️ **Cliente adversarial sobre el `diff`**: mitigación dura — el applier ignora `diff.scalar[*].current` enviado por el cliente y re-computa el diff server-side desde `payload`. El test `import-apply-trusts-server-diff.test.ts` pinea esa invariante.
+- ⚠️ **Race entre dos apply simultáneos con misma fingerprint**: ambos pasan el pre-check antes del primer commit. La segunda hace mutaciones idempotentes (mismo state final) + 2 audit rows. Detectable post-hoc; no rompe correctness.
+
+**No-alcance**:
+
+- No async background jobs (apply es síncrono, feedback inmediato).
+- No scheduler/cron sync (fetch externo de listings de plataforma).
+- No "undo apply" / historial de imports aplicados (versioning feature, futura).
+- No SmartDiff con recomendaciones AI (resolución asistida, futura).
+- No apply de `freeText.houseRules` / `freeText.checkInInstructions` (requiere campo destino en `Property` — rama de schema separada).
+- No apply de `customs.*` (siempre manual desde el editor, no desde el flow de import).
+- No creación de `Space` (requiere entity identity, fuera del shape `presence_signal_only` del payload — invariante 14D).
+- No UI de "ver historial de imports" sobre `AuditLog` (cubierto por el §6.2 deferred de 15D).
 
 **Preparación**:
+
 - **Contexto a leer**:
-  - 14D + 14E preview pipelines (diff shape)
-  - `docs/SECURITY_AND_AUDIT.md` (audit log contract, AuditLog schema)
-  - `docs/FEATURES/PLATFORM_INTEGRATIONS.md` § reconciliation semantics
-  - Prisma transaction patterns in codebase (e.g., `completeWizardAction`)
-  - Session pattern from 15A (minimal: `userId` in request context)
-- **Docs a actualizar al terminar**: PLATFORM_INTEGRATIONS.md § 9 "Apply & audit", SECURITY_AND_AUDIT.md audit log section, ROADMAP.md
-- **Skills/tools específicos**: 
-  - **Agent code-architect** para estrategias de resolución y patrón de transaction (múltiples opciones si aplica)
-  - **Agent code-explorer** para tracing de audit log usage en codebase
+  - 14D + 14E (`src/lib/imports/shared/types.ts`, `diff-engine.ts`, `airbnb/serialize.ts`, `booking/serialize.ts`).
+  - 15D (`src/lib/auth/operator-guards.ts`, `src/lib/services/audit.service.ts`, `src/test/auth/audit-mutation-coverage.test.ts`).
+  - `docs/SECURITY_AND_AUDIT.md` §3, §4, §6.
+  - `docs/FEATURES/PLATFORM_INTEGRATIONS.md` §8, §9 (preview semantics).
+  - Patrones `prisma.$transaction` existentes (`src/lib/actions/wizard.actions.ts:348`, `src/lib/actions/editor.actions.ts:384`+, `src/lib/actions/guide.actions.ts:84`).
+- **Docs a actualizar al terminar**: `docs/FEATURES/PLATFORM_INTEGRATIONS.md` (nueva §12), `docs/SECURITY_AND_AUDIT.md` (§0.2 + §4), `docs/API_ROUTES.md` (apply endpoints), `docs/ROADMAP.md` (15E ✅).
+- **Skills**: `/pre-commit-review` antes de cada commit; `/simplify` antes de PR sobre el conjunto completo de cambios; `/review-pr-comments` tras feedback.
+
+#### 1. Contrato de API
+
+```text
+POST /api/properties/:propertyId/import/{airbnb|booking}/apply
+Body: { payload: <plataforma JSON original>, resolutions: Record<string, "take_import"|"keep_current"|"skip"> }
+
+200 → { result: "success", payloadFingerprint, applied: AppliedMutation[], skipped: SkippedMutation[], warnings: ImportWarning[] }
+200 → { result: "noop", payloadFingerprint }                                  (idempotencia hit)
+400 → { error: { code: "INVALID_RESOLUTION", field, reason } }                (resolution sobre presence/freeText/customs)
+409 → { error: { code: "STALE_RESOLUTIONS", diff: <server-recomputed> } }     (state cambió entre preview y apply)
+500 → { error: { code: "APPLY_FAILED", message, payloadFingerprint } }        (rollback ejecutado, audit row con failed:true escrito)
+```
+
+El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff. El `diff` que la UI muestra es solo presentacional.
+
+#### 2. Transaction model
+
+- **Una única `prisma.$transaction`** por request. Contiene: `SELECT … FOR UPDATE` sobre la Property, `tx.property.update` con scalars resueltos, read+merge+write de `policiesJson`, `tx.amenityInstance.createMany` para adds aprobados, `tx.amenityInstance.deleteMany` para removes aprobados.
+- **All-or-nothing**. Cualquier throw → rollback completo. No hay vocabulario `partial`.
+- **AuditLog fuera del tx**:
+  - `success` → `writeAudit({entityType:"Property", entityId:propertyId, action:"import.apply", diff:{platform, payloadFingerprint, applied, skipped, warnings}})`.
+  - `failed` (catch del `$transaction`) → `writeAudit({…, diff:{platform, payloadFingerprint, failed:true, error}})`.
+  - `noop` (fingerprint hit pre-tx) → **no audit**, solo `console.info("[import.apply] noop", {propertyId, fingerprint})`.
+- **Concurrent edit defense**: `SELECT … FOR UPDATE` serializa contra cualquier otro writer que toque la misma Property durante el tx. Sin esto, dos merges concurrentes sobre `policiesJson` perderían un escritor.
+- **Idempotencia**:
+  - Pre-check `prisma.auditLog.findFirst({ where: { propertyId, action:"import.apply", diffJson: { path:["payloadFingerprint"], equals: fingerprint } } })`.
+  - Si existe **y `diffJson->>'failed' IS NULL`** → return `{result:"noop"}` sin abrir tx ni escribir audit.
+  - Si solo existen rows con `failed:true` → no es noop; el applier reintenta de cero.
+- **Cliente adversarial**: el applier reconstruye su propio `diff` desde `(payload, currentDB)`. `resolutions` solo dirige *qué fields* aplicar; los valores finales vienen del server-diff. Ningún `current`/`incoming` enviado por el cliente influye en el state final.
+
+#### 3. Mapping del `ImportDiff` a mutaciones reales
+
+| Categoría | Aplica 15E | Cómo | Fuera del alcance |
+| --- | --- | --- | --- |
+| `scalar` (`propertyType`, `primaryAccessMethod`, `bedroomsCount`, `bathroomsCount`, `personCapacity`) | ✅ | `tx.property.update({where:{id}, data: pickResolved(serverScalar, resolutions)})`. Para `propertyType`/`primaryAccessMethod` el `incoming` ya es taxonomyId resuelto por el preview pipeline. | Custom values (van por `customs`, no se aplican). |
+| `policies` (sub-keys de `policiesJson`) | ✅ (parcial) | Read current `policiesJson` dentro del tx, merge per-resolved-key, write back. Resolution a nivel de sub-key (`events.policy`, `pets.allowed`, `smoking`, …). | Entries `unactionable` con `reason: lossy_projection` → skip server-forced + warning, sin importar la resolution del cliente. |
+| `presence` (booleanos `shared_spaces.*`, `amenities.shell.*`, `accessibility_features.*`) | ❌ | Server rechaza con 400 `INVALID_RESOLUTION` cualquier resolution sobre estas entries. Razón: `presence_signal_only` no permite reconstruir entity identity. | Aplicación de booleanos → diferida a un flow separado de "create N spaces by type" con identidad explícita. |
+| `amenities.add` (taxonomyId set diff) | ✅ | `tx.amenityInstance.createMany({data: addsApproved.map(a => ({propertyId, amenityKey: a.taxonomyId}))})`. Solo shells. | `featuresJson`, `configJson`, `subtype` — host completa post-apply en el editor. |
+| `amenities.remove` (taxonomyId set diff) | ✅ (default conservador) | `tx.amenityInstance.deleteMany({where:{propertyId, amenityKey:{in: removesApproved}}})`. **Default UI = `keep_current`** — host debe marcar explícitamente cada delete; un import que "olvida" listar una amenity nunca destruye datos por default. | Cascade a placement / featuresJson — confiamos en `onDelete` del schema. |
+| `freeText` (`houseRules`, `checkInInstructions`) | ❌ | Server rechaza con 400 `INVALID_RESOLUTION`. UI muestra side-by-side para que el host copie manualmente si quiere. | Apply automático — diferido hasta que exista campo destino en `Property` (rama de schema). |
+| `customs` (`propertyType`, `primaryAccessMethod` sin match taxonómico) | ❌ | Server rechaza con 400 `INVALID_RESOLUTION`. UI muestra como sugerencias informativas con botón "copiar etiqueta". | `customPropertyTypeLabel` / `customAccessMethodLabel` — solo se setean desde el editor manual. |
 
 
 **Estado**: bloqueada por entrega del paquete de diseño Liora. Las ramas están definidas a nivel de alcance y dependencia, pero **sin archivos concretos** hasta que el paquete llegue.
