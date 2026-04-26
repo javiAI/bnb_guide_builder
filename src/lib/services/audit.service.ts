@@ -71,12 +71,26 @@ function redactInner(value: unknown, depth: number, seen: WeakSet<object>): unkn
   if (seen.has(value as object)) return REDACTED;
   seen.add(value as object);
 
+  if (value instanceof Date) return value.toISOString();
+
   if (Array.isArray(value)) {
-    return value.map((v) => redactInner(v, depth + 1, seen));
+    // Prisma JSON rejects `undefined`; coerce to null so array indices align.
+    return value.map((v) =>
+      v === undefined ? null : redactInner(v, depth + 1, seen),
+    );
+  }
+
+  // Non-plain objects (URL, Error, Map, …) would lose their data via
+  // Object.entries; fall back to String() so the audit captures something
+  // meaningful instead of `{}`.
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) {
+    return String(value);
   }
 
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (v === undefined) continue;
     if (SECRET_KEY_PATTERNS.some((p) => p.test(k))) {
       out[k] = REDACTED;
       continue;

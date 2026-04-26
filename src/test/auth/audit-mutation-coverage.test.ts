@@ -55,13 +55,16 @@ const TARGETS: Target[] = [
   },
 ];
 
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+}
+
 /** Extract the body of an async function/action by name (best-effort). */
 function extractFunctionBody(src: string, name: string): string | null {
   const re = new RegExp(`\\b(?:async\\s+)?function\\s+${name}\\s*\\([^)]*\\)\\s*[^{]*\\{`, "m");
   const m = re.exec(src);
   if (!m) return null;
   const start = m.index + m[0].length - 1; // pointer to `{`
-  // brace-balance scan
   let depth = 0;
   for (let i = start; i < src.length; i++) {
     const ch = src[i];
@@ -88,7 +91,7 @@ describe("audit mutation coverage invariants", () => {
           offenders.push(`${name} (function not found in ${target.path})`);
           continue;
         }
-        if (!/writeAudit\s*\(/.test(body)) {
+        if (!/writeAudit\s*\(/.test(stripComments(body))) {
           offenders.push(`${name} (no writeAudit() call)`);
         }
       }

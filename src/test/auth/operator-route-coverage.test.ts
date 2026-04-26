@@ -27,9 +27,13 @@ function walk(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+}
+
 const ROUTE_FILES = walk(ROOT);
 const ROUTE_SOURCES: ReadonlyMap<string, string> = new Map(
-  ROUTE_FILES.map((f) => [f, readFileSync(f, "utf-8")]),
+  ROUTE_FILES.map((f) => [f, stripComments(readFileSync(f, "utf-8"))]),
 );
 
 describe("operator route coverage invariant", () => {

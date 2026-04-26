@@ -14,16 +14,21 @@ export async function POST(request: NextRequest) {
   // as no session — we still clear the cookie but skip the audit.
   const sessionCookie = request.cookies.get('session')?.value
   if (sessionCookie) {
-    const session = verifySession(sessionCookie)
-    if (session) {
-      await writeAudit({
-        propertyId: null,
-        actor: formatActor({ type: 'user', userId: session.userId }),
-        entityType: 'Session',
-        entityId: session.userId,
-        action: AUDIT_ACTIONS.sessionEnd,
-        diff: { workspaceId: session.workspaceId },
-      })
+    try {
+      const session = verifySession(sessionCookie)
+      if (session) {
+        await writeAudit({
+          propertyId: null,
+          actor: formatActor({ type: 'user', userId: session.userId }),
+          entityType: 'Session',
+          entityId: session.userId,
+          action: AUDIT_ACTIONS.sessionEnd,
+          diff: { workspaceId: session.workspaceId },
+        })
+      }
+    } catch {
+      // Tampered/expired cookie OR misconfigured HMAC_KEY — both treated as
+      // no session. Logout stays best-effort and still clears the cookie.
     }
   }
 
