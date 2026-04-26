@@ -119,9 +119,9 @@ export function defaultResolutionForAmenityRemove(): ResolutionStrategy {
  * Server-forced behaviour:
  *   - `policies` entries with `status: "unactionable"` are always skipped
  *     with a `server_unactionable` reason — the client's strategy is ignored.
- *   - Identical scalar entries collapse to a `client_keep_current` skip even
- *     when the client picked `take_import`, to keep `applied[]` semantically
- *     meaningful (only real value changes).
+ *   - Identical scalar entries are always skipped with reason `identical`,
+ *     even when the client picked `take_import`, to keep `applied[]`
+ *     semantically meaningful (only real value changes).
  */
 export function planApply(
   diff: ImportDiff,

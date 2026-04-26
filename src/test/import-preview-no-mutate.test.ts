@@ -21,6 +21,13 @@ const MUTATION_PATTERNS = [
   /prisma\.[a-zA-Z_]+\.upsert\b/,
   /prisma\.[a-zA-Z_]+\.delete\b/,
   /prisma\.[a-zA-Z_]+\.deleteMany\b/,
+  /\btx\.[a-zA-Z_]+\.create\b/,
+  /\btx\.[a-zA-Z_]+\.createMany\b/,
+  /\btx\.[a-zA-Z_]+\.update\b/,
+  /\btx\.[a-zA-Z_]+\.updateMany\b/,
+  /\btx\.[a-zA-Z_]+\.upsert\b/,
+  /\btx\.[a-zA-Z_]+\.delete\b/,
+  /\btx\.[a-zA-Z_]+\.deleteMany\b/,
   /\$executeRaw/,
   /\$executeRawUnsafe/,
 ];

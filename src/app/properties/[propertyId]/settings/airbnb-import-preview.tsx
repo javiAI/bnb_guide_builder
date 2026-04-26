@@ -120,8 +120,9 @@ export function AirbnbImportPreview({ propertyId }: Props) {
         Import desde Airbnb (preview)
       </h2>
       <p className="mt-2 text-xs text-[var(--color-neutral-500)]">
-        Pega un listing JSON de Airbnb. Mostramos qué cambiaría sin tocar la
-        base de datos — esta vista es solo de diagnóstico.
+        Pega un listing JSON de Airbnb. Primero verás un preview en solo
+        lectura del diff. Después podrás elegir qué aplicar y persistirlo
+        desde el panel inferior.
       </p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -142,7 +143,8 @@ export function AirbnbImportPreview({ propertyId }: Props) {
             {state.kind === "loading" ? "Procesando..." : "Previsualizar"}
           </button>
           <span className="text-xs text-[var(--color-neutral-400)]">
-            Nunca se escribe nada en la base de datos desde esta vista.
+            Previsualizar es solo lectura — la escritura ocurre al pulsar
+            Aplicar en el panel inferior.
           </span>
         </div>
       </form>

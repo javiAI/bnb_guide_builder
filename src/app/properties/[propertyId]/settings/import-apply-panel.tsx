@@ -7,13 +7,17 @@ import {
   defaultResolutionForAmenityAdd,
   defaultResolutionForAmenityRemove,
   defaultResolutionForEntry,
-  type AppliedMutation,
-  type DiffEntry,
-  type ImportPreviewResult,
-  type ImportWarning,
-  type ResolutionStrategy,
-  type SkippedMutation,
-} from "@/lib/imports/airbnb";
+} from "@/lib/imports/shared/apply-strategies";
+import type {
+  AppliedMutation,
+  ResolutionStrategy,
+  SkippedMutation,
+} from "@/lib/imports/shared/apply-strategies";
+import type {
+  DiffEntry,
+  ImportPreviewResult,
+  ImportWarning,
+} from "@/lib/imports/shared/types";
 import { formatValue } from "./import-format";
 
 type ApplySuccess = {
