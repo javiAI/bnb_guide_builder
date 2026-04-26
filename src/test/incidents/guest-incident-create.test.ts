@@ -93,6 +93,7 @@ describe("createIncidentFromGuest", () => {
   it("sets origin=guest_guide, reporterType=guest, visibility=internal", async () => {
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "Wifi lento" },
     });
     const data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -104,6 +105,7 @@ describe("createIncidentFromGuest", () => {
   it("derives title from category label + summary", async () => {
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "No hay internet" },
     });
     const data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -117,6 +119,7 @@ describe("createIncidentFromGuest", () => {
     // Feed through the service directly with Zod-safe-parsed limit.
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: big.slice(0, 500) },
     });
     const data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -126,6 +129,7 @@ describe("createIncidentFromGuest", () => {
   it("seeds severity + targetType from the category taxonomy", async () => {
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.access", summary: "Llave no abre" },
     });
     const data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -138,6 +142,7 @@ describe("createIncidentFromGuest", () => {
     prismaMock.space.findFirst.mockResolvedValueOnce({ id: "sp-1" });
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: {
         categoryKey: "ic.cleaning",
         summary: "Sucio",
@@ -153,6 +158,7 @@ describe("createIncidentFromGuest", () => {
     prismaMock.space.findFirst.mockResolvedValueOnce(null);
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: {
         categoryKey: "ic.cleaning",
         summary: "Sucio",
@@ -168,6 +174,7 @@ describe("createIncidentFromGuest", () => {
   it("stores guest contact when provided, null otherwise", async () => {
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: {
         categoryKey: "ic.wifi",
         summary: "Wifi",
@@ -180,6 +187,7 @@ describe("createIncidentFromGuest", () => {
     prismaMock.incident.create.mockClear();
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "Wifi" },
     });
     data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -189,6 +197,7 @@ describe("createIncidentFromGuest", () => {
   it("stores the categoryKey for panel filtering", async () => {
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.appliance", summary: "Nevera rota" },
     });
     const data = prismaMock.incident.create.mock.calls[0][0].data;
@@ -213,6 +222,7 @@ describe("createIncidentFromGuest", () => {
     ]);
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "Wifi" },
     });
     expect(sent[0]?.recipient).toBe("host@example.com");
@@ -232,6 +242,7 @@ describe("createIncidentFromGuest", () => {
     ]);
     await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "Wifi" },
     });
     expect(sent[0]?.recipient).toBe("cleaner@example.com");
@@ -249,6 +260,7 @@ describe("createIncidentFromGuest", () => {
     ]);
     const res = await createIncidentFromGuest({
       propertyId: PROPERTY_ID,
+      slug: "test-slug",
       payload: { categoryKey: "ic.wifi", summary: "Wifi" },
     });
     expect(res.incidentId).toBe(INCIDENT_ID);

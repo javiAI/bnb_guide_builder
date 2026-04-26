@@ -1,11 +1,42 @@
 # API_CONTRACTS
 
+## 0. Auth, ownership y rate-limit por ruta (Rama 15A–15D)
+
+Toda ruta bajo `src/app/api/properties/[propertyId]/...` se construye con `withOperatorGuards<P>(handler, { rateLimit })` (`src/lib/auth/operator-guards.ts`). El wrapper aplica, en orden: (1) `requireOperator()` → 401 si no hay sesión, (2) `loadOwnedProperty(propertyId)` → 404 si la propiedad no pertenece al workspace del operador, (3) `applyOperatorRateLimit({ userId, bucket })` → 429 con `Retry-After`. Cada ruta declara su bucket (`read`/`mutate`/`expensive`); el test `operator-route-coverage.test.ts` falla en CI si una ruta nueva omite el wrapper sin marcar `// guards:manual <razón>`.
+
+| Bucket | Cap | Uso |
+| --- | --- | --- |
+| `read` | 60 req/60s | GETs, list endpoints |
+| `mutate` | 20 req/60s | POST/PATCH/DELETE no costosos |
+| `expensive` | 10 req/60s | LLM/RAG/Places/exports/imports |
+
+Buckets registrados (subject to `audit-mutation-coverage.test.ts` para mutaciones):
+
+| Ruta | Method | Bucket |
+| --- | --- | --- |
+| `/api/properties/:propertyId/derived` | GET | `read` |
+| `/api/properties/:propertyId/guide` | GET | `read` |
+| `/api/properties/:propertyId/places-search` | GET | `expensive` (+ per-property 30/60s de 13A en cascada) |
+| `/api/properties/:propertyId/assistant/ask` | POST | `expensive` |
+| `/api/properties/:propertyId/assistant/conversations` | GET | `read` |
+| `/api/properties/:propertyId/assistant/conversations` | POST | `mutate` |
+| `/api/properties/:propertyId/assistant/debug/retrieve` | POST | `expensive` |
+| `/api/properties/:propertyId/export/airbnb` | GET | `expensive` |
+| `/api/properties/:propertyId/export/booking` | GET | `expensive` |
+| `/api/properties/:propertyId/import/airbnb/preview` | POST | `mutate` |
+| `/api/properties/:propertyId/import/booking/preview` | POST | `mutate` |
+
+**Mutaciones operator → `writeAudit()`**: cada server action / API mutation que toca una entidad auditable (GuideVersion, Incident, Property, Workspace, Session, Membership) llama `writeAudit({propertyId, actor:formatActor({type:"user", userId}), entityType, entityId, action, diff?})` después del write exitoso. El wrapper NO escribe audit — es explícito en cada call site (decisión Fase -1 de 15D). Lista canónica de call sites en `docs/SECURITY_AND_AUDIT.md` §4.
+
+**Public routes y guest writes**: las rutas `/api/g/:slug/*` no usan `withOperatorGuards` (no hay operador). Mantienen sus propios limiters por slug+IP (helper compartido `sliding-window-rate-limit.ts`). Capacities firmadas via `signPublicCapability` / `verifyPublicCapability` — ver `SECURITY_AND_AUDIT.md` §0.5.
+
 ## 1. General rules
 
 - JSON sobre HTTP
 - validación con Zod en toda frontera externa
 - errores con shape uniforme
 - rutas públicas y de operador claramente separadas
+- toda ruta operator-facing construida con `withOperatorGuards` declarando su bucket de rate-limit (ver §0)
 
 ## 2. Route groups
 
@@ -53,7 +84,7 @@
 - `POST /api/properties/:propertyId/local-places`
 - `GET /api/local-places/:localPlaceId`
 - `PATCH /api/local-places/:localPlaceId`
-- `GET /api/properties/:propertyId/places-search?q=<2-120>&limit=<1-15>&lang=es|en` — Host-only typeahead (Rama 13A). Anchor lat/lng derived server-side from `Property.latitude`/`longitude` (never trusted from query). Responses: `200 { suggestions: PoiSuggestion[], provider }`, `400 invalid_query`, `404 not_found`, `409 property_missing_coordinates`, `429 rate_limited` (30 req/60s/propertyId sliding window; `Retry-After` header), `502 provider_unavailable`, `503 provider_not_configured`. `Cache-Control: no-store`. Rate limiter runs **after** the property lookup so 404/409 don't drain the quota. Provider is env-selectable: `LOCAL_POI_PROVIDER` ∈ {`maptiler`, `mock`} (default `maptiler`); missing `MAPTILER_API_KEY` in prod → fail-fast, in dev → degrades to mock.
+- `GET /api/properties/:propertyId/places-search?q=<2-120>&limit=<1-15>&lang=es|en` — Host-only typeahead (Rama 13A; wrapped in 15D). Anchor lat/lng derived server-side from `Property.latitude`/`longitude` (never trusted from query). Responses: `200 { suggestions: PoiSuggestion[], provider }`, `400 invalid_query`, `404 not_found`, `409 property_missing_coordinates`, `429 rate_limited`, `502 provider_unavailable`, `503 provider_not_configured`. `Cache-Control: no-store`. **Layered rate-limit (15D)**: per-actor `expensive` bucket (10 req/60s) applied by `withOperatorGuards` runs first; per-property limiter from 13A (30 req/60s/propertyId, sliding window, LRU 256 buckets) runs second to cap cross-actor bursts after wrapper passes. Both emit 429 with `Retry-After`. Provider is env-selectable: `LOCAL_POI_PROVIDER` ∈ {`maptiler`, `mock`} (default `maptiler`); missing `MAPTILER_API_KEY` in prod → fail-fast, in dev → degrades to mock.
 
 - `GET /api/properties/:propertyId/ops/checklist`
 - `POST /api/properties/:propertyId/ops/checklist`
@@ -139,17 +170,18 @@
 
 **Exports:**
 
-- `GET /api/properties/:propertyId/export/airbnb` — serializes a Property to an Airbnb-compatible JSON draft (rama 14B). Returns `200 { payload: AirbnbListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND` (property missing), `500 EXPORT_ERROR` (unexpected). The Zod schema is **best-effort, not officially confirmed** against Airbnb's Listings API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). **Access control**: follows the repo-wide status quo (`findUnique → 404`); no session or workspace-ownership check. Data-layer defense: the loader scopes Prisma reads to `visibility: "guest"` for spaces and amenities (no-leak invariant pinned by `airbnb-export-no-leak.test.ts`). Operator-scoped gating is pending **Fase 15B** — see `docs/SECURITY_AND_AUDIT.md` §0 and `docs/FEATURES/PLATFORM_INTEGRATIONS.md` §10.
-- `GET /api/properties/:propertyId/export/booking` — serializes a Property to a Booking.com-compatible JSON draft (rama 14C). Returns `200 { payload: BookingListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND` (property missing), `500 EXPORT_ERROR` (unexpected). The Zod schema is **best-effort, not officially confirmed** against Booking's Connectivity API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). Shape diverges from the Airbnb payload: `max_occupancy` / `policies.*` / `fees.*` / `house_rules_text` + a `checkin_instructions` free-text bucket (Booking has no structured `check_in_method` enum). **Access control**: same status quo as `/export/airbnb`; `visibility: "guest"` scoping enforced at the Prisma layer (pinned by `booking-export-no-leak.test.ts`). Operator-scoped gating pending **Fase 15B**.
+- `GET /api/properties/:propertyId/export/airbnb` — serializes a Property to an Airbnb-compatible JSON draft (rama 14B). Returns `200 { payload: AirbnbListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND` (property missing or not owned by the operator's workspace), `500 EXPORT_ERROR` (unexpected). The Zod schema is **best-effort, not officially confirmed** against Airbnb's Listings API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). **Access control** (15A–15D): wrapped in `withOperatorGuards({ rateLimit: "expensive" })` — session + workspace ownership + 10 req/60s per actor. Data-layer defense persists: the loader scopes Prisma reads to `visibility: "guest"` for spaces and amenities (pinned by `airbnb-export-no-leak.test.ts`).
+- `GET /api/properties/:propertyId/export/booking` — serializes a Property to a Booking.com-compatible JSON draft (rama 14C). Returns `200 { payload: BookingListingPayload, warnings: ExportWarning[], generatedAt: ISO, taxonomyVersion: string }`. `Cache-Control: no-store`. Errors: `404 NOT_FOUND`, `500 EXPORT_ERROR`. The Zod schema is **best-effort, not officially confirmed** against Booking's Connectivity API — see [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md). Shape diverges from the Airbnb payload: `max_occupancy` / `policies.*` / `fees.*` / `house_rules_text` + a `checkin_instructions` free-text bucket (Booking has no structured `check_in_method` enum). **Access control** (15A–15D): same wrapper as `/export/airbnb` (`expensive` bucket); `visibility: "guest"` scoping enforced at the Prisma layer (pinned by `booking-export-no-leak.test.ts`).
 
 **Imports:**
 
-- `POST /api/properties/:propertyId/import/airbnb/preview` — preview-only reconciliation of an inbound Airbnb listing JSON (rama 14D). Accepts a JSON payload in the request body (no multipart; payload is validated with Zod). Returns `200 { diff: ImportDiff, warnings: ImportWarning[] }` with no mutations. The `diff` object contains six categories: `scalar`, `policies`, `presence`, `amenities`, `freeText`, and `customs`. Each scalar/policy entry carries a `status` ∈ {`fresh`, `identical`, `conflict`, `unactionable`} and a suggested action. Unactionable entries have a mandatory `reason` field. `Cache-Control: no-store`. Error responses: `400 INVALID_JSON` (malformed request), `400 PAYLOAD_PARSE_ERROR` with `issues: string[]` (Zod validation failure), `404 NOT_FOUND` (property missing), `500 IMPORT_PREVIEW_ERROR` (unexpected). See [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md) §8 for reconciliation semantics and §8.4 for the no-mutate invariant. **Access control**: same status quo as exports; no session or workspace-ownership check. Apply/mutation is out of scope (14D preview-only; apply planned for 15E post-auth-foundation).
+- `POST /api/properties/:propertyId/import/airbnb/preview` — preview-only reconciliation of an inbound Airbnb listing JSON (rama 14D). Accepts a JSON payload in the request body (no multipart; payload is validated with Zod). Returns `200 { diff: ImportDiff, warnings: ImportWarning[] }` with no mutations. The `diff` object contains six categories: `scalar`, `policies`, `presence`, `amenities`, `freeText`, and `customs`. Each scalar/policy entry carries a `status` ∈ {`fresh`, `identical`, `conflict`, `unactionable`} and a suggested action. Unactionable entries have a mandatory `reason` field. `Cache-Control: no-store`. Error responses: `400 INVALID_JSON` (malformed request), `400 PAYLOAD_PARSE_ERROR` with `issues: string[]` (Zod validation failure), `404 NOT_FOUND`, `500 IMPORT_PREVIEW_ERROR`. See [docs/FEATURES/PLATFORM_INTEGRATIONS.md](FEATURES/PLATFORM_INTEGRATIONS.md) §8 for reconciliation semantics and §8.4 for the no-mutate invariant. **Access control** (15A–15D): wrapped in `withOperatorGuards({ rateLimit: "mutate" })`. Apply/mutation is out of scope (14D preview-only; apply planned for 15E now that the auth foundation is in place).
+- `POST /api/properties/:propertyId/import/booking/preview` — symmetric to `/import/airbnb/preview` for Booking listings (rama 14E). Same shape, same access control wrapper (`mutate` bucket).
 
 ### Ops and audit
 
 - `GET /api/properties/:propertyId/review-queue`
-- `GET /api/properties/:propertyId/audit-log`
+- `GET /api/properties/:propertyId/audit-log` — **declarado, no implementado todavía**. La capa de persistencia (`writeAudit()` + `AuditLog` table) está viva desde 15D, pero la lectura/UI queda como deuda explícita — ver `docs/SECURITY_AND_AUDIT.md` §6.2 para el plan.
 - `GET /api/properties/:propertyId/analytics`
 
 ## 3. Error shape

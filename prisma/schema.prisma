@@ -925,7 +925,7 @@ model SecretReference {
 
 model AuditLog {
   id         String   @id @default(cuid())
-  propertyId String   @map("property_id")
+  propertyId String?  @map("property_id")
   actor      String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
@@ -933,7 +933,7 @@ model AuditLog {
   diffJson   Json?    @map("diff_json")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@index([propertyId])
   @@index([propertyId, entityType])

@@ -3,12 +3,43 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
+// Stub the operator session resolver so the mutations exercise the audit
+// path without needing a real cookie / DB session.
+vi.mock("@/lib/auth/require-operator", () => ({
+  requireOperator: vi.fn().mockResolvedValue({
+    userId: "u1",
+    workspaceId: "ws1",
+    user: { id: "u1", email: "u@example.com", name: null },
+    memberships: [{ workspaceId: "ws1", role: "owner" }],
+  }),
+}));
+
+// Audit writes are fail-soft and tested elsewhere — no-op here.
+vi.mock("@/lib/services/audit.service", () => ({
+  AUDIT_ACTIONS: {
+    create: "create",
+    update: "update",
+    delete: "delete",
+    publish: "publish",
+    unpublish: "unpublish",
+    rollback: "rollback",
+    sessionStart: "session.start",
+    sessionEnd: "session.end",
+  },
+  formatActor: vi.fn((input) =>
+    input.type === "user" ? `user:${input.userId}` : `${input.type}:_`,
+  ),
+  writeAudit: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/lib/db", () => {
   const prismaMock = {
     incident: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn().mockResolvedValue({}),
       update: vi.fn().mockResolvedValue({}),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       delete: vi.fn().mockResolvedValue({}),
     },
     property: { findUnique: vi.fn() },
@@ -170,7 +201,7 @@ describe("incident CRUD", () => {
       resolvedAt: null,
       visibility: "internal",
       playbookId: null,
-      property: { timezone: null },
+      property: { timezone: null, workspaceId: "ws1" },
     });
     await updateIncidentAction(
       null,
@@ -197,7 +228,7 @@ describe("incident CRUD", () => {
       resolvedAt: existingResolvedAt,
       visibility: "internal",
       playbookId: null,
-      property: { timezone: null },
+      property: { timezone: null, workspaceId: "ws1" },
     });
     await updateIncidentAction(
       null,
@@ -221,7 +252,7 @@ describe("incident CRUD", () => {
       resolvedAt: new Date("2026-04-10T12:00:00Z"),
       visibility: "internal",
       playbookId: null,
-      property: { timezone: null },
+      property: { timezone: null, workspaceId: "ws1" },
     });
     await updateIncidentAction(
       null,
@@ -240,7 +271,11 @@ describe("incident CRUD", () => {
   });
 
   it("resolveIncidentAction flips status and stamps resolvedAt", async () => {
-    incidentFindUnique.mockResolvedValue({ propertyId: "p1" });
+    incidentFindUnique.mockResolvedValue({
+      propertyId: "p1",
+      status: "open",
+      property: { workspaceId: "ws1" },
+    });
     await resolveIncidentAction(null, form({ incidentId: "i1" }));
     const call = incidentUpdate.mock.calls[0][0];
     expect(call.data.status).toBe("resolved");
@@ -248,7 +283,12 @@ describe("incident CRUD", () => {
   });
 
   it("deletes incident only after ownership check", async () => {
-    incidentFindUnique.mockResolvedValue({ propertyId: "p1" });
+    incidentFindUnique.mockResolvedValue({
+      propertyId: "p1",
+      title: "T",
+      status: "open",
+      property: { workspaceId: "ws1" },
+    });
     const res = await deleteIncidentAction(null, form({ incidentId: "i1" }));
     expect(res).toEqual({ success: true });
     expect(incidentDelete).toHaveBeenCalledWith({ where: { id: "i1" } });

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { verifyIdToken } from '@/lib/auth/google-oauth'
 import { signSession, createSessionPayload } from '@/lib/auth/session-crypto'
+import {
+  AUDIT_ACTIONS,
+  formatActor,
+  writeAudit,
+} from '@/lib/services/audit.service'
 
 export const runtime = 'nodejs'
 
@@ -186,6 +191,15 @@ export async function GET(request: NextRequest) {
     // Create session with selected workspace
     const sessionPayload = createSessionPayload(user.id, membership.workspaceId)
     const signedSession = signSession(sessionPayload)
+
+    void writeAudit({
+      propertyId: null,
+      actor: formatActor({ type: 'user', userId: user.id }),
+      entityType: 'Session',
+      entityId: user.id,
+      action: AUDIT_ACTIONS.sessionStart,
+      diff: { workspaceId: membership.workspaceId },
+    })
 
     // Set response
     const response = NextResponse.redirect(new URL('/', request.url))

@@ -29,6 +29,11 @@ import {
   notifyHostOfIncident,
   type NotificationResult,
 } from "./incident-notification.service";
+import {
+  AUDIT_ACTIONS,
+  formatActor,
+  writeAudit,
+} from "./audit.service";
 
 const SUMMARY_MAX = 500;
 const TITLE_MAX = 180;
@@ -67,6 +72,14 @@ export type GuestIncidentPayload = z.infer<typeof GuestIncidentPayloadSchema>;
 
 export interface CreateGuestIncidentInput {
   propertyId: string;
+  /**
+   * Public slug of the property at the time of the report. Used for the
+   * audit-log actor (`guest:<slug>`); the slug is the only stable handle
+   * we have for an unauthenticated guest. Threaded from the API route
+   * caller — the service does not look it up to keep this entry point
+   * pure and side-effect-free on the property record.
+   */
+  slug: string;
   payload: GuestIncidentPayload;
 }
 
@@ -133,7 +146,7 @@ export async function createIncidentFromGuest(
   input: CreateGuestIncidentInput,
   now: Date = new Date(),
 ): Promise<CreateGuestIncidentResult> {
-  const { propertyId, payload } = input;
+  const { propertyId, slug, payload } = input;
   const category = findIncidentCategory(payload.categoryKey);
   if (!category) {
     // Schema refinement already guards this; the throw protects against a
@@ -184,6 +197,19 @@ export async function createIncidentFromGuest(
       select: { propertyNickname: true },
     }),
     resolveHostEmail(propertyId),
+    writeAudit({
+      propertyId,
+      actor: formatActor({ type: "guest", slug }),
+      entityType: "Incident",
+      entityId: incident.id,
+      action: AUDIT_ACTIONS.create,
+      diff: {
+        origin: "guest_guide",
+        categoryKey: category.id,
+        severity: category.defaultSeverity,
+        targetType,
+      },
+    }),
   ]);
 
   const hostPanelUrl = `/properties/${propertyId}/incidents/${incident.id}`;

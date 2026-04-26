@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   resolveLocalPoiProvider,
@@ -9,8 +9,7 @@ import {
   checkPlacesRateLimit,
   enforcePlacesBucketCap,
 } from "@/lib/services/places/rate-limit";
-import { loadOwnedProperty } from "@/lib/auth/owned-property";
-import { handleOwnershipApiError } from "@/lib/auth/route-helpers";
+import { withOperatorGuards } from "@/lib/auth/operator-guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,14 +26,13 @@ const querySchema = z.object({
 
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ propertyId: string }> },
-) {
-  const { propertyId } = await params;
-
-  try {
-    const { property } = await loadOwnedProperty(propertyId);
+// Per-property places limiter (heritage de 13D — protege contra bursts
+// cross-property anónimos) coexiste con el guard `expensive` por userId del
+// wrapper: este aplica primero, el del wrapper aplica antes que esto.
+export const GET = withOperatorGuards<{ propertyId: string }>(
+  async (request, { params, guarded }) => {
+    const { property } = guarded;
+    const { propertyId } = params;
 
     const parsed = querySchema.safeParse({
       q: request.nextUrl.searchParams.get("q") ?? "",
@@ -82,41 +80,33 @@ export async function GET(
       throw err;
     }
 
-    const suggestions = await provider.search({
-      query: parsed.data.q,
-      anchor: {
-        latitude: property.latitude,
-        longitude: property.longitude,
-      },
-      language: parsed.data.lang,
-      limit: parsed.data.limit,
-    });
-    return NextResponse.json(
-      { suggestions, provider: provider.name },
-      { status: 200, headers: NO_STORE },
-    );
-  } catch (err) {
-    if (
-      err instanceof Error &&
-      ["AuthRequiredError", "PropertyNotFoundError", "PropertyForbiddenError"].includes(
-        err.name,
-      )
-    ) {
-      return handleOwnershipApiError(err);
-    }
-    if (err instanceof PoiProviderUnavailableError) {
+    try {
+      const suggestions = await provider.search({
+        query: parsed.data.q,
+        anchor: {
+          latitude: property.latitude,
+          longitude: property.longitude,
+        },
+        language: parsed.data.lang,
+        limit: parsed.data.limit,
+      });
       return NextResponse.json(
-        { error: "provider_unavailable" },
-        { status: 502, headers: { "Cache-Control": "no-store" } },
+        { suggestions, provider: provider.name },
+        { status: 200, headers: NO_STORE },
+      );
+    } catch (err) {
+      if (err instanceof PoiProviderUnavailableError) {
+        return NextResponse.json(
+          { error: "provider_unavailable" },
+          { status: 502, headers: NO_STORE },
+        );
+      }
+      console.error(`[places-search] propertyId=${propertyId} error:`, err);
+      return NextResponse.json(
+        { error: "internal_error" },
+        { status: 500, headers: NO_STORE },
       );
     }
-    console.error(
-      `[places-search] propertyId=${propertyId} error:`,
-      err,
-    );
-    return NextResponse.json(
-      { error: "internal_error" },
-      { status: 500, headers: { "Cache-Control": "no-store" } },
-    );
-  }
-}
+  },
+  { rateLimit: "expensive" },
+);

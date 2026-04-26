@@ -11,6 +11,12 @@ import {
   type GuideTree,
 } from "@/lib/types/guide-tree";
 import type { ActionResult } from "@/lib/types/action-result";
+import { requireOperator } from "@/lib/auth/require-operator";
+import {
+  AUDIT_ACTIONS,
+  formatActor,
+  writeAudit,
+} from "@/lib/services/audit.service";
 
 async function revalidatePublishingPaths(
   propertyId: string,
@@ -42,8 +48,15 @@ export async function publishGuideVersionAction(
   const propertyId = formData.get("propertyId") as string;
   if (!propertyId) return { success: false, error: "propertyId requerido" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const property = await prisma.property.findUnique({
-    where: { id: propertyId },
+    where: { id: propertyId, workspaceId: operator.workspaceId },
     select: { id: true },
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
@@ -65,8 +78,10 @@ export async function publishGuideVersionAction(
 
   const tree: GuideTree = await composeGuide(propertyId, "internal", publicSlug);
 
+  let createdVersionId: string;
+  let createdVersion: number;
   try {
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const latest = await tx.guideVersion.findFirst({
         where: { propertyId },
         orderBy: { version: "desc" },
@@ -79,7 +94,7 @@ export async function publishGuideVersionAction(
         data: { status: "archived" },
       });
 
-      await tx.guideVersion.create({
+      const created = await tx.guideVersion.create({
         data: {
           version: nextVersion,
           status: "published",
@@ -88,14 +103,27 @@ export async function publishGuideVersionAction(
           publishedAt: new Date(),
           property: { connect: { id: propertyId } },
         },
+        select: { id: true, version: true },
       });
+      return created;
     });
+    createdVersionId = result.id;
+    createdVersion = result.version;
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Conflicto de versión — reintenta" };
     }
     throw err;
   }
+
+  await writeAudit({
+    propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "GuideVersion",
+    entityId: createdVersionId,
+    action: AUDIT_ACTIONS.publish,
+    diff: { version: createdVersion, publicSlug },
+  });
 
   await revalidatePublishingPaths(propertyId, publicSlug);
   return { success: true };
@@ -112,11 +140,27 @@ export async function unpublishVersionAction(
   const versionId = formData.get("versionId") as string;
   if (!versionId) return { success: false, error: "versionId requerido" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const version = await prisma.guideVersion.findUnique({
     where: { id: versionId },
-    select: { id: true, propertyId: true, status: true },
+    select: {
+      id: true,
+      propertyId: true,
+      status: true,
+      version: true,
+      property: { select: { workspaceId: true } },
+    },
   });
   if (!version) return { success: false, error: "Versión no encontrada" };
+  if (version.property.workspaceId !== operator.workspaceId) {
+    return { success: false, error: "Versión no encontrada" };
+  }
   if (version.status !== "published") {
     return { success: false, error: "Solo se pueden despublicar versiones publicadas" };
   }
@@ -126,6 +170,15 @@ export async function unpublishVersionAction(
   await prisma.guideVersion.updateMany({
     where: { propertyId: version.propertyId, status: "published" },
     data: { status: "archived" },
+  });
+
+  await writeAudit({
+    propertyId: version.propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "GuideVersion",
+    entityId: version.id,
+    action: AUDIT_ACTIONS.unpublish,
+    diff: { version: version.version },
   });
 
   await revalidatePublishingPaths(version.propertyId);
@@ -143,24 +196,38 @@ export async function rollbackToVersionAction(
   const sourceVersionId = formData.get("sourceVersionId") as string;
   if (!sourceVersionId) return { success: false, error: "sourceVersionId requerido" };
 
+  let operator;
+  try {
+    operator = await requireOperator();
+  } catch {
+    return { success: false, error: "Sesión requerida" };
+  }
+
   const source = await prisma.guideVersion.findUnique({
     where: { id: sourceVersionId },
     select: {
       id: true,
       propertyId: true,
       status: true,
+      version: true,
       treeJson: true,
       treeSchemaVersion: true,
+      property: { select: { workspaceId: true } },
     },
   });
   if (!source) return { success: false, error: "Versión fuente no encontrada" };
+  if (source.property.workspaceId !== operator.workspaceId) {
+    return { success: false, error: "Versión fuente no encontrada" };
+  }
   if (source.status !== "archived") {
     return { success: false, error: "Solo se puede restaurar una versión archivada" };
   }
   if (!source.treeJson) return { success: false, error: "La versión fuente no tiene snapshot" };
 
+  let createdVersionId: string;
+  let createdVersion: number;
   try {
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const latest = await tx.guideVersion.findFirst({
         where: { propertyId: source.propertyId },
         orderBy: { version: "desc" },
@@ -173,7 +240,7 @@ export async function rollbackToVersionAction(
         data: { status: "archived" },
       });
 
-      await tx.guideVersion.create({
+      const created = await tx.guideVersion.create({
         data: {
           version: nextVersion,
           status: "published",
@@ -184,14 +251,27 @@ export async function rollbackToVersionAction(
           publishedAt: new Date(),
           property: { connect: { id: source.propertyId } },
         },
+        select: { id: true, version: true },
       });
+      return created;
     });
+    createdVersionId = result.id;
+    createdVersion = result.version;
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Conflicto de versión — reintenta" };
     }
     throw err;
   }
+
+  await writeAudit({
+    propertyId: source.propertyId,
+    actor: formatActor({ type: "user", userId: operator.userId }),
+    entityType: "GuideVersion",
+    entityId: createdVersionId,
+    action: AUDIT_ACTIONS.rollback,
+    diff: { version: createdVersion, sourceVersionId: source.id, sourceVersion: source.version },
+  });
 
   await revalidatePublishingPaths(source.propertyId);
   return { success: true };
