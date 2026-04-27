@@ -1,0 +1,56 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · base.css
+   Element resets, focus, motion preferences. NO component styles.
+   ──────────────────────────────────────────────────────────────────── */
+
+@import url("../tokens/primitives.css?v=4");
+@import url("../tokens/semantic.css?v=4");
+@import url("../tokens/components.css?v=4");
+@import url("../tokens/shadcn.css?v=4");
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  color-scheme: light;
+}
+html[data-theme="dark"] { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: var(--color-background-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--text-base);
+  line-height: var(--text-base-lh);
+}
+
+p, h1, h2, h3, h4, h5, h6 { margin: 0; }
+
+a { color: var(--color-text-link); text-decoration: none; }
+a:hover { color: var(--color-text-link-hover); text-decoration: underline; }
+
+code, kbd, samp, pre { font-family: var(--font-family-mono); }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-selection-bg);
+  color: var(--color-selection-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

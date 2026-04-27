@@ -1,0 +1,94 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · shadcn.css
+   Bridges shadcn/ui CSS variables to our semantic tokens.
+
+   shadcn --accent maps to a NEUTRAL hover surface (not terracotta).
+   For brand emphasis, use --color-accent-default directly.
+   ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  --background:           var(--color-background-page);
+  --foreground:           var(--color-text-primary);
+
+  --card:                 var(--color-background-surface);
+  --card-foreground:      var(--color-text-primary);
+
+  --popover:              var(--color-background-elevated);
+  --popover-foreground:   var(--color-text-primary);
+
+  --primary:              var(--color-action-primary);
+  --primary-foreground:   var(--color-action-primary-fg);
+
+  --secondary:            var(--color-action-secondary);
+  --secondary-foreground: var(--color-action-secondary-fg);
+
+  --muted:                var(--color-background-subtle);
+  --muted-foreground:     var(--color-text-muted);
+
+  /* shadcn --accent = neutral hover surface (NOT terracotta). */
+  --accent:               var(--color-action-ghost-hover);
+  --accent-foreground:    var(--color-text-primary);
+
+  --destructive:          var(--color-status-error-solid);
+  --destructive-foreground: var(--color-text-inverse);
+
+  --border:               var(--color-border-default);
+  --input:                var(--color-border-default);
+  --ring:                 var(--color-focus-ring);
+
+  --radius:               var(--radius-sm);
+
+  /* shadcn chart variables (recharts/etc.) */
+  --chart-1: var(--color-chart-1);
+  --chart-2: var(--color-chart-2);
+  --chart-3: var(--color-chart-3);
+  --chart-4: var(--color-chart-4);
+  --chart-5: var(--color-chart-5);
+
+  /* shadcn sidebar variables (newer shadcn versions) */
+  --sidebar:                       var(--color-background-surface);
+  --sidebar-foreground:            var(--color-text-primary);
+  --sidebar-primary:               var(--color-action-primary);
+  --sidebar-primary-foreground:    var(--color-action-primary-fg);
+  --sidebar-accent:                var(--color-action-ghost-hover);
+  --sidebar-accent-foreground:     var(--color-text-primary);
+  --sidebar-border:                var(--color-border-subtle);
+  --sidebar-ring:                  var(--color-focus-ring);
+}
+
+[data-theme="dark"] {
+  --background:           var(--color-background-page);
+  --foreground:           var(--color-text-primary);
+  --card:                 var(--color-background-surface);
+  --card-foreground:      var(--color-text-primary);
+  --popover:              var(--color-background-elevated);
+  --popover-foreground:   var(--color-text-primary);
+  --primary:              var(--color-action-primary);
+  --primary-foreground:   var(--color-action-primary-fg);
+  --secondary:            var(--color-action-secondary);
+  --secondary-foreground: var(--color-action-secondary-fg);
+  --muted:                var(--color-background-subtle);
+  --muted-foreground:     var(--color-text-muted);
+  --accent:               var(--color-action-ghost-hover);
+  --accent-foreground:    var(--color-text-primary);
+  --destructive:          var(--color-status-error-solid);
+  --destructive-foreground: var(--color-text-inverse);
+  --border:               var(--color-border-default);
+  --input:                var(--color-border-default);
+  --ring:                 var(--color-focus-ring);
+
+  --chart-1: var(--color-chart-1);
+  --chart-2: var(--color-chart-2);
+  --chart-3: var(--color-chart-3);
+  --chart-4: var(--color-chart-4);
+  --chart-5: var(--color-chart-5);
+
+  --sidebar:                       var(--color-background-surface);
+  --sidebar-foreground:            var(--color-text-primary);
+  --sidebar-primary:               var(--color-action-primary);
+  --sidebar-primary-foreground:    var(--color-action-primary-fg);
+  --sidebar-accent:                var(--color-action-ghost-hover);
+  --sidebar-accent-foreground:     var(--color-text-primary);
+  --sidebar-border:                var(--color-border-subtle);
+  --sidebar-ring:                  var(--color-focus-ring);
+}

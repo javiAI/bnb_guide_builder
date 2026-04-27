@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Liora · Operator workspace — v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../../assets/favicon.svg">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg-1); }
+
+  /* ============================================================
+     SHELL — sidebar + main, with a *rail* docked to the right
+     ============================================================ */
+  .shell { display: grid; grid-template-columns: var(--sidebar-width) 1fr; min-height: 100vh; }
+
+  /* -------- Sidebar (unchanged DNA from v1) ------------------- */
+  .sidebar { background: var(--bg-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+  .sb-brand { padding: 18px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .sb-brand img { height: 22px; }
+  .sb-prop {
+    margin: 14px 12px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-2); cursor: pointer;
+  }
+  .sb-prop:hover { background: var(--ink-12); }
+  .sb-prop-ic { width: 28px; height: 28px; border-radius: 8px; background: var(--accent-100); display: grid; place-items: center; color: var(--accent-700); font-weight: 600; font-size: 12px; flex-shrink: 0; }
+  .sb-prop-name { font-size: 13px; font-weight: 600; color: var(--fg-1); line-height: 16px; }
+  .sb-prop-loc { font-size: 11px; color: var(--fg-3); line-height: 14px; margin-top: 2px; }
+  .sb-prop-chev { color: var(--fg-3); margin-left: auto; }
+
+  .sb-nav { flex: 1; overflow-y: auto; padding: 0 8px 16px; }
+  .sb-group { margin-top: 14px; }
+  .sb-group-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--fg-3); padding: 0 12px 8px; }
+  .sb-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; color: var(--fg-2);
+    cursor: pointer; transition: background var(--dur-1) var(--ease-standard);
+    text-decoration: none;
+  }
+  .sb-item:hover { background: var(--ink-12); color: var(--fg-1); }
+  .sb-item.active { background: var(--accent-100); color: var(--accent-700); }
+  .sb-item.active .sb-ic { color: var(--accent-700); }
+  .sb-ic { width: 16px; height: 16px; color: var(--fg-3); flex-shrink: 0; }
+  .sb-ring { width: 14px; height: 14px; margin-left: auto; }
+  .sb-foot { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .sb-ava { width: 28px; height: 28px; border-radius: 50%; background: var(--accent-700); color: var(--accent-on); display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+
+  /* -------- Main column: topbar / content / rail ------------- */
+  .main { display: grid; grid-template-rows: var(--topbar-height) 1fr; min-height: 100vh; }
+
+  .topbar {
+    border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: 1fr minmax(360px, 520px) 1fr;
+    align-items: center; padding: 0 20px;
+    background: var(--bg-1); position: sticky; top: 0; z-index: 10;
+    gap: 16px;
+  }
+  .tb-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .tb-crumbs { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tb-crumbs .cur { color: var(--fg-1); font-weight: 500; }
+  .tb-sep { color: var(--fg-4); }
+
+  /* --- THE SIGNATURE: a command bar at the top, always there - */
+  .cmd {
+    height: 36px; border-radius: 10px;
+    background: var(--bg-2); border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 12px; color: var(--fg-3); font-size: 13px;
+    cursor: pointer; transition: border-color var(--dur-1) var(--ease-standard), background var(--dur-1) var(--ease-standard);
+  }
+  .cmd:hover { border-color: var(--ink-24); background: var(--bg-1); }
+  .cmd i { width: 15px; height: 15px; color: var(--fg-3); }
+  .cmd .cmd-hint { margin-left: auto; display: flex; gap: 4px; }
+  .kbd { font: 500 10px/1 ui-monospace,monospace; padding: 3px 5px; border-radius: 4px; background: var(--ink-12); color: var(--fg-2); border: 1px solid var(--border); }
+
+  .tb-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 10px; font: 500 13px/1 Inter; cursor: pointer; transition: all var(--dur-1) var(--ease-standard); border: 1px solid transparent; white-space: nowrap; }
+  .btn-primary { background: var(--accent-700); color: var(--accent-on); }
+  .btn-primary:hover { background: var(--accent-600); }
+  .btn-secondary { background: var(--bg-2); color: var(--fg-1); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--ink-12); }
+  .btn-ghost { background: transparent; color: var(--fg-2); }
+  .btn-ghost:hover { background: var(--ink-12); color: var(--fg-1); }
+  .btn-icon { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-2); color: var(--fg-2); cursor: pointer; }
+  .btn-icon:hover { background: var(--ink-12); color: var(--fg-1); }
+
+  /* -------- Body: content + rail ------------------------------ */
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 0;
+    align-items: start;
+  }
+  .content { padding: 28px 28px 48px; max-width: 980px; width: 100%; margin: 0 auto; }
+  .rail { position: sticky; top: calc(var(--topbar-height) + 1px); height: calc(100vh - var(--topbar-height) - 1px); padding: 20px 24px; border-left: 1px solid var(--border); background: var(--bg-2); overflow-y: auto; }
+
+  /* ============================================================
+     PAGE HEADER GRAMMAR — eyebrow / title / chips / actions
+     ============================================================ */
+  .pg {
+    margin-bottom: 24px;
+  }
+  .pg-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 600; color: var(--fg-3);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .pg-eyebrow::before {
+    content: ""; width: 12px; height: 1px; background: var(--fg-4); display: inline-block;
+  }
+  .pg-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+  .pg-title {
+    font-size: 28px; font-weight: 600; letter-spacing: -0.015em; color: var(--fg-1);
+    margin: 0; line-height: 1.15;
+  }
+  .pg-sub {
+    font-size: 14px; color: var(--fg-2); margin-top: 6px; line-height: 1.5;
+    max-width: 62ch;
+  }
+  .pg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--fg-2);
+    padding: 4px 9px; border-radius: 999px;
+    background: var(--bg-2); border: 1px solid var(--border);
+  }
+  .chip i { width: 12px; height: 12px; color: var(--fg-3); }
+  .chip b { color: var(--fg-1); font-weight: 600; }
+
+  .pg-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* Hairline under page header, left-aligned */
+  .pg-rule { height: 1px; background: var(--border); margin: 20px 0 24px; }
+
+  /* ============================================================
+     SECTION BLOCK — the "eyebrow + body" grammar, applied consistently
+     ============================================================ */
+  .section { margin-bottom: 32px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 600; color: var(--fg-2);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .section-title .num {
+    width: 18px; height: 18px; border-radius: 5px;
+    background: var(--ink-12); color: var(--fg-2);
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700; letter-spacing: 0;
+  }
+  .section-action { font-size: 12px; color: var(--accent-500); font-weight: 500; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+
+  /* ============================================================
+     "HERO" read-panel — big number, named state, single CTA
+     ============================================================ */
+  .hero {
+    border: 1px solid var(--border); border-radius: 16px;
+    background: var(--bg-2);
+    display: grid; grid-template-columns: auto 1fr auto; gap: 28px;
+    align-items: center; padding: 22px 26px;
+  }
+  .hero-ring { position: relative; width: 88px; height: 88px; flex-shrink: 0; }
+  .hero-ring text { font-family: Inter; }
+  .hero-body .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--fg-3); margin-bottom: 4px; }
+  .hero-body .state { font-size: 20px; font-weight: 600; color: var(--fg-1); letter-spacing: -0.01em; }
+  .hero-body .detail { font-size: 13px; color: var(--fg-2); margin-top: 4px; line-height: 1.5; max-width: 52ch; }
+  .hero-meter { display: flex; flex-direction: column; gap: 10px; min-width: 180px; }
+  .meter-row { font-size: 12px; color: var(--fg-2); display: flex; align-items: center; gap: 8px; }
+  .meter-row .bar { flex: 1; height: 4px; background: var(--ink-12); border-radius: 2px; overflow: hidden; }
+  .meter-row .bar > span { display: block; height: 100%; background: var(--accent-500); border-radius: 2px; }
+  .meter-row .bar > span.ok { background: var(--moss-500); }
+  .meter-row .bar > span.warn { background: var(--amber-500); }
+  .meter-row .count { font-variant-numeric: tabular-nums; color: var(--fg-1); font-weight: 500; min-width: 36px; text-align: right; }
+
+  /* ============================================================
+     KPI row — quieter, smaller, no boxes per stat. "Strip."
+     ============================================================ */
+  .kpis {
+    border: 1px solid var(--border); border-radius: 16px; background: var(--bg-2);
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .kpi { padding: 16px 20px; border-right: 1px solid var(--border); }
+  .kpi:last-child { border-right: none; }
+  .kpi-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 600; }
+  .kpi-num { font-size: 24px; font-weight: 600; color: var(--fg-1); margin-top: 8px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .kpi-delta { font-size: 12px; color: var(--moss-700); margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; }
+  .kpi-delta.down { color: var(--clay-700); }
+  .kpi-spark { height: 20px; margin-top: 6px; }
+
+  /* ============================================================
+     Two-up cards
+     ============================================================ */
+  .two-up { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+  .card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 20px;
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .card-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--fg-1); }
+  .card-title i { width: 16px; height: 16px; color: var(--fg-3); }
+
+  /* Task list — our "next actions" */
+  .task { display: flex; gap: 12px; padding: 12px; border-radius: 12px; cursor: pointer; transition: background var(--dur-1) var(--ease-standard); align-items: flex-start; }
+  .task:hover { background: var(--ink-08); }
+  .task + .task { margin-top: 2px; }
+  .task-ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+  .task-ic.primary { background: var(--accent-100); color: var(--accent-700); }
+  .task-ic.neutral { background: var(--ink-12); color: var(--fg-1); }
+  .task-ic.warn { background: var(--amber-100); color: var(--amber-700); }
+  .task-ic i { width: 14px; height: 14px; }
+  .task-body { flex: 1; min-width: 0; }
+  .task-title { font-size: 13.5px; font-weight: 500; color: var(--fg-1); line-height: 1.35; }
+  .task-sub { font-size: 12px; color: var(--fg-3); margin-top: 3px; line-height: 1.5; }
+  .task-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--fg-3); }
+  .task-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--fg-4); }
+  .task-arrow { color: var(--fg-4); align-self: center; transition: transform var(--dur-1) var(--ease-standard), color var(--dur-1) var(--ease-standard); }
+  .task:hover .task-arrow { transform: translateX(2px); color: var(--accent-500); }
+
+  /* Activity feed — timeline with warm rule */
+  .feed { position: relative; padding-left: 16px; }
+  .feed::before { content: ""; position: absolute; top: 6px; bottom: 6px; left: 4px; width: 1px; background: var(--ink-24); }
+  .feed-item { position: relative; padding: 6px 0 6px 4px; font-size: 13px; color: var(--fg-2); line-height: 1.5; }
+  .feed-item::before {
+    content: ""; position: absolute; left: -16px; top: 12px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--bg-2); border: 2px solid var(--ink-24);
+  }
+  .feed-item.ok::before { border-color: var(--moss-500); }
+  .feed-item.warn::before { border-color: var(--amber-500); }
+  .feed-item.crit::before { border-color: var(--clay-500); }
+  .feed-item .when { display: block; font-size: 11px; color: var(--fg-4); margin-top: 2px; }
+  .feed-item b { color: var(--fg-1); font-weight: 600; }
+
+  /* Spaces table — denser, with leading icon */
+  .tbl { width: 100%; border-collapse: collapse; background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .tbl th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 600; padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--bg-3); }
+  .tbl td { padding: 14px 18px; font-size: 13px; color: var(--fg-1); border-bottom: 1px solid var(--ink-12); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr { cursor: pointer; transition: background var(--dur-1) var(--ease-standard); }
+  .tbl tr:hover td { background: var(--ink-08); }
+  .tbl .name { display: flex; align-items: center; gap: 12px; }
+  .tbl .name-ic { width: 30px; height: 30px; border-radius: 8px; background: var(--ink-08); display: grid; place-items: center; color: var(--fg-2); flex-shrink: 0; }
+  .tbl .name-ic i { width: 14px; height: 14px; }
+  .tbl .name b { font-weight: 600; }
+  .tbl .muted { color: var(--fg-3); font-size: 11.5px; margin-top: 2px; }
+  .tbl td.num { font-variant-numeric: tabular-nums; color: var(--fg-2); }
+
+  /* Pills */
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  .pill-published { background: var(--moss-100); color: var(--moss-700); }
+  .pill-draft { background: var(--amber-100); color: var(--amber-700); }
+  .pill-review { background: var(--accent-100); color: var(--accent-700); }
+  .pill-blocked { background: var(--clay-100); color: var(--clay-700); }
+  .pill i { width: 10px; height: 10px; }
+
+  /* ============================================================
+     RAIL — the right-side progress column
+     ============================================================ */
+  .rail-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .rail-title { font-size: 11px; font-weight: 600; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .rail-pct { font-size: 13px; font-weight: 600; color: var(--fg-1); font-variant-numeric: tabular-nums; }
+
+  .rail-bar { height: 3px; border-radius: 2px; background: var(--ink-12); overflow: hidden; margin-bottom: 20px; }
+  .rail-bar > span { display: block; height: 100%; background: var(--accent-500); border-radius: 2px; }
+
+  .rail-steps { display: flex; flex-direction: column; gap: 2px; margin-bottom: 24px; }
+  .rail-step {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 10px;
+    align-items: center; padding: 8px 4px; cursor: pointer; border-radius: 6px;
+    transition: background var(--dur-1) var(--ease-standard);
+  }
+  .rail-step:hover { background: var(--ink-08); }
+  .rail-step .node {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--bg-2); border: 1.5px solid var(--ink-24);
+    display: grid; place-items: center;
+    color: transparent;
+  }
+  .rail-step.done .node { background: var(--moss-500); border-color: var(--moss-500); color: white; }
+  .rail-step.done .node i { width: 9px; height: 9px; stroke-width: 3; }
+  .rail-step.cur .node { border-color: var(--accent-500); background: var(--accent-500); }
+  .rail-step.cur .node::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: white; }
+  .rail-step .lbl { font-size: 13px; color: var(--fg-2); }
+  .rail-step.cur .lbl { color: var(--fg-1); font-weight: 500; }
+  .rail-step.done .lbl { color: var(--fg-3); }
+  .rail-step .count { font-size: 11px; color: var(--fg-4); font-variant-numeric: tabular-nums; }
+
+  .rail-divider { height: 1px; background: var(--border); margin: 8px 0 20px; }
+
+  .rail-block { margin-bottom: 22px; }
+  .rail-block-title { font-size: 11px; font-weight: 600; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+
+  .rail-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    font-size: 13px; color: var(--fg-2); cursor: pointer;
+    transition: background var(--dur-1) var(--ease-standard);
+    margin: 0 -10px;
+  }
+  .rail-link:hover { background: var(--ink-08); color: var(--fg-1); }
+  .rail-link i { width: 14px; height: 14px; color: var(--fg-3); }
+  .rail-link .hint { margin-left: auto; font-size: 11px; color: var(--fg-4); }
+
+  .rail-url {
+    background: var(--bg-3); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-family: ui-monospace,monospace; font-size: 11.5px; color: var(--fg-1);
+    display: flex; align-items: center; gap: 6px; word-break: break-all; line-height: 1.4;
+  }
+  .rail-url .faint { color: var(--fg-3); }
+
+  /* ============================================================
+     COMMAND PALETTE overlay
+     ============================================================ */
+  .pal-overlay { position: fixed; inset: 0; background: rgba(28,26,22,.45); backdrop-filter: blur(6px); z-index: 50; display: none; align-items: flex-start; justify-content: center; padding-top: 12vh; }
+  .pal-overlay.open { display: flex; animation: fadeIn var(--dur-2) var(--ease-enter); }
+  .pal {
+    width: min(620px, 92vw);
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--elev-3); overflow: hidden;
+    animation: palIn var(--dur-2) var(--ease-enter);
+  }
+  @keyframes palIn { from { transform: translateY(-6px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .pal-input { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .pal-input i { color: var(--fg-3); width: 18px; height: 18px; }
+  .pal-input input { flex: 1; border: none; outline: none; font: 400 16px Inter; color: var(--fg-1); background: transparent; }
+  .pal-input .kbd { font-size: 11px; }
+  .pal-list { max-height: 360px; overflow-y: auto; padding: 8px; }
+  .pal-group { padding: 6px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 600; }
+  .pal-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: var(--fg-1); cursor: pointer; }
+  .pal-item i { width: 15px; height: 15px; color: var(--fg-3); }
+  .pal-item:hover, .pal-item.sel { background: var(--ink-08); }
+  .pal-item .sub { color: var(--fg-3); font-size: 12px; margin-left: 6px; }
+  .pal-item .arrow { margin-left: auto; color: var(--fg-4); font-size: 11px; }
+
+  /* Drawer (unchanged) */
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(28,26,22,.38); backdrop-filter: blur(8px); z-index: 40; display: none; }
+  .drawer-overlay.open { display: block; animation: fadeIn var(--dur-2) var(--ease-enter); }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: var(--drawer-width);
+    background: var(--bg-2); border-left: 1px solid var(--border);
+    box-shadow: var(--elev-3); z-index: 41;
+    transform: translateX(100%); transition: transform var(--dur-3) var(--ease-standard);
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .dr-head { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .dr-title { font-size: 16px; font-weight: 600; color: var(--fg-1); }
+  .dr-body { flex: 1; overflow-y: auto; padding: 20px 22px; }
+  .dr-foot { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+  .field-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--fg-2); }
+  .input, .textarea, .select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
+    font: 400 14px Inter; background: var(--bg-2); color: var(--fg-1);
+    transition: border-color var(--dur-1) var(--ease-standard);
+  }
+  .input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-100); }
+  .textarea { min-height: 92px; resize: vertical; font-family: Inter; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <img src="../../assets/liora-wordmark.svg" alt="Liora">
+    </div>
+
+    <div class="sb-prop">
+      <div class="sb-prop-ic">AR</div>
+      <div style="min-width:0; flex:1">
+        <div class="sb-prop-name">Apartamento Ruzafa</div>
+        <div class="sb-prop-loc">Valencia · 4 huéspedes</div>
+      </div>
+      <i class="sb-prop-chev" data-lucide="chevrons-up-down" style="width:14px;height:14px"></i>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-group">
+        <div class="sb-group-label">Contenido</div>
+        <a class="sb-item active"><i class="sb-ic" data-lucide="layout-dashboard"></i>Resumen</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="building-2"></i>Propiedad<span class="sb-ring" data-ring="1.0"></span></a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="key-round"></i>Llegada y acceso<span class="sb-ring" data-ring="0.78"></span></a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="door-open"></i>Espacios<span class="sb-ring" data-ring="0.85"></span></a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="sparkles"></i>Equipamiento<span class="sb-ring" data-ring="0.62"></span></a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="settings-2"></i>Sistemas<span class="sb-ring" data-ring="0.40"></span></a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="shield-alert"></i>Normas</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="users-round"></i>Contactos</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="map-pin"></i>Guía local</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="wrench"></i>Averías</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-group-label">Salidas</div>
+        <a class="sb-item"><i class="sb-ic" data-lucide="book-open"></i>Guía huésped</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="brain"></i>Asistente IA</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="messages-square"></i>Mensajería</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="send"></i>Publicación</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-group-label">Operaciones</div>
+        <a class="sb-item"><i class="sb-ic" data-lucide="clipboard-check"></i>Operativa</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="image"></i>Media</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="bar-chart-3"></i>Analítica</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="settings"></i>Configuración</a>
+      </div>
+    </nav>
+
+    <div class="sb-foot">
+      <div class="sb-ava">JB</div>
+      <div style="flex:1; min-width:0">
+        <div style="font-size:12px; font-weight:600; color:var(--fg-1)">Javier Barberá</div>
+        <div style="font-size:11px; color:var(--fg-3)">3 propiedades</div>
+      </div>
+      <i data-lucide="more-horizontal" style="width:14px;height:14px;color:var(--fg-3)"></i>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-crumbs">
+          <span>Propiedades</span>
+          <span class="tb-sep">/</span>
+          <span>Apartamento Ruzafa</span>
+          <span class="tb-sep">/</span>
+          <span class="cur">Resumen</span>
+        </div>
+      </div>
+
+      <div class="cmd" id="cmdBtn">
+        <i data-lucide="search"></i>
+        <span>Buscar espacio, equipamiento o acción…</span>
+        <span class="cmd-hint"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+      </div>
+
+      <div class="tb-right">
+        <button class="btn btn-icon" title="Notificaciones"><i data-lucide="bell" style="width:15px;height:15px"></i></button>
+        <button class="btn btn-secondary"><i data-lucide="eye" style="width:14px;height:14px"></i>Vista huésped</button>
+        <button class="btn btn-primary" id="publishBtn"><i data-lucide="send" style="width:14px;height:14px"></i>Publicar</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <main class="content">
+        <!-- PAGE HEADER -->
+        <section class="pg">
+          <div class="pg-eyebrow">Propiedad · Resumen</div>
+          <div class="pg-row">
+            <div>
+              <h1 class="pg-title">Apartamento Ruzafa</h1>
+              <p class="pg-sub">Un apartamento de 2 dormitorios en el barrio de Ruzafa, Valencia. Publicado hace 3 días; la guía del huésped ha sido abierta 142 veces esta semana.</p>
+            </div>
+            <div class="pg-actions">
+              <span class="pill pill-published"><i data-lucide="check"></i>Publicado · v12</span>
+            </div>
+          </div>
+          <div class="pg-chips">
+            <span class="chip"><i data-lucide="map-pin"></i>Valencia · Ruzafa</span>
+            <span class="chip"><i data-lucide="users-round"></i>Hasta <b>4</b> huéspedes</span>
+            <span class="chip"><i data-lucide="bed-double"></i><b>2</b> dormitorios</span>
+            <span class="chip"><i data-lucide="square"></i><b>68</b> m²</span>
+            <span class="chip"><i data-lucide="history"></i>Última edición hace 2 h</span>
+          </div>
+          <div class="pg-rule"></div>
+        </section>
+
+        <!-- HERO READINESS -->
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title"><span class="num">01</span>Estado de la guía</div>
+          </div>
+          <div class="hero">
+            <div class="hero-ring">
+              <svg viewBox="0 0 88 88" width="88" height="88">
+                <circle cx="44" cy="44" r="36" fill="none" stroke="var(--ink-12)" stroke-width="6"/>
+                <circle cx="44" cy="44" r="36" fill="none" stroke="var(--accent-700)" stroke-width="6" stroke-linecap="round"
+                        stroke-dasharray="226.2" stroke-dashoffset="56.5" transform="rotate(-90 44 44)"/>
+                <text x="44" y="49" text-anchor="middle" font-size="18" font-weight="700" fill="var(--fg-1)">75</text>
+              </svg>
+            </div>
+            <div class="hero-body">
+              <div class="label">Completitud · 75 de 100</div>
+              <div class="state">Tu guía está casi lista</div>
+              <div class="detail">Quedan 3 bloqueos menores antes de una publicación óptima. Ninguno impide publicar ahora mismo.</div>
+            </div>
+            <div class="hero-meter">
+              <div class="meter-row"><span class="count">18</span><div class="bar"><span class="ok" style="width:95%"></span></div><span>Equipamiento</span></div>
+              <div class="meter-row"><span class="count">4</span><div class="bar"><span class="ok" style="width:100%"></span></div><span>Espacios</span></div>
+              <div class="meter-row"><span class="count">12</span><div class="bar"><span class="warn" style="width:60%"></span></div><span>Fotos</span></div>
+              <div class="meter-row"><span class="count">3</span><div class="bar"><span class="warn" style="width:75%"></span></div><span>Contactos</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KPI STRIP -->
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title"><span class="num">02</span>Actividad</div>
+            <a class="section-action">Ver analítica<i data-lucide="arrow-up-right" style="width:12px;height:12px"></i></a>
+          </div>
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-lbl">Visitas · 7d</div>
+              <div class="kpi-num">142</div>
+              <div class="kpi-delta"><i data-lucide="arrow-up-right" style="width:11px;height:11px"></i>18% vs sem. anterior</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Preguntas al asistente</div>
+              <div class="kpi-num">23</div>
+              <div class="kpi-delta"><i data-lucide="arrow-up-right" style="width:11px;height:11px"></i>+4</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Copias de Wi-Fi</div>
+              <div class="kpi-num">38</div>
+              <div class="kpi-delta">Acción rápida más usada</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Incidencias abiertas</div>
+              <div class="kpi-num">1</div>
+              <div class="kpi-delta down"><i data-lucide="alert-triangle" style="width:11px;height:11px"></i>Aire acondicionado</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TWO-UP -->
+        <section class="section">
+          <div class="two-up">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title"><i data-lucide="target"></i>Siguientes acciones</div>
+                <a class="section-action">Priorizadas por impacto</a>
+              </div>
+              <div class="task" onclick="openDrawer()">
+                <div class="task-ic primary"><i data-lucide="camera"></i></div>
+                <div class="task-body">
+                  <div class="task-title">Añade una foto de la fachada</div>
+                  <div class="task-sub">Los huéspedes se orientan mucho mejor cuando reconocen la puerta de entrada.</div>
+                  <div class="task-meta"><span>Llegada y acceso</span><span class="dot"></span><span>1 min</span><span class="dot"></span><span style="color:var(--accent-500); font-weight:500">Alto impacto</span></div>
+                </div>
+                <i data-lucide="arrow-right" class="task-arrow" style="width:16px;height:16px"></i>
+              </div>
+              <div class="task">
+                <div class="task-ic neutral"><i data-lucide="phone"></i></div>
+                <div class="task-body">
+                  <div class="task-title">Revisa el teléfono de la empresa de limpieza</div>
+                  <div class="task-sub">Marcado como obsoleto en el último cambio de contactos.</div>
+                  <div class="task-meta"><span>Contactos</span><span class="dot"></span><span>2 min</span></div>
+                </div>
+                <i data-lucide="arrow-right" class="task-arrow" style="width:16px;height:16px"></i>
+              </div>
+              <div class="task">
+                <div class="task-ic warn"><i data-lucide="file-text"></i></div>
+                <div class="task-body">
+                  <div class="task-title">Escribe la descripción del baño</div>
+                  <div class="task-sub">Sin descripción propia; la IA puede proponer un borrador.</div>
+                  <div class="task-meta"><span>Espacios · Baño</span><span class="dot"></span><span>3 min</span></div>
+                </div>
+                <i data-lucide="arrow-right" class="task-arrow" style="width:16px;height:16px"></i>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title"><i data-lucide="activity"></i>Actividad reciente</div>
+                <a class="section-action">Ver todo</a>
+              </div>
+              <div class="feed">
+                <div class="feed-item ok"><b>Publicaste la versión v12</b><span class="when">hace 3 días</span></div>
+                <div class="feed-item"><b>Laura M.</b> abrió la guía y copió el Wi-Fi<span class="when">hace 5 días</span></div>
+                <div class="feed-item"><b>Añadiste 4 fotos</b> a Cocina<span class="when">hace 4 días</span></div>
+                <div class="feed-item crit">Incidencia abierta: <b>aire acondicionado no enfría</b><span class="when">hace 6 días</span></div>
+                <div class="feed-item">Importaste <b>12 items</b> desde la plantilla base<span class="when">hace 1 sem</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SPACES TABLE -->
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title"><span class="num">03</span>Espacios</div>
+            <a class="section-action"><i data-lucide="plus" style="width:12px;height:12px"></i>Añadir espacio</a>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Espacio</th><th>Equipamiento</th><th>Fotos</th><th>Actualizado</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="name"><div class="name-ic"><i data-lucide="bed-double"></i></div><div><b>Dormitorio principal</b><div class="muted">Cama doble · 14 m²</div></div></div></td>
+                <td class="num">6 items</td><td class="num">4 fotos</td><td class="num">hace 2 d</td>
+                <td><span class="pill pill-published">Completo</span></td>
+                <td><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--fg-4)"></i></td>
+              </tr>
+              <tr>
+                <td><div class="name"><div class="name-ic"><i data-lucide="bed-single"></i></div><div><b>Dormitorio 2</b><div class="muted">2 camas individuales · 10 m²</div></div></div></td>
+                <td class="num">4 items</td><td class="num">2 fotos</td><td class="num">hace 4 d</td>
+                <td><span class="pill pill-draft">2 huecos</span></td>
+                <td><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--fg-4)"></i></td>
+              </tr>
+              <tr>
+                <td><div class="name"><div class="name-ic"><i data-lucide="chef-hat"></i></div><div><b>Cocina</b><div class="muted">6 m²</div></div></div></td>
+                <td class="num">12 items</td><td class="num">4 fotos</td><td class="num">hace 4 d</td>
+                <td><span class="pill pill-published">Completo</span></td>
+                <td><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--fg-4)"></i></td>
+              </tr>
+              <tr>
+                <td><div class="name"><div class="name-ic"><i data-lucide="bath"></i></div><div><b>Baño</b><div class="muted">4 m²</div></div></div></td>
+                <td class="num">5 items</td><td class="num">2 fotos</td><td class="num">hace 1 sem</td>
+                <td><span class="pill pill-draft">Sin descripción</span></td>
+                <td><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--fg-4)"></i></td>
+              </tr>
+              <tr>
+                <td><div class="name"><div class="name-ic"><i data-lucide="sofa"></i></div><div><b>Salón</b><div class="muted">Sofá 3 plazas · 18 m²</div></div></div></td>
+                <td class="num">8 items</td><td class="num">3 fotos</td><td class="num">hace 3 d</td>
+                <td><span class="pill pill-published">Completo</span></td>
+                <td><i data-lucide="chevron-right" style="width:14px;height:14px;color:var(--fg-4)"></i></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+
+      <!-- ============================================================
+           RAIL — progress / quick links / guest link
+           ============================================================ -->
+      <aside class="rail">
+        <div class="rail-head">
+          <div class="rail-title">Ruta de publicación</div>
+          <div class="rail-pct">75%</div>
+        </div>
+        <div class="rail-bar"><span style="width:75%"></span></div>
+
+        <div class="rail-steps">
+          <div class="rail-step done"><div class="node"><i data-lucide="check"></i></div><div class="lbl">Propiedad</div><div class="count">8/8</div></div>
+          <div class="rail-step done"><div class="node"><i data-lucide="check"></i></div><div class="lbl">Llegada y acceso</div><div class="count">7/7</div></div>
+          <div class="rail-step done"><div class="node"><i data-lucide="check"></i></div><div class="lbl">Espacios</div><div class="count">4/4</div></div>
+          <div class="rail-step cur"><div class="node"></div><div class="lbl">Equipamiento</div><div class="count">11/18</div></div>
+          <div class="rail-step"><div class="node"></div><div class="lbl">Sistemas</div><div class="count">4/10</div></div>
+          <div class="rail-step"><div class="node"></div><div class="lbl">Normas</div><div class="count">0/5</div></div>
+          <div class="rail-step"><div class="node"></div><div class="lbl">Contactos</div><div class="count">3/4</div></div>
+          <div class="rail-step"><div class="node"></div><div class="lbl">Guía local</div><div class="count">0/6</div></div>
+        </div>
+
+        <div class="rail-divider"></div>
+
+        <div class="rail-block">
+          <div class="rail-block-title">Atajos</div>
+          <a class="rail-link"><i data-lucide="eye"></i>Vista huésped<span class="hint">V</span></a>
+          <a class="rail-link"><i data-lucide="brain"></i>Probar asistente<span class="hint">A</span></a>
+          <a class="rail-link"><i data-lucide="wand-2"></i>Sugerencias IA<span class="hint">S</span></a>
+          <a class="rail-link"><i data-lucide="history"></i>Historial · v12<span class="hint">H</span></a>
+        </div>
+
+        <div class="rail-block">
+          <div class="rail-block-title">Enlace de la guía</div>
+          <div class="rail-url">
+            <span class="faint">liora.app/g/</span>ruzafa-3b
+          </div>
+          <div style="display:flex; gap:6px; margin-top:8px">
+            <button class="btn btn-secondary" style="flex:1; padding:6px 10px; font-size:12px; justify-content:center" onclick="toast('Enlace copiado')"><i data-lucide="copy" style="width:12px;height:12px"></i>Copiar</button>
+            <button class="btn btn-secondary" style="flex:1; padding:6px 10px; font-size:12px; justify-content:center"><i data-lucide="qr-code" style="width:12px;height:12px"></i>QR</button>
+          </div>
+          <div style="font-size:11px; color:var(--fg-3); margin-top:8px">142 aperturas esta semana</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     COMMAND PALETTE
+     ============================================================ -->
+<div class="pal-overlay" id="palOv">
+  <div class="pal">
+    <div class="pal-input">
+      <i data-lucide="search"></i>
+      <input id="palInput" placeholder="Buscar o ejecutar…" autocomplete="off">
+      <span class="kbd">esc</span>
+    </div>
+    <div class="pal-list" id="palList">
+      <div class="pal-group">Acciones</div>
+      <div class="pal-item sel"><i data-lucide="send"></i>Publicar propiedad<span class="sub">versión siguiente: v13</span><span class="arrow">↵</span></div>
+      <div class="pal-item"><i data-lucide="eye"></i>Ver como huésped<span class="arrow">↵</span></div>
+      <div class="pal-item"><i data-lucide="wand-2"></i>Sugerir siguientes acciones (IA)<span class="arrow">↵</span></div>
+      <div class="pal-item"><i data-lucide="plus"></i>Añadir espacio<span class="arrow">↵</span></div>
+      <div class="pal-group">Ir a</div>
+      <div class="pal-item"><i data-lucide="sparkles"></i>Equipamiento<span class="sub">11 de 18</span></div>
+      <div class="pal-item"><i data-lucide="settings-2"></i>Sistemas<span class="sub">4 de 10</span></div>
+      <div class="pal-item"><i data-lucide="map-pin"></i>Guía local<span class="sub">0 de 6</span></div>
+      <div class="pal-item"><i data-lucide="messages-square"></i>Mensajería</div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer-overlay" id="drawerOv" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="dr-head">
+    <div class="dr-title">Añadir foto de fachada</div>
+    <button class="btn btn-icon" onclick="closeDrawer()"><i data-lucide="x" style="width:15px;height:15px"></i></button>
+  </div>
+  <div class="dr-body">
+    <div class="field-group">
+      <label class="field-label">Foto</label>
+      <div style="border:1.5px dashed var(--border); border-radius:12px; padding:28px; text-align:center; background:var(--bg-3); color:var(--fg-3); font-size:13px; cursor:pointer">
+        <i data-lucide="upload-cloud" style="width:28px; height:28px; margin-bottom:8px"></i>
+        <div>Arrastra una foto o haz clic para seleccionar</div>
+        <div style="font-size:11px; margin-top:4px; color:var(--fg-4)">JPG, PNG o HEIC · máx 10 MB</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Título</label>
+      <input class="input" value="Fachada desde Calle Cuba">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Descripción (opcional)</label>
+      <textarea class="textarea" placeholder="Un detalle útil para orientar al huésped">La puerta azul, al lado de la panadería.</textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Visibilidad</label>
+      <select class="select"><option>Huésped (público)</option><option>Interno</option></select>
+    </div>
+  </div>
+  <div class="dr-foot">
+    <button class="btn btn-ghost" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-primary" onclick="closeDrawer(); toast('Foto añadida');"><i data-lucide="check" style="width:14px;height:14px"></i>Guardar</button>
+  </div>
+</aside>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(8px); background:var(--ink-88); color:var(--bg-1); padding:10px 16px; border-radius:10px; font-size:13px; box-shadow:var(--elev-2); opacity:0; pointer-events:none; transition:all var(--dur-2) var(--ease-standard); z-index:60; display:flex; align-items:center; gap:10px">
+  <span style="width:6px; height:6px; background:var(--moss-500); border-radius:50%"></span>
+  <span id="toastMsg">Guardado</span>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // Mini progress rings
+  document.querySelectorAll('[data-ring]').forEach(el => {
+    const v = parseFloat(el.dataset.ring);
+    const color = v >= 0.9 ? 'var(--moss-500)' : v >= 0.6 ? 'var(--accent-500)' : 'var(--amber-500)';
+    el.innerHTML = `<svg viewBox="0 0 14 14" width="14" height="14">
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--ink-24)" stroke-width="1.5"/>
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"
+              stroke-dasharray="${2*Math.PI*5.5}" stroke-dashoffset="${2*Math.PI*5.5*(1-v)}" transform="rotate(-90 7 7)"/>
+    </svg>`;
+  });
+
+  // Command palette
+  const palOv = document.getElementById('palOv');
+  const palInput = document.getElementById('palInput');
+  function openPal() { palOv.classList.add('open'); setTimeout(() => palInput.focus(), 80); }
+  function closePal() { palOv.classList.remove('open'); palInput.value = ''; }
+  document.getElementById('cmdBtn').addEventListener('click', openPal);
+  palOv.addEventListener('click', (e) => { if (e.target === palOv) closePal(); });
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPal(); }
+    if (e.key === 'Escape') closePal();
+  });
+
+  // Drawer
+  function openDrawer() {
+    document.getElementById('drawerOv').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+  }
+  function closeDrawer() {
+    document.getElementById('drawerOv').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(8px)';
+    }, 2000);
+  }
+
+  // Publish → horizon sweep
+  document.getElementById('publishBtn').addEventListener('click', () => {
+    const sweep = document.createElement('div');
+    sweep.style.cssText = `position:fixed; inset:0; pointer-events:none; z-index:100;
+      background: linear-gradient(90deg, transparent 0%, var(--accent-500) 35%, var(--accent-500) 50%, transparent 70%);
+      transform: translateX(-100%); opacity:0.28;
+      transition: transform 480ms cubic-bezier(0.2, 0, 0, 1);`;
+    document.body.appendChild(sweep);
+    requestAnimationFrame(() => { sweep.style.transform = 'translateX(100%)'; });
+    setTimeout(() => { sweep.remove(); toast('Publicado · v13'); }, 520);
+  });
+</script>
+</body>
+</html>

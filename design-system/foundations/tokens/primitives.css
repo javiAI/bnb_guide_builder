@@ -1,0 +1,270 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · primitives.css
+   Layer 1 of 3 — raw values only. Do NOT consume directly in product
+   code. Reference semantic or component tokens instead.
+
+   Font families: declared as names only; load fonts in the host app
+   (next/font, self-host, or a single <link>). No network imports here.
+   ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Color · warm neutral · chalk → graphite (hue 70) ──────────── */
+  --warm-25:   oklch(99.2% 0.004 70);
+  --warm-50:   oklch(98.0% 0.006 70);
+  --warm-100:  oklch(96.0% 0.008 70);
+  --warm-150:  oklch(93.5% 0.010 70);
+  --warm-200:  oklch(90.0% 0.012 70);
+  --warm-300:  oklch(82.0% 0.014 70);
+  --warm-400:  oklch(68.0% 0.014 70);
+  --warm-500:  oklch(54.0% 0.014 70);
+  --warm-600:  oklch(42.0% 0.014 70);
+  --warm-700:  oklch(32.0% 0.014 70);
+  --warm-800:  oklch(22.0% 0.014 70);
+  --warm-850:  oklch(18.0% 0.013 70);
+  --warm-900:  oklch(15.0% 0.012 70);
+  --warm-925:  oklch(12.0% 0.011 70);
+  --warm-950:  oklch(10.0% 0.010 70);
+
+  /* ─── Color · cool grey (hue 250) ───────────────────────────────── */
+  --gray-50:   oklch(98.0% 0.002 250);
+  --gray-100:  oklch(95.5% 0.003 250);
+  --gray-200:  oklch(90.0% 0.004 250);
+  --gray-300:  oklch(80.0% 0.005 250);
+  --gray-500:  oklch(54.0% 0.006 250);
+  --gray-700:  oklch(32.0% 0.006 250);
+  --gray-900:  oklch(15.0% 0.005 250);
+
+  /* ─── Color · olive · primary action (hue 130) ──────────────────── */
+  --olive-50:   oklch(97.5% 0.020 130);
+  --olive-100:  oklch(94.0% 0.040 130);
+  --olive-200:  oklch(88.0% 0.060 130);
+  --olive-300:  oklch(78.0% 0.080 130);
+  --olive-400:  oklch(64.0% 0.095 130);
+  --olive-500:  oklch(52.0% 0.100 130);
+  --olive-600:  oklch(44.0% 0.095 130);
+  --olive-700:  oklch(36.0% 0.080 130);
+  --olive-800:  oklch(28.0% 0.060 130);
+  --olive-900:  oklch(20.0% 0.040 130);
+  --olive-950:  oklch(14.0% 0.030 130);
+
+  /* ─── Color · terracotta · accent (hue 40) ──────────────────────── */
+  --terra-50:   oklch(97.5% 0.020 40);
+  --terra-100:  oklch(94.0% 0.040 40);
+  --terra-200:  oklch(88.0% 0.070 40);
+  --terra-300:  oklch(78.0% 0.100 40);
+  --terra-400:  oklch(68.0% 0.120 40);
+  --terra-500:  oklch(58.0% 0.130 40);
+  --terra-600:  oklch(50.0% 0.125 40);
+  --terra-700:  oklch(42.0% 0.110 40);
+  --terra-800:  oklch(32.0% 0.080 40);
+  --terra-900:  oklch(22.0% 0.055 40);
+  --terra-950:  oklch(15.0% 0.040 40);
+
+  /* ─── Color · blue-grey · informational (hue 235) ───────────────── */
+  --info-50:   oklch(97.0% 0.015 235);
+  --info-100:  oklch(93.0% 0.030 235);
+  --info-200:  oklch(86.0% 0.045 235);
+  --info-300:  oklch(76.0% 0.060 235);
+  --info-400:  oklch(60.0% 0.070 235);
+  --info-500:  oklch(50.0% 0.075 235);
+  --info-600:  oklch(44.0% 0.070 235);
+  --info-700:  oklch(38.0% 0.060 235);
+  --info-800:  oklch(28.0% 0.050 235);
+
+  /* ─── Color · success / warning / error ─────────────────────────── */
+  --success-50:   oklch(96.0% 0.030 145);
+  --success-100:  oklch(92.0% 0.050 145);
+  --success-200:  oklch(86.0% 0.075 145);
+  --success-400:  oklch(68.0% 0.115 145);
+  --success-500:  oklch(54.0% 0.110 145);
+  --success-600:  oklch(46.0% 0.100 145);
+  --success-700:  oklch(40.0% 0.090 145);
+  --success-800:  oklch(30.0% 0.070 145);
+
+  --warning-50:   oklch(96.0% 0.040 80);
+  --warning-100:  oklch(92.0% 0.070 80);
+  --warning-200:  oklch(86.0% 0.110 80);
+  --warning-400:  oklch(78.0% 0.135 80);
+  --warning-500:  oklch(70.0% 0.130 80);
+  --warning-600:  oklch(58.0% 0.120 78);
+  --warning-700:  oklch(48.0% 0.110 75);
+  --warning-800:  oklch(36.0% 0.085 75);
+
+  --error-50:     oklch(96.0% 0.020 25);
+  --error-100:    oklch(92.0% 0.040 25);
+  --error-200:    oklch(86.0% 0.075 25);
+  --error-300:    oklch(78.0% 0.115 25);
+  --error-400:    oklch(68.0% 0.155 25);
+  --error-500:    oklch(58.0% 0.165 25);
+  --error-600:    oklch(50.0% 0.160 25);
+  --error-700:    oklch(44.0% 0.150 25);
+  --error-800:    oklch(34.0% 0.120 25);
+
+  /* ─── Type · families (load fonts in host app) ──────────────────── */
+  --font-family-sans:  "IBM Plex Sans", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-family-serif: "Newsreader", ui-serif, Georgia, "Times New Roman", serif;
+  --font-family-mono:  "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ─── Type · sizes & line heights ───────────────────────────────── */
+  --text-xs:    11px;   --text-xs-lh:   16px;
+  --text-sm:    13px;   --text-sm-lh:   18px;
+  --text-base:  14px;   --text-base-lh: 20px;
+  --text-md:    15px;   --text-md-lh:   22px;
+  --text-lg:    17px;   --text-lg-lh:   24px;
+  --text-xl:    20px;   --text-xl-lh:   28px;
+  --text-2xl:   24px;   --text-2xl-lh:  30px;
+  --text-3xl:   30px;   --text-3xl-lh:  36px;
+  --text-4xl:   38px;   --text-4xl-lh:  44px;
+  --text-5xl:   48px;   --text-5xl-lh:  54px;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --tracking-tight:  -0.015em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-caps:    0.08em;
+
+  /* ─── Spacing (4-px base, closed scale) ─────────────────────────── */
+  --space-0:    0px;
+  --space-px:   1px;
+  --space-0_5:  2px;
+  --space-1:    4px;
+  --space-1_5:  6px;
+  --space-2:    8px;
+  --space-2_5:  10px;
+  --space-3:    12px;
+  --space-3_5:  14px;
+  --space-4:    16px;
+  --space-4_5:  18px;
+  --space-5:    20px;
+  --space-6:    24px;
+  --space-7:    28px;
+  --space-8:    32px;
+  --space-10:   40px;
+  --space-12:   48px;
+  --space-14:   56px;
+  --space-16:   64px;
+  --space-20:   80px;
+  --space-24:   96px;
+  --space-32:   128px;
+
+  /* ─── Radius ────────────────────────────────────────────────────── */
+  --radius-xs:    3px;
+  --radius-sm:    5px;
+  --radius-md:    8px;
+  --radius-lg:    12px;
+  --radius-xl:    16px;
+  --radius-2xl:   24px;
+  --radius-full:  9999px;
+
+  /* ─── Shadow primitives (raw, theme-stable) ─────────────────────────
+     These never change between light/dark. The semantic
+     --elevation-* tokens select which shadow recipe to use per theme.
+     ─────────────────────────────────────────────────────────────────── */
+  /* Light-mode (warm-tinted) recipes */
+  --shadow-xs:  0 1px 0 0 rgb(40 32 20 / 0.03);
+  --shadow-sm:  0 1px 0 0 rgb(40 32 20 / 0.04),
+                0 1px 2px 0 rgb(40 32 20 / 0.05);
+  --shadow-md:  0 1px 0 0 rgb(40 32 20 / 0.04),
+                0 4px 8px -2px rgb(40 32 20 / 0.06),
+                0 2px 4px -1px rgb(40 32 20 / 0.04);
+  --shadow-lg:  0 1px 0 0 rgb(40 32 20 / 0.04),
+                0 12px 24px -6px rgb(40 32 20 / 0.10),
+                0 4px 8px -2px rgb(40 32 20 / 0.06);
+  --shadow-xl:  0 24px 48px -12px rgb(40 32 20 / 0.18),
+                0 8px 16px -4px rgb(40 32 20 / 0.08);
+
+  /* Dark-mode recipes (deeper, neutral-black). Same values regardless
+     of theme; the semantic --elevation-* layer chooses light vs dark. */
+  --shadow-xs-dark: none;
+  --shadow-sm-dark: 0 1px 0 0 rgb(0 0 0 / 0.30),
+                    0 1px 2px 0 rgb(0 0 0 / 0.30);
+  --shadow-md-dark: 0 4px 8px -2px rgb(0 0 0 / 0.45),
+                    0 2px 4px -1px rgb(0 0 0 / 0.30);
+  --shadow-lg-dark: 0 12px 24px -6px rgb(0 0 0 / 0.55),
+                    0 4px 8px -2px rgb(0 0 0 / 0.35);
+  --shadow-xl-dark: 0 24px 48px -12px rgb(0 0 0 / 0.65);
+
+  --shadow-focus-ring:       0 0 0 3px oklch(64% 0.095 130 / 0.30);
+  --shadow-focus-ring-error: 0 0 0 3px oklch(58% 0.165 25 / 0.20);
+
+  /* ─── Motion ────────────────────────────────────────────────────── */
+  --duration-instant: 80ms;
+  --duration-fast:    140ms;
+  --duration-normal:  200ms;
+  --duration-slow:    320ms;
+  --duration-slower:  480ms;
+
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --easing-enter:    cubic-bezier(0, 0, 0, 1);
+  --easing-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --easing-emphasis: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --easing-linear:   linear;
+
+  /* ─── Z-index ───────────────────────────────────────────────────── */
+  --z-base:        0;
+  --z-raised:      10;
+  --z-sticky:      100;
+  --z-dropdown:    1000;
+  --z-overlay:     1040;
+  --z-modal:       1050;
+  --z-popover:     1060;
+  --z-tooltip:     1070;
+  --z-toast:       1080;
+
+  /* ─── Breakpoints (numeric values; use in JS / queries) ─────────── */
+  --bp-sm:   640px;
+  --bp-md:   768px;
+  --bp-lg:   1024px;
+  --bp-xl:   1280px;
+  --bp-2xl:  1440px;
+
+  /* ─── Component sizing primitives ───────────────────────────────── */
+  --size-button-sm:     26px;
+  --size-button-md:     32px;
+  --size-button-lg:     40px;
+
+  --size-input-sm:      28px;
+  --size-input-md:      32px;
+  --size-input-lg:      40px;
+
+  --size-row-compact:   32px;
+  --size-row-cozy:      36px;
+  --size-row-comfortable: 44px;
+
+  --size-modal-sm:      400px;
+  --size-modal-md:      560px;
+  --size-modal-lg:      720px;
+  --size-modal-xl:      960px;
+
+  --size-sidebar:       240px;
+  --size-sidebar-collapsed: 56px;
+  --size-topbar:        56px;
+
+  --container-sm:       640px;
+  --container-md:       768px;
+  --container-lg:       1024px;
+  --container-xl:       1280px;
+  --container-2xl:      1440px;
+  --container-prose:    72ch;
+
+  /* ─── Responsive page padding ───────────────────────────────────── */
+  --page-padding-sm:    16px;
+  --page-padding-md:    24px;
+  --page-padding-lg:    32px;
+  --page-padding-xl:    48px;
+
+  /* ─── Iconography primitives ────────────────────────────────────── */
+  --icon-size-xs:    14px;
+  --icon-size-sm:    16px;
+  --icon-size-md:    20px;
+  --icon-size-lg:    24px;
+  --icon-size-xl:    32px;
+
+  --icon-stroke-thin:    1.25;
+  --icon-stroke-default: 1.5;
+  --icon-stroke-strong:  1.75;
+}

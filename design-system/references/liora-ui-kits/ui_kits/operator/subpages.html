@@ -1,0 +1,2209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Liora · Operator sub-pages</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../../assets/favicon.svg">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="operator.css?v=2">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#F7F3ED">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect x="80" y="80" width="260" height="640" rx="18" fill="#EFE8DC" stroke="#E0D5C2" stroke-width="2"/>
+    <rect x="108" y="118" width="120" height="14" rx="4" fill="#C4A57B"/>
+    <rect x="108" y="180" width="204" height="10" rx="3" fill="#D4C4A8"/>
+    <rect x="108" y="210" width="180" height="10" rx="3" fill="#D4C4A8"/>
+    <rect x="108" y="240" width="204" height="10" rx="3" fill="#C4A57B"/>
+    <rect x="108" y="270" width="170" height="10" rx="3" fill="#D4C4A8"/>
+    <rect x="108" y="300" width="204" height="10" rx="3" fill="#D4C4A8"/>
+    <rect x="108" y="330" width="160" height="10" rx="3" fill="#D4C4A8"/>
+    <rect x="380" y="80" width="740" height="64" rx="0" fill="#FFFFFF" stroke="#E0D5C2" stroke-width="2"/>
+    <rect x="420" y="104" width="320" height="16" rx="4" fill="#D4C4A8"/>
+    <rect x="420" y="200" width="200" height="14" rx="3" fill="#C4A57B"/>
+    <rect x="420" y="234" width="420" height="28" rx="4" fill="#2A1F14"/>
+    <rect x="420" y="290" width="560" height="10" rx="3" fill="#C4B9A6"/>
+    <rect x="420" y="310" width="480" height="10" rx="3" fill="#C4B9A6"/>
+    <rect x="420" y="370" width="220" height="140" rx="14" fill="#FFFFFF" stroke="#E0D5C2" stroke-width="2"/>
+    <rect x="660" y="370" width="220" height="140" rx="14" fill="#FFFFFF" stroke="#E0D5C2" stroke-width="2"/>
+    <rect x="900" y="370" width="220" height="140" rx="14" fill="#FFFFFF" stroke="#E0D5C2" stroke-width="2"/>
+    <circle cx="455" cy="405" r="14" fill="#8B4513" opacity="0.2"/>
+    <circle cx="695" cy="405" r="14" fill="#6B7C32" opacity="0.3"/>
+    <circle cx="935" cy="405" r="14" fill="#C4A57B" opacity="0.4"/>
+    <rect x="445" y="440" width="120" height="10" rx="3" fill="#2A1F14"/>
+    <rect x="685" y="440" width="120" height="10" rx="3" fill="#2A1F14"/>
+    <rect x="925" y="440" width="120" height="10" rx="3" fill="#2A1F14"/>
+    <rect x="420" y="560" width="700" height="160" rx="14" fill="#FFFFFF" stroke="#E0D5C2" stroke-width="2"/>
+    <rect x="450" y="590" width="40" height="40" rx="10" fill="#F5E6D0"/>
+    <rect x="510" y="596" width="220" height="12" rx="3" fill="#2A1F14"/>
+    <rect x="510" y="618" width="400" height="10" rx="3" fill="#C4B9A6"/>
+    <rect x="450" y="660" width="60" height="20" rx="6" fill="#6B7C32" opacity="0.25"/>
+  </svg>
+</template>
+<style>
+  /* ==========================================================
+     Page-level additions shared by every sub-page
+     ========================================================== */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ==========================================================
+     CHECKBOX — refined, used in Equipamiento & Normas
+     ========================================================== */
+  .lc {
+    width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0;
+    background: var(--bg-2); border: 1.5px solid var(--ink-24);
+    display: grid; place-items: center; cursor: pointer;
+    transition: background var(--dur-1) var(--ease-standard),
+                border-color var(--dur-1) var(--ease-standard),
+                transform var(--dur-1) var(--ease-standard);
+    position: relative;
+  }
+  .lc:hover { border-color: var(--ink-40); }
+  .lc svg { width: 14px; height: 14px; stroke: var(--bg-1); stroke-width: 3;
+    stroke-dasharray: 24; stroke-dashoffset: 24;
+    transition: stroke-dashoffset var(--dur-2) var(--ease-standard);
+    fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .lc.on {
+    background: var(--moss-500); border-color: var(--moss-500);
+  }
+  .lc.on svg { stroke-dashoffset: 0; }
+  .lc.on:active { transform: scale(0.92); }
+  /* Indeterminate — partial */
+  .lc.partial {
+    background: var(--accent-100); border-color: var(--accent-500);
+  }
+  .lc.partial::after {
+    content: ""; width: 10px; height: 2px; background: var(--accent-700); border-radius: 1px;
+  }
+
+  /* Three-state chip ("available / not available / not reviewed") */
+  .tri {
+    display: inline-flex; align-items: center; gap: 0;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px; height: 28px;
+  }
+  .tri > button {
+    height: 22px; min-width: 28px; padding: 0 8px;
+    border: none; background: transparent; border-radius: 999px;
+    font: 500 11px/1 Inter; color: var(--fg-3);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+    transition: background var(--dur-1) var(--ease-standard),
+                color var(--dur-1) var(--ease-standard);
+  }
+  .tri > button:hover { color: var(--fg-1); }
+  .tri > button i { width: 11px; height: 11px; }
+  .tri > button.on.yes { background: var(--moss-500); color: white; }
+  .tri > button.on.no { background: var(--ink-88); color: white; }
+  .tri > button.on.maybe { background: var(--amber-500); color: white; }
+
+  /* ==========================================================
+     EQUIPAMIENTO
+     ========================================================== */
+  .eq-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .search-field {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 7px 12px; flex: 1; min-width: 180px; max-width: 380px;
+  }
+  .search-field i { width: 14px; height: 14px; color: var(--fg-3); }
+  .search-field input { flex: 1; border: none; outline: none; background: transparent; font: 400 13px Inter; color: var(--fg-1); }
+  .filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 11px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-2); color: var(--fg-2); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all var(--dur-1) var(--ease-standard); white-space: nowrap;
+  }
+  .filter-btn:hover { background: var(--ink-08); }
+  .filter-btn.on { background: var(--accent-100); color: var(--accent-700); border-color: var(--accent-200); }
+  .filter-btn i { width: 13px; height: 13px; }
+
+  .eq-grp { margin-bottom: 24px; }
+  .eq-grp-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 4px; border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .eq-grp-title { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+  .eq-grp-count { font-size: 11.5px; color: var(--fg-3); font-variant-numeric: tabular-nums; }
+  .eq-grp-bar { flex: 1; height: 2px; background: var(--ink-12); border-radius: 1px; overflow: hidden; margin-left: 12px; max-width: 180px; }
+  .eq-grp-bar > span { display: block; height: 100%; background: var(--moss-500); border-radius: 1px; transition: width var(--dur-3) var(--ease-standard); }
+  .eq-grp-bar > span.warn { background: var(--amber-500); }
+
+  .eq-item {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 14px; align-items: center;
+    padding: 12px 6px;
+    border-bottom: 1px solid var(--ink-12);
+    transition: background var(--dur-1) var(--ease-standard);
+  }
+  .eq-item:last-child { border-bottom: none; }
+  .eq-item:hover { background: var(--ink-08); }
+  .eq-name { font-size: 13.5px; color: var(--fg-1); font-weight: 500; }
+  .eq-name .muted { display: block; font-size: 11.5px; color: var(--fg-3); margin-top: 2px; font-weight: 400; line-height: 1.4; }
+  .eq-item.off .eq-name { color: var(--fg-3); }
+  .eq-item.off .eq-name .muted { color: var(--fg-4); }
+
+  /* Right-side meta cluster */
+  .eq-meta { display: flex; align-items: center; gap: 8px; }
+  .eq-tag {
+    font-size: 10.5px; color: var(--fg-3); font-weight: 500;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--bg-3); border: 1px solid var(--border);
+    letter-spacing: 0.02em;
+  }
+  .eq-tag.warn { color: var(--amber-700); background: var(--amber-50); border-color: var(--amber-100); }
+  .eq-tag.none { color: var(--fg-4); background: transparent; }
+  /* Meta icons — show presence of note/photo as small dots, pill-like */
+  .eq-attach { display: inline-flex; gap: 4px; }
+  .eq-attach .p {
+    width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center;
+    color: var(--fg-4); cursor: pointer; transition: background var(--dur-1) var(--ease-standard), color var(--dur-1) var(--ease-standard);
+  }
+  .eq-attach .p:hover { background: var(--ink-12); color: var(--fg-1); }
+  .eq-attach .p.has { color: var(--accent-500); background: var(--accent-50); }
+  .eq-attach .p.has.photo { color: var(--moss-500); background: var(--moss-50); }
+  .eq-attach .p i { width: 12px; height: 12px; }
+
+  @media (max-width: 640px) {
+    .eq-item { grid-template-columns: 22px 1fr; gap: 10px; }
+    .eq-meta { grid-column: 2; margin-top: 4px; flex-wrap: wrap; }
+  }
+
+  /* ==========================================================
+     SISTEMAS
+     ========================================================== */
+  .sys-card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 20px; margin-bottom: 12px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 16px;
+    align-items: start; cursor: pointer;
+    transition: background var(--dur-1) var(--ease-standard), border-color var(--dur-1) var(--ease-standard);
+  }
+  .sys-card:hover { border-color: var(--border-strong); }
+  .sys-ic {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--accent-100); color: var(--accent-700);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .sys-ic i { width: 20px; height: 20px; }
+  .sys-body .title { font-size: 15px; font-weight: 600; color: var(--fg-1); line-height: 1.3; }
+  .sys-body .sub { font-size: 12.5px; color: var(--fg-3); margin-top: 3px; line-height: 1.4; }
+  .sys-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 11.5px; color: var(--fg-3); }
+  .sys-meta .mi { display: inline-flex; align-items: center; gap: 5px; }
+  .sys-meta .mi i { width: 12px; height: 12px; color: var(--fg-3); }
+  .sys-meta .mi b { color: var(--fg-1); font-weight: 500; }
+  .sys-meta .mi.warn { color: var(--clay-700); }
+  .sys-meta .mi.warn i { color: var(--clay-500); }
+
+  .sys-state {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+  .ring-pct { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--fg-2); font-variant-numeric: tabular-nums; }
+  .ring-pct svg { width: 22px; height: 22px; }
+
+  .sys-card.draft { border-style: dashed; background: var(--bg-1); }
+  .sys-card.empty .sys-ic { background: var(--ink-08); color: var(--fg-3); }
+  .sys-card.empty .sub { font-size: 12px; }
+
+  @media (max-width: 640px) {
+    .sys-card { grid-template-columns: auto 1fr; padding: 16px; }
+    .sys-state { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; }
+  }
+
+  /* ==========================================================
+     GUÍA LOCAL
+     ========================================================== */
+  .gl-head {
+    display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 28px;
+  }
+  @media (max-width: 900px) { .gl-head { grid-template-columns: 1fr; } }
+
+  .gl-map {
+    background: linear-gradient(135deg, var(--ink-08) 0%, var(--bg-3) 100%);
+    border: 1px solid var(--border); border-radius: 16px;
+    height: 240px; position: relative; overflow: hidden;
+  }
+  .gl-map::before {
+    content: ""; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 22px, var(--ink-12) 22px 23px),
+      repeating-linear-gradient(90deg, transparent 0 22px, var(--ink-12) 22px 23px);
+    opacity: 0.9;
+  }
+  .gl-map .road {
+    position: absolute; background: var(--ink-24); height: 3px; border-radius: 2px;
+  }
+  .gl-pin {
+    position: absolute; width: 26px; height: 26px; border-radius: 50% 50% 50% 6px;
+    transform: rotate(-45deg) translate(-50%, -50%); transform-origin: 0 0;
+    display: grid; place-items: center; box-shadow: 0 3px 8px rgba(28,26,22,.18);
+  }
+  .gl-pin i { transform: rotate(45deg); width: 12px; height: 12px; color: white; }
+  .gl-pin.home { background: var(--accent-700); }
+  .gl-pin.food { background: var(--clay-500); }
+  .gl-pin.cafe { background: var(--amber-500); }
+  .gl-pin.culture { background: var(--moss-500); }
+  .gl-pin.shop { background: var(--accent-500); }
+
+  .gl-cats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; align-content: start; }
+  .gl-cat {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+    transition: background var(--dur-1) var(--ease-standard);
+  }
+  .gl-cat:hover { background: var(--ink-08); }
+  .gl-cat .ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: white; flex-shrink: 0; }
+  .gl-cat .ic i { width: 15px; height: 15px; }
+  .gl-cat .name { font-size: 13.5px; font-weight: 600; color: var(--fg-1); }
+  .gl-cat .c { font-size: 11.5px; color: var(--fg-3); margin-top: 2px; }
+
+  .rec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .rec-grid { grid-template-columns: 1fr; } }
+  .rec {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease-standard);
+    display: flex; flex-direction: column;
+  }
+  .rec:hover { border-color: var(--border-strong); }
+  .rec-img {
+    height: 130px;
+    background: linear-gradient(135deg, var(--ink-12), var(--bg-3));
+    position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+  .rec-img i { width: 32px; height: 32px; color: var(--fg-4); }
+  .rec-img .tag {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--bg-2); color: var(--fg-1); font-size: 11px; font-weight: 600;
+    padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .rec-img .tag i { width: 10px; height: 10px; color: var(--accent-500); }
+  .rec-img .dist {
+    position: absolute; top: 10px; right: 10px;
+    background: rgba(28,26,22,0.82); color: var(--bg-1); font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 999px; backdrop-filter: blur(4px);
+  }
+  .rec-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
+  .rec-body .title { font-size: 14px; font-weight: 600; color: var(--fg-1); display: flex; align-items: center; gap: 6px; }
+  .rec-body .title .star { color: var(--amber-500); font-size: 12px; font-weight: 500; display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+  .rec-body .title .star i { width: 11px; height: 11px; fill: var(--amber-500); }
+  .rec-body .sub { font-size: 12px; color: var(--fg-3); margin-top: 3px; }
+  .rec-body .note {
+    font-size: 12.5px; color: var(--fg-2); line-height: 1.5;
+    margin-top: 10px; font-style: italic;
+    border-left: 2px solid var(--accent-200); padding-left: 10px;
+  }
+  .rec-body .meta { display: flex; gap: 10px; margin-top: 12px; font-size: 11.5px; color: var(--fg-3); flex-wrap: wrap; }
+  .rec-body .meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .rec-body .meta i { width: 11px; height: 11px; }
+
+  /* AI suggestion card — shared component */
+  .ai-card {
+    background: linear-gradient(135deg, var(--accent-50), var(--bg-2));
+    border: 1px solid var(--accent-200); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+  }
+  .ai-card .ic {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent-700); color: var(--accent-on);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .ai-card .ic i { width: 17px; height: 17px; }
+  .ai-card .body { flex: 1; min-width: 0; }
+  .ai-card .title { font-size: 13.5px; font-weight: 600; color: var(--fg-1); line-height: 1.4; }
+  .ai-card .sub { font-size: 12.5px; color: var(--fg-2); margin-top: 3px; line-height: 1.5; }
+  .ai-card .actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ==========================================================
+     PROPIEDADES — property list card
+     ========================================================== */
+  .prop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .prop-card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 0; overflow: hidden; cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease-standard), transform var(--dur-1) var(--ease-standard);
+    display: flex; flex-direction: column;
+  }
+  .prop-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .prop-card.active { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-100); }
+  .prop-cover {
+    height: 110px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, var(--ink-24), var(--ink-40));
+  }
+  .prop-cover.v2 { background: linear-gradient(135deg, #6B8A6E, #3A5040); }
+  .prop-cover.v3 { background: linear-gradient(135deg, #8A7A5E, #4A3F2E); }
+  .prop-cover::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 70% 30%, rgba(255,255,255,.14), transparent 60%);
+  }
+  .prop-cover .chip-pos {
+    position: absolute; top: 12px; left: 12px; right: 12px;
+    display: flex; gap: 6px; align-items: center; justify-content: space-between;
+  }
+  .prop-state {
+    font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+    background: rgba(255,255,255,.9); color: var(--fg-1);
+    display: inline-flex; align-items: center; gap: 5px; backdrop-filter: blur(4px);
+  }
+  .prop-state i { width: 10px; height: 10px; }
+  .prop-state.live { color: var(--moss-700); }
+  .prop-state.draft { color: var(--amber-700); }
+
+  .prop-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; }
+  .prop-name { font-size: 15px; font-weight: 600; color: var(--fg-1); letter-spacing: -0.005em; }
+  .prop-loc { font-size: 12px; color: var(--fg-3); margin-top: 2px; display: inline-flex; align-items: center; gap: 5px; }
+  .prop-loc i { width: 12px; height: 12px; }
+  .prop-stats { display: flex; gap: 14px; margin-top: 12px; font-size: 11.5px; color: var(--fg-3); }
+  .prop-stats .s { display: inline-flex; align-items: center; gap: 4px; }
+  .prop-stats .s b { color: var(--fg-1); font-weight: 500; }
+  .prop-stats i { width: 12px; height: 12px; }
+
+  .prop-foot {
+    margin-top: auto; padding-top: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: var(--fg-2);
+  }
+  .prop-foot .progress { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+  .prop-foot .progress .bar { width: 80px; height: 3px; background: var(--ink-12); border-radius: 2px; overflow: hidden; }
+  .prop-foot .progress .bar > span { display: block; height: 100%; background: var(--moss-500); border-radius: 2px; }
+
+  /* Property detail — read-only block */
+  .prop-detail {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 24px; margin-bottom: 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+  @media (max-width: 720px) { .prop-detail { grid-template-columns: 1fr; gap: 16px; } }
+  .detail-block h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 600; margin: 0 0 10px; }
+  .detail-block dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13.5px; margin: 0; }
+  .detail-block dt { color: var(--fg-3); font-size: 12.5px; }
+  .detail-block dd { margin: 0; color: var(--fg-1); font-weight: 500; }
+
+  /* ==========================================================
+     LLEGADA y ACCESO — timeline of arrival steps
+     ========================================================== */
+  .arrival-hero {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 24px; display: grid; grid-template-columns: auto 1fr; gap: 20px;
+    align-items: center; margin-bottom: 24px;
+  }
+  .arrival-big {
+    width: 96px; height: 96px; border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent-700), var(--accent-500));
+    color: var(--accent-on); display: grid; place-items: center;
+    font: 600 40px/1 Inter; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .arrival-big .pm { font-size: 14px; font-weight: 500; vertical-align: super; margin-left: 2px; opacity: 0.7; }
+  .arrival-hero .body .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); font-weight: 600; }
+  .arrival-hero .body .t { font-size: 18px; font-weight: 600; color: var(--fg-1); margin-top: 4px; }
+  .arrival-hero .body .sub { font-size: 13px; color: var(--fg-2); margin-top: 4px; line-height: 1.5; max-width: 60ch; }
+
+  .arrival-steps { position: relative; padding: 4px 0 4px 28px; }
+  .arrival-steps::before {
+    content: ""; position: absolute; top: 12px; bottom: 12px; left: 10px;
+    width: 2px; background: var(--ink-12); border-radius: 1px;
+  }
+  .as-item { position: relative; padding: 12px 16px; margin-bottom: 8px;
+    border: 1px solid var(--border); border-radius: 12px; background: var(--bg-2); }
+  .as-item::before {
+    content: ""; position: absolute; left: -22px; top: 18px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--bg-1); border: 2px solid var(--ink-24);
+  }
+  .as-item.done::before { background: var(--moss-500); border-color: var(--moss-500); }
+  .as-item.cur::before { background: var(--accent-500); border-color: var(--accent-500); box-shadow: 0 0 0 4px var(--accent-100); }
+  .as-item .h { display: flex; align-items: center; gap: 10px; }
+  .as-item .num { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--fg-3); text-transform: uppercase; }
+  .as-item .t { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+  .as-item .body { font-size: 13px; color: var(--fg-2); margin-top: 4px; line-height: 1.5; }
+  .as-item .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 11.5px; color: var(--fg-3); }
+  .as-item .meta .m { display: inline-flex; align-items: center; gap: 5px; background: var(--bg-3); border: 1px solid var(--border); padding: 3px 8px; border-radius: 999px; }
+  .as-item .meta .m i { width: 11px; height: 11px; }
+
+  /* Access method visual (combo / key / smart lock) */
+  .access-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 720px) { .access-grid { grid-template-columns: 1fr; } }
+  .access-opt {
+    background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 18px; cursor: pointer; transition: border-color var(--dur-1) var(--ease-standard);
+  }
+  .access-opt:hover { border-color: var(--ink-40); }
+  .access-opt.on {
+    border-color: var(--accent-500); background: var(--accent-50);
+  }
+  .access-opt .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-1); border: 1px solid var(--border); display: grid; place-items: center; color: var(--fg-2); margin-bottom: 12px; }
+  .access-opt.on .ic { background: var(--accent-100); color: var(--accent-700); border-color: var(--accent-200); }
+  .access-opt .ic i { width: 18px; height: 18px; }
+  .access-opt .name { font-size: 14px; font-weight: 600; color: var(--fg-1); }
+  .access-opt .desc { font-size: 12px; color: var(--fg-3); margin-top: 4px; line-height: 1.45; }
+
+  /* ==========================================================
+     ESPACIOS
+     ========================================================== */
+  .sp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .sp-card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease-standard), transform var(--dur-1) var(--ease-standard);
+    display: flex; flex-direction: column;
+  }
+  .sp-card:hover { border-color: var(--border-strong); }
+  .sp-photo {
+    height: 140px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--ink-12), var(--bg-3));
+    position: relative;
+  }
+  .sp-photo i { width: 36px; height: 36px; color: var(--fg-4); }
+  .sp-photo.living { background: linear-gradient(135deg, #C4A484, #8B7355); }
+  .sp-photo.kitchen { background: linear-gradient(135deg, #E8D5B7, #B89B6E); }
+  .sp-photo.bed { background: linear-gradient(135deg, #8E9DBF, #4E5D7F); }
+  .sp-photo.bath { background: linear-gradient(135deg, #A8C0C8, #5E7680); }
+  .sp-photo.terrace { background: linear-gradient(135deg, #6B8A6E, #3A5040); }
+  .sp-photo .count {
+    position: absolute; bottom: 10px; right: 10px;
+    background: rgba(28,26,22,.78); color: var(--bg-1);
+    font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    backdrop-filter: blur(4px); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .sp-photo .count i { width: 10px; height: 10px; }
+  .sp-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; }
+  .sp-name { font-size: 14.5px; font-weight: 600; color: var(--fg-1); }
+  .sp-facts { font-size: 12px; color: var(--fg-3); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .sp-facts span { display: inline-flex; align-items: center; gap: 4px; }
+  .sp-facts i { width: 11px; height: 11px; }
+  .sp-foot { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
+  .sp-foot .progress { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; color: var(--fg-3); flex: 1; min-width: 0; }
+  .sp-foot .progress .bar { flex: 1; height: 3px; background: var(--ink-12); border-radius: 2px; overflow: hidden; max-width: 110px; }
+  .sp-foot .progress .bar > span { display: block; height: 100%; background: var(--moss-500); border-radius: 2px; }
+
+  /* ==========================================================
+     NORMAS
+     ========================================================== */
+  .rules-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .rule-card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; display: flex; gap: 12px; align-items: center; cursor: pointer;
+    transition: border-color var(--dur-1) var(--ease-standard);
+  }
+  .rule-card:hover { border-color: var(--border-strong); }
+  .rule-ic {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--ink-08); color: var(--fg-2);
+    display: grid; place-items: center; flex-shrink: 0;
+    transition: background var(--dur-1) var(--ease-standard), color var(--dur-1) var(--ease-standard);
+  }
+  .rule-ic i { width: 18px; height: 18px; }
+  .rule-card[data-state="yes"] .rule-ic { background: var(--moss-100); color: var(--moss-700); }
+  .rule-card[data-state="no"] .rule-ic { background: var(--clay-100); color: var(--clay-700); }
+  .rule-card[data-state="maybe"] .rule-ic { background: var(--amber-100); color: var(--amber-700); }
+
+  .rule-body { flex: 1; min-width: 0; }
+  .rule-t { font-size: 13.5px; font-weight: 600; color: var(--fg-1); }
+  .rule-s { font-size: 11.5px; color: var(--fg-3); margin-top: 2px; line-height: 1.4; }
+
+  /* Rule narrative items (quiet hours, check-in etc.) */
+  .rule-narr {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 20px; margin-bottom: 10px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+  }
+  .rule-narr .rn-ic { width: 32px; height: 32px; border-radius: 9px; background: var(--accent-100); color: var(--accent-700); display: grid; place-items: center; }
+  .rule-narr .rn-ic i { width: 15px; height: 15px; }
+  .rule-narr .t { font-size: 13.5px; font-weight: 600; color: var(--fg-1); }
+  .rule-narr .s { font-size: 12px; color: var(--fg-3); margin-top: 2px; }
+  .rule-narr .val { font-size: 14px; font-weight: 600; color: var(--fg-1); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ==========================================================
+     CONTACTOS
+     ========================================================== */
+  .cn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .cn-card {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;
+    transition: border-color var(--dur-1) var(--ease-standard);
+  }
+  .cn-card:hover { border-color: var(--border-strong); }
+  .cn-top { display: flex; align-items: center; gap: 12px; }
+  .cn-av { width: 44px; height: 44px; border-radius: 50%;
+    background: var(--accent-100); color: var(--accent-700);
+    display: grid; place-items: center; font: 600 14px Inter;
+    flex-shrink: 0;
+  }
+  .cn-av.emergency { background: var(--clay-100); color: var(--clay-700); }
+  .cn-av.service { background: var(--moss-100); color: var(--moss-700); }
+  .cn-body { flex: 1; min-width: 0; }
+  .cn-name { font-size: 14px; font-weight: 600; color: var(--fg-1); line-height: 1.3; }
+  .cn-role { font-size: 11.5px; color: var(--fg-3); margin-top: 2px; }
+  .cn-role b { color: var(--fg-1); font-weight: 500; }
+
+  .cn-phone {
+    font-family: ui-monospace, monospace; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--fg-1);
+  }
+  .cn-phone i { width: 13px; height: 13px; color: var(--fg-3); }
+
+  .cn-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 4px; }
+  .cn-actions button {
+    flex: 1; padding: 7px; border: 1px solid var(--border); background: var(--bg-1);
+    color: var(--fg-2); font-size: 11.5px; font-weight: 500;
+    border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    transition: all var(--dur-1) var(--ease-standard);
+  }
+  .cn-actions button:hover { background: var(--ink-08); color: var(--fg-1); }
+  .cn-actions button i { width: 12px; height: 12px; }
+  .cn-actions button.primary { background: var(--accent-700); color: var(--accent-on); border-color: var(--accent-700); }
+  .cn-actions button.primary:hover { background: var(--accent-600); }
+
+  .cn-card.emergency { border-color: var(--clay-200); background: linear-gradient(135deg, var(--clay-50), var(--bg-2)); }
+
+  /* ==========================================================
+     AVERÍAS
+     ========================================================== */
+  .incidents { display: flex; flex-direction: column; gap: 10px; }
+  .inc {
+    background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 14px;
+    align-items: start;
+    border-left: 3px solid var(--ink-24);
+  }
+  .inc.critical { border-left-color: var(--clay-500); }
+  .inc.high { border-left-color: var(--amber-500); }
+  .inc.normal { border-left-color: var(--accent-500); }
+  .inc.resolved { border-left-color: var(--moss-500); opacity: 0.75; }
+
+  .inc-ic {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--ink-08); color: var(--fg-2);
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .inc.critical .inc-ic { background: var(--clay-100); color: var(--clay-700); }
+  .inc.high .inc-ic { background: var(--amber-100); color: var(--amber-700); }
+  .inc.normal .inc-ic { background: var(--accent-100); color: var(--accent-700); }
+  .inc.resolved .inc-ic { background: var(--moss-100); color: var(--moss-700); }
+  .inc-ic i { width: 18px; height: 18px; }
+
+  .inc-body .t { font-size: 14px; font-weight: 600; color: var(--fg-1); line-height: 1.35; }
+  .inc-body .s { font-size: 12.5px; color: var(--fg-2); margin-top: 4px; line-height: 1.5; }
+  .inc-body .meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 11.5px; color: var(--fg-3); }
+  .inc-body .meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .inc-body .meta i { width: 11px; height: 11px; }
+  .inc-body .meta b { color: var(--fg-1); font-weight: 500; }
+
+  .inc-state {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+  .age {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+    color: var(--fg-3); font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 640px) {
+    .inc { grid-template-columns: auto 1fr; }
+    .inc-state { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--ink-12); }
+  }
+
+  /* Empty state template */
+  .empty-state {
+    text-align: center; padding: 48px 24px;
+    border: 1px dashed var(--border); border-radius: 16px;
+    background: var(--bg-2);
+  }
+  .empty-state .ic { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 16px; background: var(--ink-08); color: var(--fg-3); display: grid; place-items: center; }
+  .empty-state .ic i { width: 26px; height: 26px; }
+  .empty-state .t { font-size: 15px; font-weight: 600; color: var(--fg-1); }
+  .empty-state .s { font-size: 13px; color: var(--fg-2); margin-top: 6px; line-height: 1.5; max-width: 42ch; margin-left: auto; margin-right: auto; }
+  .empty-state .cta { margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="sidebar-backdrop" id="sbBackdrop"></div>
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand"><img src="../../assets/liora-wordmark.svg" alt="Liora"></div>
+
+    <div class="sb-prop">
+      <div class="sb-prop-ic">AR</div>
+      <div style="min-width:0; flex:1">
+        <div class="sb-prop-name">Apartamento Ruzafa</div>
+        <div class="sb-prop-loc">Valencia · 4 huéspedes</div>
+      </div>
+      <i class="sb-prop-chev" data-lucide="chevrons-up-down" style="width:14px;height:14px"></i>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-group">
+        <div class="sb-group-label">Contenido</div>
+        <a class="sb-item" data-lucide-nav>
+          <i class="sb-ic" data-lucide="layout-dashboard"></i>Resumen</a>
+        <a class="sb-item nav-link" data-page="propiedades"><i class="sb-ic" data-lucide="building-2"></i>Propiedades<span class="sb-ring" data-ring="1.0"></span></a>
+        <a class="sb-item nav-link" data-page="llegada"><i class="sb-ic" data-lucide="key-round"></i>Llegada y acceso<span class="sb-ring" data-ring="0.78"></span></a>
+        <a class="sb-item nav-link" data-page="espacios"><i class="sb-ic" data-lucide="door-open"></i>Espacios<span class="sb-ring" data-ring="0.85"></span></a>
+        <a class="sb-item nav-link" data-page="equipamiento"><i class="sb-ic" data-lucide="sparkles"></i>Equipamiento<span class="sb-ring" data-ring="0.62"></span></a>
+        <a class="sb-item nav-link" data-page="sistemas"><i class="sb-ic" data-lucide="settings-2"></i>Sistemas<span class="sb-ring" data-ring="0.40"></span></a>
+        <a class="sb-item nav-link" data-page="normas"><i class="sb-ic" data-lucide="shield-alert"></i>Normas<span class="sb-ring" data-ring="0.70"></span></a>
+        <a class="sb-item nav-link" data-page="contactos"><i class="sb-ic" data-lucide="users-round"></i>Contactos<span class="sb-ring" data-ring="0.90"></span></a>
+        <a class="sb-item nav-link" data-page="guialocal"><i class="sb-ic" data-lucide="map-pin"></i>Guía local</a>
+        <a class="sb-item nav-link" data-page="averias"><i class="sb-ic" data-lucide="wrench"></i>Averías</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-group-label">Salidas</div>
+        <a class="sb-item"><i class="sb-ic" data-lucide="book-open"></i>Guía huésped</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="brain"></i>Asistente IA</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="messages-square"></i>Mensajería</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="send"></i>Publicación</a>
+      </div>
+      <div class="sb-group">
+        <div class="sb-group-label">Operaciones</div>
+        <a class="sb-item"><i class="sb-ic" data-lucide="clipboard-check"></i>Operativa</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="image"></i>Media</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="bar-chart-3"></i>Analítica</a>
+        <a class="sb-item"><i class="sb-ic" data-lucide="settings"></i>Configuración</a>
+      </div>
+    </nav>
+
+    <div class="sb-foot">
+      <div class="sb-ava">JB</div>
+      <div style="flex:1; min-width:0">
+        <div style="font-size:12px; font-weight:600; color:var(--fg-1)">Javier Barberá</div>
+        <div style="font-size:11px; color:var(--fg-3)">3 propiedades</div>
+      </div>
+      <i data-lucide="more-horizontal" style="width:14px;height:14px;color:var(--fg-3)"></i>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <button class="mobile-nav-toggle" id="navToggle" aria-label="Abrir menú"><i data-lucide="menu"></i></button>
+        <div class="tb-crumbs">
+          <span>Propiedades</span>
+          <span class="tb-sep">/</span>
+          <span>Apartamento Ruzafa</span>
+          <span class="tb-sep">/</span>
+          <span class="cur" id="crumbCur">Equipamiento</span>
+        </div>
+      </div>
+
+      <div class="cmd">
+        <i data-lucide="search"></i>
+        <span>Buscar espacio, equipamiento o acción…</span>
+        <span class="cmd-hint"><span class="kbd">⌘</span><span class="kbd">K</span></span>
+      </div>
+
+      <div class="tb-right">
+        <button class="btn btn-primary"><i data-lucide="send" style="width:14px;height:14px"></i>Publicar</button>
+      </div>
+    </header>
+
+    <div class="body">
+      <main class="content">
+
+        <!-- ==========================================================
+             PROPIEDADES
+             ========================================================== -->
+        <div class="page" id="page-propiedades">
+          <section class="pg">
+            <div class="pg-eyebrow">Cartera</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Tus propiedades</h1>
+                <p class="pg-sub">3 propiedades activas. Entra en cualquiera para editar su guía, su equipamiento o sus sistemas.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-secondary"><i data-lucide="upload" style="width:13px;height:13px"></i>Importar</button>
+                <button class="btn btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i>Añadir propiedad</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="check-check"></i><b>2</b> publicadas</span>
+              <span class="chip"><i data-lucide="pen-line"></i><b>1</b> borrador</span>
+              <span class="chip"><i data-lucide="users-round"></i>Ocupación media <b>72%</b></span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Activas</div>
+              <a class="section-action">Ordenar<i data-lucide="arrow-up-right" style="width:12px;height:12px"></i></a>
+            </div>
+            <div class="prop-grid">
+              <div class="prop-card active">
+                <div class="prop-cover">
+                  <div class="chip-pos">
+                    <span class="prop-state live"><i data-lucide="circle-dot"></i>Publicada</span>
+                    <span style="background:rgba(255,255,255,.9); color:var(--fg-2); font-size:10px; padding:3px 8px; border-radius:999px; font-weight:600">Favorito</span>
+                  </div>
+                </div>
+                <div class="prop-body">
+                  <div class="prop-name">Apartamento Ruzafa</div>
+                  <div class="prop-loc"><i data-lucide="map-pin"></i>Valencia · Ruzafa</div>
+                  <div class="prop-stats">
+                    <span class="s"><i data-lucide="users-round"></i><b>4</b> plazas</span>
+                    <span class="s"><i data-lucide="bed-single"></i><b>2</b> dormitorios</span>
+                    <span class="s"><i data-lucide="bath"></i><b>1</b> baño</span>
+                  </div>
+                  <div class="prop-foot">
+                    <span class="progress"><span class="bar"><span style="width:78%"></span></span>78%</span>
+                    <span>Editada hace 2 d</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prop-card">
+                <div class="prop-cover v2">
+                  <div class="chip-pos">
+                    <span class="prop-state live"><i data-lucide="circle-dot"></i>Publicada</span>
+                  </div>
+                </div>
+                <div class="prop-body">
+                  <div class="prop-name">Casa del Carmen</div>
+                  <div class="prop-loc"><i data-lucide="map-pin"></i>Valencia · El Carmen</div>
+                  <div class="prop-stats">
+                    <span class="s"><i data-lucide="users-round"></i><b>6</b> plazas</span>
+                    <span class="s"><i data-lucide="bed-single"></i><b>3</b> dormitorios</span>
+                    <span class="s"><i data-lucide="bath"></i><b>2</b> baños</span>
+                  </div>
+                  <div class="prop-foot">
+                    <span class="progress"><span class="bar"><span style="width:92%"></span></span>92%</span>
+                    <span>Editada ayer</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prop-card">
+                <div class="prop-cover v3">
+                  <div class="chip-pos">
+                    <span class="prop-state draft"><i data-lucide="pen-line"></i>Borrador</span>
+                  </div>
+                </div>
+                <div class="prop-body">
+                  <div class="prop-name">Loft Benimaclet</div>
+                  <div class="prop-loc"><i data-lucide="map-pin"></i>Valencia · Benimaclet</div>
+                  <div class="prop-stats">
+                    <span class="s"><i data-lucide="users-round"></i><b>2</b> plazas</span>
+                    <span class="s"><i data-lucide="bed-single"></i><b>1</b> dormitorio</span>
+                    <span class="s"><i data-lucide="bath"></i><b>1</b> baño</span>
+                  </div>
+                  <div class="prop-foot">
+                    <span class="progress"><span class="bar"><span style="width:34%; background:var(--amber-500)"></span></span>34%</span>
+                    <span>Borrador</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Detalles · Apartamento Ruzafa</div>
+              <a class="section-action">Editar<i data-lucide="arrow-up-right" style="width:12px;height:12px"></i></a>
+            </div>
+            <div class="prop-detail">
+              <div class="detail-block">
+                <h4>Información básica</h4>
+                <dl>
+                  <dt>Tipo</dt><dd>Apartamento completo</dd>
+                  <dt>Dirección</dt><dd>Calle Cádiz 21, 3B</dd>
+                  <dt>Ciudad</dt><dd>Valencia · Ruzafa</dd>
+                  <dt>Capacidad</dt><dd>4 huéspedes</dd>
+                  <dt>Tamaño</dt><dd>72 m²</dd>
+                  <dt>Planta</dt><dd>3 · con ascensor</dd>
+                </dl>
+              </div>
+              <div class="detail-block">
+                <h4>Canales activos</h4>
+                <dl>
+                  <dt>Airbnb</dt><dd>Sincronizado · 47 reseñas</dd>
+                  <dt>Booking</dt><dd>Sincronizado · 8.9★</dd>
+                  <dt>Direct</dt><dd>Liora · enlace público</dd>
+                  <dt>Última sincr.</dt><dd>Hace 12 min</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             LLEGADA Y ACCESO
+             ========================================================== -->
+        <div class="page" id="page-llegada">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Llegada</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Llegada y acceso</h1>
+                <p class="pg-sub">La hora más frágil de toda la estancia. Documenta aquí cómo llegan, cómo entran y qué hacer en los primeros minutos.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-secondary"><i data-lucide="play" style="width:13px;height:13px"></i>Simular llegada</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="clock-4"></i>Check-in <b>16:00</b></span>
+              <span class="chip"><i data-lucide="clock"></i>Check-out <b>11:00</b></span>
+              <span class="chip"><i data-lucide="key"></i>Entrada autónoma</span>
+              <span class="chip"><i data-lucide="map-pin"></i>Instrucciones fijadas</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Horarios</div>
+            </div>
+            <div class="arrival-hero">
+              <div class="arrival-big">16<span class="pm">:00</span></div>
+              <div class="body">
+                <div class="label">Check-in por defecto</div>
+                <div class="t">A partir de las 16:00, hasta las 22:00</div>
+                <div class="sub">Los huéspedes pueden entrar solos con el código del teclado. Llegadas tardías (después de las 22:00) avisan por el chat y les envías un mensaje de bienvenida con el código.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Método de acceso</div>
+              <a class="section-action">Cambiar</a>
+            </div>
+            <div class="access-grid">
+              <div class="access-opt on">
+                <div class="ic"><i data-lucide="keyboard"></i></div>
+                <div class="name">Teclado numérico</div>
+                <div class="desc">Código de 6 dígitos. Lo cambias desde Liora y se actualiza para cada reserva.</div>
+              </div>
+              <div class="access-opt">
+                <div class="ic"><i data-lucide="key"></i></div>
+                <div class="name">Caja de llaves</div>
+                <div class="desc">Caja de combinación. Apto si el edificio permite, requiere limpieza manual.</div>
+              </div>
+              <div class="access-opt">
+                <div class="ic"><i data-lucide="user-round"></i></div>
+                <div class="name">En persona</div>
+                <div class="desc">Bienvenida presencial. Cuida más, pero no escala bien con varias propiedades.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">03</span>Pasos de llegada</div>
+              <a class="section-action">Previsualizar guía<i data-lucide="arrow-up-right" style="width:12px;height:12px"></i></a>
+            </div>
+            <div class="arrival-steps">
+              <div class="as-item done">
+                <div class="h"><span class="num">Paso 1</span><span class="t">Cómo llegar</span></div>
+                <div class="body">Metro L3 o L5 hasta "Xàtiva" (6 min andando). Si vienes en coche, parking público "Bailén" a 4 min. El portal está entre el "Dulce de Leche" y la papelería.</div>
+                <div class="meta">
+                  <span class="m"><i data-lucide="file-text"></i>142 palabras</span>
+                  <span class="m"><i data-lucide="camera"></i>2 fotos</span>
+                  <span class="m"><i data-lucide="map-pin"></i>Pin fijado</span>
+                </div>
+              </div>
+              <div class="as-item done">
+                <div class="h"><span class="num">Paso 2</span><span class="t">Entrada al edificio</span></div>
+                <div class="body">Puerta verde de madera. Llave del portal en la caja de al lado del timbre (código 4729). Sube hasta la tercera planta, puerta 3B a la derecha del rellano.</div>
+                <div class="meta">
+                  <span class="m"><i data-lucide="file-text"></i>96 palabras</span>
+                  <span class="m"><i data-lucide="camera"></i>3 fotos</span>
+                </div>
+              </div>
+              <div class="as-item cur">
+                <div class="h"><span class="num">Paso 3</span><span class="t">Abrir la puerta del piso</span></div>
+                <div class="body">Teclado en el marco de la puerta. Introduce el código <b>8 2 4 1</b> y pulsa la llave. El código cambia para cada reserva, lo ves en el mensaje de bienvenida.</div>
+                <div class="meta">
+                  <span class="m"><i data-lucide="video"></i>1 vídeo · 18s</span>
+                  <span class="m"><i data-lucide="edit-3"></i>Falta foto del teclado</span>
+                </div>
+              </div>
+              <div class="as-item">
+                <div class="h"><span class="num">Paso 4</span><span class="t">Primeros minutos dentro</span></div>
+                <div class="body" style="color:var(--fg-3); font-style:italic">Sin redactar — qué luz encender, dónde dejar la maleta, qué puedes ofrecer antes de descansar (agua fresca en la nevera, Wi-Fi).</div>
+                <div class="meta">
+                  <span class="m" style="color:var(--amber-700)"><i data-lucide="circle-dashed"></i>Sin empezar</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             ESPACIOS
+             ========================================================== -->
+        <div class="page" id="page-espacios">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Espacios</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Espacios</h1>
+                <p class="pg-sub">Cada habitación tiene su propia ficha en la guía: una foto principal, detalles y peculiaridades. Aquí vives el plano de tu casa.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-secondary"><i data-lucide="layout-grid" style="width:13px;height:13px"></i>Ver plano</button>
+                <button class="btn btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i>Añadir espacio</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="door-open"></i><b>5</b> espacios</span>
+              <span class="chip"><i data-lucide="camera"></i><b>14</b> fotos</span>
+              <span class="chip"><i data-lucide="check-check"></i>Completo <b>85%</b></span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Espacios principales</div>
+            </div>
+            <div class="sp-grid">
+              <div class="sp-card">
+                <div class="sp-photo living"><span class="count"><i data-lucide="camera"></i>4</span></div>
+                <div class="sp-body">
+                  <div class="sp-name">Salón</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>22 m²</span>
+                    <span><i data-lucide="users-round"></i>4 personas</span>
+                    <span><i data-lucide="tv"></i>Smart TV</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:100%"></span></span>100%</span><span class="pill pill-published"><i data-lucide="check"></i>Publicado</span></div>
+                </div>
+              </div>
+              <div class="sp-card">
+                <div class="sp-photo kitchen"><span class="count"><i data-lucide="camera"></i>3</span></div>
+                <div class="sp-body">
+                  <div class="sp-name">Cocina</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>11 m²</span>
+                    <span><i data-lucide="flame"></i>Gas</span>
+                    <span><i data-lucide="coffee"></i>Nespresso</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:90%"></span></span>90%</span><span class="pill pill-published"><i data-lucide="check"></i>Publicado</span></div>
+                </div>
+              </div>
+              <div class="sp-card">
+                <div class="sp-photo bed"><span class="count"><i data-lucide="camera"></i>3</span></div>
+                <div class="sp-body">
+                  <div class="sp-name">Dormitorio principal</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>14 m²</span>
+                    <span><i data-lucide="bed-single"></i>Cama 150</span>
+                    <span><i data-lucide="wind"></i>A/C</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:85%"></span></span>85%</span><span class="pill pill-published"><i data-lucide="check"></i>Publicado</span></div>
+                </div>
+              </div>
+              <div class="sp-card">
+                <div class="sp-photo bed"><span class="count"><i data-lucide="camera"></i>2</span></div>
+                <div class="sp-body">
+                  <div class="sp-name">Dormitorio secundario</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>10 m²</span>
+                    <span><i data-lucide="bed-single"></i>2 individuales</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:70%; background:var(--amber-500)"></span></span>70%</span><span class="pill pill-draft"><i data-lucide="pen-line"></i>Borrador</span></div>
+                </div>
+              </div>
+              <div class="sp-card">
+                <div class="sp-photo bath"><span class="count"><i data-lucide="camera"></i>2</span></div>
+                <div class="sp-body">
+                  <div class="sp-name">Baño</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>4 m²</span>
+                    <span><i data-lucide="shower-head"></i>Ducha</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:90%"></span></span>90%</span><span class="pill pill-published"><i data-lucide="check"></i>Publicado</span></div>
+                </div>
+              </div>
+              <div class="sp-card">
+                <div class="sp-photo terrace"></div>
+                <div class="sp-body">
+                  <div class="sp-name">Terraza</div>
+                  <div class="sp-facts">
+                    <span><i data-lucide="move"></i>8 m²</span>
+                    <span><i data-lucide="umbrella"></i>Sombra parcial</span>
+                  </div>
+                  <div class="sp-foot"><span class="progress"><span class="bar"><span style="width:25%; background:var(--amber-500)"></span></span>25%</span><span class="pill pill-draft"><i data-lucide="pen-line"></i>Vacío</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             EQUIPAMIENTO
+             ========================================================== -->
+        <div class="page" id="page-equipamiento">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Equipamiento</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Equipamiento</h1>
+                <p class="pg-sub">Lo que el huésped encontrará al llegar. Marca lo que está disponible; añade una nota si el uso no es obvio. Una foto ayuda más que cualquier explicación.</p>
+              </div>
+              <div class="pg-actions">
+                <span class="pill pill-review"><i data-lucide="sparkles"></i>11 de 18</span>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="check-check"></i><b>11</b> disponibles</span>
+              <span class="chip"><i data-lucide="x"></i><b>3</b> no tiene</span>
+              <span class="chip"><i data-lucide="help-circle"></i><b>4</b> sin revisar</span>
+              <span class="chip"><i data-lucide="camera"></i><b>6</b> con foto</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="eq-toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input placeholder="Buscar equipamiento…">
+            </div>
+            <button class="filter-btn on"><i data-lucide="eye"></i>Sólo visibles</button>
+            <button class="filter-btn"><i data-lucide="help-circle"></i>Sin revisar</button>
+            <button class="filter-btn" style="margin-left:auto"><i data-lucide="plus"></i>Añadir item</button>
+          </div>
+
+          <!-- Cocina -->
+          <div class="eq-grp">
+            <div class="eq-grp-head">
+              <div class="lc partial" onclick="toggleGrp(this)" aria-label="Seleccionar grupo"></div>
+              <div class="eq-grp-title">Cocina</div>
+              <div class="eq-grp-count">5 de 6</div>
+              <div class="eq-grp-bar"><span style="width:83%"></span></div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Cafetera de cápsulas<span class="muted">Nespresso · cápsulas compatibles dejadas en el armario superior</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Nespresso</span>
+                <div class="eq-attach">
+                  <span class="p has" title="Nota"><i data-lucide="sticky-note"></i></span>
+                  <span class="p has photo" title="Foto"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Horno<span class="muted">Eléctrico · el programa pirolítico está desactivado</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Eléctrico</span>
+                <div class="eq-attach">
+                  <span class="p has"><i data-lucide="sticky-note"></i></span>
+                  <span class="p"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Microondas<span class="muted">En la encimera, junto al fregadero</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Básico</span>
+                <div class="eq-attach">
+                  <span class="p"><i data-lucide="sticky-note"></i></span>
+                  <span class="p has photo"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Lavavajillas</div>
+              <div class="eq-meta">
+                <span class="eq-tag">Bosch</span>
+                <div class="eq-attach">
+                  <span class="p has"><i data-lucide="sticky-note"></i></span>
+                  <span class="p has photo"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item off">
+              <div class="lc" onclick="toggleLc(this)" role="checkbox" aria-checked="false" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Freidora de aire<span class="muted">Sin revisar — ¿hay una en la cocina?</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag warn">Sin revisar</span>
+                <div class="eq-attach">
+                  <span class="p"><i data-lucide="sticky-note"></i></span>
+                  <span class="p"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Batidora de mano</div>
+              <div class="eq-meta">
+                <span class="eq-tag">Básico</span>
+                <div class="eq-attach">
+                  <span class="p"><i data-lucide="sticky-note"></i></span>
+                  <span class="p"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Salón -->
+          <div class="eq-grp">
+            <div class="eq-grp-head">
+              <div class="lc partial" onclick="toggleGrp(this)" aria-label="Seleccionar grupo"></div>
+              <div class="eq-grp-title">Salón</div>
+              <div class="eq-grp-count">3 de 4</div>
+              <div class="eq-grp-bar"><span style="width:75%"></span></div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Smart TV 55"<span class="muted">Netflix y Disney+ con sesión iniciada · cerrar sesión al salir</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Samsung</span>
+                <div class="eq-attach">
+                  <span class="p has"><i data-lucide="sticky-note"></i></span>
+                  <span class="p has photo"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Sofá cama<span class="muted">Para un huésped extra · sábanas en el armario del pasillo</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">3 plazas</span>
+                <div class="eq-attach">
+                  <span class="p has"><i data-lucide="sticky-note"></i></span>
+                  <span class="p"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+            <div class="eq-item off">
+              <div class="lc" onclick="toggleLc(this)" role="checkbox" aria-checked="false" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Consola de videojuegos<span class="muted">No disponible en esta propiedad</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag none">No tiene</span>
+              </div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)" role="checkbox" aria-checked="true" tabindex="0"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Altavoz bluetooth<span class="muted">Sonos Era 100 · mando en la cómoda</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Sonos</span>
+                <div class="eq-attach">
+                  <span class="p has"><i data-lucide="sticky-note"></i></span>
+                  <span class="p has photo"><i data-lucide="camera"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Baño -->
+          <div class="eq-grp">
+            <div class="eq-grp-head">
+              <div class="lc partial" onclick="toggleGrp(this)"></div>
+              <div class="eq-grp-title">Baño</div>
+              <div class="eq-grp-count">2 de 3</div>
+              <div class="eq-grp-bar"><span class="warn" style="width:67%"></span></div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Secador de pelo</div>
+              <div class="eq-meta"><span class="eq-tag">Potente</span></div>
+            </div>
+            <div class="eq-item">
+              <div class="lc on" onclick="toggleLc(this)"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Plancha y tabla<span class="muted">En el armario del pasillo</span></div>
+              <div class="eq-meta">
+                <span class="eq-tag">Básico</span>
+                <div class="eq-attach"><span class="p has"><i data-lucide="sticky-note"></i></span></div>
+              </div>
+            </div>
+            <div class="eq-item off">
+              <div class="lc" onclick="toggleLc(this)"><svg viewBox="0 0 16 16"><polyline points="3,8 7,12 13,4"/></svg></div>
+              <div class="eq-name">Báscula<span class="muted">Sin revisar</span></div>
+              <div class="eq-meta"><span class="eq-tag warn">Sin revisar</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             SISTEMAS
+             ========================================================== -->
+        <div class="page" id="page-sistemas">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Sistemas</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Sistemas de la casa</h1>
+                <p class="pg-sub">Calefacción, aire, persianas, caldera. Documenta aquí lo que no es obvio a primera vista. Cada sistema tendrá su propia tarjeta en la guía del huésped.</p>
+              </div>
+              <div class="pg-actions">
+                <span class="pill pill-blocked"><i data-lucide="alert-triangle"></i>4 de 10 · incompleto</span>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="check-check"></i><b>4</b> publicados</span>
+              <span class="chip"><i data-lucide="pen-line"></i><b>2</b> borrador</span>
+              <span class="chip"><i data-lucide="circle-dashed"></i><b>4</b> sin empezar</span>
+              <span class="chip"><i data-lucide="video"></i><b>1</b> con vídeo</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <!-- AI suggestion -->
+          <div class="ai-card">
+            <div class="ic"><i data-lucide="sparkles"></i></div>
+            <div class="body">
+              <div class="title">La IA puede redactar un borrador para <b>“Cómo funciona la caldera”</b></div>
+              <div class="sub">Detectamos una caldera Vaillant en las especificaciones del edificio. Puedes partir de una plantilla genérica y adaptarla en 2 minutos.</div>
+              <div class="actions">
+                <button class="btn btn-primary" style="padding:6px 12px; font-size:12px"><i data-lucide="wand-2" style="width:12px;height:12px"></i>Generar borrador</button>
+                <button class="btn btn-ghost" style="padding:6px 12px; font-size:12px">Más tarde</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Publicados</div>
+            </div>
+
+            <div class="sys-card">
+              <div class="sys-ic"><i data-lucide="wifi"></i></div>
+              <div class="sys-body">
+                <div class="title">Wi-Fi y red</div>
+                <div class="sub">Credenciales, extensor en el salón, red de invitados.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>248</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i><b>2</b> fotos</span>
+                  <span class="mi"><i data-lucide="message-circle-question"></i>Usado en <b>38</b> respuestas</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-published"><i data-lucide="check"></i>Publicado</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--moss-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="0" transform="rotate(-90 12 12)"/></svg>
+                  100%
+                </span>
+              </div>
+            </div>
+
+            <div class="sys-card">
+              <div class="sys-ic"><i data-lucide="thermometer-sun"></i></div>
+              <div class="sys-body">
+                <div class="title">Aire acondicionado</div>
+                <div class="sub">Dos splits · un mando por habitación · ECO mode recomendado.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>186</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i><b>3</b> fotos</span>
+                  <span class="mi"><i data-lucide="video"></i><b>1</b> vídeo · 23s</span>
+                  <span class="mi warn"><i data-lucide="alert-triangle"></i>Incidencia abierta</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-published"><i data-lucide="check"></i>Publicado</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--moss-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="0" transform="rotate(-90 12 12)"/></svg>
+                  100%
+                </span>
+              </div>
+            </div>
+
+            <div class="sys-card">
+              <div class="sys-ic"><i data-lucide="blinds"></i></div>
+              <div class="sys-body">
+                <div class="title">Persianas eléctricas</div>
+                <div class="sub">Control centralizado · salón tiene mando separado para blackout.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>94</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i><b>1</b> foto</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-published"><i data-lucide="check"></i>Publicado</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--moss-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="0" transform="rotate(-90 12 12)"/></svg>
+                  100%
+                </span>
+              </div>
+            </div>
+
+            <div class="sys-card">
+              <div class="sys-ic"><i data-lucide="lightbulb"></i></div>
+              <div class="sys-body">
+                <div class="title">Iluminación y escenas</div>
+                <div class="sub">Hue en el salón · escenas “Noche” y “Lectura” preconfiguradas.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>142</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i><b>2</b> fotos</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-published"><i data-lucide="check"></i>Publicado</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--moss-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="0" transform="rotate(-90 12 12)"/></svg>
+                  100%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Borrador</div>
+            </div>
+
+            <div class="sys-card draft">
+              <div class="sys-ic"><i data-lucide="flame"></i></div>
+              <div class="sys-body">
+                <div class="title">Caldera y agua caliente</div>
+                <div class="sub">Borrador · falta indicar tiempo de espera para agua caliente.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>64</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i>Sin fotos</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-draft"><i data-lucide="pen-line"></i>Borrador</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--amber-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="22" transform="rotate(-90 12 12)"/></svg>
+                  65%
+                </span>
+              </div>
+            </div>
+
+            <div class="sys-card draft">
+              <div class="sys-ic"><i data-lucide="waves"></i></div>
+              <div class="sys-body">
+                <div class="title">Suelo radiante</div>
+                <div class="sub">Borrador · hace falta una foto del termostato y una línea sobre tiempos.</div>
+                <div class="sys-meta">
+                  <span class="mi"><i data-lucide="file-text"></i><b>32</b> palabras</span>
+                  <span class="mi"><i data-lucide="camera"></i>Sin fotos</span>
+                </div>
+              </div>
+              <div class="sys-state">
+                <span class="pill pill-draft"><i data-lucide="pen-line"></i>Borrador</span>
+                <span class="ring-pct">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="var(--ink-12)" stroke-width="2.4"/><circle cx="12" cy="12" r="10" fill="none" stroke="var(--amber-500)" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="62.8" stroke-dashoffset="34.5" transform="rotate(-90 12 12)"/></svg>
+                  45%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">03</span>Sin empezar</div>
+              <a class="section-action">Usa plantillas<i data-lucide="arrow-up-right" style="width:12px;height:12px"></i></a>
+            </div>
+
+            <div class="sys-card empty">
+              <div class="sys-ic"><i data-lucide="trash-2"></i></div>
+              <div class="sys-body">
+                <div class="title">Recogida de basura y reciclaje</div>
+                <div class="sub">Días de recogida, ubicación de los contenedores, código de colores.</div>
+                <div class="sys-meta"><span class="mi"><i data-lucide="clock-4"></i>Estimado <b>3 min</b></span></div>
+              </div>
+              <div class="sys-state">
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px"><i data-lucide="plus" style="width:12px;height:12px"></i>Empezar</button>
+              </div>
+            </div>
+
+            <div class="sys-card empty">
+              <div class="sys-ic"><i data-lucide="shield-check"></i></div>
+              <div class="sys-body">
+                <div class="title">Alarma y seguridad</div>
+                <div class="sub">¿La casa tiene alarma? Código de activación y desactivación.</div>
+                <div class="sys-meta"><span class="mi"><i data-lucide="clock-4"></i>Estimado <b>2 min</b></span></div>
+              </div>
+              <div class="sys-state">
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px"><i data-lucide="plus" style="width:12px;height:12px"></i>Empezar</button>
+              </div>
+            </div>
+
+            <div class="sys-card empty">
+              <div class="sys-ic"><i data-lucide="car"></i></div>
+              <div class="sys-body">
+                <div class="title">Plaza de garaje</div>
+                <div class="sub">Dimensiones, acceso, mando a distancia.</div>
+                <div class="sys-meta"><span class="mi"><i data-lucide="clock-4"></i>Estimado <b>3 min</b></span></div>
+              </div>
+              <div class="sys-state">
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px"><i data-lucide="plus" style="width:12px;height:12px"></i>Empezar</button>
+              </div>
+            </div>
+
+            <div class="sys-card empty">
+              <div class="sys-ic"><i data-lucide="washing-machine"></i></div>
+              <div class="sys-body">
+                <div class="title">Lavadora y tendedero</div>
+                <div class="sub">Programas recomendados · dónde tender.</div>
+                <div class="sys-meta"><span class="mi"><i data-lucide="clock-4"></i>Estimado <b>4 min</b></span></div>
+              </div>
+              <div class="sys-state">
+                <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px"><i data-lucide="plus" style="width:12px;height:12px"></i>Empezar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             NORMAS
+             ========================================================== -->
+        <div class="page" id="page-normas">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Normas</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Normas de la casa</h1>
+                <p class="pg-sub">Lo que puede y no puede hacer el huésped. Escribe con el mismo tono con el que hablarías en persona — firme y cálido, no burocrático.</p>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="check-check"></i><b>9</b> definidas</span>
+              <span class="chip"><i data-lucide="help-circle"></i><b>2</b> sin decidir</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Horarios y silencio</div>
+            </div>
+            <div class="rule-narr">
+              <div class="rn-ic"><i data-lucide="moon"></i></div>
+              <div>
+                <div class="t">Horas de silencio</div>
+                <div class="s">Los vecinos son sensibles al ruido después de las 22h.</div>
+              </div>
+              <div class="val">22:00 – 08:00</div>
+            </div>
+            <div class="rule-narr">
+              <div class="rn-ic"><i data-lucide="clock-4"></i></div>
+              <div>
+                <div class="t">Check-in / Check-out</div>
+                <div class="s">Flexible con aviso previo.</div>
+              </div>
+              <div class="val">16:00 / 11:00</div>
+            </div>
+            <div class="rule-narr">
+              <div class="rn-ic"><i data-lucide="users"></i></div>
+              <div>
+                <div class="t">Visitas</div>
+                <div class="s">Puntuales sí; pernoctar fuera del parte no.</div>
+              </div>
+              <div class="val">Máx. 2 invitados</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Qué se permite</div>
+            </div>
+            <div class="rules-grid">
+              <div class="rule-card" data-state="no">
+                <div class="rule-ic"><i data-lucide="cigarette-off"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Fumar</div>
+                  <div class="rule-s">No, tampoco en la terraza</div>
+                </div>
+                <div class="tri">
+                  <button><i data-lucide="check"></i></button>
+                  <button class="on no"><i data-lucide="x"></i></button>
+                  <button><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+              <div class="rule-card" data-state="yes">
+                <div class="rule-ic"><i data-lucide="dog"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Mascotas</div>
+                  <div class="rule-s">Pequeñas y con aviso previo</div>
+                </div>
+                <div class="tri">
+                  <button class="on yes"><i data-lucide="check"></i></button>
+                  <button><i data-lucide="x"></i></button>
+                  <button><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+              <div class="rule-card" data-state="no">
+                <div class="rule-ic"><i data-lucide="party-popper"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Fiestas</div>
+                  <div class="rule-s">El edificio no lo permite</div>
+                </div>
+                <div class="tri">
+                  <button><i data-lucide="check"></i></button>
+                  <button class="on no"><i data-lucide="x"></i></button>
+                  <button><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+              <div class="rule-card" data-state="yes">
+                <div class="rule-ic"><i data-lucide="baby"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Niños</div>
+                  <div class="rule-s">Sí — cuna disponible</div>
+                </div>
+                <div class="tri">
+                  <button class="on yes"><i data-lucide="check"></i></button>
+                  <button><i data-lucide="x"></i></button>
+                  <button><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+              <div class="rule-card" data-state="maybe">
+                <div class="rule-ic"><i data-lucide="flame"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Cocinar con humo</div>
+                  <div class="rule-s">Hay campana, pero abre ventana</div>
+                </div>
+                <div class="tri">
+                  <button><i data-lucide="check"></i></button>
+                  <button><i data-lucide="x"></i></button>
+                  <button class="on maybe"><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+              <div class="rule-card" data-state="no">
+                <div class="rule-ic"><i data-lucide="flame-kindling"></i></div>
+                <div class="rule-body">
+                  <div class="rule-t">Velas o incienso</div>
+                  <div class="rule-s">No — la alarma es sensible</div>
+                </div>
+                <div class="tri">
+                  <button><i data-lucide="check"></i></button>
+                  <button class="on no"><i data-lucide="x"></i></button>
+                  <button><i data-lucide="help-circle"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             CONTACTOS
+             ========================================================== -->
+        <div class="page" id="page-contactos">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Contactos</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Contactos</h1>
+                <p class="pg-sub">Quién responde, quién limpia, quién arregla. Mantén esta lista al día — es lo primero que mira el huésped si algo va mal.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i>Añadir contacto</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="user-round"></i><b>1</b> anfitrión</span>
+              <span class="chip"><i data-lucide="siren"></i><b>3</b> emergencia</span>
+              <span class="chip"><i data-lucide="wrench"></i><b>4</b> servicios</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Anfitrión</div>
+            </div>
+            <div class="cn-grid">
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av">JB</div>
+                  <div class="cn-body">
+                    <div class="cn-name">Javier Barberá</div>
+                    <div class="cn-role"><b>Anfitrión principal</b> · Responde en &lt; 30 min</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>+34 666 12 34 56</div>
+                <div class="cn-actions">
+                  <button class="primary"><i data-lucide="phone"></i>Llamar</button>
+                  <button><i data-lucide="message-circle"></i>WhatsApp</button>
+                  <button><i data-lucide="mail"></i>Email</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Emergencia</div>
+              <a class="section-action">Siempre visibles en la guía</a>
+            </div>
+            <div class="cn-grid">
+              <div class="cn-card emergency">
+                <div class="cn-top">
+                  <div class="cn-av emergency"><i data-lucide="siren" style="width:18px;height:18px"></i></div>
+                  <div class="cn-body">
+                    <div class="cn-name">Emergencias</div>
+                    <div class="cn-role"><b>112</b> · Bomberos, ambulancia, policía</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>112</div>
+                <div class="cn-actions"><button class="primary"><i data-lucide="phone"></i>Llamar</button></div>
+              </div>
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av"><i data-lucide="hospital" style="width:18px;height:18px"></i></div>
+                  <div class="cn-body">
+                    <div class="cn-name">Hospital La Fe</div>
+                    <div class="cn-role"><b>Urgencias</b> · 3 km</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>961 244 000</div>
+                <div class="cn-actions">
+                  <button><i data-lucide="phone"></i>Llamar</button>
+                  <button><i data-lucide="map-pin"></i>Ir</button>
+                </div>
+              </div>
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av"><i data-lucide="pill" style="width:18px;height:18px"></i></div>
+                  <div class="cn-body">
+                    <div class="cn-name">Farmacia 24h</div>
+                    <div class="cn-role"><b>Farmacia Cuenca</b> · A 400 m</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>963 412 876</div>
+                <div class="cn-actions">
+                  <button><i data-lucide="phone"></i>Llamar</button>
+                  <button><i data-lucide="map-pin"></i>Ir</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">03</span>Servicios</div>
+            </div>
+            <div class="cn-grid">
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av service">MC</div>
+                  <div class="cn-body">
+                    <div class="cn-name">María Campos</div>
+                    <div class="cn-role"><b>Limpieza</b> · Lunes y viernes</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>+34 622 44 18 02</div>
+                <div class="cn-actions">
+                  <button><i data-lucide="phone"></i>Llamar</button>
+                  <button><i data-lucide="message-circle"></i>Mensaje</button>
+                </div>
+              </div>
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av service">PR</div>
+                  <div class="cn-body">
+                    <div class="cn-name">Pedro Ramírez</div>
+                    <div class="cn-role"><b>Mantenimiento</b> · Fontanero y electricista</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>+34 654 91 23 45</div>
+                <div class="cn-actions">
+                  <button><i data-lucide="phone"></i>Llamar</button>
+                  <button><i data-lucide="message-circle"></i>Mensaje</button>
+                </div>
+              </div>
+              <div class="cn-card">
+                <div class="cn-top">
+                  <div class="cn-av service"><i data-lucide="wifi" style="width:16px;height:16px"></i></div>
+                  <div class="cn-body">
+                    <div class="cn-name">Movistar</div>
+                    <div class="cn-role"><b>Internet y TV</b> · Soporte técnico</div>
+                  </div>
+                </div>
+                <div class="cn-phone"><i data-lucide="phone"></i>1004</div>
+                <div class="cn-actions"><button><i data-lucide="phone"></i>Llamar</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             AVERÍAS
+             ========================================================== -->
+        <div class="page" id="page-averias">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Mantenimiento</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Averías</h1>
+                <p class="pg-sub">Lo que los huéspedes han reportado y lo que tú has detectado. Lleva aquí cada incidencia desde que aparece hasta que se resuelve.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-secondary"><i data-lucide="filter" style="width:13px;height:13px"></i>Filtrar</button>
+                <button class="btn btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i>Nueva avería</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="alert-triangle"></i><b>1</b> crítica</span>
+              <span class="chip"><i data-lucide="circle-alert"></i><b>2</b> abiertas</span>
+              <span class="chip"><i data-lucide="check-check"></i><b>8</b> resueltas</span>
+              <span class="chip"><i data-lucide="clock"></i>Tiempo medio <b>2.3 d</b></span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Abiertas</div>
+              <a class="section-action">Ver todas</a>
+            </div>
+            <div class="incidents">
+              <div class="inc critical">
+                <div class="inc-ic"><i data-lucide="thermometer-sun"></i></div>
+                <div class="inc-body">
+                  <div class="t">Aire acondicionado no enfría — Loft Benimaclet</div>
+                  <div class="s">Reportado por Marc Roig (estancia activa). El split del salón suelta aire pero no baja la temperatura. Mensaje recibido esta mañana.</div>
+                  <div class="meta">
+                    <span><i data-lucide="map-pin"></i><b>Loft Benimaclet</b></span>
+                    <span><i data-lucide="user-round"></i>Marc Roig</span>
+                    <span><i data-lucide="message-circle"></i>Conversación <b>#1248</b></span>
+                    <span><i data-lucide="wrench"></i>Asignado a <b>Pedro Ramírez</b></span>
+                  </div>
+                </div>
+                <div class="inc-state">
+                  <span class="pill pill-blocked"><i data-lucide="alert-triangle"></i>Crítica</span>
+                  <span class="age">2 h 14 m</span>
+                </div>
+              </div>
+
+              <div class="inc high">
+                <div class="inc-ic"><i data-lucide="droplets"></i></div>
+                <div class="inc-body">
+                  <div class="t">Goteo en el grifo de la cocina — Apartamento Ruzafa</div>
+                  <div class="s">Detectado en la última limpieza. No es urgente para el huésped actual, pero debería revisarse antes del siguiente check-in del sábado.</div>
+                  <div class="meta">
+                    <span><i data-lucide="map-pin"></i><b>Apartamento Ruzafa</b></span>
+                    <span><i data-lucide="calendar"></i>Deadline sábado</span>
+                    <span><i data-lucide="user-round"></i>Asignado a <b>Pedro Ramírez</b></span>
+                  </div>
+                </div>
+                <div class="inc-state">
+                  <span class="pill pill-draft"><i data-lucide="circle-alert"></i>Alta</span>
+                  <span class="age">1 d</span>
+                </div>
+              </div>
+
+              <div class="inc normal">
+                <div class="inc-ic"><i data-lucide="lightbulb"></i></div>
+                <div class="inc-body">
+                  <div class="t">Bombilla fundida en el pasillo — Casa del Carmen</div>
+                  <div class="s">Detectada por Sofie Klaassen. Sustituible en la próxima rotación de limpieza, no afecta a la estancia.</div>
+                  <div class="meta">
+                    <span><i data-lucide="map-pin"></i><b>Casa del Carmen</b></span>
+                    <span><i data-lucide="clock-4"></i>En cola</span>
+                  </div>
+                </div>
+                <div class="inc-state">
+                  <span class="pill pill-review"><i data-lucide="circle-dot"></i>Normal</span>
+                  <span class="age">3 d</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">02</span>Resueltas recientemente</div>
+            </div>
+            <div class="incidents">
+              <div class="inc resolved">
+                <div class="inc-ic"><i data-lucide="lock"></i></div>
+                <div class="inc-body">
+                  <div class="t">Código caja de llaves no funcionaba — Apartamento Ruzafa</div>
+                  <div class="s">Resuelto ayer. Se cambió la combinación y se envió el nuevo código a la huésped.</div>
+                  <div class="meta">
+                    <span><i data-lucide="check"></i>Resuelto en <b>18 min</b></span>
+                    <span><i data-lucide="user-round"></i>Javier Barberá</span>
+                  </div>
+                </div>
+                <div class="inc-state">
+                  <span class="pill pill-published"><i data-lucide="check"></i>Resuelto</span>
+                  <span class="age">Ayer</span>
+                </div>
+              </div>
+              <div class="inc resolved">
+                <div class="inc-ic"><i data-lucide="wifi"></i></div>
+                <div class="inc-body">
+                  <div class="t">Wi-Fi intermitente en el dormitorio — Casa del Carmen</div>
+                  <div class="s">Se instaló extensor. El router se movió al salón. Confirmado por el siguiente huésped.</div>
+                  <div class="meta">
+                    <span><i data-lucide="check"></i>Resuelto en <b>3 d</b></span>
+                    <span><i data-lucide="user-round"></i>Pedro Ramírez</span>
+                  </div>
+                </div>
+                <div class="inc-state">
+                  <span class="pill pill-published"><i data-lucide="check"></i>Resuelto</span>
+                  <span class="age">1 sem</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================================
+             GUÍA LOCAL
+             ========================================================== -->
+        <div class="page" id="page-guialocal">
+          <section class="pg">
+            <div class="pg-eyebrow">Propiedad · Guía local</div>
+            <div class="pg-row">
+              <div>
+                <h1 class="pg-title">Guía local</h1>
+                <p class="pg-sub">Tus sitios favoritos del barrio, contados con tu voz. Los huéspedes confían más en tres recomendaciones personales que en una lista de veinte.</p>
+              </div>
+              <div class="pg-actions">
+                <button class="btn btn-secondary"><i data-lucide="wand-2" style="width:13px;height:13px"></i>Sugerencias IA</button>
+                <button class="btn btn-primary"><i data-lucide="plus" style="width:13px;height:13px"></i>Añadir sitio</button>
+              </div>
+            </div>
+            <div class="pg-chips">
+              <span class="chip"><i data-lucide="map-pin"></i><b>12</b> sitios</span>
+              <span class="chip"><i data-lucide="heart"></i><b>4</b> favoritos</span>
+              <span class="chip"><i data-lucide="footprints"></i>Todos a <b>&lt; 10 min</b></span>
+              <span class="chip"><i data-lucide="clock-4"></i>Actualizado hace 2 sem</span>
+            </div>
+            <div class="pg-rule"></div>
+          </section>
+
+          <div class="gl-head">
+            <div class="gl-map">
+              <div class="road" style="top:30%; left:10%; width:80%; transform:rotate(-4deg)"></div>
+              <div class="road" style="top:60%; left:15%; width:70%; transform:rotate(2deg)"></div>
+              <div class="road" style="top:20%; left:40%; height:70%; width:3px;"></div>
+              <div class="gl-pin home" style="top:50%; left:50%"><i data-lucide="home"></i></div>
+              <div class="gl-pin food" style="top:32%; left:28%"><i data-lucide="utensils"></i></div>
+              <div class="gl-pin food" style="top:64%; left:65%"><i data-lucide="utensils"></i></div>
+              <div class="gl-pin cafe" style="top:38%; left:70%"><i data-lucide="coffee"></i></div>
+              <div class="gl-pin cafe" style="top:68%; left:32%"><i data-lucide="coffee"></i></div>
+              <div class="gl-pin culture" style="top:22%; left:56%"><i data-lucide="landmark"></i></div>
+              <div class="gl-pin shop" style="top:75%; left:50%"><i data-lucide="shopping-bag"></i></div>
+              <div style="position:absolute; bottom:10px; left:12px; font-size:11px; color:var(--fg-3); background:var(--bg-2); padding:4px 8px; border-radius:6px; border:1px solid var(--border)">Ruzafa · 500 m</div>
+            </div>
+            <div class="gl-cats">
+              <div class="gl-cat"><div class="ic" style="background:var(--clay-500)"><i data-lucide="utensils"></i></div><div><div class="name">Comer</div><div class="c">5 sitios</div></div></div>
+              <div class="gl-cat"><div class="ic" style="background:var(--amber-500)"><i data-lucide="coffee"></i></div><div><div class="name">Café y desayuno</div><div class="c">3 sitios</div></div></div>
+              <div class="gl-cat"><div class="ic" style="background:var(--moss-500)"><i data-lucide="landmark"></i></div><div><div class="name">Cultura</div><div class="c">2 sitios</div></div></div>
+              <div class="gl-cat"><div class="ic" style="background:var(--accent-500)"><i data-lucide="shopping-bag"></i></div><div><div class="name">Compras</div><div class="c">1 sitio</div></div></div>
+              <div class="gl-cat" style="grid-column: span 2; border-style:dashed; color:var(--fg-3); justify-content:center; text-align:center"><i data-lucide="plus" style="width:14px;height:14px"></i><div class="name" style="color:var(--fg-2)">Añadir categoría</div></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-head">
+              <div class="section-title"><span class="num">01</span>Tus favoritos</div>
+              <a class="section-action">Aparecen destacados en la guía</a>
+            </div>
+            <div class="rec-grid">
+              <div class="rec">
+                <div class="rec-img" style="background: linear-gradient(135deg, #B64A38, #7A2E22);">
+                  <i data-lucide="utensils" style="color:rgba(255,255,255,.4)"></i>
+                  <span class="tag"><i data-lucide="heart" style="fill:var(--clay-500)"></i>Favorito</span>
+                  <span class="dist">4 min a pie</span>
+                </div>
+                <div class="rec-body">
+                  <div class="title">Ricard Camarena Bar<span class="star"><i data-lucide="star"></i>4.8</span></div>
+                  <div class="sub">Mercado · cocina valenciana · €€€</div>
+                  <div class="note">"Reserva con tiempo. Pide la coca de sardina y cualquier arroz de la pizarra. Si vas entre semana a las 13:30, suele haber sitio en la barra."</div>
+                  <div class="meta"><span><i data-lucide="map-pin"></i>Calle del Doctor Sumsi, 4</span><span><i data-lucide="clock-4"></i>13:00–15:30</span></div>
+                </div>
+              </div>
+              <div class="rec">
+                <div class="rec-img" style="background: linear-gradient(135deg, #B7793A, #7A4A18);">
+                  <i data-lucide="coffee" style="color:rgba(255,255,255,.4)"></i>
+                  <span class="tag"><i data-lucide="heart" style="fill:var(--clay-500)"></i>Favorito</span>
+                  <span class="dist">2 min a pie</span>
+                </div>
+                <div class="rec-body">
+                  <div class="title">Dulce de Leche<span class="star"><i data-lucide="star"></i>4.6</span></div>
+                  <div class="sub">Cafetería de barrio · €</div>
+                  <div class="note">"El mejor desayuno del barrio. Café bien hecho, tostada de tomate y aguacate con huevo. Terraza tranquila los sábados por la mañana."</div>
+                  <div class="meta"><span><i data-lucide="map-pin"></i>Calle Puerto Rico, 22</span><span><i data-lucide="clock-4"></i>8:00–20:00</span></div>
+                </div>
+              </div>
+              <div class="rec">
+                <div class="rec-img" style="background: linear-gradient(135deg, #4F7A52, #2C4A2E);">
+                  <i data-lucide="landmark" style="color:rgba(255,255,255,.4)"></i>
+                  <span class="tag"><i data-lucide="heart" style="fill:var(--clay-500)"></i>Favorito</span>
+                  <span class="dist">8 min a pie</span>
+                </div>
+                <div class="rec-body">
+                  <div class="title">Mercado de Ruzafa<span class="star"><i data-lucide="star"></i>4.7</span></div>
+                  <div class="sub">Mercado tradicional · parada obligada</div>
+                  <div class="note">"Para el café con tostada: Bar Central. Pescado del día en la parada de Marisol. Martes a sábado hasta las 14:30."</div>
+                  <div class="meta"><span><i data-lucide="map-pin"></i>Plaza Baró de Cortes, s/n</span><span><i data-lucide="clock-4"></i>Mar–Sáb 7:30–14:30</span></div>
+                </div>
+              </div>
+              <div class="rec">
+                <div class="rec-img" style="background: linear-gradient(135deg, #3A5070, #1E2A3A);">
+                  <i data-lucide="utensils" style="color:rgba(255,255,255,.4)"></i>
+                  <span class="tag"><i data-lucide="heart" style="fill:var(--clay-500)"></i>Favorito</span>
+                  <span class="dist">6 min a pie</span>
+                </div>
+                <div class="rec-body">
+                  <div class="title">Canalla Bistro<span class="star"><i data-lucide="star"></i>4.5</span></div>
+                  <div class="sub">Fusión · Ricard Camarena · €€</div>
+                  <div class="note">"Plan más relajado que el Bar. Carta pequeña que cambia cada mes. La ternera con kimchi no falla."</div>
+                  <div class="meta"><span><i data-lucide="map-pin"></i>Calle Maestro José Serrano, 5</span><span><i data-lucide="clock-4"></i>13:30–16:00, 20:30–23:00</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- Rail (contextual: shows page-specific progress) -->
+      <aside class="rail">
+        <div class="rail-head rail-head-block">
+          <div class="rail-title" id="railTitle">Equipamiento</div>
+          <div class="rail-pct" id="railPct">62%</div>
+        </div>
+        <div class="rail-bar"><span id="railBar" style="width:62%"></span></div>
+
+        <div class="rail-block">
+          <div class="rail-block-title">Por categoría</div>
+          <div class="rail-steps" id="railCats"></div>
+        </div>
+
+        <div class="rail-divider"></div>
+
+        <div class="rail-block">
+          <div class="rail-block-title">Atajos</div>
+          <a class="rail-link"><i data-lucide="eye"></i>Vista huésped<span class="hint">V</span></a>
+          <a class="rail-link"><i data-lucide="brain"></i>Probar asistente<span class="hint">A</span></a>
+          <a class="rail-link"><i data-lucide="wand-2"></i>Sugerencias IA<span class="hint">S</span></a>
+        </div>
+
+        <div class="rail-block" id="railTip">
+          <div class="rail-block-title">Consejo</div>
+          <div style="font-size:12.5px; color:var(--fg-2); line-height:1.55" id="railTipBody">Una frase personal rinde más que un catálogo. Cuenta por qué <b>tú</b> vas a ese sitio.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // --------- Ring indicators in sidebar -----------------------
+  document.querySelectorAll('[data-ring]').forEach(el => {
+    const v = parseFloat(el.dataset.ring);
+    const color = v >= 0.9 ? 'var(--moss-500)' : v >= 0.6 ? 'var(--accent-500)' : 'var(--amber-500)';
+    const C = 2 * Math.PI * 5.5;
+    el.innerHTML = `<svg viewBox="0 0 14 14" width="14" height="14">
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--ink-24)" stroke-width="1.5"/>
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"
+              stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - v)}" transform="rotate(-90 7 7)"/>
+    </svg>`;
+  });
+
+  // --------- Checkbox interactions ----------------------------
+  window.toggleLc = function (el) {
+    const on = el.classList.toggle('on');
+    el.setAttribute('aria-checked', on);
+    const item = el.closest('.eq-item');
+    if (item) item.classList.toggle('off', !on);
+  };
+  window.toggleGrp = function (el) {
+    el.classList.toggle('partial');
+    el.classList.toggle('on');
+  };
+
+  // --------- Tri-state (Normas) -------------------------------
+  document.querySelectorAll('.tri').forEach(tri => {
+    tri.addEventListener('click', (e) => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      tri.querySelectorAll('button').forEach(b => b.classList.remove('on', 'yes', 'no', 'maybe'));
+      const kind = btn.querySelector('i')?.getAttribute('data-lucide');
+      let cls = kind === 'check' ? 'yes' : kind === 'x' ? 'no' : 'maybe';
+      btn.classList.add('on', cls);
+      const card = tri.closest('.rule-card');
+      if (card) card.setAttribute('data-state', cls);
+    });
+  });
+
+  // --------- Page switching -----------------------------------
+  const PAGE_CONFIG = {
+    propiedades: {
+      crumb: 'Propiedades',
+      railTitle: 'Cartera',
+      railPct: 75,
+      cats: [
+        { lbl: 'Apartamento Ruzafa', status: 'cur', count: '78%' },
+        { lbl: 'Casa del Carmen', status: 'done', count: '92%' },
+        { lbl: 'Loft Benimaclet', status: '', count: '34%' },
+      ],
+      tip: 'Una propiedad lista (>80%) se publica con menos rebotes y genera menos preguntas en los primeros 3 días.',
+    },
+    llegada: {
+      crumb: 'Llegada y acceso',
+      railTitle: 'Llegada',
+      railPct: 78,
+      cats: [
+        { lbl: 'Cómo llegar', status: 'done', count: '' },
+        { lbl: 'Entrada al edificio', status: 'done', count: '' },
+        { lbl: 'Abrir la puerta', status: 'cur', count: 'falta foto' },
+        { lbl: 'Primeros minutos', status: '', count: 'vacío' },
+      ],
+      tip: 'El momento más frágil es abrir la puerta. Una foto del teclado marcando la secuencia vale más que 50 palabras.',
+    },
+    espacios: {
+      crumb: 'Espacios',
+      railTitle: 'Espacios',
+      railPct: 85,
+      cats: [
+        { lbl: 'Salón', status: 'done', count: '100%' },
+        { lbl: 'Cocina', status: 'done', count: '90%' },
+        { lbl: 'Dorm. principal', status: 'done', count: '85%' },
+        { lbl: 'Dorm. secundario', status: 'cur', count: '70%' },
+        { lbl: 'Baño', status: 'done', count: '90%' },
+        { lbl: 'Terraza', status: '', count: '25%' },
+      ],
+      tip: 'Una foto principal por espacio es el mínimo. Si tienes terraza, haz que sea el hero; vende la experiencia, no los m².',
+    },
+    equipamiento: {
+      crumb: 'Equipamiento',
+      railTitle: 'Equipamiento',
+      railPct: 62,
+      cats: [
+        { lbl: 'Cocina', status: 'cur', count: '5/6' },
+        { lbl: 'Salón', status: 'cur', count: '3/4' },
+        { lbl: 'Baño', status: 'cur', count: '2/3' },
+        { lbl: 'Dormitorio', status: 'cur', count: '1/3' },
+        { lbl: 'Exterior', status: '', count: '0/2' },
+      ],
+      tip: 'Si no es obvio cómo se usa (cafetera, freidora, TV), añade una foto o un vídeo de 10 segundos. Menos preguntas, mejor estancia.',
+    },
+    sistemas: {
+      crumb: 'Sistemas',
+      railTitle: 'Sistemas',
+      railPct: 40,
+      cats: [
+        { lbl: 'Wi-Fi y red', status: 'done', count: '' },
+        { lbl: 'Aire acondicionado', status: 'done', count: '' },
+        { lbl: 'Persianas', status: 'done', count: '' },
+        { lbl: 'Iluminación', status: 'done', count: '' },
+        { lbl: 'Caldera', status: 'cur', count: 'borrador' },
+        { lbl: 'Suelo radiante', status: 'cur', count: 'borrador' },
+        { lbl: 'Basura', status: '', count: 'vacío' },
+        { lbl: 'Alarma', status: '', count: 'vacío' },
+      ],
+      tip: 'Un vídeo corto — 20 segundos — funciona mejor que tres fotos cuando el sistema es delicado.',
+    },
+    normas: {
+      crumb: 'Normas',
+      railTitle: 'Normas',
+      railPct: 70,
+      cats: [
+        { lbl: 'Horarios', status: 'done', count: '' },
+        { lbl: 'Fumar / mascotas', status: 'done', count: '' },
+        { lbl: 'Fiestas', status: 'done', count: '' },
+        { lbl: 'Velas e incienso', status: 'cur', count: 'revisar' },
+        { lbl: 'Limpieza al salir', status: '', count: 'vacío' },
+      ],
+      tip: 'Las normas funcionan mejor cuando explicas el <b>por qué</b>. "Silencio a partir de las 22h porque los vecinos duermen temprano" pesa más que una prohibición seca.',
+    },
+    contactos: {
+      crumb: 'Contactos',
+      railTitle: 'Contactos',
+      railPct: 90,
+      cats: [
+        { lbl: 'Anfitrión', status: 'done', count: '' },
+        { lbl: 'Emergencias', status: 'done', count: '3' },
+        { lbl: 'Servicios', status: 'done', count: '3' },
+        { lbl: 'Llaves vecino', status: 'cur', count: 'opcional' },
+      ],
+      tip: 'Un número directo de anfitrión con horario claro de respuesta es la diferencia entre una reseña buena y una excelente.',
+    },
+    guialocal: {
+      crumb: 'Guía local',
+      railTitle: 'Guía local',
+      railPct: 50,
+      cats: [
+        { lbl: 'Comer', status: 'cur', count: '5 sitios' },
+        { lbl: 'Café y desayuno', status: 'cur', count: '3 sitios' },
+        { lbl: 'Cultura', status: 'cur', count: '2 sitios' },
+        { lbl: 'Compras', status: 'cur', count: '1 sitio' },
+        { lbl: 'Vida nocturna', status: '', count: 'vacío' },
+        { lbl: 'Playa', status: '', count: 'vacío' },
+      ],
+      tip: 'Una frase personal rinde más que un catálogo. Cuenta por qué <b>tú</b> vas a ese sitio.',
+    },
+    averias: {
+      crumb: 'Averías',
+      railTitle: 'Averías',
+      railPct: 55,
+      cats: [
+        { lbl: 'Crítica · abierta', status: 'cur', count: '1' },
+        { lbl: 'Alta · abierta', status: 'cur', count: '1' },
+        { lbl: 'Normal · cola', status: 'cur', count: '1' },
+        { lbl: 'Resueltas 30d', status: 'done', count: '8' },
+      ],
+      tip: 'Una avería documentada con foto se resuelve en la mitad de tiempo. Enseña al huésped a adjuntar imagen desde el chat.',
+    },
+  };
+
+  function switchPage(p) {
+    const cfg = PAGE_CONFIG[p]; if (!cfg) return;
+    document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + p));
+    document.getElementById('crumbCur').textContent = cfg.crumb;
+    document.getElementById('railTitle').textContent = cfg.railTitle;
+    document.getElementById('railPct').textContent = cfg.railPct + '%';
+    document.getElementById('railBar').style.width = cfg.railPct + '%';
+    document.getElementById('railTipBody').innerHTML = cfg.tip;
+
+    document.querySelectorAll('.sidebar .sb-item').forEach(a => a.classList.remove('active'));
+    const sbHit = document.querySelector(`.sidebar .nav-link[data-page="${p}"]`);
+    if (sbHit) sbHit.classList.add('active');
+
+    const railCats = document.getElementById('railCats');
+    railCats.innerHTML = cfg.cats.map(c =>
+      `<div class="rail-step ${c.status}"><div class="node">${c.status === 'done' ? '<i data-lucide="check"></i>' : ''}</div><div class="lbl">${c.lbl}</div><div class="count">${c.count}</div></div>`
+    ).join('');
+    lucide.createIcons();
+
+    // Close mobile nav on navigation
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sbBackdrop').classList.remove('open');
+    document.documentElement.scrollTop = 0;
+
+    localStorage.setItem('op_subpage', p);
+  }
+
+  document.querySelectorAll('.nav-link').forEach(a => {
+    a.addEventListener('click', (e) => { e.preventDefault(); switchPage(a.dataset.page); });
+  });
+
+  // --------- Mobile nav --------------------------------------
+  const sb = document.getElementById('sidebar');
+  const sbBg = document.getElementById('sbBackdrop');
+  document.getElementById('navToggle').addEventListener('click', () => {
+    sb.classList.toggle('open');
+    sbBg.classList.toggle('open');
+  });
+  sbBg.addEventListener('click', () => {
+    sb.classList.remove('open');
+    sbBg.classList.remove('open');
+  });
+
+  // Boot
+  const initial = localStorage.getItem('op_subpage') || 'equipamiento';
+  switchPage(initial);
+</script>
+</body>
+</html>

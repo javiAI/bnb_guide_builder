@@ -6,7 +6,7 @@
 
 ## 1. Snapshot en 30 segundos
 
-- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). Estado: Fases 8–15 ✅ cerradas (hasta 15E, PR #92, `fc39482`). Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`**. Fase 16 (Liora Design Replatform, 7 ramas 16A-G) está **bloqueada por entrega del paquete de diseño** y no bloquea ningún trabajo funcional restante. Reglas anti-legacy aplicables desde ya: `docs/ARCHITECTURE_OVERVIEW.md` §14.
+- Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md). Estado: Fases 8–15 ✅ cerradas (hasta 15E, PR #92, `fc39482`). Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`**. Fase 16 (Liora Design Replatform, 7 ramas 16A-G) está **lista para arrancar** — paquete entregado en `design-system/` (kebab, trackeado en Git, validado por `npm run validate:design-system` en CI). Reglas anti-legacy aplicables desde ya: `docs/ARCHITECTURE_OVERVIEW.md` §14.
 - Estado vivo: [ROADMAP.md](ROADMAP.md) (tabla + "Progreso Fase X" por rama).
 - Research base congelado v1.0 (referenciar por línea, no copiar):
   - [research/GUEST_GUIDE_SPEC.md](research/GUEST_GUIDE_SPEC.md)
@@ -112,7 +112,7 @@ Subagentes: `Explore` (búsqueda cross-archivo >3 queries), `code-explorer` (tra
 
 Context7 (MCP) se activa auto — no invocar explícitamente salvo que falle.
 
-**Skills `/liora-*`**: **no disponibles**. Se crean al arrancar rama 16A junto con los docs `docs/LIORA_*.md`. Ver `docs/MASTER_PLAN_V2.md` § FASE 16.
+**Skills `/liora-*` y docs `docs/LIORA_*.md`**: **no creados todavía**. Se crean en 16A/B/C según corresponda. Ver `docs/MASTER_PLAN_V2.md` § FASE 16. Antes de arrancar cualquier rama Liora, leer `design-system/docs/DESIGN_MIGRATION.md` (legacy → semantic mapping + per-branch gates).
 
 ---
 
@@ -130,13 +130,13 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 
 ## 10. Próxima rama (mantener actualizado al hacer merge)
 
-**Estado tras merge de `chore/post-fase-15-docs-sync`**: wait-state explícito hasta entrega del paquete Liora. La fila funcional del plan original está esencialmente cerrada — Fases 8–15 ✅ completas, Fase 16 bloqueada.
+**Estado tras merge de `chore/plan-update-liora`**: paquete Liora trackeado en Git en `design-system/`, §FASE 16 reescrito con 7 ramas 16A-G corregidas, validador formal en CI. Fila funcional del plan original esencialmente cerrada (Fases 8–15 ✅), Fase 16 lista para arrancar.
 
-**Candidata funcional preferida**: **Rama 13C — `feat/guide-maps-embedded`**. Única rama del plan original sin cerrar (sigue ⏳ en `Progreso Fase 13`). Reusa `buildGuideMapData` + `obfuscateAnchor` ya entregados en 13B y consume el surface de presentación de 10F. Encaja con la regla anti-Liora: estructura/comportamiento/a11y sobre fidelidad visual. Esfuerzo estimado 1-2 semanas, riesgo bajo.
+**Tres caminos abiertos** (decisión de producto):
 
-**Alternativa corta de alto leverage**: **FUTURE.md §1 Nivel 0 — script `taxonomy:lint`** (1 día, validación + diff + impacto antes de tocar `taxonomies/*.json`). Cero dependencia de Liora.
-
-**Wait-state estricto**: si producto no quiere abrir 13C ni la alternativa, esta rama de docs-sync deja el repo coherente. La siguiente sesión arranca con `git fetch origin main` + esperar entrega Liora.
+1. **Arrancar Fase 16 — Rama 16A `refactor/liora-token-foundation`**: instala infraestructura de tokens Liora (Tailwind theme + `design-system.css` wrapper + IBM Plex + pre-paint dark mode + aliases legacy registrados con retirada en 16G). Esfuerzo 1.5–2 días focused. Bloquea 16B-G.
+2. **Cerrar 13C — `feat/guide-maps-embedded`**: única rama funcional del plan original sin cerrar (sigue ⏳ en `Progreso Fase 13`). Reusa `buildGuideMapData` + `obfuscateAnchor` de 13B y consume el surface de presentación de 10F. Encaja con la regla anti-Liora: estructura/comportamiento/a11y sobre fidelidad visual. Esfuerzo 1-2 semanas, riesgo bajo. Compatible con Fase 16 si arranca primero (16A no toca `src/components/**`; 16B-G se replatformarán los componentes que 13C toque).
+3. **Alternativa corta**: **FUTURE.md §1 Nivel 0 — script `taxonomy:lint`** (1 día, validación + diff + impacto antes de tocar `taxonomies/*.json`). Cero dependencia de Liora.
 
 **Lectura mínima para arrancar 13C** (cuando se decida ejecutar):
 
@@ -149,4 +149,11 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 
 **Restricción de Fase 16 vigente**: 13C prioriza estructura, comportamiento y a11y sobre fidelidad visual. Reusa primitivos de `src/components/ui/`. No introduce duplicados `*V2`/`New*`/`Better*` ni convivencias legacy sin plan de retirada.
 
-Tras merge de 13C: actualizar este apartado (volver a wait-state Liora si no hay otra rama funcional planificada) + marcar 13C en ROADMAP.md.
+**Lectura mínima para arrancar 16A** (cuando se decida ejecutar):
+
+- [MASTER_PLAN_V2.md § Rama 16A](MASTER_PLAN_V2.md) — sección entera.
+- [design-system/docs/DESIGN_MIGRATION.md](../design-system/docs/DESIGN_MIGRATION.md) — legacy → semantic mapping + per-branch gates + decisión §2.3 sobre `--font-size-*` / `--space-*` / `--radius-*`.
+- [design-system/foundations/docs/DESIGN_SYSTEM.md](../design-system/foundations/docs/DESIGN_SYSTEM.md), [IMPLEMENTATION.md](../design-system/foundations/docs/IMPLEMENTATION.md), [ACCESSIBILITY.md](../design-system/foundations/docs/ACCESSIBILITY.md).
+- `src/app/layout.tsx`, `src/app/globals.css`, `tailwind.config.ts`, `src/config/brand-palette.ts`.
+
+Tras merge de 13C o 16A: actualizar este apartado + marcar la rama en ROADMAP.md.

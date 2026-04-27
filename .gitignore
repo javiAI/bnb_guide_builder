@@ -64,4 +64,11 @@ __pycache__/
 
 # Personal Claude notes
 docs/SKILLS_MCP_PLUGINS_GUIDE.md
-docs/liora_design_system/*
+
+# Design system residues (paquete trackeado en design-system/, solo ignoramos basura)
+design_system.zip
+design-system.zip
+design-system/**/.DS_Store
+design-system/**/__MACOSX/
+design-system/preview/
+design-system/tmp/

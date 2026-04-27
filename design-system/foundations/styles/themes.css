@@ -1,0 +1,64 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · themes.css
+
+   Theme strategy
+   --------------
+   The system supports two display modes (light / dark) plus optional
+   per-product brand themes. Apply by setting attributes on <html>:
+
+       <html data-theme="light">
+       <html data-theme="dark">
+       <html data-theme="dark" data-theme-brand="cool">
+
+   Pre-paint script (place inline in <head>, BEFORE any CSS link) to
+   resolve the user's preference and avoid a flash of wrong theme:
+
+   <script>
+     (function () {
+       try {
+         var stored = localStorage.getItem("theme");        // 'light' | 'dark' | 'system' | null
+         var prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+         var resolved = (stored === "light" || stored === "dark")
+           ? stored
+           : (prefersDark ? "dark" : "light");
+         document.documentElement.setAttribute("data-theme", resolved);
+       } catch (e) {
+         document.documentElement.setAttribute("data-theme", "light");
+       }
+     })();
+   </script>
+
+   Brand themes
+   ------------
+   Brand themes are alternative *semantic* mappings, scoped under a
+   `[data-theme-brand="…"]` attribute. They:
+
+     • re-bind semantic tokens to existing primitive scales,
+     • do NOT introduce new raw color values,
+     • do NOT override primitive tokens,
+     • do NOT change typography, spacing, or radii.
+
+   Use them to retune accent/action hues for a sub-product without
+   forking the system. Add new variants by appending a new selector
+   block in this file.
+   ──────────────────────────────────────────────────────────────────── */
+
+[data-theme-brand="cool"] {
+  --color-action-primary:          var(--info-600);
+  --color-action-primary-hover:    var(--info-700);
+  --color-action-primary-active:   var(--info-800);
+  --color-text-link:               var(--info-700);
+  --color-focus-ring:              var(--info-500);
+  --color-interactive-selected:    var(--info-50);
+  --color-interactive-selected-fg: var(--info-700);
+}
+
+[data-theme="dark"][data-theme-brand="cool"] {
+  --color-action-primary:          var(--info-400);
+  --color-action-primary-hover:    var(--info-300);
+  --color-action-primary-active:   var(--info-200);
+  --color-text-link:               var(--info-300);
+  --color-focus-ring:              var(--info-300);
+  --color-interactive-selected:    color-mix(in oklch, var(--info-700) 30%, var(--warm-900));
+  --color-interactive-selected-fg: var(--info-200);
+}
