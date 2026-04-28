@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServiceWorkerRegister } from "@/lib/client/service-worker-register";
 import { InstallNudge } from "@/components/public-guide/install-nudge";
+import { getBrandPair } from "@/config/brand-palette";
 
 interface Props {
   params: Promise<{ fixture: string }>;
@@ -21,11 +22,12 @@ export default async function PublicGuideE2ELayout({ params, children }: Props) 
   if (process.env.E2E !== "1") notFound();
   const { fixture } = await params;
   const slug = `e2e/${fixture}`;
+  const { light: brandLight, dark: brandDark } = getBrandPair(null);
   return (
     <>
       {children}
       <ServiceWorkerRegister slug={slug} />
-      <InstallNudge slug={slug} />
+      <InstallNudge slug={slug} brandLight={brandLight} brandDark={brandDark} />
     </>
   );
 }

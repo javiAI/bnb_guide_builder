@@ -334,8 +334,8 @@
  * children pick them up via var() cascade — avoids selector specificity race
  * with Tailwind arbitrary-value utilities. */
 .guide-hero__answers {
-  --card-bg: color-mix(in srgb, var(--guide-brand-fg) 10%, transparent);
-  --card-border: color-mix(in srgb, var(--guide-brand-fg) 20%, transparent);
+  --card-bg: color-mix(in srgb, var(--guide-brand-fg) 10%, var(--guide-brand));
+  --card-border: color-mix(in srgb, var(--guide-brand-fg) 20%, var(--guide-brand));
 }
 
 .guide-hero__answers .guide-item__label,
@@ -345,7 +345,7 @@
 
 .guide-hero__answers .guide-item__value,
 .guide-hero__answers .guide-item__field-value {
-  color: color-mix(in srgb, var(--guide-brand-fg) 80%, transparent);
+  color: var(--guide-brand-fg);
 }
 
 /* Toast viewport: bottom-right on desktop, full-width on mobile. */
@@ -886,6 +886,14 @@
  * so the Liora replatform (FASE 15) re-skins without rewiring triggers. */
 
 .guide-install-nudge {
+  /* Self-supply guide tokens: nudge renders outside .guide-root in the layout
+   * tree, so it cannot inherit scoped vars. Inline style provides
+   * --guide-brand-light/dark; these fallback rules cover the default case. */
+  --guide-brand: var(--guide-brand-light, var(--color-action-primary));
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
+  --guide-muted: var(--color-text-secondary);
   position: fixed;
   bottom: 0;
   left: 0;
@@ -895,6 +903,10 @@
   padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0));
   z-index: 900;
   pointer-events: none;
+}
+
+[data-theme="dark"] .guide-install-nudge {
+  --guide-brand: var(--guide-brand-dark, var(--color-action-primary));
 }
 
 .guide-install-nudge__panel {
