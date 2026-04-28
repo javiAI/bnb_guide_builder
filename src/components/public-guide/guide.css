@@ -312,26 +312,51 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0.625rem 1rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
+  transition: background 150ms ease;
 }
 
-.guide-quick-action:hover,
+.guide-quick-action:hover {
+  background: var(--guide-brand-hover);
+  text-decoration: none;
+}
+
+.guide-quick-action:active {
+  background: var(--guide-brand-active);
+}
+
 .guide-quick-action:focus-visible {
-  outline: 2px solid var(--guide-brand);
+  outline: 2px solid var(--guide-brand-active);
   outline-offset: 2px;
   text-decoration: none;
 }
 
 .guide-quick-action__label {
   white-space: nowrap;
+}
+
+/* Hero answer cards on brand background */
+.guide-hero__answers .guide-item {
+  background: color-mix(in srgb, var(--guide-brand-fg) 10%, transparent);
+  border-color: color-mix(in srgb, var(--guide-brand-fg) 20%, transparent);
+}
+
+.guide-hero__answers .guide-item__label,
+.guide-hero__answers .guide-item__field-label {
+  color: var(--guide-brand-fg);
+}
+
+.guide-hero__answers .guide-item__value,
+.guide-hero__answers .guide-item__field-value {
+  color: color-mix(in srgb, var(--guide-brand-fg) 80%, transparent);
 }
 
 /* Toast viewport: bottom-right on desktop, full-width on mobile. */

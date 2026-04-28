@@ -10,6 +10,7 @@ import { GuideItem } from "./guide-item";
 import { GuideEmptyState } from "./guide-empty-state";
 import { GuideToastProvider } from "./toast";
 import { QuickActionButton } from "./quick-action-button";
+import { HeroCard } from "./ui/guide-card";
 
 interface Props {
   section: GuideSection;
@@ -119,11 +120,13 @@ export function GuideHero({ section, renderable, audience, tree }: Props) {
         {answers.length === 0 ? (
           <GuideEmptyState copy={emptyCopy ?? undefined} />
         ) : (
-          <div className="guide-items">
-            {answers.map((item) => (
-              <GuideItem key={item.id} item={item} />
-            ))}
-          </div>
+          <HeroCard className="guide-hero__answers">
+            <div className="guide-items">
+              {answers.map((item) => (
+                <GuideItem key={item.id} item={item} />
+              ))}
+            </div>
+          </HeroCard>
         )}
       </section>
     </GuideToastProvider>
