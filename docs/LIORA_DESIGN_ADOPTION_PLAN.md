@@ -164,11 +164,9 @@ in `guide-renderer.tsx` are **permanent product architecture**, not legacy debt.
 
 These per-property brand colors coexist with foundations:
 - The `--guide-brand` CSS var is set inline on the guide root element.
-- Guest cards (created in **16C**) consume `var(--guide-brand)` alongside foundations semantic tokens.
+- Guest cards (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard` in `src/components/public-guide/ui/guide-card.tsx`) consume `var(--guide-brand)` alongside foundations semantic tokens.
 - `brand-palette.ts` is **not touched** in any Liora branch.
-- The bridge between brand-palette hex values and foundations semantic tokens is
-  documented in the 16C section of this plan and in `LIORA_SURFACE_ROLLOUT_PLAN.md`
-  (created in 16C).
+- The full bridge contract is documented in `LIORA_SURFACE_ROLLOUT_PLAN.md` §"Guest guide migration detail".
 
 ---
 
@@ -178,8 +176,8 @@ These per-property brand colors coexist with foundations:
 |---|---|---|
 | `chore/plan-update-liora` | ✅ merged | Package setup, CI gate |
 | `16A refactor/liora-token-foundation` | ✅ complete | Token infra, fonts, dark mode pre-paint |
-| `16B refactor/liora-core-components` | ⬜ pending | `src/components/ui/` primitives |
-| `16C feat/liora-guest-guide-redesign` | ⬜ pending | `/g/:slug` surface |
+| `16B refactor/liora-core-components` | ✅ complete | `src/components/ui/` primitives |
+| `16C feat/liora-guest-guide-redesign` | ✅ complete | `/g/:slug` surface |
 | `16D feat/liora-operator-shell-redesign` | ⬜ pending | Sidebar, topbar, dark toggle |
 | `16E feat/liora-operator-module-rollout` | ⬜ pending | Wizard + module surfaces |
 | `16F feat/liora-messaging-assistant-redesign` | ⬜ pending | Messaging + assistant |

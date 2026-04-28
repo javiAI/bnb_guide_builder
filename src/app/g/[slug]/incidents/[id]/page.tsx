@@ -71,88 +71,32 @@ export default async function GuestIncidentTrackingPage({ params }: Props) {
   const statusLabel = STATUS_LABEL[incident.status] ?? incident.status;
 
   return (
-    <div className="guide-root" style={{ minHeight: "100vh", padding: "2rem 1rem" }}>
-      <main
-        style={{
-          maxWidth: "36rem",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "1.5rem",
-        }}
-      >
+    <div className="guide-root guide-incident-page">
+      <main className="guide-incident-main">
         <header>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "0.8125rem",
-              color: "var(--guide-muted)",
-            }}
-          >
+          <p className="guide-incident-header__property">
             {property.propertyNickname}
           </p>
-          <h1
-            style={{
-              margin: "0.25rem 0 0",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              color: "var(--foreground)",
-            }}
-          >
+          <h1 className="guide-incident-header__title">
             Seguimiento de incidencia
           </h1>
         </header>
-        <dl
-          style={{
-            margin: 0,
-            padding: "1rem",
-            border: "1px solid var(--guide-border)",
-            borderRadius: "0.75rem",
-            background: "var(--guide-surface)",
-            display: "grid",
-            gridTemplateColumns: "max-content 1fr",
-            columnGap: "1rem",
-            rowGap: "0.5rem",
-            fontSize: "0.9375rem",
-          }}
-        >
-          <dt style={{ color: "var(--guide-muted)" }}>Categoría</dt>
-          <dd style={{ margin: 0, color: "var(--foreground)" }}>
-            {category?.guestLabel ?? "—"}
-          </dd>
-          <dt style={{ color: "var(--guide-muted)" }}>Estado</dt>
-          <dd style={{ margin: 0, color: "var(--foreground)", fontWeight: 600 }}>
-            {statusLabel}
-          </dd>
-          <dt style={{ color: "var(--guide-muted)" }}>Reportada</dt>
-          <dd style={{ margin: 0, color: "var(--foreground)" }}>
-            {formatDate(incident.createdAt)}
-          </dd>
-          <dt style={{ color: "var(--guide-muted)" }}>Resuelta</dt>
-          <dd style={{ margin: 0, color: "var(--foreground)" }}>
-            {formatDate(incident.resolvedAt)}
-          </dd>
+        <dl className="guide-incident-dl">
+          <dt>Categoría</dt>
+          <dd>{category?.guestLabel ?? "—"}</dd>
+          <dt>Estado</dt>
+          <dd className="is-status">{statusLabel}</dd>
+          <dt>Reportada</dt>
+          <dd>{formatDate(incident.createdAt)}</dd>
+          <dt>Resuelta</dt>
+          <dd>{formatDate(incident.resolvedAt)}</dd>
         </dl>
-        <p
-          style={{
-            margin: 0,
-            fontSize: "0.875rem",
-            color: "var(--guide-muted)",
-            lineHeight: 1.5,
-          }}
-        >
+        <p className="guide-incident-footer">
           El anfitrión recibe cada aviso y actualiza el estado cuando la
           incidencia avanza o queda resuelta.
         </p>
         <p>
-          <a
-            href={`/g/${slug}`}
-            style={{
-              color: "var(--guide-brand)",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
+          <a href={`/g/${slug}`} className="guide-incident-back">
             ← Volver a la guía
           </a>
         </p>
