@@ -9,27 +9,24 @@
   --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
   --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
   --guide-brand-fg: var(--color-text-on-primary);
-  --guide-brand-contrast: var(--color-neutral-50); /* keep for legacy selectors — removed in commit 7 */
-  --guide-muted: var(--color-neutral-600);
-  --guide-surface: var(--surface-elevated, #ffffff);
-  --guide-border: var(--color-neutral-200);
+  --guide-brand-contrast: var(--color-text-on-primary); /* legacy alias — removed in commit 7 */
+  --guide-muted: var(--color-text-secondary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
   --guide-gap: 1.5rem;
-  /* Button component token overrides: primary buttons inside the guide use the brand color */
   --button-primary-bg:        var(--guide-brand);
   --button-primary-bg-hover:  var(--guide-brand-hover);
   --button-primary-bg-active: var(--guide-brand-active);
   --button-primary-fg:        var(--guide-brand-fg);
   --button-primary-border:    transparent;
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--color-text-primary);
+  background: var(--color-background-page);
+  font-family: var(--font-family-sans);
 }
 
 @media (prefers-color-scheme: dark) {
   .guide-root {
     --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
-    --guide-muted: var(--color-neutral-400);
-    --guide-surface: var(--color-neutral-900);
-    --guide-border: var(--color-neutral-800);
   }
 }
 
@@ -66,7 +63,7 @@
 .guide-brand-header__logo {
   width: 3rem;
   height: 3rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   object-fit: cover;
 }
 
@@ -74,7 +71,7 @@
   font-size: 1.5rem;
   line-height: 2rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -120,7 +117,7 @@
 .guide-toc__link {
   display: block;
   padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   color: var(--guide-muted);
   text-decoration: none;
@@ -130,15 +127,8 @@
 .guide-toc__link:hover,
 .guide-toc__link:focus-visible {
   color: var(--guide-brand);
-  background: var(--color-neutral-50);
+  background: var(--color-interactive-hover);
   outline: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-toc__link:hover,
-  .guide-toc__link:focus-visible {
-    background: var(--color-neutral-800);
-  }
 }
 
 .guide-toc__link[aria-current="true"] {
@@ -172,7 +162,7 @@
   font-size: 1.375rem;
   line-height: 1.75rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-section--hero .guide-section__title {
@@ -190,7 +180,7 @@
 .guide-section__empty {
   padding: 1.25rem;
   border: 1px dashed var(--guide-border);
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   color: var(--guide-muted);
   font-size: 0.9375rem;
 }
@@ -205,7 +195,7 @@
   padding: 1.25rem;
   background: var(--guide-surface);
   border: 1px solid var(--guide-border);
-  border-radius: var(--radius-lg, 0.75rem);
+  border-radius: var(--radius-lg);
 }
 
 .guide-item__label {
