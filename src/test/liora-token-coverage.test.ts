@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, extname } from "node:path";
+import { walk } from "./utils/walk";
 
 const ROOT = process.cwd();
 
@@ -15,20 +16,8 @@ const EXTERNAL_VARS = new Set([
   "--guide-brand-dark",
 ]);
 
-function walk(dir: string, exts: string[], acc: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry.startsWith(".") || entry === "node_modules") continue;
-    const full = join(dir, entry);
-    const stat = statSync(full);
-    if (stat.isDirectory()) walk(full, exts, acc);
-    else if (exts.includes(extname(entry))) acc.push(full);
-  }
-  return acc;
-}
-
 function extractDeclarations(content: string): Set<string> {
   const declared = new Set<string>();
-  // Match CSS custom property declarations: --var-name:
   for (const m of content.matchAll(/(--[\w-]+)\s*:/g)) {
     declared.add(m[1]);
   }
@@ -37,7 +26,6 @@ function extractDeclarations(content: string): Set<string> {
 
 function extractReferences(content: string): string[] {
   const refs: string[] = [];
-  // Match var(--xxx) — capture only the var name, ignore fallback
   for (const m of content.matchAll(/var\(\s*(--[\w-]+)/g)) {
     refs.push(m[1]);
   }
@@ -62,26 +50,29 @@ describe("liora-token-coverage", () => {
       "src/styles/legacy-aliases.css",
       "src/app/globals.css",
     ]) {
-      for (const v of extractDeclarations(
-        readFileSync(join(ROOT, rel), "utf8"),
-      )) {
+      for (const v of extractDeclarations(readFileSync(join(ROOT, rel), "utf8"))) {
         declared.add(v);
       }
     }
 
-    // other CSS files in src/ (e.g. guide.css declares --guide-brand)
-    for (const f of walk(join(ROOT, "src"), [".css"])) {
-      for (const v of extractDeclarations(readFileSync(f, "utf8"))) {
-        declared.add(v);
-      }
-    }
-
-    // ── 2. Collect all var(--xxx) references in src/ ──────────────────────
+    // ── 2. Walk src/ once; declarations first (phase A), references second (phase B) ──
     const EXCLUDE = [join(ROOT, "src/test/"), join(ROOT, "src/lib/types/")];
-    const unknown: { file: string; var: string }[] = [];
+    const srcFiles = walk(join(ROOT, "src"), [".ts", ".tsx", ".css"]).filter(
+      (f) => !EXCLUDE.some((ex) => f.startsWith(ex)),
+    );
 
-    for (const f of walk(join(ROOT, "src"), [".ts", ".tsx", ".css"])) {
-      if (EXCLUDE.some((ex) => f.startsWith(ex))) continue;
+    // Phase A: collect declarations from remaining src CSS (e.g. guide.css declares --guide-brand)
+    for (const f of srcFiles) {
+      if (extname(f) === ".css") {
+        for (const v of extractDeclarations(readFileSync(f, "utf8"))) {
+          declared.add(v);
+        }
+      }
+    }
+
+    // Phase B: check all var(--xxx) references against the complete declared set
+    const unknown: { file: string; var: string }[] = [];
+    for (const f of srcFiles) {
       const content = readFileSync(f, "utf8");
       for (const ref of extractReferences(content)) {
         if (!declared.has(ref) && !EXTERNAL_VARS.has(ref)) {
