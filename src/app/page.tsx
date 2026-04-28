@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { PrimaryCta } from "@/components/ui/primary-cta";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { STATUS_LABELS, STATUS_TONES, type PropertyStatus } from "@/lib/types";
 import { DeletePropertyButton } from "./delete-property-button";
 import { DeleteDraftButton } from "./delete-draft-button";
@@ -17,14 +18,14 @@ const STEP_PATHS = [
 
 function PropertyCard({ property }: { property: { id: string; propertyNickname: string; status: string; city: string | null; country: string | null; maxGuests: number | null; bedroomsCount: number | null; bathroomsCount: number | null } }) {
   return (
-    <div className="relative rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5 transition-shadow hover:shadow-md">
+    <div className="relative rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5 transition-shadow hover:shadow-md">
       <a href={`/properties/${property.id}`} className="block">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-semibold text-[var(--foreground)]">
+            <h3 className="truncate text-base font-semibold text-[var(--color-text-primary)]">
               {property.propertyNickname}
             </h3>
-            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
               {[property.city, property.country].filter(Boolean).join(", ") ||
                 "Sin ubicación"}
             </p>
@@ -34,7 +35,7 @@ function PropertyCard({ property }: { property: { id: string; propertyNickname: 
             tone={STATUS_TONES[property.status as PropertyStatus] ?? "neutral"}
           />
         </div>
-        <div className="mt-3 flex gap-4 text-xs text-[var(--color-neutral-500)]">
+        <div className="mt-3 flex gap-4 text-xs text-[var(--color-text-muted)]">
           {property.maxGuests != null && (
             <span>{property.maxGuests} huéspedes</span>
           )}
@@ -58,20 +59,20 @@ function DraftWizardCard({ session }: { session: { id: string; propertyNickname:
   const resumeHref = `${STEP_PATHS[stepIndex]}?sessionId=${session.id}`;
 
   return (
-    <div className="relative rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] p-5 transition-all hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)]">
+    <div className="relative rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-default)] bg-[var(--color-background-subtle)] p-5 transition-all hover:border-[var(--color-action-primary)] hover:bg-[var(--color-action-primary-subtle)]">
       <a href={resumeHref} className="block">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-base font-semibold text-[var(--foreground)]">
+            <h3 className="truncate text-base font-semibold text-[var(--color-text-primary)]">
               {session.propertyNickname || "Sin nombre"}
             </h3>
-            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
               {session.currentStep > 4 ? "Revisión" : `Paso ${session.currentStep} de 4`}
             </p>
           </div>
           <Badge label="Borrador" tone="warning" />
         </div>
-        <p className="mt-3 text-xs font-medium text-[var(--color-primary-500)]">
+        <p className="mt-3 text-xs font-medium text-[var(--color-action-primary-subtle-fg)]">
           Continuar configuración &rarr;
         </p>
       </a>
@@ -84,11 +85,11 @@ function DraftWizardCard({ session }: { session: { id: string; propertyNickname:
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border-2 border-dashed border-[var(--color-neutral-300)] px-8 py-16 text-center">
-      <h2 className="text-lg font-semibold text-[var(--foreground)]">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-xl)] border-2 border-dashed border-[var(--color-border-default)] px-8 py-16 text-center">
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
         Sin propiedades todavía
       </h2>
-      <p className="mt-2 max-w-sm text-sm text-[var(--color-neutral-500)]">
+      <p className="mt-2 max-w-sm text-sm text-[var(--color-text-muted)]">
         Crea tu primera propiedad para generar guías inteligentes, mensajes
         automáticos y mucho más.
       </p>
@@ -100,7 +101,6 @@ function EmptyState() {
 }
 
 export default async function DashboardPage() {
-  // Require valid session — redirect to login if not authenticated
   try {
     await requireOperator();
   } catch {
@@ -136,34 +136,46 @@ export default async function DashboardPage() {
   const hasContent = properties.length > 0 || draftSessions.length > 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            Propiedades
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
-            Gestiona tus alojamientos y sus guías
-          </p>
+    <div className="min-h-screen bg-[var(--color-background-page)]">
+      {/* Minimal header with toggle */}
+      <header className="border-b border-[var(--color-border-default)] bg-[var(--color-background-page)] px-6 py-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Guide Builder
+          </span>
+          <ThemeToggle />
         </div>
-        {hasContent && (
-          <PrimaryCta label="Crear propiedad" href="/properties/new/welcome" />
-        )}
-      </div>
+      </header>
 
-      <div className="mt-8">
-        {!hasContent ? (
-          <EmptyState />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {draftSessions.map((session) => (
-              <DraftWizardCard key={session.id} session={session} />
-            ))}
-            {properties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
+              Propiedades
+            </h1>
+            <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+              Gestiona tus alojamientos y sus guías
+            </p>
           </div>
-        )}
+          {hasContent && (
+            <PrimaryCta label="Crear propiedad" href="/properties/new/welcome" />
+          )}
+        </div>
+
+        <div className="mt-8">
+          {!hasContent ? (
+            <EmptyState />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {draftSessions.map((session) => (
+                <DraftWizardCard key={session.id} session={session} />
+              ))}
+              {properties.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
