@@ -25,10 +25,15 @@ const guideCard = cva(
   },
 );
 
-type CardProps = ComponentPropsWithoutRef<"div"> & VariantProps<typeof guideCard>;
+type GuideCardElement = "div" | "article" | "section";
 
-function GuideCard({ variant, padding, className, ...props }: CardProps) {
-  return <div className={cn(guideCard({ variant, padding }), className)} {...props} />;
+type CardProps = ComponentPropsWithoutRef<"div"> &
+  VariantProps<typeof guideCard> & {
+    as?: GuideCardElement;
+  };
+
+function GuideCard({ as: Component = "div", variant, padding, className, ...props }: CardProps) {
+  return <Component className={cn(guideCard({ variant, padding }), className)} {...props} />;
 }
 
 export function HeroCard({ className, ...props }: Omit<CardProps, "variant" | "padding">) {

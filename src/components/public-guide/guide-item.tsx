@@ -18,7 +18,7 @@ export function GuideItem({ item }: Props) {
   const displayValue = resolveDisplayValue(item);
   const displayFields = resolveDisplayFields(item);
   return (
-    <StandardCard className="guide-item" id={`item-${item.id}`}>
+    <StandardCard as="article" className="guide-item" id={`item-${item.id}`}>
       <h3 className="guide-item__label">
         {item.label}
         {item.deprecated && (

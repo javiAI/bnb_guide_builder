@@ -42,7 +42,7 @@ export function GuideEmergencySection({ section, renderable, audience }: Props) 
             const notes = fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.notes)?.value;
             const mailto = email ? buildMailtoHref(email) : null;
             return (
-              <WarningCard key={item.id} className="guide-item" id={`item-${item.id}`}>
+              <WarningCard as="article" key={item.id} className="guide-item" id={`item-${item.id}`}>
                 <h3 className="guide-item__label">{item.label}</h3>
                 <div className="guide-contact">
                   {phone && (
