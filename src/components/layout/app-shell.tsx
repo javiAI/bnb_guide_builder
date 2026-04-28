@@ -1,4 +1,5 @@
 import { SideNav } from "./side-nav";
+import { Topbar } from "./topbar";
 import { getDerived } from "@/lib/services/property-derived.service";
 
 interface AppShellProps {
@@ -13,8 +14,6 @@ export async function AppShell({ propertyId, propertyNickname, children }: AppSh
   let sectionScores: Record<string, number> | undefined;
   try {
     const derived = await getDerived(propertyId);
-    // Guard against older cached payloads that predate the readiness field —
-    // they would throw TypeError and silently drop all sidebar progress.
     const scores = derived?.readiness?.scores;
     if (
       scores &&
@@ -41,14 +40,17 @@ export async function AppShell({ propertyId, propertyNickname, children }: AppSh
         propertyNickname={propertyNickname}
         sectionScores={sectionScores}
       />
-      <main
-        className="min-h-screen bg-[var(--surface)]"
+      <div
+        className="flex min-h-screen flex-col bg-[var(--color-background-page)]"
         style={{ marginLeft: "var(--sidebar-width)" }}
       >
-        <div className="mx-auto max-w-4xl px-6 py-8">
-          {children}
-        </div>
-      </main>
+        <Topbar propertyId={propertyId} propertyNickname={propertyNickname} />
+        <main className="flex-1">
+          <div className="mx-auto max-w-4xl px-7 py-7">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
