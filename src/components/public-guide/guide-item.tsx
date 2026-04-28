@@ -4,6 +4,7 @@ import {
   resolveDisplayValue,
 } from "@/lib/renderers/_guide-display";
 import { GuideMediaGallery } from "./guide-media-gallery";
+import { StandardCard } from "./ui/guide-card";
 
 interface Props {
   item: GuideItemType;
@@ -17,7 +18,7 @@ export function GuideItem({ item }: Props) {
   const displayValue = resolveDisplayValue(item);
   const displayFields = resolveDisplayFields(item);
   return (
-    <article className="guide-item" id={`item-${item.id}`}>
+    <StandardCard className="guide-item" id={`item-${item.id}`}>
       <h3 className="guide-item__label">
         {item.label}
         {item.deprecated && (
@@ -63,6 +64,6 @@ export function GuideItem({ item }: Props) {
       {item.media.length > 0 && (
         <GuideMediaGallery media={item.media} contextLabel={item.label} />
       )}
-    </article>
+    </StandardCard>
   );
 }
