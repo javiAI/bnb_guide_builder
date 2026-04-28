@@ -1,9 +1,29 @@
+import { Icon, type IconName } from "./icon";
+
 type BannerType = "info" | "warning" | "danger";
 
-const typeStyles: Record<BannerType, string> = {
-  info: "bg-[var(--color-info-50)] border-[var(--color-info-500)] text-[var(--color-neutral-700)]",
-  warning: "bg-[var(--color-warning-50)] border-[var(--color-warning-500)] text-[var(--color-neutral-700)]",
-  danger: "bg-[var(--color-danger-50)] border-[var(--color-danger-500)] text-[var(--color-neutral-700)]",
+const typeConfig: Record<
+  BannerType,
+  { bg: string; border: string; icon: IconName; iconTone: "info" | "warning" | "error" }
+> = {
+  info: {
+    bg:       "bg-[var(--color-status-info-bg)]",
+    border:   "border-[var(--color-status-info-border)]",
+    icon:     "info",
+    iconTone: "info",
+  },
+  warning: {
+    bg:       "bg-[var(--color-status-warning-bg)]",
+    border:   "border-[var(--color-status-warning-border)]",
+    icon:     "triangle-alert",
+    iconTone: "warning",
+  },
+  danger: {
+    bg:       "bg-[var(--color-status-error-bg)]",
+    border:   "border-[var(--color-status-error-border)]",
+    icon:     "circle-alert",
+    iconTone: "error",
+  },
 };
 
 interface BannerProps {
@@ -12,12 +32,15 @@ interface BannerProps {
 }
 
 export function Banner({ type, message }: BannerProps) {
+  const { bg, border, icon, iconTone } = typeConfig[type];
   return (
     <div
-      className={`rounded-[var(--radius-md)] border-l-4 p-4 text-sm ${typeStyles[type]}`}
+      className={`flex items-start gap-[var(--alert-gap)] rounded-[var(--alert-radius)] border-l-4 text-[var(--color-text-primary)] ${bg} ${border}`}
+      style={{ padding: "var(--alert-padding)" }}
       role="alert"
     >
-      {message}
+      <Icon name={icon} tone={iconTone} size="md" style={{ marginTop: "1px", flexShrink: 0 }} />
+      <span className="text-sm">{message}</span>
     </div>
   );
 }

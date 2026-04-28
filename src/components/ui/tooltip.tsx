@@ -3,15 +3,56 @@
 import { useState, useRef, useCallback, useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+export function TooltipBubble({
+  id,
+  pos,
+  text,
+}: {
+  id: string;
+  pos: { top: number; left: number };
+  text: string;
+}) {
+  return (
+    <span
+      id={id}
+      role="tooltip"
+      style={{
+        position: "absolute",
+        top: pos.top,
+        left: pos.left,
+        transform: "translate(-50%, -100%)",
+        zIndex: 9999,
+        pointerEvents: "none",
+        background: "var(--tooltip-bg)",
+        color: "var(--tooltip-fg)",
+        padding: "var(--tooltip-padding)",
+        maxWidth: "var(--tooltip-max-width)",
+        boxShadow: "var(--tooltip-shadow)",
+        borderRadius: "var(--tooltip-radius)",
+      }}
+      className="text-[length:var(--tooltip-font-size)] leading-relaxed"
+    >
+      {text}
+      <span
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          borderWidth: "5px",
+          borderStyle: "solid",
+          borderColor: "var(--tooltip-bg) transparent transparent transparent",
+        }}
+      />
+    </span>
+  );
+}
+
 interface TooltipProps {
   text: string;
   children: ReactNode;
 }
 
-/**
- * Hover tooltip matching InfoTooltip's visual style.
- * Wraps any element and shows a styled tooltip on hover/focus.
- */
 export function Tooltip({ text, children }: TooltipProps) {
   const tooltipId = useId();
   const [visible, setVisible] = useState(false);
@@ -57,28 +98,6 @@ export function Tooltip({ text, children }: TooltipProps) {
 
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  const tooltip = (
-    <span
-      id={tooltipId}
-      role="tooltip"
-      style={{
-        position: "absolute",
-        top: pos.top,
-        left: pos.left,
-        transform: "translate(-50%, -100%)",
-        zIndex: 9999,
-        pointerEvents: "none",
-      }}
-      className="w-60 rounded-[var(--radius-md)] bg-gray-900 px-3 py-2 text-xs leading-relaxed text-white shadow-xl"
-    >
-      {text}
-      <span
-        style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)" }}
-        className="border-[5px] border-transparent border-t-gray-900"
-      />
-    </span>
-  );
-
   return (
     <span
       ref={wrapRef}
@@ -90,7 +109,7 @@ export function Tooltip({ text, children }: TooltipProps) {
       className="inline-flex"
     >
       {children}
-      {visible && mounted && createPortal(tooltip, document.body)}
+      {visible && mounted && createPortal(<TooltipBubble id={tooltipId} pos={pos} text={text} />, document.body)}
     </span>
   );
 }

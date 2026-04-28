@@ -13,6 +13,8 @@ interface NumberStepperProps {
   suffix?: string;
 }
 
+const stepBtnCls = "flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]";
+
 export function NumberStepper({
   label,
   value,
@@ -24,27 +26,27 @@ export function NumberStepper({
   suffix,
 }: NumberStepperProps) {
   return (
-    <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-3">
+    <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 py-3">
       {name && <input type="hidden" name={name} value={value} />}
-      <span className="text-sm font-medium text-[var(--foreground)]">{label}</span>
+      <span className="text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
       <div className="flex items-center gap-3">
         <button
           type="button"
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] text-[var(--color-neutral-600)] transition-colors hover:bg-[var(--color-neutral-100)] disabled:cursor-not-allowed disabled:opacity-40"
+          className={stepBtnCls}
           aria-label={`Reducir ${label}`}
         >
           &minus;
         </button>
-        <span className="min-w-[2rem] text-center text-sm font-semibold text-[var(--foreground)]">
+        <span className="min-w-[2rem] text-center text-sm font-semibold text-[var(--color-text-primary)]">
           {value}{suffix ? ` ${suffix}` : ""}
         </span>
         <button
           type="button"
           disabled={value >= max}
           onClick={() => onChange(Math.min(max, value + step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border)] text-[var(--color-neutral-600)] transition-colors hover:bg-[var(--color-neutral-100)] disabled:cursor-not-allowed disabled:opacity-40"
+          className={stepBtnCls}
           aria-label={`Aumentar ${label}`}
         >
           +

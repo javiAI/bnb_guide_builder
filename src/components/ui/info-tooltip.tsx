@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
+import { TooltipBubble } from "./tooltip";
 
 interface InfoTooltipProps {
   text: string;
@@ -45,29 +46,6 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
     };
   }, [open, calcPos]);
 
-  const tooltip = (
-    <span
-      id={tooltipId}
-      role="tooltip"
-      onMouseDown={(e) => e.stopPropagation()}
-      style={{
-        position: "absolute",
-        top: pos.top,
-        left: pos.left,
-        transform: "translate(-50%, -100%)",
-        zIndex: 9999,
-        pointerEvents: "none",
-      }}
-      className="w-60 rounded-[var(--radius-md)] bg-gray-900 px-3 py-2 text-xs leading-relaxed text-white shadow-xl"
-    >
-      {text}
-      <span
-        style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)" }}
-        className="border-[5px] border-transparent border-t-gray-900"
-      />
-    </span>
-  );
-
   return (
     <span className="inline-flex shrink-0">
       <span
@@ -76,13 +54,16 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         tabIndex={0}
         onClick={toggle}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } }}
-        className="ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-neutral-200)] text-[10px] font-bold text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-300)] hover:text-[var(--color-neutral-700)] transition-colors"
+        className="ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-background-subtle)] text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-border-default)] hover:text-[var(--color-text-secondary)] transition-colors"
         aria-label="Más información"
         aria-describedby={open ? tooltipId : undefined}
       >
         ?
       </span>
-      {open && mounted && createPortal(tooltip, document.body)}
+      {open && mounted && createPortal(
+        <TooltipBubble id={tooltipId} pos={pos} text={text} />,
+        document.body,
+      )}
     </span>
   );
 }

@@ -9,6 +9,15 @@ interface LocationMapProps {
   onPositionChange: (lat: number, lng: number) => void;
 }
 
+function createMarker(map: maplibregl.Map, lng: number, lat: number): maplibregl.Marker {
+  const primaryColor = getComputedStyle(document.documentElement)
+    .getPropertyValue("--color-action-primary")
+    .trim();
+  const options: maplibregl.MarkerOptions = { draggable: true };
+  if (primaryColor) options.color = primaryColor;
+  return new maplibregl.Marker(options).setLngLat([lng, lat]).addTo(map);
+}
+
 export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -54,15 +63,11 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
 
     if (lat != null && lng != null) {
-      const marker = new maplibregl.Marker({ draggable: true, color: "#6366f1" })
-        .setLngLat([lng, lat])
-        .addTo(map);
-
+      const marker = createMarker(map, lng, lat);
       marker.on("dragend", () => {
         const pos = marker.getLngLat();
         onPositionChangeRef.current(pos.lat, pos.lng);
       });
-
       markerRef.current = marker;
     }
 
@@ -73,15 +78,11 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
       if (markerRef.current) {
         markerRef.current.setLngLat([clickLng, clickLat]);
       } else {
-        const marker = new maplibregl.Marker({ draggable: true, color: "#6366f1" })
-          .setLngLat([clickLng, clickLat])
-          .addTo(map);
-
+        const marker = createMarker(map, clickLng, clickLat);
         marker.on("dragend", () => {
           const pos = marker.getLngLat();
           onPositionChangeRef.current(pos.lat, pos.lng);
         });
-
         markerRef.current = marker;
       }
     });
@@ -99,22 +100,17 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [styleUrl]);
 
-  // Update marker when lat/lng change externally (geocode result)
   useEffect(() => {
     if (!mapRef.current || lat == null || lng == null) return;
 
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
     } else {
-      const marker = new maplibregl.Marker({ draggable: true, color: "#6366f1" })
-        .setLngLat([lng, lat])
-        .addTo(mapRef.current);
-
+      const marker = createMarker(mapRef.current, lng, lat);
       marker.on("dragend", () => {
         const pos = marker.getLngLat();
         onPositionChangeRef.current(pos.lat, pos.lng);
       });
-
       markerRef.current = marker;
     }
 
@@ -123,7 +119,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
 
   if (error) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] text-sm text-[var(--color-neutral-500)]">
+      <div className="flex h-48 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-strong)] bg-[var(--color-background-subtle)] text-sm text-[var(--color-text-muted)]">
         {error}
       </div>
     );
@@ -131,7 +127,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
 
   if (!styleUrl) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-neutral-300)] bg-[var(--color-neutral-50)] text-sm text-[var(--color-neutral-500)]">
+      <div className="flex h-48 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-strong)] bg-[var(--color-background-subtle)] text-sm text-[var(--color-text-muted)]">
         Cargando mapa...
       </div>
     );
@@ -140,7 +136,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
   return (
     <div
       ref={containerRef}
-      className="h-64 w-full rounded-[var(--radius-lg)] border border-[var(--border)] overflow-hidden"
+      className="h-64 w-full rounded-[var(--radius-lg)] border border-[var(--color-border-default)] overflow-hidden"
     />
   );
 }
