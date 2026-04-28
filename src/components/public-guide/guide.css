@@ -9,6 +9,7 @@
   --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
   --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
   --guide-brand-fg: var(--color-text-on-primary);
+  --guide-brand-focus-ring: color-mix(in srgb, var(--guide-brand) 35%, transparent);
   --guide-muted: var(--color-text-secondary);
   --guide-surface: var(--color-background-elevated);
   --guide-border: var(--color-border-default);
@@ -335,10 +336,12 @@
   white-space: nowrap;
 }
 
-/* Hero answer cards on brand background */
-.guide-hero__answers .guide-item {
-  background: color-mix(in srgb, var(--guide-brand-fg) 10%, transparent);
-  border-color: color-mix(in srgb, var(--guide-brand-fg) 20%, transparent);
+/* Hero answer cards: override card tokens on the container so StandardCard
+ * children pick them up via var() cascade — avoids selector specificity race
+ * with Tailwind arbitrary-value utilities. */
+.guide-hero__answers {
+  --card-bg: color-mix(in srgb, var(--guide-brand-fg) 10%, transparent);
+  --card-border: color-mix(in srgb, var(--guide-brand-fg) 20%, transparent);
 }
 
 .guide-hero__answers .guide-item__label,
@@ -419,7 +422,7 @@
 }
 
 .guide-search__trigger:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-search__trigger-label {
@@ -505,7 +508,7 @@
 
 .guide-search__input-row:focus-within {
   border-color: var(--guide-brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-search__input {
@@ -673,7 +676,7 @@
 }
 
 .guide-reporter__trigger:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__trigger-label {
@@ -758,7 +761,7 @@
 }
 
 .guide-reporter__chip:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__chip--selected {
@@ -805,7 +808,7 @@
 .guide-reporter__input:focus-visible {
   border-color: var(--guide-brand);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__counter,
@@ -1104,11 +1107,11 @@
 }
 
 .guide-map__pin--event {
-  background: #f59e0b; /* amber — visual delta vs place pins */
+  background: var(--color-status-warning-solid);
 }
 
 .guide-map__pin--anchor-exact {
-  background: #ef4444;
+  background: var(--color-status-error-solid);
   width: 1rem;
   height: 1rem;
 }
