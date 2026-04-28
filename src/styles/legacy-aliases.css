@@ -13,6 +13,8 @@
   --color-primary-100: var(--color-action-primary-subtle);
   /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
   --color-primary-200: var(--color-action-primary-subtle);
+  /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
+  --color-primary-300: var(--color-action-primary-subtle);
   /* @deprecated removed in 16G — use var(--color-action-primary-hover) */
   --color-primary-400: var(--color-action-primary-hover);
   /* @deprecated removed in 16G — use var(--color-action-primary) */
@@ -49,26 +51,60 @@
   /* ── Status: success ─────────────────────────────────────────────────── */
   /* @deprecated removed in 16G — use var(--color-status-success-bg) */
   --color-success-50:  var(--color-status-success-bg);
+  /* @deprecated removed in 16G — use var(--color-status-success-border) */
+  --color-success-200: var(--color-status-success-border);
+  /* @deprecated removed in 16G — use var(--color-status-success-border) */
+  --color-success-300: var(--color-status-success-border);
   /* @deprecated removed in 16G — use var(--color-status-success-solid) */
   --color-success-500: var(--color-status-success-solid);
+  /* @deprecated removed in 16G — use var(--color-status-success-icon) */
+  --color-success-600: var(--color-status-success-icon);
   /* @deprecated removed in 16G — use var(--color-status-success-text) */
   --color-success-700: var(--color-status-success-text);
 
   /* ── Status: warning ─────────────────────────────────────────────────── */
   /* @deprecated removed in 16G — use var(--color-status-warning-bg) */
   --color-warning-50:  var(--color-status-warning-bg);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-200: var(--color-status-warning-border);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-300: var(--color-status-warning-border);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-400: var(--color-status-warning-border);
   /* @deprecated removed in 16G — use var(--color-status-warning-solid) */
   --color-warning-500: var(--color-status-warning-solid);
+  /* @deprecated removed in 16G — use var(--color-status-warning-icon) */
+  --color-warning-600: var(--color-status-warning-icon);
   /* @deprecated removed in 16G — use var(--color-status-warning-text) */
   --color-warning-700: var(--color-status-warning-text);
+  /* @deprecated removed in 16G — use var(--color-status-warning-text) */
+  --color-warning-800: var(--color-status-warning-text);
 
   /* ── Status: danger/error ────────────────────────────────────────────── */
   /* @deprecated removed in 16G — use var(--color-status-error-bg) */
   --color-danger-50:   var(--color-status-error-bg);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-danger-200:  var(--color-status-error-border);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-danger-300:  var(--color-status-error-border);
   /* @deprecated removed in 16G — use var(--color-status-error-solid) */
   --color-danger-500:  var(--color-status-error-solid);
+  /* @deprecated removed in 16G — use var(--color-status-error-icon) */
+  --color-danger-600:  var(--color-status-error-icon);
   /* @deprecated removed in 16G — use var(--color-status-error-text) */
   --color-danger-700:  var(--color-status-error-text);
+
+  /* ── Status: error (--color-error-* naming variant) ─────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-error-bg) */
+  --color-error-50:  var(--color-status-error-bg);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-error-300: var(--color-status-error-border);
+  /* @deprecated removed in 16G — use var(--color-status-error-solid) */
+  --color-error-500: var(--color-status-error-solid);
+  /* @deprecated removed in 16G — use var(--color-status-error-icon) */
+  --color-error-600: var(--color-status-error-icon);
+  /* @deprecated removed in 16G — use var(--color-status-error-text) */
+  --color-error-700: var(--color-status-error-text);
 
   /* ── Status: info ────────────────────────────────────────────────────── */
   /* @deprecated removed in 16G — use var(--color-status-info-bg) */
@@ -95,10 +131,12 @@
   --header-height: var(--size-topbar);
 
   /* ── Radius (legacy call sites; foundations exposes via Tailwind rounded-*) ── */
-  /* @deprecated removed in 16G — legacy radius aliases preserving current
-     call sites; migrate to Tailwind rounded-* after 16G audit */
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-sm */
   --radius-sm: 0.375rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-md */
   --radius-md: 0.5rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-lg */
   --radius-lg: 0.75rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-xl */
   --radius-xl: 1rem;
 }

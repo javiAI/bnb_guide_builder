@@ -58,6 +58,7 @@ has a `@deprecated` comment and is referenced in this table.
 | `--color-primary-50` | `--color-action-primary-subtle` | Lightest tint → olive-50 |
 | `--color-primary-100` | `--color-action-primary-subtle` | No exact mid-tint in foundations |
 | `--color-primary-200` | `--color-action-primary-subtle` | No exact mid-tint in foundations |
+| `--color-primary-300` | `--color-action-primary-subtle` | No exact mid-tint in foundations |
 | `--color-primary-400` | `--color-action-primary-hover` | olive-700 |
 | `--color-primary-500` | `--color-action-primary` | **Main action color** — olive-600 |
 | `--color-primary-600` | `--color-action-primary-hover` | olive-700 |
@@ -81,19 +82,35 @@ has a `@deprecated` comment and is referenced in this table.
 
 ### 2.3 Color — status
 
-| Legacy var | Semantic target |
-|---|---|
-| `--color-success-50` | `--color-status-success-bg` |
-| `--color-success-500` | `--color-status-success-solid` |
-| `--color-success-700` | `--color-status-success-text` |
-| `--color-warning-50` | `--color-status-warning-bg` |
-| `--color-warning-500` | `--color-status-warning-solid` |
-| `--color-warning-700` | `--color-status-warning-text` |
-| `--color-danger-50` | `--color-status-error-bg` |
-| `--color-danger-500` | `--color-status-error-solid` |
-| `--color-danger-700` | `--color-status-error-text` |
-| `--color-info-50` | `--color-status-info-bg` |
-| `--color-info-500` | `--color-status-info-solid` |
+| Legacy var | Semantic target | Notes |
+|---|---|---|
+| `--color-success-50` | `--color-status-success-bg` | |
+| `--color-success-200` | `--color-status-success-border` | Mid-tint; no finer semantic exists |
+| `--color-success-300` | `--color-status-success-border` | Mid-tint; no finer semantic exists |
+| `--color-success-500` | `--color-status-success-solid` | |
+| `--color-success-600` | `--color-status-success-icon` | |
+| `--color-success-700` | `--color-status-success-text` | |
+| `--color-warning-50` | `--color-status-warning-bg` | |
+| `--color-warning-200` | `--color-status-warning-border` | Mid-tint; no finer semantic exists |
+| `--color-warning-300` | `--color-status-warning-border` | Mid-tint; no finer semantic exists |
+| `--color-warning-400` | `--color-status-warning-border` | Mid-tint; no finer semantic exists |
+| `--color-warning-500` | `--color-status-warning-solid` | |
+| `--color-warning-600` | `--color-status-warning-icon` | |
+| `--color-warning-700` | `--color-status-warning-text` | |
+| `--color-warning-800` | `--color-status-warning-text` | Darker shade; mapped to text (nearest) |
+| `--color-danger-50` | `--color-status-error-bg` | |
+| `--color-danger-200` | `--color-status-error-border` | Mid-tint; no finer semantic exists |
+| `--color-danger-300` | `--color-status-error-border` | Mid-tint; no finer semantic exists |
+| `--color-danger-500` | `--color-status-error-solid` | |
+| `--color-danger-600` | `--color-status-error-icon` | |
+| `--color-danger-700` | `--color-status-error-text` | |
+| `--color-error-50` | `--color-status-error-bg` | Alternate `error` prefix used by some components |
+| `--color-error-300` | `--color-status-error-border` | Alternate prefix |
+| `--color-error-500` | `--color-status-error-solid` | Alternate prefix |
+| `--color-error-600` | `--color-status-error-icon` | Alternate prefix |
+| `--color-error-700` | `--color-status-error-text` | Alternate prefix |
+| `--color-info-50` | `--color-status-info-bg` | |
+| `--color-info-500` | `--color-status-info-solid` | |
 
 Note: `--color-info-700` was never declared in legacy `globals.css` — no alias created.
 
