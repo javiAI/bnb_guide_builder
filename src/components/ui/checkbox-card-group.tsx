@@ -33,8 +33,8 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
             key={option.id}
             className={`relative flex cursor-pointer items-start gap-3 rounded-[var(--radius-lg)] border-2 p-4 transition-colors ${
               selected
-                ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
-                : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--color-neutral-400)]"
+                ? "border-[var(--color-action-primary)] bg-[var(--color-interactive-selected)]"
+                : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-emphasis)]"
             }`}
           >
             <input
@@ -43,18 +43,18 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
               value={option.id}
               checked={selected}
               onChange={() => toggle(option.id)}
-              className="mt-0.5 h-4 w-4 accent-[var(--color-primary-500)]"
+              className="mt-0.5 h-4 w-4 accent-[var(--color-action-primary)]"
             />
             <div className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-[var(--foreground)]">
+              <span className="block text-sm font-medium text-[var(--color-text-primary)]">
                 {option.label}
                 {showRecommended && option.recommended && (
-                  <span className="ml-2 inline-block rounded-full bg-[var(--color-primary-100)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-primary-700)]">
+                  <span className="ml-2 inline-block rounded-full bg-[var(--color-interactive-selected)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-interactive-selected-fg)]">
                     Recomendado
                   </span>
                 )}
               </span>
-              <span className="mt-1 block text-xs text-[var(--color-neutral-500)]">
+              <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
                 {option.description}
               </span>
             </div>

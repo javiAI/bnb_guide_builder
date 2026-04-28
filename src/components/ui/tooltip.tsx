@@ -8,10 +8,6 @@ interface TooltipProps {
   children: ReactNode;
 }
 
-/**
- * Hover tooltip matching InfoTooltip's visual style.
- * Wraps any element and shows a styled tooltip on hover/focus.
- */
 export function Tooltip({ text, children }: TooltipProps) {
   const tooltipId = useId();
   const [visible, setVisible] = useState(false);
@@ -68,13 +64,26 @@ export function Tooltip({ text, children }: TooltipProps) {
         transform: "translate(-50%, -100%)",
         zIndex: 9999,
         pointerEvents: "none",
+        background: "var(--tooltip-bg)",
+        color: "var(--tooltip-fg)",
+        padding: "var(--tooltip-padding)",
+        maxWidth: "var(--tooltip-max-width)",
+        boxShadow: "var(--tooltip-shadow)",
+        borderRadius: "var(--tooltip-radius)",
       }}
-      className="w-60 rounded-[var(--radius-md)] bg-gray-900 px-3 py-2 text-xs leading-relaxed text-white shadow-xl"
+      className="text-[length:var(--tooltip-font-size)] leading-relaxed w-60"
     >
       {text}
       <span
-        style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)" }}
-        className="border-[5px] border-transparent border-t-gray-900"
+        style={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
+          borderWidth: "5px",
+          borderStyle: "solid",
+          borderColor: "var(--tooltip-bg) transparent transparent transparent",
+        }}
       />
     </span>
   );

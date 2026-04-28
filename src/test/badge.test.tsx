@@ -11,12 +11,12 @@ describe("Badge", () => {
   it("applies correct tone classes for success", () => {
     const { container } = render(<Badge label="Activa" tone="success" />);
     const badge = container.firstChild as HTMLElement;
-    expect(badge.className).toContain("success");
+    expect(badge.className).toContain("badge-success");
   });
 
-  it("applies correct tone classes for danger", () => {
+  it("applies correct tone classes for danger (maps to error tokens)", () => {
     const { container } = render(<Badge label="Error" tone="danger" />);
     const badge = container.firstChild as HTMLElement;
-    expect(badge.className).toContain("danger");
+    expect(badge.className).toContain("badge-error");
   });
 });

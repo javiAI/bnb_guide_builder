@@ -2905,6 +2905,9 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - `class-variance-authority` — variants en componentes.
 - `tailwind-merge` — merge de clases sin colisión.
 - `clsx` — concat condicional.
+- `@radix-ui/react-select` — primitivo accesible para `select.tsx` (directo, no shadcn CLI).
+- `@radix-ui/react-tabs` — primitivo accesible para `tabs.tsx` (directo, no shadcn CLI).
+- `@radix-ui/react-slot` — habilita `asChild` en `Button`.
 
 **Archivos a re-skinear** (12, en `src/components/ui/`):
 - `badge.tsx`, `banner.tsx`, `checkbox-card-group.tsx`, `collapsible-section.tsx`, `delete-confirmation-button.tsx`, `info-tooltip.tsx`, `inline-save-status.tsx`, `location-map.tsx`, `number-stepper.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `tooltip.tsx`.
@@ -2916,19 +2919,22 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - `src/components/ui/textarea.tsx`.
 - `src/components/ui/card.tsx` — `Card`, `CardHeader`, `CardContent`, `CardFooter`. Variantes mínimas genéricas (default, elevated, outlined). **NO incluye** HeroCard / EssentialCard / StandardCard / WarningCard — esas son guest-only y van en 16C en `src/components/public-guide/ui/guide-card.tsx` (decisión permanente 6).
 - `src/components/ui/tabs.tsx` — Radix Tabs + foundations skin.
-- `src/components/ui/icon.tsx` — wrapper de lucide-react con default size + token color. API: `<Icon name="check" size="md" tone="success" />`.
+- `src/components/ui/icon.tsx` — wrapper de lucide-react con default size + token color. API: `<Icon name="check" size="md" tone="success" />`. Registro estático `ICONS = { ... } as const`; `name: keyof typeof ICONS`. El set inicial contiene solo iconos usados por los componentes tocados en 16B — se amplía explícitamente en ramas posteriores cuando aparezcan nuevos usos. No `import * as Icons`, no dynamic import.
 - `docs/LIORA_COMPONENT_MAPPING.md` — tabla viva: cada componente del repo, su clasificación (`reused | reskinned | rewritten | deleted | new`), tokens semánticos consumidos, decisión shadcn (si aplica).
 
 **Decisión `primary-cta.tsx`** (cierra ambigüedad):
-- Se marca `deprecated` en 16B (alias delgado a `Button variant="primary"`).
-- Se elimina en 16G por grep gate.
-- Documentado en `LIORA_COMPONENT_MAPPING.md` con ownership 16G.
+
+- Se convierte en alias delgado sobre `<Button variant="primary" asChild>` en 16B. API pública sin cambios.
+- **No tocar call sites** (e.g. `src/app/page.tsx`) en 16B — 16B no toca superficies.
+- Se elimina en 16G (grep gate borra el alias y migra los call sites).
+- Clasificación en `LIORA_COMPONENT_MAPPING.md`: `deprecated`; replacement: `Button variant="primary"`; owner: 16G.
 
 **Tests**:
 - Cobertura existente verde.
-- `src/test/liora-component-tokens.test.ts` — verifica que cada primitivo nuevo consume solo tokens semánticos / componente, no primitivos ni hex literales, no aliases legacy salvo los registrados.
-- Axe-core sobre cada primitivo nuevo (test page interna o snapshot DOM en jsdom).
-- Tests específicos por componente nuevo (Button variants, Input states, etc.).
+- `src/test/liora-component-tokens.test.ts` — escanea `src/components/ui/**/*.tsx`; bloquea: primitivos directos (`--warm-*`, `--olive-*`, `--terra-*`, etc.), hex literales, Tailwind named colors built-in. Permite: tokens semánticos `--color-*`, component tokens `--button-*` / `--input-*` / `--card-*` / etc., aliases legacy registrados en 16A.
+- `src/test/liora-no-tailwind-named-color.test.ts` — quinto guard Liora permanente. Scope: `src/components/ui/**/*.tsx`. Detecta color utilities con prefijos `bg-` / `text-` / `border-` / `ring-` / `fill-` / `stroke-` / `from-` / `to-` / `via-` seguidos de nombre de color Tailwind built-in + escala numérica. No bloquea clases no-color como `text-sm`, `ring-2`, `border`, `shadow-sm`.
+- Axe-core sobre snapshot DOM en jsdom para los primitivos interactivos nuevos (Button, Input) y re-skinned complejos (CollapsibleSection, NumberStepper).
+- Tests de variantes: Button (4 variantes × 3 sizes × disabled), Input (3 sizes × error/disabled), Icon (todos los nombres del registro renderizan).
 
 **Criterio de done**:
 - ✅ Tabla de clasificación completa en PR description, sin pendientes.
@@ -2946,8 +2952,10 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - ❌ Crear `HeroCard / EssentialCard / StandardCard / WarningCard` en `src/components/ui/` (van en 16C en `public-guide/ui/`).
 
 **Dependencias / Riesgos**:
-- ⚠️ ~40 call sites de `primary-cta.tsx` siguen funcionando vía alias deprecated; borrar el alias en 16G requiere reemplazarlos todos. Mitigación: registro acumulado en `LIORA_COMPONENT_MAPPING.md`.
-- ⚠️ `location-map.tsx` envuelve MapLibre — re-skin no debe romper marker styles ni brand color injection.
+
+- ⚠️ `primary-cta.tsx` tiene 1 consumer file real (`src/app/page.tsx`, 2 usos) — spec original estimaba ~40. El alias deprecated es suficiente; 16G los migra. Registro en `LIORA_COMPONENT_MAPPING.md`.
+- ⚠️ `location-map.tsx` envuelve MapLibre — marker color via `getComputedStyle(document.documentElement).getPropertyValue("--color-action-primary").trim()`; si el valor está vacío → `new maplibregl.Marker()` sin `color` (fallback nativo MapLibre, no hex hardcodeado).
+- ⚠️ `banner.tsx` — `--alert-*` tokens existen en `components.css` solo para layout/spacing/radius. Colores van por `--color-status-{info,warning,error}-{bg,border,text}` semánticos.
 
 **No-alcance**: superficies, brand themes, dark toggle UI, command palette.
 
