@@ -33,8 +33,15 @@ Generated `dark:` classes match `[data-theme="dark"]` descendants.
 
 IBM Plex Sans, IBM Plex Mono, Newsreader loaded via `next/font/google` in `layout.tsx`.
 Variables `--font-sans`, `--font-serif`, `--font-mono` set on `<html>`.
-`globals.css` overrides `--font-family-{sans,serif,mono}` in `primitives.css` with these vars
-so the browser uses the optimised next/font `@font-face` declarations.
+`src/app/design-system.css` bridges them into the foundations names via:
+```css
+:root {
+  --font-family-sans:  var(--font-sans);
+  --font-family-serif: var(--font-serif);
+  --font-family-mono:  var(--font-mono);
+}
+```
+This block sits after the `@import` rules so the browser uses the optimised `@font-face` declarations generated at build time.
 
 ### 1.4 Dark mode infrastructure
 
@@ -170,7 +177,7 @@ These per-property brand colors coexist with foundations:
 | Branch | Status | Surfaces adopted |
 |---|---|---|
 | `chore/plan-update-liora` | ✅ merged | Package setup, CI gate |
-| `16A refactor/liora-token-foundation` | 🔄 in progress | Token infra, fonts, dark mode pre-paint |
+| `16A refactor/liora-token-foundation` | ✅ complete | Token infra, fonts, dark mode pre-paint |
 | `16B refactor/liora-core-components` | ⬜ pending | `src/components/ui/` primitives |
 | `16C feat/liora-guest-guide-redesign` | ⬜ pending | `/g/:slug` surface |
 | `16D feat/liora-operator-shell-redesign` | ⬜ pending | Sidebar, topbar, dark toggle |

@@ -45,14 +45,11 @@ describe("liora-token-coverage", () => {
       }
     }
 
-    // legacy aliases + globals.css (font bridge)
-    for (const rel of [
-      "src/styles/legacy-aliases.css",
-      "src/app/globals.css",
-    ]) {
-      for (const v of extractDeclarations(readFileSync(join(ROOT, rel), "utf8"))) {
-        declared.add(v);
-      }
+    // legacy aliases (font bridge now lives in design-system.css, picked up by src walk below)
+    for (const v of extractDeclarations(
+      readFileSync(join(ROOT, "src/styles/legacy-aliases.css"), "utf8"),
+    )) {
+      declared.add(v);
     }
 
     // ── 2. Walk src/ once; declarations first (phase A), references second (phase B) ──
