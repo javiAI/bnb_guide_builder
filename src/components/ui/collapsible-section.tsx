@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import { Tooltip } from "./tooltip";
 
 interface CollapsibleSectionProps {
   title: React.ReactNode;
@@ -13,8 +14,6 @@ interface CollapsibleSectionProps {
 }
 
 function SelectionBadge({ label }: { label: string }) {
-  const [hovered, setHovered] = useState(false);
-
   const parts = label.split(", ").map((s) => s.trim()).filter(Boolean);
 
   if (parts.length <= 1) {
@@ -26,34 +25,16 @@ function SelectionBadge({ label }: { label: string }) {
   }
 
   return (
-    <span
-      className="relative inline-flex items-center gap-1"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <span className="rounded-full bg-[var(--color-interactive-selected)] px-3 py-0.5 text-xs font-medium text-[var(--color-interactive-selected-fg)]">
-        {parts[0]}
-      </span>
-      <span className="rounded-full bg-[var(--color-background-subtle)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-secondary)]">
-        +{parts.length - 1}
-      </span>
-      {hovered && (
-        <span
-          className="absolute right-0 top-full z-20 mt-1 w-56 rounded-[var(--tooltip-radius)] shadow-[var(--tooltip-shadow)]"
-          style={{
-            background: "var(--tooltip-bg)",
-            color: "var(--tooltip-fg)",
-            padding: "var(--tooltip-padding)",
-          }}
-        >
-          <ul className="space-y-1 text-xs">
-            {parts.map((p, i) => (
-              <li key={i}>{p}</li>
-            ))}
-          </ul>
+    <Tooltip text={parts.join(", ")}>
+      <span className="inline-flex items-center gap-1">
+        <span className="rounded-full bg-[var(--color-interactive-selected)] px-3 py-0.5 text-xs font-medium text-[var(--color-interactive-selected-fg)]">
+          {parts[0]}
         </span>
-      )}
-    </span>
+        <span className="rounded-full bg-[var(--color-background-subtle)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-text-secondary)]">
+          +{parts.length - 1}
+        </span>
+      </span>
+    </Tooltip>
   );
 }
 

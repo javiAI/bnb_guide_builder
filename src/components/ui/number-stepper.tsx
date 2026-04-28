@@ -13,6 +13,8 @@ interface NumberStepperProps {
   suffix?: string;
 }
 
+const stepBtnCls = "flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]";
+
 export function NumberStepper({
   label,
   value,
@@ -32,7 +34,7 @@ export function NumberStepper({
           type="button"
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]"
+          className={stepBtnCls}
           aria-label={`Reducir ${label}`}
         >
           &minus;
@@ -44,7 +46,7 @@ export function NumberStepper({
           type="button"
           disabled={value >= max}
           onClick={() => onChange(Math.min(max, value + step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]"
+          className={stepBtnCls}
           aria-label={`Aumentar ${label}`}
         >
           +

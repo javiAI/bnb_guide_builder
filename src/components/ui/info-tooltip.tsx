@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { createPortal } from "react-dom";
+import { TooltipBubble } from "./tooltip";
 
 interface InfoTooltipProps {
   text: string;
@@ -45,42 +46,6 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
     };
   }, [open, calcPos]);
 
-  const tooltip = (
-    <span
-      id={tooltipId}
-      role="tooltip"
-      onMouseDown={(e) => e.stopPropagation()}
-      style={{
-        position: "absolute",
-        top: pos.top,
-        left: pos.left,
-        transform: "translate(-50%, -100%)",
-        zIndex: 9999,
-        pointerEvents: "none",
-        background: "var(--tooltip-bg)",
-        color: "var(--tooltip-fg)",
-        padding: "var(--tooltip-padding)",
-        maxWidth: "var(--tooltip-max-width)",
-        boxShadow: "var(--tooltip-shadow)",
-        borderRadius: "var(--tooltip-radius)",
-      }}
-      className="text-[length:var(--tooltip-font-size)] leading-relaxed w-60"
-    >
-      {text}
-      <span
-        style={{
-          position: "absolute",
-          top: "100%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          borderWidth: "5px",
-          borderStyle: "solid",
-          borderColor: "var(--tooltip-bg) transparent transparent transparent",
-        }}
-      />
-    </span>
-  );
-
   return (
     <span className="inline-flex shrink-0">
       <span
@@ -95,7 +60,10 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
       >
         ?
       </span>
-      {open && mounted && createPortal(tooltip, document.body)}
+      {open && mounted && createPortal(
+        <TooltipBubble id={tooltipId} pos={pos} text={text} onMouseDown={(e) => e.stopPropagation()} />,
+        document.body,
+      )}
     </span>
   );
 }
