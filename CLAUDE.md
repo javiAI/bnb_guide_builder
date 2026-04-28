@@ -193,6 +193,16 @@ Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` 
 - Stack obligatorio en UI guest: Radix UI primitives, lucide-react, CVA, tailwind-merge/clsx, fuse.js, yet-another-react-lightbox (lazy), date-fns, react-hook-form+zod solo en forms. **Prohibido** en guest: MUI, Ant Design, Chakra, `next-pwa`.
 - PWA / offline (rama 10I): SW manual servido por `src/app/g/[slug]/sw.js/route.ts` (no `public/sw.js` — scope global rompería aislamiento). Versionado vía `__SW_VERSION__` = `GuideSearchIndex.buildVersion` (rama 10H), 12 chars determinísticos. Tres tiers de caché declarados en `taxonomies/guide_sections.json` (`offlineCacheTier: 1|2|3`); tier 1 (essentials/arrival/checkout/emergency) precached al install + SWR; tier 2 (thumbs) SWR con cap 12; tier 3 (md/full) network-first con timeout 2s. Manifest dinámico vía `buildGuidePwaManifest()` con `theme_color` derivado de `getBrandPair(brandPaletteKey).light`. Cache names llevan slug en namespace (`guide-<slug>-tier{N}-<version>`) para aislamiento per-property. Tests: 5 invariantes vitest + 1 spec E2E fuerte; SW lifecycle real no se testea en headless (flake típico).
 
+## Patrones de UI — Operator shell (Fase 16D)
+
+- **ThemeToggle** (`src/components/ui/theme-toggle.tsx`): 3 estados — `auto` / `light` / `dark`. Persiste en `localStorage[THEME_STORAGE_KEY]` (`src/lib/theme.ts`, key `"theme"`). Aplica `data-theme` en `<html>`. En modo `auto` responde a cambios del SO vía `matchMedia` listener (useEffect con cleanup). El pre-paint script en `layout.tsx` lleva una copia del key literal porque no puede importar módulos — si renombras `THEME_STORAGE_KEY`, actualiza `layout.tsx` también.
+- **AppShell** (`src/components/layout/app-shell.tsx`): server component. Monta `SideNav` + columna de contenido (`Topbar` + `<main>`). `sectionScores` se obtiene de `getDerived()` dentro de un try/catch fail-soft (un fallo de caché no rompe la navegación).
+- **Topbar** (`src/components/layout/topbar.tsx`): client component. Grid 3 columnas: breadcrumbs | `CommandBarSlot` | `ThemeToggle`. Usa `isNavItemActive()` de `navigation.ts` para resolver el item activo.
+- **CommandBarSlot** (`src/components/layout/command-bar-slot.tsx`): placeholder visual, `aria-hidden="true"`. No tiene interactividad ni listener `⌘K` — funcionalidad real diferida a `FUTURE.md §8.2`.
+- **SideNav** (`src/components/layout/side-nav.tsx`): iconos viven en mapa local `NAV_ICONS: Record<string, LucideIcon>` — NO en `navigation.ts`. `isNavItemActive()` importado de `navigation.ts`. Badge de propiedad arriba, grupos content/outputs/operations en el centro, "Nueva propiedad" en el footer (neutro, sin identidad de usuario).
+- **Properties list + login** (`src/app/page.tsx`, `src/app/login/page.tsx`): ambas tienen `ThemeToggle` en un header mínimo. Login: reskin completo con tokens semánticos, copia en español, SVG de Google inline.
+- **dark-parity.test.ts** (`src/test/dark-parity.test.ts`): 4 tests — root block existe, dark block existe, todos los grupos core tienen override dark, ≥80% paridad global. Los grupos core = `CORE_PREFIXES` en el test.
+
 ## Patrones de UI — Espacios
 
 - Botones de feature activos: estilo sólido `bg-[var(--color-primary-500)] text-white` — **no** `bg-primary-50 text-primary-700` (bajo contraste sobre surface-elevated)
