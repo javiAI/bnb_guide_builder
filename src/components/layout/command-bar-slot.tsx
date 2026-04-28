@@ -4,7 +4,7 @@ export function CommandBarSlot() {
   return (
     <div
       aria-hidden="true"
-      className="flex h-9 w-full items-center gap-2.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[var(--color-text-tertiary)] select-none"
+      className="flex h-9 w-full items-center gap-2.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[var(--color-text-muted)] select-none"
     >
       <Search size={14} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--color-text-muted)]">
