@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 /** Trigger logic is load-bearing across Liora replatform (FASE 15) — the
  * skin can change but the visit/time thresholds and per-slug dismissal
@@ -70,7 +70,7 @@ function isStandaloneInstalled(): boolean {
   return Boolean(ios);
 }
 
-export function InstallNudge({ slug }: { slug: string }) {
+export function InstallNudge({ slug, brandLight, brandDark }: { slug: string; brandLight?: string; brandDark?: string }) {
   const [visible, setVisible] = useState(false);
   const [iosInstructionsOpen, setIosInstructionsOpen] = useState(false);
   const promptEventRef = useRef<BeforeInstallPromptEvent | null>(null);
@@ -186,8 +186,12 @@ export function InstallNudge({ slug }: { slug: string }) {
 
   const ios = isIosSafari();
 
+  const brandStyle = brandLight
+    ? ({ "--guide-brand-light": brandLight, "--guide-brand-dark": brandDark ?? brandLight } as CSSProperties)
+    : undefined;
+
   return (
-    <div className="guide-install-nudge" role="dialog" aria-labelledby="guide-install-nudge-title">
+    <div className="guide-install-nudge" role="dialog" aria-labelledby="guide-install-nudge-title" style={brandStyle}>
       {iosInstructionsOpen ? (
         <div className="guide-install-nudge__panel">
           <h2 id="guide-install-nudge-title" className="guide-install-nudge__title">

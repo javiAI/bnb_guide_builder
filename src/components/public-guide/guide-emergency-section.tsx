@@ -10,6 +10,7 @@ import {
   resolveEmptyCopy,
 } from "@/lib/renderers/_guide-display";
 import { GuideEmptyState } from "./guide-empty-state";
+import { WarningCard } from "./ui/guide-card";
 
 interface Props {
   section: GuideSection;
@@ -17,10 +18,6 @@ interface Props {
   audience: GuideAudience;
 }
 
-/** Specialized renderer for "Ayuda y emergencias". Phone and email are
- * promoted to tappable `tel:` / `mailto:` links so a guest needing help gets
- * one tap — not a copy-paste dance. Non-contact fields fall through to the
- * standard definition-list layout. */
 export function GuideEmergencySection({ section, renderable, audience }: Props) {
   const emptyCopy = resolveEmptyCopy(section, audience);
   return (
@@ -45,7 +42,7 @@ export function GuideEmergencySection({ section, renderable, audience }: Props) 
             const notes = fields.find((f) => f.label === EMERGENCY_FIELD_LABELS.notes)?.value;
             const mailto = email ? buildMailtoHref(email) : null;
             return (
-              <article key={item.id} className="guide-item" id={`item-${item.id}`}>
+              <WarningCard as="article" key={item.id} className="guide-item" id={`item-${item.id}`}>
                 <h3 className="guide-item__label">{item.label}</h3>
                 <div className="guide-contact">
                   {phone && (
@@ -63,7 +60,7 @@ export function GuideEmergencySection({ section, renderable, audience }: Props) 
                   )}
                   {notes && <p className="guide-contact__notes">{notes}</p>}
                 </div>
-              </article>
+              </WarningCard>
             );
           })}
         </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { ServiceWorkerRegister } from "@/lib/client/service-worker-register";
 import { InstallNudge } from "@/components/public-guide/install-nudge";
+import { getBrandPair } from "@/config/brand-palette";
 // MapLibre's stylesheet is a node_modules global CSS file consumed by the
 // `<GuideMap>` island inside this subtree. Next.js prefers global CSS to be
 // imported from a layout/entry rather than a client component so the style
@@ -26,14 +27,24 @@ export default async function PublicGuideLayout({ params, children }: Props) {
 
   const published = await prisma.guideVersion.findFirst({
     where: { property: { publicSlug: slug }, status: "published" },
-    select: { version: true },
+    select: { version: true, property: { select: { brandPaletteKey: true } } },
   });
+
+  const brandPair = published
+    ? getBrandPair(published.property.brandPaletteKey)
+    : null;
 
   return (
     <>
       {children}
       {published && <ServiceWorkerRegister slug={slug} />}
-      {published && <InstallNudge slug={slug} />}
+      {published && (
+        <InstallNudge
+          slug={slug}
+          brandLight={brandPair?.light}
+          brandDark={brandPair?.dark}
+        />
+      )}
     </>
   );
 }

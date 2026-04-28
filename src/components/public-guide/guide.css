@@ -5,23 +5,28 @@
  */
 
 .guide-root {
-  --guide-brand: var(--guide-brand-light, var(--color-primary-500));
-  --guide-brand-contrast: var(--color-neutral-50);
-  --guide-muted: var(--color-neutral-600);
-  --guide-surface: var(--surface-elevated, #ffffff);
-  --guide-border: var(--color-neutral-200);
+  --guide-brand: var(--guide-brand-light, var(--color-action-primary));
+  --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
+  --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-brand-focus-ring: color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  --guide-muted: var(--color-text-secondary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
   --guide-gap: 1.5rem;
-  color: var(--foreground);
-  background: var(--background);
+  --button-primary-bg:        var(--guide-brand);
+  --button-primary-bg-hover:  var(--guide-brand-hover);
+  --button-primary-bg-active: var(--guide-brand-active);
+  --button-primary-fg:        var(--guide-brand-fg);
+  --button-primary-border:    transparent;
+  color: var(--color-text-primary);
+  background: var(--color-background-page);
+  font-family: var(--font-family-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  .guide-root {
-    --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
-    --guide-muted: var(--color-neutral-400);
-    --guide-surface: var(--color-neutral-900);
-    --guide-border: var(--color-neutral-800);
-  }
+/* Dark-mode brand switch via 16A data-theme mechanism. */
+[data-theme="dark"] .guide-root {
+  --guide-brand: var(--guide-brand-dark, var(--color-action-primary));
 }
 
 .guide-brand-header {
@@ -52,7 +57,7 @@
 .guide-brand-header__logo {
   width: 3rem;
   height: 3rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   object-fit: cover;
 }
 
@@ -60,7 +65,7 @@
   font-size: 1.5rem;
   line-height: 2rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -106,7 +111,7 @@
 .guide-toc__link {
   display: block;
   padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   font-size: 0.875rem;
   color: var(--guide-muted);
   text-decoration: none;
@@ -116,15 +121,8 @@
 .guide-toc__link:hover,
 .guide-toc__link:focus-visible {
   color: var(--guide-brand);
-  background: var(--color-neutral-50);
+  background: var(--color-interactive-hover);
   outline: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-toc__link:hover,
-  .guide-toc__link:focus-visible {
-    background: var(--color-neutral-800);
-  }
 }
 
 .guide-toc__link[aria-current="true"] {
@@ -158,7 +156,7 @@
   font-size: 1.375rem;
   line-height: 1.75rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-section--hero .guide-section__title {
@@ -176,7 +174,7 @@
 .guide-section__empty {
   padding: 1.25rem;
   border: 1px dashed var(--guide-border);
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   color: var(--guide-muted);
   font-size: 0.9375rem;
 }
@@ -187,23 +185,16 @@
   gap: var(--guide-gap);
 }
 
-.guide-item {
-  padding: 1.25rem;
-  background: var(--guide-surface);
-  border: 1px solid var(--guide-border);
-  border-radius: var(--radius-lg, 0.75rem);
-}
-
 .guide-item__label {
   margin: 0 0 0.25rem;
   font-size: 1.0625rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-item__value {
   margin: 0 0 0.75rem;
-  color: var(--guide-muted);
+  color: var(--color-text-secondary);
   font-size: 0.9375rem;
 }
 
@@ -219,7 +210,7 @@
 .guide-item__field-label {
   font-weight: 600;
   margin-right: 0.375rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-item__field-value {
@@ -258,10 +249,10 @@
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: var(--radius-md, 0.5rem);
-  border: 1px solid var(--guide-border);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
   cursor: zoom-in;
-  background: var(--color-neutral-100);
+  background: var(--color-background-subtle);
 }
 
 .guide-gallery__thumb-btn:focus-visible .guide-gallery__thumb {
@@ -288,7 +279,7 @@
 .guide-deprecated {
   display: inline-block;
   font-size: 0.75rem;
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   margin-left: 0.5rem;
   text-transform: lowercase;
 }
@@ -308,26 +299,54 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0.625rem 1rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
+  transition: background 150ms ease;
 }
 
-.guide-quick-action:hover,
+.guide-quick-action:hover {
+  background: var(--guide-brand-hover);
+  text-decoration: none;
+}
+
+.guide-quick-action:active {
+  background: var(--guide-brand-active);
+}
+
 .guide-quick-action:focus-visible {
-  outline: 2px solid var(--guide-brand);
+  outline: 2px solid var(--guide-brand-active);
   outline-offset: 2px;
   text-decoration: none;
 }
 
 .guide-quick-action__label {
   white-space: nowrap;
+}
+
+/* Hero answer cards: override card tokens on the container so StandardCard
+ * children pick them up via var() cascade — avoids selector specificity race
+ * with Tailwind arbitrary-value utilities. */
+.guide-hero__answers {
+  --card-bg: color-mix(in srgb, var(--guide-brand-fg) 10%, var(--guide-brand));
+  --card-border: color-mix(in srgb, var(--guide-brand-fg) 20%, var(--guide-brand));
+  --card-fg: var(--guide-brand-fg);
+}
+
+.guide-hero__answers .guide-item__label,
+.guide-hero__answers .guide-item__field-label {
+  color: var(--guide-brand-fg);
+}
+
+.guide-hero__answers .guide-item__value,
+.guide-hero__answers .guide-item__field-value {
+  color: var(--guide-brand-fg);
 }
 
 /* Toast viewport: bottom-right on desktop, full-width on mobile. */
@@ -357,19 +376,13 @@
 }
 
 .guide-toast {
-  background: var(--color-neutral-900);
-  color: var(--color-neutral-50);
-  border-radius: var(--radius-md, 0.5rem);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  border: 1px solid var(--toast-border);
+  border-radius: var(--toast-radius);
   padding: 0.75rem 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--toast-shadow);
   font-size: 0.9375rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-toast {
-    background: var(--color-neutral-50);
-    color: var(--color-neutral-900);
-  }
 }
 
 .guide-toast__title {
@@ -391,7 +404,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -404,7 +417,7 @@
 }
 
 .guide-search__trigger:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-search__trigger-label {
@@ -427,31 +440,31 @@
 
 .guide-search__dialog {
   /* Radix portals the dialog to `document.body`, so `.guide-root`-scoped
-   * tokens are unreachable. Rebind the minimum set the dialog uses so the
-   * surface, text and borders render against known values (axe WCAG AA). */
-  --guide-brand: var(--guide-brand-light, var(--color-primary-500));
-  --guide-muted: var(--color-neutral-600);
-  --guide-surface: var(--surface-elevated, #ffffff);
-  --guide-border: var(--color-neutral-200);
+   * tokens are unreachable. Rebind with semantic tokens so surface, text,
+   * and borders render correctly; only --guide-brand needs dark-mode rebind
+   * (semantic tokens adapt automatically via [data-theme="dark"]). */
+  --guide-brand: var(--guide-brand-light, var(--color-action-primary));
+  --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
+  --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-brand-focus-ring: color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  --guide-muted: var(--color-text-secondary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
   position: fixed;
   inset: 0;
   z-index: 51;
   display: flex;
   flex-direction: column;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   padding: 1rem;
   gap: 0.75rem;
   animation: guideSearchFadeIn 160ms ease-out;
 }
 
-@media (prefers-color-scheme: dark) {
-  .guide-search__dialog {
-    --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
-    --guide-muted: var(--color-neutral-400);
-    --guide-surface: var(--color-neutral-900);
-    --guide-border: var(--color-neutral-800);
-  }
+[data-theme="dark"] .guide-search__dialog {
+  --guide-brand: var(--guide-brand-dark, var(--color-action-primary));
 }
 
 @media (min-width: 640px) {
@@ -462,7 +475,7 @@
     transform: translateX(-50%);
     width: min(560px, calc(100vw - 2rem));
     max-height: 70vh;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--guide-border);
     padding: 1.25rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
@@ -488,13 +501,13 @@
   gap: 0.5rem;
   padding: 0 0.75rem;
   border: 1px solid var(--guide-border);
-  border-radius: 0.5rem;
-  background: var(--background);
+  border-radius: var(--radius-md);
+  background: var(--color-background-page);
 }
 
 .guide-search__input-row:focus-within {
   border-color: var(--guide-brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-search__input {
@@ -502,7 +515,7 @@
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 1rem;
   outline: none;
 }
@@ -533,7 +546,7 @@
   grid-template-rows: auto auto;
   gap: 0.125rem 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   min-height: 44px;
 }
@@ -547,7 +560,7 @@
   grid-column: 1;
   grid-row: 1;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-search__result-snippet {
@@ -591,10 +604,10 @@
   margin: 0.5rem 0;
   padding: 0.625rem 0.875rem;
   min-height: 44px;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--guide-border);
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font: inherit;
   cursor: pointer;
 }
@@ -627,7 +640,7 @@
 .guide-search__inline-error {
   margin: 0.25rem 0;
   font-size: 0.8125rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 @keyframes guideSearchFadeIn {
@@ -649,7 +662,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -662,7 +675,7 @@
 }
 
 .guide-reporter__trigger:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__trigger-label {
@@ -690,7 +703,7 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__description {
@@ -719,7 +732,7 @@
 .guide-reporter__legend {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   padding: 0;
 }
 
@@ -735,7 +748,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   cursor: pointer;
 }
@@ -747,12 +760,12 @@
 }
 
 .guide-reporter__chip:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__chip--selected {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
   border-color: var(--guide-brand);
 }
 
@@ -765,7 +778,7 @@
 .guide-reporter__label {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__textarea,
@@ -773,9 +786,9 @@
   width: 100%;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--guide-border);
-  border-radius: 0.5rem;
-  background: var(--background);
-  color: var(--foreground);
+  border-radius: var(--radius-md);
+  background: var(--color-background-page);
+  color: var(--color-text-primary);
   font: inherit;
   font-size: 1rem;
   line-height: 1.4;
@@ -794,7 +807,7 @@
 .guide-reporter__input:focus-visible {
   border-color: var(--guide-brand);
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--guide-brand) 35%, transparent);
+  box-shadow: 0 0 0 3px var(--guide-brand-focus-ring);
 }
 
 .guide-reporter__counter,
@@ -806,9 +819,9 @@
 .guide-reporter__error {
   margin: 0;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--color-danger-500, #b91c1c) 12%, transparent);
-  color: var(--foreground);
+  border-radius: var(--radius-md);
+  background: var(--color-status-error-bg);
+  color: var(--color-status-error-text);
   font-size: 0.9375rem;
 }
 
@@ -823,7 +836,7 @@
 .guide-reporter__secondary {
   min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
@@ -832,7 +845,7 @@
 
 .guide-reporter__primary {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
 }
 
 .guide-reporter__primary:disabled,
@@ -843,7 +856,7 @@
 
 .guide-reporter__secondary {
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border-color: var(--guide-border);
 }
 
@@ -864,7 +877,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__success-copy {
@@ -878,6 +891,14 @@
  * so the Liora replatform (FASE 15) re-skins without rewiring triggers. */
 
 .guide-install-nudge {
+  /* Self-supply guide tokens: nudge renders outside .guide-root in the layout
+   * tree, so it cannot inherit scoped vars. Inline style provides
+   * --guide-brand-light/dark; these fallback rules cover the default case. */
+  --guide-brand: var(--guide-brand-light, var(--color-action-primary));
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
+  --guide-muted: var(--color-text-secondary);
   position: fixed;
   bottom: 0;
   left: 0;
@@ -889,13 +910,17 @@
   pointer-events: none;
 }
 
+[data-theme="dark"] .guide-install-nudge {
+  --guide-brand: var(--guide-brand-dark, var(--color-action-primary));
+}
+
 .guide-install-nudge__panel {
   pointer-events: auto;
   width: min(28rem, 100%);
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border: 1px solid var(--guide-border);
-  border-radius: var(--radius-md, 0.75rem);
+  border-radius: var(--radius-md);
   padding: 0.875rem 1rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
   display: flex;
@@ -922,7 +947,7 @@
   padding-left: 1.25rem;
   font-size: 0.9375rem;
   line-height: 1.4;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -940,7 +965,7 @@
   min-height: 44px;
   min-width: 44px;
   padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
@@ -950,12 +975,12 @@
 
 .guide-install-nudge__btn-primary {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
 }
 
 .guide-install-nudge__btn-secondary {
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border-color: var(--guide-border);
 }
 
@@ -984,15 +1009,9 @@
   align-self: flex-start;
   gap: 0.25rem;
   padding: 0.25rem;
-  border-radius: var(--radius-lg, 0.75rem);
-  background: var(--color-neutral-100);
+  border-radius: var(--radius-lg);
+  background: var(--color-background-subtle);
   border: 1px solid var(--guide-border);
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-map__toggle {
-    background: var(--color-neutral-800);
-  }
 }
 
 .guide-map__toggle-btn {
@@ -1001,7 +1020,7 @@
   gap: 0.375rem;
   min-height: 44px;
   padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   border: 0;
   background: transparent;
   font-size: 0.875rem;
@@ -1012,7 +1031,7 @@
 
 .guide-map__toggle-btn.is-active {
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
@@ -1028,7 +1047,7 @@
   min-width: 1.5rem;
   padding: 0 0.375rem;
   border-radius: 999px;
-  background: var(--color-neutral-200);
+  background: var(--color-background-subtle);
   color: var(--guide-muted);
   font-size: 0.75rem;
   font-weight: 600;
@@ -1037,22 +1056,16 @@
 
 .guide-map__toggle-btn.is-active .guide-map__toggle-count {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-map__toggle-count {
-    background: var(--color-neutral-700);
-  }
+  color: var(--guide-brand-fg);
 }
 
 .guide-map__canvas {
   width: 100%;
   height: 24rem;
-  border-radius: var(--radius-lg, 0.75rem);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--guide-border);
   overflow: hidden;
-  background: var(--color-neutral-100);
+  background: var(--color-background-subtle);
 }
 
 @media (max-width: 640px) {
@@ -1064,18 +1077,12 @@
 .guide-map__zone-note {
   margin: 0;
   padding: 0.625rem 0.75rem;
-  border-radius: var(--radius-md, 0.5rem);
-  background: var(--color-neutral-50);
+  border-radius: var(--radius-md);
+  background: var(--color-background-subtle);
   border: 1px solid var(--guide-border);
   color: var(--guide-muted);
   font-size: 0.8125rem;
   line-height: 1.4;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-map__zone-note {
-    background: var(--color-neutral-900);
-  }
 }
 
 .guide-map__fallback {
@@ -1084,25 +1091,19 @@
   justify-content: center;
   min-height: 12rem;
   padding: 1.5rem;
-  border-radius: var(--radius-lg, 0.75rem);
+  border-radius: var(--radius-lg);
   border: 1px dashed var(--guide-border);
-  background: var(--color-neutral-50);
+  background: var(--color-background-subtle);
   color: var(--guide-muted);
   font-size: 0.9375rem;
   text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-map__fallback {
-    background: var(--color-neutral-900);
-  }
 }
 
 .guide-map__pin {
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 999px;
-  border: 2px solid var(--guide-brand-contrast, #fff);
+  border: 2px solid var(--guide-brand-fg);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   cursor: pointer;
 }
@@ -1117,11 +1118,11 @@
 }
 
 .guide-map__pin--event {
-  background: #f59e0b; /* amber — visual delta vs place pins */
+  background: var(--color-status-warning-solid);
 }
 
 .guide-map__pin--anchor-exact {
-  background: #ef4444;
+  background: var(--color-status-error-solid);
   width: 1rem;
   height: 1rem;
 }
@@ -1135,7 +1136,7 @@
   margin: 0 0 0.125rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   line-height: 1.3;
 }
 
@@ -1157,7 +1158,7 @@
 .guide-events__empty {
   padding: 1.25rem;
   border: 1px dashed var(--guide-border);
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   color: var(--guide-muted);
   font-size: 0.9375rem;
 }
@@ -1167,7 +1168,7 @@
   grid-template-columns: auto 1fr;
   gap: 0.875rem;
   padding: 0.875rem 1rem;
-  border-radius: var(--radius-md, 0.75rem);
+  border-radius: var(--radius-md);
   border: 1px solid var(--guide-border);
   background: var(--guide-surface);
 }
@@ -1179,16 +1180,10 @@
   justify-content: center;
   min-width: 3.5rem;
   padding: 0.375rem 0.5rem;
-  border-radius: var(--radius-md, 0.5rem);
-  background: var(--color-neutral-50);
+  border-radius: var(--radius-md);
+  background: var(--color-background-subtle);
   border: 1px solid var(--guide-border);
-  color: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-event__date {
-    background: var(--color-neutral-900);
-  }
+  color: var(--color-text-primary);
 }
 
 .guide-event__month {
@@ -1216,7 +1211,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   line-height: 1.3;
 }
 
@@ -1235,14 +1230,14 @@
 }
 
 .guide-event__meta-item--nocoord {
-  color: var(--color-neutral-500);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
 .guide-event__desc {
   margin: 0.25rem 0 0;
   font-size: 0.875rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   line-height: 1.4;
 }
 
@@ -1269,10 +1264,77 @@
 
 .guide-event__origin {
   font-size: 0.75rem;
-  color: var(--color-neutral-600, #5a5a5a);
-  background: var(--color-neutral-100, #f2f2f2);
+  color: var(--color-text-secondary);
+  background: var(--color-background-subtle);
   padding: 0.15rem 0.5rem;
   border-radius: 999px;
   line-height: 1.2;
   cursor: help;
+}
+
+/* ── Incident tracking page (/g/:slug/incidents/:id) ────────────────────── */
+
+.guide-incident-page {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.guide-incident-main {
+  max-width: 36rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.guide-incident-header__property {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--guide-muted);
+}
+
+.guide-incident-header__title {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.guide-incident-dl {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--guide-border);
+  border-radius: var(--radius-lg);
+  background: var(--guide-surface);
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.guide-incident-dl dt {
+  color: var(--guide-muted);
+}
+
+.guide-incident-dl dd {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.guide-incident-dl dd.is-status {
+  font-weight: 600;
+}
+
+.guide-incident-footer {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--guide-muted);
+  line-height: 1.5;
+}
+
+.guide-incident-back {
+  color: var(--guide-brand);
+  font-weight: 600;
+  text-decoration: none;
 }
