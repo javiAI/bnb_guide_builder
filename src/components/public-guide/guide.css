@@ -386,19 +386,13 @@
 }
 
 .guide-toast {
-  background: var(--color-neutral-900);
-  color: var(--color-neutral-50);
-  border-radius: var(--radius-md, 0.5rem);
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  border: 1px solid var(--toast-border);
+  border-radius: var(--toast-radius);
   padding: 0.75rem 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--toast-shadow);
   font-size: 0.9375rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .guide-toast {
-    background: var(--color-neutral-50);
-    color: var(--color-neutral-900);
-  }
 }
 
 .guide-toast__title {
@@ -420,7 +414,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -456,31 +450,27 @@
 
 .guide-search__dialog {
   /* Radix portals the dialog to `document.body`, so `.guide-root`-scoped
-   * tokens are unreachable. Rebind the minimum set the dialog uses so the
-   * surface, text and borders render against known values (axe WCAG AA). */
+   * tokens are unreachable. Rebind with semantic tokens so surface, text,
+   * and borders render correctly; only --guide-brand needs dark-mode rebind
+   * (semantic tokens adapt automatically via [data-theme="dark"]). */
   --guide-brand: var(--guide-brand-light, var(--color-primary-500));
-  --guide-muted: var(--color-neutral-600);
-  --guide-surface: var(--surface-elevated, #ffffff);
-  --guide-border: var(--color-neutral-200);
+  --guide-muted: var(--color-text-secondary);
+  --guide-surface: var(--color-background-elevated);
+  --guide-border: var(--color-border-default);
   position: fixed;
   inset: 0;
   z-index: 51;
   display: flex;
   flex-direction: column;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   padding: 1rem;
   gap: 0.75rem;
   animation: guideSearchFadeIn 160ms ease-out;
 }
 
-@media (prefers-color-scheme: dark) {
-  .guide-search__dialog {
-    --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
-    --guide-muted: var(--color-neutral-400);
-    --guide-surface: var(--color-neutral-900);
-    --guide-border: var(--color-neutral-800);
-  }
+[data-theme="dark"] .guide-search__dialog {
+  --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
 }
 
 @media (min-width: 640px) {
@@ -491,7 +481,7 @@
     transform: translateX(-50%);
     width: min(560px, calc(100vw - 2rem));
     max-height: 70vh;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--guide-border);
     padding: 1.25rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
@@ -517,8 +507,8 @@
   gap: 0.5rem;
   padding: 0 0.75rem;
   border: 1px solid var(--guide-border);
-  border-radius: 0.5rem;
-  background: var(--background);
+  border-radius: var(--radius-md);
+  background: var(--color-background-page);
 }
 
 .guide-search__input-row:focus-within {
@@ -531,7 +521,7 @@
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 1rem;
   outline: none;
 }
@@ -562,7 +552,7 @@
   grid-template-rows: auto auto;
   gap: 0.125rem 0.75rem;
   padding: 0.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   cursor: pointer;
   min-height: 44px;
 }
@@ -576,7 +566,7 @@
   grid-column: 1;
   grid-row: 1;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-search__result-snippet {
@@ -620,10 +610,10 @@
   margin: 0.5rem 0;
   padding: 0.625rem 0.875rem;
   min-height: 44px;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   border: 1px solid var(--guide-border);
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font: inherit;
   cursor: pointer;
 }
@@ -656,7 +646,7 @@
 .guide-search__inline-error {
   margin: 0.25rem 0;
   font-size: 0.8125rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 @keyframes guideSearchFadeIn {
@@ -678,7 +668,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -719,7 +709,7 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__description {
@@ -748,7 +738,7 @@
 .guide-reporter__legend {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   padding: 0;
 }
 
@@ -764,7 +754,7 @@
   border: 1px solid var(--guide-border);
   border-radius: 999px;
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   font-size: 0.9375rem;
   cursor: pointer;
 }
@@ -781,7 +771,7 @@
 
 .guide-reporter__chip--selected {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
   border-color: var(--guide-brand);
 }
 
@@ -794,7 +784,7 @@
 .guide-reporter__label {
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__textarea,
@@ -802,9 +792,9 @@
   width: 100%;
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--guide-border);
-  border-radius: 0.5rem;
-  background: var(--background);
-  color: var(--foreground);
+  border-radius: var(--radius-md);
+  background: var(--color-background-page);
+  color: var(--color-text-primary);
   font: inherit;
   font-size: 1rem;
   line-height: 1.4;
@@ -835,9 +825,9 @@
 .guide-reporter__error {
   margin: 0;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--color-danger-500, #b91c1c) 12%, transparent);
-  color: var(--foreground);
+  border-radius: var(--radius-md);
+  background: var(--color-status-error-bg);
+  color: var(--color-status-error-text);
   font-size: 0.9375rem;
 }
 
@@ -852,7 +842,7 @@
 .guide-reporter__secondary {
   min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
@@ -861,7 +851,7 @@
 
 .guide-reporter__primary {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
 }
 
 .guide-reporter__primary:disabled,
@@ -872,7 +862,7 @@
 
 .guide-reporter__secondary {
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border-color: var(--guide-border);
 }
 
@@ -893,7 +883,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--foreground);
+  color: var(--color-text-primary);
 }
 
 .guide-reporter__success-copy {
@@ -922,9 +912,9 @@
   pointer-events: auto;
   width: min(28rem, 100%);
   background: var(--guide-surface);
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border: 1px solid var(--guide-border);
-  border-radius: var(--radius-md, 0.75rem);
+  border-radius: var(--radius-md);
   padding: 0.875rem 1rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
   display: flex;
@@ -951,7 +941,7 @@
   padding-left: 1.25rem;
   font-size: 0.9375rem;
   line-height: 1.4;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -969,7 +959,7 @@
   min-height: 44px;
   min-width: 44px;
   padding: 0.5rem 0.875rem;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: var(--radius-md);
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.2;
@@ -979,12 +969,12 @@
 
 .guide-install-nudge__btn-primary {
   background: var(--guide-brand);
-  color: var(--guide-brand-contrast);
+  color: var(--guide-brand-fg);
 }
 
 .guide-install-nudge__btn-secondary {
   background: transparent;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   border-color: var(--guide-border);
 }
 
