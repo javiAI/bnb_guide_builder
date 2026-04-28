@@ -1,0 +1,444 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · components.css
+   Layer 3 of 3 — component-level token contracts. Component code
+   references these names. All values resolve through semantic tokens.
+   ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ════════ BUTTON ════════ */
+  --button-radius:           var(--radius-sm);
+  --button-gap:              var(--space-2);
+  --button-font-size:        var(--text-sm);
+  --button-font-weight:      var(--weight-medium);
+  --button-icon-size:        var(--icon-size-sm);
+
+  --button-height-sm:        var(--size-button-sm);
+  --button-height-md:        var(--size-button-md);
+  --button-height-lg:        var(--size-button-lg);
+  --button-padding-x-sm:     var(--space-2_5);
+  --button-padding-x-md:     var(--space-3_5);
+  --button-padding-x-lg:     var(--space-5);
+
+  --button-primary-bg:           var(--color-action-primary);
+  --button-primary-fg:           var(--color-action-primary-fg);
+  --button-primary-bg-hover:     var(--color-action-primary-hover);
+  --button-primary-bg-active:    var(--color-action-primary-active);
+  --button-primary-border:       transparent;
+
+  --button-secondary-bg:         var(--color-action-secondary);
+  --button-secondary-fg:         var(--color-action-secondary-fg);
+  --button-secondary-bg-hover:   var(--color-action-secondary-hover);
+  --button-secondary-bg-active:  var(--color-action-secondary-active);
+  --button-secondary-border:     var(--color-border-default);
+
+  --button-ghost-bg:             var(--color-action-ghost);
+  --button-ghost-fg:             var(--color-action-ghost-fg);
+  --button-ghost-bg-hover:       var(--color-action-ghost-hover);
+  --button-ghost-bg-active:      var(--color-action-ghost-active);
+  --button-ghost-border:         transparent;
+
+  --button-destructive-bg:        var(--color-action-destructive);
+  --button-destructive-fg:        var(--color-action-destructive-fg);
+  --button-destructive-bg-hover:  var(--color-action-destructive-hover);
+  --button-destructive-bg-active: var(--color-action-destructive-active);
+
+  --button-disabled-bg: var(--color-disabled-bg);
+  --button-disabled-fg: var(--color-disabled-fg);
+  --button-focus-ring:  var(--shadow-focus);
+
+  /* ════════ INPUT / SELECT / TEXTAREA ════════ */
+  --input-radius:           var(--radius-sm);
+  --input-font-size:        var(--text-sm);
+  --input-height-sm:        var(--size-input-sm);
+  --input-height-md:        var(--size-input-md);
+  --input-height-lg:        var(--size-input-lg);
+  --input-padding-x:        var(--space-2_5);
+  --input-padding-y:        var(--space-1_5);
+  --input-bg:               var(--color-background-page);
+  --input-fg:               var(--color-text-primary);
+  --input-placeholder:      var(--color-text-placeholder);
+  --input-icon:             var(--color-text-muted);
+  --input-border:           var(--color-border-default);
+  --input-border-hover:     var(--color-border-strong);
+  --input-border-focus:     var(--color-border-focus);
+  --input-border-error:     var(--color-border-error);
+  --input-bg-disabled:      var(--color-disabled-bg);
+  --input-fg-disabled:      var(--color-disabled-fg);
+  --input-shadow-focus:     var(--shadow-focus);
+  --input-shadow-error:     var(--shadow-focus-error);
+
+  --textarea-min-height: 80px;
+  --textarea-padding:    var(--space-2_5) var(--space-3);
+
+  --select-chevron:    var(--color-text-muted);
+
+  /* ════════ CHECKBOX / RADIO ════════ */
+  --checkbox-size:           var(--icon-size-sm);
+  --checkbox-radius:         var(--radius-xs);
+  --checkbox-border:         var(--color-border-strong);
+  --checkbox-bg:             var(--color-background-page);
+  --checkbox-bg-checked:     var(--color-action-primary);
+  --checkbox-fg-checked:     var(--color-action-primary-fg);
+  --checkbox-border-checked: var(--color-action-primary);
+  --checkbox-bg-disabled:    var(--color-disabled-bg);
+  --checkbox-fg-disabled:    var(--color-disabled-fg);
+
+  --radio-size:           var(--icon-size-sm);
+  --radio-border:         var(--color-border-strong);
+  --radio-bg:             var(--color-background-page);
+  --radio-dot:            var(--color-action-primary-fg);
+  --radio-bg-checked:     var(--color-action-primary);
+  --radio-border-checked: var(--color-action-primary);
+
+  /* ════════ TOGGLE / SWITCH ════════ */
+  --toggle-track-width:     32px;
+  --toggle-track-height:    18px;
+  --toggle-thumb-size:      14px;
+  --toggle-track-bg:        var(--color-border-strong);
+  --toggle-track-bg-on:     var(--color-action-primary);
+  --toggle-track-bg-disabled: var(--color-disabled-bg);
+  --toggle-thumb-bg:        var(--color-background-page);
+  --toggle-thumb-shadow:    var(--elevation-surface-sm);
+
+  /* ════════ CARD ════════ */
+  --card-bg:        var(--color-background-surface);
+  --card-fg:        var(--color-text-primary);
+  --card-border:    var(--color-border-subtle);
+  --card-shadow:       var(--elevation-surface-sm);
+  --card-shadow-hover: var(--elevation-surface-md);
+  --card-radius:    var(--radius-md);
+  --card-padding-sm: var(--space-4);
+  --card-padding-md: var(--space-5);
+  --card-padding-lg: var(--space-6);
+
+  /* ════════ BADGE ════════ */
+  --badge-radius:        var(--radius-full);
+  --badge-font-size:     var(--text-xs);
+  --badge-font-weight:   var(--weight-medium);
+  --badge-padding-x:     var(--space-2);
+  --badge-padding-y:     2px;
+  --badge-height:        20px;
+
+  --badge-neutral-bg:    var(--color-status-neutral-bg);
+  --badge-neutral-fg:    var(--color-status-neutral-text);
+  --badge-neutral-border: transparent;
+  --badge-success-bg:    var(--color-status-success-bg);
+  --badge-success-fg:    var(--color-status-success-text);
+  --badge-warning-bg:    var(--color-status-warning-bg);
+  --badge-warning-fg:    var(--color-status-warning-text);
+  --badge-error-bg:      var(--color-status-error-bg);
+  --badge-error-fg:      var(--color-status-error-text);
+  --badge-info-bg:       var(--color-status-info-bg);
+  --badge-info-fg:       var(--color-status-info-text);
+  --badge-accent-bg:     var(--color-accent-subtle);
+  --badge-accent-fg:     var(--color-accent-fg);
+
+  /* ════════ ALERT ════════ */
+  --alert-radius:    var(--radius-md);
+  --alert-padding:   var(--space-3) var(--space-3_5);
+  --alert-gap:       var(--space-3);
+  --alert-icon-size: var(--icon-size-md);
+
+  /* ════════ TABS ════════ */
+  --tabs-list-border:        var(--color-border-default);
+  --tabs-list-gap:           var(--space-4);
+  --tab-fg:                  var(--color-text-secondary);
+  --tab-fg-hover:            var(--color-text-primary);
+  --tab-fg-active:           var(--color-text-primary);
+  --tab-indicator:           var(--color-action-primary);
+  --tab-padding:             var(--space-2_5) var(--space-1);
+  --tab-font-size:           var(--text-sm);
+  --tab-font-weight:         var(--weight-medium);
+  --tab-height:              36px;
+  --tab-bg-active:           transparent;
+
+  /* ════════ TABLE ════════ */
+  --table-header-bg:        var(--color-background-surface);
+  --table-header-fg:        var(--color-text-muted);
+  --table-header-font-size: var(--text-xs);
+  --table-header-font-weight: var(--weight-medium);
+  --table-row-bg:           transparent;
+  --table-row-bg-hover:     var(--color-interactive-hover);
+  --table-row-bg-selected:  var(--color-interactive-selected);
+  --table-row-border:       var(--color-border-subtle);
+  --table-row-border-selected: var(--color-action-primary);
+  --table-cell-padding-x:   var(--space-3);
+  --table-cell-padding-y:   0;
+  --table-row-height-compact:     var(--size-row-compact);
+  --table-row-height-cozy:        var(--size-row-cozy);
+  --table-row-height-comfortable: var(--size-row-comfortable);
+
+  /* ════════ NAVIGATION ════════ */
+  --nav-item-bg:               transparent;
+  --nav-item-bg-hover:         var(--color-interactive-hover);
+  --nav-item-bg-active:        var(--color-interactive-selected);
+  --nav-item-fg:               var(--color-text-secondary);
+  --nav-item-fg-hover:         var(--color-text-primary);
+  --nav-item-fg-active:        var(--color-interactive-selected-fg);
+  --nav-item-border-active:    var(--color-action-primary);
+  --nav-item-radius:           var(--radius-sm);
+  --nav-item-padding:          var(--space-1_5) var(--space-2_5);
+  --nav-item-gap:              var(--space-2_5);
+  --nav-item-icon-fg:          var(--color-text-muted);
+  --nav-item-icon-fg-active:   var(--color-interactive-selected-fg);
+
+  /* ════════ SIDEBAR ════════ */
+  --sidebar-bg:        var(--color-background-surface);
+  --sidebar-fg:        var(--color-text-primary);
+  --sidebar-border:    var(--color-border-subtle);
+  --sidebar-width:     var(--size-sidebar);
+  --sidebar-width-collapsed: var(--size-sidebar-collapsed);
+  --sidebar-padding:   var(--space-2);
+  --sidebar-section-label-fg: var(--color-text-muted);
+
+  /* ════════ TOPBAR ════════ */
+  --topbar-bg:         var(--color-background-page);
+  --topbar-border:     var(--color-border-default);
+  --topbar-height:     var(--size-topbar);
+  --topbar-padding-x:  var(--space-4);
+  --topbar-fg:         var(--color-text-primary);
+
+  /* ════════ MODAL / DIALOG ════════ */
+  --modal-bg:        var(--color-background-elevated);
+  --modal-fg:        var(--color-text-primary);
+  --modal-border:    var(--color-border-default);
+  --modal-shadow:    var(--elevation-modal);
+  --modal-radius:    var(--radius-lg);
+  --modal-overlay:   var(--color-background-overlay);
+  --modal-padding:   var(--space-6);
+  --modal-gap:       var(--space-4);
+  --modal-width-sm:  var(--size-modal-sm);
+  --modal-width-md:  var(--size-modal-md);
+  --modal-width-lg:  var(--size-modal-lg);
+  --modal-width-xl:  var(--size-modal-xl);
+
+  /* ════════ TOOLTIP ════════ */
+  --tooltip-bg:        var(--color-background-inverse);
+  --tooltip-fg:        var(--color-text-inverse);
+  --tooltip-radius:    var(--radius-sm);
+  --tooltip-padding:   var(--space-1_5) var(--space-2_5);
+  --tooltip-font-size: var(--text-xs);
+  --tooltip-shadow:    var(--elevation-tooltip);
+  --tooltip-max-width: 280px;
+
+  /* ════════ POPOVER ════════ */
+  --popover-bg:        var(--color-background-elevated);
+  --popover-fg:        var(--color-text-primary);
+  --popover-border:    var(--color-border-default);
+  --popover-shadow:    var(--elevation-popover);
+  --popover-radius:    var(--radius-md);
+  --popover-padding:   var(--space-3);
+
+  /* ════════ DROPDOWN / MENU ════════ */
+  --dropdown-bg:        var(--color-background-elevated);
+  --dropdown-fg:        var(--color-text-primary);
+  --dropdown-border:    var(--color-border-default);
+  --dropdown-shadow:    var(--elevation-dropdown);
+  --dropdown-radius:    var(--radius-md);
+  --dropdown-padding:   var(--space-1);
+  --dropdown-min-width: 180px;
+
+  --dropdown-item-fg:        var(--color-text-primary);
+  --dropdown-item-fg-muted:  var(--color-text-muted);
+  --dropdown-item-bg:        transparent;
+  --dropdown-item-bg-hover:  var(--color-action-ghost-hover);
+  --dropdown-item-bg-active: var(--color-action-ghost-active);
+  --dropdown-item-fg-selected: var(--color-interactive-selected-fg);
+  --dropdown-item-bg-selected: var(--color-interactive-selected);
+  --dropdown-item-padding:    var(--space-1_5) var(--space-2_5);
+  --dropdown-item-radius:     var(--radius-xs);
+  --dropdown-item-height:     30px;
+  --dropdown-divider:         var(--color-border-subtle);
+
+  /* ════════ COMMAND PALETTE ════════ */
+  --command-bg:           var(--color-background-elevated);
+  --command-fg:           var(--color-text-primary);
+  --command-border:       var(--color-border-default);
+  --command-shadow:       var(--elevation-command);
+  --command-radius:       var(--radius-lg);
+  --command-width:        640px;
+  --command-input-bg:     var(--color-background-surface);
+  --command-input-border: var(--color-border-subtle);
+  --command-section-label: var(--color-text-muted);
+  --command-item-bg-active: var(--color-interactive-selected);
+  --command-item-fg-active: var(--color-interactive-selected-fg);
+  --command-kbd-bg:       var(--color-background-subtle);
+  --command-kbd-fg:       var(--color-text-secondary);
+  --command-kbd-border:   var(--color-border-default);
+
+  /* ════════ TOAST ════════ */
+  --toast-bg:        var(--color-background-elevated);
+  --toast-fg:        var(--color-text-primary);
+  --toast-border:    var(--color-border-default);
+  --toast-shadow:    var(--elevation-toast);
+  --toast-radius:    var(--radius-md);
+  --toast-padding:   var(--space-3) var(--space-3_5);
+  --toast-min-width: 320px;
+  --toast-max-width: 480px;
+  --toast-gap:       var(--space-3);
+
+  /* ════════ EMPTY STATE ════════ */
+  --empty-bg:           transparent;
+  --empty-fg:           var(--color-text-secondary);
+  --empty-title-fg:     var(--color-text-primary);
+  --empty-icon-fg:      var(--color-text-subtle);
+  --empty-icon-bg:      var(--color-background-subtle);
+  --empty-padding:      var(--space-8) var(--space-6);
+  --empty-gap:          var(--space-3);
+
+  /* ════════ METRIC CARD ════════ */
+  --metric-bg:           var(--color-background-surface);
+  --metric-border:       var(--color-border-subtle);
+  --metric-radius:       var(--radius-md);
+  --metric-padding:      var(--space-4) var(--space-4_5);
+  --metric-label-fg:     var(--color-text-muted);
+  --metric-value-fg:     var(--color-text-primary);
+  --metric-value-size:   var(--text-3xl);
+  --metric-delta-up:     var(--color-status-success-text);
+  --metric-delta-down:   var(--color-status-error-text);
+  --metric-delta-flat:   var(--color-text-muted);
+
+  /* ════════ SKELETON / LOADING ════════ */
+  --skeleton-bg:       var(--color-loading-skeleton);
+  --skeleton-shimmer:  var(--color-loading-shimmer);
+  --skeleton-radius:   var(--radius-sm);
+  --skeleton-duration: 1400ms;
+
+  --spinner-track:     var(--color-border-default);
+  --spinner-indicator: var(--color-action-primary);
+  --spinner-size-sm:   14px;
+  --spinner-size-md:   18px;
+  --spinner-size-lg:   24px;
+
+  /* ════════ PROGRESS / STATUS INDICATOR ════════ */
+  --progress-track:        var(--color-progress-track);
+  --progress-indicator:    var(--color-action-primary);
+  --progress-success:      var(--color-status-success-solid);
+  --progress-warning:      var(--color-status-warning-solid);
+  --progress-error:        var(--color-status-error-solid);
+  --progress-info:         var(--color-status-info-solid);
+  --progress-radius:       var(--radius-full);
+  --progress-height:       6px;
+  --progress-height-lg:    10px;
+
+  /* ════════ BREADCRUMB ════════ */
+  --breadcrumb-fg:           var(--color-text-secondary);
+  --breadcrumb-fg-current:   var(--color-text-primary);
+  --breadcrumb-fg-hover:     var(--color-text-link);
+  --breadcrumb-separator-fg: var(--color-text-subtle);
+  --breadcrumb-gap:          var(--space-2);
+  --breadcrumb-font-size:    var(--text-sm);
+
+  /* ════════ SEGMENTED CONTROL ════════ */
+  --segmented-bg:           var(--color-background-subtle);
+  --segmented-border:       var(--color-border-subtle);
+  --segmented-radius:       var(--radius-sm);
+  --segmented-padding:      2px;
+  --segmented-height:       var(--size-button-md);
+
+  --segment-fg:             var(--color-text-secondary);
+  --segment-fg-active:      var(--color-text-primary);
+  --segment-bg:             transparent;
+  --segment-bg-active:      var(--color-background-page);
+  --segment-shadow-active:  var(--elevation-surface-xs);
+  --segment-padding-x:      var(--space-3);
+  --segment-radius:         var(--radius-xs);
+  --segment-font-size:      var(--text-sm);
+  --segment-font-weight:    var(--weight-medium);
+
+  /* ════════ PAGINATION ════════ */
+  --pagination-gap:        var(--space-1);
+  --pagination-item-size:  28px;
+  --pagination-item-fg:    var(--color-text-secondary);
+  --pagination-item-bg:    transparent;
+  --pagination-item-bg-hover:    var(--color-action-ghost-hover);
+  --pagination-item-fg-active:   var(--color-action-primary-fg);
+  --pagination-item-bg-active:   var(--color-action-primary);
+  --pagination-item-fg-disabled: var(--color-text-disabled);
+  --pagination-item-radius:      var(--radius-sm);
+  --pagination-font-size:        var(--text-sm);
+
+  /* ════════ DATE PICKER ════════ */
+  --datepicker-bg:        var(--color-background-elevated);
+  --datepicker-border:    var(--color-border-default);
+  --datepicker-shadow:    var(--elevation-floating);
+  --datepicker-radius:    var(--radius-md);
+  --datepicker-padding:   var(--space-3);
+
+  --datepicker-day-fg:           var(--color-text-primary);
+  --datepicker-day-fg-muted:     var(--color-text-subtle);
+  --datepicker-day-bg-hover:     var(--color-action-ghost-hover);
+  --datepicker-day-bg-selected:  var(--color-action-primary);
+  --datepicker-day-fg-selected:  var(--color-action-primary-fg);
+  --datepicker-day-bg-in-range:  var(--color-action-primary-subtle);
+  --datepicker-day-fg-in-range:  var(--color-action-primary-subtle-fg);
+  --datepicker-day-bg-today:     var(--color-background-subtle);
+  --datepicker-day-border-today: var(--color-action-primary);
+  --datepicker-day-fg-disabled:  var(--color-text-disabled);
+  --datepicker-day-size:         32px;
+  --datepicker-day-radius:       var(--radius-sm);
+  --datepicker-weekday-fg:       var(--color-text-muted);
+
+  /* ════════ FILE UPLOAD ════════ */
+  --upload-bg:             var(--color-background-subtle);
+  --upload-bg-hover:       var(--color-interactive-hover);
+  --upload-bg-active:      var(--color-action-primary-subtle);
+  --upload-border:         var(--color-border-default);
+  --upload-border-hover:   var(--color-border-strong);
+  --upload-border-active:  var(--color-action-primary);
+  --upload-border-error:   var(--color-border-error);
+  --upload-border-style:   dashed;
+  --upload-radius:         var(--radius-md);
+  --upload-padding:        var(--space-6);
+  --upload-fg:             var(--color-text-secondary);
+  --upload-fg-strong:      var(--color-text-primary);
+  --upload-icon-fg:        var(--color-text-muted);
+
+  /* ════════ STEPPER / WORKFLOW STATUS ════════ */
+  --stepper-line:           var(--color-border-default);
+  --stepper-line-complete:  var(--color-action-primary);
+  --stepper-step-bg:        var(--color-background-page);
+  --stepper-step-border:    var(--color-border-strong);
+  --stepper-step-fg:        var(--color-text-secondary);
+  --stepper-step-bg-active:    var(--color-action-primary);
+  --stepper-step-fg-active:    var(--color-action-primary-fg);
+  --stepper-step-border-active: var(--color-action-primary);
+  --stepper-step-bg-complete:    var(--color-action-primary);
+  --stepper-step-fg-complete:    var(--color-action-primary-fg);
+  --stepper-step-border-complete: var(--color-action-primary);
+  --stepper-step-bg-error:    var(--color-status-error-bg);
+  --stepper-step-fg-error:    var(--color-status-error-text);
+  --stepper-step-border-error: var(--color-status-error-border);
+  --stepper-step-size:        24px;
+  --stepper-label-fg:         var(--color-text-secondary);
+  --stepper-label-fg-active:  var(--color-text-primary);
+  --stepper-gap:              var(--space-3);
+
+  /* ════════ ICON · component sizes & defaults ════════ */
+  --icon-default-size:    var(--icon-size-md);
+  --icon-default-stroke:  var(--icon-stroke-default);
+  --icon-default-color:   currentColor;
+
+  --input-icon-size:      var(--icon-size-sm);
+  --nav-icon-size:        var(--icon-size-sm);
+  --badge-icon-size:      var(--icon-size-xs);
+  --metric-icon-size:     var(--icon-size-md);
+  --empty-state-icon-size: var(--icon-size-xl);
+  --toast-icon-size:      var(--icon-size-md);
+  --table-icon-size:      var(--icon-size-sm);
+  --tooltip-icon-size:    var(--icon-size-xs);
+  --tab-icon-size:        var(--icon-size-sm);
+}
+
+[data-theme="dark"] {
+  /* Dark-mode overrides only where the component needs a different
+     surface tier than the light-mode mapping resolves to. All values
+     route through semantic tokens (no primitive references). */
+  --table-header-bg:         var(--color-background-subtle);
+  --segmented-bg:            var(--color-background-subtle);
+  --segment-bg-active:       var(--color-background-muted);
+  --upload-bg:               var(--color-background-subtle);
+  --command-input-bg:        var(--color-background-subtle);
+  --datepicker-day-bg-today: var(--color-background-subtle);
+  --command-kbd-bg:          var(--color-background-subtle);
+}

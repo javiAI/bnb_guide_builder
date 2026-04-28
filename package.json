@@ -16,7 +16,8 @@
     "embed:backfill": "tsx src/lib/jobs/knowledge-embed-backfill.ts",
     "firecrawl:dry-run": "tsx src/lib/jobs/local-events-firecrawl-dry-run.ts",
     "eval:assistant": "vitest run --config vitest.evals.config.ts",
-    "eval:assistant:refresh": "tsx scripts/refresh-eval-embeddings.ts"
+    "eval:assistant:refresh": "tsx scripts/refresh-eval-embeddings.ts",
+    "validate:design-system": "tsx scripts/validate-design-system.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

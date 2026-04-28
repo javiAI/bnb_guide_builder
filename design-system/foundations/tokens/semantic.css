@@ -1,0 +1,477 @@
+/* ────────────────────────────────────────────────────────────────────
+   Warm Analytical Minimalism · semantic.css
+   Layer 2 of 3 — public token contract. Product code references these.
+
+   Light mode is :root; dark mode is [data-theme="dark"].
+
+   Contract: this file MAY consume primitive tokens. Components and
+   product code MUST NOT — they consume only the names defined here
+   (or their component-token aliases in components.css).
+   ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Background ─── */
+  --color-background-page:      var(--warm-25);
+  --color-background-surface:   var(--warm-50);
+  --color-background-subtle:    var(--warm-100);
+  --color-background-muted:     var(--warm-150);
+  --color-background-elevated:  var(--warm-25);
+  --color-background-inverse:   var(--warm-950);
+  --color-background-overlay:   rgb(20 16 10 / 0.45);
+  --color-background-scrim:     rgb(20 16 10 / 0.65);
+
+  /* ─── Text ─── */
+  --color-text-primary:    var(--warm-900);
+  --color-text-secondary:  var(--warm-600);
+  --color-text-muted:      var(--warm-500);
+  --color-text-subtle:     var(--warm-400);
+  --color-text-inverse:    var(--warm-50);
+  --color-text-link:       var(--olive-700);
+  --color-text-link-hover: var(--olive-800);
+  --color-text-disabled:   var(--warm-400);
+  --color-text-placeholder: var(--warm-500);
+  --color-text-on-accent:  var(--warm-25);
+  --color-text-on-primary: var(--warm-25);
+
+  /* ─── Border ─── */
+  --color-border-subtle:   var(--warm-150);
+  --color-border-default:  var(--warm-200);
+  --color-border-strong:   var(--warm-300);
+  --color-border-emphasis: var(--warm-400);
+  --color-border-focus:    var(--olive-500);
+  --color-border-error:    var(--error-500);
+  --color-border-success:  var(--success-500);
+  --color-border-warning:  var(--warning-500);
+  --color-border-info:     var(--info-500);
+  --color-border-inverse:  var(--warm-800);
+
+  /* ─── Action · primary (olive) ─── */
+  --color-action-primary:           var(--olive-600);
+  --color-action-primary-hover:     var(--olive-700);
+  --color-action-primary-active:    var(--olive-800);
+  --color-action-primary-fg:        var(--warm-25);
+  --color-action-primary-subtle:    var(--olive-50);
+  --color-action-primary-subtle-fg: var(--olive-700);
+
+  /* ─── Action · secondary (neutral surface button) ─── */
+  --color-action-secondary:         var(--warm-50);
+  --color-action-secondary-hover:   var(--warm-100);
+  --color-action-secondary-active:  var(--warm-150);
+  --color-action-secondary-fg:      var(--warm-800);
+
+  /* ─── Action · ghost (transparent) ─── */
+  --color-action-ghost:             transparent;
+  --color-action-ghost-hover:       var(--warm-100);
+  --color-action-ghost-active:      var(--warm-150);
+  --color-action-ghost-fg:          var(--warm-800);
+
+  /* ─── Action · destructive ─── */
+  --color-action-destructive:        var(--error-600);
+  --color-action-destructive-hover:  var(--error-700);
+  --color-action-destructive-active: var(--error-800);
+  --color-action-destructive-fg:     var(--warm-25);
+  --color-action-destructive-subtle: var(--error-50);
+
+  /* ─── Accent (terracotta) — emphasis only ─── */
+  --color-accent-default:  var(--terra-600);
+  --color-accent-hover:    var(--terra-700);
+  --color-accent-active:   var(--terra-800);
+  --color-accent-subtle:   var(--terra-50);
+  --color-accent-fg:       var(--terra-700);
+  --color-accent-on-fg:    var(--warm-25);
+
+  /* ─── Interactive surface (hover/selected for nav, menus, rows) ─── */
+  --color-interactive-hover:           var(--warm-100);
+  --color-interactive-active:          var(--warm-150);
+  --color-interactive-selected:        var(--olive-50);
+  --color-interactive-selected-fg:     var(--olive-700);
+  --color-interactive-selected-border: var(--olive-200);
+
+  /* ─── Focus ─── */
+  --color-focus-ring:    var(--olive-400);
+  --shadow-focus:        var(--shadow-focus-ring);
+  --shadow-focus-error:  var(--shadow-focus-ring-error);
+
+  /* ─── Disabled ─── */
+  --color-disabled-bg:     var(--warm-100);
+  --color-disabled-fg:     var(--warm-500);  /* darkened from warm-400 → 4.5:1+ on warm-100 */
+  --color-disabled-border: var(--warm-200);
+  --opacity-disabled:      0.6;
+
+  /* ─── Selection ─── */
+  --color-selection-bg: var(--olive-200);
+  --color-selection-fg: var(--warm-900);
+
+  /* ─── Status quartets ─── */
+  --color-status-success-bg:      var(--success-50);
+  --color-status-success-text:    var(--success-700);
+  --color-status-success-icon:    var(--success-600);
+  --color-status-success-border:  var(--success-200);
+  --color-status-success-solid:   var(--success-600);
+  --color-status-success-solid-fg: var(--warm-25);
+
+  --color-status-warning-bg:      var(--warning-50);
+  --color-status-warning-text:    var(--warning-700);
+  --color-status-warning-icon:    var(--warning-600);
+  --color-status-warning-border:  var(--warning-200);
+  --color-status-warning-solid:   var(--warning-600);
+  --color-status-warning-solid-fg: var(--warm-25);
+
+  --color-status-error-bg:        var(--error-50);
+  --color-status-error-text:      var(--error-700);
+  --color-status-error-icon:      var(--error-600);
+  --color-status-error-border:    var(--error-200);
+  --color-status-error-solid:     var(--error-600);
+  --color-status-error-solid-fg:  var(--warm-25);
+
+  --color-status-info-bg:         var(--info-50);
+  --color-status-info-text:       var(--info-700);
+  --color-status-info-icon:       var(--info-600);
+  --color-status-info-border:     var(--info-200);
+  --color-status-info-solid:      var(--info-600);
+  --color-status-info-solid-fg:   var(--warm-25);
+
+  --color-status-neutral-bg:      var(--warm-100);
+  --color-status-neutral-text:    var(--warm-700);
+  --color-status-neutral-icon:    var(--warm-600);
+  --color-status-neutral-border:  var(--warm-200);
+
+  /* ─── Iconography (semantic) ──────────────────────────────────────
+     Icons inherit currentColor by default. Use these tokens only when
+     the icon's color is decoupled from surrounding text. */
+  --color-icon-primary:   var(--warm-700);
+  --color-icon-secondary: var(--warm-600);
+  --color-icon-muted:     var(--warm-500);
+  --color-icon-disabled:  var(--warm-400);
+  --color-icon-inverse:   var(--warm-50);
+  --color-icon-accent:    var(--terra-600);
+  --color-icon-success:   var(--color-status-success-icon);
+  --color-icon-warning:   var(--color-status-warning-icon);
+  --color-icon-error:     var(--color-status-error-icon);
+  --color-icon-info:      var(--color-status-info-icon);
+
+  /* ─── Chart · categorical (8) ──────────────────────────────────── */
+  --color-chart-1: var(--olive-500);
+  --color-chart-2: var(--terra-500);
+  --color-chart-3: var(--info-500);
+  --color-chart-4: var(--olive-300);
+  --color-chart-5: var(--terra-300);
+  --color-chart-6: var(--info-300);
+  --color-chart-7: var(--warm-500);
+  --color-chart-8: var(--gray-500);
+
+  /* ─── Chart · sequential (5-step, single hue) ──────────────────── */
+  --color-chart-seq-1: var(--olive-100);
+  --color-chart-seq-2: var(--olive-200);
+  --color-chart-seq-3: var(--olive-300);
+  --color-chart-seq-4: var(--olive-500);
+  --color-chart-seq-5: var(--olive-700);
+
+  /* ─── Chart · diverging (7-step terra ↔ olive) ─────────────────── */
+  --color-chart-div-neg-3: var(--terra-700);
+  --color-chart-div-neg-2: var(--terra-500);
+  --color-chart-div-neg-1: var(--terra-200);
+  --color-chart-div-mid:   var(--warm-200);
+  --color-chart-div-pos-1: var(--olive-200);
+  --color-chart-div-pos-2: var(--olive-500);
+  --color-chart-div-pos-3: var(--olive-700);
+
+  /* ─── Chart · framing (axes, grids, tooltips, legends) ─────────── */
+  --color-chart-bg:             var(--color-background-surface);
+  --color-chart-plot-bg:        var(--color-background-page);
+  --color-chart-grid:           var(--warm-200);
+  --color-chart-grid-strong:    var(--warm-300);
+  --color-chart-axis:           var(--warm-500);
+  --color-chart-axis-label:     var(--warm-600);
+  --color-chart-legend-fg:      var(--color-text-secondary);
+  --color-chart-tooltip-bg:     var(--warm-950);
+  --color-chart-tooltip-fg:     var(--warm-50);
+  --color-chart-tooltip-border: var(--warm-800);
+  --color-chart-crosshair:      var(--warm-400);
+  --color-chart-brush:          color-mix(in oklch, var(--olive-500) 18%, transparent);
+
+  /* ─── Chart · semantic series ──────────────────────────────────── */
+  --color-chart-positive:   var(--success-600);
+  --color-chart-negative:   var(--error-600);
+  --color-chart-neutral:    var(--warm-500);
+  --color-chart-warning:    var(--warning-600);
+  --color-chart-error:      var(--error-600);
+  --color-chart-threshold:  var(--warning-600);
+  --color-chart-target:     var(--info-600);
+  --color-chart-reference:  var(--warm-500);
+  --color-chart-projection: var(--warm-300);
+  --color-chart-benchmark:  var(--info-500);
+  --color-chart-anomaly:    var(--terra-600);
+  --color-chart-forecast:   var(--info-300);
+
+  /* ─── Map / choropleth ─────────────────────────────────────────── */
+  --color-map-seq-1: var(--olive-100);
+  --color-map-seq-2: var(--olive-200);
+  --color-map-seq-3: var(--olive-400);
+  --color-map-seq-4: var(--olive-600);
+  --color-map-seq-5: var(--olive-800);
+
+  --color-map-div-neg-3: var(--terra-700);
+  --color-map-div-neg-2: var(--terra-500);
+  --color-map-div-neg-1: var(--terra-200);
+  --color-map-div-mid:   var(--warm-150);
+  --color-map-div-pos-1: var(--olive-200);
+  --color-map-div-pos-2: var(--olive-500);
+  --color-map-div-pos-3: var(--olive-700);
+
+  --color-map-boundary:        var(--warm-300);
+  --color-map-label-fg:        var(--warm-700);
+  --color-map-region-hover:    color-mix(in oklch, var(--olive-500) 14%, transparent);
+  --color-map-region-selected: color-mix(in oklch, var(--olive-500) 30%, transparent);
+  --color-map-no-data:         var(--warm-100);
+
+  /* ─── Loading / progress surfaces ──────────────────────────────── */
+  --color-loading-skeleton: var(--warm-100);
+  --color-loading-shimmer:  var(--warm-150);
+  --color-progress-track:   var(--warm-150);
+
+  /* ─── Elevation (semantic — selects light/dark shadow recipes) ──
+     These are the ONLY shadow tokens components should consume.
+     Primitive shadow values (--shadow-*) are theme-stable; this layer
+     swaps the recipe in dark mode. */
+  --elevation-none:           none;
+  --elevation-surface-xs:     var(--shadow-xs);
+  --elevation-surface-sm:     var(--shadow-sm);
+  --elevation-surface-md:     var(--shadow-md);
+  --elevation-floating:       var(--shadow-md);
+  --elevation-popover:        var(--shadow-md);
+  --elevation-dropdown:       var(--shadow-md);
+  --elevation-tooltip:        var(--shadow-md);
+  --elevation-modal:          var(--shadow-xl);
+  --elevation-toast:          var(--shadow-lg);
+  --elevation-command:        var(--shadow-xl);
+
+  /* ─── Sizing aliases ─── */
+  --container-page: var(--container-2xl);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   Dark mode · semantic remap
+   Primitive tokens (--warm-*, --olive-*, --terra-*, --shadow-*) DO NOT
+   change here. Only semantic bindings.
+   ──────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --color-background-page:      var(--warm-950);
+  --color-background-surface:   var(--warm-900);
+  --color-background-subtle:    var(--warm-850);
+  --color-background-muted:     var(--warm-800);
+  --color-background-elevated:  var(--warm-850);
+  --color-background-inverse:   var(--warm-25);
+  --color-background-overlay:   rgb(0 0 0 / 0.65);
+  --color-background-scrim:     rgb(0 0 0 / 0.80);
+
+  --color-text-primary:    var(--warm-50);
+  --color-text-secondary:  var(--warm-200);  /* lifted from 300 → 7.0:1+ on warm-900 */
+  --color-text-muted:      var(--warm-300);  /* lifted from 400 → 4.8:1 on warm-900 */
+  --color-text-subtle:     var(--warm-400);
+  --color-text-inverse:    var(--warm-900);
+  --color-text-link:       var(--olive-300);
+  --color-text-link-hover: var(--olive-200);
+  --color-text-disabled:   var(--warm-500);  /* lifted from 600 → readably-dim, ≥3:1 */
+  --color-text-placeholder: var(--warm-400); /* lifted from 500 → ≥4.5:1 on input bg */
+  --color-text-on-accent:  var(--warm-950);
+  --color-text-on-primary: var(--warm-950);
+
+  --color-border-subtle:   var(--warm-850);
+  --color-border-default:  var(--warm-800);
+  --color-border-strong:   var(--warm-700);
+  --color-border-emphasis: var(--warm-500);
+  --color-border-focus:    var(--olive-400);
+  --color-border-error:    var(--error-400);
+  --color-border-success:  var(--success-400);
+  --color-border-warning:  var(--warning-400);
+  --color-border-info:     var(--info-400);
+  --color-border-inverse:  var(--warm-200);
+
+  /* Action · primary — olive-400 carries 4.8:1 on warm-950, paired with
+     dark fg for AA on the button face itself. */
+  --color-action-primary:           var(--olive-400);
+  --color-action-primary-hover:     var(--olive-300);
+  --color-action-primary-active:    var(--olive-200);
+  --color-action-primary-fg:        var(--warm-950);
+  --color-action-primary-subtle:    color-mix(in oklch, var(--olive-700) 30%, var(--warm-900));
+  --color-action-primary-subtle-fg: var(--olive-200);
+
+  --color-action-secondary:         var(--warm-850);
+  --color-action-secondary-hover:   var(--warm-800);
+  --color-action-secondary-active:  var(--warm-700);
+  --color-action-secondary-fg:      var(--warm-100);
+
+  --color-action-ghost:             transparent;
+  --color-action-ghost-hover:       var(--warm-850);
+  --color-action-ghost-active:      var(--warm-800);
+  --color-action-ghost-fg:          var(--warm-100);
+
+  /* Destructive — error-400 (lighter, more luminous) on warm-950 fg
+     for AA on button face; hover/active brighten further. */
+  --color-action-destructive:        var(--error-400);
+  --color-action-destructive-hover:  var(--error-300);
+  --color-action-destructive-active: var(--error-200);
+  --color-action-destructive-fg:     var(--warm-950);
+  --color-action-destructive-subtle: color-mix(in oklch, var(--error-700) 25%, var(--warm-900));
+
+  --color-accent-default:  var(--terra-400);
+  --color-accent-hover:    var(--terra-300);
+  --color-accent-active:   var(--terra-200);
+  --color-accent-subtle:   color-mix(in oklch, var(--terra-700) 25%, var(--warm-900));
+  --color-accent-fg:       var(--terra-200);
+  --color-accent-on-fg:    var(--warm-950);
+
+  --color-interactive-hover:           var(--warm-850);
+  --color-interactive-active:          var(--warm-800);
+  --color-interactive-selected:        color-mix(in oklch, var(--olive-700) 30%, var(--warm-900));
+  --color-interactive-selected-fg:     var(--olive-200);
+  --color-interactive-selected-border: color-mix(in oklch, var(--olive-700) 60%, transparent);
+
+  --color-focus-ring:    var(--olive-300);
+  --shadow-focus:        0 0 0 3px oklch(78% 0.08 130 / 0.36);
+  --shadow-focus-error:  0 0 0 3px oklch(68% 0.155 25 / 0.36);
+
+  /* Disabled — readable enough to identify (≥3:1) but visibly dim. */
+  --color-disabled-bg:     var(--warm-850);
+  --color-disabled-fg:     var(--warm-500);
+  --color-disabled-border: var(--warm-800);
+
+  /* Selection — keep saturation; pair olive-700 bg with warm-50 fg. */
+  --color-selection-bg: var(--olive-700);
+  --color-selection-fg: var(--warm-50);
+
+  /* Status quartets — lifted text values to AA on darkened bg. */
+  --color-status-success-bg:      color-mix(in oklch, var(--success-700) 22%, var(--warm-900));
+  --color-status-success-text:    var(--success-100);
+  --color-status-success-icon:    var(--success-400);
+  --color-status-success-border:  color-mix(in oklch, var(--success-700) 60%, transparent);
+  --color-status-success-solid:   var(--success-500);
+  --color-status-success-solid-fg: var(--warm-950);
+
+  --color-status-warning-bg:      color-mix(in oklch, var(--warning-700) 22%, var(--warm-900));
+  --color-status-warning-text:    var(--warning-100);
+  --color-status-warning-icon:    var(--warning-400);
+  --color-status-warning-border:  color-mix(in oklch, var(--warning-700) 60%, transparent);
+  --color-status-warning-solid:   var(--warning-500);
+  --color-status-warning-solid-fg: var(--warm-950);
+
+  --color-status-error-bg:        color-mix(in oklch, var(--error-700) 22%, var(--warm-900));
+  --color-status-error-text:      var(--error-100);
+  --color-status-error-icon:      var(--error-400);
+  --color-status-error-border:    color-mix(in oklch, var(--error-700) 60%, transparent);
+  --color-status-error-solid:     var(--error-500);
+  --color-status-error-solid-fg:  var(--warm-950);
+
+  --color-status-info-bg:         color-mix(in oklch, var(--info-700) 22%, var(--warm-900));
+  --color-status-info-text:       var(--info-100);
+  --color-status-info-icon:       var(--info-400);
+  --color-status-info-border:     color-mix(in oklch, var(--info-700) 60%, transparent);
+  --color-status-info-solid:      var(--info-500);
+  --color-status-info-solid-fg:   var(--warm-950);
+
+  --color-status-neutral-bg:      var(--warm-850);
+  --color-status-neutral-text:    var(--warm-100);
+  --color-status-neutral-icon:    var(--warm-300);
+  --color-status-neutral-border:  var(--warm-800);
+
+  /* Iconography */
+  --color-icon-primary:   var(--warm-100);
+  --color-icon-secondary: var(--warm-200);
+  --color-icon-muted:     var(--warm-300);
+  --color-icon-disabled:  var(--warm-500);
+  --color-icon-inverse:   var(--warm-900);
+  --color-icon-accent:    var(--terra-300);
+  --color-icon-success:   var(--color-status-success-icon);
+  --color-icon-warning:   var(--color-status-warning-icon);
+  --color-icon-error:     var(--color-status-error-icon);
+  --color-icon-info:      var(--color-status-info-icon);
+
+  /* Chart hues bumped lighter for dark surfaces */
+  --color-chart-1: var(--olive-300);
+  --color-chart-2: var(--terra-300);
+  --color-chart-3: var(--info-300);
+  --color-chart-4: var(--olive-200);
+  --color-chart-5: var(--terra-200);
+  --color-chart-6: var(--info-200);
+  --color-chart-7: var(--warm-300);
+  --color-chart-8: var(--gray-300);
+
+  --color-chart-seq-1: color-mix(in oklch, var(--olive-700) 30%, var(--warm-900));
+  --color-chart-seq-2: var(--olive-700);
+  --color-chart-seq-3: var(--olive-500);
+  --color-chart-seq-4: var(--olive-300);
+  --color-chart-seq-5: var(--olive-100);
+
+  --color-chart-div-neg-3: var(--terra-200);
+  --color-chart-div-neg-2: var(--terra-400);
+  --color-chart-div-neg-1: color-mix(in oklch, var(--terra-700) 50%, var(--warm-900));
+  --color-chart-div-mid:   var(--warm-700);
+  --color-chart-div-pos-1: color-mix(in oklch, var(--olive-700) 50%, var(--warm-900));
+  --color-chart-div-pos-2: var(--olive-400);
+  --color-chart-div-pos-3: var(--olive-200);
+
+  --color-chart-bg:             var(--color-background-surface);
+  --color-chart-plot-bg:        var(--color-background-page);
+  --color-chart-grid:           var(--warm-800);
+  --color-chart-grid-strong:    var(--warm-700);
+  --color-chart-axis:           var(--warm-500);
+  --color-chart-axis-label:     var(--warm-300);
+  --color-chart-legend-fg:      var(--color-text-secondary);
+  --color-chart-tooltip-bg:     var(--warm-100);
+  --color-chart-tooltip-fg:     var(--warm-900);
+  --color-chart-tooltip-border: var(--warm-200);
+  --color-chart-crosshair:      var(--warm-500);
+  --color-chart-brush:          color-mix(in oklch, var(--olive-300) 22%, transparent);
+
+  --color-chart-positive:   var(--success-400);
+  --color-chart-negative:   var(--error-400);
+  --color-chart-neutral:    var(--warm-400);
+  --color-chart-warning:    var(--warning-400);
+  --color-chart-error:      var(--error-400);
+  --color-chart-threshold:  var(--warning-400);
+  --color-chart-target:     var(--info-300);
+  --color-chart-reference:  var(--warm-500);
+  --color-chart-projection: var(--warm-700);
+  --color-chart-benchmark:  var(--info-300);
+  --color-chart-anomaly:    var(--terra-300);
+  --color-chart-forecast:   var(--info-200);
+
+  --color-map-seq-1: color-mix(in oklch, var(--olive-700) 25%, var(--warm-900));
+  --color-map-seq-2: var(--olive-700);
+  --color-map-seq-3: var(--olive-500);
+  --color-map-seq-4: var(--olive-300);
+  --color-map-seq-5: var(--olive-100);
+
+  --color-map-div-neg-3: var(--terra-200);
+  --color-map-div-neg-2: var(--terra-400);
+  --color-map-div-neg-1: color-mix(in oklch, var(--terra-700) 50%, var(--warm-900));
+  --color-map-div-mid:   var(--warm-800);
+  --color-map-div-pos-1: color-mix(in oklch, var(--olive-700) 50%, var(--warm-900));
+  --color-map-div-pos-2: var(--olive-400);
+  --color-map-div-pos-3: var(--olive-200);
+
+  --color-map-boundary:        var(--warm-700);
+  --color-map-label-fg:        var(--warm-200);
+  --color-map-region-hover:    color-mix(in oklch, var(--olive-300) 18%, transparent);
+  --color-map-region-selected: color-mix(in oklch, var(--olive-300) 32%, transparent);
+  --color-map-no-data:         var(--warm-850);
+
+  --color-loading-skeleton: var(--warm-850);
+  --color-loading-shimmer:  var(--warm-800);
+  --color-progress-track:   var(--warm-800);
+
+  /* Elevation in dark mode — point semantic tokens at the *-dark
+     primitive recipes. Primitives themselves don't change. */
+  --elevation-none:           none;
+  --elevation-surface-xs:     var(--shadow-xs-dark);
+  --elevation-surface-sm:     var(--shadow-sm-dark);
+  --elevation-surface-md:     var(--shadow-md-dark);
+  --elevation-floating:       var(--shadow-md-dark);
+  --elevation-popover:        var(--shadow-md-dark);
+  --elevation-dropdown:       var(--shadow-md-dark);
+  --elevation-tooltip:        var(--shadow-md-dark);
+  --elevation-modal:          var(--shadow-xl-dark);
+  --elevation-toast:          var(--shadow-lg-dark);
+  --elevation-command:        var(--shadow-xl-dark);
+}

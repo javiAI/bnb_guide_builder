@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Liora · Guía del huésped · v2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="../../assets/favicon.svg">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; font-family:Inter,system-ui;
+    background: radial-gradient(ellipse at top, #EDE7DC 0%, #DDD4C2 55%, #C8BDA6 100%);
+    padding: 48px 24px; }
+
+  .stage { max-width:1480px; margin:0 auto; display:flex; gap:28px; flex-wrap:wrap; justify-content:center; }
+
+  /* Phone */
+  .device { width:390px; height:820px; border-radius:52px; overflow:hidden;
+    background:var(--bg-1); position:relative;
+    box-shadow:0 40px 80px rgba(28,26,22,0.22), 0 0 0 10px #1C1A16, 0 0 0 11px #2E2B26; }
+  .island { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:118px; height:34px; border-radius:22px; background:#000; z-index:50; }
+  .statusbar { position:absolute; top:0; left:0; right:0; height:54px; display:flex; justify-content:space-between; align-items:center; padding:18px 32px 0; font-size:15px; font-weight:600; color:var(--fg-1); z-index:20; }
+  .sb-right { display:flex; gap:6px; align-items:center; }
+  .screen { width:100%; height:100%; overflow-y:auto; padding-top:54px; padding-bottom:100px; background:var(--bg-1); }
+  .home-ind { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:120px; height:4px; background:var(--ink-88); border-radius:100px; opacity:0.3; z-index:60; }
+  .phone-label { text-align:center; margin-top:14px; font-size:12px; font-weight:500; color:var(--fg-1); letter-spacing:0.01em; }
+  .phone-label small { display:block; color:var(--fg-3); font-weight:400; margin-top:2px; }
+
+  /* ==================  SURVIVAL HERO  ================== */
+  .s-hero {
+    margin:10px 12px 0; padding:18px 18px 14px;
+    background: var(--accent-700); color:var(--accent-on);
+    border-radius: 22px;
+    position:relative; overflow:hidden;
+    box-shadow: 0 8px 24px rgba(30,42,58,0.24);
+  }
+  .s-hero::before {
+    content:""; position:absolute; inset:-40% -10% auto auto; width:60%; height:120%;
+    background: radial-gradient(ellipse at top right, rgba(242,192,120,0.18), transparent 60%);
+    pointer-events:none;
+  }
+  .s-top { display:flex; align-items:center; justify-content:space-between; font-size:11px;
+    text-transform:uppercase; letter-spacing:0.1em; font-weight:600; opacity:0.72; }
+  .s-stage { display:flex; align-items:center; gap:6px; }
+  .s-stage-dot { width:6px; height:6px; border-radius:50%; background:#F2C078; box-shadow:0 0 8px #F2C078; }
+  .s-greet { font-size:26px; font-weight:700; line-height:30px; letter-spacing:-0.02em; margin-top:10px; }
+  .s-address { font-size:13px; opacity:0.82; margin-top:4px; display:flex; align-items:center; gap:6px; }
+
+  /* survival metrics grid — always-on */
+  .s-metrics { display:grid; grid-template-columns: repeat(4, 1fr); gap:1px;
+    background:rgba(255,255,255,0.14); border-radius:14px; overflow:hidden;
+    margin-top:16px; position:relative; }
+  .s-metric { background: var(--accent-700); padding:10px 8px 10px; text-align:center; position:relative; }
+  .s-metric .k { font-size:10px; opacity:0.6; text-transform:uppercase; letter-spacing:0.07em; font-weight:600; }
+  .s-metric .v { font-size:17px; font-weight:700; letter-spacing:-0.01em; margin-top:3px; line-height:20px; }
+  .s-metric .sub { font-size:10px; opacity:0.65; font-weight:500; }
+
+  /* survival actions — 4 hard buttons */
+  .s-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:14px; }
+  .s-btn {
+    background:rgba(255,255,255,0.10); border:1px solid rgba(255,255,255,0.14);
+    border-radius:12px; padding:10px 4px; text-align:center; color:var(--accent-on);
+    display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
+    transition: background var(--dur-1) var(--ease-standard);
+  }
+  .s-btn:active { background:rgba(255,255,255,0.18); }
+  .s-btn svg { width:18px; height:18px; }
+  .s-btn .lbl { font-size:11px; font-weight:600; letter-spacing:0.01em; }
+
+  /* ================= SECTION ================= */
+  .section { padding:12px 16px 0; }
+  .section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; color:var(--fg-3); padding:12px 2px 8px; display:flex; justify-content:space-between; align-items:center; }
+  .section-title .n { background:var(--ink-12); color:var(--fg-2); padding:2px 7px; border-radius:5px; font-size:10px; letter-spacing:0; text-transform:none; font-weight:600; }
+
+  /* Essential card — heavyweight */
+  .ess {
+    background:var(--bg-2); border:2px solid var(--accent-700);
+    border-radius:16px; padding:14px 16px 14px; position:relative; margin-bottom:10px;
+    box-shadow: 0 2px 8px rgba(28,26,22,0.06);
+  }
+  .ess-tag { position:absolute; top:-9px; left:14px; background:var(--accent-700); color:var(--accent-on);
+    font-size:10px; padding:3px 8px; border-radius:6px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+  .ess-row { display:flex; gap:12px; align-items:flex-start; }
+  .ess-ic { width:34px; height:34px; border-radius:10px; background:var(--accent-700); color:var(--accent-on);
+    display:grid; place-items:center; flex-shrink:0; }
+  .ess-ic svg { width:16px; height:16px; }
+  .ess-t { font-size:15px; font-weight:700; color:var(--fg-1); line-height:18px; letter-spacing:-0.01em; }
+  .ess-sub { font-size:13px; color:var(--fg-2); line-height:18px; margin-top:3px; }
+  .ess-code {
+    font-family: ui-monospace, monospace; background:var(--ink-88); color:var(--bg-1);
+    font-size:15px; font-weight:700; letter-spacing:0.12em; padding:3px 8px; border-radius:6px;
+    display:inline-block; vertical-align:middle;
+  }
+
+  /* Wi-Fi double row (pressable, huge hit area) */
+  .wifi { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .wifi-cell { background:var(--bg-3); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:3px; position:relative; cursor:pointer; }
+  .wifi-k { font-size:10px; color:var(--fg-3); text-transform:uppercase; letter-spacing:0.08em; font-weight:600; }
+  .wifi-v { font-size:15px; font-weight:700; color:var(--fg-1); font-family: ui-monospace, monospace; letter-spacing:-0.01em; }
+  .wifi-copy { position:absolute; right:10px; top:10px; color:var(--accent-500); }
+
+  /* Standard list card */
+  .lc { background:var(--bg-2); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:8px; }
+  .lc-row { display:flex; gap:12px; padding:12px 14px; align-items:center; border-bottom:1px solid var(--ink-12); cursor:pointer; }
+  .lc-row:last-child { border-bottom:none; }
+  .lc-row:active { background:var(--ink-12); }
+  .lc-ic { width:32px; height:32px; border-radius:9px; background:var(--ink-12); color:var(--fg-2); display:grid; place-items:center; flex-shrink:0; }
+  .lc-ic svg { width:15px; height:15px; }
+  .lc-main { flex:1; min-width:0; }
+  .lc-title { font-size:14px; font-weight:600; color:var(--fg-1); line-height:18px; }
+  .lc-sub { font-size:12px; color:var(--fg-3); margin-top:2px; }
+  .lc-chev { color:var(--fg-4); }
+  .lc-meta { font-size:11px; color:var(--fg-3); font-weight:500; background:var(--ink-12); padding:3px 7px; border-radius:5px; }
+
+  /* WARNING band — visually distinct from essential */
+  .warn {
+    margin:0 16px 10px; padding:12px 14px; background:var(--amber-50);
+    border:1px solid var(--amber-100); border-left:4px solid var(--amber-500);
+    border-radius:10px; display:flex; gap:10px; align-items:flex-start;
+  }
+  .warn svg { color:var(--amber-700); flex-shrink:0; margin-top:1px; }
+  .warn-body { font-size:12px; color:var(--fg-1); line-height:17px; }
+  .warn-body b { color:var(--amber-700); }
+
+  /* Emergency strip — very bold, hard to miss */
+  .emg { margin:20px 16px 8px; background:var(--bg-2); border:1px solid var(--border);
+    border-radius:16px; overflow:hidden; }
+  .emg-head { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--clay-500); color:white; }
+  .emg-head svg { width:18px; height:18px; }
+  .emg-head .t { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; }
+  .emg-row { display:flex; gap:10px; padding:12px 14px; align-items:center; border-bottom:1px solid var(--ink-12); }
+  .emg-row:last-child { border-bottom:none; }
+  .emg-ic { width:38px; height:38px; border-radius:10px; background:var(--clay-100); color:var(--clay-700); display:grid; place-items:center; flex-shrink:0; }
+  .emg-ic svg { width:17px; height:17px; }
+  .emg-main { flex:1; }
+  .emg-t { font-size:14px; font-weight:700; color:var(--fg-1); }
+  .emg-s { font-size:12px; color:var(--fg-3); margin-top:1px; }
+  .emg-call { background:var(--clay-500); color:white; border:none; padding:8px 14px; border-radius:10px;
+    font:600 13px Inter; display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .emg-call svg { width:13px; height:13px; }
+
+  /* Local — utility cards */
+  .local-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .local {
+    background:var(--bg-2); border:1px solid var(--border); border-radius:14px;
+    padding:12px; display:flex; flex-direction:column; gap:4px; cursor:pointer;
+  }
+  .local-top { display:flex; align-items:center; gap:8px; }
+  .local-ic { width:28px; height:28px; border-radius:8px; background:var(--accent-100); color:var(--accent-700); display:grid; place-items:center; }
+  .local-ic svg { width:14px; height:14px; }
+  .local-dist { margin-left:auto; font-size:11px; color:var(--fg-3); font-weight:600; }
+  .local-t { font-size:13px; font-weight:700; color:var(--fg-1); }
+  .local-s { font-size:11px; color:var(--fg-3); line-height:14px; }
+  .local-hours { font-size:10px; font-weight:600; color:var(--moss-700); display:flex; align-items:center; gap:4px; margin-top:4px; }
+  .local-hours::before { content:""; width:5px; height:5px; border-radius:50%; background:var(--moss-500); }
+  .local-hours.closed { color:var(--fg-3); }
+  .local-hours.closed::before { background:var(--fg-4); }
+
+  /* Arrival timeline */
+  .tl-card { margin: 0 16px 10px; background:var(--bg-2); border:1px solid var(--border); border-radius:16px; padding:14px 16px; }
+  .tl-head { font-size:13px; font-weight:700; color:var(--fg-1); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .tl-head .pill { background:var(--accent-100); color:var(--accent-700); font-size:10px; padding:2px 7px; border-radius:5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; }
+  .tl-rail { position:relative; padding-left:22px; }
+  .tl-rail::before { content:""; position:absolute; left:7px; top:4px; bottom:4px; width:2px; background:var(--ink-24); }
+  .tl-step { padding:4px 0 10px; position:relative; }
+  .tl-step::before { content:""; position:absolute; left:-18px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--bg-2); border:2px solid var(--ink-24); }
+  .tl-step.done::before { background:var(--moss-500); border-color:var(--moss-500); }
+  .tl-step.current::before { background:var(--accent-700); border-color:var(--accent-700); box-shadow: 0 0 0 4px var(--accent-100); }
+  .tl-t { font-size:13px; font-weight:600; color:var(--fg-1); line-height:17px; }
+  .tl-s { font-size:11px; color:var(--fg-3); margin-top:1px; }
+  .tl-time { font-size:11px; font-weight:600; color:var(--fg-2); font-family:ui-monospace, monospace; margin-left:8px; }
+
+  /* Assistant FAB */
+  .fab { position:absolute; bottom:90px; right:14px; z-index:40; width:54px; height:54px; border-radius:50%; background:var(--accent-700); color:var(--accent-on); display:grid; place-items:center;
+    box-shadow: 0 8px 24px rgba(30,42,58,0.38), 0 2px 6px rgba(30,42,58,0.22); cursor:pointer; }
+  .fab svg { width:20px; height:20px; }
+
+  /* Tab bar (solid, contained) */
+  .tabbar { position:absolute; bottom:0; left:0; right:0; height:74px; background:var(--bg-2); border-top:1px solid var(--border); z-index:30; display:flex; justify-content:space-around; align-items:flex-start; padding-top:10px; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--fg-3); font-size:10px; font-weight:600; padding:4px 12px; cursor:pointer; }
+  .tab.active { color:var(--accent-700); }
+  .tab svg { width:20px; height:20px; }
+
+  /* ===== WEB / DESKTOP guest view ===== */
+  .web {
+    width:1040px; max-width:100%; background:var(--bg-1); border-radius:22px;
+    border:1px solid var(--border); overflow:hidden;
+    box-shadow: 0 40px 80px rgba(28,26,22,0.18);
+  }
+  .web-bar {
+    background:var(--bg-2); border-bottom:1px solid var(--border); padding:10px 16px;
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--fg-3);
+  }
+  .web-bar .dot { width:10px; height:10px; border-radius:50%; background:var(--ink-24); }
+  .web-url { flex:1; background:var(--bg-1); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font:500 12px ui-monospace,monospace; color:var(--fg-2); }
+  .web-url b { color:var(--fg-1); }
+  .web-body { display:grid; grid-template-columns: 260px 1fr; min-height:640px; }
+
+  .web-nav { background:var(--bg-2); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:2px; }
+  .web-brand { display:flex; align-items:center; gap:10px; padding:0 8px 18px; }
+  .web-brand img { height:22px; }
+  .web-nav .g { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--fg-3); font-weight:700; padding:12px 10px 6px; }
+  .web-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; font-size:13px; font-weight:500; color:var(--fg-2); cursor:pointer; }
+  .web-item svg { width:15px; height:15px; color:var(--fg-3); }
+  .web-item:hover { background:var(--ink-12); color:var(--fg-1); }
+  .web-item.active { background:var(--accent-700); color:var(--accent-on); }
+  .web-item.active svg { color:var(--accent-on); }
+  .web-nav .prog { margin-top:auto; padding:10px 12px; background:var(--bg-1); border:1px solid var(--border); border-radius:10px; font-size:11px; color:var(--fg-3); }
+  .web-nav .prog-bar { background:var(--ink-12); height:4px; border-radius:2px; margin-top:6px; overflow:hidden; }
+  .web-nav .prog-bar div { background:var(--accent-700); height:100%; width:62%; }
+
+  .web-content { padding:28px 36px; background:var(--bg-1); }
+  .web-hero { display:grid; grid-template-columns: 1fr 300px; gap:20px; }
+  .web-hero-main { background:var(--accent-700); color:var(--accent-on); border-radius:18px; padding:22px 24px; position:relative; overflow:hidden; }
+  .web-hero-main::before { content:""; position:absolute; inset:-50% auto auto -10%; width:50%; height:120%; background:radial-gradient(circle, rgba(242,192,120,0.18), transparent 65%); pointer-events:none; }
+  .web-hero-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; opacity:0.7; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .web-hero-label::before { content:""; width:6px; height:6px; border-radius:50%; background:#F2C078; }
+  .web-hero-t { font-size:32px; font-weight:700; line-height:36px; letter-spacing:-0.02em; margin-top:8px; }
+  .web-hero-sub { font-size:14px; opacity:0.85; margin-top:6px; }
+  .web-hero-meta { display:grid; grid-template-columns: repeat(4,1fr); gap:18px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.16); }
+  .web-hero-meta .k { font-size:11px; opacity:0.6; text-transform:uppercase; letter-spacing:0.07em; font-weight:600; }
+  .web-hero-meta .v { font-size:16px; font-weight:700; margin-top:2px; }
+
+  .web-side { background:var(--bg-2); border:2px solid var(--accent-700); border-radius:16px; padding:14px 16px; position:relative; }
+  .web-side-tag { position:absolute; top:-9px; left:14px; background:var(--accent-700); color:var(--accent-on); font-size:10px; padding:3px 8px; border-radius:6px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; }
+  .web-side-t { font-size:15px; font-weight:700; color:var(--fg-1); }
+  .web-side-body { font-size:13px; color:var(--fg-2); margin-top:4px; line-height:18px; }
+
+  .web-qa { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-top:20px; }
+  .web-q { background:var(--bg-2); border:1px solid var(--border); border-radius:12px; padding:12px 10px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; transition:all var(--dur-1) var(--ease-standard); }
+  .web-q:hover { border-color:var(--accent-500); transform:translateY(-1px); box-shadow: var(--elev-1); }
+  .web-q-ic { width:36px; height:36px; border-radius:10px; background:var(--accent-100); color:var(--accent-700); display:grid; place-items:center; }
+  .web-q-lbl { font-size:12px; font-weight:600; color:var(--fg-1); }
+
+  .web-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+  .web-card { background:var(--bg-2); border:1px solid var(--border); border-radius:16px; padding:18px 20px; }
+  .web-card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .web-card-t { font-size:11px; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; color:var(--fg-3); }
+  .web-card-link { font-size:12px; color:var(--accent-500); font-weight:500; cursor:pointer; }
+
+  /* section headers */
+  .section-heading { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; font-weight:700; color:var(--fg-1); margin: 28px 0 12px; display:flex; align-items:center; gap:8px; }
+  .section-heading::after { content:""; flex:1; height:1px; background:var(--border); }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- ==================  Phone 1: Survival Home ================== -->
+  <div>
+  <div class="device">
+    <div class="island"></div>
+    <div class="statusbar"><span>9:41</span><span class="sb-right"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:22px;height:15px"></i></span></div>
+    <div class="screen">
+
+      <div class="s-hero">
+        <div class="s-top">
+          <span class="s-stage"><span class="s-stage-dot"></span>DÍA 1 · LLEGADA</span>
+          <span>MAR · 22°</span>
+        </div>
+        <div class="s-greet">Hola, Laura.</div>
+        <div class="s-address"><i data-lucide="map-pin" style="width:13px;height:13px"></i>Calle Cuba 42, 3B · Ruzafa</div>
+
+        <div class="s-metrics">
+          <div class="s-metric"><div class="k">Check-in</div><div class="v">16:00</div><div class="sub">hoy</div></div>
+          <div class="s-metric"><div class="k">Check-out</div><div class="v">11:00</div><div class="sub">vie 22</div></div>
+          <div class="s-metric"><div class="k">Acceso</div><div class="v">5274</div><div class="sub">caja</div></div>
+          <div class="s-metric"><div class="k">Piso</div><div class="v">3B</div><div class="sub">planta 3</div></div>
+        </div>
+
+        <div class="s-actions">
+          <div class="s-btn"><i data-lucide="wifi"></i><span class="lbl">Wi-Fi</span></div>
+          <div class="s-btn"><i data-lucide="key-round"></i><span class="lbl">Entrar</span></div>
+          <div class="s-btn"><i data-lucide="door-open"></i><span class="lbl">Salida</span></div>
+          <div class="s-btn"><i data-lucide="life-buoy"></i><span class="lbl">SOS</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Esencial <span class="n">3</span></div>
+
+        <div class="ess">
+          <span class="ess-tag">Primero</span>
+          <div class="ess-row">
+            <div class="ess-ic"><i data-lucide="key-round"></i></div>
+            <div>
+              <div class="ess-t">Cómo entrar</div>
+              <div class="ess-sub">Caja de llaves a la derecha del portal. Código <span class="ess-code">5274</span></div>
+            </div>
+          </div>
+          <div class="wifi">
+            <div class="wifi-cell"><span class="wifi-k">Red</span><span class="wifi-v">Ruzafa_3B</span><i data-lucide="copy" class="wifi-copy" style="width:14px;height:14px"></i></div>
+            <div class="wifi-cell"><span class="wifi-k">Contraseña</span><span class="wifi-v">naranja24</span><i data-lucide="copy" class="wifi-copy" style="width:14px;height:14px"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn">
+        <i data-lucide="alert-triangle" style="width:16px;height:16px"></i>
+        <div class="warn-body"><b>Silencio desde las 22:00.</b> Vecindad residencial. Multas del ayuntamiento reales.</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Casa <span class="n">6</span></div>
+        <div class="lc">
+          <div class="lc-row"><div class="lc-ic"><i data-lucide="bed-double"></i></div><div class="lc-main"><div class="lc-title">Dormitorios</div><div class="lc-sub">Ropa de cama, secretos de armarios</div></div><span class="lc-meta">2</span><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+          <div class="lc-row"><div class="lc-ic"><i data-lucide="chef-hat"></i></div><div class="lc-main"><div class="lc-title">Cocina</div><div class="lc-sub">Inducción, horno, lavavajillas</div></div><span class="lc-meta">12</span><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+          <div class="lc-row"><div class="lc-ic"><i data-lucide="bath"></i></div><div class="lc-main"><div class="lc-title">Baño</div><div class="lc-sub">Ducha, secador, toallas extra</div></div><span class="lc-meta">5</span><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+          <div class="lc-row"><div class="lc-ic"><i data-lucide="trash-2"></i></div><div class="lc-main"><div class="lc-title">Basura y reciclaje</div><div class="lc-sub">Qué día saca qué contenedor</div></div><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+        </div>
+      </div>
+
+      <!-- Emergency strip -->
+      <div class="section-title" style="padding-left:16px">Ayuda</div>
+      <div class="emg">
+        <div class="emg-head"><i data-lucide="life-buoy"></i><span class="t">Si algo va mal</span></div>
+        <div class="emg-row">
+          <div class="emg-ic" style="background:var(--accent-100); color:var(--accent-700)"><i data-lucide="message-circle"></i></div>
+          <div class="emg-main"><div class="emg-t">Javier · anfitrión</div><div class="emg-s">Responde en menos de 1 h</div></div>
+          <button class="emg-call" style="background:var(--accent-700)"><i data-lucide="message-circle"></i>Chat</button>
+        </div>
+        <div class="emg-row">
+          <div class="emg-ic"><i data-lucide="phone"></i></div>
+          <div class="emg-main"><div class="emg-t">Emergencias · 112</div><div class="emg-s">Policía · bomberos · sanitarios</div></div>
+          <button class="emg-call"><i data-lucide="phone"></i>112</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="fab"><i data-lucide="sparkles"></i></div>
+    <div class="tabbar">
+      <div class="tab active"><i data-lucide="home"></i>Inicio</div>
+      <div class="tab"><i data-lucide="layout-grid"></i>Casa</div>
+      <div class="tab"><i data-lucide="map"></i>Barrio</div>
+      <div class="tab"><i data-lucide="life-buoy"></i>Ayuda</div>
+    </div>
+    <div class="home-ind"></div>
+  </div>
+  <div class="phone-label">Survival Home<small>hero operativo · quick actions · emergency strip</small></div>
+  </div>
+
+  <!-- ==================  Phone 2: Arrival Day Timeline ================== -->
+  <div>
+  <div class="device">
+    <div class="island"></div>
+    <div class="statusbar"><span>9:41</span><span class="sb-right"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:22px;height:15px"></i></span></div>
+    <div class="screen">
+
+      <div style="padding:0 16px; margin-top:4px;">
+        <div style="font-size:11px; color:var(--fg-3); font-weight:600; text-transform:uppercase; letter-spacing:0.08em">Tu llegada · hoy</div>
+        <div style="font-size:24px; font-weight:700; color:var(--fg-1); letter-spacing:-0.01em; margin-top:4px; line-height:28px">Paso a paso hasta el sofá</div>
+      </div>
+
+      <div class="tl-card" style="margin-top:14px">
+        <div class="tl-head"><span>Trayecto</span><span class="pill">en curso</span></div>
+        <div class="tl-rail">
+          <div class="tl-step done">
+            <div class="tl-t">Aterrizaje · Valencia VLC <span class="tl-time">14:10</span></div>
+            <div class="tl-s">Terminal única · sigue salida</div>
+          </div>
+          <div class="tl-step done">
+            <div class="tl-t">Metro L1 hacia Bailén <span class="tl-time">14:45</span></div>
+            <div class="tl-s">Baja en Xàtiva · 2,80 €</div>
+          </div>
+          <div class="tl-step current">
+            <div class="tl-t">15 min caminando a Calle Cuba 42 <span class="tl-time">ahora</span></div>
+            <div class="tl-s">Atraviesa el parque de Colón, entra en Ruzafa</div>
+          </div>
+          <div class="tl-step">
+            <div class="tl-t">Caja de llaves · código 5274 <span class="tl-time">16:00</span></div>
+            <div class="tl-s">A la derecha del portal, debajo del interfono</div>
+          </div>
+          <div class="tl-step">
+            <div class="tl-t">3B · tercera planta</div>
+            <div class="tl-s">Ascensor al fondo a la izquierda</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-card">
+        <div class="tl-head"><span>Nada más entrar</span></div>
+        <div class="lc" style="margin:0">
+          <div class="lc-row" style="padding:10px 0"><div class="lc-ic" style="background:var(--accent-100); color:var(--accent-700)"><i data-lucide="thermometer"></i></div><div class="lc-main"><div class="lc-title">Enciende el aire · 23°</div><div class="lc-sub">Mando en la mesa del salón</div></div></div>
+          <div class="lc-row" style="padding:10px 0"><div class="lc-ic" style="background:var(--accent-100); color:var(--accent-700)"><i data-lucide="wifi"></i></div><div class="lc-main"><div class="lc-title">Conéctate al Wi-Fi</div><div class="lc-sub">Ruzafa_3B · naranja24</div></div></div>
+          <div class="lc-row" style="padding:10px 0"><div class="lc-ic" style="background:var(--accent-100); color:var(--accent-700)"><i data-lucide="droplet"></i></div><div class="lc-main"><div class="lc-title">Agua fría en la nevera</div><div class="lc-sub">Te hemos dejado dos botellas</div></div></div>
+        </div>
+      </div>
+
+      <div class="warn" style="margin-top:12px">
+        <i data-lucide="info" style="width:16px;height:16px"></i>
+        <div class="warn-body"><b>Llamada sobre las 16:10</b> de +34 963… Es Elena, limpiadora, confirmando que todo está bien.</div>
+      </div>
+
+    </div>
+    <div class="tabbar">
+      <div class="tab active"><i data-lucide="home"></i>Inicio</div>
+      <div class="tab"><i data-lucide="layout-grid"></i>Casa</div>
+      <div class="tab"><i data-lucide="map"></i>Barrio</div>
+      <div class="tab"><i data-lucide="life-buoy"></i>Ayuda</div>
+    </div>
+    <div class="home-ind"></div>
+  </div>
+  <div class="phone-label">Arrival Timeline<small>paso-a-paso funcional hasta el sofá</small></div>
+  </div>
+
+  <!-- ==================  Phone 3: Local Guide (utility) ================== -->
+  <div>
+  <div class="device">
+    <div class="island"></div>
+    <div class="statusbar"><span>9:41</span><span class="sb-right"><i data-lucide="signal" style="width:15px;height:15px"></i><i data-lucide="wifi" style="width:15px;height:15px"></i><i data-lucide="battery-full" style="width:22px;height:15px"></i></span></div>
+    <div class="screen">
+      <div style="padding:0 16px; margin-top:4px;">
+        <div style="font-size:11px; color:var(--fg-3); font-weight:600; text-transform:uppercase; letter-spacing:0.08em">Tu barrio · Ruzafa</div>
+        <div style="font-size:24px; font-weight:700; color:var(--fg-1); letter-spacing:-0.01em; margin-top:4px">Lo útil, cerca</div>
+      </div>
+
+      <!-- filter chips -->
+      <div style="display:flex; gap:6px; padding:14px 16px 6px; overflow-x:auto">
+        <span style="background:var(--accent-700); color:var(--accent-on); font-size:12px; padding:6px 12px; border-radius:999px; font-weight:600; white-space:nowrap">Ahora abierto</span>
+        <span style="background:var(--bg-2); color:var(--fg-1); border:1px solid var(--border); font-size:12px; padding:6px 12px; border-radius:999px; font-weight:500; white-space:nowrap">Café</span>
+        <span style="background:var(--bg-2); color:var(--fg-1); border:1px solid var(--border); font-size:12px; padding:6px 12px; border-radius:999px; font-weight:500; white-space:nowrap">Super</span>
+        <span style="background:var(--bg-2); color:var(--fg-1); border:1px solid var(--border); font-size:12px; padding:6px 12px; border-radius:999px; font-weight:500; white-space:nowrap">Farmacia</span>
+        <span style="background:var(--bg-2); color:var(--fg-1); border:1px solid var(--border); font-size:12px; padding:6px 12px; border-radius:999px; font-weight:500; white-space:nowrap">Cajero</span>
+      </div>
+
+      <div style="padding:6px 16px">
+        <div class="section-title" style="padding-top:8px">Lo que necesitas hoy</div>
+        <div class="local-grid">
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="shopping-basket"></i></div><span class="local-dist">4 min</span></div><div class="local-t">Mercado de Ruzafa</div><div class="local-s">Fruta, pan, pescado</div><div class="local-hours">Abre hasta 14:30</div></div>
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="coffee"></i></div><span class="local-dist">2 min</span></div><div class="local-t">Café Berlín</div><div class="local-s">Cafés, tostadas</div><div class="local-hours">Abierto ahora</div></div>
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="pill"></i></div><span class="local-dist">3 min</span></div><div class="local-t">Farmacia Sorní</div><div class="local-s">Turno 24h los martes</div><div class="local-hours">Abierto ahora</div></div>
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="banknote"></i></div><span class="local-dist">1 min</span></div><div class="local-t">Cajero CaixaBank</div><div class="local-s">Sin comisión con Visa</div><div class="local-hours">24h</div></div>
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="shopping-cart"></i></div><span class="local-dist">5 min</span></div><div class="local-t">Mercadona</div><div class="local-s">Super grande</div><div class="local-hours closed">Cierra a 21:30</div></div>
+          <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="wine"></i></div><span class="local-dist">3 min</span></div><div class="local-t">Canalla Bistro</div><div class="local-s">Cena · reserva</div><div class="local-hours closed">Abre a 20:00</div></div>
+        </div>
+
+        <div class="section-title" style="margin-top:12px">Recomendado por Javier</div>
+        <div class="lc">
+          <div class="lc-row"><div class="lc-ic" style="background:var(--amber-100); color:var(--amber-700)"><i data-lucide="star"></i></div><div class="lc-main"><div class="lc-title">Pepita Pulgarcita</div><div class="lc-sub">Brunch de fin de semana · 4 min</div></div><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+          <div class="lc-row"><div class="lc-ic" style="background:var(--amber-100); color:var(--amber-700)"><i data-lucide="star"></i></div><div class="lc-main"><div class="lc-title">Ultramarinos Huerta</div><div class="lc-sub">Conservas para llevar · 6 min</div></div><i data-lucide="chevron-right" class="lc-chev" style="width:15px;height:15px"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar">
+      <div class="tab"><i data-lucide="home"></i>Inicio</div>
+      <div class="tab"><i data-lucide="layout-grid"></i>Casa</div>
+      <div class="tab active"><i data-lucide="map"></i>Barrio</div>
+      <div class="tab"><i data-lucide="life-buoy"></i>Ayuda</div>
+    </div>
+    <div class="home-ind"></div>
+  </div>
+  <div class="phone-label">Local · utilidad<small>chip "ahora abierto" · distancia + horario en cada card</small></div>
+  </div>
+
+</div>
+
+<!-- ================== WEB version ================== -->
+<div style="max-width:1480px; margin:60px auto 0">
+  <div class="section-heading">Versión web · misma guía, escritorio</div>
+  <div class="web">
+    <div class="web-bar">
+      <span class="dot" style="background:#E57373"></span><span class="dot" style="background:#FFB74D"></span><span class="dot" style="background:#81C784"></span>
+      <div class="web-url"><b>liora.app</b>/g/ruzafa-3b</div>
+      <i data-lucide="share" style="width:14px;height:14px; color:var(--fg-3)"></i>
+    </div>
+
+    <div class="web-body">
+      <aside class="web-nav">
+        <div class="web-brand"><img src="../../assets/liora-wordmark.svg" alt="Liora"></div>
+        <div class="g">Tu estancia</div>
+        <div class="web-item active"><i data-lucide="home"></i>Inicio</div>
+        <div class="web-item"><i data-lucide="key-round"></i>Llegada y acceso</div>
+        <div class="web-item"><i data-lucide="layout-grid"></i>La casa</div>
+        <div class="web-item"><i data-lucide="shield-alert"></i>Normas</div>
+        <div class="web-item"><i data-lucide="map"></i>Barrio</div>
+        <div class="web-item"><i data-lucide="life-buoy"></i>Ayuda</div>
+        <div class="g">Final</div>
+        <div class="web-item"><i data-lucide="door-open"></i>Salida</div>
+        <div class="prog">
+          Check-in en <b style="color:var(--fg-1)">2 h 14 min</b>
+          <div class="prog-bar"><div></div></div>
+        </div>
+      </aside>
+
+      <section class="web-content">
+        <div class="web-hero">
+          <div class="web-hero-main">
+            <div class="web-hero-label">DÍA 1 · LLEGADA</div>
+            <div class="web-hero-t">Hola, Laura.<br/>Te esperamos en Ruzafa.</div>
+            <div class="web-hero-sub">Calle Cuba 42, 3B · Valencia · 22° y soleado</div>
+            <div class="web-hero-meta">
+              <div><div class="k">Check-in</div><div class="v">Hoy · 16:00</div></div>
+              <div><div class="k">Check-out</div><div class="v">Vie · 11:00</div></div>
+              <div><div class="k">Código caja</div><div class="v">5274</div></div>
+              <div><div class="k">Piso</div><div class="v">3B</div></div>
+            </div>
+          </div>
+          <div class="web-side">
+            <span class="web-side-tag">Primero</span>
+            <div class="web-side-t">Cómo entrar</div>
+            <div class="web-side-body">Caja de llaves a la derecha del portal. Código <b>5274</b>. Apartamento 3B, tercera planta.</div>
+            <div class="wifi" style="margin-top:12px">
+              <div class="wifi-cell"><span class="wifi-k">Red</span><span class="wifi-v">Ruzafa_3B</span><i data-lucide="copy" class="wifi-copy" style="width:14px;height:14px"></i></div>
+              <div class="wifi-cell"><span class="wifi-k">Clave</span><span class="wifi-v">naranja24</span><i data-lucide="copy" class="wifi-copy" style="width:14px;height:14px"></i></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="web-qa">
+          <div class="web-q"><div class="web-q-ic"><i data-lucide="wifi"></i></div><div class="web-q-lbl">Wi-Fi</div></div>
+          <div class="web-q"><div class="web-q-ic"><i data-lucide="thermometer"></i></div><div class="web-q-lbl">Aire</div></div>
+          <div class="web-q"><div class="web-q-ic"><i data-lucide="trash-2"></i></div><div class="web-q-lbl">Basura</div></div>
+          <div class="web-q"><div class="web-q-ic"><i data-lucide="chef-hat"></i></div><div class="web-q-lbl">Cocina</div></div>
+          <div class="web-q"><div class="web-q-ic"><i data-lucide="message-circle"></i></div><div class="web-q-lbl">Anfitrión</div></div>
+        </div>
+
+        <div class="web-grid">
+          <div class="web-card">
+            <div class="web-card-head"><span class="web-card-t">Normas clave</span></div>
+            <div class="lc" style="background:transparent; border:none; margin:0">
+              <div class="lc-row" style="padding:10px 0; border-bottom:1px solid var(--ink-12)"><div class="lc-ic" style="background:var(--clay-100); color:var(--clay-700)"><i data-lucide="cigarette-off"></i></div><div class="lc-main"><div class="lc-title">No fumar en el interior</div><div class="lc-sub">Balcón permitido · 150 € si se detecta olor</div></div></div>
+              <div class="lc-row" style="padding:10px 0; border-bottom:1px solid var(--ink-12)"><div class="lc-ic"><i data-lucide="moon"></i></div><div class="lc-main"><div class="lc-title">Silencio desde las 22:00</div><div class="lc-sub">Vecindad residencial</div></div></div>
+              <div class="lc-row" style="padding:10px 0"><div class="lc-ic"><i data-lucide="paw-print"></i></div><div class="lc-main"><div class="lc-title">Mascotas permitidas</div><div class="lc-sub">Avisa con antelación</div></div></div>
+            </div>
+          </div>
+
+          <div class="web-card">
+            <div class="web-card-head"><span class="web-card-t">Lo útil, cerca</span><span class="web-card-link">Ver mapa</span></div>
+            <div class="local-grid" style="grid-template-columns:1fr 1fr 1fr">
+              <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="shopping-basket"></i></div><span class="local-dist">4'</span></div><div class="local-t">Mercado</div><div class="local-hours">Hasta 14:30</div></div>
+              <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="coffee"></i></div><span class="local-dist">2'</span></div><div class="local-t">Café Berlín</div><div class="local-hours">Abierto</div></div>
+              <div class="local"><div class="local-top"><div class="local-ic"><i data-lucide="pill"></i></div><span class="local-dist">3'</span></div><div class="local-t">Farmacia</div><div class="local-hours">Abierto</div></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

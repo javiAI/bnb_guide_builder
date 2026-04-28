@@ -2766,141 +2766,515 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 
 ## FASE 16 — Liora Design Replatform
 
-**Objetivo**: replatform visual integral del producto sobre el sistema de diseño Liora (tokens, componentes UI, superficies). Cero cambios funcionales — la replatform se hace **componente a componente** y **superficie a superficie**, manteniendo paridad de comportamiento, accesibilidad y telemetría con el estado pre-rama.
+**Objetivo**: replatform visual integral del producto sobre el sistema de diseño Liora ("Warm Analytical Minimalism": olive primary, terracotta accent, info blue-grey sobre warm-neutrals; borders antes que sombras). Cero cambios funcionales — la replatform se hace componente a componente y superficie a superficie, manteniendo paridad de comportamiento, accesibilidad y telemetría con el estado pre-rama.
 
-**Estado actual**: ⏳ **bloqueada** — espera entrega externa del paquete de diseño Liora (tokens completos, primitivos, especificación por superficie). La fase no arranca hasta que esa entrega esté en el repo y revisada. Las 7 ramas 16A–16G se planifican como secuencia con dependencias internas, no se abren en paralelo.
+**Estado actual**: 🟢 **lista para arrancar**. El paquete vive en `design-system/` (kebab, trackeado en Git): foundations (tokens en 3 capas + base.css + themes.css + tailwind.tokens.ts + shadcn.css) y references/liora-ui-kits (operator/messaging/guest HTMLs, referencia de layout, no de paleta — los kits usan azul-gris frío que no se adopta como brand). Saneado y validado por `npm run validate:design-system` (chore `chore/plan-update-liora`).
 
-**Por qué Fase 16 no bloquea trabajo funcional pendiente**: las reglas duras de `docs/ARCHITECTURE_OVERVIEW.md` §14 y `CLAUDE.md` § "Replatform de diseño (Liora)" se aplican desde ya en toda rama funcional (incluida 13C). Con esa disciplina, el trabajo funcional construido antes de Liora se replatformará por superficie sin reabrir scope. El único item realmente bloqueado por la entrega del paquete es Fase 16 misma — no 13C, no FUTURE.
+**Decisiones permanentes** (vinculantes en toda la fase, no se retiran):
+1. Path canónico único: `design-system/` (kebab, trackeado en Git).
+2. Foundations es la única fuente de paleta. Los kits dictan layout/jerarquía, foundations dicta paleta/tokens.
+3. Dark mode global vía `html[data-theme]` (16A instala infra + pre-paint, 16D añade toggle visible operator). Guest hereda el `data-theme` global cuando hay toggle activo y cae a `prefers-color-scheme` en `auto`.
+4. shadcn NO wholesale. Radix continúa donde ya está (dialog, toast). Adopción selectiva justificada por componente en `LIORA_COMPONENT_MAPPING.md`. `shadcn.css` es bridge potencial, no mandato.
+5. Brand themes per-propiedad guest permanentes (`src/config/brand-palette.ts` + bridge `--guide-brand-light/dark` en `guide-renderer.tsx`). Conviven con foundations vía `--guide-brand` resuelto a tokens semánticos.
+6. Cards globales (`src/components/ui/card.tsx`) ≠ cards guest (`src/components/public-guide/ui/guide-card.tsx`). Promoción requiere rama dedicada futura.
+7. Command palette funcional fuera de scope de Fase 16. 16D solo prepara slot visual no interactivo en topbar; el palette real va a `feat/operator-command-palette` (registrado en `docs/FUTURE.md`).
+8. Reglas duras §14 ARCHITECTURE_OVERVIEW + "Replatform de diseño (Liora)" en CLAUDE.md aplican: sin sufijos `*V2`, `New*`, `Better*`, `*Old`, `legacy-*`. Tabla de clasificación obligatoria por PR. axe-core `serious|critical = 0` invariante. Targets ≥44×44 invariante. Componentes consumen tokens semánticos / componente, nunca primitivos.
+9. Cero cambios funcionales: pipeline `composeGuide → filterByAudience → normalizeGuideForPresentation`, registries, taxonomies, server actions, routes y APIs quedan intactos. Liora es solo capa visual.
+10. Guest base visual = v2 de `ui_kits/guest/index.html`. v1 ya borrado del paquete. Reincorporación de elementos v1 puntuales requiere bloque "Excepciones v1" justificado en la PR de 16C.
+11. Nada se "difiere" sin destino: cada item temporal va con (a) entry en `docs/FUTURE.md`, (b) rama nombrada y registrada, o (c) decisión arquitectura permanente documentada.
 
-**Preparación al arrancar (rama 16A)**: crear los docs `docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_COMPONENT_MAPPING.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` y los skills `/liora-*` que aparezcan necesarios. Hoy no existen.
+**Las 7 ramas 16A–16G son secuenciales con dependencias internas, no paralelas.**
 
 ---
 
 ### Rama 16A — `refactor/liora-token-foundation`
 
-**Propósito**: alinear `src/config/design-tokens.ts` al esquema del paquete Liora (colores, tipografía, spacing, radii, sombras, motion). Cero cambios visuales nuevos en superficies — solo cambio de fuente de tokens.
+**Propósito**: instalar la infraestructura de tokens Liora en el pipeline de Tailwind/Next y reemplazar el sistema actual de variables CSS por el contrato de foundations, manteniendo compatibilidad legacy explícita y registrada para no arrastrar el cambio a `src/components/**` en esta misma rama.
 
-**Archivos a modificar** (referencia, exhaustividad tras entrega):
-- `src/config/design-tokens.ts` — única fuente de declaración de variables CSS.
-- CSS global / `tailwind.config.ts` — re-mapeo si el paquete introduce tokens semánticos no cubiertos.
+**Scope estricto**: solo tokens, base styles, theme infra, Tailwind integration, fonts (Geist → IBM Plex Sans + Plex Mono + Newsreader), pre-paint script de dark mode (sin toggle UI), compatibility aliases (registrados con plan de retirada), tests de tokens y aliases.
 
-**Archivos a crear**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (ver bloque de apertura de la fase).
+**Excepción**: dependencias estrictamente necesarias para 16A se justifican en la PR. Las deps de componentes (lucide-react, class-variance-authority, tailwind-merge, clsx) van en 16B, no aquí.
+
+**Archivos a crear**:
+- `docs/LIORA_DESIGN_ADOPTION_PLAN.md` — mapa Liora → producto: tokens adoptados, legacy aliases registrados, ownership de retirada, mapping de fonts, mapping de dark mode, mapping de brand themes guest.
+- `src/test/liora-token-coverage.test.ts` — verifica que cada `var(--…)` consumido en `src/**` está definido en `design-system/foundations/tokens/` o en el registro de aliases legacy.
+- `src/test/liora-no-primitive-leak.test.ts` — falla si algún archivo fuera de `design-system/foundations/tokens/` referencia un primitivo (`--warm-*`, `--olive-*`, `--terra-*`, `--info-*`, `--gray-*`, `--success-*`, `--warning-*`, `--error-*`).
+- `src/test/liora-legacy-alias-registry.test.ts` — verifica que cada alias legacy está documentado en `LIORA_DESIGN_ADOPTION_PLAN.md` con: token semántico al que apunta, lista de archivos que aún lo usan, rama de retirada (16G), comentario `@deprecated` en CSS.
+- `src/test/liora-no-hex-in-jsx.test.ts` — recorre `src/**/*.{ts,tsx}` (excl. `src/test/`, `src/lib/types/`, vendor) y falla si encuentra `style={{...#RRGGBB...}}` o `className` con `bg-[#…]` / `text-[#…]` literales. Bloquea PR de 16A en adelante.
+- `src/styles/legacy-aliases.css` — bloque CSS con todos los aliases legacy. Cargado por wrapper `design-system.css` después de `themes.css`.
+- `src/app/design-system.css` — **wrapper único**: importa `foundations/styles/base.css` → `foundations/styles/themes.css` → `src/styles/legacy-aliases.css`. Único archivo que el resto de la app importa para foundations.
+
+**Aliases legacy registrados** (lista cerrada, ampliable solo con doc + test):
+- `--color-primary-{50,100,200,400,500,600,700}` → `--color-action-primary*` y variantes.
+- `--color-neutral-{0,50,100,200,300,400,500,600,700,800,900}` → `--color-background-*` y `--color-text-*`.
+- `--color-success-{50,500,700}` → `--color-status-success-{bg,solid,text}`.
+- `--color-warning-{50,500,700}` → `--color-status-warning-{bg,solid,text}`.
+- `--color-danger-{50,500,700}` → `--color-status-error-{bg,solid,text}`.
+- `--color-info-{50,500,700}` → `--color-status-info-{bg,solid,text}`.
+- `--background` → `--color-background-page`.
+- `--foreground` → `--color-text-primary`.
+- `--surface` → `--color-background-surface`.
+- `--surface-elevated` → `--color-background-elevated`.
+- `--border` → `--color-border-default`.
+- `--sidebar-width` → `var(--width-sidebar)`.
+- `--header-height` → `var(--height-topbar)`.
+
+Cada alias declarado con comentario `/* @deprecated removed in 16G — use <semantic> */`.
+
+**Decisión sobre `--font-size-*`, `--space-*`, `--radius-*`**: estos tokens existen hoy en `globals.css` y NO entran en la lista cerrada anterior (decisión diferida en chore/plan-update-liora § DESIGN_MIGRATION.md §2.3). Resolución en Fase -1 de 16A: o (a) re-export directo desde foundations sin alias intermedio, o (b) alias temporal análogo a colores con retirada en 16G. La elección se documenta en `LIORA_DESIGN_ADOPTION_PLAN.md` como parte de la PR de 16A.
+
+**Archivos a modificar**:
+- `tailwind.config.ts` — `theme.extend = warmAnalyticalTheme` desde `design-system/foundations/tokens/tailwind.tokens.ts`. Sintaxis dark mode: Tailwind v3.4.19 (confirmado en `package.json`) → `darkMode: ["class", '[data-theme="dark"]']`. Smoke test con un componente cualquiera con `dark:bg-…` parte del gate de done.
+- `src/app/layout.tsx`:
+  - `import "./design-system.css";` (wrapper, en lugar de tres imports separados).
+  - `import "./globals.css";` después (resets puntuales que sobreviven a base.css).
+  - Cargar IBM Plex Sans + Plex Mono + Newsreader vía `next/font/google`. Mapear a `--font-family-sans`, `--font-family-mono`, `--font-family-serif`.
+  - Inline pre-paint script de dark mode (foundations IMPLEMENTATION.md §5). Determina `light | dark | auto` desde `localStorage.theme`, aplica `data-theme` en `<html>`. **No expone toggle UI** — eso es 16D. CSP: confirmado en chore que `next.config.ts` no define headers CSP, no requiere nonce.
+- `src/app/globals.css` — vaciar el bloque `:root { --color-* … }` (esos tokens vienen de foundations + aliases legacy). Mantener resets globales no cubiertos por `base.css`.
+- `package.json` — desinstalar `geist` si aparece como dep; añadir solo fuentes vía `next/font` (no requiere npm install adicional).
+
+**Archivos a NO tocar**:
+- `src/components/**` (re-skin va en 16B; los call sites siguen funcionando vía aliases legacy).
+- `src/components/public-guide/guide.css` (rewrite va en 16C).
+- `src/config/brand-palette.ts` (decisión permanente 5: convive — 16C documenta cómo).
 
 **Tests**:
-- `src/test/design-tokens-mapping.test.ts` (nuevo) — cobertura Liora → tokens internos.
-- Snapshot de guía pública idéntico al baseline pre-rama (validación de no-regresión visual + a11y).
+- `liora-token-coverage.test.ts` verde.
+- `liora-no-primitive-leak.test.ts` verde.
+- `liora-legacy-alias-registry.test.ts` verde.
+- `liora-no-hex-in-jsx.test.ts` verde.
+- `npm run validate:design-system` verde (gate CI permanente desde el chore).
+- E2E baseline (`e2e/axe-a11y.spec.ts`, `e2e/guest-leak-invariants.spec.ts`, `e2e/public-guide.spec.ts`, `e2e/guide-search.spec.ts`, `e2e/hero-quick-actions.spec.ts`, `e2e/guide-pwa-offline.spec.ts`) verde.
+- `npx tsc --noEmit` verde tras `prisma generate`.
 
-**Criterio de done**: axe-core + snapshot guest idénticos al baseline pre-rama; tokens Liora declarados en una sola fuente; brand theming de 10E sigue funcionando sin cambios.
+**Criterio de done** (sin "visual idéntico"):
+- ✅ `tailwind.config.ts` consume `warmAnalyticalTheme` con `darkMode: ["class", '[data-theme="dark"]']` y un componente smoke prueba que `dark:` se aplica al toggle de `[data-theme]`.
+- ✅ `src/app/design-system.css` es el único punto de entrada al paquete; `layout.tsx` importa este wrapper, no rutas profundas.
+- ✅ Orden de capas dentro del wrapper: `base.css` → `themes.css` → `legacy-aliases.css`. `globals.css` carga después en `layout.tsx`.
+- ✅ IBM Plex (Sans/Mono) + Newsreader cargados vía `next/font`. Geist desinstalado.
+- ✅ Pre-paint dark mode script en `<head>`. Sin FOUC.
+- ✅ 0 referencias a primitivos fuera de `design-system/foundations/tokens/`.
+- ✅ Cada alias legacy registrado en `LIORA_DESIGN_ADOPTION_PLAN.md` con ownership 16G.
+- ✅ Tres invariantes de no-regresión (en lugar de "visual idéntico"):
+  - **No broken layout**: scroll, click targets, sticky elements, grid layouts funcionan en 3 viewports (375 / 768 / 1280).
+  - **No regresión funcional**: navegación, formularios, search, lightbox, PWA install funcionan igual.
+  - **No regresión de accesibilidad**: axe-core `serious|critical = 0`.
+- ✅ Cambios de métrica tipográfica (Geist → Plex) **esperados y documentados** en la PR description con screenshots side-by-side de las 3 superficies (guest, operator overview, messaging) en 3 viewports × light/dark.
+- ✅ E2E suite verde.
+
+**Restricciones**:
+- ❌ Reescribir `guide.css` (16C).
+- ❌ Cambiar componentes de `src/components/ui/` (16B).
+- ❌ Adoptar shadcn primitivos (16B).
+- ❌ Añadir lucide / CVA / tailwind-merge / clsx (16B).
+- ❌ Exponer toggle dark mode visible (16D).
+- ❌ Crear aliases legacy nuevos sin entrada en `LIORA_DESIGN_ADOPTION_PLAN.md` + plan de retirada en 16G.
+- ❌ Promesa de "visual idéntico al baseline".
+
+**Dependencias / Riesgos**:
+- ⚠️ Geist → IBM Plex cambia métricas. Mitigación: screenshots comparativos obligatorios en PR; cualquier overflow visible se ajusta con padding/min-width en la rama, no se considera regresión.
+- ⚠️ Pre-paint script inline en `<head>` — CSP confirmado ausente en chore, no requiere nonce. Si se añade CSP en el futuro, threadear nonce desde `next.config.ts`.
+- ⚠️ Tests `no-primitive-leak` revelarán uso oculto de hex hardcodeado con fallback. Cada uno se migra a alias o token semántico en la misma rama.
+- ⚠️ Aliases legacy son **deuda registrada**, no permanente. Cierran en 16G por grep gate. Cualquier nuevo alias añadido fuera de la lista cerrada bloquea la PR (test).
+
+**No-alcance**: re-skin de primitivos, re-diseño de superficies, adopción de shadcn, adopción de lucide en componentes, toggle dark mode visible.
 
 **Preparación**:
-- **Contexto a leer**: paquete Liora (cuando exista), `src/config/design-tokens.ts`, `docs/CONFIG_DRIVEN_SYSTEM.md` §UI rule, research `L162-210` de `GUEST_GUIDE_SPEC.md` para el diff de tokens MVP vs Liora.
-- **Docs a actualizar al terminar**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (creado en esta rama).
-- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+- **Contexto a leer**: `design-system/docs/DESIGN_MIGRATION.md` (legacy → semantic mapping + decisión §2.3 sobre size/space/radius), `design-system/foundations/docs/DESIGN_SYSTEM.md`, `design-system/foundations/docs/IMPLEMENTATION.md`, `design-system/foundations/docs/ACCESSIBILITY.md`, `design-system/foundations/tokens/tailwind.tokens.ts`, `design-system/foundations/styles/base.css` y `themes.css`, `src/app/globals.css`, `src/app/layout.tsx`, `tailwind.config.ts`, `src/config/brand-palette.ts`.
+- **Fase -1 de 16A — checks específicos** (gate antes de crear la rama):
+  1. Decisión sobre `--font-size-*`, `--space-*`, `--radius-*` (re-export directo vs alias temporal). Documentar en `LIORA_DESIGN_ADOPTION_PLAN.md`.
+  2. Verificar que `next.config.ts` sigue sin CSP (chequeado en chore/plan-update-liora). Si cambió, añadir nonce al pre-paint script.
+  3. Smoke test del dark mode: renderizar un componente `<div className="bg-white dark:bg-black">` y verificar que `dark:` aplica al togglear `[data-theme="dark"]` en el `<html>`.
+- **Docs a actualizar al terminar**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (creado), `CLAUDE.md` § patrones (cómo cargar fuentes y dark mode infra, wrapper `design-system.css`), `docs/ROADMAP.md`.
+- **Skills**: `/feature-dev` opcional. `/simplify` obligatorio antes de PR.
 
 ---
 
 ### Rama 16B — `refactor/liora-core-components`
 
-**Propósito**: re-skin (no reescritura) de primitivos compartidos consumiendo los tokens de 15A. Cada componente tocado se clasifica en la PR como `reused` / `reskinned` / `rewritten` / `deleted`.
+**Propósito**: re-skin de los 12 primitivos en `src/components/ui/` + creación de los primitivos faltantes (Button, Input, Select, Textarea, Card global, Tabs, Icon wrapper) consumiendo tokens de 16A. Adopción de CVA + lucide-react. Clasificación obligatoria por componente.
 
-**Archivos a modificar** (lista preliminar — se cierra con entrega):
-- Primitivos actuales en `src/components/ui/` (kebab-case): `badge.tsx`, `banner.tsx`, `checkbox-card-group.tsx`, `collapsible-section.tsx`, `delete-confirmation-button.tsx`, `info-tooltip.tsx`, `inline-save-status.tsx`, `location-map.tsx`, `number-stepper.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `tooltip.tsx`.
-- Cards específicas de la guía guest (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`) hoy **no existen como archivos** — son nombres de la spec `docs/FEATURES/GUEST_GUIDE_UX.md` que se materializan en 15A/B con el mapping definitivo (reused/reskinned/rewritten). El mapping lo documenta `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` al cerrar 15A.
+**Decisión sobre shadcn** (decisión permanente 4): NO wholesale. Radix continúa donde ya está. Adopción selectiva de un primitivo shadcn requiere entrada en `LIORA_COMPONENT_MAPPING.md` con: motivo (vs hand-roll), comparativa de costo, mapping a tokens semánticos. `shadcn.css` puente queda disponible si se adopta.
 
-**Prohibido**: crear archivos `*V2.tsx`, `New*`, `Better*`, `Next*`. Si un primitivo exige reescritura de API, va como `rewritten` en la clasificación y la legacy se borra en la misma rama (no coexistencia).
+**Dependencias añadidas en esta rama**:
+- `lucide-react` — icon library.
+- `class-variance-authority` — variants en componentes.
+- `tailwind-merge` — merge de clases sin colisión.
+- `clsx` — concat condicional.
+
+**Archivos a re-skinear** (12, en `src/components/ui/`):
+- `badge.tsx`, `banner.tsx`, `checkbox-card-group.tsx`, `collapsible-section.tsx`, `delete-confirmation-button.tsx`, `info-tooltip.tsx`, `inline-save-status.tsx`, `location-map.tsx`, `number-stepper.tsx`, `primary-cta.tsx`, `radio-card-group.tsx`, `tooltip.tsx`.
+
+**Archivos a crear** (primitivos faltantes globales):
+- `src/components/ui/button.tsx` — variants `primary | secondary | ghost | destructive` × sizes `sm | md | lg`. CVA-based.
+- `src/components/ui/input.tsx` — sm/md/lg, error/disabled.
+- `src/components/ui/select.tsx` — Radix Select + foundations skin.
+- `src/components/ui/textarea.tsx`.
+- `src/components/ui/card.tsx` — `Card`, `CardHeader`, `CardContent`, `CardFooter`. Variantes mínimas genéricas (default, elevated, outlined). **NO incluye** HeroCard / EssentialCard / StandardCard / WarningCard — esas son guest-only y van en 16C en `src/components/public-guide/ui/guide-card.tsx` (decisión permanente 6).
+- `src/components/ui/tabs.tsx` — Radix Tabs + foundations skin.
+- `src/components/ui/icon.tsx` — wrapper de lucide-react con default size + token color. API: `<Icon name="check" size="md" tone="success" />`.
+- `docs/LIORA_COMPONENT_MAPPING.md` — tabla viva: cada componente del repo, su clasificación (`reused | reskinned | rewritten | deleted | new`), tokens semánticos consumidos, decisión shadcn (si aplica).
+
+**Decisión `primary-cta.tsx`** (cierra ambigüedad):
+- Se marca `deprecated` en 16B (alias delgado a `Button variant="primary"`).
+- Se elimina en 16G por grep gate.
+- Documentado en `LIORA_COMPONENT_MAPPING.md` con ownership 16G.
 
 **Tests**:
-- Cobertura existente de cada componente se mantiene verde.
-- Axe-core sobre página de preview interna (si existe) o sobre guest guide.
+- Cobertura existente verde.
+- `src/test/liora-component-tokens.test.ts` — verifica que cada primitivo nuevo consume solo tokens semánticos / componente, no primitivos ni hex literales, no aliases legacy salvo los registrados.
+- Axe-core sobre cada primitivo nuevo (test page interna o snapshot DOM en jsdom).
+- Tests específicos por componente nuevo (Button variants, Input states, etc.).
 
-**Criterio de done**: tabla de clasificación completa en la PR description; 0 duplicados con sufijos prohibidos; axe-core `serious|critical = 0`; targets interactivos ≥44×44 preservados.
+**Criterio de done**:
+- ✅ Tabla de clasificación completa en PR description, sin pendientes.
+- ✅ 0 sufijos prohibidos.
+- ✅ axe-core `serious|critical = 0` en suite y E2E.
+- ✅ 44×44 targets preservados en todos los interactivos.
+- ✅ `LIORA_COMPONENT_MAPPING.md` creado y poblado con todos los primitivos (existentes + nuevos).
+- ✅ Cada decisión shadcn documentada por componente (si se adoptó alguno).
+- ✅ `primary-cta.tsx` marcado `deprecated` con ownership 16G.
+
+**Restricciones**:
+- ❌ Cambiar API pública de los 12 primitivos sin marcar `rewritten` + actualizar todos los call sites en la misma rama.
+- ❌ Adoptar shadcn wholesale.
+- ❌ Tocar superficies (`/g/[slug]`, `/properties/[propertyId]`) — eso es 16C/D.
+- ❌ Crear `HeroCard / EssentialCard / StandardCard / WarningCard` en `src/components/ui/` (van en 16C en `public-guide/ui/`).
+
+**Dependencias / Riesgos**:
+- ⚠️ ~40 call sites de `primary-cta.tsx` siguen funcionando vía alias deprecated; borrar el alias en 16G requiere reemplazarlos todos. Mitigación: registro acumulado en `LIORA_COMPONENT_MAPPING.md`.
+- ⚠️ `location-map.tsx` envuelve MapLibre — re-skin no debe romper marker styles ni brand color injection.
+
+**No-alcance**: superficies, brand themes, dark toggle UI, command palette.
 
 **Preparación**:
-- **Contexto a leer**: `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (creado en 15A), paquete Liora, `docs/FEATURES/GUEST_GUIDE_UX.md` (cards + a11y).
-- **Docs a actualizar al terminar**: `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` (creado aquí) actualizado con los primitivos cubiertos.
-- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+- **Contexto a leer**: 16A merged + `LIORA_DESIGN_ADOPTION_PLAN.md`, `design-system/foundations/tokens/components.css`, `design-system/foundations/docs/ACCESSIBILITY.md`, `docs/FEATURES/GUEST_GUIDE_UX.md` (cards spec, para no duplicar guest cards aquí).
+- **Docs a actualizar al terminar**: `docs/LIORA_COMPONENT_MAPPING.md` (creado), `CLAUDE.md` § patrones (Icon wrapper, Card global vs guest cards).
+- **Skills**: `/simplify` obligatorio.
 
 ---
 
 ### Rama 16C — `feat/liora-guest-guide-redesign`
 
-**Propósito**: superficie `/g/:slug` (shell, secciones, hero, footer) adopta los primitivos re-skineados. Cero cambios en `normalizeGuideForPresentation`, presenter registry, resolvers o taxonomías.
+**Propósito**: superficie `/g/:slug` adopta primitivos de 16B, crea las cards guest-only y reescribe `guide.css` (~1.278 LOC) según patrones visuales de `ui_kits/guest/index.html` (v2). Cero cambios en presenter registry, resolvers, taxonomies o tipos `GuideTree`.
 
-**Archivos a modificar**: `src/app/g/[slug]/page.tsx`, `src/components/public-guide/*` (renderers React de 10E: `guide-renderer.tsx`, `section-card.tsx`, `guide-item.tsx`, `guide-brand-header.tsx`, `guide-emergency-section.tsx`, `guide-empty-state.tsx`, `guide-media-gallery.tsx`, `guide-toc.tsx`, `public-guide-section-registry.ts`, `guide.css`).
+**Base visual**: v2 de `ui_kits/guest/index.html`. v1 ya eliminado del paquete en chore/plan-update-liora.
+
+**Excepciones v1**: bloque dedicado en PR description si el usuario pide reincorporar elementos puntuales. Cada excepción justificada con: motivo, mitigación de anti-pattern (foundations dice qué no), aprobación explícita. Por defecto: ninguna.
+
+**Cards guest-only (creación)**:
+- `src/components/public-guide/ui/guide-card.tsx` — exporta `HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`. CVA-based. Consumen tokens semánticos foundations + tokens guest brand (`--guide-brand`).
+- Cualquier promoción de una variante a global requiere rama dedicada futura documentada (decisión permanente 6).
+
+**Brand themes guest** (decisión permanente 5):
+- `src/config/brand-palette.ts` no se toca.
+- `getBrandPair(brandPaletteKey).light/dark` sigue inyectando `--guide-brand-light` y `--guide-brand-dark` en `guide-renderer.tsx`.
+- Las cards guest consumen `var(--guide-brand)` que resuelve a `var(--guide-brand-light)` por defecto y a `var(--guide-brand-dark)` cuando `[data-theme="dark"]`.
+- `LIORA_DESIGN_ADOPTION_PLAN.md` (actualizado en 16C) documenta este bridge como **permanente**, no como deuda.
+- 16G no toca brand-palette ni el bridge.
+
+**Commits internos obligatorios** (no se acepta PR de un solo commit):
+1. `class/token skeleton` — declaración de clases base + tokens guest, sin layout aún.
+2. `layout shell` — guide-renderer + guide-brand-header + guide-toc + grid responsive.
+3. `hero + quick actions` — guide-hero con HeroCard + 4 quick action buttons.
+4. `cards/sections` — section-card + EssentialCard/StandardCard + guide-item integrado.
+5. `search/reporter/install nudge` — guide-search + issue-reporter + install-nudge re-skin.
+6. `local/emergency/media` — guide-local-section + guide-emergency-section + guide-media-gallery + WarningCard.
+7. `cleanup + tests` — borrado de selectores legacy huérfanos en `guide.css`, actualización de selectores en E2E + unit tests, snapshot Lighthouse.
+
+**Archivos a modificar**:
+- `src/app/g/[slug]/page.tsx`, `layout.tsx`.
+- `src/components/public-guide/guide-renderer.tsx`, `guide-brand-header.tsx`, `guide-toc.tsx`, `guide-search.tsx`, `section-card.tsx`, `guide-item.tsx`, `guide-hero.tsx`, `guide-emergency-section.tsx`, `guide-local-section.tsx`, `guide-local-event-card.tsx`, `guide-media-gallery.tsx`, `guide-empty-state.tsx`, `install-nudge.tsx`, `issue-reporter.tsx`, `toast.tsx`.
+- `src/components/public-guide/guide.css` — **rewrite completo** (~1.278 LOC → estimado 600–800 LOC). Selectores antiguos huérfanos se borran en commit 7.
+- `src/app/g/[slug]/incidents/[id]/page.tsx` — refactor de inline `style={{}}` a clases.
+
+**Archivos NO tocados**:
+- `src/lib/services/guide-presentation.service.ts` (normalizador, invariantes preservadas).
+- `src/config/registries/presenter-registry.ts`.
+- `src/config/brand-palette.ts`.
+- Cualquier resolver, taxonomy loader, `composeGuide`.
 
 **Tests**:
-- Harness E2E de 10J verde (smoke + anti-leak + axe) sobre las 3 fixtures × 4 viewports.
-- Lighthouse p95 ≤10% peor que baseline pre-rama en `/g/:slug`.
-- `src/test/guide-rendering-proxy-urls.test.ts` verde (media proxy inalterado).
+- E2E `e2e/axe-a11y.spec.ts` verde sobre guest fixtures × 4 viewports × **light + dark** (decisión permanente 3 hace dark global; 16C valida ambos).
+- E2E `e2e/guest-leak-invariants.spec.ts` verde — actualizar selectores CSS si cambian (ej. `.guide-item__value` → nuevo nombre). Documentar el rename en PR.
+- E2E `e2e/guide-search.spec.ts`, `hero-quick-actions.spec.ts`, `guide-pwa-offline.spec.ts` verdes.
+- Unit `src/test/guest-leak-invariants.test.ts` verde con selectores actualizados.
+- `src/test/guide-rendering-proxy-urls.test.ts` verde.
+- Lighthouse p95 mobile **light + dark** ≤10% peor que baseline pre-rama.
 
-**Criterio de done**: harness 10J verde idéntico; 0 cambios en el pipeline de presentación; regresión de performance ≤10%.
+**Criterio de done**:
+- ✅ Harness 10J verde en light + dark.
+- ✅ 0 cambios en pipeline de presentación.
+- ✅ 0 referencias a aliases legacy guest (`--color-primary-*`) en `public-guide/`; todo via tokens semánticos foundations + tokens guest brand.
+- ✅ 44×44 targets preservados.
+- ✅ Service worker bumpea `__SW_VERSION__` (de `GuideSearchIndex.buildVersion`, rama 10H) tras el rewrite.
+- ✅ Brand themes guest funcionan en las 8 paletas curadas + light + dark.
+- ✅ 7 commits internos visibles en historial de la rama.
+
+**Restricciones**:
+- ❌ Cambiar copy editorial visible al guest.
+- ❌ Romper invariantes de leak (raw JSON, taxonomy keys, internal labels).
+- ❌ Adoptar elementos de v1 sin entrada explícita en "Excepciones v1".
+- ❌ Tocar `brand-palette.ts`.
+- ❌ Promover guide-card variants a `src/components/ui/`.
+
+**Dependencias / Riesgos**:
+- ⚠️ `guide.css` ~1.278 LOC reescritas es la unidad mayor de cambio. Mitigación: 7 commits obligatorios.
+- ⚠️ Renaming de clases CSS rompe selectores en tests. Hacer en commit 1 o 2, no al final.
+- ⚠️ Service worker cachea CSS por hash; verificar bump de `__SW_VERSION__`.
+- ⚠️ Brand themes en 8 paletas × light + dark = 16 combinaciones. Smoke manual con `/playwright-cli` al menos 3 paletas.
+
+**No-alcance**: shell operador, módulos operador, messaging, assistant, command palette.
 
 **Preparación**:
-- **Contexto a leer**: 15A + 15B, `docs/FEATURES/GUEST_GUIDE_UX.md`, research `L104-160` (UX patterns) y `L236-262` (métricas).
-- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (creado aquí o en 15A según orden de exploración) marcando guest como superficie migrada.
-- **Skills/tools específicos**: pendientes hasta entrega del paquete de diseño.
+- **Contexto a leer**: 16A + 16B merged, `LIORA_DESIGN_ADOPTION_PLAN.md`, `LIORA_COMPONENT_MAPPING.md`, `ui_kits/guest/index.html` (v2), `docs/FEATURES/GUEST_GUIDE_UX.md`, `src/components/public-guide/guide.css` entero, `src/lib/services/guide-presentation.service.ts`, `src/config/brand-palette.ts`.
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (creado aquí — guest marcado migrado), `docs/LIORA_DESIGN_ADOPTION_PLAN.md` (sección "brand themes guest" como permanente), `docs/FEATURES/GUEST_GUIDE_UX.md` (actualizar spec a Liora final), `CLAUDE.md` § "Patrones — Guía pública (audience=guest)".
+- **Skills**: `/playwright-cli` para verificación visual. `/simplify` obligatorio.
 
 ---
 
 ### Rama 16D — `feat/liora-operator-shell-redesign`
 
-**Propósito**: shell del operador — sidebar, topbar, layout de `/properties/[propertyId]`. Sin tocar wizards ni section editors (quedan para 15E).
+**Propósito**: shell del operador (sidebar, topbar, layout `/properties/[propertyId]/`) adopta primitivos de 16B + base visual de `ui_kits/operator/index.html` y `subpages.html`. **Incluye toggle dark mode visible** (decisión permanente 3 — infra ya en 16A, toggle visible aquí).
 
-**Archivos a modificar**: `src/components/layout/*`, `src/app/properties/layout.tsx` (o equivalente).
+**Patrones a portar de los kits** (visual, no funcional):
+- Sidebar 240–260px: brand lockup, property selector con badge, grouped nav, footer avatar.
+- Topbar 56px: breadcrumbs (left), **slot visual de command bar (placeholder no interactivo)** (center), buttons (right). Toggle dark mode visible.
+- Right rail opcional 300px sticky para overview.
+- Page header: eyebrow uppercase 11px, title 28px/600, subtitle, chips, actions flex.
 
-**Tests**: suite existente verde + axe-core sobre shell vacío y con contenido.
+**Command bar — restricción dura** (decisión permanente 7):
+- Solo slot visual preparado. Renderiza un placeholder con icono search + texto "Buscar (próximamente)" + Cmd+K hint deshabilitado. **No interactivo**.
+- 16D no cambia comportamiento de navegación o búsqueda.
+- Funcionalidad real va en rama posterior `feat/operator-command-palette`, registrada en `docs/FUTURE.md` con motivo (separar replatform visual de feature nueva).
 
-**Criterio de done**: navegación funcional inalterada; tabla de clasificación cubre todos los componentes del shell; axe-core `serious|critical = 0`.
+**Toggle dark mode**:
+- Componente `src/components/ui/theme-toggle.tsx` — sun/moon icons (lucide), 3 estados `light | dark | auto`, persiste en `localStorage.theme`.
+- Aplicado vía `data-theme` en `<html>` (foundations canonical, instalado en 16A).
+- Guest hereda automáticamente el data-theme global cuando el toggle está activo; cae a `prefers-color-scheme` en `auto`.
+- Toggle visible en topbar operator (esquina superior derecha).
+- Test: `dark-parity.test.ts` (creado aquí) verifica que cada `--color-*` definido en `:root` tiene binding en `[data-theme="dark"]`. Si foundations es coherente, pasa de entrada (ya cubierto por `npm run validate:design-system`).
+
+**Archivos a modificar**:
+- `src/components/layout/app-shell.tsx`, `side-nav.tsx`.
+- `src/app/properties/[propertyId]/layout.tsx`.
+- `src/app/properties/[propertyId]/page.tsx` (overview — primer subpage signature de los kits).
+- `src/components/overview/capacity-card.tsx`, `publish-readiness-card.tsx`, `gaps-card.tsx`, `next-action-card.tsx`.
+- `src/lib/navigation.ts` (no toca lógica; sí labels si los kits sugieren naming).
+- `src/app/page.tsx` (landing / properties list).
+- `src/app/login/page.tsx` (auth — branded splash con tokens foundations).
+
+**Archivos a crear**:
+- `src/components/ui/theme-toggle.tsx`.
+- `src/components/layout/topbar.tsx` (si no existe; topbar es nuevo en kits).
+- `src/components/layout/command-bar-slot.tsx` — slot visual no interactivo.
+- `src/test/dark-parity.test.ts`.
+
+**Tests**:
+- Suite existente verde.
+- `dark-parity.test.ts` verde.
+- Axe-core sobre shell vacío + overview con datos, en light + dark.
+- Visual smoke: navegación entre 3 sub-secciones sin layout shift; toggle light↔dark↔auto sin FOUC.
+
+**Criterio de done**:
+- ✅ Navegación funcional inalterada (rutas, links, active states).
+- ✅ Tabla de clasificación cubre todos los componentes de shell.
+- ✅ Toggle dark mode funcional + persistente + sin FOUC (vía pre-paint script de 16A).
+- ✅ Guest validado en light + dark a través del toggle (smoke con `/playwright-cli`).
+- ✅ axe-core `serious|critical = 0` en light y dark.
+- ✅ Command bar solo placeholder visual, no interactivo.
+
+**Restricciones**:
+- ❌ Tocar formularios de wizard o section editors (16E).
+- ❌ Tocar messaging o assistant (16F).
+- ❌ Romper rutas existentes o cambiar URLs.
+- ❌ Implementar command palette funcional.
+- ❌ Cambiar comportamiento de navegación o búsqueda existente.
+
+**Dependencias / Riesgos**:
+- ⚠️ `getDerived(propertyId).readiness.scores` se consume en `app-shell.tsx` para badges en sidebar — el render no debe regresar.
+- ⚠️ Brand themes operator no existen hoy (solo guest). 16D no introduce brand themes operator — registrado en `docs/FUTURE.md` como item separado.
+
+**No-alcance**: módulos del operador, messaging, guest, command palette funcional, brand themes operator.
 
 **Preparación**:
-- **Contexto a leer**: 15A + 15B, `docs/ARCHITECTURE_OVERVIEW.md` §4 (Canonical UX model).
-- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (shell operador).
-- **Skills/tools específicos**: pendientes.
+- **Contexto a leer**: 16A + 16B + 16C merged, kits operator (`index.html` + `subpages.html` + `operator.css`), `docs/ARCHITECTURE_OVERVIEW.md` §4.
+- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (shell operador), `CLAUDE.md` § patrones (toggle dark mode), `docs/FUTURE.md` (command palette + brand themes operator).
+- **Skills**: `/playwright-cli` opcional. `/simplify` obligatorio.
 
 ---
 
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
-**Propósito**: superficies de módulos del operador — wizard (4 pasos + review) + section editors (spaces, access, amenities, systems, policies, contacts, emergency, local, knowledge). Puede dividirse en sub-PRs internos, siempre bajo la misma rama Git.
+**Propósito**: superficies de módulos del operador. Una rama Git, **3 sub-PRs internos secuenciales** con gates obligatorios.
 
-**Archivos a modificar**: `src/components/wizard/*`, `src/app/properties/[propertyId]/**/page.tsx`, formularios por sección.
+**Umbral de partición** (gate duro): si al final de E2 el diff acumulado supera **80 archivos tocados** o **5.000 LOC netas añadidas/borradas**, 16E se parte en ramas reales separadas (`feat/liora-operator-modules-content`, `feat/liora-operator-modules-ops`, `feat/liora-operator-modules-outputs`). La decisión se toma al cerrar E2 con git diff stats explícitos en la PR description.
 
-**Tests**: suites existentes de cada módulo + regresión completa de completeness scoring + field-type renderers.
+**Sub-PR E1 — wizard + content modules**:
+- `src/components/wizard/wizard-shell.tsx`.
+- `src/app/properties/new/welcome/page.tsx`, `step-1`, `step-2`, `step-3`, `step-4`, `review`.
+- Editores de contenido: spaces, access, amenities, systems.
+- Renombrar `src/components/amenity-selector-v2.tsx` → `amenity-selector.tsx` (sufijo prohibido por §14). Actualizar todos los imports en la misma rama.
 
-**Criterio de done**: cada módulo con su propia subsección en la PR description + tabla de clasificación; `config-driven.test.ts` verde; `field-type-coverage.test.ts` verde.
+**Sub-PR E2 — output + operations modules**:
+- Editores: policies, contacts, emergency, local-guide, knowledge, ops.
+- `src/components/local-guide/place-autocomplete.tsx`, `src/components/media/*`.
+
+**Sub-PR E3 — outputs**:
+- `src/app/properties/[propertyId]/{guest-guide,publishing,analytics,reservations,media}/page.tsx`.
+- `src/components/guide-preview.tsx` (operator preview del guest).
+
+**Gates por sub-PR** (obligatorios):
+- ✅ `/simplify` ejecutado y aplicado.
+- ✅ Tabla de clasificación propia (no acumulada — cada sub-PR independiente).
+- ✅ Checks relevantes verdes: `npx tsc --noEmit`, `vitest run`, axe-core.
+- ✅ PR description con diff stats (`git diff main --stat`).
+
+**PR final contra main**:
+- Solo acumula sub-PRs ya validados. **No introduce cambios conceptuales nuevos**.
+- Tabla de clasificación combinada (E1 + E2 + E3).
+- Si umbral de partición se disparó al cerrar E2, esta PR final no existe — se abren las 3 ramas separadas y E3 se ejecuta en su propia rama.
+
+**Tests**:
+- `config-driven.test.ts` verde.
+- `field-type-coverage.test.ts` verde.
+- Suite existente de cada módulo verde.
+- Regresión completeness scoring (spotcheck Playwright sobre wizard end-to-end).
+
+**Criterio de done**:
+- ✅ Cada módulo con subsección dedicada en PR description final.
+- ✅ Tabla de clasificación combinada.
+- ✅ 0 sufijos prohibidos (incluido `amenity-selector-v2.tsx` renombrado).
+- ✅ 0 inline `style={{}}` con valores hardcoded en módulos tocados.
+
+**Restricciones**:
+- ❌ Cambiar lógica config-driven (taxonomías, registries, conditional engine).
+- ❌ Cambiar API de server actions.
+- ❌ Tocar messaging, assistant (16F).
+
+**Dependencias / Riesgos**:
+- ⚠️ Wizard tiene 4 steps con state cruzado — verificar que el redesign no introduce re-renders perdidos.
+- ⚠️ Tres sub-PRs en la misma rama generan PR final grande. El gate de umbral fuerza la partición si pasa de 80 archivos / 5k LOC.
+
+**No-alcance**: messaging, assistant, guest, shell, command palette.
 
 **Preparación**:
-- **Contexto a leer**: 15A + 15B + 15D, `docs/CONFIG_DRIVEN_SYSTEM.md` (UI rule), `docs/DATA_MODEL.md` por módulo.
-- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` por módulo.
-- **Skills/tools específicos**: pendientes.
+- **Contexto a leer**: 16A–D merged, `docs/CONFIG_DRIVEN_SYSTEM.md` §UI rule, `docs/DATA_MODEL.md` por módulo, `ui_kits/operator/subpages.html` entero, `docs/FEATURES/*.md` por módulo.
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` por módulo, `CLAUDE.md` § "Patrones de UI — Espacios" si los nuevos primitivos cambian reglas.
+- **Skills**: `/feature-dev` por sub-PR. `/playwright-cli` para wizard. `/simplify` antes de cada sub-PR + final.
 
 ---
 
 ### Rama 16F — `feat/liora-messaging-assistant-redesign`
 
-**Propósito**: superficies de messaging + assistant console. **Requiere** Fase 11 y/o 12 ya mergeadas — si no existen aún, esta rama queda dormida.
+**Propósito**: superficies messaging + assistant console. Asume Fase 11 + 12 mergeadas (verde en MEMORY).
 
-**Criterio de done**: paridad funcional con el estado pre-rama + axe-core `serious|critical = 0`.
+**Clasificación obligatoria del mock `ui_kits/messaging/index.html`**: cada elemento del kit se etiqueta en la PR description en una de tres categorías antes de implementar. La tabla de clasificación bloquea la PR hasta estar completa. Categorías:
+
+- **existing** — el comportamiento ya existe en código (Fase 11/12) y solo se re-skinea visualmente. Ejemplos esperados (ajustar tras lectura de código en Fase -1 de 16F):
+  - Conversation list (existe en `messaging/page.tsx` + componentes Fase 12).
+  - Composer + send (existe).
+  - AI suggestion callout (existe via `AssistantChat`).
+  - EscalationHandoff card (existe Fase 11D).
+  - Streaming SSE de respuesta AI (existe).
+
+- **derivable** — el dato existe en backend / pipeline pero la UI actual no lo expone; el redesign **sí** lo expone leyendo lo que ya hay, sin nueva ruta ni migración. Cada item derivable lleva en la PR: campo origen, ruta/servicio que ya lo computa, costo estimado de cableado. Candidatos típicos del mock:
+  - Tags semánticos (ai/esc/resolved/waiting) en list items: derivables del estado de la conversación (`status`) + presencia de escalation activa.
+  - Source cards con relevance badge en right panel: derivables de `citationsJson` (rama 11C) sobre el último mensaje del assistant.
+  - Gap alert en right panel: derivable cuando `synthesized.escalated === true` y `EscalationResolution.fallbackLevel === "fallback"` (rama 11D).
+  - Timeline vertical: derivable del log de mensajes + audit (rama 15D) si la conversación tiene actor switches.
+
+- **aspirational** — feature **nueva** que el mock sugiere pero el backend no soporta. **Fuera de scope de 16F**. Cada aspirational lleva destino exacto (rama futura nombrada o entry en `docs/FUTURE.md`) o se omite del rediseño. Candidatos típicos:
+  - Multi-conversation bulk actions (no existe state model).
+  - Tool buttons del composer (attach file, image, voice memo) — pipeline de media + audio no existe; va a `docs/FUTURE.md` como "Messaging composer tooling".
+  - Right panel con KPIs de respuesta agregados — requiere métricas no computadas hoy; va a `docs/FUTURE.md`.
+  - "Mark as resolved" / triage manual — requiere campo nuevo en `AssistantConversation`; va a `docs/FUTURE.md`.
+
+Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gana. Mejor diferir y registrar que rascar backend en una rama visual.
+
+**Patrones visuales a portar** (solo categorías existing + derivable):
+- 4-column grid: sidebar + conversation list + main thread + right context panel.
+- Conversation list items con avatar, name, timestamp, preview, tags semánticos (ai/esc/resolved/waiting — categoría derivable), unread dot, active state con left 3px accent.
+- Message bubbles: guest (bg-2 + border), AI (status-info-bg + border, **no** azul-gris kit), Host (accent-default + on-accent fg).
+- AI suggestion callout: dashed border, accent header.
+- Composer: textarea flex, send button accent. **Tool buttons del kit son aspirational — no se renderizan en 16F.**
+- Right panel: guest card avatar 44px, KV list, source cards con relevance badge (derivable), gap alert (derivable) con WarningCard guest pattern adaptado o variante operator.
+- Timeline vertical con dots semánticos (derivable, opcional según costo).
+
+**Archivos a modificar**:
+- `src/components/assistant/AssistantChat.tsx`, `EscalationHandoff.tsx`.
+- `src/app/properties/[propertyId]/messaging/page.tsx`, `[touchpointKey]/page.tsx`, `drafts/page.tsx`.
+- Componentes de messaging creados en Fase 12 (`starter-pack-picker.tsx`, template/draft cards, etc.).
+
+**Tests**:
+- Suite messaging + assistant verde.
+- E2E si existe spec de assistant chat.
+- Streaming de mensajes funcional (no romper SSE handling).
+
+**Criterio de done**:
+- ✅ Tabla de clasificación existing/derivable/aspirational completa en PR description, con destino registrado para cada aspirational (rama o FUTURE).
+- ✅ Cero items aspirational implementados.
+- ✅ Cada derivable cableado consume datos ya existentes — no introduce nuevas columnas, server actions, ni migraciones.
+- ✅ Paridad funcional pre-rama para todo lo `existing`.
+- ✅ axe-core `serious|critical = 0` en light + dark.
+
+**Restricciones**:
+- ❌ Cambiar API `/api/assistant-conversations/*`.
+- ❌ Cambiar pipeline assistant (`src/lib/services/assistant/*`).
+- ❌ Migrar esquema (`AssistantConversation`, `AssistantMessage`, etc.).
+- ❌ Implementar items aspirational del mock.
+- ❌ Replicar azul-gris kits para AI bubbles — usar accent foundations.
+
+**Dependencias / Riesgos**:
+- ⚠️ Streaming responses (Anthropic SDK) — el redesign no debe romper render incremental.
+- ⚠️ `EscalationHandoff` consume `EscalationResolution` shape de Fase 11D — UI cambia, shape no.
+
+**No-alcance**: pipeline assistant backend, escalation rules, audit, command palette.
 
 **Preparación**:
-- **Contexto a leer**: 15A + 15B + 15D + Fase 11/12 según aplique.
-- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`.
-- **Skills/tools específicos**: pendientes.
+- **Contexto a leer**: 16A–E merged, kits messaging, código assistant + messaging Fase 11/12.
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md`.
+- **Skills**: `/simplify` obligatorio.
 
 ---
 
 ### Rama 16G — `chore/remove-legacy-ui`
 
-**Propósito**: barrido final. Elimina tokens, clases CSS, variables, helpers y componentes que 15A-F marcaron como `deleted` en su clasificación. Ningún `legacy-*` ni `*-old` sobrevive en el bundle.
+**Propósito**: barrido final. Elimina:
+- Tokens, clases CSS, vars marcados `deleted` en clasificaciones de 16A–F.
+- **Aliases legacy registrados en 16A** (`--color-primary-*`, `--color-neutral-*`, `--color-success/warning/danger/info-*`, `--background`, `--foreground`, `--surface`, `--surface-elevated`, `--border`, `--sidebar-width`, `--header-height`).
+- `src/components/ui/primary-cta.tsx` (alias deprecated en 16B).
+- Componentes con sufijo legacy (`amenity-selector-v2.tsx` ya renombrado en E1 — gate verifica que no reapareció).
+- `src/app/globals.css` legacy bloques residuales post-16A.
+- Selectores antiguos huérfanos en cualquier CSS post-16C.
+- `src/styles/legacy-aliases.css` (eliminado completo en este barrido).
 
-**Gate CI**: grep guardado — si aparece cualquier identificador legacy clasificado como `deleted`, la PR falla.
+**Gate CI**:
+- Grep gate falla si reaparece `*V2.tsx`, `*New.tsx`, `*Better.tsx`, `*Old.tsx`, `legacy-*`, `--color-primary-` legacy fuera de `design-system/`.
+- `liora-no-primitive-leak.test.ts` verde (introducido en 16A, debe seguir).
+- `liora-token-coverage.test.ts` actualizado: ya no permite aliases legacy (registro vacío post-16G).
+- Bundle size ≤ baseline (next-bundle-analyzer).
 
-**Criterio de done**: bundle size igual o menor; suite completa verde; tablas de clasificación de 15A-F vaciadas de `deleted` pendientes.
+**Criterio de done**:
+- ✅ Bundle size igual o menor.
+- ✅ Suite completa verde.
+- ✅ Grep gate verde.
+- ✅ `liora-legacy-alias-registry.test.ts` muestra registro vacío.
+- ✅ Tablas de clasificación de 16A–F vaciadas de `deleted` pendientes.
+- ✅ `LIORA_SURFACE_ROLLOUT_PLAN.md` marca Fase 16 completa.
+- ✅ `docs/ROADMAP.md` cierra Fase 16.
+
+**Restricciones**:
+- ❌ Cambios funcionales.
+- ❌ Re-skin adicional.
+- ❌ Borrar `src/config/brand-palette.ts` (decisión permanente 5).
+
+**No-alcance**: nuevas features.
 
 **Preparación**:
-- **Contexto a leer**: tablas de clasificación acumuladas de 15A-F.
-- **Docs a actualizar al terminar**: `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` marca Fase 16 como completada.
-- **Skills/tools específicos**: pendientes.
+- **Contexto a leer**: tablas de clasificación acumuladas de 16A–F, `LIORA_DESIGN_ADOPTION_PLAN.md` (registro de aliases con ownership 16G).
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` (Fase 16 completa), `docs/ROADMAP.md` (cierre Fase 16), `CLAUDE.md` § "Replatform de diseño (Liora)" (estado: ✅ completada).
+- **Skills**: `/simplify` obligatorio.
 
 ---
 
