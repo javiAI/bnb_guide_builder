@@ -1,0 +1,142 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Legacy compatibility aliases — 16A → 16G
+   Every var here preserves a call site that used the old globals.css tokens.
+   All entries are removed in 16G after call sites migrate to semantic tokens.
+   Registry: docs/LIORA_DESIGN_ADOPTION_PLAN.md
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Primary action (was indigo, now olive) ──────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
+  --color-primary-50:  var(--color-action-primary-subtle);
+  /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
+  --color-primary-100: var(--color-action-primary-subtle);
+  /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
+  --color-primary-200: var(--color-action-primary-subtle);
+  /* @deprecated removed in 16G — use var(--color-action-primary-subtle) */
+  --color-primary-300: var(--color-action-primary-subtle);
+  /* @deprecated removed in 16G — use var(--color-action-primary-hover) */
+  --color-primary-400: var(--color-action-primary-hover);
+  /* @deprecated removed in 16G — use var(--color-action-primary) */
+  --color-primary-500: var(--color-action-primary);
+  /* @deprecated removed in 16G — use var(--color-action-primary-hover) */
+  --color-primary-600: var(--color-action-primary-hover);
+  /* @deprecated removed in 16G — use var(--color-action-primary-active) */
+  --color-primary-700: var(--color-action-primary-active);
+
+  /* ── Neutrals (was blue-gray, now warm) ─────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-background-page) */
+  --color-neutral-0:   var(--color-background-page);
+  /* @deprecated removed in 16G — use var(--color-background-surface) */
+  --color-neutral-50:  var(--color-background-surface);
+  /* @deprecated removed in 16G — use var(--color-background-subtle) */
+  --color-neutral-100: var(--color-background-subtle);
+  /* @deprecated removed in 16G — use var(--color-border-default) */
+  --color-neutral-200: var(--color-border-default);
+  /* @deprecated removed in 16G — use var(--color-border-strong) */
+  --color-neutral-300: var(--color-border-strong);
+  /* @deprecated removed in 16G — use var(--color-border-emphasis) */
+  --color-neutral-400: var(--color-border-emphasis);
+  /* @deprecated removed in 16G — use var(--color-text-muted) */
+  --color-neutral-500: var(--color-text-muted);
+  /* @deprecated removed in 16G — use var(--color-text-secondary) */
+  --color-neutral-600: var(--color-text-secondary);
+  /* @deprecated removed in 16G — use var(--color-text-primary) */
+  --color-neutral-700: var(--color-text-primary);
+  /* @deprecated removed in 16G — use var(--color-text-primary) */
+  --color-neutral-800: var(--color-text-primary);
+  /* @deprecated removed in 16G — use var(--color-background-inverse) */
+  --color-neutral-900: var(--color-background-inverse);
+
+  /* ── Status: success ─────────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-success-bg) */
+  --color-success-50:  var(--color-status-success-bg);
+  /* @deprecated removed in 16G — use var(--color-status-success-border) */
+  --color-success-200: var(--color-status-success-border);
+  /* @deprecated removed in 16G — use var(--color-status-success-border) */
+  --color-success-300: var(--color-status-success-border);
+  /* @deprecated removed in 16G — use var(--color-status-success-solid) */
+  --color-success-500: var(--color-status-success-solid);
+  /* @deprecated removed in 16G — use var(--color-status-success-icon) */
+  --color-success-600: var(--color-status-success-icon);
+  /* @deprecated removed in 16G — use var(--color-status-success-text) */
+  --color-success-700: var(--color-status-success-text);
+
+  /* ── Status: warning ─────────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-warning-bg) */
+  --color-warning-50:  var(--color-status-warning-bg);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-200: var(--color-status-warning-border);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-300: var(--color-status-warning-border);
+  /* @deprecated removed in 16G — use var(--color-status-warning-border) */
+  --color-warning-400: var(--color-status-warning-border);
+  /* @deprecated removed in 16G — use var(--color-status-warning-solid) */
+  --color-warning-500: var(--color-status-warning-solid);
+  /* @deprecated removed in 16G — use var(--color-status-warning-icon) */
+  --color-warning-600: var(--color-status-warning-icon);
+  /* @deprecated removed in 16G — use var(--color-status-warning-text) */
+  --color-warning-700: var(--color-status-warning-text);
+  /* @deprecated removed in 16G — use var(--color-status-warning-text) */
+  --color-warning-800: var(--color-status-warning-text);
+
+  /* ── Status: danger/error ────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-error-bg) */
+  --color-danger-50:   var(--color-status-error-bg);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-danger-200:  var(--color-status-error-border);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-danger-300:  var(--color-status-error-border);
+  /* @deprecated removed in 16G — use var(--color-status-error-solid) */
+  --color-danger-500:  var(--color-status-error-solid);
+  /* @deprecated removed in 16G — use var(--color-status-error-icon) */
+  --color-danger-600:  var(--color-status-error-icon);
+  /* @deprecated removed in 16G — use var(--color-status-error-text) */
+  --color-danger-700:  var(--color-status-error-text);
+
+  /* ── Status: error (--color-error-* naming variant) ─────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-error-bg) */
+  --color-error-50:  var(--color-status-error-bg);
+  /* @deprecated removed in 16G — use var(--color-status-error-border) */
+  --color-error-300: var(--color-status-error-border);
+  /* @deprecated removed in 16G — use var(--color-status-error-solid) */
+  --color-error-500: var(--color-status-error-solid);
+  /* @deprecated removed in 16G — use var(--color-status-error-icon) */
+  --color-error-600: var(--color-status-error-icon);
+  /* @deprecated removed in 16G — use var(--color-status-error-text) */
+  --color-error-700: var(--color-status-error-text);
+
+  /* ── Status: info ────────────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-status-info-bg) */
+  --color-info-50:  var(--color-status-info-bg);
+  /* @deprecated removed in 16G — use var(--color-status-info-solid) */
+  --color-info-500: var(--color-status-info-solid);
+
+  /* ── Surface shortcuts ───────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--color-background-page) */
+  --background:       var(--color-background-page);
+  /* @deprecated removed in 16G — use var(--color-text-primary) */
+  --foreground:       var(--color-text-primary);
+  /* @deprecated removed in 16G — use var(--color-background-surface) */
+  --surface:          var(--color-background-surface);
+  /* @deprecated removed in 16G — use var(--color-background-elevated) */
+  --surface-elevated: var(--color-background-elevated);
+  /* @deprecated removed in 16G — use var(--color-border-default) */
+  --border:           var(--color-border-default);
+
+  /* ── Layout dimensions ───────────────────────────────────────────────── */
+  /* @deprecated removed in 16G — use var(--size-sidebar) (240px in foundations) */
+  --sidebar-width: 260px;
+  /* @deprecated removed in 16G — use var(--size-topbar) */
+  --header-height: var(--size-topbar);
+
+  /* ── Radius (legacy call sites; foundations exposes via Tailwind rounded-*) ── */
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-sm */
+  --radius-sm: 0.375rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-md */
+  --radius-md: 0.5rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-lg */
+  --radius-lg: 0.75rem;
+  /* @deprecated removed in 16G — migrate to Tailwind rounded-xl */
+  --radius-xl: 1rem;
+}

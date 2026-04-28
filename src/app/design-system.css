@@ -1,0 +1,16 @@
+/* Single entry point for the Liora foundations in this app.
+   Loaded after globals.css so our base rules win over Tailwind preflight.
+   Import order: primitives/semantic/component tokens → dark-mode theme
+   bindings → legacy compatibility aliases → font bridge. */
+@import "../../design-system/foundations/styles/base.css";
+@import "../../design-system/foundations/styles/themes.css";
+@import "../styles/legacy-aliases.css";
+
+/* next/font variables override the literal names in primitives.css so the
+   browser uses the optimised @font-face declarations generated at build time.
+   Must come after base.css, which declares --font-family-*. */
+:root {
+  --font-family-sans:  var(--font-sans);
+  --font-family-serif: var(--font-serif);
+  --font-family-mono:  var(--font-mono);
+}

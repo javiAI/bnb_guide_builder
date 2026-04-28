@@ -2821,7 +2821,11 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 
 Cada alias declarado con comentario `/* @deprecated removed in 16G — use <semantic> */`.
 
-**Decisión sobre `--font-size-*`, `--space-*`, `--radius-*`**: estos tokens existen hoy en `globals.css` y NO entran en la lista cerrada anterior (decisión diferida en chore/plan-update-liora § DESIGN_MIGRATION.md §2.3). Resolución en Fase -1 de 16A: o (a) re-export directo desde foundations sin alias intermedio, o (b) alias temporal análogo a colores con retirada en 16G. La elección se documenta en `LIORA_DESIGN_ADOPTION_PLAN.md` como parte de la PR de 16A.
+**Decisión sobre `--font-size-*`, `--space-*`, `--radius-*`** (confirmada en Fase -1 de 16A):
+
+- `--font-size-*` (7 vars): **0 archivos consumidores** → Option B: eliminar directamente de `globals.css`, sin alias.
+- `--space-*` (9 vars): **0 archivos consumidores** → Option B: eliminar directamente de `globals.css`, sin alias.
+- `--radius-*` (4 vars): **92 archivos, 393 usos** → Option A: aliases en `legacy-aliases.css` preservando los valores actuales; retirada en 16G tras migrar call sites a Tailwind `rounded-*`. Alias descritos como "legacy radius aliases preserving current call sites; removed in 16G after migration to Product Foundations radius / Tailwind aliases" — **no** como equivalentes exactos a Tailwind default. Documentado en `LIORA_DESIGN_ADOPTION_PLAN.md`.
 
 **Archivos a modificar**:
 - `tailwind.config.ts` — `theme.extend = warmAnalyticalTheme` desde `design-system/foundations/tokens/tailwind.tokens.ts`. Sintaxis dark mode: Tailwind v3.4.19 (confirmado en `package.json`) → `darkMode: ["class", '[data-theme="dark"]']`. Smoke test con un componente cualquiera con `dark:bg-…` parte del gate de done.
