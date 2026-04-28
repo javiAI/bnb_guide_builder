@@ -1,0 +1,6 @@
+/* Single entry point for the Liora foundations in this app.
+   Import order matters: primitives/semantic/component tokens (base) →
+   dark-mode theme bindings (themes) → legacy compatibility aliases. */
+@import "../../design-system/foundations/styles/base.css";
+@import "../../design-system/foundations/styles/themes.css";
+@import "../styles/legacy-aliases.css";
