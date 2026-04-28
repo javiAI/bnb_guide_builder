@@ -24,15 +24,9 @@
   font-family: var(--font-family-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  .guide-root {
-    --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
-  }
-}
-
-/* Explicit dark-mode brand switch (16A data-theme mechanism). */
+/* Dark-mode brand switch via 16A data-theme mechanism. */
 [data-theme="dark"] .guide-root {
-  --guide-brand: var(--guide-brand-dark);
+  --guide-brand: var(--guide-brand-dark, var(--color-primary-400));
 }
 
 .guide-brand-header {

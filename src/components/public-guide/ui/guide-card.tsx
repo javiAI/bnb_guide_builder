@@ -31,7 +31,7 @@ function GuideCard({ variant, padding, className, ...props }: CardProps) {
   return <div className={cn(guideCard({ variant, padding }), className)} {...props} />;
 }
 
-export function HeroCard({ className, ...props }: Omit<CardProps, "variant">) {
+export function HeroCard({ className, ...props }: Omit<CardProps, "variant" | "padding">) {
   return <GuideCard variant="hero" padding="lg" className={className} {...props} />;
 }
 
