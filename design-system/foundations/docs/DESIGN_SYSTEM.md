@@ -68,9 +68,9 @@ A reusable visual foundation for premium, productive web applications.
 - Disabled controls keep `opacity 0.5` and remain readable.
 
 ## Implementation rules
-- Import once at the app root: `design-system/styles/base.css`.
-- Tailwind: `theme.extend = warmAnalyticalTheme` (from `tokens/tailwind.tokens.ts`).
-- shadcn: `tokens/shadcn.css` is the bridge — do not patch shadcn variables elsewhere.
+- Import once at the app root: `design-system/foundations/styles/base.css`.
+- Tailwind: `theme.extend = warmAnalyticalTheme` (from `foundations/tokens/tailwind.tokens.ts`).
+- shadcn: `foundations/tokens/shadcn.css` is the bridge — do not patch shadcn variables elsewhere.
 - Theme per product by overriding semantic tokens inside a scoped `[data-theme-brand="…"]` selector — never primitives.
 
 ## Anti-patterns
@@ -86,19 +86,20 @@ A reusable visual foundation for premium, productive web applications.
 ## File map
 ```
 /design-system
-  /tokens
-    primitives.css        raw scales, sizing, motion
-    semantic.css          --color-* + dark mode
-    components.css        --{component}-* tokens
-    shadcn.css            shadcn/ui bridge
-    tokens.json           W3C token tree
-    tailwind.tokens.ts    theme.extend export
-  /styles
-    base.css              resets, focus, motion preferences
-    themes.css            theme activation strategy
-  /docs
-    Foundation.html       this living spec
-    DESIGN_SYSTEM.md      rules (this file)
-    IMPLEMENTATION.md     React/Next.js/Tailwind/shadcn setup
-    ACCESSIBILITY.md      WCAG matrix and pairings
+  /foundations
+    /tokens
+      primitives.css        raw scales, sizing, motion
+      semantic.css          --color-* + dark mode
+      components.css        --{component}-* tokens
+      shadcn.css            shadcn/ui bridge
+      tokens.json           W3C token tree
+      tailwind.tokens.ts    theme.extend export
+    /styles
+      base.css              resets, focus, motion preferences
+      themes.css            theme activation strategy
+    /docs
+      Foundation.html       this living spec
+      DESIGN_SYSTEM.md      rules (this file)
+      IMPLEMENTATION.md     React/Next.js/Tailwind/shadcn setup
+      ACCESSIBILITY.md      WCAG matrix and pairings
 ```

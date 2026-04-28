@@ -1,11 +1,11 @@
 # Implementation Guide
 
 ## 1. Install
-Copy `design-system/` into your repo. Import `styles/base.css` once at the application root.
+Copy `design-system/` into your repo. Import `foundations/styles/base.css` once at the application root, or use your app-level wrapper stylesheet (e.g. `src/app/design-system.css`) as the single entry point.
 
 ```tsx
 // app/layout.tsx (Next.js App Router)
-import "@/design-system/styles/base.css";
+import "@/design-system/foundations/styles/base.css";
 ```
 
 `base.css` composes `primitives.css → semantic.css → components.css → shadcn.css`.
@@ -35,7 +35,7 @@ export default function Root({ children }) {
 ## 3. Tailwind
 ```ts
 // tailwind.config.ts
-import warmAnalyticalTheme from "./design-system/tokens/tailwind.tokens";
+import warmAnalyticalTheme from "./design-system/foundations/tokens/tailwind.tokens";
 
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],

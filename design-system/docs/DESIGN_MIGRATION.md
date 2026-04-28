@@ -179,9 +179,9 @@ These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora 
 
 1. Required structure exists (`foundations/{docs,styles,tokens}/`, `references/liora-ui-kits/`).
 2. Mandatory files present and non-empty (`DESIGN_SYSTEM.md`, `IMPLEMENTATION.md`, `ACCESSIBILITY.md`, `Foundation.html`, `base.css`, `themes.css`, `primitives.css`, `semantic.css`, `components.css`, `shadcn.css`, `tailwind.tokens.ts`, `tokens.json`).
-3. `tokens.json` parses as JSON, no `success.300` / `warning.300` legacy keys, every `var(--…)` referenced in foundations CSS exists in `tokens.json`.
-4. `tailwind.tokens.ts` exports `warmAnalyticalTheme` and all CSS-var refs match `tokens.json`.
-5. Dark coverage: every semantic token in `:root` of `themes.css` has a binding in `[data-theme="dark"]`.
+3. `tokens.json` parses as valid JSON and does not contain legacy `success.300` / `warning.300` keys; every `{dot.path}` reference resolves to a declared token.
+4. `tailwind.tokens.ts` exports `warmAnalyticalTheme`.
+5. Dark coverage: every `--color-*` token declared in `:root` of `foundations/tokens/semantic.css` has a binding in `[data-theme="dark"]`.
 6. `references/liora-ui-kits/colors_and_type.css` starts with the `REFERENCE ONLY` header.
 7. No residues: `.DS_Store`, `__MACOSX`, `index_v1.html` not present anywhere in `design-system/`.
 8. **Gitignore hardening**: for each of 3 sample paths (`design-system/`, `design-system/foundations/tokens/tokens.json`, `design-system/references/liora-ui-kits/REFERENCE_RULES.md`), `git check-ignore <path>` must exit non-zero (path NOT ignored). Detects any glob that would silently re-ignore the package.

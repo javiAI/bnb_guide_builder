@@ -1,7 +1,7 @@
 /**
  * Validates the integrity of the `design-system/` package.
  *
- * Runs as a CI gate on every PR that touches `design-system/**` and as a
+ * Runs as a CI gate on every PR (unconditional, unit job) and as a
  * local pre-commit check. Catches:
  *   1. Missing required structure
  *   2. Empty mandatory docs/styles/tokens
