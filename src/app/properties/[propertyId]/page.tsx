@@ -45,25 +45,36 @@ export default async function OverviewPage({
   ]);
 
   const { readiness, sleepingCapacity } = derived;
+  const location = [property.city, property.country].filter(Boolean).join(", ");
 
   return (
     <div>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            {property.propertyNickname}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-neutral-500)]">
-            {[property.city, property.country].filter(Boolean).join(", ")}
-          </p>
+      {/* Page header — kit grammar: eyebrow / title / chips / actions */}
+      <header className="mb-6">
+        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+          <span className="inline-block h-px w-3 bg-[var(--color-text-subtle)]" aria-hidden="true" />
+          Resumen
+        </p>
+        <div className="flex items-start justify-between gap-5">
+          <div className="min-w-0">
+            <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-[var(--color-text-primary)]">
+              {property.propertyNickname}
+            </h1>
+            {location && (
+              <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+                {location}
+              </p>
+            )}
+          </div>
+          <Badge
+            label={STATUS_LABELS[property.status as PropertyStatus]}
+            tone={STATUS_TONES[property.status as PropertyStatus]}
+          />
         </div>
-        <Badge
-          label={STATUS_LABELS[property.status as PropertyStatus]}
-          tone={STATUS_TONES[property.status as PropertyStatus]}
-        />
-      </div>
+        <hr className="mt-5 border-[var(--color-border-subtle)]" />
+      </header>
 
-      <div className="mt-6">
+      <div className="mb-4">
         <NextActionCard
           propertyId={propertyId}
           scores={readiness.scores}
@@ -72,7 +83,7 @@ export default async function OverviewPage({
         />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <PublishReadinessCard
           propertyId={propertyId}
           overall={readiness.overall}
