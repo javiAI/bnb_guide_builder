@@ -31,12 +31,12 @@ export function PublishReadinessCard({
   const canPublish = publishable && issues.length === 0;
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
       <div className="flex items-start justify-between">
-        <h3 className="text-sm font-semibold text-[var(--foreground)]">
+        <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
           Listo para publicar
         </h3>
-        <span className="text-2xl font-semibold tabular-nums text-[var(--foreground)]">
+        <span className="text-2xl font-semibold tabular-nums text-[var(--color-text-primary)]">
           {overall}%
         </span>
       </div>
@@ -55,13 +55,13 @@ export function PublishReadinessCard({
           {issues.map((f) => (
             <li
               key={f.id}
-              className="flex items-start justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2"
+              className="flex items-start justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 py-2"
             >
-              <span className="text-xs text-[var(--foreground)]">{f.message}</span>
+              <span className="text-xs text-[var(--color-text-primary)]">{f.message}</span>
               {f.ctaUrl && (
                 <Link
                   href={f.ctaUrl}
-                  className="shrink-0 text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+                  className="shrink-0 text-xs font-medium text-[var(--color-text-link)] hover:underline"
                 >
                   {f.ctaLabel ?? "Ir"}
                 </Link>
@@ -70,7 +70,7 @@ export function PublishReadinessCard({
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-xs text-[var(--color-neutral-500)]">
+        <p className="mt-4 text-xs text-[var(--color-text-muted)]">
           Sin incidencias. Revisa la página de publicación para ver los outputs
           disponibles.
         </p>
@@ -78,7 +78,7 @@ export function PublishReadinessCard({
       <div className="mt-4">
         <Link
           href={`/properties/${propertyId}/publishing`}
-          className="text-xs font-medium text-[var(--color-primary-600)] hover:underline"
+          className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
         >
           Ir a publicación →
         </Link>

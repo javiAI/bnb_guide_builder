@@ -10,27 +10,22 @@ interface GapsCardProps {
 
 function toneClass(score: number): string {
   const { usableMinScore, publishableMinScore } = completenessRules.thresholds;
-  if (score >= publishableMinScore) return "bg-[var(--color-success-500)]";
-  if (score >= usableMinScore) return "bg-[var(--color-warning-500)]";
-  return "bg-[var(--color-danger-500)]";
+  if (score >= publishableMinScore) return "bg-[var(--color-status-success-solid)]";
+  if (score >= usableMinScore) return "bg-[var(--color-status-warning-solid)]";
+  return "bg-[var(--color-status-error-solid)]";
 }
 
-/**
- * Four-row section readiness bar. Sorted ascending so the section that needs
- * the most attention sits at the top — makes the card act like a prioritised
- * task list rather than a static grid.
- */
 export function GapsCard({ propertyId, scores }: GapsCardProps) {
   const sorted = [...OVERVIEW_SECTIONS].sort(
     (a, b) => scores[a.key] - scores[b.key],
   );
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
-      <h3 className="text-sm font-semibold text-[var(--foreground)]">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
         Gaps por sección
       </h3>
-      <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
+      <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
         Ordenado por urgencia. Haz clic para abrir la sección.
       </p>
       <ul className="mt-3 space-y-2">
@@ -40,18 +35,18 @@ export function GapsCard({ propertyId, scores }: GapsCardProps) {
             <li key={row.key}>
               <Link
                 href={`/properties/${propertyId}/${row.href}`}
-                className="group flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-1.5 transition-colors hover:bg-[var(--color-neutral-50)]"
+                className="group flex items-center gap-3 rounded-[var(--radius-md)] px-2 py-1.5 transition-colors hover:bg-[var(--color-interactive-hover)]"
               >
-                <span className="min-w-[7.5rem] text-sm text-[var(--foreground)] group-hover:underline">
+                <span className="min-w-[7.5rem] text-sm text-[var(--color-text-primary)] group-hover:underline">
                   {row.label}
                 </span>
-                <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-neutral-100)]">
+                <span className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-background-muted)]">
                   <span
                     className={`absolute inset-y-0 left-0 ${toneClass(score)}`}
                     style={{ width: `${score}%` }}
                   />
                 </span>
-                <span className="min-w-[2.5rem] text-right text-xs font-semibold tabular-nums text-[var(--color-neutral-600)]">
+                <span className="min-w-[2.5rem] text-right text-xs font-semibold tabular-nums text-[var(--color-text-secondary)]">
                   {score}%
                 </span>
               </Link>

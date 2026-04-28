@@ -18,11 +18,6 @@ interface NextAction {
   ctaLabel: string;
 }
 
-/**
- * Picks the single most impactful next action. Blockers/errors come first
- * (they gate publishing); otherwise the lowest-scoring section drives the CTA.
- * When nothing matters, returns a "celebrate" message instead of a CTA.
- */
 function pickNextAction(
   propertyId: string,
   scores: SectionScores,
@@ -66,27 +61,27 @@ export function NextActionCard({
   const action = pickNextAction(propertyId, scores, blockers, errors);
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--color-primary-50)] p-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-primary-700)]">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-action-primary-subtle)] p-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-action-primary-subtle-fg)]">
         Siguiente paso
       </h3>
       {action ? (
         <>
-          <p className="mt-2 text-sm font-semibold text-[var(--foreground)]">
+          <p className="mt-2 text-sm font-semibold text-[var(--color-text-primary)]">
             {action.title}
           </p>
-          <p className="mt-1 text-xs text-[var(--color-neutral-600)]">
+          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
             {action.description}
           </p>
           <Link
             href={action.ctaUrl}
-            className="mt-3 inline-flex items-center text-xs font-semibold text-[var(--color-primary-700)] hover:underline"
+            className="mt-3 inline-flex items-center text-xs font-semibold text-[var(--color-text-link)] hover:underline"
           >
             {action.ctaLabel} →
           </Link>
         </>
       ) : (
-        <p className="mt-2 text-sm text-[var(--foreground)]">
+        <p className="mt-2 text-sm text-[var(--color-text-primary)]">
           Todo listo. No hay acciones pendientes.
         </p>
       )}
