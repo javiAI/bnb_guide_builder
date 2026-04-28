@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CommandBarSlot } from "./command-bar-slot";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { WORKSPACE_NAV } from "@/lib/navigation";
+import { WORKSPACE_NAV, isNavItemActive } from "@/lib/navigation";
 
 interface TopbarProps {
   propertyId: string;
@@ -14,10 +14,9 @@ interface TopbarProps {
 export function Topbar({ propertyId, propertyNickname }: TopbarProps) {
   const pathname = usePathname();
 
-  const currentItem = WORKSPACE_NAV.find((item) => {
-    const href = item.href(propertyId);
-    return item.key === "overview" ? pathname === href : pathname.startsWith(href);
-  });
+  const currentItem = WORKSPACE_NAV.find((item) =>
+    isNavItemActive(item, pathname, propertyId),
+  );
 
   return (
     <header

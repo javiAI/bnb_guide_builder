@@ -8,14 +8,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = () => {
-    try {
-      setLoading(true);
-      setError(null);
-      window.location.href = "/api/auth/google/login";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(null);
+    window.location.href = "/api/auth/google/login";
   };
 
   return (

@@ -27,7 +27,7 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import { WORKSPACE_NAV, NAV_GROUP_LABELS, type NavItem } from "@/lib/navigation";
+import { WORKSPACE_NAV, NAV_GROUP_LABELS, isNavItemActive, type NavItem } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
@@ -80,8 +80,7 @@ export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNav
   }));
 
   function isActive(item: NavItem): boolean {
-    const href = item.href(propertyId);
-    return item.key === "overview" ? pathname === href : pathname.startsWith(href);
+    return isNavItemActive(item, pathname, propertyId);
   }
 
   return (

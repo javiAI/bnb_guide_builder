@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon, Monitor } from "lucide-react";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 type Theme = "light" | "dark" | "auto";
 
 function readStoredTheme(): Theme {
   if (typeof localStorage === "undefined") return "auto";
-  const v = localStorage.getItem("theme");
+  const v = localStorage.getItem(THEME_STORAGE_KEY);
   if (v === "light" || v === "dark") return v;
   return "auto";
 }
 
 function applyTheme(theme: Theme) {
+  if (typeof window === "undefined") return;
   const resolved =
     theme === "dark"
       ? "dark"
@@ -24,9 +26,9 @@ function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", resolved);
 
   if (theme === "auto") {
-    localStorage.removeItem("theme");
+    localStorage.removeItem(THEME_STORAGE_KEY);
   } else {
-    localStorage.setItem("theme", theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
   }
 }
 
@@ -50,6 +52,15 @@ export function ThemeToggle() {
   useEffect(() => {
     setTheme(readStoredTheme());
   }, []);
+
+  // Keep data-theme in sync with OS preference while in auto mode.
+  useEffect(() => {
+    if (theme !== "auto") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme("auto");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [theme]);
 
   const cycle = () => {
     const next = NEXT[theme];

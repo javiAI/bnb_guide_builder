@@ -8,7 +8,7 @@ const SEMANTIC_CSS = readFileSync(
   "utf8",
 );
 
-function extractVarsFromBlock(css: string, blockSelector: string): Set<string> {
+function extractColorVarsFromBlock(css: string, blockSelector: string): Set<string> {
   const start = css.indexOf(blockSelector);
   if (start === -1) return new Set();
   const openBrace = css.indexOf("{", start);
@@ -33,11 +33,11 @@ function extractVarsFromBlock(css: string, blockSelector: string): Set<string> {
 }
 
 function extractRootVars(css: string): Set<string> {
-  return extractVarsFromBlock(css, ":root {");
+  return extractColorVarsFromBlock(css, ":root {");
 }
 
 const rootVars = extractRootVars(SEMANTIC_CSS);
-const darkVars = extractVarsFromBlock(SEMANTIC_CSS, '[data-theme="dark"]');
+const darkVars = extractColorVarsFromBlock(SEMANTIC_CSS, '[data-theme="dark"]');
 
 const CORE_PREFIXES = [
   "--color-background-",
