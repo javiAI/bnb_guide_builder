@@ -336,6 +336,7 @@
 .guide-hero__answers {
   --card-bg: color-mix(in srgb, var(--guide-brand-fg) 10%, var(--guide-brand));
   --card-border: color-mix(in srgb, var(--guide-brand-fg) 20%, var(--guide-brand));
+  --card-fg: var(--guide-brand-fg);
 }
 
 .guide-hero__answers .guide-item__label,

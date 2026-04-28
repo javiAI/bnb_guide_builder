@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readPublicCapabilityFromCookie } from "@/lib/auth/public-capability";
 import { findIncidentCategory } from "@/lib/taxonomy-loader";
+import type { CSSProperties } from "react";
+import { getBrandPair } from "@/config/brand-palette";
 import "@/components/public-guide/guide.css";
 
 interface Props {
@@ -49,7 +51,7 @@ export default async function GuestIncidentTrackingPage({ params }: Props) {
 
   const property = await prisma.property.findUnique({
     where: { publicSlug: slug },
-    select: { id: true, propertyNickname: true },
+    select: { id: true, propertyNickname: true, brandPaletteKey: true },
   });
   if (!property) notFound();
 
@@ -69,9 +71,14 @@ export default async function GuestIncidentTrackingPage({ params }: Props) {
     ? findIncidentCategory(incident.categoryKey)
     : null;
   const statusLabel = STATUS_LABEL[incident.status] ?? incident.status;
+  const brandPair = getBrandPair(property.brandPaletteKey);
+  const brandStyle = {
+    "--guide-brand-light": brandPair.light,
+    "--guide-brand-dark": brandPair.dark,
+  } as CSSProperties;
 
   return (
-    <div className="guide-root guide-incident-page">
+    <div className="guide-root guide-incident-page" style={brandStyle}>
       <main className="guide-incident-main">
         <header>
           <p className="guide-incident-header__property">
