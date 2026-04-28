@@ -443,6 +443,10 @@
    * and borders render correctly; only --guide-brand needs dark-mode rebind
    * (semantic tokens adapt automatically via [data-theme="dark"]). */
   --guide-brand: var(--guide-brand-light, var(--color-action-primary));
+  --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
+  --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-brand-focus-ring: color-mix(in srgb, var(--guide-brand) 35%, transparent);
   --guide-muted: var(--color-text-secondary);
   --guide-surface: var(--color-background-elevated);
   --guide-border: var(--color-border-default);
