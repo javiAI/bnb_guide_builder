@@ -1,12 +1,5 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* next/font variables override the literal names in primitives.css so the
-   browser uses the optimised @font-face declarations generated at build time. */
-:root {
-  --font-family-sans:  var(--font-sans);
-  --font-family-serif: var(--font-serif);
-  --font-family-mono:  var(--font-mono);
-}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
-import "./design-system.css";
 import "./globals.css";
+import "./design-system.css";
 
 const sans = IBM_Plex_Sans({
   subsets: ["latin"],

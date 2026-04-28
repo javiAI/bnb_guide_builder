@@ -9,17 +9,17 @@ Living document. Updated by each Liora branch (16A–16G) as work progresses.
 ### 1.1 Entry point
 
 `src/app/design-system.css` is the **single import point** for the Liora foundations in this app.
-`layout.tsx` imports it before `globals.css`. Import order:
+`layout.tsx` imports `globals.css` first so Tailwind preflight runs before our base rules, then `design-system.css`. This ensures `base.css` body rules (e.g. `line-height: var(--text-base-lh)`) win over Tailwind's `body { line-height: inherit }` preflight. Import order:
 
 ```
-design-system.css
-  └─ design-system/foundations/styles/base.css     (primitives → semantic → components → shadcn)
-  └─ design-system/foundations/styles/themes.css   ([data-theme="dark"] bindings)
-  └─ src/styles/legacy-aliases.css                 (compatibility shims — removed in 16G)
 globals.css
   └─ maplibre-gl/dist/maplibre-gl.css
-  └─ @tailwind base/components/utilities
-  └─ :root { --font-family-* bridge }              (next/font vars override primitives.css names)
+  └─ @tailwind base/components/utilities        (Tailwind preflight runs here)
+design-system.css
+  └─ design-system/foundations/styles/base.css  (primitives → semantic → components → shadcn)
+  └─ design-system/foundations/styles/themes.css ([data-theme="dark"] bindings)
+  └─ :root { --font-family-* bridge }            (next/font vars override primitives.css names)
+  └─ src/styles/legacy-aliases.css               (compatibility shims — removed in 16G)
 ```
 
 ### 1.2 Tailwind integration
