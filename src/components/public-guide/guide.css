@@ -6,11 +6,20 @@
 
 .guide-root {
   --guide-brand: var(--guide-brand-light, var(--color-primary-500));
-  --guide-brand-contrast: var(--color-neutral-50);
+  --guide-brand-hover: color-mix(in srgb, var(--guide-brand) 85%, black);
+  --guide-brand-active: color-mix(in srgb, var(--guide-brand) 70%, black);
+  --guide-brand-fg: var(--color-text-on-primary);
+  --guide-brand-contrast: var(--color-neutral-50); /* keep for legacy selectors — removed in commit 7 */
   --guide-muted: var(--color-neutral-600);
   --guide-surface: var(--surface-elevated, #ffffff);
   --guide-border: var(--color-neutral-200);
   --guide-gap: 1.5rem;
+  /* Button component token overrides: primary buttons inside the guide use the brand color */
+  --button-primary-bg:        var(--guide-brand);
+  --button-primary-bg-hover:  var(--guide-brand-hover);
+  --button-primary-bg-active: var(--guide-brand-active);
+  --button-primary-fg:        var(--guide-brand-fg);
+  --button-primary-border:    transparent;
   color: var(--foreground);
   background: var(--background);
 }
@@ -22,6 +31,11 @@
     --guide-surface: var(--color-neutral-900);
     --guide-border: var(--color-neutral-800);
   }
+}
+
+/* Explicit dark-mode brand switch (16A data-theme mechanism). */
+[data-theme="dark"] .guide-root {
+  --guide-brand: var(--guide-brand-dark);
 }
 
 .guide-brand-header {
