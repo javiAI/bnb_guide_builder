@@ -1,24 +1,21 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useId, type ReactNode, type MouseEvent } from "react";
+import { useState, useRef, useCallback, useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export function TooltipBubble({
   id,
   pos,
   text,
-  onMouseDown,
 }: {
   id: string;
   pos: { top: number; left: number };
   text: string;
-  onMouseDown?: (e: MouseEvent) => void;
 }) {
   return (
     <span
       id={id}
       role="tooltip"
-      onMouseDown={onMouseDown}
       style={{
         position: "absolute",
         top: pos.top,
@@ -33,7 +30,7 @@ export function TooltipBubble({
         boxShadow: "var(--tooltip-shadow)",
         borderRadius: "var(--tooltip-radius)",
       }}
-      className="text-[length:var(--tooltip-font-size)] leading-relaxed w-60"
+      className="text-[length:var(--tooltip-font-size)] leading-relaxed"
     >
       {text}
       <span

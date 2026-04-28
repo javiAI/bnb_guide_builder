@@ -55,9 +55,10 @@ export function DeleteConfirmationButton({
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
         className="rounded-md p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-action-destructive)] hover:bg-[var(--color-action-destructive-subtle)] transition-colors"
+        aria-label={title}
         title={title}
       >
-        <Icon name="trash" size="sm" tone="muted" />
+        <Icon name="trash" size="sm" tone="inherit" />
       </button>
 
       <dialog

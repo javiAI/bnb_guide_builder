@@ -20,6 +20,7 @@ export const ICONS = {
 export type IconName = keyof typeof ICONS;
 
 type IconTone =
+  | "inherit"
   | "default"
   | "muted"
   | "success"
@@ -29,7 +30,7 @@ type IconTone =
   | "primary"
   | "destructive";
 
-const TONE_COLORS: Record<IconTone, string> = {
+const TONE_COLORS: Record<Exclude<IconTone, "inherit">, string> = {
   default:     "--color-text-secondary",
   muted:       "--color-text-muted",
   success:     "--color-status-success-icon",
@@ -59,16 +60,11 @@ interface IconProps extends Omit<LucideProps, "size"> {
 export function Icon({ name, size = "md", tone = "default", style, ...props }: IconProps) {
   const IconComponent = ICONS[name];
   const sizeVar = SIZE_VARS[size];
+  const color = tone === "inherit" ? "currentColor" : `var(${TONE_COLORS[tone]})`;
   return (
     <IconComponent
       aria-hidden
-      style={{
-        width:      sizeVar,
-        height:     sizeVar,
-        color:      `var(${TONE_COLORS[tone]})`,
-        flexShrink: 0,
-        ...style,
-      }}
+      style={{ width: sizeVar, height: sizeVar, color, flexShrink: 0, ...style }}
       {...props}
     />
   );

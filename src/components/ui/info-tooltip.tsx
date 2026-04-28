@@ -61,7 +61,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         ?
       </span>
       {open && mounted && createPortal(
-        <TooltipBubble id={tooltipId} pos={pos} text={text} onMouseDown={(e) => e.stopPropagation()} />,
+        <TooltipBubble id={tooltipId} pos={pos} text={text} />,
         document.body,
       )}
     </span>
