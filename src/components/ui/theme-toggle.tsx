@@ -69,8 +69,13 @@ export function ThemeToggle() {
     }
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => applyTheme("auto");
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }
+    // Safari ≤13 fallback
+    mq.addListener(handler);
+    return () => mq.removeListener(handler);
   }, [theme]);
 
   const cycle = () => {

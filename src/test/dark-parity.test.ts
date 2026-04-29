@@ -37,7 +37,7 @@ function extractRootVars(css: string): Set<string> {
 }
 
 const rootVars = extractRootVars(SEMANTIC_CSS);
-const darkVars = extractColorVarsFromBlock(SEMANTIC_CSS, '[data-theme="dark"]');
+const darkVars = extractColorVarsFromBlock(SEMANTIC_CSS, '[data-theme="dark"] {');
 
 const CORE_PREFIXES = [
   "--color-background-",
