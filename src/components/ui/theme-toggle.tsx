@@ -6,29 +6,37 @@ import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 type Theme = "light" | "dark" | "auto";
 
+function getSystemTheme(): "light" | "dark" {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "light";
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
 function readStoredTheme(): Theme {
-  if (typeof localStorage === "undefined") return "auto";
-  const v = localStorage.getItem(THEME_STORAGE_KEY);
-  if (v === "light" || v === "dark") return v;
+  try {
+    if (typeof localStorage === "undefined") return "auto";
+    const v = localStorage.getItem(THEME_STORAGE_KEY);
+    if (v === "light" || v === "dark") return v;
+  } catch {
+    // localStorage blocked (private browsing, permissions) — fall through to auto
+  }
   return "auto";
 }
 
 function applyTheme(theme: Theme) {
   if (typeof window === "undefined") return;
-  const resolved =
-    theme === "dark"
-      ? "dark"
-      : theme === "light"
-        ? "light"
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+  const resolved = theme === "dark" ? "dark" : theme === "light" ? "light" : getSystemTheme();
   document.documentElement.setAttribute("data-theme", resolved);
 
-  if (theme === "auto") {
-    localStorage.removeItem(THEME_STORAGE_KEY);
-  } else {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  try {
+    if (theme === "auto") {
+      localStorage.removeItem(THEME_STORAGE_KEY);
+    } else {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    }
+  } catch {
+    // localStorage blocked — data-theme is already set for this session
   }
 }
 
@@ -53,9 +61,12 @@ export function ThemeToggle() {
     setTheme(readStoredTheme());
   }, []);
 
-  // Keep data-theme in sync with OS preference while in auto mode.
   useEffect(() => {
     if (theme !== "auto") return;
+    if (typeof window.matchMedia !== "function") {
+      applyTheme("auto");
+      return;
+    }
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => applyTheme("auto");
     mq.addEventListener("change", handler);

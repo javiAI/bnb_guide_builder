@@ -22,7 +22,7 @@ export function Topbar({ propertyId, propertyNickname }: TopbarProps) {
     <header
       className="sticky top-0 z-10 grid items-center gap-4 border-b border-[var(--color-border-default)] bg-[var(--color-background-page)] px-5"
       style={{
-        height: "var(--height-topbar, 56px)",
+        height: "var(--topbar-height)",
         gridTemplateColumns: "1fr minmax(280px, 480px) 1fr",
       }}
     >

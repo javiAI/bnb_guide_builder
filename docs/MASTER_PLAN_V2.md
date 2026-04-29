@@ -3082,7 +3082,7 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 **Decisiones Fase -1 (permanentes)**:
 
-- Iconos de nav: mapa local `NAV_ICONS: Record<string, string>` en `side-nav.tsx`. No tocar `navigation.ts` salvo justificación documentada.
+- Iconos de nav: mapa local `NAV_ICONS: Partial<Record<string, LucideIcon>>` en `side-nav.tsx`. No tocar `navigation.ts` salvo justificación documentada.
 - Footer sidebar: visual neutro/minimalista. No lookup de perfil real ni `requireOperator()` adicional en el shell.
 - Right rail overview: NO implementar — registrar en `docs/FUTURE.md` como "operator overview right rail".
 - Toggle en `page.tsx` (properties list) con header mínimo; permitido también en `login/page.tsx`.

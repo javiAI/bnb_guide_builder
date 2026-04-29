@@ -30,7 +30,7 @@ import {
 import { WORKSPACE_NAV, NAV_GROUP_LABELS, isNavItemActive, type NavItem } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
 
-const NAV_ICONS: Record<string, LucideIcon> = {
+const NAV_ICONS: Partial<Record<string, LucideIcon>> = {
   overview:      LayoutDashboard,
   property:      Home,
   access:        KeyRound,
