@@ -87,29 +87,10 @@ export const CURRENT_BRANCH = "16D.5";
 /**
  * Touch-target violations grandfathered into the gate. Each entry must reach
  * a 44×44 hit area (visual ≥44 OR `recipe-icon-btn-32` slop) before being
- * deleted from this list. Pre-populated for files refactored later in this
- * same branch (commit 4) — entries removed when their fix lands.
+ * deleted from this list. Empty after commit 4 of this branch — every
+ * audited button-shaped clickable now reaches 44 (visual or slop).
  */
-export const TOUCH_TARGET_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [
-  {
-    file: "src/components/layout/topbar.tsx",
-    reason:
-      "Bell placeholder (32×32) + Publicar mobile (32×32). Refactored to IconButton size='sm' (slop) + min-h/w 44 in commit 4 of this branch.",
-    removeBy: "16D.5",
-  },
-  {
-    file: "src/components/layout/publishing-rail.tsx",
-    reason:
-      "'Abrir guía' link (h-8) reaches 44 in commit 4 of this branch via min-h-[44px].",
-    removeBy: "16D.5",
-  },
-  {
-    file: "src/components/layout/mobile-nav-drawer.tsx",
-    reason:
-      "Menu open + close buttons (h-8 w-8) reach 44 visual in commit 4 of this branch (mobile-only — slop is not sufficient on coarse pointers).",
-    removeBy: "16D.5",
-  },
-];
+export const TOUCH_TARGET_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
 
 /**
  * Web API guard exceptions (localStorage/matchMedia/etc. accessed outside an

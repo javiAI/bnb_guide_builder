@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, Eye, Send } from "lucide-react";
 import { CommandBarSlot } from "./command-bar-slot";
+import { IconButton } from "@/components/ui/icon-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { WORKSPACE_NAV, isNavItemActive } from "@/lib/navigation";
 
@@ -60,20 +61,20 @@ export function Topbar({ propertyId, propertyNickname, mobileNavSlot }: TopbarPr
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <button
-            type="button"
+          <IconButton
+            icon={Bell}
+            size="sm"
+            tone="neutral"
             aria-label={NOTIFICATIONS_PLACEHOLDER_LABEL}
             aria-disabled="true"
             tabIndex={-1}
             title={NOTIFICATIONS_PLACEHOLDER_LABEL}
-            className="grid h-8 w-8 cursor-default place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)]"
-          >
-            <Bell size={15} aria-hidden="true" />
-          </button>
+            className="cursor-default"
+          />
           <Link
             href={`/properties/${propertyId}/guest-guide`}
             aria-label="Vista huésped"
-            className="hidden h-8 items-center gap-1.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] md:inline-flex"
+            className="recipe-icon-btn-32 hidden h-8 items-center gap-1.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] md:inline-flex"
           >
             <Eye size={14} aria-hidden="true" />
             <span>Vista huésped</span>
@@ -81,7 +82,7 @@ export function Topbar({ propertyId, propertyNickname, mobileNavSlot }: TopbarPr
           <Link
             href={`/properties/${propertyId}/publishing`}
             aria-label="Publicar"
-            className="inline-flex h-8 w-8 items-center justify-center gap-1.5 rounded-[10px] bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] no-underline transition-colors hover:bg-[var(--color-action-primary-hover)] hover:text-[var(--color-action-primary-fg)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] sm:w-auto sm:px-3 sm:text-[13px] sm:font-medium"
+            className="recipe-icon-btn-32 inline-flex h-8 w-8 items-center justify-center gap-1.5 rounded-[10px] bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] no-underline transition-colors hover:bg-[var(--color-action-primary-hover)] hover:text-[var(--color-action-primary-fg)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] sm:w-auto sm:px-3 sm:text-[13px] sm:font-medium"
           >
             <Send size={14} aria-hidden="true" />
             <span className="hidden sm:inline">Publicar</span>
