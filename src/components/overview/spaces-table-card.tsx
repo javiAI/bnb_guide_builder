@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { BedDouble, ChevronRight, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button-link";
+import { IconBadge } from "@/components/ui/icon-badge";
+import { TextLink } from "@/components/ui/text-link";
 import type { BadgeTone } from "@/lib/types";
 import { formatRelativeEs } from "@/lib/format-relative-es";
 
@@ -35,13 +38,14 @@ export function SpacesTableCard({
           <p className="text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
             Aún no has añadido espacios.
           </p>
-          <Link
+          <ButtonLink
             href={`/properties/${propertyId}/spaces`}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[13px] font-medium text-[var(--color-text-primary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
+            variant="secondary"
+            size="md"
           >
             <Plus size={14} aria-hidden="true" />
             Añadir espacio
-          </Link>
+          </ButtonLink>
         </div>
       ) : (
         <>
@@ -68,12 +72,7 @@ export function SpacesTableCard({
                         href={`/properties/${propertyId}/spaces`}
                         className="flex items-center gap-2.5"
                       >
-                        <span
-                          className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
-                          aria-hidden="true"
-                        >
-                          <BedDouble size={14} />
-                        </span>
+                        <IconBadge icon={BedDouble} tone="neutral" />
                         <span className="flex flex-col gap-0.5">
                           <span className="font-semibold text-[var(--color-text-primary)]">
                             {row.name}
@@ -119,12 +118,7 @@ export function SpacesTableCard({
                   href={`/properties/${propertyId}/spaces`}
                   className="flex min-h-[44px] items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-interactive-hover)]"
                 >
-                  <span
-                    className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
-                    aria-hidden="true"
-                  >
-                    <BedDouble size={14} />
-                  </span>
+                  <IconBadge icon={BedDouble} tone="neutral" />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
                       {row.name}
@@ -141,12 +135,13 @@ export function SpacesTableCard({
 
           {remaining > 0 && (
             <div className="border-t border-[var(--color-border-subtle)] px-5 py-3 text-right">
-              <Link
+              <TextLink
                 href={`/properties/${propertyId}/spaces`}
-                className="text-[12px] font-medium text-[var(--color-text-link)] hover:underline"
+                size="sm"
+                arrow
               >
-                Ver los {remaining} restantes →
-              </Link>
+                Ver los {remaining} restantes
+              </TextLink>
             </div>
           )}
         </>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TextLink } from "@/components/ui/text-link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
 import { OVERVIEW_SECTIONS } from "./section-map";
@@ -167,23 +168,22 @@ export function ReadinessHeroCard({
               >
                 <span className="text-[var(--color-text-primary)]">{f.message}</span>
                 {f.ctaUrl && (
-                  <Link
-                    href={f.ctaUrl}
-                    className="shrink-0 font-medium text-[var(--color-text-link)] hover:underline"
-                  >
+                  <TextLink href={f.ctaUrl} size="sm" className="shrink-0">
                     {f.ctaLabel ?? "Ir"}
-                  </Link>
+                  </TextLink>
                 )}
               </li>
             ))}
           </ul>
           {issues.length > 3 && (
-            <Link
+            <TextLink
               href={`/properties/${propertyId}/publishing`}
-              className="mt-3 inline-flex text-[12px] font-medium text-[var(--color-text-link)] hover:underline"
+              size="sm"
+              arrow
+              className="mt-3 inline-flex"
             >
-              Ver los {issues.length - 3} restantes →
-            </Link>
+              Ver los {issues.length - 3} restantes
+            </TextLink>
           )}
         </div>
       )}

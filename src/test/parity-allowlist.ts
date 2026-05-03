@@ -139,19 +139,9 @@ export const EFFECT_CLEANUP_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
  * Primitive-adoption exceptions: overview/operator card files whose root
  * element matches the canonical overview shell (flex h-full flex-col +
  * rounded-lg + border-default + bg-elevated + p-4) but still uses a raw
- * `<div>` instead of `<Card variant="overview">`. Pre-populated for the
- * cards refactored in commit 3 of this branch — entries removed when the
- * raw shell is replaced with the primitive.
+ * `<div>` instead of `<Card variant="overview">`. Empty after commit 3 of
+ * this branch — every overview card matching the canonical shell now uses
+ * `<Card variant="overview">`. Cards with non-canonical shells (overflow
+ * containers, grid layouts, p-5 hero) are not required to migrate.
  */
-export const PRIMITIVE_ADOPTION_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [
-  {
-    file: "src/components/overview/activity-feed-card.tsx",
-    reason: "Replaces raw shell with <Card variant='overview'> in commit 3.",
-    removeBy: "16D.5",
-  },
-  {
-    file: "src/components/overview/tasks-list-card.tsx",
-    reason: "Replaces raw shell with <Card variant='overview'> in commit 3.",
-    removeBy: "16D.5",
-  },
-];
+export const PRIMITIVE_ADOPTION_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
