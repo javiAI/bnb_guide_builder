@@ -237,21 +237,16 @@ describe("Component invariants · HTML validity", () => {
     for (const file of auditedFiles) {
       if (!file.endsWith(".tsx")) continue;
       const content = readSrc(file);
-      let i = 0;
-      while (i < content.length) {
-        const open = content.indexOf("<button", i);
-        if (open < 0) break;
-        const closeOfOpenTag = content.indexOf(">", open);
-        if (closeOfOpenTag < 0) break;
-        const closingIdx = content.indexOf("</button>", closeOfOpenTag);
-        if (closingIdx < 0) break;
-        const inner = content.slice(closeOfOpenTag + 1, closingIdx);
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
         if (/<button\b/.test(inner)) {
           violations.push(
-            `${file}:${lineNumber(content, open)}  <button> contains nested <button>`,
+            `${file}:${lineNumber(content, tag.openIdx)}  <button> contains nested <button>`,
           );
         }
-        i = closingIdx + "</button>".length;
       }
     }
     expect(violations).toEqual([]);
@@ -259,27 +254,19 @@ describe("Component invariants · HTML validity", () => {
 
   it("no nested <a>/<Link> inside <a>/<Link> on audited surfaces", () => {
     const violations: string[] = [];
-    const openers = ["<a ", "<Link "];
     for (const file of auditedFiles) {
       if (!file.endsWith(".tsx")) continue;
       const content = readSrc(file);
-      for (const opener of openers) {
-        const closer = opener.startsWith("<a") ? "</a>" : "</Link>";
-        let i = 0;
-        while (i < content.length) {
-          const open = content.indexOf(opener, i);
-          if (open < 0) break;
-          const closeOfOpenTag = content.indexOf(">", open);
-          if (closeOfOpenTag < 0) break;
-          const closingIdx = content.indexOf(closer, closeOfOpenTag);
-          if (closingIdx < 0) break;
-          const inner = content.slice(closeOfOpenTag + 1, closingIdx);
-          if (/<a\b|<Link\b/.test(inner)) {
-            violations.push(
-              `${file}:${lineNumber(content, open)}  ${opener.trim()}> contains nested anchor/Link`,
-            );
-          }
-          i = closingIdx + closer.length;
+      for (const tag of iterateOpenTags(content, ["a", "Link"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closer = `</${tag.name}>`;
+        const closingIdx = content.indexOf(closer, attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
+        if (/<a\b|<Link\b/.test(inner)) {
+          violations.push(
+            `${file}:${lineNumber(content, tag.openIdx)}  <${tag.name}> contains nested anchor/Link`,
+          );
         }
       }
     }
@@ -360,9 +347,8 @@ describe("Component invariants · Tailwind hardcode extension", () => {
     const violations: string[] = [];
     for (const file of auditedFiles) {
       const content = readSrc(file);
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(content)) !== null) {
-        violations.push(`${file}:${lineNumber(content, m.index)}  ${m[0]}`);
+      for (const m of content.matchAll(re)) {
+        violations.push(`${file}:${lineNumber(content, m.index ?? 0)}  ${m[0]}`);
       }
     }
     expect(violations).toEqual([]);
@@ -375,25 +361,26 @@ describe("Component invariants · Tailwind hardcode extension", () => {
 
 describe("Component invariants · tone quartet", () => {
   it("Record<BadgeTone, ...> literals contain exactly {neutral,success,warning,danger}", () => {
-    const reBlock =
-      /:\s*Record<BadgeTone,[^>]+>\s*=\s*\{([\s\S]*?)\};?/g;
+    // Scoped to `Record<BadgeTone, string>` — flat-string values only. A
+    // future `Record<BadgeTone, {bg:string;text:string}>` would slip the gate
+    // until we extend the matcher; document here so the limitation is visible
+    // when someone adds an object-valued tone record.
+    const reBlock = /:\s*Record<BadgeTone,\s*string>\s*=\s*\{([\s\S]*?)\};?/g;
+    const keyRe = /^\s*(\w+)\s*:/gm;
     const expectedKeys = new Set(["neutral", "success", "warning", "danger"]);
     const violations: string[] = [];
     for (const file of ALL_FILES) {
       if (!/\.(tsx?|jsx?)$/.test(file)) continue;
       const content = readSrc(file);
-      let m: RegExpExecArray | null;
-      while ((m = reBlock.exec(content)) !== null) {
+      for (const m of content.matchAll(reBlock)) {
         const body = m[1];
-        const keyRe = /^\s*(\w+)\s*:/gm;
         const keys = new Set<string>();
-        let km: RegExpExecArray | null;
-        while ((km = keyRe.exec(body)) !== null) keys.add(km[1]);
+        for (const km of body.matchAll(keyRe)) keys.add(km[1]);
         const missing = [...expectedKeys].filter((k) => !keys.has(k));
         const extra = [...keys].filter((k) => !expectedKeys.has(k));
         if (missing.length || extra.length) {
           violations.push(
-            `${file}:${lineNumber(content, m.index)}  Record<BadgeTone> ${missing.length ? `missing [${missing.join(", ")}]` : ""}${extra.length ? ` extra [${extra.join(", ")}]` : ""}`,
+            `${file}:${lineNumber(content, m.index ?? 0)}  Record<BadgeTone> ${missing.length ? `missing [${missing.join(", ")}]` : ""}${extra.length ? ` extra [${extra.join(", ")}]` : ""}`,
           );
         }
       }

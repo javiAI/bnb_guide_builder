@@ -2,6 +2,12 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export type IconBadgeTone = "neutral" | "success" | "warning" | "danger" | "primary";
+export type IconBadgeSize = "sm" | "md";
+
+const SIZE_CLASS: Record<IconBadgeSize, string> = {
+  sm: "h-[30px] w-[30px]",
+  md: "h-[36px] w-[36px]",
+};
 
 const TONE_BG: Record<IconBadgeTone, string> = {
   neutral: "bg-[var(--color-background-muted)] text-[var(--color-text-primary)]",
@@ -15,7 +21,7 @@ interface IconBadgeProps {
   icon: LucideIcon;
   tone?: IconBadgeTone;
   iconSize?: number;
-  size?: "sm" | "md";
+  size?: IconBadgeSize;
   className?: string;
 }
 
@@ -26,12 +32,11 @@ export function IconBadge({
   size = "sm",
   className,
 }: IconBadgeProps) {
-  const sizeClass = size === "sm" ? "h-[30px] w-[30px]" : "h-[36px] w-[36px]";
   return (
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-[8px]",
-        sizeClass,
+        SIZE_CLASS[size],
         TONE_BG[tone],
         className,
       )}

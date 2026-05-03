@@ -2,14 +2,10 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { ICON_BUTTON_SIZE_CLASS, type IconButtonSize } from "./icon-button";
 
-export type IconButtonLinkSize = "sm" | "md";
+export type IconButtonLinkSize = IconButtonSize;
 export type IconButtonLinkTone = "neutral" | "primary";
-
-const SIZE_CLASS: Record<IconButtonLinkSize, string> = {
-  sm: "recipe-icon-btn-32 grid h-8 w-8 place-items-center",
-  md: "grid h-11 w-11 place-items-center",
-};
 
 const TONE_CLASS: Record<IconButtonLinkTone, string> = {
   neutral:
@@ -37,7 +33,7 @@ export function IconButtonLink({
   ...props
 }: IconButtonLinkProps) {
   return (
-    <Link className={cn(SIZE_CLASS[size], TONE_CLASS[tone], className)} {...props}>
+    <Link className={cn(ICON_BUTTON_SIZE_CLASS[size], TONE_CLASS[tone], className)} {...props}>
       <Icon size={iconSize} aria-hidden="true" />
     </Link>
   );

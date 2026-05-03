@@ -5,8 +5,8 @@ import { cn } from "@/lib/cn";
 export type IconButtonSize = "sm" | "md";
 export type IconButtonTone = "neutral" | "primary";
 
-const SIZE_CLASS: Record<IconButtonSize, string> = {
-  /* 32 visual + slop ::before pseudo-element brings hit area to 44 on fine pointers. */
+/* 32 visual + slop ::before pseudo-element brings hit area to 44 on fine pointers. */
+export const ICON_BUTTON_SIZE_CLASS: Record<IconButtonSize, string> = {
   sm: "recipe-icon-btn-32 grid h-8 w-8 place-items-center",
   md: "grid h-11 w-11 place-items-center",
 };
@@ -38,7 +38,7 @@ export function IconButton({
   return (
     <button
       type={type}
-      className={cn(SIZE_CLASS[size], TONE_CLASS[tone], className)}
+      className={cn(ICON_BUTTON_SIZE_CLASS[size], TONE_CLASS[tone], className)}
       {...props}
     >
       <Icon size={iconSize} aria-hidden="true" />
