@@ -57,7 +57,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <p className="text-center text-xs text-[var(--color-text-subtle)]">
+        <p className="text-center text-xs text-[var(--color-text-muted)]">
           Al acceder aceptas los términos de uso del servicio.
         </p>
       </div>

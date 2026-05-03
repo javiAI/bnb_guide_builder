@@ -29,6 +29,10 @@ import {
 } from "lucide-react";
 import { WORKSPACE_NAV, NAV_GROUP_LABELS, isNavItemActive, type NavItem } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
+import {
+  PropertySwitcher,
+  type SwitchableProperty,
+} from "./property-switcher";
 
 const NAV_ICONS: Partial<Record<string, LucideIcon>> = {
   overview:      LayoutDashboard,
@@ -59,18 +63,17 @@ interface SideNavProps {
   propertyId: string;
   propertyNickname: string;
   sectionScores?: Record<string, number>;
+  workspaceProperties: SwitchableProperty[];
+  variant?: "desktop" | "drawer";
 }
 
-function propertyInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0] ?? "")
-    .join("")
-    .toUpperCase();
-}
-
-export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNavProps) {
+export function SideNav({
+  propertyId,
+  propertyNickname,
+  sectionScores,
+  workspaceProperties,
+  variant = "desktop",
+}: SideNavProps) {
   const pathname = usePathname();
 
   const groups = (["content", "outputs", "operations"] as const).map((group) => ({
@@ -83,33 +86,24 @@ export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNav
     return isNavItemActive(item, pathname, propertyId);
   }
 
+  const visibilityClass =
+    variant === "desktop" ? "hidden lg:flex" : "flex";
+
   return (
     <aside
-      className="fixed left-0 top-0 flex h-full flex-col border-r border-[var(--color-border-default)] bg-[var(--color-background-elevated)]"
-      style={{ width: "var(--sidebar-width)" }}
+      className={`fixed left-0 z-40 flex-col border-r border-[var(--color-border-default)] bg-[var(--color-background-elevated)] ${visibilityClass}`}
+      style={{
+        top: "var(--topbar-height)",
+        height: "calc(100vh - var(--topbar-height))",
+        width: "var(--sidebar-width)",
+      }}
     >
-      {/* Property badge */}
-      <div className="mx-3 my-3.5 flex items-center gap-2.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-page)] px-3 py-2.5">
-        <span
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] bg-[var(--color-action-primary-subtle)] text-[11px] font-semibold text-[var(--color-action-primary-subtle-fg)]"
-          aria-hidden="true"
-        >
-          {propertyInitials(propertyNickname)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold leading-[16px] text-[var(--color-text-primary)]">
-            {propertyNickname}
-          </p>
-          <Link
-            href="/"
-            className="text-[11px] leading-[14px] text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-secondary)]"
-          >
-            ← Propiedades
-          </Link>
-        </div>
-      </div>
+      <PropertySwitcher
+        currentPropertyId={propertyId}
+        currentPropertyNickname={propertyNickname}
+        properties={workspaceProperties}
+      />
 
-      {/* Nav groups */}
       <nav className="flex-1 overflow-y-auto px-2 pb-4" aria-label="Navegación de propiedad">
         {groups.map((group) => (
           <div key={group.key} className="mt-3.5">
@@ -124,9 +118,9 @@ export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNav
                   <li key={item.key}>
                     <Link
                       href={item.href(propertyId)}
-                      className={`flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium transition-colors ${
+                      className={`flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium no-underline transition-colors hover:no-underline ${
                         active
-                          ? "bg-[var(--color-interactive-selected)] text-[var(--color-interactive-selected-fg)]"
+                          ? "bg-[var(--color-interactive-selected)] text-[var(--color-interactive-selected-fg)] hover:text-[var(--color-interactive-selected-fg)]"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
                       }`}
                     >
@@ -150,11 +144,10 @@ export function SideNav({ propertyId, propertyNickname, sectionScores }: SideNav
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="border-t border-[var(--color-border-default)] px-3 py-3">
         <Link
           href="/properties/new/welcome"
-          className="flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
+          className="flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
         >
           <Home size={16} className="shrink-0" aria-hidden="true" />
           <span>Nueva propiedad</span>

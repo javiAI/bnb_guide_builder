@@ -72,3 +72,9 @@ design-system/**/.DS_Store
 design-system/**/__MACOSX/
 design-system/preview/
 design-system/tmp/
+
+# Throwaway capture/probe scripts (Liora parity audit)
+.tmp-*.mjs
+
+# Claude Code skill lockfile (per-machine)
+skills-lock.json

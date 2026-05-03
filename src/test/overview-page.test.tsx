@@ -1,109 +1,76 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { CapacityCard } from "@/components/overview/capacity-card";
-import { GapsCard } from "@/components/overview/gaps-card";
-import { PublishReadinessCard } from "@/components/overview/publish-readiness-card";
-import { NextActionCard } from "@/components/overview/next-action-card";
+import { ReadinessHeroCard } from "@/components/overview/readiness-hero-card";
+import { TasksListCard } from "@/components/overview/tasks-list-card";
+import { KpiStrip } from "@/components/overview/kpi-strip";
+import {
+  ActivityFeedCard,
+  type ActivityFeedItem,
+} from "@/components/overview/activity-feed-card";
+import {
+  SpacesTableCard,
+  type SpacesTableRow,
+} from "@/components/overview/spaces-table-card";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
 
-describe("CapacityCard", () => {
-  it("shows coherente when maxGuests ≤ sleeping capacity", () => {
-    render(<CapacityCard propertyId="p1" maxGuests={4} sleepingCapacity={4} />);
-    expect(screen.getByText("Coherente")).toBeInTheDocument();
-    expect(screen.getAllByText("4").length).toBeGreaterThanOrEqual(2);
-  });
-
-  it("warns when maxGuests exceeds sleeping capacity", () => {
-    render(<CapacityCard propertyId="p1" maxGuests={6} sleepingCapacity={4} />);
-    expect(screen.getByText("Revisar")).toBeInTheDocument();
-    expect(screen.getByText(/supera la capacidad/)).toBeInTheDocument();
-  });
-
-  it("shows 'Aforo no configurado' when maxGuests is null", () => {
-    render(<CapacityCard propertyId="p1" maxGuests={null} sleepingCapacity={4} />);
-    expect(screen.getByText("Aforo no configurado")).toBeInTheDocument();
-  });
-
-  it("shows 'Sin camas' when no beds are configured", () => {
-    render(<CapacityCard propertyId="p1" maxGuests={4} sleepingCapacity={0} />);
-    expect(screen.getByText("Sin camas")).toBeInTheDocument();
-  });
-});
-
-describe("GapsCard", () => {
-  it("lists all four sections sorted by score ascending", () => {
+describe("ReadinessHeroCard", () => {
+  it("shows the overall percentage in the ring", () => {
     render(
-      <GapsCard
+      <ReadinessHeroCard
         propertyId="p1"
-        scores={{ spaces: 90, amenities: 40, systems: 70, arrival: 20 }}
+        overall={75}
+        publishable={false}
+        usable
+        scores={{ spaces: 80, amenities: 60, systems: 70, arrival: 90 }}
+        blockers={[]}
+        errors={[]}
       />,
     );
-    const labels = screen.getAllByText(
-      /Espacios|Equipamiento|Sistemas|Acceso y llegada/,
-    );
-    expect(labels.map((n) => n.textContent)).toEqual([
-      "Acceso y llegada",
-      "Equipamiento",
-      "Sistemas",
-      "Espacios",
-    ]);
+    expect(screen.getByText("75")).toBeInTheDocument();
+    expect(screen.getByText(/Completitud · 75 de 100/)).toBeInTheDocument();
   });
 
-  it("renders each score as a percentage", () => {
+  it("celebrates when publishable with no issues", () => {
     render(
-      <GapsCard
-        propertyId="p1"
-        scores={{ spaces: 90, amenities: 40, systems: 70, arrival: 20 }}
-      />,
-    );
-    expect(screen.getByText("90%")).toBeInTheDocument();
-    expect(screen.getByText("20%")).toBeInTheDocument();
-  });
-});
-
-describe("PublishReadinessCard", () => {
-  const blocker: ValidationFinding = {
-    id: "wifi_incomplete",
-    severity: "blocker",
-    message: "Wifi configurado sin SSID",
-    ctaUrl: "/properties/p1/systems",
-    ctaLabel: "Completar wifi",
-  };
-
-  it("shows publicable badge and happy state when no issues", () => {
-    render(
-      <PublishReadinessCard
+      <ReadinessHeroCard
         propertyId="p1"
         overall={92}
-        usable
         publishable
+        usable
+        scores={{ spaces: 90, amenities: 90, systems: 90, arrival: 90 }}
         blockers={[]}
         errors={[]}
       />,
     );
-    expect(screen.getByText("Publicable")).toBeInTheDocument();
-    expect(screen.getByText("92%")).toBeInTheDocument();
-    expect(screen.getByText(/Sin incidencias/)).toBeInTheDocument();
+    expect(screen.getByText(/Tu guía está lista/)).toBeInTheDocument();
   });
 
-  it("lists blockers with their CTA when present", () => {
+  it("surfaces blockers count and first 3 messages", () => {
+    const blocker: ValidationFinding = {
+      id: "wifi_incomplete",
+      severity: "blocker",
+      message: "Wifi configurado sin SSID",
+      ctaUrl: "/properties/p1/systems",
+      ctaLabel: "Completar wifi",
+    };
     render(
-      <PublishReadinessCard
+      <ReadinessHeroCard
         propertyId="p1"
         overall={60}
-        usable={false}
         publishable={false}
+        usable={false}
+        scores={{ spaces: 30, amenities: 40, systems: 20, arrival: 50 }}
         blockers={[blocker]}
         errors={[]}
       />,
     );
-    expect(screen.getByText("No publicable")).toBeInTheDocument();
     expect(screen.getByText("Wifi configurado sin SSID")).toBeInTheDocument();
     expect(screen.getByText("Completar wifi")).toBeInTheDocument();
+    expect(screen.getByText(/1 bloqueante pendiente/)).toBeInTheDocument();
   });
 });
 
-describe("NextActionCard", () => {
+describe("TasksListCard", () => {
   const blocker: ValidationFinding = {
     id: "wifi_incomplete",
     severity: "blocker",
@@ -112,57 +79,33 @@ describe("NextActionCard", () => {
     ctaLabel: "Completar wifi",
   };
 
-  it("prioritises blockers over low section scores", () => {
+  it("prioritises blockers above section gaps", () => {
     render(
-      <NextActionCard
+      <TasksListCard
         propertyId="p1"
         scores={{ spaces: 10, amenities: 20, systems: 30, arrival: 40 }}
         blockers={[blocker]}
         errors={[]}
       />,
     );
-    expect(screen.getByText("Resuelve un bloqueante")).toBeInTheDocument();
     expect(screen.getByText("Wifi configurado sin SSID")).toBeInTheDocument();
   });
 
-  it("labels errors-only path with 'Resuelve un error'", () => {
-    const err: ValidationFinding = {
-      id: "visibility_leak_wifi",
-      severity: "error",
-      message: "Wifi expone contraseña con visibilidad public",
-      ctaUrl: "/properties/p1/amenities",
-      ctaLabel: "Revisar visibilidad",
-    };
+  it("falls back to lowest section when no blockers", () => {
     render(
-      <NextActionCard
-        propertyId="p1"
-        scores={{ spaces: 10, amenities: 20, systems: 30, arrival: 40 }}
-        blockers={[]}
-        errors={[err]}
-      />,
-    );
-    expect(screen.getByText("Resuelve un error")).toBeInTheDocument();
-    expect(
-      screen.getByText("Wifi expone contraseña con visibilidad public"),
-    ).toBeInTheDocument();
-  });
-
-  it("falls back to lowest section score when no blockers/errors", () => {
-    render(
-      <NextActionCard
+      <TasksListCard
         propertyId="p1"
         scores={{ spaces: 80, amenities: 40, systems: 90, arrival: 60 }}
         blockers={[]}
         errors={[]}
       />,
     );
-    expect(screen.getByText("Mejora Equipamiento")).toBeInTheDocument();
-    expect(screen.getByText(/Score actual: 40%/)).toBeInTheDocument();
+    expect(screen.getByText("Mejora equipamiento")).toBeInTheDocument();
   });
 
   it("shows celebrate state when everything is publishable", () => {
     render(
-      <NextActionCard
+      <TasksListCard
         propertyId="p1"
         scores={{ spaces: 90, amenities: 90, systems: 90, arrival: 90 }}
         blockers={[]}
@@ -170,5 +113,94 @@ describe("NextActionCard", () => {
       />,
     );
     expect(screen.getByText(/Todo listo/)).toBeInTheDocument();
+  });
+
+  it("renders at most 3 tasks", () => {
+    const blockers: ValidationFinding[] = Array.from({ length: 5 }).map(
+      (_, i) => ({
+        id: `b${i}`,
+        severity: "blocker" as const,
+        message: `Bloqueante ${i}`,
+      }),
+    );
+    render(
+      <TasksListCard
+        propertyId="p1"
+        scores={{ spaces: 80, amenities: 80, systems: 80, arrival: 80 }}
+        blockers={blockers}
+        errors={[]}
+      />,
+    );
+    expect(screen.getByText("Bloqueante 0")).toBeInTheDocument();
+    expect(screen.getByText("Bloqueante 1")).toBeInTheDocument();
+    expect(screen.getByText("Bloqueante 2")).toBeInTheDocument();
+    expect(screen.queryByText("Bloqueante 3")).toBeNull();
+  });
+});
+
+describe("KpiStrip", () => {
+  it("renders the four KPIs with their counts", () => {
+    render(
+      <KpiStrip
+        propertyId="p1"
+        spacesCount={4}
+        amenityCount={18}
+        contactsCount={3}
+        blockersCount={1}
+      />,
+    );
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("18")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("Espacios")).toBeInTheDocument();
+    expect(screen.getByText("Bloqueantes")).toBeInTheDocument();
+  });
+});
+
+describe("ActivityFeedCard", () => {
+  it("shows empty copy when there are no entries", () => {
+    render(<ActivityFeedCard propertyId="p1" items={[]} />);
+    expect(screen.getByText(/Sin actividad/)).toBeInTheDocument();
+  });
+
+  it("renders each feed item with its message", () => {
+    const items: ActivityFeedItem[] = [
+      {
+        id: "1",
+        message: "Space actualizado",
+        whenISO: new Date().toISOString(),
+      },
+    ];
+    render(<ActivityFeedCard propertyId="p1" items={items} />);
+    expect(screen.getByText("Space actualizado")).toBeInTheDocument();
+  });
+});
+
+describe("SpacesTableCard", () => {
+  it("shows empty state with CTA when no rows", () => {
+    render(<SpacesTableCard propertyId="p1" rows={[]} totalCount={0} />);
+    expect(screen.getByText(/Aún no has añadido espacios/)).toBeInTheDocument();
+    expect(screen.getByText("Añadir espacio")).toBeInTheDocument();
+  });
+
+  it("renders rows with their counts and status", () => {
+    const rows: SpacesTableRow[] = [
+      {
+        id: "s1",
+        name: "Dormitorio principal",
+        spaceTypeLabel: "Dormitorio",
+        amenityCount: 6,
+        photoCount: 4,
+        updatedAtISO: new Date().toISOString(),
+        status: { label: "Completo", tone: "success" },
+      },
+    ];
+    render(<SpacesTableCard propertyId="p1" rows={rows} totalCount={1} />);
+    // Row appears twice (desktop table + mobile list); both should reflect data
+    expect(screen.getAllByText("Dormitorio principal").length).toBeGreaterThan(0);
+    expect(screen.getByText("6 items")).toBeInTheDocument();
+    expect(screen.getByText("4 fotos")).toBeInTheDocument();
+    expect(screen.getAllByText("Completo").length).toBeGreaterThan(0);
   });
 });
