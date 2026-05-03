@@ -242,10 +242,24 @@ Cuando 16E/F/G añadan guest surfaces auditadas, el filtrado se hace mediante `a
 `src/test/parity-allowlist.ts` mantiene 8 listas de excepciones tipadas con `ExceptionEntry { file, reason, removeBy: LioraPhase|"never" }`. `LioraPhase = "16D.5"|"16E"|"16F"|"16G"` con orden canónico en `LIORA_PHASE_ORDER`; la fase activa vive en `CURRENT_LIORA_PHASE`. **Política**:
 
 - Toda excepción nueva requiere `reason` ≥ 8 chars y `removeBy` ≤ fase actual + 1. Excepciones que sobreviven 2 fases son governance debt — la rama responsable no las cerró.
-- **Phase-order enforcement**: el invariante governance-shape compara `removeBy` contra `CURRENT_LIORA_PHASE` y falla si `removeBy` está en el pasado (`isPhaseInPast`). Una rama no puede mergear con una excepción cuyo `removeBy` ya pasó — la cleanup se hace o se sube el `removeBy` con un commit explícito.
+- **PR description + commit message** deben justificar cualquier excepción añadida (motivo, deadline, plan de retirada). Una excepción sin justificación visible al revisor bloquea el merge — la auditabilidad es el contrato, no la lista en sí.
+- **Phase-order enforcement**: el invariante governance-shape compara `removeBy` contra `CURRENT_LIORA_PHASE` y falla si `removeBy` está en el pasado (`isPhaseInPast`). Una rama no puede mergear con una excepción cuyo `removeBy` ya pasó — la cleanup se hace o se sube el `removeBy` con un commit explícito que documente el motivo de la extensión.
+- Si una rama no puede cerrar una excepción heredada, debe explicarlo en PR description (motivo, plan, próxima rama responsable). Saltar el deadline silenciosamente no es opción — el gate falla CI.
 - `removeBy: "never"` reservado a casos estructurales (brand SVGs de terceros, etc.). Cualquier otro uso es CR red-flag.
 - **Orphan check**: `EXPECTED_OPERATOR_SCOPE_PATTERNS` + heurística de imports de primitivos (`LIORA_PRIMITIVE_IMPORT_PATHS`). Cualquier .tsx que matchee un patrón esperado o importe un primitivo Liora **debe** estar en `AUDITED_SURFACES` o en `ORPHAN_AUDIT_PENDING_EXCEPTIONS`. Falla en CI; no se puede mergear silenciosamente migrando un fichero sin cobertura.
-- 16G empty-registry gate: todas las listas vacías al merge final (excepto `removeBy: "never"`).
+- 16G empty-registry gate: todas las listas vacías al merge final (excepto `removeBy: "never"`). El modelo "8 listas vacías al final" se enforza vía `parity-allowlist.ts` + tests, no es una promesa.
+
+### Branch closure template — 16E onwards (heredado de 16D.5)
+
+Toda PR de una rama Liora visual posterior a 16D.5 (16E, 16F, 16G y subramas E1/E2/E3, F1/F2/F3) **debe** incluir una sección "Audited surfaces / test coverage" en la descripción de la PR. Spec normativa completa en [docs/MASTER_PLAN_V2.md § Liora branch closure template — 16E onwards](docs/MASTER_PLAN_V2.md). Resumen de reglas duras enforced por `component-invariants.test.ts`:
+
+1. **Same-commit AUDITED_SURFACES update**. Toda página/operator surface tocada o migrada se añade a `AUDITED_SURFACES` en el mismo commit. Una migración visual sin actualización de `AUDITED_SURFACES` no está completa.
+2. **Liora-import heuristic**. Cualquier .tsx que importe primitivos Liora (`@/components/ui/{card,section-eyebrow,icon-badge,text-link,timeline-list,icon-button,icon-button-link,button-link}` o `@/lib/tone`) debe quedar cubierto por `AUDITED_SURFACES` o `ORPHAN_AUDIT_PENDING_EXCEPTIONS` en esa misma rama. El orphan check es enforcement real, no documentación.
+3. **Profile separation (operator vs guest vs shared)**. Guest public guide tiene su propio sistema visual en `src/components/public-guide/ui/` y **no hereda primitivos operator** (`<Card variant="overview">`, primitive-adoption operator, copy-lint Spanish, etc.). Para guest aplican invariantes compartidos: tokens, hardcodes, web API guards, a11y básica, target-size donde corresponda. Si una rama futura audita guest surfaces, usa `profile: "guest"` y la batería compartida se aplica automáticamente.
+4. **`CURRENT_LIORA_PHASE` bump al iniciar la rama**. 16E sube `CURRENT_LIORA_PHASE` a `"16E"`, etc. Sin bump → la rama no recibe el efecto de governance (phase-order check sobre entradas heredadas) — bug.
+5. **Exception policy**. Ver § Allowlist governance arriba. Cualquier excepción nueva: justificar en PR + commit, `removeBy` ≤ siguiente fase, no acumular debt.
+
+Esta sección es la spec normativa heredable. Si en una rama futura el agente no encuentra estas reglas o no recuerda el formato del template, vuelve a `MASTER_PLAN_V2.md` § Liora branch closure template — no es necesario inferir.
 
 ### Static-analysis gate honestidad (16D.5)
 

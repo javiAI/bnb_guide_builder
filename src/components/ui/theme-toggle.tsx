@@ -94,7 +94,7 @@ export function ThemeToggle() {
       onClick={cycle}
       aria-label={LABELS[theme]}
       title={LABELS[theme]}
-      className="grid h-11 w-11 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+      className="recipe-interactive-hover grid h-11 w-11 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)]"
     >
       <Icon size={16} aria-hidden="true" />
     </button>

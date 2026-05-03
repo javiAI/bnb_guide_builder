@@ -422,7 +422,10 @@ describe("Component invariants · copy lint (Spanish on operator surfaces)", () 
       "Placeholder text",
     ];
     const violations: string[] = [];
-    for (const file of auditedFiles) {
+    // Operator-only invariant: guest surfaces have their own copy contract
+    // (multilingual; English is allowed). Scope to operator + shared per the
+    // describe block — iterating auditedFiles would falsely flag guest copy.
+    for (const file of operatorAuditedFiles) {
       if (!file.endsWith(".tsx")) continue;
       if (exempt(file, COPY_LINT_EXCEPTIONS)) continue;
       const content = readSrc(file);
@@ -751,9 +754,13 @@ describe("Component invariants · governance shape", () => {
     // audited. Catches the failure mode where a future rama refactors a
     // subpage to use a primitive but forgets to add the file/glob to
     // AUDITED_SURFACES.
+    // MDN-canonical regex-escape (escapes the full set of regex meta chars
+    // including `]` and `\`). Today's primitive paths don't contain any of
+    // these, but using the canonical form documents intent and stays robust
+    // if a future path adds a hyphen-bracket or similar.
     const importRe = new RegExp(
       `from\\s+["'](?:${LIORA_PRIMITIVE_IMPORT_PATHS.map((p) =>
-        p.replace(/[.*+?^${}()|[\\]/g, "\\$&"),
+        p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
       ).join("|")})["']`,
     );
     const violations: string[] = [];

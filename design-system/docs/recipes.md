@@ -73,7 +73,9 @@ Estados de hover/focus para surfaces interactivas neutras (sidebar, drawer items
 }
 ```
 
-**Consumer canónico**: ninguno por ahora — **reservada para 16E**. Hoy `[side-nav.tsx](../../src/components/layout/side-nav.tsx)` y otros listados interactivos sin surface fill duplican parte de este contrato (transición + hover bg/text), pero adoptar la recipe completa añadiría focus-ring donde no lo había — un delta visual fuera de scope para 16D.5 (governance, cero delta intencional). 16E hará el sweep de focus-ring sobre items de side-nav y otros listados; ahí la recipe encuentra a sus consumidores naturales. Si en 16E surge un patrón de listado con shell distinto, se crea una recipe nueva en lugar de extender ésta. Cuando un item lleva surface fill propio (botón sólido), preferir `<IconButton>`/`<ButtonLink>` — esos hornean además `hover:no-underline` para defenderse del `a:hover { text-decoration: underline }` global.
+**Consumer canónico**: [`<ThemeToggle>`](../../src/components/ui/theme-toggle.tsx) — el botón de tema ya tenía exactamente el contrato (`transition-colors + hover:bg + hover:text + focus-visible:ring`); aplicar la recipe es zero-delta y centraliza el patrón.
+
+**Otros consumidores potenciales (16E)**: [`side-nav.tsx`](../../src/components/layout/side-nav.tsx) y otros listados interactivos sin surface fill (drawer items, list rows) duplican parte de este contrato (transición + hover bg/text) pero **no llevan focus-visible:ring hoy**. Adoptar la recipe completa añadiría focus-ring donde no lo había — un delta visual fuera de scope para 16D.5 (governance, cero delta intencional). 16E hará el sweep de focus-ring sobre items de side-nav y otros listados; ahí la recipe encuentra a sus consumidores naturales adicionales. Si en 16E surge un patrón de listado con shell distinto, se crea una recipe nueva en lugar de extender ésta. Cuando un item lleva surface fill propio (botón sólido), preferir `<IconButton>`/`<ButtonLink>` — esos hornean además `hover:no-underline` para defenderse del `a:hover { text-decoration: underline }` global.
 
 ### `.recipe-icon-btn-32`
 

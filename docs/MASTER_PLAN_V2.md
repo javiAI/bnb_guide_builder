@@ -3206,6 +3206,56 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 ---
 
+### Liora branch closure template — 16E onwards (heredado de 16D.5)
+
+**Aplica a**: 16E, 16F, 16G y cualquier subrama derivada (sub-PRs E1/E2/E3, F1/F2/F3, etc.).
+
+Toda PR de una rama Liora visual posterior a 16D.5 **debe** incluir esta sección en la descripción de la PR. La ausencia es señal de scope no auditado y bloquea el merge:
+
+```markdown
+## Audited surfaces / test coverage
+
+Pages/components touched:
+- <list every operator surface or shared primitive modified>
+
+AUDITED_SURFACES updates:
+- <new entries added to src/test/parity-allowlist.ts (with profile)>
+- <existing entries extended (file globs, profile changes)>
+
+Invariant coverage:
+- component-invariants.test.ts ✓
+- parity-static.test.ts ✓
+- dark-parity.test.ts (where applicable) ✓
+
+Exceptions added:
+- <none / list with file + reason ≥8 chars + removeBy ≤ next phase>
+
+Exceptions cleared by this branch:
+- <list removeBy entries this branch retired>
+
+Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
+```
+
+**Reglas duras heredables** (enforced por `src/test/component-invariants.test.ts` + governance shape gate):
+
+1. **Same-commit AUDITED_SURFACES update**. Toda página/operator surface tocada o migrada se añade a `AUDITED_SURFACES` en el mismo commit que la migración. Sin entry → invariantes no aplican → re-skin parcial pasaría inadvertido. **Una migración visual sin actualización de `AUDITED_SURFACES` no está completa.**
+
+2. **Liora-import heuristic**. Cualquier .tsx que empiece a importar primitivos Liora (`@/components/ui/{card,section-eyebrow,icon-badge,text-link,timeline-list,icon-button,icon-button-link,button-link}` o `@/lib/tone`) debe quedar cubierto por `AUDITED_SURFACES` o `ORPHAN_AUDIT_PENDING_EXCEPTIONS` en esa misma rama. El orphan check en `component-invariants.test.ts` falla CI si no — es enforcement real, no documentación.
+
+3. **Profile separation (operator vs guest vs shared)**. La guest public guide tiene su propio sistema visual en [`src/components/public-guide/ui/`](../src/components/public-guide/ui/) (ver `docs/FEATURES/GUEST_GUIDE_UX.md`) y **no hereda primitivos operator**. Para guest aplican invariantes compartidos — tokens, hardcodes, web API guards, a11y básica, target-size donde corresponda — pero **no** `<Card variant="overview">`, primitive-adoption operator, ni copy-lint Spanish. Si una rama futura audita guest surfaces, usa `profile: "guest"` y la batería compartida se aplica automáticamente.
+
+4. **Exception policy** (refuerzo de 16D.5):
+   - Cualquier excepción nueva en `parity-allowlist.ts` requiere justificación en PR description y commit message.
+   - `removeBy` ≤ siguiente fase Liora (no acumular debt indefinido). `removeBy: "never"` reservado a casos estructurales (brand SVGs de terceros, etc.) — cualquier otro uso es CR red flag.
+   - Si una rama no puede cerrar una excepción heredada, debe explicarlo en PR description (motivo, plan, próxima rama responsable). Saltar el deadline silenciosamente bloquea el merge — el gate de phase-order falla CI cuando `removeBy < CURRENT_LIORA_PHASE`.
+   - El modelo "8 listas vacías al final de 16G" se enforza vía `parity-allowlist.ts` + el registry-empty gate de 16G — no es una promesa, es un test.
+
+5. **`CURRENT_LIORA_PHASE`**. Cada rama bumpea `CURRENT_LIORA_PHASE` en `src/test/parity-allowlist.ts` al iniciar (16E sube a `"16E"`, etc.). Esto activa el phase-order check sobre las entradas heredadas y fuerza la limpieza inline. Sin bump → la rama no recibe el efecto de governance — bug.
+
+**Esta sección es la spec normativa**. Si en una rama futura el agente no encuentra estas reglas en CLAUDE.md o no recuerda el formato del template, se vuelve aquí. No es necesario inferir.
+
+---
+
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
 **Propósito**: superficies de módulos del operador. Una rama Git, **3 sub-PRs internos secuenciales** con gates obligatorios.
