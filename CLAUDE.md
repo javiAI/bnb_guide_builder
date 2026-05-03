@@ -193,7 +193,7 @@ Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` 
 - Stack obligatorio en UI guest: Radix UI primitives, lucide-react, CVA, tailwind-merge/clsx, fuse.js, yet-another-react-lightbox (lazy), date-fns, react-hook-form+zod solo en forms. **Prohibido** en guest: MUI, Ant Design, Chakra, `next-pwa`.
 - PWA / offline (rama 10I): SW manual servido por `src/app/g/[slug]/sw.js/route.ts` (no `public/sw.js` — scope global rompería aislamiento). Versionado vía `__SW_VERSION__` = `GuideSearchIndex.buildVersion` (rama 10H), 12 chars determinísticos. Tres tiers de caché declarados en `taxonomies/guide_sections.json` (`offlineCacheTier: 1|2|3`); tier 1 (essentials/arrival/checkout/emergency) precached al install + SWR; tier 2 (thumbs) SWR con cap 12; tier 3 (md/full) network-first con timeout 2s. Manifest dinámico vía `buildGuidePwaManifest()` con `theme_color` derivado de `getBrandPair(brandPaletteKey).light`. Cache names llevan slug en namespace (`guide-<slug>-tier{N}-<version>`) para aislamiento per-property. Tests: 5 invariantes vitest + 1 spec E2E fuerte; SW lifecycle real no se testea en headless (flake típico).
 
-## Patrones de UI — Operator shell (Fase 16D)
+## Patrones de UI — Operator shell (Fase 16D / 16D.5)
 
 - **ThemeToggle** (`src/components/ui/theme-toggle.tsx`): 3 estados — `auto` / `light` / `dark`. Persiste en `localStorage[THEME_STORAGE_KEY]` (`src/lib/theme.ts`, key `"theme"`). Aplica `data-theme` en `<html>`. En modo `auto` responde a cambios del SO vía `matchMedia` listener (useEffect con cleanup). El pre-paint script en `layout.tsx` lleva una copia del key literal porque no puede importar módulos — si renombras `THEME_STORAGE_KEY`, actualiza `layout.tsx` también.
 - **AppShell** (`src/components/layout/app-shell.tsx`): server component. Monta `SideNav` + columna de contenido (`Topbar` + `<main>`). `sectionScores` se obtiene de `getDerived()` dentro de un try/catch fail-soft (un fallo de caché no rompe la navegación).
@@ -202,6 +202,37 @@ Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` 
 - **SideNav** (`src/components/layout/side-nav.tsx`): iconos viven en mapa local `NAV_ICONS: Partial<Record<string, LucideIcon>>` — NO en `navigation.ts`. `isNavItemActive()` importado de `navigation.ts`. Badge de propiedad arriba, grupos content/outputs/operations en el centro, "Nueva propiedad" en el footer (neutro, sin identidad de usuario).
 - **Properties list + login** (`src/app/page.tsx`, `src/app/login/page.tsx`): ambas tienen `ThemeToggle` en un header mínimo. Login: reskin completo con tokens semánticos, copia en español, SVG de Google inline.
 - **dark-parity.test.ts** (`src/test/dark-parity.test.ts`): 4 tests — root block existe, dark block existe, todos los grupos core tienen override dark, ≥80% paridad global. Los grupos core = `CORE_PREFIXES` en el test.
+
+### Primitivos obligatorios (Fase 16D.5)
+
+Toda surface bajo `AUDITED_SURFACES` (hoy: overview + layout + theme-toggle; 16E/F la extienden) **debe** usar estos primitivos en lugar de raw className. El test `src/test/component-invariants.test.ts` enforza la adopción.
+
+- **`<Card variant="overview">`** (`src/components/ui/card.tsx`): shell `flex h-full flex-col rounded-[var(--radius-lg)] border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4`. **No** anidar `CardHeader`/`CardContent` dentro (double-pad: `--card-padding-md = var(--space-5)` ≠ `p-4`). Cards con shell no canónico (overflow container, p-5 hero, grid) NO migran al primitivo — el test los excluye por firma.
+- **`<SectionEyebrow icon={…}>`** (`src/components/ui/section-eyebrow.tsx`): `<h3>` con icono Lucide y label, tipografía `text-sm font-semibold text-[var(--color-text-primary)]`. Reemplaza el patrón inline `<h3 className="flex items-center gap-2 text-sm font-semibold">`.
+- **`<IconBadge icon={…} tone={…}>`** (`src/components/ui/icon-badge.tsx`): `<span aria-hidden>` decorativo 30×30 (sm) o 36×36 (md). Tones: `neutral|success|warning|danger|primary` (5 keys — el extra `primary` evita falso positivo del gate `Record<BadgeTone>`). Reemplaza el bloque `<span className="grid h-[30px] w-[30px] ... rounded-[8px] bg-[...]">`.
+- **`<TextLink size="xs|sm|md" arrow>`** (`src/components/ui/text-link.tsx`): inline link `text-[N]px font-medium text-[var(--color-text-link)] hover:underline`. Reemplaza `<Link className="text-[N]px font-medium text-[var(--color-text-link)] hover:underline">`.
+- **`<TimelineList items={…}>`** (`src/components/ui/timeline-list.tsx`): vertical timeline con dot tones — usado en activity-feed, futuro audit log (16E), conversation events (16F).
+- **`<IconButton icon={…} size="sm|md" tone="neutral|primary">`** (`src/components/ui/icon-button.tsx`): button-only, `<button>` puro. `md` = h-11 w-11 (44 visual). `sm` = h-8 w-8 (32 visual) con `recipe-icon-btn-32` baked → 44 hit area vía pseudo-elemento `::before`, colapsa a 44 visual en `pointer:coarse`.
+- **`<IconButtonLink icon={…} size="sm|md">`** (`src/components/ui/icon-button-link.tsx`): wrapper de `next/link`. **NO** polimorfismo `as="a"` — separa typed `href` + prefetch del primitivo `<button>` puro.
+- **`<ButtonLink size="sm|md|lg" variant="primary|secondary">`** (`src/components/ui/button-link.tsx`): text-button-styled `<Link>` que **hornea** `hover:no-underline` para outranquear el `a:hover { text-decoration: underline }` global de `base.css` (el bug de specificity (0,1,1) que vence Tailwind arbitrary classes).
+- **`tone.ts`** (`src/lib/tone.ts`): records keyed por `BadgeTone = "neutral"|"success"|"warning"|"danger"`. Usar `TONE_DOT_BORDER`, `TONE_BG_SOFT`, `TONE_TEXT`, `TONE_BORDER` en lugar de mapas inline. **Cualquier `Record<BadgeTone, ...>` con keys distintas falla el test** (regla 6 — tone quartet).
+
+### Touch-target invariant (regla 1)
+
+Todo elemento clickable button-shaped (con `bg-[var(--color-...)]` o outline `border + border-[var(--color-...)] + rounded-[...]`) debe alcanzar **44 hit area**. Patrones aceptados (en orden de preferencia):
+
+1. **Visual 44**: `min-h-[44px]` / `min-h-11` / `h-11` / `h-12+`. Default para botones text-bearing y mobile-only (donde `pointer:coarse` es la regla).
+2. **Slop 32→44**: `recipe-icon-btn-32` (32 visual + `::before { inset: -6px }` = 44 hit en fine pointers; `@media (pointer: coarse)` colapsa a 44 visual). Default para topbar icon-only en desktop. **No** apta para messaging mobile, drawer mobile, ni cualquier surface con táctil primario — usar visual 44 ahí.
+
+Inline text links (sin bg ni outline button-style) están **exentos** por WCAG 2.5.8 (inline target exception). El test los excluye de la regla.
+
+### Allowlist governance (parity-allowlist.ts)
+
+`src/test/parity-allowlist.ts` mantiene 6 listas de excepciones tipadas con `ExceptionEntry { file, reason, removeBy: "16D.5"|"16E"|"16F"|"16G"|"never" }`. **Política**:
+
+- Toda excepción nueva requiere `reason` ≥ 8 chars y `removeBy` ≤ rama actual + 1. Excepciones que sobreviven 2 ramas son governance debt — la rama responsable no las cerró.
+- `removeBy: "never"` reservado a casos estructurales (brand SVGs de terceros, etc.). Cualquier otro uso es CR red-flag.
+- 16G empty-registry gate: todas las listas vacías al merge final (excepto `removeBy: "never"`).
 
 ## Patrones de UI — Espacios
 

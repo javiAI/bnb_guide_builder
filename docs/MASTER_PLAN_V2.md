@@ -3250,10 +3250,19 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - ✅ 0 sufijos prohibidos (incluido `amenity-selector-v2.tsx` renombrado).
 - ✅ 0 inline `style={{}}` con valores hardcoded en módulos tocados.
 
+**Hard rules heredadas de 16D.5** (enforced por `src/test/component-invariants.test.ts`):
+- Cualquier card nueva con shell canónico (`flex h-full flex-col rounded-[var(--radius-lg)] border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4`) **debe** usar `<Card variant="overview">`. Raw `<div>` con esta firma falla el test (regla 10 — primitive adoption).
+- Cualquier elemento button-shaped (con `bg-[var(--color-...)]` o outline `border + border-[var(--color-...)] + rounded-[...]`) **debe** alcanzar 44 hit area: `min-h-[44px]` / `h-11+` / `recipe-icon-btn-32` (regla 1 — touch targets).
+- Iconografía decorativa estandarizada: `<IconBadge>` para tono+icono, `<IconButton>` / `<IconButtonLink>` para acción icon-only, `<TextLink>` para enlaces inline. Mapas locales `Record<BadgeTone, ...>` con keys distintas a `{neutral, success, warning, danger}` fallan (regla 6 — tone quartet).
+- Cada surface tocada en una sub-PR de 16E **debe añadirse a `AUDITED_SURFACES` en el mismo commit** que la migración. Sin entry → invariantes no aplican → re-skin parcial pasaría inadvertido.
+- `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`: **no añadir entries nuevas** salvo justificación documentada en PR description con `removeBy` ≤ "16E" (excepción que no se cierra en la propia rama es señal de scope fuera de control).
+
 **Restricciones**:
 - ❌ Cambiar lógica config-driven (taxonomías, registries, conditional engine).
 - ❌ Cambiar API de server actions.
 - ❌ Tocar messaging, assistant (16F).
+- ❌ Re-introducir mapas inline `Record<BadgeTone, ...>` (consolidados en `src/lib/tone.ts` en 16D.5).
+- ❌ Componer nuevos `<button>` o `<Link>` "button-styled" con className raw — usar `<IconButton>` / `<IconButtonLink>` / `<ButtonLink>`.
 
 **Dependencias / Riesgos**:
 - ⚠️ Wizard tiene 4 steps con state cruzado — verificar que el redesign no introduce re-renders perdidos.
@@ -3321,12 +3330,21 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - ✅ Paridad funcional pre-rama para todo lo `existing`.
 - ✅ axe-core `serious|critical = 0` en light + dark.
 
+**Hard rules heredadas de 16D.5** (enforced por `src/test/component-invariants.test.ts`):
+- Message bubbles, conversation list items, right-panel source/gap cards, AI suggestion callout: cada superficie messaging tocada **debe añadirse a `AUDITED_SURFACES`** en el mismo commit que su redesign. Sin entry → invariantes no aplican.
+- Iconografía + acciones icon-only del composer y right panel pasan por `<IconButton>` / `<IconButtonLink>`. Tool buttons del composer son aspirational en 16F (no se renderizan), pero la regla aplica si más adelante se cablean.
+- Conversation list active-state accent (left 3px) y tag chips (ai/esc/resolved/waiting) consumen tokens semánticos del kit Liora — prohibido reintroducir azul-gris brand del mock.
+- Touch-target invariant 44 hit area aplica a TODO elemento clickable de messaging (compose send, composer toolbar slots si se cablean en futuro, list items, source-card abre/expand). Tabletas + táctiles son target principal de messaging — sin slop "barato": preferir 44 visual cuando hay acompañamiento de texto.
+- `TOUCH_TARGET_EXCEPTIONS` y peers: **no añadir entries nuevas** salvo justificación documentada con `removeBy` ≤ "16F".
+
 **Restricciones**:
 - ❌ Cambiar API `/api/assistant-conversations/*`.
 - ❌ Cambiar pipeline assistant (`src/lib/services/assistant/*`).
 - ❌ Migrar esquema (`AssistantConversation`, `AssistantMessage`, etc.).
 - ❌ Implementar items aspirational del mock.
 - ❌ Replicar azul-gris kits para AI bubbles — usar accent foundations.
+- ❌ Re-introducir mapas inline `Record<BadgeTone, ...>` (consolidados en `src/lib/tone.ts` en 16D.5).
+- ❌ Componer nuevos `<button>` / `<Link>` "button-styled" con className raw.
 
 **Dependencias / Riesgos**:
 - ⚠️ Streaming responses (Anthropic SDK) — el redesign no debe romper render incremental.
@@ -3357,6 +3375,8 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - `liora-no-primitive-leak.test.ts` verde (introducido en 16A, debe seguir).
 - `liora-token-coverage.test.ts` actualizado: ya no permite aliases legacy (registro vacío post-16G).
 - Bundle size ≤ baseline (next-bundle-analyzer).
+- **Registry-vacío gate (heredado de 16D.5)**: `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`, `FORBIDDEN_SUFFIX_LEGACY` en `src/test/parity-allowlist.ts` deben estar **vacíos** al merge de 16G. Cualquier entry remanente con `removeBy ≤ "16G"` cuyo deadline ya venció bloquea la PR (señal de governance debt arrastrada). Entries con `removeBy: "never"` permitidas solo para excepciones estructurales documentadas (brand SVGs de terceros, etc.).
+- `AUDITED_SURFACES` cubre **todas** las superficies operator + messaging + guest activas; archivos de `src/components/{overview,layout,messaging,assistant,public-guide,wizard}/**/*.tsx` no listados son una regresión de cobertura.
 
 **Criterio de done**:
 - ✅ Bundle size igual o menor.
