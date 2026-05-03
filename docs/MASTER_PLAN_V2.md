@@ -3122,6 +3122,91 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 ---
 
+### Rama 16D.5 — `refactor/liora-16D-governance`
+
+**Propósito**: extraer los primitivos + recipes que las 6 overview cards de 16D ya implican, congelar su shape con un test de invariantes (`component-invariants.test.ts`), formalizar la política de touch targets (44 hit area invariante, 32 visual sólo vía `<IconButton size="sm">` con slop) y publicar las reglas de governance que 16E/F/G heredarán automáticamente. Cero delta visual intencional. Prerequisito de 16E (15 subpages copiarían el shell raw 14 veces más sin estos primitivos).
+
+**Archivos a crear**:
+
+- `src/lib/tone.ts` — `TONE_DOT_BORDER`, `TONE_TEXT`, `TONE_BG_SOFT`, `TONE_BORDER` records keyed por `BadgeTone` (consolida 3 mapas inline en `activity-feed-card`, `kpi-strip`, `spaces-table-card`).
+- `src/styles/recipes.css` — `.recipe-card-shell`, `.recipe-eyebrow`, `.recipe-text-link`, `.recipe-interactive-hover`, `.recipe-icon-btn-32` (slop 32→44 con `@media (pointer: coarse)` que escala visual a 44).
+- `src/components/ui/SectionEyebrow.tsx`.
+- `src/components/ui/IconBadge.tsx`.
+- `src/components/ui/TextLink.tsx`.
+- `src/components/ui/TimelineList.tsx` (item-shape-agnostic — reusable en 16E audit log + 16F messaging).
+- `src/components/ui/IconButton.tsx` — pure `<button>`, sizes `md` (44 visual, default) / `sm` (32 visual + slop).
+- `src/components/ui/IconButtonLink.tsx` — wrapper de Next `<Link>` (NO polimorfismo `as="a"`; preserva typed `href` + prefetch + hornea `hover:no-underline`).
+- `src/components/ui/ButtonLink.tsx` — text-button-styled Link, mismo tratamiento `hover:no-underline` para outranquear `a:hover` global.
+- `src/test/component-invariants.test.ts` — 12 invariantes (touch-target, HTML validity AST, web-API guards, copy lint, Tailwind hardcode, tone quartet, empty-handler, effect cleanup, command-bar non-interactive, primitive adoption, button-like Link, audited surface coverage, exception entries shape). AST loader memoizado, target ~2-3s sobre ~150 archivos.
+- `design-system/docs/touch-targets.md` — política de §1; `sm` vs `md` matrix; do/don't.
+- `design-system/docs/recipes.md` — catálogo de `recipe-*` classes.
+- `design-system/docs/primitives.md` — catálogo de los 8 primitivos React + props + DON'T list + path rule (genéricos en `src/components/ui/`, surface-only en su carpeta).
+
+**Archivos a modificar**:
+
+- `src/components/ui/Card.tsx` — añade `variant="overview"` que replica EXACTAMENTE el shell actual (`bg-[var(--color-background-elevated)] border-[var(--color-border-default)] rounded-[var(--radius-lg)] p-4`); `variant="default"` intacto. NO token consolidation.
+- `src/components/overview/{kpi-strip,tasks-list-card,spaces-table-card,readiness-hero-card,activity-feed-card,chip-row}.tsx` — refactor mecánico a primitivos. `activity-feed-card` plantilla canónica (~69 LOC → ~14).
+- `src/components/layout/topbar.tsx` — bell `<IconButton size="sm" disabled />` (tabIndex=-1, aria-disabled, slop hit-area aplicado para activación futura); "Publicar" mobile a `min-h-[44px] min-w-[44px]`.
+- `src/components/layout/publishing-rail.tsx` — "Abrir guía" a `min-h-[44px]` (mantiene `flex-1`).
+- `src/test/parity-allowlist.ts` — añade `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `AUDITED_SURFACES`, `CURRENT_BRANCH = "16D.5"`, type `ExceptionEntry { file: string; reason: string; owner?: string; removeBy: "16E"|"16F"|"16G"|"never" }`.
+- `package.json` — `@typescript-eslint/parser` explícito en `devDependencies` (hoy transitiva — fragilidad si un upstream bump la retira).
+- `CLAUDE.md` § "Patrones de UI — Operator shell" — añade primitivos obligatorios, política de touch targets, mención del test gate.
+- `docs/MASTER_PLAN_V2.md` — hard rules en § Rama 16E / 16F / 16G ("componentes nuevos deben usar primitivos de 16D.5; nuevas instancias del shell `flex h-full flex-col rounded-[var(--radius-lg)] ... p-4` BLOQUEADAS por `component-invariants.test.ts`"; "cualquier surface migrada debe añadir sus ficheros a `AUDITED_SURFACES` en el mismo commit que la migración").
+- `scripts/validate-design-system.ts` — añade summary line apuntando a `component-invariants.test.ts` en el output.
+
+**Tests**:
+
+- `src/test/component-invariants.test.ts` — 12 invariantes enumeradas arriba. Añade `parseSourceFile()` memoizado que comparte AST entre test cases.
+- Pin `parity-static.test.ts` extendido si surge un patrón nuevo de hardcoded Tailwind durante el refactor (no hay caso planeado a priori).
+- `dark-parity.test.ts` debe seguir pasando sin cambios — el refactor es estructural, no toca tokens.
+
+**Criterio de done**:
+
+- ✅ 8 primitivos en `src/components/ui/` con tests verdes.
+- ✅ 6 overview cards refactorizadas usando primitivos. `activity-feed-card.tsx` ~14 LOC. Inspección manual + screenshots before/after en PR description confirman cero delta visual.
+- ✅ Topbar bell visual 32 con hit area 44; "Publicar" mobile 44×44; "Abrir guía" 44.
+- ✅ `component-invariants.test.ts` pasa con allowlists en 0 entradas activas (excepto las que tengan `removeBy` futuro legítimo).
+- ✅ `npm run validate:design-system && npm run typecheck && npm run build && npm run test && npm run test:e2e:dev` verde.
+- ✅ Governance docs publicadas (CLAUDE.md, `design-system/docs/{touch-targets,recipes,primitives}.md`, MASTER_PLAN_V2 16E/F/G hard rules).
+
+**Restricciones**:
+
+- ❌ Cero delta visual intencional. Validación = manual + screenshots, NO pixel-perfect CI (defer a FUTURE.md hasta tener visual-regression infra).
+- ❌ NO token consolidation. `<Card variant="overview">` replica EXACTAMENTE el shell actual.
+- ❌ NO polimorfismo `as="a"`. Dos componentes separados: `<IconButton>` (button-only) + `<IconButtonLink>` (Next `<Link>` wrapper).
+- ❌ NO ampliar scope fuera del dossier. Si surge un patrón problemático adicional (ej. `style={{...}}` inline), se difiere a la rama que lo descubra.
+
+**Dependencias / Riesgos**:
+
+- ⚠️ `a:hover` specificity bug: `<ButtonLink>` / `<IconButtonLink>` deben hornear `hover:no-underline` + `hover:text-[...]` para outranquear `a:hover { text-decoration: underline }` de `base.css`. Test "Button-like Link" lo enforza.
+- ⚠️ `@typescript-eslint/parser` debe declararse explícito en `devDependencies` en el MISMO commit que `component-invariants.test.ts`. Confiar en transitividad es frágil.
+- ⚠️ Allowlist drift: si `removeBy` de una entrada expira (ej. `"16E"` cuando `CURRENT_BRANCH === "16E"`), el test debe fallar para forzar limpieza. Pin enforced por test #12 ("Exception entries well-formed").
+- ⚠️ Visual regression manual: requiere disciplina al revisar screenshots. Riesgo aceptado — promotion a pixel-perfect CI cuando haya un caso real (segundo dev / usuario reporta drift).
+
+**No-alcance**:
+
+- Token consolidation (`--color-background-surface` ≈ `--color-background-elevated`) — defer a futuro token-cleanup branch.
+- Pixel-perfect CI / visual regression infra — defer a FUTURE.md.
+- Refactor de superficies fuera de `overview/` + `layout/topbar` + `layout/publishing-rail`. 16E migrará el resto.
+- Brand themes operator, command palette funcional, right rail — todos siguen en su rama futura correspondiente.
+- Cambios a `dark-parity.test.ts` — se mantiene exactamente como está post-16D.
+
+**Preparación**:
+
+- **Contexto a leer**: 16D mergeada (`60e6e6f`), `~/.claude/plans/goofy-splashing-abelson.md` (dossier aprobado), `design-system/docs/DESIGN_MIGRATION.md` (legacy → semantic mapping), `src/components/overview/activity-feed-card.tsx` (template del refactor), `src/components/ui/Card.tsx` (primitivo a extender), `src/test/parity-static.test.ts` (peer del nuevo test), `src/test/parity-allowlist.ts` (donde aterriza el shape `ExceptionEntry`).
+- **Docs a actualizar al terminar**: `CLAUDE.md` § "Patrones de UI — Operator shell", `design-system/docs/{touch-targets,recipes,primitives}.md` (nuevos), `docs/MASTER_PLAN_V2.md` § 16E / 16F / 16G (hard rules), `docs/ROADMAP.md` (marcar 16D.5).
+- **Skills**: `/simplify` obligatorio antes de PR. `/playwright-cli` opcional para snapshots manuales.
+
+**Orden de commits** (5, cada uno deja la rama verde — typecheck + test + build):
+
+1. § 16D.5 + `tone.ts` + `recipes.css` + 8 primitivos (sin consumers todavía).
+2. `component-invariants.test.ts` + `parity-allowlist.ts` shape `ExceptionEntry` + allowlists pobladas para violaciones actuales + `@typescript-eslint/parser` explícito.
+3. Refactor 6 overview cards a primitivos (drop allowlist entries paralelo).
+4. Refactor `topbar.tsx` + `publishing-rail.tsx` — touch-target allowlist a 0.
+5. Governance docs.
+
+---
+
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
 **Propósito**: superficies de módulos del operador. Una rama Git, **3 sub-PRs internos secuenciales** con gates obligatorios.
