@@ -184,6 +184,73 @@ function* iterateOpenTags(
   }
 }
 
+/**
+ * Extract a flat class-token string from a JSX `className=` attribute, covering
+ * the shapes used in this codebase:
+ *   - className="foo bar"
+ *   - className={"foo bar"}
+ *   - className={`foo bar`}
+ *   - className={cn("foo", isActive && "bar", `baz`)}
+ *   - className={clsx("foo", "bar")}
+ *
+ * For `cn(...)` / `clsx(...)`, all string-literal arguments are concatenated
+ * (separated by spaces). Non-literal args (variables, imported constants) are
+ * invisible — that limitation is intentional: a static walker can't follow
+ * runtime values, and primitives that compose classes via constants are
+ * audited via the `primitive-adoption` test, not this regex layer.
+ *
+ * Returns `null` when no className attribute is found.
+ */
+function extractClassName(attrs: string): string | null {
+  const lit = attrs.match(
+    /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/,
+  );
+  if (lit) return lit[1] ?? lit[2] ?? lit[3] ?? "";
+  const callMatch = attrs.match(/\bclassName=\{(?:cn|clsx)\(/);
+  if (!callMatch || callMatch.index === undefined) return null;
+  const startIdx = callMatch.index + callMatch[0].length;
+  let parenDepth = 1;
+  let i = startIdx;
+  let collected = "";
+  let str: '"' | "'" | "`" | null = null;
+  while (i < attrs.length) {
+    const c = attrs[i];
+    if (str) {
+      if (c === "\\") {
+        i += 2;
+        continue;
+      }
+      if (c === str) {
+        str = null;
+        collected += " ";
+        i++;
+        continue;
+      }
+      collected += c;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      str = c;
+      i++;
+      continue;
+    }
+    if (c === "(") {
+      parenDepth++;
+      i++;
+      continue;
+    }
+    if (c === ")") {
+      parenDepth--;
+      if (parenDepth === 0) return collected;
+      i++;
+      continue;
+    }
+    i++;
+  }
+  return collected;
+}
+
 const VALID_REMOVE_BY: ReadonlySet<RemoveBy> = new Set([
   ...LIORA_PHASE_ORDER,
   "never" as const,
@@ -219,11 +286,9 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       for (const tag of iterateOpenTags(content, ["button", "Link", "a"])) {
         const { name, attrs, openIdx } = tag;
         if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
-        const clsMatch = attrs.match(
-          /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/,
-        );
-        if (!clsMatch) continue;
-        const cls = clsMatch[1] ?? clsMatch[2] ?? clsMatch[3] ?? "";
+        if (/\bdisabled\b(?!=)/.test(attrs)) continue;
+        const cls = extractClassName(attrs);
+        if (cls === null) continue;
         // Button-shape gate: a non-hover surface, OR a true rounded outlined
         // shape (`border` token followed by whitespace + a token-bound
         // border color + a rounded-[...] radius). Divider-only patterns like
@@ -527,17 +592,20 @@ describe("Component invariants · primitive adoption (operator)", () => {
       /^src\/components\/overview\/.+\.tsx$/.test(f),
     );
     const violations: string[] = [];
-    const divRe =
-      /<div\b[^>]*\bclassName=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/g;
     for (const file of overviewFiles) {
       if (exempt(file, PRIMITIVE_ADOPTION_EXCEPTIONS)) continue;
       const content = readSrc(file);
-      let m: RegExpExecArray | null;
-      while ((m = divRe.exec(content)) !== null) {
-        const cls = m[1] ?? m[2] ?? m[3] ?? "";
-        if (required.every((token) => cls.includes(token))) {
+      for (const tag of iterateOpenTags(content, ["div"])) {
+        const cls = extractClassName(tag.attrs);
+        if (cls === null) continue;
+        // Two equivalent canonical-shell signatures: the literal token bag,
+        // or the recipe-card-shell class (which @applies the same tokens).
+        // Either form on a raw <div> in overview/ must be migrated to <Card variant="overview">.
+        const hasLiteralShell = required.every((token) => cls.includes(token));
+        const hasRecipeShell = /\brecipe-card-shell\b/.test(cls);
+        if (hasLiteralShell || hasRecipeShell) {
           violations.push(
-            `${file}:${lineNumber(content, m.index)}  raw <div> with overview shell — use <Card variant="overview">`,
+            `${file}:${lineNumber(content, tag.openIdx)}  raw <div> with overview shell — use <Card variant="overview">`,
           );
         }
       }

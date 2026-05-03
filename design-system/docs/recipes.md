@@ -29,7 +29,7 @@ Shell canónico de overview cards. Flex column + radius lg + border default + bg
 }
 ```
 
-**Cuándo usar**: la consume `<Card variant="overview">`. No usar directamente en feature code — preferir el primitivo. La existencia de la recipe permite que el invariante `primitive-adoption` detecte el shell canónico mediante una regex que mira el className renderizado, sin tener que parsear cada combinación token-bound posible.
+**Consumer canónico**: [`<Card variant="overview">`](../../src/components/ui/card.tsx) — la variante consume `recipe-card-shell` directamente. Feature code que renderiza este shell debe usar el primitivo, no la recipe. El invariante `primitive-adoption` (en [component-invariants.test.ts](../../src/test/component-invariants.test.ts)) detecta tanto la firma literal del shell como `recipe-card-shell` en `<div>` raw dentro de `src/components/overview/**/*.tsx` — ambas formas fallan el gate y exigen migración al primitivo.
 
 ### `.recipe-eyebrow`
 
@@ -43,7 +43,7 @@ Header de sección operator (sm + semibold + text-primary + flex items-center ga
 }
 ```
 
-**Cuándo usar**: la consume `<SectionEyebrow>`. Reuso fuera del primitivo solo si necesitas un nivel de heading distinto (`h2`/`h4`) — el primitivo es `<h3>` por default.
+**Consumer canónico**: [`<SectionEyebrow>`](../../src/components/ui/section-eyebrow.tsx) — el primitivo consume `recipe-eyebrow` directamente. Reuso fuera del primitivo solo si necesitas un nivel de heading distinto (`h2`/`h4`) — el primitivo es `<h3>` por default.
 
 ### `.recipe-text-link`
 
@@ -57,7 +57,7 @@ Link inline (xs + medium + text-link + hover:underline). Versión más densa que
 }
 ```
 
-**Cuándo usar**: solo en surfaces densas donde 11px es el tamaño de microcopy (footers de cards de overview con CTA secundario). Para uso general preferir `<TextLink size="sm">` o `size="md">`.
+**Consumer canónico**: [`<TextLink size="xs">`](../../src/components/ui/text-link.tsx) — el primitivo consume `recipe-text-link` solo para `size="xs"` (microcopy 11px); `sm`/`md` mantienen sus clases inline porque la recipe es xs-specific. Para uso general preferir `<TextLink size="sm">` o `size="md">`.
 
 ### `.recipe-interactive-hover`
 
@@ -73,7 +73,7 @@ Estados de hover/focus para surfaces interactivas neutras (sidebar, drawer items
 }
 ```
 
-**Cuándo usar**: items de listado interactivos sin surface fill (Atajos en publishing rail, items de side-nav). Si el item lleva surface fill propio (botón sólido), usar el contrato baked en `IconButton`/`ButtonLink` — esa lleva además `hover:no-underline` para defenderse del `a:hover { text-decoration: underline }` global.
+**Consumer canónico**: ninguno por ahora — **reservada para 16E**. Hoy `[side-nav.tsx](../../src/components/layout/side-nav.tsx)` y otros listados interactivos sin surface fill duplican parte de este contrato (transición + hover bg/text), pero adoptar la recipe completa añadiría focus-ring donde no lo había — un delta visual fuera de scope para 16D.5 (governance, cero delta intencional). 16E hará el sweep de focus-ring sobre items de side-nav y otros listados; ahí la recipe encuentra a sus consumidores naturales. Si en 16E surge un patrón de listado con shell distinto, se crea una recipe nueva en lugar de extender ésta. Cuando un item lleva surface fill propio (botón sólido), preferir `<IconButton>`/`<ButtonLink>` — esos hornean además `hover:no-underline` para defenderse del `a:hover { text-decoration: underline }` global.
 
 ### `.recipe-icon-btn-32`
 

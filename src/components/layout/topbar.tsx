@@ -61,15 +61,16 @@ export function Topbar({ propertyId, propertyNickname, mobileNavSlot }: TopbarPr
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {/* Future interactive control — disabled until notifications ship.
+              Uses native `disabled` so the browser handles focus + click suppression;
+              IconButton bakes the hover/cursor/opacity treatment. */}
           <IconButton
             icon={Bell}
             size="sm"
             tone="neutral"
+            disabled
             aria-label={NOTIFICATIONS_PLACEHOLDER_LABEL}
-            aria-disabled="true"
-            tabIndex={-1}
             title={NOTIFICATIONS_PLACEHOLDER_LABEL}
-            className="cursor-default"
           />
           <Link
             href={`/properties/${propertyId}/guest-guide`}

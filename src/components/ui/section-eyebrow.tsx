@@ -16,10 +16,7 @@ export function SectionEyebrow({
 }: SectionEyebrowProps) {
   return (
     <h3
-      className={cn(
-        "flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]",
-        className,
-      )}
+      className={cn("recipe-eyebrow", className)}
       {...props}
     >
       {Icon && <Icon size={iconSize} aria-hidden="true" />}

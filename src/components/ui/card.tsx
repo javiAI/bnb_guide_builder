@@ -8,10 +8,11 @@ const cardVariants = cva("", {
       default:  "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] border border-[var(--card-border)] shadow-[var(--card-shadow)]",
       elevated: "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] shadow-[var(--card-shadow-hover)]",
       outlined: "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] border border-[var(--card-border)]",
-      // overview replicates EXACTLY the shell of operator overview cards (16D).
-      // Padding (p-4) is baked in; do NOT nest CardHeader/CardContent inside (would double-pad,
+      // overview replicates EXACTLY the shell of operator overview cards (16D)
+      // via the recipe-card-shell @apply (src/styles/recipes.css). Padding (p-4)
+      // is baked in; do NOT nest CardHeader/CardContent inside (would double-pad,
       // since --card-padding-md = var(--space-5) ≠ p-4).
-      overview: "flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4",
+      overview: "recipe-card-shell",
     },
   },
   defaultVariants: {

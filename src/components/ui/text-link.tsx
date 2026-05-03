@@ -4,10 +4,15 @@ import { cn } from "@/lib/cn";
 
 type TextLinkSize = "xs" | "sm" | "md";
 
+/*
+ * size="xs" consumes recipe-text-link (src/styles/recipes.css), which @applies
+ * the same 11px + medium + link-color + hover:underline contract. sm/md sizes
+ * keep their classes inline because the recipe is xs-specific (microcopy).
+ */
 const SIZE_CLASS: Record<TextLinkSize, string> = {
-  xs: "text-[11px] font-medium",
-  sm: "text-[12px] font-medium",
-  md: "text-[13px] font-medium",
+  xs: "recipe-text-link",
+  sm: "text-[12px] font-medium text-[var(--color-text-link)] hover:underline",
+  md: "text-[13px] font-medium text-[var(--color-text-link)] hover:underline",
 };
 
 interface TextLinkProps extends ComponentProps<typeof Link> {
@@ -24,11 +29,7 @@ export function TextLink({
 }: TextLinkProps) {
   return (
     <Link
-      className={cn(
-        SIZE_CLASS[size],
-        "text-[var(--color-text-link)] hover:underline",
-        className,
-      )}
+      className={cn(SIZE_CLASS[size], className)}
       {...props}
     >
       {children}

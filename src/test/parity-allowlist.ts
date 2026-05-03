@@ -63,19 +63,23 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
 ];
 
 /**
- * Patterns that the orphan check uses to verify the audit scope is honest:
- * any file matching one of these patterns must either (a) be matched by some
- * `AUDITED_SURFACES.files` entry, or (b) be listed in
- * `ORPHAN_AUDIT_PENDING_EXCEPTIONS` with an explicit `removeBy` deadline.
+ * Patterns the orphan check uses to verify the audit scope is honest. A file
+ * matching one of these patterns must satisfy one of:
  *
- * Adding a pattern here is a forward-looking commitment: it asserts the rama
- * with that `removeBy` will migrate the matching files into an audited surface
- * (with the right profile) and shrink the exception list to zero.
+ *   (a) covered by some `AUDITED_SURFACES.files` glob (audit-and-done), OR
+ *   (b) listed in `ORPHAN_AUDIT_PENDING_EXCEPTIONS` with an explicit
+ *       `removeBy` deadline (the deadline lives on the exception entry, not
+ *       on the pattern itself — patterns are scope, exceptions are debt).
  *
- * Today (post-16D), the operator shell + entry pages are migrated; the inner
- * property subpages are not. They sit in the orphan-pending list pinned to
- * 16E/16F so a future rama cannot ship without either auditing them or
- * extending the deadline (which is itself a CR signal).
+ * Adding a pattern here declares "this scope SHOULD be audited"; the deadline
+ * for any specific file in that scope is whatever its `ORPHAN_AUDIT_PENDING_EXCEPTIONS`
+ * entry says (or "now" if the file is matched but not yet exempted).
+ *
+ * Today (post-16D), the operator shell + entry pages are audited; the inner
+ * property subpages are not. They will appear here with `ORPHAN_AUDIT_PENDING_EXCEPTIONS`
+ * entries pinned to 16E/16F as those ramas migrate them — a future rama
+ * cannot ship without either auditing them or extending the per-file
+ * `removeBy` (which is itself a CR signal).
  */
 export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/page.tsx",
