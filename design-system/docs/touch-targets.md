@@ -1,6 +1,6 @@
 # Touch targets — política Liora 16D.5
 
-Toda interfaz operator debe satisfacer **WCAG 2.5.5 (Target Size — Minimum)**: cada elemento clickable button-shaped alcanza un **hit area ≥ 44×44 CSS px**. La invariante está hardcoded en `src/test/component-invariants.test.ts` regla 1 y aplica sobre `AUDITED_SURFACES` (hoy: overview + layout + theme-toggle).
+Toda interfaz operator debe satisfacer **WCAG 2.5.5 (Target Size — Enhanced, AAA)**: cada elemento clickable button-shaped alcanza un **hit area ≥ 44×44 CSS px**. (WCAG 2.5.8 — "Target Size (Minimum)", AA en WCAG 2.2 — exige solo 24×24; nosotros adoptamos el criterio AAA por defecto y aplicamos la inline target exception del 2.5.8 a los text links inline.) La invariante está hardcoded en `src/test/component-invariants.test.ts` regla 1 y aplica sobre `AUDITED_SURFACES` (hoy: overview + layout + theme-toggle).
 
 ## Cuándo aplica
 

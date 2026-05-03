@@ -12,7 +12,7 @@
 
 - **No** usar `as="a"` polymorphism. Componentes para `<Link>` (`<ButtonLink>`, `<IconButtonLink>`, `<TextLink>`) son separados de sus equivalentes `<button>` (`<IconButton>`). Polymorphism rompe el invariante `touch-target` (el walker JSX detecta `<button>` y `<Link>`/`<a>` separadamente — un componente `as="a"` se vuelve invisible al gate).
 - **No** escribir className raw para obtener surface fill o outline button-style. Si el className matchea la firma button-shape (`bg-[var(...)]` no-hover OR `border + border-[var(...)] + rounded-[...]`) sin estar dentro de un primitivo, el invariante `touch-target` flagea. La regla es: si vas a escribir un botón, parte siempre de un primitivo. Solo bajas a className raw cuando el primitivo no expresa la variación responsiva — y entonces bake `recipe-icon-btn-32` o `min-h-[44px]`.
-- **No** inline `Record<BadgeTone, string>` en feature code. La paleta de tonos vive en [src/lib/tone.ts](../../src/lib/tone.ts) (`TONE_BADGE_BG`, `TONE_BADGE_TEXT`, `TONE_DOT_BG`, `TONE_DOT_BORDER`). Inline tone-quartets se prohíben por el invariante `tone-quartet` para evitar drift de paleta.
+- **No** inline `Record<BadgeTone, string>` en feature code. La paleta de tonos vive en [src/lib/tone.ts](../../src/lib/tone.ts) (`TONE_DOT_BORDER`, `TONE_BG_SOFT`, `TONE_TEXT`, `TONE_BORDER`). Inline tone-quartets se prohíben por el invariante `tone-quartet` para evitar drift de paleta.
 - **No** introducir versiones paralelas (`*V2`, `*New`, `*Alt`, `*Redesign`). Si la API de un primitivo necesita cambiar, se cambia en su sitio.
 
 ## Catálogo
@@ -158,7 +158,9 @@ import { ButtonLink } from "@/components/ui/button-link";
 </ButtonLink>
 ```
 
-**Cuándo `size="sm"`**: el primitivo NO bakea slop para size sm — un `ButtonLink size="sm"` text-bearing tiene 32 visual con 32 hit area, y FALLARÁ el invariante `touch-target` si está en surface auditada. Razón: slop sobre texto rompe la affordance visual (documentado en [touch-targets.md](touch-targets.md)). Usar `size="md"` (44 visual) por default; `size="sm"` solo en surfaces no-auditadas (admin internal, etc.).
+**Cuándo `size="sm"`**: el primitivo NO bakea slop para size sm — un `ButtonLink size="sm"` text-bearing tiene 32 visual con 32 hit area. Razón: slop sobre texto rompe la affordance visual (documentado en [touch-targets.md](touch-targets.md)). Usar `size="md"` (44 visual) por default; `size="sm"` solo en surfaces no-auditadas (admin internal, etc.).
+
+> **Nota de enforcement**: el invariante `touch-target` opera sobre tags literales (`<button>`, `<Link>`, `<a>`) — no detecta `<ButtonLink size="sm">` porque el wrapper Next `<Link>` queda dentro del primitivo. La regla "no usar `ButtonLink size="sm"` en surfaces auditadas" es **convención**, no enforced. Para subir el rigor a static-check (16E o posterior), añadir un walker JSX que matchee `<ButtonLink ... size="sm" ...>` en `AUDITED_SURFACES` directamente.
 
 **Don't**: añadir `hover:underline`. El primitivo bakea `hover:no-underline` precisamente para defenderse del `a:hover { text-decoration: underline }` global de `base.css` (specificity 0,1,1 — beats Tailwind arbitraries). Si reescribes el hover en consumer, abres ese bug.
 

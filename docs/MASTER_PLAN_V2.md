@@ -3130,13 +3130,13 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 - `src/lib/tone.ts` — `TONE_DOT_BORDER`, `TONE_TEXT`, `TONE_BG_SOFT`, `TONE_BORDER` records keyed por `BadgeTone` (consolida 3 mapas inline en `activity-feed-card`, `kpi-strip`, `spaces-table-card`).
 - `src/styles/recipes.css` — `.recipe-card-shell`, `.recipe-eyebrow`, `.recipe-text-link`, `.recipe-interactive-hover`, `.recipe-icon-btn-32` (slop 32→44 con `@media (pointer: coarse)` que escala visual a 44).
-- `src/components/ui/SectionEyebrow.tsx`.
-- `src/components/ui/IconBadge.tsx`.
-- `src/components/ui/TextLink.tsx`.
-- `src/components/ui/TimelineList.tsx` (item-shape-agnostic — reusable en 16E audit log + 16F messaging).
-- `src/components/ui/IconButton.tsx` — pure `<button>`, sizes `md` (44 visual, default) / `sm` (32 visual + slop).
-- `src/components/ui/IconButtonLink.tsx` — wrapper de Next `<Link>` (NO polimorfismo `as="a"`; preserva typed `href` + prefetch + hornea `hover:no-underline`).
-- `src/components/ui/ButtonLink.tsx` — text-button-styled Link, mismo tratamiento `hover:no-underline` para outranquear `a:hover` global.
+- `src/components/ui/section-eyebrow.tsx`.
+- `src/components/ui/icon-badge.tsx`.
+- `src/components/ui/text-link.tsx`.
+- `src/components/ui/timeline-list.tsx` (item-shape-agnostic — reusable en 16E audit log + 16F messaging).
+- `src/components/ui/icon-button.tsx` — pure `<button>`, sizes `md` (44 visual, default) / `sm` (32 visual + slop).
+- `src/components/ui/icon-button-link.tsx` — wrapper de Next `<Link>` (NO polimorfismo `as="a"`; preserva typed `href` + prefetch + hornea `hover:no-underline`).
+- `src/components/ui/button-link.tsx` — text-button-styled Link, mismo tratamiento `hover:no-underline` para outranquear `a:hover` global.
 - `src/test/component-invariants.test.ts` — 12 invariantes (touch-target, HTML validity AST, web-API guards, copy lint, Tailwind hardcode, tone quartet, empty-handler, effect cleanup, command-bar non-interactive, primitive adoption, button-like Link, audited surface coverage, exception entries shape). AST loader memoizado, target ~2-3s sobre ~150 archivos.
 - `design-system/docs/touch-targets.md` — política de §1; `sm` vs `md` matrix; do/don't.
 - `design-system/docs/recipes.md` — catálogo de `recipe-*` classes.
@@ -3144,11 +3144,11 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 **Archivos a modificar**:
 
-- `src/components/ui/Card.tsx` — añade `variant="overview"` que replica EXACTAMENTE el shell actual (`bg-[var(--color-background-elevated)] border-[var(--color-border-default)] rounded-[var(--radius-lg)] p-4`); `variant="default"` intacto. NO token consolidation.
+- `src/components/ui/card.tsx` — añade `variant="overview"` que replica EXACTAMENTE el shell actual (`bg-[var(--color-background-elevated)] border-[var(--color-border-default)] rounded-[var(--radius-lg)] p-4`); `variant="default"` intacto. NO token consolidation.
 - `src/components/overview/{kpi-strip,tasks-list-card,spaces-table-card,readiness-hero-card,activity-feed-card,chip-row}.tsx` — refactor mecánico a primitivos. `activity-feed-card` plantilla canónica (~69 LOC → ~14).
-- `src/components/layout/topbar.tsx` — bell `<IconButton size="sm" disabled />` (tabIndex=-1, aria-disabled, slop hit-area aplicado para activación futura); "Publicar" mobile a `min-h-[44px] min-w-[44px]`.
+- `src/components/layout/topbar.tsx` — bell `<IconButton size="sm" aria-disabled="true" tabIndex={-1} />` (slop hit-area aplicado para activación futura); "Publicar" mobile a `min-h-[44px] min-w-[44px]`.
 - `src/components/layout/publishing-rail.tsx` — "Abrir guía" a `min-h-[44px]` (mantiene `flex-1`).
-- `src/test/parity-allowlist.ts` — añade `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `AUDITED_SURFACES`, `CURRENT_BRANCH = "16D.5"`, type `ExceptionEntry { file: string; reason: string; owner?: string; removeBy: "16E"|"16F"|"16G"|"never" }`.
+- `src/test/parity-allowlist.ts` — añade `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `AUDITED_SURFACES`, `CURRENT_BRANCH = "16D.5"`, type `ExceptionEntry { file: string; reason: string; removeBy: "16D.5"|"16E"|"16F"|"16G"|"never" }`.
 - `package.json` — `@typescript-eslint/parser` explícito en `devDependencies` (hoy transitiva — fragilidad si un upstream bump la retira).
 - `CLAUDE.md` § "Patrones de UI — Operator shell" — añade primitivos obligatorios, política de touch targets, mención del test gate.
 - `docs/MASTER_PLAN_V2.md` — hard rules en § Rama 16E / 16F / 16G ("componentes nuevos deben usar primitivos de 16D.5; nuevas instancias del shell `flex h-full flex-col rounded-[var(--radius-lg)] ... p-4` BLOQUEADAS por `component-invariants.test.ts`"; "cualquier surface migrada debe añadir sus ficheros a `AUDITED_SURFACES` en el mismo commit que la migración").

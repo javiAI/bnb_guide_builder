@@ -310,10 +310,12 @@ describe("Component invariants · web API guards", () => {
 describe("Component invariants · copy lint (Spanish on operator surfaces)", () => {
   it("no English placeholder strings in audited operator copy", () => {
     // Conservative blocklist — adding a phrase here is a CR signal, not a
-    // lint catch-all. We strip JSX comments and string-attribute-only English
-    // (e.g. `aria-label="Send"` is fine if the visible label is Spanish) by
-    // matching only inside JSX text or quoted props that are NOT a known
-    // technical attribute.
+    // lint catch-all. We do a literal substring match over the file (no
+    // JSX/comment/attr filtering); the blocklist is intentionally narrow
+    // enough that false positives haven't surfaced. If a phrase grows
+    // ambiguous (e.g. legitimately appearing inside a comment), the right
+    // response is to remove it from the blocklist or replace the substring
+    // match with an AST-aware walk — not to expand the impl silently.
     const blocklist = [
       "Coming soon",
       "Click here",
