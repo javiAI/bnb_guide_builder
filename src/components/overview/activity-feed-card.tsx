@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Activity } from "lucide-react";
 import { formatRelativeEs } from "@/lib/format-relative-es";
+import type { BadgeTone } from "@/lib/types";
 
 export interface ActivityFeedItem {
   id: string;
   message: string;
   whenISO: string;
-  tone?: "ok" | "warn" | "crit";
+  tone?: BadgeTone;
 }
 
 interface ActivityFeedCardProps {
@@ -14,11 +15,11 @@ interface ActivityFeedCardProps {
   items: ActivityFeedItem[];
 }
 
-const TONE_DOT: Record<"ok" | "warn" | "crit" | "default", string> = {
-  ok: "border-[var(--color-status-success-solid)]",
-  warn: "border-[var(--color-status-warning-solid)]",
-  crit: "border-[var(--color-status-error-solid)]",
-  default: "border-[var(--color-border-default)]",
+const TONE_DOT: Record<BadgeTone, string> = {
+  neutral: "border-[var(--color-border-default)]",
+  success: "border-[var(--color-status-success-solid)]",
+  warning: "border-[var(--color-status-warning-solid)]",
+  danger: "border-[var(--color-status-error-solid)]",
 };
 
 export function ActivityFeedCard({ propertyId, items }: ActivityFeedCardProps) {
@@ -48,7 +49,7 @@ export function ActivityFeedCard({ propertyId, items }: ActivityFeedCardProps) {
             className="absolute left-1 top-1.5 bottom-1.5 w-px bg-[var(--color-border-default)]"
           />
           {items.map((item) => {
-            const tone = item.tone ?? "default";
+            const tone = item.tone ?? "neutral";
             return (
               <li
                 key={item.id}

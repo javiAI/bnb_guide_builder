@@ -36,12 +36,6 @@ import {
 } from "@/components/overview/spaces-table-card";
 import { ChipRow } from "@/components/overview/chip-row";
 
-const FEED_TONE_BY_BADGE: Partial<Record<BadgeTone, ActivityFeedItem["tone"]>> = {
-  success: "ok",
-  warning: "warn",
-  danger: "crit",
-};
-
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
 }
@@ -61,9 +55,9 @@ function formatActivityMessage(
   action: string,
 ): { message: string; tone?: ActivityFeedItem["tone"] } {
   const entity = getEntityLabel(entityType);
-  const info = ACTION_LABELS[action];
+  const info = ACTION_LABELS[action as keyof typeof ACTION_LABELS];
   if (!info) return { message: `${entity} · ${action}` };
-  return { message: `${entity} ${info.verbPast}`, tone: FEED_TONE_BY_BADGE[info.tone] };
+  return { message: `${entity} ${info.verbPast}`, tone: info.tone };
 }
 
 interface ChipProps {

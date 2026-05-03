@@ -56,15 +56,18 @@ const ICONS: Record<Theme, React.ElementType> = {
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("auto");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     setTheme(readStoredTheme());
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (theme !== "auto") return;
-    // If pre-paint fell back to light (localStorage blocked), apply once on mount
-    // so the OS preference takes effect immediately, not just on the next change.
+    // Gate on hydrated: the useState default is "auto", so without this gate the
+    // first render's effect would call applyTheme("auto") and erase a stored
+    // "dark"/"light" before readStoredTheme() has settled into state.
+    if (!hydrated || theme !== "auto") return;
     applyTheme("auto");
     if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -73,10 +76,9 @@ export function ThemeToggle() {
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
     }
-    // Safari ≤13 fallback
     mq.addListener(handler);
     return () => mq.removeListener(handler);
-  }, [theme]);
+  }, [theme, hydrated]);
 
   const cycle = () => {
     const next = NEXT[theme];

@@ -1,4 +1,5 @@
 import type { BadgeTone } from "@/lib/types";
+import type { AuditAction } from "@/lib/services/audit.service";
 
 export const ENTITY_LABELS: Record<string, string> = {
   Property: "Propiedad",
@@ -16,9 +17,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   MaintenanceTask: "Mantenimiento",
 };
 
-export const ACTION_LABELS: Record<
-  string,
-  { label: string; tone: BadgeTone; verbPast: string }
+export const ACTION_LABELS: Partial<
+  Record<AuditAction, { label: string; tone: BadgeTone; verbPast: string }>
 > = {
   create: { label: "Crear", tone: "success", verbPast: "creado" },
   update: { label: "Actualizar", tone: "neutral", verbPast: "actualizado" },

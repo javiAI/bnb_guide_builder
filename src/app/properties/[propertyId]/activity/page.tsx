@@ -43,7 +43,7 @@ export default async function ActivityPage({
           <div className="space-y-2">
             {logs.map((log) => {
               const entityLabel = getEntityLabel(log.entityType);
-              const actionInfo = ACTION_LABELS[log.action] ?? { label: log.action, tone: "neutral" as const };
+              const actionInfo = ACTION_LABELS[log.action as keyof typeof ACTION_LABELS] ?? { label: log.action, tone: "neutral" as const };
 
               return (
                 <div
