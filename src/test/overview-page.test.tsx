@@ -66,7 +66,7 @@ describe("ReadinessHeroCard", () => {
     );
     expect(screen.getByText("Wifi configurado sin SSID")).toBeInTheDocument();
     expect(screen.getByText("Completar wifi")).toBeInTheDocument();
-    expect(screen.getByText(/1 bloqueante pendiente/)).toBeInTheDocument();
+    expect(screen.getByText(/1 incidencia pendiente/)).toBeInTheDocument();
   });
 });
 
