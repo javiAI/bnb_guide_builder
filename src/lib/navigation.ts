@@ -47,6 +47,12 @@ function buildWorkspaceNav(): NavItem[] {
 
 export const WORKSPACE_NAV: NavItem[] = buildWorkspaceNav();
 
+// overview uses exact-match; all other items use prefix-match (they have sub-routes).
+export function isNavItemActive(item: NavItem, pathname: string, propertyId: string): boolean {
+  const href = item.href(propertyId);
+  return item.key === "overview" ? pathname === href : pathname.startsWith(href);
+}
+
 export const NAV_GROUP_LABELS: Record<NavItem["group"], string> = {
   content: "Contenido",
   outputs: "Salidas",

@@ -3069,18 +3069,24 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 
 **Archivos a modificar**:
 - `src/components/layout/app-shell.tsx`, `side-nav.tsx`.
-- `src/app/properties/[propertyId]/layout.tsx`.
 - `src/app/properties/[propertyId]/page.tsx` (overview — primer subpage signature de los kits).
 - `src/components/overview/capacity-card.tsx`, `publish-readiness-card.tsx`, `gaps-card.tsx`, `next-action-card.tsx`.
-- `src/lib/navigation.ts` (no toca lógica; sí labels si los kits sugieren naming).
-- `src/app/page.tsx` (landing / properties list).
-- `src/app/login/page.tsx` (auth — branded splash con tokens foundations).
+- `src/app/page.tsx` (properties list — token migration + header mínimo con toggle).
+- `src/app/login/page.tsx` (re-skin con foundations tokens + copy en español; sin logo Liora).
 
 **Archivos a crear**:
 - `src/components/ui/theme-toggle.tsx`.
-- `src/components/layout/topbar.tsx` (si no existe; topbar es nuevo en kits).
+- `src/components/layout/topbar.tsx`.
 - `src/components/layout/command-bar-slot.tsx` — slot visual no interactivo.
 - `src/test/dark-parity.test.ts`.
+
+**Decisiones Fase -1 (permanentes)**:
+
+- Iconos de nav: mapa local `NAV_ICONS: Partial<Record<string, LucideIcon>>` en `side-nav.tsx`. No tocar `navigation.ts` salvo justificación documentada.
+- Footer sidebar: visual neutro/minimalista. No lookup de perfil real ni `requireOperator()` adicional en el shell.
+- Right rail overview: NO implementar — registrar en `docs/FUTURE.md` como "operator overview right rail".
+- Toggle en `page.tsx` (properties list) con header mínimo; permitido también en `login/page.tsx`.
+- `src/app/properties/[propertyId]/layout.tsx`: sin cambios.
 
 **Tests**:
 - Suite existente verde.
@@ -3107,7 +3113,7 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - ⚠️ `getDerived(propertyId).readiness.scores` se consume en `app-shell.tsx` para badges en sidebar — el render no debe regresar.
 - ⚠️ Brand themes operator no existen hoy (solo guest). 16D no introduce brand themes operator — registrado en `docs/FUTURE.md` como item separado.
 
-**No-alcance**: módulos del operador, messaging, guest, command palette funcional, brand themes operator.
+**No-alcance**: módulos del operador, messaging, guest, command palette funcional, brand themes operator, right rail, `navigation.ts` icon field, auth/perfil real en sidebar.
 
 **Preparación**:
 - **Contexto a leer**: 16A + 16B + 16C merged, kits operator (`index.html` + `subpages.html` + `operator.css`), `docs/ARCHITECTURE_OVERVIEW.md` §4.

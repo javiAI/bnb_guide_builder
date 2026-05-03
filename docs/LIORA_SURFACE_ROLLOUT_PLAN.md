@@ -12,7 +12,7 @@ Migration order and status for each product surface adopting the Liora foundatio
 | Token infra + fonts | global (`src/app/`) | 16A | ✅ migrated |
 | Core UI primitives (`src/components/ui/`) | operator surfaces | 16B | ✅ migrated |
 | **Guest guide** | `/g/:slug` | **16C** | **✅ migrated** |
-| Operator shell (sidebar, topbar) | `/properties/**` | 16D | ⬜ pending |
+| Operator shell (sidebar, topbar) | `/properties/**` | 16D | ✅ migrated |
 | Operator modules (wizard, editor) | `/properties/**` | 16E | ⬜ pending |
 | Messaging + assistant | `/properties/*/messaging`, `/g/:slug` chat | 16F | ⬜ pending |
 | Legacy alias removal | global | 16G | ⬜ pending |
@@ -52,10 +52,30 @@ Migration order and status for each product surface adopting the Liora foundatio
 
 ## Pending surfaces (16D–16G)
 
-### 16D — Operator shell
+### 16D — Operator shell ✅
 
-Surfaces: sidebar navigation, topbar, dark-mode toggle, user menu.
-Key files: `src/components/layout/`, `src/app/properties/layout.tsx`.
+**Scope**: sidebar navigation, topbar, dark-mode toggle, properties list, login page, overview page header + cards.
+
+**Key files migrated**:
+
+- `src/components/layout/app-shell.tsx` — Topbar wired; `var(--surface)` → `var(--color-background-page)`
+- `src/components/layout/side-nav.tsx` — full rewrite: lucide icons map, semantic tokens, `isNavItemActive()` from `navigation.ts`, 44px nav targets
+- `src/components/layout/topbar.tsx` — 3-column grid (breadcrumbs | CommandBarSlot | ThemeToggle)
+- `src/components/layout/command-bar-slot.tsx` — NEW, `aria-hidden` placeholder (functional command palette deferred to FUTURE.md §8.2)
+- `src/components/ui/theme-toggle.tsx` — NEW, 3-state (auto/light/dark), matchMedia listener for auto mode, 44×44 target
+- `src/lib/theme.ts` — NEW, canonical `THEME_STORAGE_KEY`
+- `src/lib/navigation.ts` — added `isNavItemActive()` export
+- `src/app/page.tsx` — properties list: all semantic tokens + minimal header with ThemeToggle
+- `src/app/login/page.tsx` — full reskin: semantic tokens, Spanish copy, ThemeToggle
+- `src/app/properties/[propertyId]/page.tsx` — overview header grammar (eyebrow + title + subtitle)
+- `src/components/overview/` — all 4 cards: semantic token migration (`--border`/`--surface-elevated`/`--foreground`/`--color-primary-*` → foundations)
+- `src/test/dark-parity.test.ts` — NEW, 4 tests: root/dark blocks exist, core groups covered, ≥80% overall parity
+
+**Token strategy**:
+
+- All structural tokens: foundations semantic layer only.
+- No brand color usage in operator shell (neutral warm-analytical theme).
+- `var(--sidebar-width)` kept as-is (defined in `design-system/foundations/tokens/components.css`).
 
 ### 16E — Operator modules
 

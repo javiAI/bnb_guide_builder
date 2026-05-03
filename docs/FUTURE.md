@@ -324,3 +324,29 @@ Implementación paralela `GooglePlacesProvider` para hosts en mercados donde Map
 - La UI y el pipeline ignoran qué provider respondió (solo queda `provider` persistido en `LocalPlace.provider` para auditoría).
 
 Esperar demanda de un mercado concreto antes de escribir el segundo provider.
+
+---
+
+## 8. Operator shell — diferidos de 16D
+
+### 8.1 Overview right rail
+
+**Estado**: diferido. Registrado en Fase -1 de 16D.
+
+Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets de actividad reciente, estado de sincronización con plataformas, o resumen de reservas próximas. No implementado en 16D porque requiere diseño de layout adicional (columna 3 en el grid) y definir qué datos son más útiles ahí.
+
+**Trigger**: cuando el overview tenga suficiente densidad de datos (reservas, mensajes, analítica) que justifique una columna de contexto permanente.
+
+### 8.2 Command palette funcional
+
+**Estado**: diferido. El `CommandBarSlot` de 16D es un placeholder visual (`aria-hidden`, sin interactividad).
+
+Implementar paleta real con `cmdk` o similar: búsqueda de propiedades, navegación a secciones, acciones rápidas (crear propiedad, ir a publicación). Requiere decidir el scope de comandos y gestión de estado global para el listener `⌘K`.
+
+**Trigger**: cuando haya ≥3 propiedades en uso real o cuando el feedback de usuarios identifique la navegación como fricción.
+
+### 8.3 Brand themes para el operator shell
+
+**Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
+
+Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
