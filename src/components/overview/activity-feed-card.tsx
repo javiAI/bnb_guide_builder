@@ -43,11 +43,7 @@ export function ActivityFeedCard({ propertyId, items }: ActivityFeedCardProps) {
           Sin actividad reciente.
         </p>
       ) : (
-        <ol className="relative flex-1 pl-4">
-          <span
-            aria-hidden="true"
-            className="absolute left-1 top-1.5 bottom-1.5 w-px bg-[var(--color-border-default)]"
-          />
+        <ol className="relative flex-1 pl-4 before:absolute before:left-1 before:top-1.5 before:bottom-1.5 before:w-px before:bg-[var(--color-border-default)] before:content-['']">
           {items.map((item) => {
             const tone = item.tone ?? "neutral";
             return (

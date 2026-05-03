@@ -88,7 +88,7 @@ describe("Parity gate · audited surfaces", () => {
     expect(auditedFiles.length).toBeGreaterThan(0);
   });
 
-  it("no hex/rgb/oklch literals (line-anchored brand-SVG exceptions only)", () => {
+  it("no hex/rgb/oklch literals (per-(file, hex) brand-SVG exceptions only)", () => {
     const re = /(#[0-9a-fA-F]{3,8}\b|rgb\(|rgba\(|oklch\()/g;
     const violations: string[] = [];
     for (const file of auditedFiles) {

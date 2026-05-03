@@ -52,10 +52,17 @@ export function ChipRow({ children }: ChipRowProps) {
     };
 
     recompute();
-    const ro = new ResizeObserver(schedule);
-    ro.observe(container);
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(schedule);
+      ro.observe(container);
+      return () => {
+        ro.disconnect();
+        cancelAnimationFrame(raf);
+      };
+    }
+    window.addEventListener("resize", schedule);
     return () => {
-      ro.disconnect();
+      window.removeEventListener("resize", schedule);
       cancelAnimationFrame(raf);
     };
   }, [children]);
