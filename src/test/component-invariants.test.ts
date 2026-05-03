@@ -3,14 +3,22 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import {
   AUDITED_SURFACES,
+  BUTTON_LINK_SIZE_SM_EXCEPTIONS,
+  COPY_LINT_EXCEPTIONS,
+  CURRENT_LIORA_PHASE,
+  EFFECT_CLEANUP_EXCEPTIONS,
+  EMPTY_HANDLER_PLACEHOLDERS,
+  EXPECTED_OPERATOR_SCOPE_PATTERNS,
+  LIORA_PHASE_ORDER,
+  LIORA_PRIMITIVE_IMPORT_PATHS,
+  ORPHAN_AUDIT_PENDING_EXCEPTIONS,
+  PRIMITIVE_ADOPTION_EXCEPTIONS,
   TOUCH_TARGET_EXCEPTIONS,
   WEB_API_GUARD_EXCEPTIONS,
-  COPY_LINT_EXCEPTIONS,
-  EMPTY_HANDLER_PLACEHOLDERS,
-  EFFECT_CLEANUP_EXCEPTIONS,
-  PRIMITIVE_ADOPTION_EXCEPTIONS,
   type ExceptionEntry,
+  type LioraPhase,
   type RemoveBy,
+  type SurfaceProfile,
 } from "./parity-allowlist";
 
 /**
@@ -64,6 +72,24 @@ const ALL_FILES = walk(join(ROOT, "src"))
 
 const AUDITED_PATTERNS = AUDITED_SURFACES.flatMap((s) => s.files);
 const auditedFiles = ALL_FILES.filter((f) => matchesAny(f, AUDITED_PATTERNS));
+
+/**
+ * Files matched by audited surfaces with one of the given profiles. Used to
+ * scope operator-only invariants (primitive-adoption, command-bar slot,
+ * Spanish copy-lint, ButtonLink size=sm) so they don't fire on guest
+ * surfaces — guest applies a different visual system on purpose.
+ */
+function auditedFilesByProfile(
+  ...profiles: ReadonlyArray<SurfaceProfile>
+): string[] {
+  const allowed = new Set(profiles);
+  const patterns = AUDITED_SURFACES.filter((s) => allowed.has(s.profile)).flatMap(
+    (s) => s.files,
+  );
+  return ALL_FILES.filter((f) => matchesAny(f, patterns));
+}
+
+const operatorAuditedFiles = auditedFilesByProfile("operator", "shared");
 
 const fileCache = new Map<string, string>();
 function readSrc(file: string): string {
@@ -159,12 +185,20 @@ function* iterateOpenTags(
 }
 
 const VALID_REMOVE_BY: ReadonlySet<RemoveBy> = new Set([
-  "16D.5",
-  "16E",
-  "16F",
-  "16G",
-  "never",
-] as const);
+  ...LIORA_PHASE_ORDER,
+  "never" as const,
+]);
+
+/**
+ * Returns true when `candidate` is a Liora phase that has already passed
+ * relative to `current` (i.e. an exception with `removeBy = candidate`
+ * promised cleanup before we reached `current` and shipped without it).
+ */
+function isPhaseInPast(candidate: LioraPhase, current: LioraPhase): boolean {
+  const ci = LIORA_PHASE_ORDER.indexOf(candidate);
+  const cu = LIORA_PHASE_ORDER.indexOf(current);
+  return ci >= 0 && cu >= 0 && ci < cu;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. Touch-target invariant (≥44 hit area)
@@ -451,9 +485,15 @@ describe("Component invariants · effect cleanup", () => {
 // 9. Command-bar slot is non-interactive (placeholder until 16E)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Component invariants · command-bar slot non-interactive", () => {
+describe("Component invariants · command-bar slot non-interactive (operator)", () => {
+  // Scope: operator only — guest surfaces don't have a command-bar slot.
   it("command-bar-slot.tsx is aria-hidden + has no interactive handlers", () => {
     const file = "src/components/layout/command-bar-slot.tsx";
+    if (!operatorAuditedFiles.includes(file)) {
+      // Defensive: only run when the file is in scope under operator/shared
+      // profile. Today it is via `src/components/layout/**/*.tsx`.
+      return;
+    }
     const content = readSrc(file);
     expect(content).toMatch(/aria-hidden=("true"|\{true\})/);
     expect(content).not.toMatch(/\bon(Click|Change|Input|KeyDown|KeyUp|Submit)=/);
@@ -464,7 +504,10 @@ describe("Component invariants · command-bar slot non-interactive", () => {
 // 10. Primitive adoption (overview shell → <Card variant="overview">)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Component invariants · primitive adoption", () => {
+describe("Component invariants · primitive adoption (operator)", () => {
+  // Scope: operator only. Guest surfaces use `src/components/public-guide/ui/`
+  // primitives (CVA-based hero/essential/standard/warning cards) — they have
+  // their own visual system and must not be forced into the operator shell.
   it("overview cards with the canonical shell use <Card variant='overview'>", () => {
     // Detect the canonical shell signature on a raw <div> root: must contain
     // ALL of `flex`, `h-full`, `flex-col`, `rounded-[var(--radius-lg)]`,
@@ -540,7 +583,25 @@ describe("Component invariants · governance shape", () => {
     expect(auditedFiles.length).toBeGreaterThan(0);
   });
 
-  it("every exception entry has a valid shape (file exists, removeBy valid, reason set)", () => {
+  it("every audited surface declares a profile", () => {
+    const violations: string[] = [];
+    const validProfiles: ReadonlySet<SurfaceProfile> = new Set([
+      "operator",
+      "guest",
+      "shared",
+    ]);
+    for (const s of AUDITED_SURFACES) {
+      if (!validProfiles.has(s.profile)) {
+        violations.push(`${s.id}  invalid profile "${s.profile}"`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("every exception entry has a valid shape (file exists, removeBy valid, reason set, not in the past)", () => {
+    // Compound gate: shape (file/reason/removeBy) AND phase expiration.
+    // `removeBy < CURRENT_LIORA_PHASE` means a previous rama promised to
+    // clean up an exception and shipped without doing so — fail loud.
     const allLists: ReadonlyArray<{
       name: string;
       entries: ReadonlyArray<ExceptionEntry>;
@@ -553,6 +614,14 @@ describe("Component invariants · governance shape", () => {
       {
         name: "PRIMITIVE_ADOPTION_EXCEPTIONS",
         entries: PRIMITIVE_ADOPTION_EXCEPTIONS,
+      },
+      {
+        name: "BUTTON_LINK_SIZE_SM_EXCEPTIONS",
+        entries: BUTTON_LINK_SIZE_SM_EXCEPTIONS,
+      },
+      {
+        name: "ORPHAN_AUDIT_PENDING_EXCEPTIONS",
+        entries: ORPHAN_AUDIT_PENDING_EXCEPTIONS,
       },
     ];
     const violations: string[] = [];
@@ -574,7 +643,91 @@ describe("Component invariants · governance shape", () => {
           violations.push(
             `${name}/${e.file}  invalid removeBy "${e.removeBy}"`,
           );
+          continue;
         }
+        if (e.removeBy !== "never" && isPhaseInPast(e.removeBy, CURRENT_LIORA_PHASE)) {
+          violations.push(
+            `${name}/${e.file}  removeBy "${e.removeBy}" is in the past relative to current phase "${CURRENT_LIORA_PHASE}" — the rama that promised cleanup shipped without it`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Orphan check: every file matching EXPECTED_OPERATOR_SCOPE_PATTERNS or
+  // importing a Liora primitive must be in AUDITED_SURFACES (any profile),
+  // unless explicitly listed in ORPHAN_AUDIT_PENDING_EXCEPTIONS.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  it("every expected-scope file is covered by AUDITED_SURFACES (or pending exception)", () => {
+    const expectedFiles = ALL_FILES.filter((f) =>
+      matchesAny(f, EXPECTED_OPERATOR_SCOPE_PATTERNS),
+    );
+    const violations: string[] = [];
+    for (const file of expectedFiles) {
+      if (auditedFiles.includes(file)) continue;
+      if (ORPHAN_AUDIT_PENDING_EXCEPTIONS.some((e) => e.file === file)) continue;
+      violations.push(
+        `${file}  matches EXPECTED_OPERATOR_SCOPE_PATTERNS but is not in AUDITED_SURFACES (add to AUDITED_SURFACES or ORPHAN_AUDIT_PENDING_EXCEPTIONS)`,
+      );
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("every Liora-touched file (imports primitive) is covered by AUDITED_SURFACES (or pending exception)", () => {
+    // Heuristic: if a file imports `@/components/ui/{card,section-eyebrow,
+    // icon-badge,text-link,timeline-list,icon-button,icon-button-link,
+    // button-link}` or `@/lib/tone`, it has migrated to Liora and must be
+    // audited. Catches the failure mode where a future rama refactors a
+    // subpage to use a primitive but forgets to add the file/glob to
+    // AUDITED_SURFACES.
+    const importRe = new RegExp(
+      `from\\s+["'](?:${LIORA_PRIMITIVE_IMPORT_PATHS.map((p) =>
+        p.replace(/[.*+?^${}()|[\\]/g, "\\$&"),
+      ).join("|")})["']`,
+    );
+    const violations: string[] = [];
+    for (const file of ALL_FILES) {
+      if (!file.endsWith(".tsx") && !file.endsWith(".ts")) continue;
+      if (auditedFiles.includes(file)) continue;
+      if (ORPHAN_AUDIT_PENDING_EXCEPTIONS.some((e) => e.file === file)) continue;
+      // Skip the primitive sources themselves — `timeline-list.tsx` imports
+      // `@/lib/tone` legitimately. Only flag CONSUMERS outside the audit.
+      const isPrimitiveSource =
+        file.startsWith("src/components/ui/") || file === "src/lib/tone.ts";
+      if (isPrimitiveSource) continue;
+      const content = readSrc(file);
+      if (importRe.test(content)) {
+        violations.push(
+          `${file}  imports a Liora primitive but is not in AUDITED_SURFACES (extend the surface globs or add to ORPHAN_AUDIT_PENDING_EXCEPTIONS)`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 13. ButtonLink size="sm" forbidden on operator/shared audited surfaces
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · <ButtonLink size='sm'> on audited operator surfaces", () => {
+  it("no <ButtonLink size=\"sm\"> on operator/shared surfaces (slop on text-bearing button breaks affordance)", () => {
+    // ButtonLink does NOT bake recipe-icon-btn-32 for size=sm because slop on
+    // a text-bearing button breaks the visual affordance (see
+    // design-system/docs/touch-targets.md). On operator/shared audited
+    // surfaces the default is size="md" (44 visual). Real exceptions go to
+    // BUTTON_LINK_SIZE_SM_EXCEPTIONS with reason + removeBy.
+    const re = /<ButtonLink\b[^>]*\bsize=("sm"|\{"sm"\})/g;
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      if (exempt(file, BUTTON_LINK_SIZE_SM_EXCEPTIONS)) continue;
+      const content = readSrc(file);
+      for (const m of content.matchAll(re)) {
+        violations.push(`${file}:${lineNumber(content, m.index ?? 0)}  ${m[0]}`);
       }
     }
     expect(violations).toEqual([]);

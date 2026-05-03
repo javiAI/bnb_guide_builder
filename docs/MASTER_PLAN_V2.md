@@ -3137,7 +3137,7 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - `src/components/ui/icon-button.tsx` — pure `<button>`, sizes `md` (44 visual, default) / `sm` (32 visual + slop).
 - `src/components/ui/icon-button-link.tsx` — wrapper de Next `<Link>` (NO polimorfismo `as="a"`; preserva typed `href` + prefetch + hornea `hover:no-underline`).
 - `src/components/ui/button-link.tsx` — text-button-styled Link, mismo tratamiento `hover:no-underline` para outranquear `a:hover` global.
-- `src/test/component-invariants.test.ts` — 12 invariantes (touch-target, HTML validity AST, web-API guards, copy lint, Tailwind hardcode, tone quartet, empty-handler, effect cleanup, command-bar non-interactive, primitive adoption, button-like Link, audited surface coverage, exception entries shape). AST loader memoizado, target ~2-3s sobre ~150 archivos.
+- `src/test/component-invariants.test.ts` — invariantes (touch-target, HTML validity heurística por brace-aware JSX walker, web-API guards, copy lint, Tailwind hardcode, tone quartet, empty-handler, effect cleanup, command-bar non-interactive, primitive adoption, button-like Link, profile validation, audited surface coverage, exception entries shape, orphan check pattern-based, orphan check Liora-import, ButtonLink size=sm). Walker textual/regex con tracking de profundidad de llaves; cubre el 90% de patrones reales. Tags compuestos (`<IconButton>` rendering `<button>`) son invisibles al walker — la cobertura via primitivos viene del test de adoption, no de validación HTML. Promoción a AST queda como upgrade futuro si surge un patrón que el walker no cubre.
 - `design-system/docs/touch-targets.md` — política de §1; `sm` vs `md` matrix; do/don't.
 - `design-system/docs/recipes.md` — catálogo de `recipe-*` classes.
 - `design-system/docs/primitives.md` — catálogo de los 8 primitivos React + props + DON'T list + path rule (genéricos en `src/components/ui/`, surface-only en su carpeta).
@@ -3148,15 +3148,14 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - `src/components/overview/{kpi-strip,tasks-list-card,spaces-table-card,readiness-hero-card,activity-feed-card,chip-row}.tsx` — refactor mecánico a primitivos. `activity-feed-card` plantilla canónica (~69 LOC → ~14).
 - `src/components/layout/topbar.tsx` — bell `<IconButton size="sm" aria-disabled="true" tabIndex={-1} />` (slop hit-area aplicado para activación futura); "Publicar" mobile a `min-h-[44px] min-w-[44px]`.
 - `src/components/layout/publishing-rail.tsx` — "Abrir guía" a `min-h-[44px]` (mantiene `flex-1`).
-- `src/test/parity-allowlist.ts` — añade `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `AUDITED_SURFACES`, `CURRENT_BRANCH = "16D.5"`, type `ExceptionEntry { file: string; reason: string; removeBy: "16D.5"|"16E"|"16F"|"16G"|"never" }`.
-- `package.json` — `@typescript-eslint/parser` explícito en `devDependencies` (hoy transitiva — fragilidad si un upstream bump la retira).
-- `CLAUDE.md` § "Patrones de UI — Operator shell" — añade primitivos obligatorios, política de touch targets, mención del test gate.
-- `docs/MASTER_PLAN_V2.md` — hard rules en § Rama 16E / 16F / 16G ("componentes nuevos deben usar primitivos de 16D.5; nuevas instancias del shell `flex h-full flex-col rounded-[var(--radius-lg)] ... p-4` BLOQUEADAS por `component-invariants.test.ts`"; "cualquier surface migrada debe añadir sus ficheros a `AUDITED_SURFACES` en el mismo commit que la migración").
+- `src/test/parity-allowlist.ts` — añade `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`, `BUTTON_LINK_SIZE_SM_EXCEPTIONS`, `ORPHAN_AUDIT_PENDING_EXCEPTIONS`, `AUDITED_SURFACES` (con `profile: "operator" | "guest" | "shared"`), `EXPECTED_OPERATOR_SCOPE_PATTERNS`, `LIORA_PRIMITIVE_IMPORT_PATHS`, `LIORA_PHASE_ORDER`, `CURRENT_LIORA_PHASE = "16D.5"`, types `LioraPhase = "16D.5"|"16E"|"16F"|"16G"`, `RemoveBy = LioraPhase | "never"`, `ExceptionEntry { file, reason, owner?, removeBy: RemoveBy }`.
+- `CLAUDE.md` § "Patrones de UI — Operator shell" — añade primitivos obligatorios, política de touch targets, mención del test gate, política de profile (operator vs guest vs shared), honestidad del walker heurístico.
+- `docs/MASTER_PLAN_V2.md` — hard rules en § Rama 16E / 16F / 16G ("componentes nuevos deben usar primitivos de 16D.5; nuevas instancias del shell `flex h-full flex-col rounded-[var(--radius-lg)] ... p-4` BLOQUEADAS por `component-invariants.test.ts`"; "cualquier surface operator/shared migrada debe añadir sus ficheros a `AUDITED_SURFACES` con `profile` correcto en el mismo commit; guest public guide mantiene su propio sistema visual en `src/components/public-guide/ui/` y NO hereda primitivos operator").
 - `scripts/validate-design-system.ts` — añade summary line apuntando a `component-invariants.test.ts` en el output.
 
 **Tests**:
 
-- `src/test/component-invariants.test.ts` — 12 invariantes enumeradas arriba. Añade `parseSourceFile()` memoizado que comparte AST entre test cases.
+- `src/test/component-invariants.test.ts` — invariantes enumeradas arriba. Walker heurístico (regex + brace-depth tracking), no AST — el coste es comprable a un ESLint rule simple.
 - Pin `parity-static.test.ts` extendido si surge un patrón nuevo de hardcoded Tailwind durante el refactor (no hay caso planeado a priori).
 - `dark-parity.test.ts` debe seguir pasando sin cambios — el refactor es estructural, no toca tokens.
 
@@ -3179,8 +3178,8 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 **Dependencias / Riesgos**:
 
 - ⚠️ `a:hover` specificity bug: `<ButtonLink>` / `<IconButtonLink>` deben hornear `hover:no-underline` + `hover:text-[...]` para outranquear `a:hover { text-decoration: underline }` de `base.css`. Test "Button-like Link" lo enforza.
-- ⚠️ `@typescript-eslint/parser` debe declararse explícito en `devDependencies` en el MISMO commit que `component-invariants.test.ts`. Confiar en transitividad es frágil.
-- ⚠️ Allowlist drift: si `removeBy` de una entrada expira (ej. `"16E"` cuando `CURRENT_BRANCH === "16E"`), el test debe fallar para forzar limpieza. Pin enforced por test #12 ("Exception entries well-formed").
+- ⚠️ Walker honesty: el test usa un walker textual con tracking de profundidad de llaves, NO un AST completo. Tags compuestos (`<IconButton>` que renderiza `<button>` debajo) son invisibles a la regla literal-tag. Compensación: `primitive-adoption` enforza el uso de los primitivos, así el camino vía componente queda cubierto. Si surge un patrón que el walker no ve, la opción A (AST con `@typescript-eslint/parser`) queda como upgrade futuro — hoy no se justifica el coste.
+- ⚠️ Allowlist drift: si `removeBy` de una entrada queda en el pasado relativo a `CURRENT_LIORA_PHASE` (ej. `"16D.5"` cuando `CURRENT_LIORA_PHASE === "16E"`), el test falla para forzar limpieza. Pin enforced por el test de governance shape + `LIORA_PHASE_ORDER`.
 - ⚠️ Visual regression manual: requiere disciplina al revisar screenshots. Riesgo aceptado — promotion a pixel-perfect CI cuando haya un caso real (segundo dev / usuario reporta drift).
 
 **No-alcance**:
@@ -3200,7 +3199,7 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 **Orden de commits** (5, cada uno deja la rama verde — typecheck + test + build):
 
 1. § 16D.5 + `tone.ts` + `recipes.css` + 8 primitivos (sin consumers todavía).
-2. `component-invariants.test.ts` + `parity-allowlist.ts` shape `ExceptionEntry` + allowlists pobladas para violaciones actuales + `@typescript-eslint/parser` explícito.
+2. `component-invariants.test.ts` + `parity-allowlist.ts` shape `ExceptionEntry` + allowlists pobladas para violaciones actuales.
 3. Refactor 6 overview cards a primitivos (drop allowlist entries paralelo).
 4. Refactor `topbar.tsx` + `publishing-rail.tsx` — touch-target allowlist a 0.
 5. Governance docs.
@@ -3254,8 +3253,8 @@ Cada alias declarado con comentario `/* @deprecated removed in 16G — use <sema
 - Cualquier card nueva con shell canónico (`flex h-full flex-col rounded-[var(--radius-lg)] border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4`) **debe** usar `<Card variant="overview">`. Raw `<div>` con esta firma falla el test (regla 10 — primitive adoption).
 - Cualquier elemento button-shaped (con `bg-[var(--color-...)]` o outline `border + border-[var(--color-...)] + rounded-[...]`) **debe** alcanzar 44 hit area: `min-h-[44px]` / `h-11+` / `recipe-icon-btn-32` (regla 1 — touch targets).
 - Iconografía decorativa estandarizada: `<IconBadge>` para tono+icono, `<IconButton>` / `<IconButtonLink>` para acción icon-only, `<TextLink>` para enlaces inline. Mapas locales `Record<BadgeTone, ...>` con keys distintas a `{neutral, success, warning, danger}` fallan (regla 6 — tone quartet).
-- Cada surface tocada en una sub-PR de 16E **debe añadirse a `AUDITED_SURFACES` en el mismo commit** que la migración. Sin entry → invariantes no aplican → re-skin parcial pasaría inadvertido.
-- `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`: **no añadir entries nuevas** salvo justificación documentada en PR description con `removeBy` ≤ "16E" (excepción que no se cierra en la propia rama es señal de scope fuera de control).
+- Cada surface tocada en una sub-PR de 16E **debe añadirse a `AUDITED_SURFACES` con `profile: "operator"` en el mismo commit** que la migración. Sin entry → invariantes no aplican → re-skin parcial pasaría inadvertido. Guest public guide queda fuera (mantiene su propio sistema visual en `src/components/public-guide/ui/` y NO hereda primitivos operator).
+- `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`, `BUTTON_LINK_SIZE_SM_EXCEPTIONS`, `ORPHAN_AUDIT_PENDING_EXCEPTIONS`: **no añadir entries nuevas** salvo justificación documentada en PR description con `removeBy` ≤ "16E" (excepción que no se cierra en la propia rama es señal de scope fuera de control). El gate de phase-order falla CI si una entrada queda con `removeBy < CURRENT_LIORA_PHASE`.
 
 **Restricciones**:
 - ❌ Cambiar lógica config-driven (taxonomías, registries, conditional engine).
@@ -3331,7 +3330,7 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - ✅ axe-core `serious|critical = 0` en light + dark.
 
 **Hard rules heredadas de 16D.5** (enforced por `src/test/component-invariants.test.ts`):
-- Message bubbles, conversation list items, right-panel source/gap cards, AI suggestion callout: cada superficie messaging tocada **debe añadirse a `AUDITED_SURFACES`** en el mismo commit que su redesign. Sin entry → invariantes no aplican.
+- Message bubbles, conversation list items, right-panel source/gap cards, AI suggestion callout: cada superficie messaging tocada **debe añadirse a `AUDITED_SURFACES` con `profile: "operator"`** en el mismo commit que su redesign. Sin entry → invariantes no aplican. Guest public guide queda fuera del rollout operator y mantiene su sistema visual en `src/components/public-guide/ui/`.
 - Iconografía + acciones icon-only del composer y right panel pasan por `<IconButton>` / `<IconButtonLink>`. Tool buttons del composer son aspirational en 16F (no se renderizan), pero la regla aplica si más adelante se cablean.
 - Conversation list active-state accent (left 3px) y tag chips (ai/esc/resolved/waiting) consumen tokens semánticos del kit Liora — prohibido reintroducir azul-gris brand del mock.
 - Touch-target invariant 44 hit area aplica a TODO elemento clickable de messaging (compose send, composer toolbar slots si se cablean en futuro, list items, source-card abre/expand). Tabletas + táctiles son target principal de messaging — sin slop "barato": preferir 44 visual cuando hay acompañamiento de texto.
@@ -3375,8 +3374,8 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - `liora-no-primitive-leak.test.ts` verde (introducido en 16A, debe seguir).
 - `liora-token-coverage.test.ts` actualizado: ya no permite aliases legacy (registro vacío post-16G).
 - Bundle size ≤ baseline (next-bundle-analyzer).
-- **Registry-vacío gate (heredado de 16D.5)**: `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`, `FORBIDDEN_SUFFIX_LEGACY` en `src/test/parity-allowlist.ts` deben estar **vacíos** al merge de 16G. Cualquier entry remanente con `removeBy ≤ "16G"` cuyo deadline ya venció bloquea la PR (señal de governance debt arrastrada). Entries con `removeBy: "never"` permitidas solo para excepciones estructurales documentadas (brand SVGs de terceros, etc.).
-- `AUDITED_SURFACES` cubre **todas** las superficies operator + messaging + guest activas; archivos de `src/components/{overview,layout,messaging,assistant,public-guide,wizard}/**/*.tsx` no listados son una regresión de cobertura.
+- **Registry-vacío gate (heredado de 16D.5)**: `TOUCH_TARGET_EXCEPTIONS`, `WEB_API_GUARD_EXCEPTIONS`, `COPY_LINT_EXCEPTIONS`, `EMPTY_HANDLER_PLACEHOLDERS`, `EFFECT_CLEANUP_EXCEPTIONS`, `PRIMITIVE_ADOPTION_EXCEPTIONS`, `BUTTON_LINK_SIZE_SM_EXCEPTIONS`, `ORPHAN_AUDIT_PENDING_EXCEPTIONS`, `FORBIDDEN_SUFFIX_LEGACY` en `src/test/parity-allowlist.ts` deben estar **vacíos** al merge de 16G. Cualquier entry remanente con `removeBy ≤ "16G"` cuyo deadline ya venció bloquea la PR (señal de governance debt arrastrada). Entries con `removeBy: "never"` permitidas solo para excepciones estructurales documentadas (brand SVGs de terceros, etc.).
+- `AUDITED_SURFACES` cubre **todas** las superficies operator + messaging activas con `profile: "operator" | "shared"`. Guest public guide se cataloga con `profile: "guest"` o queda explícitamente fuera (mantiene su propio sistema visual en `src/components/public-guide/ui/` y NO hereda primitivos operator). Archivos de `src/components/{overview,layout,messaging,assistant,wizard}/**/*.tsx` no listados son una regresión de cobertura operator.
 
 **Criterio de done**:
 - ✅ Bundle size igual o menor.

@@ -9,25 +9,102 @@
  * here); `files` is what the static test consumes. Layout components render on
  * every operator route, so they are part of every operator-shell surface from
  * the moment the first such surface lands.
+ *
+ * Profile model (16D.5):
+ *   - "operator" — operator-shell surfaces. Full Liora invariant suite
+ *     (touch-target, primitive-adoption, command-bar slot, web API guards,
+ *     copy-lint Spanish, Tailwind hardcode, tone quartet, empty handlers,
+ *     effect cleanup, HTML validity, interactive elements as button/Link).
+ *   - "guest" — guest public guide surfaces. Shared invariants only
+ *     (no hex/rgb/oklch outside allowlist, no Tailwind named colors, web API
+ *     guards, no empty handlers, HTML validity, target-size where applicable).
+ *     Primitive-adoption + command-bar + operator copy-lint do NOT apply.
+ *   - "shared" — primitives or layout that render on both. Same suite as
+ *     "operator" minus operator-specific copy-lint when ambiguous.
  */
+export type SurfaceProfile = "operator" | "guest" | "shared";
+
 export interface AuditedSurface {
   id: string;
   routes: string[];
   files: string[];
+  profile: SurfaceProfile;
 }
 
 export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
   {
-    id: "overview",
+    id: "operator-overview",
     routes: ["/properties/[propertyId]"],
+    profile: "operator",
     files: [
       "src/app/properties/[propertyId]/page.tsx",
       "src/app/properties/[propertyId]/layout.tsx",
       "src/components/overview/**/*.tsx",
       "src/components/layout/**/*.tsx",
+    ],
+  },
+  {
+    id: "operator-entry",
+    routes: ["/", "/login"],
+    profile: "operator",
+    files: [
+      "src/app/page.tsx",
+      "src/app/login/page.tsx",
+    ],
+  },
+  {
+    id: "shared-primitives",
+    routes: ["(rendered on every operator + guest surface as imported)"],
+    profile: "shared",
+    files: [
       "src/components/ui/theme-toggle.tsx",
     ],
   },
+];
+
+/**
+ * Patterns that the orphan check uses to verify the audit scope is honest:
+ * any file matching one of these patterns must either (a) be matched by some
+ * `AUDITED_SURFACES.files` entry, or (b) be listed in
+ * `ORPHAN_AUDIT_PENDING_EXCEPTIONS` with an explicit `removeBy` deadline.
+ *
+ * Adding a pattern here is a forward-looking commitment: it asserts the rama
+ * with that `removeBy` will migrate the matching files into an audited surface
+ * (with the right profile) and shrink the exception list to zero.
+ *
+ * Today (post-16D), the operator shell + entry pages are migrated; the inner
+ * property subpages are not. They sit in the orphan-pending list pinned to
+ * 16E/16F so a future rama cannot ship without either auditing them or
+ * extending the deadline (which is itself a CR signal).
+ */
+export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
+  "src/app/page.tsx",
+  "src/app/login/page.tsx",
+  "src/app/properties/[propertyId]/layout.tsx",
+  "src/app/properties/[propertyId]/page.tsx",
+  "src/components/overview/**/*.tsx",
+  "src/components/layout/**/*.tsx",
+  "src/components/ui/theme-toggle.tsx",
+];
+
+/**
+ * Liora-touched signal heuristic: any .tsx file importing one of these
+ * primitives is "Liora-migrated" and must be in `AUDITED_SURFACES` (any
+ * profile) or explicitly listed in `ORPHAN_AUDIT_PENDING_EXCEPTIONS`.
+ *
+ * Catches the case where a future rama migrates a subpage to use a primitive
+ * but forgets to extend `AUDITED_SURFACES` in the same commit.
+ */
+export const LIORA_PRIMITIVE_IMPORT_PATHS: ReadonlyArray<string> = [
+  "@/components/ui/card",
+  "@/components/ui/section-eyebrow",
+  "@/components/ui/icon-badge",
+  "@/components/ui/text-link",
+  "@/components/ui/timeline-list",
+  "@/components/ui/icon-button",
+  "@/components/ui/icon-button-link",
+  "@/components/ui/button-link",
+  "@/lib/tone",
 ];
 
 /**
@@ -67,12 +144,29 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
 ];
 
 /**
- * Liora replatform branch identifiers used by exception entries to declare
+ * Liora replatform phase identifiers used by exception entries to declare
  * when an exception is expected to be removed. `never` is reserved for
  * structural exceptions that are not on the rollout path (e.g. third-party
  * brand SVGs); every other value is a hard deadline for cleanup.
+ *
+ * The order in `LIORA_PHASE_ORDER` is the timeline. The phase-expiration
+ * gate (`component-invariants.test.ts` § governance shape) compares
+ * `removeBy` against `CURRENT_LIORA_PHASE` and fails if `removeBy` is in
+ * the past — i.e. a previous rama promised to remove the exception and
+ * shipped without doing so.
  */
-export type RemoveBy = "16D.5" | "16E" | "16F" | "16G" | "never";
+export type LioraPhase = "16D.5" | "16E" | "16F" | "16G";
+export type RemoveBy = LioraPhase | "never";
+
+export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
+  "16D.5",
+  "16E",
+  "16F",
+  "16G",
+] as const;
+
+/** Active Liora phase the allowlist is being audited against. */
+export const CURRENT_LIORA_PHASE: LioraPhase = "16D.5";
 
 export interface ExceptionEntry {
   file: string;
@@ -80,9 +174,6 @@ export interface ExceptionEntry {
   owner?: string;
   removeBy: RemoveBy;
 }
-
-/** Branch this allowlist is being audited against (current development branch). */
-export const CURRENT_BRANCH = "16D.5";
 
 /**
  * Touch-target violations grandfathered into the gate. Each entry must reach
@@ -126,3 +217,27 @@ export const EFFECT_CLEANUP_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
  * containers, grid layouts, p-5 hero) are not required to migrate.
  */
 export const PRIMITIVE_ADOPTION_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
+
+/**
+ * `<ButtonLink size="sm">` exceptions on operator/shared surfaces.
+ *
+ * Policy: `ButtonLink` does NOT bake `recipe-icon-btn-32` for size=sm
+ * (slop on a text-bearing button breaks the visual affordance — see
+ * `design-system/docs/touch-targets.md`). On audited operator/shared
+ * surfaces the static check fails on any `<ButtonLink ... size="sm" ...>`
+ * occurrence; the exception list is the only escape hatch.
+ */
+export const BUTTON_LINK_SIZE_SM_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];
+
+/**
+ * Files that match `EXPECTED_OPERATOR_SCOPE_PATTERNS` (or the Liora-import
+ * heuristic) but are not yet covered by `AUDITED_SURFACES`. Entries here are
+ * a forward commitment: each file must be either (a) audited by the rama in
+ * `removeBy`, or (b) the rama must extend the deadline with a CR-visible
+ * commit (which is itself a signal — the rama did not finish what it said
+ * it would).
+ *
+ * Empty today: every expected-scope path is fully covered, and no .tsx
+ * outside `AUDITED_SURFACES` imports a Liora primitive.
+ */
+export const ORPHAN_AUDIT_PENDING_EXCEPTIONS: ReadonlyArray<ExceptionEntry> = [];

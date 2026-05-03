@@ -226,13 +226,34 @@ Todo elemento clickable button-shaped (con `bg-[var(--color-...)]` o outline `bo
 
 Inline text links (sin bg ni outline button-style) están **exentos** por WCAG 2.5.8 (inline target exception). El test los excluye de la regla.
 
+### Surface profiles (operator vs guest, 16D.5)
+
+`AUDITED_SURFACES` en `src/test/parity-allowlist.ts` lleva `profile: "operator" | "guest" | "shared"`. **El sistema visual de operator y guest es deliberadamente distinto** — guest mantiene su propio set de cards (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard` en `src/components/public-guide/ui/`), tipografía Inter 28/20/16/14/12 y radii 8/10/12/20 por contrato (ver `docs/FEATURES/GUEST_GUIDE_UX.md`), no la shell operator. **No** forzar `<Card variant="overview">`, `<SectionEyebrow>`, `<IconBadge>`, etc. sobre guest.
+
+Invariantes que aplican por profile:
+
+- **Operator-only** (`profile: "operator" | "shared"`): primitive-adoption (`<Card variant="overview">`), command-bar slot non-interactive, copy-lint Spanish, `<ButtonLink size="sm">` ban.
+- **Compartidas** (cualquier profile): touch-target ≥44 hit area, HTML validity (no nested button/anchor), web API guards (SSR-safe), Tailwind hardcode (no named-palette), tone quartet, empty handlers, effect cleanup, interactive elements as `<button>`/`<Link>`.
+
+Cuando 16E/F/G añadan guest surfaces auditadas, el filtrado se hace mediante `auditedFilesByProfile("operator", "shared")` en el test; no hay que tocar las invariantes individuales.
+
 ### Allowlist governance (parity-allowlist.ts)
 
-`src/test/parity-allowlist.ts` mantiene 6 listas de excepciones tipadas con `ExceptionEntry { file, reason, removeBy: "16D.5"|"16E"|"16F"|"16G"|"never" }`. **Política**:
+`src/test/parity-allowlist.ts` mantiene 8 listas de excepciones tipadas con `ExceptionEntry { file, reason, removeBy: LioraPhase|"never" }`. `LioraPhase = "16D.5"|"16E"|"16F"|"16G"` con orden canónico en `LIORA_PHASE_ORDER`; la fase activa vive en `CURRENT_LIORA_PHASE`. **Política**:
 
-- Toda excepción nueva requiere `reason` ≥ 8 chars y `removeBy` ≤ rama actual + 1. Excepciones que sobreviven 2 ramas son governance debt — la rama responsable no las cerró.
+- Toda excepción nueva requiere `reason` ≥ 8 chars y `removeBy` ≤ fase actual + 1. Excepciones que sobreviven 2 fases son governance debt — la rama responsable no las cerró.
+- **Phase-order enforcement**: el invariante governance-shape compara `removeBy` contra `CURRENT_LIORA_PHASE` y falla si `removeBy` está en el pasado (`isPhaseInPast`). Una rama no puede mergear con una excepción cuyo `removeBy` ya pasó — la cleanup se hace o se sube el `removeBy` con un commit explícito.
 - `removeBy: "never"` reservado a casos estructurales (brand SVGs de terceros, etc.). Cualquier otro uso es CR red-flag.
+- **Orphan check**: `EXPECTED_OPERATOR_SCOPE_PATTERNS` + heurística de imports de primitivos (`LIORA_PRIMITIVE_IMPORT_PATHS`). Cualquier .tsx que matchee un patrón esperado o importe un primitivo Liora **debe** estar en `AUDITED_SURFACES` o en `ORPHAN_AUDIT_PENDING_EXCEPTIONS`. Falla en CI; no se puede mergear silenciosamente migrando un fichero sin cobertura.
 - 16G empty-registry gate: todas las listas vacías al merge final (excepto `removeBy: "never"`).
+
+### Static-analysis gate honestidad (16D.5)
+
+`component-invariants.test.ts` usa un **walker JSX brace-aware heurístico**, no un AST parser completo. El walker rastrea `{}` nesting + string literals para encontrar el cierre real del open-tag (evita el bug de `>` dentro de `=>` callbacks), pero no construye un syntax tree. Consecuencias:
+
+- Componentes resueltos a runtime (`<IconButton>` que renderiza `<button>`) no son detectados — solo tags literales (`<button>`, `<Link>`, `<a>`, `<ButtonLink>`).
+- Polymorphism `as="a"` rompería el gate por la misma razón — por eso primitivos como `IconButton`/`IconButtonLink`/`ButtonLink` están separados deliberadamente (no `as` poly).
+- Si en 16E o posterior el rigor lo requiere, opción A: introducir `@typescript-eslint/parser` explícito en devDependencies y reescribir las invariantes sobre AST. Hoy: heurística suficiente para el scope auditado, documentada como tal.
 
 ## Patrones de UI — Espacios
 

@@ -2,6 +2,10 @@
 
 Las **recipes** (`recipe-*` classes) viven en [src/styles/recipes.css](../../src/styles/recipes.css) y son globales (cargadas desde `globals.css`). Existen para centralizar patrones que las primitivas React consumen — su razón de ser es que un sistema de tokens + Tailwind no expresa bien dos cosas: (1) **pseudo-elementos** (slop hit-area), (2) **media queries condicionales** (coarse vs. fine pointers). Cuando una primitiva necesita una de esas dos cosas, baja a una recipe.
 
+## Alcance — operator-shell recipes
+
+Las recipes catalogadas aquí son consumidas por primitivas de **operator-shell** (surfaces con `profile: "operator" | "shared"` en `AUDITED_SURFACES`). Guest public guide tiene su propio sistema visual en [src/components/public-guide/ui/](../../src/components/public-guide/ui/) y no consume estas recipes — ver [primitives.md § alcance](primitives.md#política--alcance-operator-vs-guest-16d5).
+
 ## Política de uso
 
 - **Consumo preferente**: desde primitivas en [src/components/ui/](../../src/components/ui/). El usuario de feature code idealmente nunca escribe `recipe-*` a mano.

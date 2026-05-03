@@ -1,6 +1,18 @@
 # Primitivos React — política Liora 16D.5
 
-8 primitivos compuestos sobre tokens + recipes que cubren los patrones recurrentes del shell operator. Viven en [src/components/ui/](../../src/components/ui/) y son consumidos por surfaces auditadas (hoy: overview + layout). Su existencia permite que invariantes de tests (`primitive-adoption`, `touch-target`, `tone-quartet`) operen sobre nombres de componente o classNames bakeados, sin tener que escanear cada combinación posible.
+8 primitivos compuestos sobre tokens + recipes que cubren los patrones recurrentes del shell **operator**. Viven en [src/components/ui/](../../src/components/ui/) y son consumidos por surfaces auditadas con `profile: "operator" | "shared"` (hoy: overview + layout + entry pages + theme-toggle). Su existencia permite que invariantes de tests (`primitive-adoption`, `touch-target`, `tone-quartet`, `button-link-size-sm`) operen sobre nombres de componente o classNames bakeados, sin tener que escanear cada combinación posible.
+
+## Política — alcance operator vs guest (16D.5)
+
+Estos 8 primitivos **no aplican** a guest public guide. La guía pública mantiene su propio sistema visual en [src/components/public-guide/ui/](../../src/components/public-guide/ui/) (cards CVA-based: `HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard`) y su propio set de tokens cards/spacing/radii — ver [docs/FEATURES/GUEST_GUIDE_UX.md](../../docs/FEATURES/GUEST_GUIDE_UX.md).
+
+`AUDITED_SURFACES` lleva un campo `profile`:
+
+- **`operator`** — full Liora suite: touch-target, primitive-adoption (`<Card variant="overview">`), command-bar slot non-interactive, web API guards, copy-lint Spanish, Tailwind hardcode, tone quartet, empty handlers, effect cleanup, HTML validity, interactive elements as `<button>`/`<Link>`, `<ButtonLink size="sm">` ban.
+- **`guest`** — solo invariantes compartidos: no hex/rgb/oklch (con allowlist), no Tailwind named colors, web API guards, no empty handlers, HTML validity, target-size donde aplica. **No** se aplica primitive-adoption ni command-bar ni `ButtonLink size="sm"`.
+- **`shared`** — primitivos o layout que renderizan en ambos. Mismas invariantes que `operator`.
+
+La separación se enforza dinámicamente: `auditedFilesByProfile("operator", "shared")` en `component-invariants.test.ts` filtra el set de archivos antes de ejecutar las invariantes operator-only.
 
 ## Política — path rule
 
@@ -160,7 +172,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 
 **Cuándo `size="sm"`**: el primitivo NO bakea slop para size sm — un `ButtonLink size="sm"` text-bearing tiene 32 visual con 32 hit area. Razón: slop sobre texto rompe la affordance visual (documentado en [touch-targets.md](touch-targets.md)). Usar `size="md"` (44 visual) por default; `size="sm"` solo en surfaces no-auditadas (admin internal, etc.).
 
-> **Nota de enforcement**: el invariante `touch-target` opera sobre tags literales (`<button>`, `<Link>`, `<a>`) — no detecta `<ButtonLink size="sm">` porque el wrapper Next `<Link>` queda dentro del primitivo. La regla "no usar `ButtonLink size="sm"` en surfaces auditadas" es **convención**, no enforced. Para subir el rigor a static-check (16E o posterior), añadir un walker JSX que matchee `<ButtonLink ... size="sm" ...>` en `AUDITED_SURFACES` directamente.
+> **Enforcement**: el invariante dedicado `<ButtonLink size="sm">` en [src/test/component-invariants.test.ts](../../src/test/component-invariants.test.ts) escanea `<ButtonLink ... size="sm" ...>` literal en cada surface con `profile: "operator" | "shared"` y falla. La invariante general `touch-target` opera sobre tags literales (`<button>`, `<Link>`, `<a>`) y no entra al wrapper, por eso necesitamos el check específico. Excepciones reales van a `BUTTON_LINK_SIZE_SM_EXCEPTIONS` con `reason` + `removeBy`.
 
 **Don't**: añadir `hover:underline`. El primitivo bakea `hover:no-underline` precisamente para defenderse del `a:hover { text-decoration: underline }` global de `base.css` (specificity 0,1,1 — beats Tailwind arbitraries). Si reescribes el hover en consumer, abres ese bug.
 
