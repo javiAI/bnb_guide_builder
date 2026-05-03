@@ -63,10 +63,10 @@ export function ThemeToggle() {
 
   useEffect(() => {
     if (theme !== "auto") return;
-    if (typeof window.matchMedia !== "function") {
-      applyTheme("auto");
-      return;
-    }
+    // If pre-paint fell back to light (localStorage blocked), apply once on mount
+    // so the OS preference takes effect immediately, not just on the next change.
+    applyTheme("auto");
+    if (typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => applyTheme("auto");
     if (typeof mq.addEventListener === "function") {

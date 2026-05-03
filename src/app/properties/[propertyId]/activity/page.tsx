@@ -1,29 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
-
-const ENTITY_LABELS: Record<string, string> = {
-  Property: "Propiedad",
-  Space: "Espacio",
-  PropertyAmenityInstance: "Amenity",
-  TroubleshootingPlaybook: "Playbook",
-  LocalPlace: "Lugar local",
-  MediaAsset: "Media",
-  KnowledgeItem: "Conocimiento",
-  GuideVersion: "Guía",
-  MessageTemplate: "Plantilla",
-  MessageAutomation: "Automatización",
-  OpsChecklistItem: "Checklist",
-  StockItem: "Stock",
-  MaintenanceTask: "Mantenimiento",
-};
-
-const ACTION_LABELS: Record<string, { label: string; tone: "neutral" | "success" | "warning" | "danger" }> = {
-  create: { label: "Crear", tone: "success" },
-  update: { label: "Actualizar", tone: "neutral" },
-  delete: { label: "Eliminar", tone: "danger" },
-  publish: { label: "Publicar", tone: "success" },
-};
+import { ACTION_LABELS, getEntityLabel } from "@/lib/audit-labels";
 
 export default async function ActivityPage({
   params,
@@ -64,7 +42,7 @@ export default async function ActivityPage({
         ) : (
           <div className="space-y-2">
             {logs.map((log) => {
-              const entityLabel = ENTITY_LABELS[log.entityType] ?? log.entityType;
+              const entityLabel = getEntityLabel(log.entityType);
               const actionInfo = ACTION_LABELS[log.action] ?? { label: log.action, tone: "neutral" as const };
 
               return (

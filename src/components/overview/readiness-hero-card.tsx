@@ -69,7 +69,7 @@ export function ReadinessHeroCard({
   errors,
 }: ReadinessHeroCardProps) {
   const issues = [...blockers, ...errors];
-  const state = readinessState(publishable, usable, issues.length);
+  const state = readinessState(publishable, usable, blockers.length);
   const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * overall) / 100;
 
   return (
@@ -157,7 +157,7 @@ export function ReadinessHeroCard({
       {issues.length > 0 && (
         <div className="mt-5 border-t border-[var(--color-border-subtle)] pt-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
-            {issues.length} {issues.length === 1 ? "bloqueante" : "bloqueantes"} pendiente{issues.length === 1 ? "" : "s"}
+            {issues.length} {issues.length === 1 ? "incidencia pendiente" : "incidencias pendientes"}
           </p>
           <ul className="mt-2 space-y-1.5">
             {issues.slice(0, 3).map((f) => (

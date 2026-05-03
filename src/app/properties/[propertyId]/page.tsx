@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   CheckCircle2,
@@ -20,6 +21,8 @@ import {
 import { getDerived } from "@/lib/services/property-derived.service";
 import { runAllValidations } from "@/lib/validations/run-all";
 import { getSpaceTypeLabel } from "@/lib/taxonomy-loader";
+import { ACTION_LABELS, getEntityLabel } from "@/lib/audit-labels";
+import { formatRelativeEs } from "@/lib/format-relative-es";
 import { ReadinessHeroCard } from "@/components/overview/readiness-hero-card";
 import { KpiStrip } from "@/components/overview/kpi-strip";
 import { TasksListCard } from "@/components/overview/tasks-list-card";
@@ -32,6 +35,12 @@ import {
   type SpacesTableRow,
 } from "@/components/overview/spaces-table-card";
 import { ChipRow } from "@/components/overview/chip-row";
+
+const FEED_TONE_BY_BADGE: Partial<Record<BadgeTone, ActivityFeedItem["tone"]>> = {
+  success: "ok",
+  warning: "warn",
+  danger: "crit",
+};
 
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -51,25 +60,10 @@ function formatActivityMessage(
   entityType: string,
   action: string,
 ): { message: string; tone?: ActivityFeedItem["tone"] } {
-  const entity = entityType
-    .replace(/[._-]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-  switch (action) {
-    case "create":
-      return { message: `${entity} creado`, tone: "ok" };
-    case "update":
-      return { message: `${entity} actualizado` };
-    case "delete":
-      return { message: `${entity} eliminado`, tone: "warn" };
-    case "publish":
-      return { message: `${entity} publicado`, tone: "ok" };
-    case "unpublish":
-      return { message: `${entity} despublicado`, tone: "warn" };
-    case "rollback":
-      return { message: `${entity} revertido`, tone: "warn" };
-    default:
-      return { message: `${entity} · ${action}` };
-  }
+  const entity = getEntityLabel(entityType);
+  const info = ACTION_LABELS[action];
+  if (!info) return { message: `${entity} · ${action}` };
+  return { message: `${entity} ${info.verbPast}`, tone: FEED_TONE_BY_BADGE[info.tone] };
 }
 
 interface ChipProps {
@@ -109,12 +103,12 @@ function SectionHeading({ num, title, action }: SectionHeadingProps) {
         {title}
       </h2>
       {action && (
-        <a
+        <Link
           href={action.href}
           className="text-[12px] font-medium text-[var(--color-text-link)] hover:underline"
         >
           {action.label}
-        </a>
+        </Link>
       )}
     </div>
   );
@@ -199,15 +193,7 @@ export default async function OverviewPage({
   const statusLabel = STATUS_LABELS[status];
 
   const location = [property.city, property.country].filter(Boolean).join(", ");
-  const lastEditedRel = (() => {
-    const diff = Date.now() - property.updatedAt.getTime();
-    const minutes = Math.round(diff / 60000);
-    if (minutes < 60) return `hace ${minutes} min`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `hace ${hours} h`;
-    const days = Math.round(hours / 24);
-    return `hace ${days} d`;
-  })();
+  const lastEditedRel = formatRelativeEs(property.updatedAt.toISOString());
 
   const spaceRows: SpacesTableRow[] = spacesRaw.map((s) => {
     const photoCount = photoByEntity.get(s.id) ?? 0;

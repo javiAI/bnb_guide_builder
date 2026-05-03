@@ -1,4 +1,3 @@
-import { cache } from "react";
 import Link from "next/link";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
@@ -42,9 +41,9 @@ const SHORTCUTS: ReadonlyArray<{ icon: LucideIcon; label: string; pathSegment: s
   { icon: History, label: "Historial", pathSegment: "activity" },
 ];
 
-const generateQrSvg = cache((url: string) =>
-  QRCode.toString(url, { type: "svg", margin: 1, width: 240 }),
-);
+function generateQrSvg(url: string): Promise<string> {
+  return QRCode.toString(url, { type: "svg", margin: 1, width: 240 });
+}
 
 function buildSteps(propertyId: string, scores?: Record<string, number>): RailStep[] {
   return RAIL_STEP_DEFS.map((d) => ({

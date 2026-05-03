@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { loadOwnedProperty } from "@/lib/auth/owned-property";
+import { loadOwnedProperty, type OwnedPropertyResult } from "@/lib/auth/owned-property";
 import { handleOwnershipPageError } from "@/lib/auth/page-helpers";
 import { prisma } from "@/lib/db";
 
@@ -14,13 +14,13 @@ export default async function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const { propertyId } = await params;
 
-  let property;
-  let operator;
+  let owned: OwnedPropertyResult;
   try {
-    ({ property, operator } = await loadOwnedProperty(propertyId));
+    owned = await loadOwnedProperty(propertyId);
   } catch (err) {
     handleOwnershipPageError(err);
   }
+  const { property, operator } = owned;
 
   const workspaceProperties = await prisma.property.findMany({
     where: { workspaceId: operator.workspaceId, status: { not: "archived" } },

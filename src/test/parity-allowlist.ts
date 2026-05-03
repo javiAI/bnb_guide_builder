@@ -31,9 +31,11 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
 ];
 
 /**
- * Documented hex exceptions for third-party brand SVGs. Line-anchored to a
- * specific file: a stray hex literal anywhere else still fails the gate. New
- * exceptions require a doc entry per `liora-ui-kit-parity` § Hard rules.
+ * Documented hex exceptions for third-party brand SVGs. Allowlisted per
+ * (file, hex) pair: a stray hex literal in a different file still fails the
+ * gate, but the same hex elsewhere in the same file is accepted (a new
+ * occurrence is a CR red flag, not a CI failure). New exceptions require a
+ * doc entry per `liora-ui-kit-parity` § Hard rules.
  */
 export const HEX_EXCEPTIONS: ReadonlyArray<{ file: string; hex: string }> = [
   { file: "src/app/login/page.tsx", hex: "#4285F4" },
