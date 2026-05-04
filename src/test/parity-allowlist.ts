@@ -180,6 +180,30 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/spaces/**/*.tsx",
     ],
   },
+  {
+    // 16E content modules — amenities (equipamiento). Kit reference exists
+    // (`page-equipamiento` in subpages.html) with rich visual silhouette:
+    // tier headers (Esenciales/Recomendados/Destacados) as banded sections,
+    // chip-grid with category-colored borders and tonal active states, derived
+    // amenities as a distinct read-only band, per-amenity detail panel as a
+    // dedicated card with structured field rows. **E1 ships baseline-only**
+    // (semantic error/warning tokens, a11y, 44 hit-targets on submits + chips
+    // + the custom-amenity "+" submit, primitives where they fit). The
+    // structural chip-grid + tier layout is preserved. Inline SVG glyphs (close
+    // X, chevrons ▲▼) are kept as-is — Lucide migration is structural and
+    // ships in 16E.5 alongside the silhouette port. Full UI Kit visual
+    // silhouette port is **deferred to required follow-up rama 16E.5**
+    // (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-amenities",
+    routes: ["/properties/[propertyId]/amenities"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/amenities/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -211,6 +235,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/property/**/*.tsx",
   "src/app/properties/[propertyId]/access/**/*.tsx",
   "src/app/properties/[propertyId]/spaces/**/*.tsx",
+  "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",

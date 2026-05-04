@@ -90,7 +90,7 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
       </div>
 
       {saveResult?.error && (
-        <p className="mb-3 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-2 text-xs text-[var(--color-danger-700)]">
+        <p className="mb-3 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-2 text-xs text-[var(--color-status-error-text)]">
           {saveResult.error}
         </p>
       )}
@@ -136,7 +136,7 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
         >
           {isPending ? "Guardando…" : "Guardar"}
         </button>
