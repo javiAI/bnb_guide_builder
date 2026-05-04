@@ -157,14 +157,7 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
   file: string;
   identifier: string;
   reason: string;
-}> = [
-  {
-    file: "src/app/properties/[propertyId]/amenities/amenity-selector-v2.tsx",
-    identifier: "AmenitySelectorV2",
-    reason:
-      "Pre-Liora amenity instance migration leftover. Rename to AmenitySelector + amenity-selector.tsx in a dedicated cleanup PR (file + 1 caller in amenities/page.tsx).",
-  },
-];
+}> = [];
 
 /**
  * Liora replatform phase identifiers used by exception entries to declare

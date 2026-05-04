@@ -19,7 +19,7 @@ import {
   type DerivationStatus,
   type AccessMethodsShape,
 } from "@/lib/amenity-derivation-resolver";
-import { AmenitySelectorV2 } from "./amenity-selector-v2";
+import { AmenitySelector } from "./amenity-selector";
 
 // ── Serialisable types for client ──
 
@@ -264,7 +264,7 @@ export default async function AmenitiesPage({
       </p>
 
       <div className="mt-8">
-        <AmenitySelectorV2
+        <AmenitySelector
           propertyId={propertyId}
           generalItems={generalItems}
           generalDerived={generalDerived}

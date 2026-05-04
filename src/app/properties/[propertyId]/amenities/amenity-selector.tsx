@@ -15,7 +15,7 @@ const TIER_CONFIG: { level: ImportanceLevel; label: string; hint: string }[] = [
   { level: "bonus", label: "Destacados", hint: "Te diferencian de la competencia" },
 ];
 
-interface AmenitySelectorV2Props {
+interface AmenitySelectorProps {
   propertyId: string;
   generalItems: EnrichedAmenityItem[];
   generalDerived: DerivedAmenityItem[];
@@ -251,12 +251,12 @@ function countLabel(enabled: number, total: number): string {
   return `${enabled} de ${total}`;
 }
 
-export function AmenitySelectorV2({
+export function AmenitySelector({
   propertyId,
   generalItems,
   generalDerived,
   spaceSections,
-}: AmenitySelectorV2Props) {
+}: AmenitySelectorProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set(["general"]),
   );
