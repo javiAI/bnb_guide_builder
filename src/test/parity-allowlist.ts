@@ -136,6 +136,25 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/property/**/*.tsx",
     ],
   },
+  {
+    // 16E content modules — access (llegada y check-in). Kit reference exists
+    // (`page-llegada` in subpages.html) with rich visual silhouette:
+    // arrival-hero big-number timestamp, access-grid 3-col method cards,
+    // arrival-steps vertical list with per-step meta chips. **E1 ships
+    // baseline-only** (semantic tokens, a11y, glyph fixes, primitives where
+    // they fit) — the structural form layout (`CollapsibleSection`-based) is
+    // preserved. Full UI Kit visual silhouette port is **deferred to required
+    // follow-up rama 16E.5** (`feat/liora-operator-content-visual-parity`)
+    // per LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-access",
+    routes: ["/properties/[propertyId]/access"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/access/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -165,6 +184,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/layout.tsx",
   "src/app/properties/[propertyId]/page.tsx",
   "src/app/properties/[propertyId]/property/**/*.tsx",
+  "src/app/properties/[propertyId]/access/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",

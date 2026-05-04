@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
@@ -107,7 +108,10 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href={`/properties/${propertyId}`} className="text-xs text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]">&larr; Volver al panel</Link>
+          <Link href={`/properties/${propertyId}`} className="inline-flex items-center gap-1.5 text-xs text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]">
+            <ArrowLeft size={12} aria-hidden="true" />
+            Volver al panel
+          </Link>
           <h1 className="mt-2 text-2xl font-bold text-[var(--foreground)]">Acceso y check-in</h1>
         </div>
         <InlineSaveStatus status={pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : "saved"} />
@@ -200,7 +204,7 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
 
-        <button type="submit" disabled={pending || !isDirty} className="inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
           {pending ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>
