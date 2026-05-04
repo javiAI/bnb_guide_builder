@@ -55,7 +55,7 @@ export function SystemCoverageTable({ systemId, propertyId, spaces, coverageMap 
   return (
     <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)]">
       {error && (
-        <div className="border-b border-[var(--border)] bg-[var(--color-error-50)] px-4 py-2 text-xs text-[var(--color-error-700)]">
+        <div className="border-b border-[var(--border)] bg-[var(--color-status-error-bg)] px-4 py-2 text-xs text-[var(--color-status-error-text)]">
           {error}
         </div>
       )}

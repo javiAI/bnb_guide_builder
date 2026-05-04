@@ -60,20 +60,20 @@ export function CreateSystemForm({ propertyId, existingKeys }: Props) {
           ))}
         </select>
         {result?.fieldErrors?.systemKey && (
-          <p className="mt-1 text-xs text-[var(--color-error-600)]">{result.fieldErrors.systemKey[0]}</p>
+          <p className="mt-1 text-xs text-[var(--color-status-error-icon)]">{result.fieldErrors.systemKey[0]}</p>
         )}
       </div>
 
       <button
         type="submit"
         disabled={pending || !selected}
-        className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
+        className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
       >
         {pending ? "Añadiendo…" : "Añadir sistema"}
       </button>
 
       {result && !result.success && result.error && (
-        <p className="text-xs text-[var(--color-error-600)]">{result.error}</p>
+        <p className="text-xs text-[var(--color-status-error-icon)]">{result.error}</p>
       )}
     </form>
   );
