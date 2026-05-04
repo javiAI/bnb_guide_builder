@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Eye, Star, X } from "lucide-react";
 import { getMediaDownloadUrlAction } from "@/lib/actions/media.actions";
 
 export interface MediaThumbnailData {
@@ -127,31 +128,31 @@ export function MediaThumbnail({
           <button
             type="button"
             onClick={handleOpenFullSize}
-            className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-neutral-700)] shadow hover:bg-white"
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
             title="Ver"
             aria-label="Ver imagen completa"
           >
-            &#128269;
+            <Eye size={14} aria-hidden="true" />
           </button>
           {!isCover && (
             <button
               type="button"
               onClick={() => onSetCover?.(data.assignmentId)}
-              className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-primary-600)] shadow hover:bg-white"
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
               title="Marcar como portada"
               aria-label="Marcar como portada"
             >
-              &#9733;
+              <Star size={14} aria-hidden="true" />
             </button>
           )}
           <button
             type="button"
             onClick={() => onRemove?.(data.assignmentId)}
-            className="rounded-full bg-white/90 p-1.5 text-xs text-[var(--color-danger-600)] shadow hover:bg-white"
+            className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-danger-600)] shadow hover:bg-white"
             title="Quitar"
             aria-label="Quitar imagen"
           >
-            &#10005;
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
       )}

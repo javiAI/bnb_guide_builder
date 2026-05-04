@@ -77,6 +77,23 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/lib/tone.ts",
     ],
   },
+  {
+    // 16E shared upfront — utility components consumed across multiple
+    // operator content modules (amenity-detail-panel, space-card,
+    // access-form, local-guide create form, media-page-client). Migrated
+    // first so subsequent module migrations do not need to revisit them.
+    // No UI Kit reference (these are infra, not pages) — design contract
+    // is "consume Liora tokens + primitives, no novel visual language".
+    id: "shared-media-and-place-autocomplete",
+    routes: ["(rendered inside operator content modules as imported)"],
+    profile: "shared",
+    files: [
+      "src/components/media/media-thumbnail.tsx",
+      "src/components/media/upload-dropzone.tsx",
+      "src/components/media/entity-gallery.tsx",
+      "src/components/local-guide/place-autocomplete.tsx",
+    ],
+  },
 ];
 
 /**
@@ -108,6 +125,8 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
+  "src/components/media/**/*.tsx",
+  "src/components/local-guide/place-autocomplete.tsx",
 ];
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   getEntityMediaAction,
   reorderMediaAction,
@@ -146,10 +147,13 @@ export function EntityGallery({
       type="button"
       onClick={() => setIsCollapsed(!isCollapsed)}
       className="flex w-full items-center gap-2 text-left text-xs font-semibold text-[var(--color-neutral-600)]"
+      aria-expanded={!isCollapsed}
     >
-      <span className="transition-transform" style={{ transform: isCollapsed ? "rotate(-90deg)" : "rotate(0)" }}>
-        &#9660;
-      </span>
+      <ChevronDown
+        size={12}
+        aria-hidden="true"
+        className={`transition-transform ${isCollapsed ? "-rotate-90" : "rotate-0"}`}
+      />
       {label} ({count})
     </button>
   ) : null;

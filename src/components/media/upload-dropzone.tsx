@@ -165,16 +165,14 @@ export function UploadDropzone({
 
   return (
     <div>
-      {/* Drop zone */}
-      <div
-        role="button"
-        tabIndex={0}
+      {/* Drop zone — native <button> for keyboard + screen reader semantics; drag handlers stay on the same element */}
+      <button
+        type="button"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputRef.current?.click(); } }}
-        className={`cursor-pointer rounded-[var(--radius-md)] border-2 border-dashed transition-colors ${
+        className={`block min-h-[44px] w-full cursor-pointer rounded-[var(--radius-md)] border-2 border-dashed text-left transition-colors ${
           isDragOver
             ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
             : "border-[var(--color-neutral-300)] hover:border-[var(--color-neutral-400)]"
@@ -198,7 +196,7 @@ export function UploadDropzone({
             </p>
           )}
         </div>
-      </div>
+      </button>
 
       {/* Upload progress */}
       {jobs.length > 0 && (
