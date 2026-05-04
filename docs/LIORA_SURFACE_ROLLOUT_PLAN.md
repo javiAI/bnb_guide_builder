@@ -131,6 +131,27 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 | `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
 | wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
 
+#### Wizard E2E smoke gate — opt-out documented
+
+**Decision**: deferred — no Playwright wizard smoke spec ships in `feat/liora-operator-module-rollout` (E1 baseline). Re-evaluation point: rama 16E.5, where the wizard silhouette port may introduce new interactive states worth covering.
+
+**Rationale**: E1 is a baseline-only Liora migration. The wizard's structural behavior (4-step form, validation, navigation, save-and-exit, completion) is not changed by this branch — only its rendered classNames. The behavioral contract is already pinned by:
+
+1. **Static invariants** in `component-invariants.test.ts` — touch-target, primitive-adoption, web-API guards, copy-lint Spanish, Tailwind hardcode, tone quartet, empty handlers, effect cleanup, HTML validity, interactive elements as `<button>`/`<Link>`. All run on every wizard file via the `operator-wizard` `AUDITED_SURFACES` entry.
+2. **Vitest unit + integration** — wizard step schemas, completeness scoring, and server actions are covered by the broader suite.
+3. **Type system** — `tsc --noEmit` clean across all wizard files.
+
+Adding a Playwright smoke now would exercise unchanged behavior and introduce selector/timing maintenance cost without a corresponding gain in confidence over the existing static + unit coverage.
+
+**Re-evaluation criteria for 16E.5** (any one triggers a smoke spec):
+
+- New interactive widgets appear that have no equivalent on a surface already covered by an existing E2E (e.g. multi-select drawers, sortable lists, drag-and-drop).
+- Step navigation logic changes (conditional skipping, branched flows, async pre-fill from external sources).
+- The save-and-exit contract changes (different `data-*` attributes, different debounce semantics, different toast placement).
+- A regression is found in production that a smoke spec would have caught at the boundary between visual rework and behavior.
+
+If none of those apply when 16E.5 ships, this deferral remains in force and is closed out as part of broader Liora replatform completion in 16G.
+
 ### 16F — Messaging + assistant
 
 Surfaces: messaging thread UI, AI assistant chat widget (operator + guest).
