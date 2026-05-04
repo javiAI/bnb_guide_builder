@@ -119,6 +119,23 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/new/**/*.tsx",
     ],
   },
+  {
+    // 16E content modules — property datos básicos editor. The kit
+    // `subpages.html` page-propiedades shows a property listing + read-only
+    // detail summary (`<dl>` with Tipo/Dirección/Ciudad/Capacidad/etc.) but
+    // NO editor form reference. Treated under the same deferred kit-design
+    // policy as wizard: baseline Liora invariants only (tokens, primitives
+    // where they fit, touch-target, no Tailwind named-palette, no HTML entity
+    // glyphs, web API guards, copy Spanish). Full UI Kit Parity audit deferred
+    // until a `page-propiedad-edit` or equivalent kit page lands in
+    // subpages.html. See MASTER_PLAN_V2.md § rama 16E "Surfaces sin kit-ref".
+    id: "operator-property",
+    routes: ["/properties/[propertyId]/property"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/property/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -147,6 +164,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/login/page.tsx",
   "src/app/properties/[propertyId]/layout.tsx",
   "src/app/properties/[propertyId]/page.tsx",
+  "src/app/properties/[propertyId]/property/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
