@@ -224,7 +224,7 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
                     </label>
                   </div>
                 )}
-                <button type="button" disabled={buildingMethods.length === 0} onClick={saveBuildingAccess} className="mt-4 inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">
+                <button type="button" disabled={buildingMethods.length === 0} onClick={saveBuildingAccess} className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">
                   Guardar
                 </button>
               </CollapsibleSection>
@@ -252,7 +252,7 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
                   </div>
                 )}
                 {fieldError("unitAccess") && <p className="mt-2 text-sm text-[var(--color-danger-500)]">{fieldError("unitAccess")}</p>}
-                <button type="button" disabled={unitMethods.length === 0} onClick={saveUnitAccess} className="mt-4 inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">
+                <button type="button" disabled={unitMethods.length === 0} onClick={saveUnitAccess} className="mt-4 inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors">
                   Guardar
                 </button>
               </CollapsibleSection>
@@ -289,7 +289,7 @@ export function Step4Form({ sessionId, initialState, maxStepReached, snapshot, s
               </div>
             </div>
 
-            <button type="submit" disabled={pending || !canContinue} className="mt-4 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+            <button type="submit" disabled={pending || !canContinue} className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-primary-600)] disabled:opacity-50">
               {pending ? "Guardando…" : "Continuar a revisión"}
             </button>
           </>

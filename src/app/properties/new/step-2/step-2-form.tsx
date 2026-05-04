@@ -36,7 +36,10 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
   const canContinue = country.trim().length > 0 && city.trim().length > 0 && streetAddress.trim().length > 0 && timezone.length > 0;
 
   const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
+  useEffect(() => {
+    const timers = flashTimers.current;
+    return () => { timers.forEach((t) => clearTimeout(t)); };
+  }, []);
 
   function flashField(name: string) {
     setAutoFilled((prev) => new Set(prev).add(name));
@@ -182,7 +185,7 @@ export function Step2Form({ sessionId, initialState, maxStepReached, snapshot, s
           {fieldError("timezone") && <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("timezone")}</p>}
         </label>
 
-        <button type="submit" disabled={pending || !canContinue} className="mt-4 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+        <button type="submit" disabled={pending || !canContinue} className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
           {pending ? "Guardando…" : "Continuar"}
         </button>
       </form>

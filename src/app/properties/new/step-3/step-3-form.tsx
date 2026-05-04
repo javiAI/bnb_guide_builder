@@ -204,22 +204,22 @@ export function Step3Form({ sessionId, initialState, maxStepReached, snapshot, s
                 <select value={bed.quantity} onChange={(e) => updateBed(idx, "quantity", Number(e.target.value))} className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1.5 text-sm">
                   {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
-                {beds.length > 1 ? <button type="button" onClick={() => removeBed(idx)} className="text-[var(--color-neutral-400)] hover:text-red-500 text-sm text-center">&times;</button> : <span />}
+                {beds.length > 1 ? <button type="button" onClick={() => removeBed(idx)} className="text-[var(--color-neutral-400)] hover:text-[var(--color-status-error-text)] text-sm text-center">&times;</button> : <span />}
               </div>
             ))}
           </div>
 
-          <button type="button" onClick={addBed} className="mt-3 inline-flex items-center gap-1 rounded-[var(--radius-md)] border border-dashed border-[var(--color-neutral-300)] px-3 py-2 text-xs font-medium text-[var(--color-neutral-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-500)]">
+          <button type="button" onClick={addBed} className="mt-3 inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border border-dashed border-[var(--color-neutral-300)] px-3 py-2 text-xs font-medium text-[var(--color-neutral-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-500)]">
             + Añadir cama
           </button>
 
           <div className="mt-3 flex items-center gap-2 text-xs">
             <span className="text-[var(--color-neutral-500)]">Capacidad total: {totalBedCapacity} personas</span>
-            {capacityWarning && <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">Inferior al máximo de huéspedes ({maxGuests})</span>}
+            {capacityWarning && <span className="rounded bg-[var(--color-status-warning-bg)] px-1.5 py-0.5 text-[var(--color-status-warning-text)]">Inferior al máximo de huéspedes ({maxGuests})</span>}
           </div>
         </div>
 
-        <button type="submit" disabled={pending || totalBedCapacity < maxGuests} className="mt-4 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+        <button type="submit" disabled={pending || totalBedCapacity < maxGuests} className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
           {pending ? "Guardando…" : "Continuar"}
         </button>
       </form>

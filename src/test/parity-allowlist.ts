@@ -94,6 +94,31 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/local-guide/place-autocomplete.tsx",
     ],
   },
+  {
+    // 16E wizard / onboarding — operator-facing 4-step property creation
+    // flow. NO UI kit reference exists in
+    // `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html`
+    // (see MASTER_PLAN_V2.md § rama 16E "Surfaces sin kit-ref"). Baseline
+    // Liora invariants only: tokens, primitives where they fit, touch-target,
+    // no Tailwind named-palette, no HTML entity glyphs, web API guards,
+    // copy Spanish. Full UI Kit Parity audit deferred to a future rama
+    // once the wizard kit page lands in subpages.html (then frontend-design
+    // → impl → liora-ui-kit-parity → webapp-testing).
+    id: "operator-wizard",
+    routes: [
+      "/properties/new/welcome",
+      "/properties/new/step-1",
+      "/properties/new/step-2",
+      "/properties/new/step-3",
+      "/properties/new/step-4",
+      "/properties/new/review",
+    ],
+    profile: "operator",
+    files: [
+      "src/components/wizard/**/*.tsx",
+      "src/app/properties/new/**/*.tsx",
+    ],
+  },
 ];
 
 /**
