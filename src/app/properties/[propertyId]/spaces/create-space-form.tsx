@@ -86,7 +86,7 @@ export function CreateSpaceForm({ propertyId, availableTypeOptions }: CreateSpac
       <button
         type="submit"
         disabled={pending}
-        className="mt-4 inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
       >
         {pending ? "Añadiendo…" : "Añadir espacio"}
       </button>

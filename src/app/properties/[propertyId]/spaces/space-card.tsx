@@ -212,19 +212,8 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   return (
     <div className={`rounded-[var(--radius-lg)] border-2 transition-colors duration-200 ${isArchived ? "border-dashed border-[var(--border)] bg-[var(--color-neutral-50)] opacity-70" : "border-[var(--border)] bg-[var(--surface-elevated)]"}`}>
-      {/* ── Card header ── */}
-      <div
-        className={`flex items-center gap-3 px-4 py-3 ${!editingName ? "cursor-pointer select-none" : ""}`}
-        role={!editingName ? "button" : undefined}
-        tabIndex={!editingName ? 0 : undefined}
-        aria-expanded={!editingName ? expanded : undefined}
-        onClick={() => { if (!editingName) setExpanded((e) => !e); }}
-        onKeyDown={(e) => {
-          if (editingName) return;
-          if (e.target !== e.currentTarget) return;
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((prev) => !prev); }
-        }}
-      >
+      {/* ── Card header (expand via the chevron button on the right) ── */}
+      <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
           {editingName ? (
             <form action={renameAction} className="flex items-center gap-2">
@@ -294,8 +283,8 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                 aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
                 className={`h-2 w-2 rounded-full ${
                   progressDot === "complete"
-                    ? "bg-[var(--color-success-500,#22c55e)]"
-                    : "bg-[var(--color-warning-400,#facc15)]"
+                    ? "bg-[var(--color-status-success-icon)]"
+                    : "bg-[var(--color-status-warning-icon)]"
                 }`}
               />
             </Tooltip>
@@ -450,7 +439,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                     <li key={sys.id}>
                       <Link
                         href={`/properties/${propertyId}/systems/${sys.id}`}
-                        className="inline-flex items-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs text-[var(--color-primary-700)] transition-colors hover:bg-[var(--color-primary-100)] hover:text-[var(--color-primary-700)] hover:no-underline"
                       >
                         {sys.label}
                       </Link>
@@ -481,7 +470,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   type="submit"
                   form={`details-${space.id}`}
                   disabled={detailsPending || !formDirty}
-                  className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
                 >
                   {detailsPending ? "Guardando…" : "Guardar cambios"}
                 </button>
@@ -498,7 +487,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   <button
                     type="submit"
                     disabled={archivePending}
-                    className="rounded-[var(--radius-md)] border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50"
                   >
                     {archivePending ? "Restaurando…" : "Restaurar espacio"}
                   </button>
@@ -508,14 +497,14 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                 </form>
               ) : confirmArchive ? (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-warning-700)]">¿Archivar este espacio?</span>
+                  <span className="text-xs text-[var(--color-status-warning-text)]">¿Archivar este espacio?</span>
                   <form action={archiveAction}>
                     <input type="hidden" name="spaceId" value={space.id} />
                     <input type="hidden" name="status" value="archived" />
                     <button
                       type="submit"
                       disabled={archivePending}
-                      className="rounded-[var(--radius-md)] bg-[var(--color-warning-600)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-warning-700)] disabled:opacity-50"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] hover:opacity-90 disabled:opacity-50"
                     >
                       {archivePending ? "Archivando…" : "Sí, archivar"}
                     </button>
@@ -607,7 +596,7 @@ function FlatFeatureSection({
                   type="button"
                   aria-pressed={active}
                   onClick={() => onChangeFeature(field.id, !active)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                     active
                       ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
                       : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
@@ -698,7 +687,7 @@ function StructuredField({
                     : [...selected, opt.id];
                   onChange(next.length > 0 ? next : null);
                 }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
                   checked
                     ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
                     : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"

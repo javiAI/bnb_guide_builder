@@ -83,11 +83,11 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
             Capacidad total: {totalCapacity} {totalCapacity === 1 ? "persona" : "personas"}
           </p>
           {maxGuests != null && totalCapacity > maxGuests && (
-            <div className="flex items-start gap-1.5 rounded-[var(--radius-md)] border border-amber-300 bg-amber-50 px-2.5 py-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-amber-600">
+            <div className="flex items-start gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-2.5 py-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-[var(--color-status-warning-icon)]" aria-hidden="true">
                 <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
-              <p className="text-xs text-amber-800">
+              <p className="text-xs text-[var(--color-status-warning-text)]">
                 Este espacio tiene camas para {totalCapacity} personas, más que el máximo actual de la propiedad ({maxGuests}). Esto no es un error — puedes tener más plazas de las habituales — pero conviene revisarlo si no es intencionado.
               </p>
             </div>
@@ -161,7 +161,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           <button
             type="submit"
             disabled={addPending || !selectedType || (selectedType === "bt.other" && !customBedLabel.trim())}
-            className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
           >
             {addPending ? "…" : "Añadir"}
           </button>
@@ -256,7 +256,7 @@ function BedRow({
           type="button"
           onClick={() => setExpanded((v) => !v)}
           title="Configurar colchón, almohada y ropa de cama"
-          className={`inline-flex items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
+          className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
             hasConfig
               ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
               : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
@@ -319,7 +319,7 @@ function BedRow({
           <button
             type="submit"
             disabled={deletePending}
-            className="flex h-6 w-6 items-center justify-center rounded p-0.5 text-[var(--color-neutral-400)] transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
+            className="flex h-6 w-6 items-center justify-center rounded p-0.5 text-[var(--color-neutral-400)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-icon)] disabled:opacity-40"
             title="Eliminar cama"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
@@ -376,7 +376,7 @@ function BedRow({
                   key={opt.id}
                   type="button"
                   onClick={() => setMattressType(mattressType === opt.id ? "" : opt.id)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressType === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressType === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
                 >
                   {opt.label}
                 </button>
@@ -389,7 +389,7 @@ function BedRow({
                     key={opt.id}
                     type="button"
                     onClick={() => setMattressFirmness(mattressFirmness === opt.id ? "" : opt.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressFirmness === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                    className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressFirmness === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
                   >
                     {opt.label}
                   </button>
@@ -407,7 +407,7 @@ function BedRow({
                   key={opt.id}
                   type="button"
                   onClick={() => togglePillow(opt.id)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillowTypes.includes(opt.id) ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillowTypes.includes(opt.id) ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
                 >
                   {opt.label}
                 </button>
