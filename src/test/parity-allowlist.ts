@@ -53,11 +53,28 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
+    // Primitives + tone helper. Audit scope = the primitives themselves, so
+    // invariants like Tailwind hardcode, tone quartet, web API guards, copy
+    // lint and HTML validity run on them. `primitive-adoption` is narrowly
+    // scoped to `src/components/overview/**` and therefore never iterates
+    // these files — primitives can render their own shell (e.g. card.tsx
+    // applies `recipe-card-shell` for variant="overview") without false
+    // positives. The orphan-import heuristic already exempts primitive
+    // sources by path prefix.
     id: "shared-primitives",
     routes: ["(rendered on every operator + guest surface as imported)"],
     profile: "shared",
     files: [
       "src/components/ui/theme-toggle.tsx",
+      "src/components/ui/card.tsx",
+      "src/components/ui/section-eyebrow.tsx",
+      "src/components/ui/icon-badge.tsx",
+      "src/components/ui/text-link.tsx",
+      "src/components/ui/timeline-list.tsx",
+      "src/components/ui/icon-button.tsx",
+      "src/components/ui/icon-button-link.tsx",
+      "src/components/ui/button-link.tsx",
+      "src/lib/tone.ts",
     ],
   },
 ];
@@ -75,11 +92,13 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
  * for any specific file in that scope is whatever its `ORPHAN_AUDIT_PENDING_EXCEPTIONS`
  * entry says (or "now" if the file is matched but not yet exempted).
  *
- * Today (post-16D), the operator shell + entry pages are audited; the inner
- * property subpages are not. They will appear here with `ORPHAN_AUDIT_PENDING_EXCEPTIONS`
- * entries pinned to 16E/16F as those ramas migrate them — a future rama
- * cannot ship without either auditing them or extending the per-file
- * `removeBy` (which is itself a CR signal).
+ * Today (post-16D.5), every pattern listed below is fully covered by an
+ * `AUDITED_SURFACES` entry — `ORPHAN_AUDIT_PENDING_EXCEPTIONS` is empty.
+ * 16E/F will extend this list with the inner property subpages (the
+ * `src/app/properties/[propertyId]/<section>/...` glob) AND add matching
+ * `ORPHAN_AUDIT_PENDING_EXCEPTIONS` entries pinned to that rama for any
+ * file that lands before its surface ships — the orphan check then forces
+ * either the audit or a CR-visible deadline extension.
  */
 export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/page.tsx",

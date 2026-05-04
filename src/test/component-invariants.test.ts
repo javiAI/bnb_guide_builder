@@ -91,11 +91,65 @@ function auditedFilesByProfile(
 
 const operatorAuditedFiles = auditedFilesByProfile("operator", "shared");
 
+/**
+ * Strip JS line and block comments while preserving line numbers (replace
+ * comment chars with whitespace so `lineNumber()` reports the source line).
+ * The brace-aware JSX walker would otherwise see `<button>` references inside
+ * doc comments and count them as nested tags. String literals (single, double,
+ * template) are skipped so a `// in a string` is not stripped.
+ */
+function stripJsComments(content: string): string {
+  let out = "";
+  let i = 0;
+  let str: '"' | "'" | "`" | null = null;
+  while (i < content.length) {
+    const c = content[i];
+    const next = content[i + 1];
+    if (str) {
+      if (c === "\\" && i + 1 < content.length) {
+        out += c + content[i + 1];
+        i += 2;
+        continue;
+      }
+      if (c === str) str = null;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      str = c;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const end = content.indexOf("*/", i + 2);
+      if (end < 0) {
+        out += " ".repeat(content.length - i);
+        return out;
+      }
+      out += content.slice(i, end + 2).replace(/[^\n]/g, " ");
+      i = end + 2;
+      continue;
+    }
+    if (c === "/" && next === "/") {
+      const end = content.indexOf("\n", i);
+      const stop = end < 0 ? content.length : end;
+      out += " ".repeat(stop - i);
+      i = stop;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
 const fileCache = new Map<string, string>();
 function readSrc(file: string): string {
   let cached = fileCache.get(file);
   if (cached === undefined) {
-    cached = readFileSync(join(ROOT, file), "utf8");
+    cached = stripJsComments(readFileSync(join(ROOT, file), "utf8"));
     fileCache.set(file, cached);
   }
   return cached;
@@ -300,7 +354,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           /(?<!hover:)border-\[var\(--color-/.test(cls) &&
           /\brounded-\[/.test(cls);
         if (!hasSurface && !hasButtonOutline) continue;
-        const tokens = [
+        // Height signals that meet 44 visual on their own.
+        const heightTokens = [
           "min-h-[44px]",
           "min-h-11",
           "min-h-12",
@@ -308,12 +363,34 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           "h-12",
           "h-14",
           "h-16",
-          "recipe-icon-btn-32",
         ];
-        const reaches44 = tokens.some((t) => cls.includes(t));
+        // Width signals — required when the button-shape is fixed-square
+        // (icon-only). `min-h-[44px]` alone is the text-bearing pattern (44
+        // floor, content drives width, not a fixed square) and is exempted.
+        // `recipe-icon-btn-32` bakes both dimensions via the pseudo-element +
+        // coarse-pointer media query; no width signal needed.
+        const widthTokens = [
+          "min-w-[44px]",
+          "min-w-11",
+          "min-w-12",
+          "w-11",
+          "w-12",
+          "w-14",
+          "w-16",
+        ];
+        const hasSlop = cls.includes("recipe-icon-btn-32");
+        const hasHeight = heightTokens.some((t) => cls.includes(t));
+        const hasWidth = widthTokens.some((t) => cls.includes(t));
+        const isTextBearingFloor =
+          cls.includes("min-h-[44px]") && !cls.includes("recipe-icon-btn-32");
+        const reaches44 =
+          hasSlop || (hasHeight && (isTextBearingFloor || hasWidth));
         if (!reaches44) {
+          const reason = !hasHeight
+            ? "missing min-h-[44px] / h-11 / recipe-icon-btn-32"
+            : "icon-shaped (fixed height) — also needs w-11 / min-w-[44px] or recipe-icon-btn-32";
           violations.push(
-            `${file}:${lineNumber(content, openIdx)}  <${name}> button-shaped but missing min-h-[44px] / h-11 / recipe-icon-btn-32`,
+            `${file}:${lineNumber(content, openIdx)}  <${name}> button-shaped but ${reason}`,
           );
         }
       }
