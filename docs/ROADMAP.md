@@ -2,7 +2,7 @@
 
 Estado actual y próximos pasos. Este documento es el punto de entrada rápido; el detalle ejecutable vive en `MASTER_PLAN_V2.md`.
 
-## Donde estamos (2026-04-26)
+## Donde estamos (2026-05-04)
 
 ### Completado — MASTER_PLAN v1 (fases 1A-7B, 20 PRs)
 
@@ -38,9 +38,9 @@ Fuente de verdad ejecutable: [MASTER_PLAN_V2.md](MASTER_PLAN_V2.md) · Quickref 
 | 13 | Guía local + issue reporting | 4 | ⏳ parcial — 13A/13B/13D ✅, 13C `feat/guide-maps-embedded` pendiente |
 | 14 | Platform integrations (Airbnb/Booking) | 5 | ✅ cerrada (14A–14E) |
 | 15 | Auth & access control foundation | 5 | ✅ cerrada (15A–15E) |
-| 16 | Liora Design Replatform | 7 | 🟢 lista para arrancar (paquete entregado en `design-system/`, plan corregido en chore/plan-update-liora) |
+| 16 | Liora Design Replatform | 7 + 1 governance | ⏳ parcial — 16A/B/C/D + 16D.5 ✅, 16E/F/G pendientes |
 
-**Estado actual**: Fase 15 cerrada con 15E (PR #92, `fc39482`). Fase 16 (Liora) lista para arrancar — paquete trackeado en `design-system/`, validado por `npm run validate:design-system` en CI. Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`**. Decisión de producto: arrancar 16A vs cerrar 13C primero.
+**Estado actual**: Fase 16 en marcha — 16A token foundation, 16B core components, 16C guest guide, 16D operator shell redesign y 16D.5 governance (primitivos + invariantes + branch closure template heredable) cerradas. 16E hereda los 8 primitivos + 5 recipes + 18 invariantes + `CURRENT_LIORA_PHASE` bump + 5 hard rules. Única rama funcional del plan original sin cerrar: **13C `feat/guide-maps-embedded`**. Decisión de producto: arrancar 16E vs cerrar 13C primero.
 
 **Fase 15 (Auth & access control foundation)** cubrió de forma transversal (a) operator OAuth + sessions (15A), (b) route guards + ownership cross-workspace (15B), (c) public-guide capability primitive generalizando el HMAC de 13D (15C), (d) hardening + AuditLog real + per-actor rate-limit (15D), (e) closed-loop import apply para Airbnb + Booking (15E). Toda ruta nueva bajo `/api/properties/[propertyId]/...` se escribe con `withOperatorGuards<P>(handler, { rateLimit })`. Ver `docs/SECURITY_AND_AUDIT.md` §0 para el contrato vivo + deuda explícita post-15D (audit reads UI, retention policy, audit en cron jobs).
 
@@ -134,7 +134,8 @@ Producto en punto naturalmente estable tras cerrar Fase 15:
 - ✅ **16A** `refactor/liora-token-foundation` — Tailwind config + `warmAnalyticalTheme`; IBM Plex fonts + pre-paint dark-mode script; `design-system.css` wrapper + `globals.css` cleanup; `legacy-aliases.css` (46 vars); `LIORA_DESIGN_ADOPTION_PLAN.md`; 4 Vitest CI guards (token-coverage, no-primitive-leak, alias-registry, no-hex-in-jsx)
 - ✅ **16B** `refactor/liora-core-components` — 7 nuevos primitivos (Button/Input/Select/Textarea/Card/Tabs/Icon); 12 re-skins con tokens semánticos/componente; CVA + lucide-react + tailwind-merge + clsx + Radix Select/Tabs/Slot; quinto guard Liora (`liora-no-tailwind-named-color`); `LIORA_COMPONENT_MAPPING.md`; `primary-cta.tsx` alias deprecated
 - ✅ **16C** `feat/liora-guest-guide-redesign` — `guide.css` rewrite completo (1279→~1320 LOC con clases incident page); 4 CVA guest cards; WarningCard en emergency; tokens semánticos en todos los componentes public-guide; `LIORA_SURFACE_ROLLOUT_PLAN.md` creado
-- ⏳ **16D** `feat/liora-operator-shell-redesign` — pendiente
+- ✅ **16D** `feat/liora-operator-shell-redesign` — operator overview redesign (6 cards refactored); SideNav + Topbar shell + ThemeToggle (auto/light/dark, persisted); login + properties list reskin; `dark-parity.test.ts` (≥80% paridad). PR #98 merged.
+- ✅ **16D.5** `refactor/liora-16D-governance` — governance branch entre 16D y 16E (cero delta visual). Extrae 8 primitivos (Card variant=overview, SectionEyebrow, IconBadge, TextLink, TimelineList, IconButton, IconButtonLink, ButtonLink) + `tone.ts` quartet helper + 5 CSS recipes (`recipe-card-shell`, `recipe-eyebrow`, `recipe-text-link`, `recipe-interactive-hover`, `recipe-icon-btn-32` slop hit-area). `component-invariants.test.ts` con 18 invariantes (touch-target ≥44 hit area + width signal, HTML validity heurística vía brace-aware JSX walker con strip de comentarios, web-API guards SSR-safe, Spanish copy lint, Tailwind hardcode, tone quartet, empty handlers, effect cleanup, command-bar non-interactive, primitive adoption, button-like Link, profile validation, audit coverage, exception shape, orphan check pattern + Liora-import). `parity-allowlist.ts` con 8 listas tipadas + `LioraPhase` order + phase-expiration enforcement + `AUDITED_SURFACES` con `profile: operator|guest|shared` + `EXPECTED_OPERATOR_SCOPE_PATTERNS` + `LIORA_PRIMITIVE_IMPORT_PATHS`. Branch closure template + 5 hard rules heredables en MASTER_PLAN_V2 §16E onwards + CLAUDE.md. PR #99 merged (5 review rounds, 12 commits). 16E hereda primitivos + invariantes + governance template — sus surfaces se añaden a `AUDITED_SURFACES` con `profile: operator` en cada commit y los gates corren solos.
 - ⏳ **16E** `feat/liora-operator-module-rollout` — pendiente
 - ⏳ **16F** `feat/liora-messaging-assistant-redesign` — pendiente
 - ⏳ **16G** `chore/remove-legacy-ui` — pendiente
