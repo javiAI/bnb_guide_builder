@@ -193,7 +193,7 @@ Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` 
 - Stack obligatorio en UI guest: Radix UI primitives, lucide-react, CVA, tailwind-merge/clsx, fuse.js, yet-another-react-lightbox (lazy), date-fns, react-hook-form+zod solo en forms. **Prohibido** en guest: MUI, Ant Design, Chakra, `next-pwa`.
 - PWA / offline (rama 10I): SW manual servido por `src/app/g/[slug]/sw.js/route.ts` (no `public/sw.js` — scope global rompería aislamiento). Versionado vía `__SW_VERSION__` = `GuideSearchIndex.buildVersion` (rama 10H), 12 chars determinísticos. Tres tiers de caché declarados en `taxonomies/guide_sections.json` (`offlineCacheTier: 1|2|3`); tier 1 (essentials/arrival/checkout/emergency) precached al install + SWR; tier 2 (thumbs) SWR con cap 12; tier 3 (md/full) network-first con timeout 2s. Manifest dinámico vía `buildGuidePwaManifest()` con `theme_color` derivado de `getBrandPair(brandPaletteKey).light`. Cache names llevan slug en namespace (`guide-<slug>-tier{N}-<version>`) para aislamiento per-property. Tests: 5 invariantes vitest + 1 spec E2E fuerte; SW lifecycle real no se testea en headless (flake típico).
 
-## Patrones de UI — Operator shell (Fase 16D)
+## Patrones de UI — Operator shell (Fase 16D / 16D.5)
 
 - **ThemeToggle** (`src/components/ui/theme-toggle.tsx`): 3 estados — `auto` / `light` / `dark`. Persiste en `localStorage[THEME_STORAGE_KEY]` (`src/lib/theme.ts`, key `"theme"`). Aplica `data-theme` en `<html>`. En modo `auto` responde a cambios del SO vía `matchMedia` listener (useEffect con cleanup). El pre-paint script en `layout.tsx` lleva una copia del key literal porque no puede importar módulos — si renombras `THEME_STORAGE_KEY`, actualiza `layout.tsx` también.
 - **AppShell** (`src/components/layout/app-shell.tsx`): server component. Monta `SideNav` + columna de contenido (`Topbar` + `<main>`). `sectionScores` se obtiene de `getDerived()` dentro de un try/catch fail-soft (un fallo de caché no rompe la navegación).
@@ -202,6 +202,72 @@ Reglas completas y consecuencias operacionales: `docs/ARCHITECTURE_OVERVIEW.md` 
 - **SideNav** (`src/components/layout/side-nav.tsx`): iconos viven en mapa local `NAV_ICONS: Partial<Record<string, LucideIcon>>` — NO en `navigation.ts`. `isNavItemActive()` importado de `navigation.ts`. Badge de propiedad arriba, grupos content/outputs/operations en el centro, "Nueva propiedad" en el footer (neutro, sin identidad de usuario).
 - **Properties list + login** (`src/app/page.tsx`, `src/app/login/page.tsx`): ambas tienen `ThemeToggle` en un header mínimo. Login: reskin completo con tokens semánticos, copia en español, SVG de Google inline.
 - **dark-parity.test.ts** (`src/test/dark-parity.test.ts`): 4 tests — root block existe, dark block existe, todos los grupos core tienen override dark, ≥80% paridad global. Los grupos core = `CORE_PREFIXES` en el test.
+
+### Primitivos obligatorios (Fase 16D.5)
+
+Toda surface bajo `AUDITED_SURFACES` (hoy: overview + layout + theme-toggle; 16E/F la extienden) **debe** usar estos primitivos en lugar de raw className. El test `src/test/component-invariants.test.ts` enforza la adopción.
+
+- **`<Card variant="overview">`** (`src/components/ui/card.tsx`): shell `flex h-full flex-col rounded-[var(--radius-lg)] border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4`. **No** anidar `CardHeader`/`CardContent` dentro (double-pad: `--card-padding-md = var(--space-5)` ≠ `p-4`). Cards con shell no canónico (overflow container, p-5 hero, grid) NO migran al primitivo — el test los excluye por firma.
+- **`<SectionEyebrow icon={…}>`** (`src/components/ui/section-eyebrow.tsx`): `<h3>` con icono Lucide y label, tipografía `text-sm font-semibold text-[var(--color-text-primary)]`. Reemplaza el patrón inline `<h3 className="flex items-center gap-2 text-sm font-semibold">`.
+- **`<IconBadge icon={…} tone={…}>`** (`src/components/ui/icon-badge.tsx`): `<span aria-hidden>` decorativo 30×30 (sm) o 36×36 (md). Tones: `neutral|success|warning|danger|primary` (5 keys — el extra `primary` evita falso positivo del gate `Record<BadgeTone>`). Reemplaza el bloque `<span className="grid h-[30px] w-[30px] ... rounded-[8px] bg-[...]">`.
+- **`<TextLink size="xs|sm|md" arrow>`** (`src/components/ui/text-link.tsx`): inline link `text-[N]px font-medium text-[var(--color-text-link)] hover:underline`. Reemplaza `<Link className="text-[N]px font-medium text-[var(--color-text-link)] hover:underline">`.
+- **`<TimelineList items={…}>`** (`src/components/ui/timeline-list.tsx`): vertical timeline con dot tones — usado en activity-feed, futuro audit log (16E), conversation events (16F).
+- **`<IconButton icon={…} size="sm|md" tone="neutral|primary">`** (`src/components/ui/icon-button.tsx`): button-only, `<button>` puro. `md` = h-11 w-11 (44 visual). `sm` = h-8 w-8 (32 visual) con `recipe-icon-btn-32` baked → 44 hit area vía pseudo-elemento `::before`, colapsa a 44 visual en `pointer:coarse`.
+- **`<IconButtonLink icon={…} size="sm|md">`** (`src/components/ui/icon-button-link.tsx`): wrapper de `next/link`. **NO** polimorfismo `as="a"` — separa typed `href` + prefetch del primitivo `<button>` puro.
+- **`<ButtonLink size="sm|md|lg" variant="primary|secondary">`** (`src/components/ui/button-link.tsx`): text-button-styled `<Link>` que **hornea** `hover:no-underline` para outranquear el `a:hover { text-decoration: underline }` global de `base.css` (el bug de specificity (0,1,1) que vence Tailwind arbitrary classes).
+- **`tone.ts`** (`src/lib/tone.ts`): records keyed por `BadgeTone = "neutral"|"success"|"warning"|"danger"`. Usar `TONE_DOT_BORDER`, `TONE_BG_SOFT`, `TONE_TEXT`, `TONE_BORDER` en lugar de mapas inline. **Cualquier `Record<BadgeTone, ...>` con keys distintas falla el test** (regla 6 — tone quartet).
+
+### Touch-target invariant (regla 1)
+
+Todo elemento clickable button-shaped (con `bg-[var(--color-...)]` o outline `border + border-[var(--color-...)] + rounded-[...]`) debe alcanzar **44 hit area**. Patrones aceptados (en orden de preferencia):
+
+1. **Visual 44**: `min-h-[44px]` / `min-h-11` / `h-11` / `h-12+`. Default para botones text-bearing y mobile-only (donde `pointer:coarse` es la regla).
+2. **Slop 32→44**: `recipe-icon-btn-32` (32 visual + `::before { inset: -6px }` = 44 hit en fine pointers; `@media (pointer: coarse)` colapsa a 44 visual). Default para topbar icon-only en desktop. **No** apta para messaging mobile, drawer mobile, ni cualquier surface con táctil primario — usar visual 44 ahí.
+
+Inline text links (sin bg ni outline button-style) están **exentos** por WCAG 2.5.8 (inline target exception). El test los excluye de la regla.
+
+### Surface profiles (operator vs guest, 16D.5)
+
+`AUDITED_SURFACES` en `src/test/parity-allowlist.ts` lleva `profile: "operator" | "guest" | "shared"`. **El sistema visual de operator y guest es deliberadamente distinto** — guest mantiene su propio set de cards (`HeroCard`, `EssentialCard`, `StandardCard`, `WarningCard` en `src/components/public-guide/ui/`), tipografía Inter 28/20/16/14/12 y radii 8/10/12/20 por contrato (ver `docs/FEATURES/GUEST_GUIDE_UX.md`), no la shell operator. **No** forzar `<Card variant="overview">`, `<SectionEyebrow>`, `<IconBadge>`, etc. sobre guest.
+
+Invariantes que aplican por profile:
+
+- **Operator-only** (`profile: "operator" | "shared"`): primitive-adoption (`<Card variant="overview">`), command-bar slot non-interactive, copy-lint Spanish, `<ButtonLink size="sm">` ban.
+- **Compartidas** (cualquier profile): touch-target ≥44 hit area, HTML validity (no nested button/anchor), web API guards (SSR-safe), Tailwind hardcode (no named-palette), tone quartet, empty handlers, effect cleanup, interactive elements as `<button>`/`<Link>`.
+
+Cuando 16E/F/G añadan guest surfaces auditadas, el filtrado se hace mediante `auditedFilesByProfile("operator", "shared")` en el test; no hay que tocar las invariantes individuales.
+
+### Allowlist governance (parity-allowlist.ts)
+
+`src/test/parity-allowlist.ts` mantiene 8 listas de excepciones tipadas con `ExceptionEntry { file, reason, removeBy: LioraPhase|"never" }`. `LioraPhase = "16D.5"|"16E"|"16F"|"16G"` con orden canónico en `LIORA_PHASE_ORDER`; la fase activa vive en `CURRENT_LIORA_PHASE`. **Política**:
+
+- Toda excepción nueva requiere `reason` ≥ 8 chars y `removeBy` ≤ fase actual + 1. Excepciones que sobreviven 2 fases son governance debt — la rama responsable no las cerró.
+- **PR description + commit message** deben justificar cualquier excepción añadida (motivo, deadline, plan de retirada). Una excepción sin justificación visible al revisor bloquea el merge — la auditabilidad es el contrato, no la lista en sí.
+- **Phase-order enforcement**: el invariante governance-shape compara `removeBy` contra `CURRENT_LIORA_PHASE` y falla si `removeBy` está en el pasado (`isPhaseInPast`). Una rama no puede mergear con una excepción cuyo `removeBy` ya pasó — la cleanup se hace o se sube el `removeBy` con un commit explícito que documente el motivo de la extensión.
+- Si una rama no puede cerrar una excepción heredada, debe explicarlo en PR description (motivo, plan, próxima rama responsable). Saltar el deadline silenciosamente no es opción — el gate falla CI.
+- `removeBy: "never"` reservado a casos estructurales (brand SVGs de terceros, etc.). Cualquier otro uso es CR red-flag.
+- **Orphan check**: `EXPECTED_OPERATOR_SCOPE_PATTERNS` + heurística de imports de primitivos (`LIORA_PRIMITIVE_IMPORT_PATHS`). Cualquier .tsx que matchee un patrón esperado o importe un primitivo Liora **debe** estar en `AUDITED_SURFACES` o en `ORPHAN_AUDIT_PENDING_EXCEPTIONS`. Falla en CI; no se puede mergear silenciosamente migrando un fichero sin cobertura.
+- 16G empty-registry gate: todas las listas vacías al merge final (excepto `removeBy: "never"`). El modelo "8 listas vacías al final" se enforza vía `parity-allowlist.ts` + tests, no es una promesa.
+
+### Branch closure template — 16E onwards (heredado de 16D.5)
+
+Toda PR de una rama Liora visual posterior a 16D.5 (16E, 16F, 16G y subramas E1/E2/E3, F1/F2/F3) **debe** incluir una sección "Audited surfaces / test coverage" en la descripción de la PR. Spec normativa completa en [docs/MASTER_PLAN_V2.md § Liora branch closure template — 16E onwards](docs/MASTER_PLAN_V2.md). Resumen de reglas duras enforced por `component-invariants.test.ts`:
+
+1. **Same-commit AUDITED_SURFACES update**. Toda página/operator surface tocada o migrada se añade a `AUDITED_SURFACES` en el mismo commit. Una migración visual sin actualización de `AUDITED_SURFACES` no está completa.
+2. **Liora-import heuristic**. Cualquier .tsx que importe primitivos Liora (`@/components/ui/{card,section-eyebrow,icon-badge,text-link,timeline-list,icon-button,icon-button-link,button-link}` o `@/lib/tone`) debe quedar cubierto por `AUDITED_SURFACES` o `ORPHAN_AUDIT_PENDING_EXCEPTIONS` en esa misma rama. El orphan check es enforcement real, no documentación.
+3. **Profile separation (operator vs guest vs shared)**. Guest public guide tiene su propio sistema visual en `src/components/public-guide/ui/` y **no hereda primitivos operator** (`<Card variant="overview">`, primitive-adoption operator, copy-lint Spanish, etc.). Para guest aplican invariantes compartidos: tokens, hardcodes, web API guards, a11y básica, target-size donde corresponda. Si una rama futura audita guest surfaces, usa `profile: "guest"` y la batería compartida se aplica automáticamente.
+4. **`CURRENT_LIORA_PHASE` bump al iniciar la rama**. 16E sube `CURRENT_LIORA_PHASE` a `"16E"`, etc. Sin bump → la rama no recibe el efecto de governance (phase-order check sobre entradas heredadas) — bug.
+5. **Exception policy**. Ver § Allowlist governance arriba. Cualquier excepción nueva: justificar en PR + commit, `removeBy` ≤ siguiente fase, no acumular debt.
+
+Esta sección es la spec normativa heredable. Si en una rama futura el agente no encuentra estas reglas o no recuerda el formato del template, vuelve a `MASTER_PLAN_V2.md` § Liora branch closure template — no es necesario inferir.
+
+### Static-analysis gate honestidad (16D.5)
+
+`component-invariants.test.ts` usa un **walker JSX brace-aware heurístico**, no un AST parser completo. El walker rastrea `{}` nesting + string literals para encontrar el cierre real del open-tag (evita el bug de `>` dentro de `=>` callbacks), pero no construye un syntax tree. Consecuencias:
+
+- Componentes resueltos a runtime (`<IconButton>` que renderiza `<button>`) no son detectados — solo tags literales (`<button>`, `<Link>`, `<a>`, `<ButtonLink>`).
+- Polymorphism `as="a"` rompería el gate por la misma razón — por eso primitivos como `IconButton`/`IconButtonLink`/`ButtonLink` están separados deliberadamente (no `as` poly).
+- Si en 16E o posterior el rigor lo requiere, opción A: introducir `@typescript-eslint/parser` explícito en devDependencies y reescribir las invariantes sobre AST. Hoy: heurística suficiente para el scope auditado, documentada como tal.
 
 ## Patrones de UI — Espacios
 

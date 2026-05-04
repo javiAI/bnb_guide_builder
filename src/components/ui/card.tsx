@@ -2,21 +2,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@/lib/cn";
 
-const cardVariants = cva(
-  "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)]",
-  {
-    variants: {
-      variant: {
-        default:  "border border-[var(--card-border)] shadow-[var(--card-shadow)]",
-        elevated: "shadow-[var(--card-shadow-hover)]",
-        outlined: "border border-[var(--card-border)]",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
+const cardVariants = cva("", {
+  variants: {
+    variant: {
+      default:  "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] border border-[var(--card-border)] shadow-[var(--card-shadow)]",
+      elevated: "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] shadow-[var(--card-shadow-hover)]",
+      outlined: "rounded-[var(--card-radius)] bg-[var(--card-bg)] text-[var(--card-fg)] border border-[var(--card-border)]",
+      // overview replicates EXACTLY the shell of operator overview cards (16D)
+      // via the recipe-card-shell @apply (src/styles/recipes.css). Padding (p-4)
+      // is baked in; do NOT nest CardHeader/CardContent inside (would double-pad,
+      // since --card-padding-md = var(--space-5) ≠ p-4).
+      overview: "recipe-card-shell",
     },
   },
-);
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 interface CardProps
   extends ComponentPropsWithoutRef<"div">,

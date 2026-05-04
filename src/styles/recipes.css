@@ -1,0 +1,49 @@
+/*
+ * Liora 16D.5 — global CSS recipes consumed by primitives in src/components/ui/.
+ * Direct usage in feature code is allowed but discouraged: prefer the primitive.
+ */
+
+.recipe-card-shell {
+  @apply flex h-full flex-col
+         rounded-[var(--radius-lg)]
+         border border-[var(--color-border-default)]
+         bg-[var(--color-background-elevated)]
+         p-4;
+}
+
+.recipe-eyebrow {
+  @apply flex items-center gap-2
+         text-sm font-semibold
+         text-[var(--color-text-primary)];
+}
+
+.recipe-text-link {
+  @apply text-[11px] font-medium
+         text-[var(--color-text-link)]
+         hover:underline;
+}
+
+.recipe-interactive-hover {
+  @apply transition-colors
+         hover:bg-[var(--color-interactive-hover)]
+         hover:text-[var(--color-text-primary)]
+         focus-visible:outline-none focus-visible:ring-2
+         focus-visible:ring-[var(--color-border-focus)];
+}
+
+/*
+ * Touch-target slop: 32 visual + 12px ::before slop = 44 hit area on fine pointers.
+ * On coarse pointers (touch primary), the visual itself grows to 44 — slop collapses.
+ */
+.recipe-icon-btn-32 {
+  position: relative;
+}
+.recipe-icon-btn-32::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+@media (pointer: coarse) {
+  .recipe-icon-btn-32 { min-height: 44px; min-width: 44px; }
+  .recipe-icon-btn-32::before { inset: 0; }
+}

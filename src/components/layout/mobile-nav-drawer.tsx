@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 import { SideNav } from "./side-nav";
 import type { SwitchableProperty } from "./property-switcher";
 
@@ -31,15 +32,15 @@ export function MobileNavDrawer({
 
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        icon={Menu}
+        size="md"
+        tone="neutral"
         onClick={() => setOpen(true)}
         aria-label="Abrir navegación"
         aria-expanded={open}
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] lg:hidden"
-      >
-        <Menu size={15} aria-hidden="true" />
-      </button>
+        className="shrink-0 lg:hidden"
+      />
 
       {open && (
         <>
@@ -56,18 +57,18 @@ export function MobileNavDrawer({
               workspaceProperties={workspaceProperties}
               variant="drawer"
             />
-            <button
-              type="button"
+            <IconButton
+              icon={X}
+              size="md"
+              tone="neutral"
               onClick={() => setOpen(false)}
               aria-label="Cerrar navegación"
-              className="fixed z-[60] grid h-8 w-8 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+              className="fixed z-[60]"
               style={{
                 left: "calc(var(--sidebar-width) - 40px)",
                 top: "calc(var(--topbar-height) + 8px)",
               }}
-            >
-              <X size={15} aria-hidden="true" />
-            </button>
+            />
           </div>
         </>
       )}

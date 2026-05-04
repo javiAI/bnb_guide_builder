@@ -214,7 +214,7 @@ export async function PublishingRail({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Abrir guía en una nueva pestaña"
-                className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-[var(--color-action-primary)] px-3 text-[12px] font-medium text-[var(--color-action-primary-fg)] no-underline transition-colors hover:bg-[var(--color-action-primary-hover)] hover:text-[var(--color-action-primary-fg)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[8px] bg-[var(--color-action-primary)] px-3 text-[12px] font-medium text-[var(--color-action-primary-fg)] no-underline transition-colors hover:bg-[var(--color-action-primary-hover)] hover:text-[var(--color-action-primary-fg)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
               >
                 <ExternalLink size={12} aria-hidden="true" />
                 Abrir guía

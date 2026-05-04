@@ -21,11 +21,6 @@ const RATE_BUCKETS_SOFT_CAP = 512;
 
 const rateBuckets = new Map<string, number[]>();
 
-/** Test-only helper: clear the rate-limit window. */
-export function __resetIncidentRateLimitForTests(): void {
-  rateBuckets.clear();
-}
-
 interface RouteContext {
   params: Promise<{ slug: string }>;
 }

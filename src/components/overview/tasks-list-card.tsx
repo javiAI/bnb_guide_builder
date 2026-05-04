@@ -11,6 +11,9 @@ import {
   Target,
   type LucideIcon,
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
+import { IconBadge, type IconBadgeTone } from "@/components/ui/icon-badge";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
 import { OVERVIEW_SECTIONS } from "./section-map";
@@ -30,7 +33,7 @@ interface Task {
   meta: string;
   ctaUrl: string;
   icon: LucideIcon;
-  iconTone: "primary" | "neutral" | "warn";
+  iconTone: Extract<IconBadgeTone, "primary" | "neutral" | "warning">;
   impact?: "Alto impacto" | "Impacto medio" | null;
 }
 
@@ -62,7 +65,7 @@ function buildTasks(
       meta: "Bloqueante",
       ctaUrl: issue.ctaUrl ?? `/properties/${propertyId}/publishing`,
       icon: SEVERITY_TASK_ICON.blocker ?? AlertCircle,
-      iconTone: "warn",
+      iconTone: "warning",
       impact: "Alto impacto",
     });
   }
@@ -75,7 +78,7 @@ function buildTasks(
       meta: "Error",
       ctaUrl: issue.ctaUrl ?? `/properties/${propertyId}/publishing`,
       icon: SEVERITY_TASK_ICON.error ?? FileText,
-      iconTone: "warn",
+      iconTone: "warning",
       impact: "Alto impacto",
     });
   }
@@ -94,21 +97,13 @@ function buildTasks(
       meta: section.label,
       ctaUrl: `/properties/${propertyId}/${section.href}`,
       icon: SECTION_ICON[section.key] ?? Camera,
-      iconTone: isCritical ? "warn" : "primary",
+      iconTone: isCritical ? "warning" : "primary",
       impact: isCritical ? "Alto impacto" : "Impacto medio",
     });
   }
 
   return tasks;
 }
-
-const ICON_TONE_BG: Record<"primary" | "neutral" | "warn", string> = {
-  primary:
-    "bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]",
-  neutral:
-    "bg-[var(--color-background-muted)] text-[var(--color-text-primary)]",
-  warn: "bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)]",
-};
 
 export function TasksListCard({
   propertyId,
@@ -119,12 +114,9 @@ export function TasksListCard({
   const tasks = buildTasks(propertyId, scores, blockers, errors).slice(0, 3);
 
   return (
-    <div className="flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
+    <Card variant="overview">
       <div className="mb-3 flex items-start justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
-          <Target size={14} aria-hidden="true" />
-          Siguientes acciones
-        </h3>
+        <SectionEyebrow icon={Target}>Siguientes acciones</SectionEyebrow>
         <span className="text-[11px] text-[var(--color-text-muted)]">
           Priorizadas por impacto
         </span>
@@ -136,56 +128,48 @@ export function TasksListCard({
         </p>
       ) : (
         <ul className="-mx-2 flex flex-1 flex-col">
-          {tasks.map((task) => {
-            const Icon = task.icon;
-            return (
-              <li key={task.id}>
-                <Link
-                  href={task.ctaUrl}
-                  className="group flex min-h-[44px] items-start gap-3 rounded-[var(--radius-md)] px-2 py-3 transition-colors hover:bg-[var(--color-interactive-hover)]"
-                >
-                  <span
-                    className={`grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] ${ICON_TONE_BG[task.iconTone]}`}
-                    aria-hidden="true"
-                  >
-                    <Icon size={14} />
-                  </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <p className="text-[13px] font-medium leading-snug text-[var(--color-text-primary)]">
-                      {task.title}
-                    </p>
-                    <p className="text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
-                      {task.sub}
-                    </p>
-                    <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-                      <span>{task.meta}</span>
-                      {task.impact && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span
-                            className={
-                              task.impact === "Alto impacto"
-                                ? "font-medium text-[var(--color-action-primary)]"
-                                : ""
-                            }
-                          >
-                            {task.impact}
-                          </span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <ArrowRight
-                    size={16}
-                    aria-hidden="true"
-                    className="mt-1 shrink-0 text-[var(--color-text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--color-text-primary)]"
-                  />
-                </Link>
-              </li>
-            );
-          })}
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <Link
+                href={task.ctaUrl}
+                className="group flex min-h-[44px] items-start gap-3 rounded-[var(--radius-md)] px-2 py-3 transition-colors hover:bg-[var(--color-interactive-hover)]"
+              >
+                <IconBadge icon={task.icon} tone={task.iconTone} />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <p className="text-[13px] font-medium leading-snug text-[var(--color-text-primary)]">
+                    {task.title}
+                  </p>
+                  <p className="text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
+                    {task.sub}
+                  </p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
+                    <span>{task.meta}</span>
+                    {task.impact && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span
+                          className={
+                            task.impact === "Alto impacto"
+                              ? "font-medium text-[var(--color-action-primary)]"
+                              : ""
+                          }
+                        >
+                          {task.impact}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                </div>
+                <ArrowRight
+                  size={16}
+                  aria-hidden="true"
+                  className="mt-1 shrink-0 text-[var(--color-text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--color-text-primary)]"
+                />
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
