@@ -231,6 +231,34 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/systems/**/*.tsx",
     ],
   },
+  {
+    // 16E content modules — troubleshooting (incidencias: playbooks +
+    // ocurrencias). NO single-page kit reference exists in subpages.html for
+    // a playbook editor or incident registry — `page-troubleshooting` is a
+    // surface conceptually adjacent to system detail but the UI Kit does
+    // not ship distinct silhouettes for the playbook list, the playbook
+    // editor form, the incident registry table, or the incident row
+    // actions. **E1 ships baseline-only** (semantic error tokens replacing
+    // `--color-danger-*` legacy aliases, 44 hit-targets on submits + filter
+    // + row actions, primitives where they fit). Tab-row navigation
+    // (TroubleshootingTabs) and inline list-row patterns are preserved.
+    // Glyphs (← back arrow, severity badges) are kept as-is. Full UI Kit
+    // visual silhouette port is **deferred to required follow-up rama
+    // 16E.5** (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-troubleshooting",
+    routes: [
+      "/properties/[propertyId]/troubleshooting",
+      "/properties/[propertyId]/troubleshooting/[playbookKey]",
+      "/properties/[propertyId]/troubleshooting/incidents",
+    ],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -264,6 +292,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/spaces/**/*.tsx",
   "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/app/properties/[propertyId]/systems/**/*.tsx",
+  "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",

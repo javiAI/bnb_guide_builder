@@ -33,7 +33,7 @@ export function IncidentRowActions({ incidentId, canResolve }: IncidentRowAction
   return (
     <div className="flex flex-col items-end gap-1">
       {error && (
-        <span className="text-xs text-[var(--color-danger-700)]">{error}</span>
+        <span className="text-xs text-[var(--color-status-error-text)]">{error}</span>
       )}
       <div className="flex gap-2">
       {canResolve && (
@@ -41,7 +41,7 @@ export function IncidentRowActions({ incidentId, canResolve }: IncidentRowAction
           type="button"
           disabled={pending}
           onClick={() => handle(resolveIncidentAction)}
-          className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1 text-xs hover:bg-[var(--color-neutral-50)] disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1 text-xs hover:bg-[var(--color-neutral-50)] disabled:opacity-50"
         >
           Marcar resuelta
         </button>
@@ -52,7 +52,7 @@ export function IncidentRowActions({ incidentId, canResolve }: IncidentRowAction
         onClick={() =>
           handle(deleteIncidentAction, "¿Eliminar esta ocurrencia? No se puede deshacer.")
         }
-        className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-3 py-1 text-xs text-[var(--color-danger-700)] hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-status-error-border)] px-3 py-1 text-xs text-[var(--color-status-error-text)] hover:bg-[var(--color-status-error-bg)] disabled:opacity-50"
       >
         Eliminar
       </button>
