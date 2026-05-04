@@ -13,7 +13,8 @@ Migration order and status for each product surface adopting the Liora foundatio
 | Core UI primitives (`src/components/ui/`) | operator surfaces | 16B | ✅ migrated |
 | **Guest guide** | `/g/:slug` | **16C** | **✅ migrated** |
 | Operator shell (sidebar, topbar) | `/properties/**` | 16D | ✅ migrated |
-| Operator modules (wizard, editor) | `/properties/**` | 16E | ⬜ pending |
+| Operator modules (wizard, editor) — **baseline** | `/properties/**` | 16E | 🟡 in progress |
+| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting}` | 16E.5 | ⬜ pending (required follow-up) |
 | Messaging + assistant | `/properties/*/messaging`, `/g/:slug` chat | 16F | ⬜ pending |
 | Legacy alias removal | global | 16G | ⬜ pending |
 
@@ -81,6 +82,54 @@ Migration order and status for each product surface adopting the Liora foundatio
 
 Surfaces: property wizard (all steps), property editor, space editor.
 Key files: `src/components/wizard/`, `src/components/overview/`.
+
+**E1 status (in progress)**: baseline migration only — semantic tokens, primitives where they fit, touch-target ≥44, glyph fixes, AUDITED_SURFACES governance. Structural form layout (`CollapsibleSection`-based) is preserved when reworking it would require UX redesign. **The full UI Kit visual silhouette port is deferred to required follow-up rama 16E.5** — see § "Deferred visual parity — required follow-up" per module below.
+
+**Modules migrated to baseline in E1** (status updated as commits land):
+
+- `src/components/wizard/` + `src/app/properties/new/**/*.tsx` (welcome, step-1..4, review) — no kit reference exists.
+- `src/app/properties/[propertyId]/property/` — only listing+detail summary in kit, no editor reference.
+- `src/app/properties/[propertyId]/access/` — kit reference `page-llegada` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/spaces/` — kit reference `page-espacios` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/amenities/` — kit reference `page-equipamiento` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/systems/` — kit reference `page-sistemas` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/troubleshooting/` — kit reference `page-averias` exists; visual silhouette deferred to 16E.5.
+
+#### Deferred visual parity — required follow-up
+
+**Status**: required next follow-up, not optional polish.
+**Reason**: E1 applied baseline token/a11y migration only; full UI Kit silhouette requires UX/layout restructuring beyond a token swap (the `CollapsibleSection` form pattern does not map 1:1 to `arrival-hero`, `access-grid`, `arrival-steps`, hero rows, section numbering, chip strips, etc.).
+**Required branch**: `feat/liora-operator-content-visual-parity` (rama 16E.5 — spec in `docs/MASTER_PLAN_V2.md` § rama 16E.5).
+**Reference assets**: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` per module + matching CSS in `operator.css`.
+**Expected changes per module**:
+
+- Hero/header treatment where the kit shows it (e.g. `arrival-hero` big-number timestamp on access/).
+- Section rhythm and numbering (01/02/03 prefixes).
+- Grid/card layout parity (e.g. `access-grid` 3-column method cards on access/).
+- Status/meta chips (e.g. eyebrow row chips: check-in time, autonomous flag).
+- Richer empty states aligned with kit voice.
+- CTA placement parity (action buttons on the right of the page header).
+- Screenshot evidence in `eval-artifacts/16E.5/<module>/` (Liora vs implementation, light + dark).
+
+**Acceptance gate** (required, blocking):
+
+- ✅ UI Kit Parity ≥ 8.5 global, ≥ 7.5 per criterion (skill `liora-ui-kit-parity` 7-criterios).
+- ✅ Screenshots referenced in PR description.
+- ✅ Zero functional/server-action changes (baseline E1 logic preserved).
+- ✅ `component-invariants.test.ts`, `parity-static.test.ts`, `dark-parity.test.ts` green.
+- ✅ axe-core `serious|critical = 0` light + dark per surface.
+
+**Per-module deferred parity table** (updated by 16E.5 as each module ports):
+
+| Module | E1 baseline status | UI Kit Parity status | Follow-up branch |
+|--------|--------------------|----------------------|------------------|
+| `access/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `spaces/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `amenities/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `systems/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `troubleshooting/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
+| wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
 
 ### 16F — Messaging + assistant
 

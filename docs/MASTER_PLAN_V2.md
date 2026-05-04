@@ -3364,6 +3364,70 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 
 ---
 
+### Rama 16E.5 — `feat/liora-operator-content-visual-parity`
+
+**Estado**: bloqueada hasta que 16E (`feat/liora-operator-module-rollout`) cierre. Es la **siguiente rama prioritaria** después de E1 — no se ejecuta E2/E3 sin decisión explícita del usuario que opte por saltarse este paso.
+
+**Propósito**: completar la paridad visual real de los content modules migrados con baseline únicamente en E1 (Sub-PR E1 ramas 16E). E1 aplica tokens semánticos + a11y + glyph fixes + AUDITED_SURFACES, pero mantiene la estructura `CollapsibleSection` actual cuando rehacerla implica rediseño de UX/form flow. 16E.5 cierra ese gap convirtiendo cada surface en silueta Liora real (`arrival-hero`, `access-grid`, `arrival-steps`, chip strips de eyebrow row, section numbering 01/02/03, hero treatments, etc.) **sin tocar server actions, schema Prisma, ni lógica config-driven**.
+
+**Naturaleza**: required follow-up, NO optional polish. La deuda queda registrada por módulo en `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity — required follow-up" con acceptance gate concreto (UI Kit Parity ≥8.5 global / ≥7.5 per criterion + screenshots). E2/E3 continúan en sub-PRs internos sobre la misma rama de E1 SOLO si el usuario decide explícitamente que el visual parity port se ejecuta inmediatamente después; de lo contrario abre rama nueva 16E.5 con su propia PR contra `main`.
+
+**Scope inicial**:
+- `src/app/properties/[propertyId]/access/` (page-llegada).
+- `src/app/properties/[propertyId]/spaces/` (page-espacios).
+- `src/app/properties/[propertyId]/amenities/` (page-equipamiento).
+- `src/app/properties/[propertyId]/systems/` (page-sistemas).
+- `src/app/properties/[propertyId]/troubleshooting/` (page-averias).
+- `src/app/properties/[propertyId]/property/` si el baseline E1 queda visualmente por debajo del kit (revisar al cerrar 16E con stats explícitos).
+- Wizard `src/components/wizard/` + `src/app/properties/new/**/*.tsx` queda excluido — 16E lo cubre como "no-kit-ref deferred" y el kit de wizard no existe todavía. Su parity port espera a que `subpages.html` añada `page-onboarding` (rama futura distinta).
+
+**No-alcance**:
+- ❌ Cambiar server actions o cualquier lógica de persistencia.
+- ❌ Tocar Prisma / schema / migraciones.
+- ❌ Messaging, assistant, `ai/` (16F).
+- ❌ Guest public guide (`src/app/g/[slug]/*`, `src/components/public-guide/*`).
+- ❌ Outputs E3 (`reservations/`, `media/`, `analytics/`, `publishing/`, `activity/`) salvo decisión explícita de incorporar.
+- ❌ Introducir nuevas taxonomías o nuevas server actions.
+
+**Acceptance gate per módulo**:
+- ✅ UI Kit Parity ≥ 8.5 global, ≥ 7.5 per criterion (skill `liora-ui-kit-parity` con tabla 7-criterios + screenshots Liora vs implementación en `eval-artifacts/16E.5/<module>/`).
+- ✅ Layout silhouette portado: hero/header treatment donde aplique, section rhythm + numbering 01/02/03, grid/card layout parity, status/meta chips, empty states, CTA placement.
+- ✅ Cero cambios funcionales (las server actions y schemas no se tocan — el test `vitest run` de cada módulo + `tsc --noEmit` deben pasar sin modificar lógica).
+- ✅ AUDITED_SURFACES no requiere nuevas entries (los módulos ya están auditados desde E1) pero sí actualización del comentario inline cuando el surface deja de estar en "deferred kit-design" status.
+
+**Tests**:
+- `component-invariants.test.ts` verde (todas las invariantes 16D.5 + governance shape).
+- `parity-static.test.ts` verde.
+- `dark-parity.test.ts` verde — la migración visual debe mantener paridad dark-mode.
+- Suite de cada módulo verde (sin cambios funcionales esperados).
+- axe-core `serious|critical = 0` en light + dark per surface.
+
+**Criterio de done**:
+- ✅ Cada módulo del scope con `LIORA_SURFACE_ROLLOUT_PLAN.md` actualizado: status pasa de "deferred required follow-up" a "✅ migrated" con UI Kit Parity verdict (tabla 7-criterios + screenshots referenciados).
+- ✅ PR description con tabla per módulo (E1 baseline status → 16E.5 final status) + diff stats + screenshots referenced.
+- ✅ `/simplify` ejecutado sobre toda la rama antes de abrir PR.
+- ✅ `docs/ROADMAP.md` marca 16E.5 ✅.
+- ✅ `CLAUDE.md` § "Patrones de UI — Operator shell" actualizado si la migración introduce nuevos patrones reutilizables (chip-strip, hero-row, section-numbered, etc.).
+
+**Skills**:
+- `frontend-design` — design thinking pre-implementación per módulo (Purpose / Tone / Constraints / Differentiation).
+- `liora-ui-kit-parity` — audit post-implementación per módulo, scoring 7-criterios + screenshots.
+- `webapp-testing` — Playwright smoke per módulo si aporta valor (no es mandatorio).
+
+**Restricciones / Riesgos**:
+- ⚠️ La rama puede ser grande (5+ módulos × silueta visual real) — particionar en sub-PRs por módulo si supera 60 archivos / 4k LOC al cerrar el primer módulo.
+- ⚠️ Tentación de tocar server actions "porque ya estamos aquí" — bloqueado por test invariants. Si una migración visual revela que la lógica del form necesita refactor, eso va a una rama separada después.
+- ⚠️ CollapsibleSection puede no encajar con la silueta del kit en algunos módulos (e.g. arrival-hero + arrival-steps son layouts no-collapsibles). Decisión de Fase -1 per módulo: ¿se reemplaza, se complementa, o se mantiene? Documentar el reasoning en la PR description.
+
+**Dependencias**: 16E mergeada (E1 baseline aplicado a todos los content modules listados arriba).
+
+**Preparación**:
+- Releer `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` per módulo (page-llegada, page-espacios, page-equipamiento, page-sistemas, page-averias) y los selectores CSS asociados en `operator.css`.
+- Releer `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity" per módulo (escrito durante E1 con la lista exacta de gaps).
+- Skill mandatoria: `frontend-design` antes de tocar el primer módulo.
+
+---
+
 ### Rama 16F — `feat/liora-messaging-assistant-redesign`
 
 **Propósito**: superficies messaging + assistant console. Asume Fase 11 + 12 mergeadas (verde en MEMORY).
