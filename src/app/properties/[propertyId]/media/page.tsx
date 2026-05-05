@@ -30,9 +30,20 @@ export default async function MediaPage({
 
   const assets = await prisma.mediaAsset.findMany({
     where: { propertyId },
-    include: {
+    select: {
+      id: true,
+      assetRoleKey: true,
+      mediaType: true,
+      visibility: true,
+      status: true,
+      caption: true,
       assignments: {
         orderBy: { sortOrder: "asc" },
+        select: {
+          id: true,
+          entityType: true,
+          entityId: true,
+        },
       },
     },
     orderBy: { createdAt: "desc" },

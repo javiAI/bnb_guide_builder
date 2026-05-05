@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import {
   addBedAction,
   updateBedAction,
@@ -219,15 +219,46 @@ function BedRow({
   const cap = isCustom ? customCapacity : (typeInfo?.sleepingCapacity ?? 1);
   const quantityDirty = quantity !== bed.quantity;
 
+  const pillowsDirty = useMemo(() => {
+    const a = [...pillowTypes].sort();
+    const b = [...((cfg.pillowTypes as string[]) ?? [])].sort();
+    if (a.length !== b.length) return true;
+    return a.some((v, i) => v !== b[i]);
+  }, [pillowTypes, cfg.pillowTypes]);
+
   const configDirty =
     mattressType !== ((cfg.mattressType as string) ?? "") ||
     mattressFirmness !== ((cfg.mattressFirmness as string) ?? "") ||
-    JSON.stringify([...pillowTypes].sort()) !== JSON.stringify([...((cfg.pillowTypes as string[]) ?? [])].sort()) ||
+    pillowsDirty ||
     linenIncluded !== ((cfg.linenIncluded as boolean) ?? false) ||
     extraBlanket !== ((cfg.extraBlanket as boolean) ?? false) ||
     mattressProtector !== ((cfg.mattressProtector as boolean) ?? false) ||
     (isCustom && customLabelEdit !== ((cfg.customLabel as string) ?? "")) ||
     (isCustom && customCapacity !== ((cfg.customCapacity as number) ?? 1));
+
+  const configSerialized = useMemo(
+    () =>
+      JSON.stringify({
+        mattressType,
+        mattressFirmness,
+        pillowTypes,
+        linenIncluded,
+        extraBlanket,
+        mattressProtector,
+        ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}),
+      }),
+    [
+      mattressType,
+      mattressFirmness,
+      pillowTypes,
+      linenIncluded,
+      extraBlanket,
+      mattressProtector,
+      isCustom,
+      customLabelEdit,
+      customCapacity,
+    ],
+  );
 
   function togglePillow(id: string) {
     setPillowTypes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
@@ -337,11 +368,7 @@ function BedRow({
         <form action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--color-neutral-50)] px-4 py-3 space-y-4">
           <input type="hidden" name="bedId" value={bed.id} />
           <input type="hidden" name="spaceId" value={spaceId} />
-          <input
-            type="hidden"
-            name="configJson"
-            value={JSON.stringify({ mattressType, mattressFirmness, pillowTypes, linenIncluded, extraBlanket, mattressProtector, ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}) })}
-          />
+          <input type="hidden" name="configJson" value={configSerialized} />
 
           {/* Custom bed: name + capacity */}
           {isCustom && (

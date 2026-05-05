@@ -1,7 +1,6 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import Fuse from "fuse.js";
 import {
   useCallback,
   useDeferredValue,
@@ -11,11 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  createFuseFromIndex,
-  FUSE_OPTIONS,
-} from "@/lib/client/guide-search-index";
+import { FUSE_OPTIONS } from "@/lib/client/guide-search-index";
 import { trackSearchMiss } from "@/lib/client/guide-analytics";
+import type Fuse from "fuse.js";
 import type {
   GuideSearchEntry,
   GuideSearchHit,
@@ -59,12 +56,23 @@ export function GuideSearch({ index, slug }: Props) {
   const optionIdPrefix = useId();
   const abortRef = useRef<AbortController | null>(null);
 
-  const fuse = useMemo<Fuse<GuideSearchEntry>>(
-    () => createFuseFromIndex(index),
-    [index],
-  );
+  // Defer Fuse load until the dialog is first opened — the library is ~30 KB
+  // minzipped and most page visits never open the search.
+  const [fuse, setFuse] = useState<Fuse<GuideSearchEntry> | null>(null);
+  useEffect(() => {
+    if (!open || fuse) return;
+    let cancelled = false;
+    void import("fuse.js").then((mod) => {
+      if (cancelled) return;
+      setFuse(new mod.default(index.entries, FUSE_OPTIONS));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, fuse, index]);
 
   const results = useMemo<GuideSearchHit[]>(() => {
+    if (!fuse) return [];
     const q = deferredQuery.trim();
     if (q.length < (FUSE_OPTIONS.minMatchCharLength ?? 1)) return [];
     return fuse

@@ -13,6 +13,13 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
 import { EntityGallery } from "@/components/media/entity-gallery";
 
+function sameStringList(a: string[], b: string[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
 const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];
 const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
 
@@ -92,13 +99,14 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(saveAccessAction, null);
 
-  // Dirty tracking
+  // Dirty tracking — element-wise list comparison avoids re-stringifying
+  // every list on every keystroke just to compare references.
   const isDirty = isAutonomous !== (p.isAutonomousCheckin ? "yes" : "no") ||
     hasBuildingAccess !== (p.hasBuildingAccess ? "yes" : "no") ||
-    JSON.stringify(buildingMethods) !== JSON.stringify(p.buildingAccess?.methods ?? []) ||
-    JSON.stringify(unitMethods) !== JSON.stringify(p.unitAccess?.methods ?? []) ||
-    JSON.stringify(parkingTypes) !== JSON.stringify(p.parkingTypes) ||
-    JSON.stringify(axFeatures) !== JSON.stringify(p.accessibilityFeatures) ||
+    !sameStringList(buildingMethods, p.buildingAccess?.methods ?? []) ||
+    !sameStringList(unitMethods, p.unitAccess?.methods ?? []) ||
+    !sameStringList(parkingTypes, p.parkingTypes) ||
+    !sameStringList(axFeatures, p.accessibilityFeatures) ||
     checkInEnd !== (p.checkInEnd ?? "22:00");
 
   const autonomousMode = isAutonomous === "yes";

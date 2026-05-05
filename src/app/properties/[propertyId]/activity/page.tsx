@@ -21,6 +21,14 @@ export default async function ActivityPage({
     where: { propertyId },
     orderBy: { createdAt: "desc" },
     take: 100,
+    select: {
+      id: true,
+      entityType: true,
+      action: true,
+      actor: true,
+      entityId: true,
+      createdAt: true,
+    },
   });
 
   return (

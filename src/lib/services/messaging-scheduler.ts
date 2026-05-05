@@ -68,11 +68,12 @@ export async function runTick(
     select: { id: true },
   });
 
-  const outcomes: MaterializationOutcome[] = [];
-  for (const r of reservations) {
-    const res = await materializeDraftsForReservation(r.id);
-    outcomes.push(...res);
-  }
+  // Materialize all reservations in parallel — each call is independent and
+  // `materializeDraftsForReservation` is idempotent. Sequential awaits would
+  // serialize N+1 round-trips per tick.
+  const outcomes: MaterializationOutcome[] = (
+    await Promise.all(reservations.map((r) => materializeDraftsForReservation(r.id)))
+  ).flat();
 
   // 2. Dispatch due drafts. No provider here — the engine just marks them
   // sent. A future branch swaps this for a real dispatcher.

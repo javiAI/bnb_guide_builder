@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-// NOTE: the MapLibre stylesheet is imported once from `app/g/[slug]/layout.tsx`
-// so it loads for the whole public-guide subtree and no global CSS is pulled
-// in from this client component.
+// CSS ships with this lazy chunk via `next/dynamic({ ssr: false })`, so the
+// stylesheet only loads when a map actually mounts (not on every guest paint).
+import "maplibre-gl/dist/maplibre-gl.css";
 import type { GuideMapData, GuideMapPin } from "@/lib/types/guide-map";
 import { escapeHtml } from "@/lib/utils/html-escape";
 import { formatDistance } from "@/lib/services/places";

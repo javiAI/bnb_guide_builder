@@ -15,10 +15,12 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+// Serif is exposed as a token but no component currently sets it. Ship one
+// weight so the `--font-serif` variable still resolves without paying for 6
+// font files on every operator paint.
 const serif = Newsreader({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  weight: ["400"],
   variable: "--font-serif",
 });
 

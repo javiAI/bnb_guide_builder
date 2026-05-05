@@ -337,7 +337,11 @@ export async function assignMediaAction(
       },
     });
 
-    revalidatePath(`/properties/${asset.propertyId}`, "layout");
+    // Page scope (not "layout"): we don't need to re-render the workspace
+    // shell + sidebar on every assignment toggle. Sidebar readiness updates
+    // on next navigation.
+    revalidatePath(`/properties/${asset.propertyId}/media`);
+    revalidatePath(`/properties/${asset.propertyId}`);
     return { success: true, data: { assignmentId: assignment.id } };
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
@@ -362,7 +366,8 @@ export async function unassignMediaAction(
 
   await prisma.mediaAssignment.delete({ where: { id: assignmentId } });
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
   return { success: true };
 }
 
@@ -402,7 +407,10 @@ export async function reorderMediaAction(
   );
 
   const propertyId = assignments[0]?.mediaAsset.propertyId;
-  if (propertyId) revalidatePath(`/properties/${propertyId}`, "layout");
+  if (propertyId) {
+    revalidatePath(`/properties/${propertyId}/media`);
+    revalidatePath(`/properties/${propertyId}`);
+  }
 
   return { success: true };
 }
@@ -442,7 +450,8 @@ export async function setCoverAction(
     }),
   ]);
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
   return { success: true };
 }
 
