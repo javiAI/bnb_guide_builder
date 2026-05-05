@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useMemo } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -103,14 +103,8 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const autonomousMode = isAutonomous === "yes";
   const showBuilding = hasBuildingAccess === "yes";
-  const buildingOptions = useMemo(
-    () => getBuildingOptions(autonomousMode),
-    [autonomousMode],
-  );
-  const unitOptions = useMemo(
-    () => getUnitOptions(autonomousMode),
-    [autonomousMode],
-  );
+  const buildingOptions = getBuildingOptions(autonomousMode);
+  const unitOptions = getUnitOptions(autonomousMode);
 
   function handleAutonomousChange(val: string) {
     setIsAutonomous(val);
@@ -119,23 +113,10 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const hoursLabel = p.checkInStart ? `${p.checkInStart} — ${checkInEnd === "flexible" ? "Flexible" : checkInEnd} · Salida ${p.checkOutTime ?? "—"}` : "Sin definir";
   const typeLabel = `Autónomo: ${isAutonomous === "yes" ? "Sí" : "No"} · Edificio: ${hasBuildingAccess === "yes" ? "Sí" : "No"}`;
-
-  const buildingLabel = useMemo(
-    () => buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir",
-    [buildingMethods],
-  );
-  const unitLabel = useMemo(
-    () => unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir",
-    [unitMethods],
-  );
-  const parkingLabel = useMemo(
-    () => parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir",
-    [parkingTypes],
-  );
-  const axLabel = useMemo(
-    () => axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna",
-    [axFeatures],
-  );
+  const buildingLabel = buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir";
+  const unitLabel = unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir";
+  const parkingLabel = parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir";
+  const axLabel = axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna";
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">

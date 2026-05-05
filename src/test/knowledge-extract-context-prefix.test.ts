@@ -7,9 +7,7 @@ import { CHUNK_TYPES, ENTITY_TYPES } from "@/lib/types/knowledge";
 // format for every chunkType and entityType, and never embeds raw taxonomy keys
 // (e.g. am.wifi, ct.host, sys.internet) that are internal identifiers.
 
-// Local substring scanner — detects taxonomy keys embedded in longer text.
-// The canonical TAXONOMY_KEY_PATTERN is full-string-anchored and cannot detect substrings,
-// but context-prefix output is prose (sentences), so a leak like "am.wifi" appears as a substring.
+// Canonical TAXONOMY_KEY_PATTERN is full-string-anchored — won't match substrings in prose output.
 const TAXONOMY_KEY_IN_TEXT = /\b(am|ct|sys|sp|pt|rm|pol)\.[a-z_]+\b/;
 
 vi.mock("@/lib/db", () => ({
