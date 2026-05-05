@@ -36,7 +36,7 @@ export function QrModalButton({ url, qrSvg }: QrModalButtonProps) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Ampliar código QR"
-        className="inline-flex items-center gap-1.5 rounded-[6px] px-1.5 py-1 text-[11px] font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
       >
         <QrCode size={12} aria-hidden="true" />
         Ampliar QR

@@ -397,6 +397,49 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     }
     expect(violations).toEqual([]);
   });
+
+  it("buttons/links with small fixed dimensions declare a compensating 44-hit-area class", () => {
+    // Capture buttons with explicit small heights/padding that lack a 44-hit-area
+    // compensator. Example: `h-6 w-6` delete buttons without `min-h-[44px]` or
+    // `h-11`. Scoped to operator/shared — guest buttons have different size rules.
+    // Matches: h-6, h-7, h-8, p-0.5, p-1, p-1.5, px-1, py-1, etc.
+    const smallDimensionRe = /\b(h-[678]|p-0\.5|p-1(?:\.[5])?|p[xy]-0\.5|p[xy]-1|p[xy]-1\.5)\b/;
+    const validCompensators = [
+      "min-h-[44px]",
+      "min-h-11",
+      "min-w-[44px]",
+      "min-w-11",
+      "h-11",
+      "h-12",
+      "h-14",
+      "h-16",
+      "w-11",
+      "w-12",
+      "recipe-icon-btn-32",
+    ];
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button", "Link", "a"])) {
+        const { name, attrs, openIdx } = tag;
+        if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
+        if (/\bdisabled\b(?!=)/.test(attrs)) continue;
+        const cls = extractClassName(attrs);
+        if (cls === null) continue;
+        // Detect small-dimension marker
+        if (!smallDimensionRe.test(cls)) continue;
+        // Check for compensating 44-hit-area class
+        const hasCompensator = validCompensators.some((t) => cls.includes(t));
+        if (!hasCompensator) {
+          violations.push(
+            `${file}:${lineNumber(content, openIdx)}  <${name}> has small size (h-6/h-7/h-8/p-1/p-1.5) but lacks 44-hit-area class (min-h-[44px]/h-11/recipe-icon-btn-32)`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -442,6 +485,52 @@ describe("Component invariants · HTML validity", () => {
         if (/<a\b|<Link\b/.test(inner)) {
           violations.push(
             `${file}:${lineNumber(content, tag.openIdx)}  <${tag.name}> contains nested anchor/Link`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("no form controls (<input>/<select>/<textarea>) nested inside <button>", () => {
+    // Invalid HTML nesting — form controls cannot be interactive descendants
+    // of a button. Example from PR #100: `<input type="file">` was nested
+    // inside the dropzone `<button>`, breaking form control semantics.
+    const violations: string[] = [];
+    for (const file of auditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
+        if (/<input\b|<select\b|<textarea\b/.test(inner)) {
+          violations.push(
+            `${file}:${lineNumber(content, tag.openIdx)}  <button> contains nested form control (<input>/<select>/<textarea>)`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("no block elements (<div>/<p>/<section>) nested inside <button>", () => {
+    // Invalid HTML nesting — block-level elements have semantics that break
+    // inside button context. Browser repair is inconsistent. Example: a
+    // dropzone `<button>` with nested `<div>` + `<p>` loses affordance.
+    const violations: string[] = [];
+    for (const file of auditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
+        if (/<div\b|<p\b|<section\b|<article\b|<header\b|<footer\b|<main\b/.test(inner)) {
+          violations.push(
+            `${file}:${lineNumber(content, tag.openIdx)}  <button> contains nested block element (<div>/<p>/<section>/...)`,
           );
         }
       }
@@ -883,5 +972,177 @@ describe("Component invariants · <ButtonLink size='sm'> on audited operator sur
       }
     }
     expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 14. Token consistency (operator surfaces use correct semantic tokens)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · token consistency (error messages)", () => {
+  it("error/validation messages use status-error-text tone (not status-error-solid/-icon)", () => {
+    // status-error-solid reserves accent red for filled surfaces/buttons.
+    // Inline copy (error text, validation feedback) must use status-error-text.
+    // In dark mode, -solid is dimmer and lower-contrast. -icon is for icons only.
+    // Flag ONLY text- and color- usage; exclude bg- (filled surfaces like hero cards can use -solid correctly).
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Flag text- and color- use of -solid or -icon; EXCLUDE bg- (filled surfaces)
+      const badTokens = /\b(?:text|color)-\[var\(--color-status-error-(solid|icon)\)/g;
+      for (const m of content.matchAll(badTokens)) {
+        violations.push(
+          `${file}:${lineNumber(content, m.index ?? 0)}  uses status-error-${
+            m[1]
+          } for inline text — must be status-error-text for readability`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 15. Layout safety (grid column mismatches, opacity-0 accessibility)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · layout safety", () => {
+  it("elements with min-w-[44px] or h-11+ cannot be inside grid-cols-[...24px...]", () => {
+    // Grid column mismatch: element min-w-[44px] inside a 24px grid column causes
+    // overflow and layout breakage. Pattern: grid-cols-[...24px...] followed by
+    // button/div with min-w-[44px]/min-h-[44px]/h-11/recipe-icon-btn-32.
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Find ALL grid-cols with 24px column (not just first)
+      const gridRe = /grid-cols-\[([^\]]*24px[^\]]*)\]/g;
+      for (const gridMatch of content.matchAll(gridRe)) {
+        const gridIdx = gridMatch.index || 0;
+        // Check if there's a 44-width element in the next few lines
+        const nextChunk = content.slice(gridIdx, gridIdx + 1000);
+        // Look for buttons/elements with 44-width classes after the grid definition
+        if (/\b(min-w-\[44px\]|min-h-\[44px\]|h-11|h-12|recipe-icon-btn-32)\b/.test(nextChunk)) {
+          violations.push(
+            `${file}:${lineNumber(content, gridIdx)}  grid-cols-[...24px...] has 44-width child element — will cause overflow/misalign`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 16. Accessibility (icon-only buttons, drag handlers)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · accessibility hardening", () => {
+  it("icon-only buttons require aria-label or title (Lucide icons or symbol-only)", () => {
+    // Icon-only buttons (button with only <Icon /> or symbol like +, ×) are invisible
+    // to screen readers. Must have aria-label or title to announce purpose.
+    // Patterns: <button ...><${IconName}.../></button> or <button ...>+</button>
+    // Exclude primitives (src/components/ui/) which mandate aria-label via TypeScript.
+    const lucideIconRe = /from\s+["']lucide-react["']/;
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      // Skip primitive definitions (they mandate aria-label via TypeScript)
+      if (file.startsWith("src/components/ui/")) continue;
+      const content = readSrc(file);
+      // Find all <button> tags
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx).trim();
+        // Icon-only patterns: Lucide component OR symbol-only (+, ×, −, etc.)
+        const isLucideIcon = /^<[A-Z]\w+[^>]*\/>$/.test(inner) ||
+                            /^<[A-Z]\w+[^>]*>[^<]*<\/[A-Z]\w+>$/.test(inner);
+        const isSymbolOnly = /^[+\-×÷→←↑↓★☆•]$|^&\w+;$/.test(inner); // symbol or HTML entity
+        if (!isLucideIcon && !isSymbolOnly) continue;
+        // Check for aria-label or title
+        if (/\b(aria-label|title)=/.test(tag.attrs)) continue;
+        // Skip if {...props} spread (props might contain aria-label)
+        if (/\{\.\.\.\w+\}/.test(tag.attrs)) continue;
+        violations.push(
+          `${file}:${lineNumber(content, tag.openIdx)}  icon-only <button> lacks aria-label/title — screen readers won't announce purpose`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("drag event handlers must preventDefault to prevent browser default", () => {
+    // onDrop + onDragOver without preventDefault allow browser to open dragged files.
+    // Detect handlers and check handler body for e.preventDefault() specifically.
+    // stopPropagation() alone is insufficient.
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Find all onDrop= and onDragOver= handlers
+      const dragHandlerRe = /\b(onDrop|onDragOver)=\{([^}]+)\}/g;
+      for (const m of content.matchAll(dragHandlerRe)) {
+        const handlerName = m[1];
+        const handlerBody = m[2];
+        // Check if handler calls preventDefault (required)
+        if (/preventDefault/.test(handlerBody)) continue;
+        // If handler is just a reference or function call, skip
+        // (e.g. onDrop={handleDrop} or onDrop={(e) => handleDrop(e, index)})
+        // Patterns: `funcName` or `funcName(...)` or `(e) => funcName(e, ...)`
+        if (/^[a-zA-Z_]\w*(\([^)]*\))?$/.test(handlerBody.trim())) continue; // simple call
+        if (/^\([^)]*\)\s*=>\s*[a-zA-Z_]\w*\([^)]*\)$/.test(handlerBody.trim())) continue; // arrow function calling another
+        violations.push(
+          `${file}:${lineNumber(content, m.index ?? 0)}  ${handlerName} handler lacks preventDefault() — allows browser to open files`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 16. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · shared primitive compliance", () => {
+  it("NumberStepper step buttons meet 44-hit-area baseline when consumed by audited surfaces", () => {
+    // When an operator/shared audited surface imports NumberStepper, the
+    // primitive's internal button size must meet the 44-hit-area baseline.
+    // Check that stepBtnCls or the button definitions specifically include 44-width.
+    const PRIMITIVE = "src/components/ui/number-stepper.tsx";
+    const VALID_BUTTON_PATTERNS = [
+      /className=.*?(min-h-\[44px\]|min-h-11|h-11|h-12|recipe-icon-btn-32)/,
+      /stepBtnCls.*?(min-h-\[44px\]|min-h-11|h-11|h-12|recipe-icon-btn-32)/,
+    ];
+
+    // Find audited consumers
+    const auditedConsumers: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      if (/from\s+["']@\/components\/ui\/number-stepper["']/.test(content)) {
+        auditedConsumers.push(file);
+      }
+    }
+
+    // If no consumers, invariant is vacuously true
+    if (auditedConsumers.length === 0) return;
+
+    // Check primitive source: look for 44-width classes in button definitions
+    const primitiveContent = readSrc(PRIMITIVE);
+    const hasValidButtons = VALID_BUTTON_PATTERNS.some((pattern) =>
+      pattern.test(primitiveContent),
+    );
+
+    expect(hasValidButtons).toBe(true);
+    if (!hasValidButtons) {
+      expect.fail(
+        `NumberStepper (${PRIMITIVE}) step buttons lack 44-hit-area class (min-h-[44px]/h-11/recipe-icon-btn-32). Consumers: ${auditedConsumers.join(", ")}. Add 44-width class to button definitions.`,
+      );
+    }
   });
 });

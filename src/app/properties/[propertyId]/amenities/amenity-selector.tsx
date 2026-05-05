@@ -15,7 +15,7 @@ const TIER_CONFIG: { level: ImportanceLevel; label: string; hint: string }[] = [
   { level: "bonus", label: "Destacados", hint: "Te diferencian de la competencia" },
 ];
 
-interface AmenitySelectorV2Props {
+interface AmenitySelectorProps {
   propertyId: string;
   generalItems: EnrichedAmenityItem[];
   generalDerived: DerivedAmenityItem[];
@@ -108,7 +108,7 @@ function AmenityChip({
             type="button"
             onClick={handleToggle}
             disabled={isPending}
-            className="ml-0.5 rounded-full p-0.5 hover:bg-white/20 transition-colors"
+            className="ml-0.5 rounded-full recipe-icon-btn-32 hover:bg-white/20 transition-colors"
             aria-label="Quitar"
           >
             <svg viewBox="0 0 12 12" className="h-3 w-3">
@@ -126,7 +126,7 @@ function AmenityChip({
         type="button"
         onClick={handleToggle}
         disabled={isPending}
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-300)] ${isPending ? "opacity-50" : ""}`}
+        className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-300)] ${isPending ? "opacity-50" : ""}`}
       >
         {item.label}
       </button>
@@ -238,7 +238,8 @@ function CustomChipInput({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-full bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          aria-label="Añadir amenidad personalizada"
         >
           +
         </button>
@@ -251,12 +252,12 @@ function countLabel(enabled: number, total: number): string {
   return `${enabled} de ${total}`;
 }
 
-export function AmenitySelectorV2({
+export function AmenitySelector({
   propertyId,
   generalItems,
   generalDerived,
   spaceSections,
-}: AmenitySelectorV2Props) {
+}: AmenitySelectorProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set(["general"]),
   );

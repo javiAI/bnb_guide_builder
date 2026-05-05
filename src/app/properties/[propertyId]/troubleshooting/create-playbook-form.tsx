@@ -31,7 +31,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
       <input type="hidden" name="propertyId" value={propertyId} />
 
       {state?.error && (
-        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
@@ -46,7 +46,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
             ))}
           </select>
           {fieldError("playbookKey") && (
-            <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("playbookKey")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("playbookKey")}</p>
           )}
         </label>
 
@@ -54,7 +54,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
           <span className="text-xs text-[var(--color-neutral-500)]">Título *</span>
           <input name="title" type="text" required placeholder="Ej: Huésped no puede entrar" className={inputClass} />
           {fieldError("title") && (
-            <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("title")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("title")}</p>
           )}
         </label>
 
@@ -72,7 +72,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-4 inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
       >
         {pending ? "Añadiendo…" : "Añadir playbook"}
       </button>

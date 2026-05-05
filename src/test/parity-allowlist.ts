@@ -77,6 +77,188 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/lib/tone.ts",
     ],
   },
+  {
+    // 16E shared upfront — utility components consumed across multiple
+    // operator content modules (amenity-detail-panel, space-card,
+    // access-form, local-guide create form, media-page-client). Migrated
+    // first so subsequent module migrations do not need to revisit them.
+    // No UI Kit reference (these are infra, not pages) — design contract
+    // is "consume Liora tokens + primitives, no novel visual language".
+    id: "shared-media-and-place-autocomplete",
+    routes: ["(rendered inside operator content modules as imported)"],
+    profile: "shared",
+    files: [
+      "src/components/media/media-thumbnail.tsx",
+      "src/components/media/upload-dropzone.tsx",
+      "src/components/media/entity-gallery.tsx",
+      "src/components/local-guide/place-autocomplete.tsx",
+    ],
+  },
+  {
+    // 16E wizard / onboarding — operator-facing 4-step property creation
+    // flow. NO UI kit reference exists in
+    // `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html`
+    // (see MASTER_PLAN_V2.md § rama 16E "Surfaces sin kit-ref"). Baseline
+    // Liora invariants only: tokens, primitives where they fit, touch-target,
+    // no Tailwind named-palette, no HTML entity glyphs, web API guards,
+    // copy Spanish. Full UI Kit Parity audit deferred to a future rama
+    // once the wizard kit page lands in subpages.html (then frontend-design
+    // → impl → liora-ui-kit-parity → webapp-testing).
+    id: "operator-wizard",
+    routes: [
+      "/properties/new/welcome",
+      "/properties/new/step-1",
+      "/properties/new/step-2",
+      "/properties/new/step-3",
+      "/properties/new/step-4",
+      "/properties/new/review",
+    ],
+    profile: "operator",
+    files: [
+      "src/components/wizard/**/*.tsx",
+      "src/app/properties/new/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — property datos básicos editor. The kit
+    // `subpages.html` page-propiedades shows a property listing + read-only
+    // detail summary (`<dl>` with Tipo/Dirección/Ciudad/Capacidad/etc.) but
+    // NO editor form reference. Treated under the same deferred kit-design
+    // policy as wizard: baseline Liora invariants only (tokens, primitives
+    // where they fit, touch-target, no Tailwind named-palette, no HTML entity
+    // glyphs, web API guards, copy Spanish). Full UI Kit Parity audit deferred
+    // until a `page-propiedad-edit` or equivalent kit page lands in
+    // subpages.html. See MASTER_PLAN_V2.md § rama 16E "Surfaces sin kit-ref".
+    id: "operator-property",
+    routes: ["/properties/[propertyId]/property"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/property/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — access (llegada y check-in). Kit reference exists
+    // (`page-llegada` in subpages.html) with rich visual silhouette:
+    // arrival-hero big-number timestamp, access-grid 3-col method cards,
+    // arrival-steps vertical list with per-step meta chips. **E1 ships
+    // baseline-only** (semantic tokens, a11y, glyph fixes, primitives where
+    // they fit) — the structural form layout (`CollapsibleSection`-based) is
+    // preserved. Full UI Kit visual silhouette port is **deferred to required
+    // follow-up rama 16E.5** (`feat/liora-operator-content-visual-parity`)
+    // per LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-access",
+    routes: ["/properties/[propertyId]/access"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/access/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — spaces (espacios y camas). Kit reference exists
+    // (`page-espacios` in subpages.html) with rich visual silhouette: section
+    // numbering (01/02/03), per-space hero rows with meta chips, capacity
+    // readouts as dedicated cards, bed config as collapsible structured
+    // panels. **E1 ships baseline-only** (semantic warning/error/success
+    // tokens, a11y, 44 hit-targets on submits, replace Tailwind named-palette
+    // amber/red with semantic status tokens). Inline quantity steppers
+    // (h-6/h-7) are kept since they pass the gate and a redesign to either
+    // visual 44 or `recipe-icon-btn-32` slop requires layout rework that maps
+    // 1:1 to the kit. Inline SVG glyphs (pencil, chevron, gear, trash, alert,
+    // arrow) are kept as-is — Lucide migration on these dialogs is structural
+    // and ships in 16E.5 alongside the silhouette port. Full UI Kit visual
+    // silhouette port is **deferred to required follow-up rama 16E.5**
+    // (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-spaces",
+    routes: ["/properties/[propertyId]/spaces"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/spaces/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — amenities (equipamiento). Kit reference exists
+    // (`page-equipamiento` in subpages.html) with rich visual silhouette:
+    // tier headers (Esenciales/Recomendados/Destacados) as banded sections,
+    // chip-grid with category-colored borders and tonal active states, derived
+    // amenities as a distinct read-only band, per-amenity detail panel as a
+    // dedicated card with structured field rows. **E1 ships baseline-only**
+    // (semantic error/warning tokens, a11y, 44 hit-targets on submits + chips
+    // + the custom-amenity "+" submit, primitives where they fit). The
+    // structural chip-grid + tier layout is preserved. Inline SVG glyphs (close
+    // X, chevrons ▲▼) are kept as-is — Lucide migration is structural and
+    // ships in 16E.5 alongside the silhouette port. Full UI Kit visual
+    // silhouette port is **deferred to required follow-up rama 16E.5**
+    // (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-amenities",
+    routes: ["/properties/[propertyId]/amenities"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/amenities/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — systems (sistemas: clima, agua, electricidad,
+    // conectividad). Kit reference exists (`page-sistemas` in subpages.html)
+    // with rich visual silhouette: per-group banded sections, system rows
+    // as detailed cards with status pills + meta chips, coverage matrix as
+    // a structured table with tonal cells. **E1 ships baseline-only**
+    // (semantic error/success tokens replacing `--color-error-*` and
+    // `--color-success-*` legacy aliases, 44 hit-targets on submits and
+    // delete button, primitives where they fit). The structural list +
+    // detail-form layout is preserved. Glyphs (← back arrow, → call-to-
+    // action arrow, ★ recommended marker) are kept as-is — Lucide migration
+    // is structural and ships in 16E.5 alongside the silhouette port. Full
+    // UI Kit visual silhouette port is **deferred to required follow-up
+    // rama 16E.5** (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-systems",
+    routes: [
+      "/properties/[propertyId]/systems",
+      "/properties/[propertyId]/systems/[systemId]",
+    ],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/systems/**/*.tsx",
+    ],
+  },
+  {
+    // 16E content modules — troubleshooting (incidencias: playbooks +
+    // ocurrencias). NO single-page kit reference exists in subpages.html for
+    // a playbook editor or incident registry — `page-troubleshooting` is a
+    // surface conceptually adjacent to system detail but the UI Kit does
+    // not ship distinct silhouettes for the playbook list, the playbook
+    // editor form, the incident registry table, or the incident row
+    // actions. **E1 ships baseline-only** (semantic error tokens replacing
+    // `--color-danger-*` legacy aliases, 44 hit-targets on submits + filter
+    // + row actions, primitives where they fit). Tab-row navigation
+    // (TroubleshootingTabs) and inline list-row patterns are preserved.
+    // Glyphs (← back arrow, severity badges) are kept as-is. Full UI Kit
+    // visual silhouette port is **deferred to required follow-up rama
+    // 16E.5** (`feat/liora-operator-content-visual-parity`) per
+    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
+    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
+    // screenshots) applies to 16E.5, not E1.
+    id: "operator-troubleshooting",
+    routes: [
+      "/properties/[propertyId]/troubleshooting",
+      "/properties/[propertyId]/troubleshooting/[playbookKey]",
+      "/properties/[propertyId]/troubleshooting/incidents",
+    ],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -105,9 +287,17 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/login/page.tsx",
   "src/app/properties/[propertyId]/layout.tsx",
   "src/app/properties/[propertyId]/page.tsx",
+  "src/app/properties/[propertyId]/property/**/*.tsx",
+  "src/app/properties/[propertyId]/access/**/*.tsx",
+  "src/app/properties/[propertyId]/spaces/**/*.tsx",
+  "src/app/properties/[propertyId]/amenities/**/*.tsx",
+  "src/app/properties/[propertyId]/systems/**/*.tsx",
+  "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
+  "src/components/media/**/*.tsx",
+  "src/components/local-guide/place-autocomplete.tsx",
 ];
 
 /**
@@ -157,14 +347,7 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
   file: string;
   identifier: string;
   reason: string;
-}> = [
-  {
-    file: "src/app/properties/[propertyId]/amenities/amenity-selector-v2.tsx",
-    identifier: "AmenitySelectorV2",
-    reason:
-      "Pre-Liora amenity instance migration leftover. Rename to AmenitySelector + amenity-selector.tsx in a dedicated cleanup PR (file + 1 caller in amenities/page.tsx).",
-  },
-];
+}> = [];
 
 /**
  * Liora replatform phase identifiers used by exception entries to declare
@@ -178,18 +361,19 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
  * the past — i.e. a previous rama promised to remove the exception and
  * shipped without doing so.
  */
-export type LioraPhase = "16D.5" | "16E" | "16F" | "16G";
+export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16F" | "16G";
 export type RemoveBy = LioraPhase | "never";
 
 export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
   "16D.5",
   "16E",
+  "16E.5",
   "16F",
   "16G",
 ] as const;
 
 /** Active Liora phase the allowlist is being audited against. */
-export const CURRENT_LIORA_PHASE: LioraPhase = "16D.5";
+export const CURRENT_LIORA_PHASE: LioraPhase = "16E";
 
 export interface ExceptionEntry {
   file: string;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { restoreSnapshotAction } from "@/lib/actions/wizard.actions";
 
 interface WizardShellProps {
@@ -182,9 +183,10 @@ export function WizardShell({
         <div className="mt-6">
           <Link
             href={backHref}
-            className="text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
+            className="inline-flex items-center gap-1.5 text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
           >
-            &larr; Volver
+            <ArrowLeft size={14} aria-hidden="true" />
+            Volver
           </Link>
         </div>
       )}
@@ -203,7 +205,7 @@ export function WizardShell({
               <button
                 type="button"
                 onClick={() => setShowCancelModal(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] transition-colors"
+                className="inline-flex min-h-[44px] items-center rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] transition-colors"
               >
                 Volver al wizard
               </button>
@@ -211,7 +213,7 @@ export function WizardShell({
                 type="button"
                 onClick={handleCancel}
                 disabled={cancelling}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+                className="inline-flex min-h-[44px] items-center rounded-lg bg-[var(--color-status-error-solid)] px-4 py-2 text-sm font-medium text-[var(--color-status-error-solid-fg)] hover:opacity-90 disabled:opacity-40 transition-opacity"
               >
                 {cancelling ? "Cancelando..." : "Sí, cancelar"}
               </button>

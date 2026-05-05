@@ -73,7 +73,7 @@ export function PlaybookDetailForm({
       </div>
 
       {state?.error && (
-        <p className="rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+        <p className="rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
@@ -214,7 +214,7 @@ export function PlaybookDetailForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
       >
         {pending ? "Guardando…" : "Guardar cambios"}
       </button>

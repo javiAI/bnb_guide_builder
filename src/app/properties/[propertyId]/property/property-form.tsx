@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
+import { ArrowLeft, Pencil, Search } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
@@ -141,7 +142,10 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     infraDirty;
 
   const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  useEffect(() => () => { flashTimers.current.forEach((t) => clearTimeout(t)); }, []);
+  useEffect(() => {
+    const timers = flashTimers.current;
+    return () => { timers.forEach((t) => clearTimeout(t)); };
+  }, []);
 
   function flashField(name: string) {
     setAutoFilled((prev) => new Set(prev).add(name));
@@ -242,7 +246,10 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href={`/properties/${propertyId}`} className="text-xs text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]">&larr; Volver al panel</Link>
+          <Link href={`/properties/${propertyId}`} className="inline-flex items-center gap-1.5 text-xs text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]">
+            <ArrowLeft size={12} aria-hidden="true" />
+            Volver al panel
+          </Link>
           <h1 className="mt-2 text-2xl font-bold text-[var(--foreground)]">Propiedad</h1>
         </div>
         <InlineSaveStatus status={pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : "saved"} />
@@ -278,13 +285,13 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               className="w-full rounded-[var(--radius-md)] border border-[var(--color-primary-400)] bg-[var(--surface-elevated)] px-3 py-1.5 text-lg font-bold text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
             />
           ) : (
-            <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group">
-              <span className="text-lg font-bold text-[var(--foreground)]">{nickname}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-[var(--color-neutral-400)] group-hover:text-[var(--color-primary-500)] transition-colors">
-                <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
-              </svg>
+            <>
+              <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group min-h-[44px] rounded-[var(--radius-md)] px-1 py-2 transition-colors hover:bg-[var(--color-neutral-50)]">
+                <span className="text-lg font-bold text-[var(--foreground)]">{nickname}</span>
+                <Pencil size={16} aria-hidden="true" className="text-[var(--color-neutral-400)] group-hover:text-[var(--color-primary-500)] transition-colors" />
+              </button>
               <input type="hidden" name="propertyNickname" value={nickname} />
-            </button>
+            </>
           )}
         </div>
 
@@ -370,7 +377,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             <input type="hidden" name="longitude" value={longitude ?? ""} />
 
             <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" /></svg>
+              <Search size={14} aria-hidden="true" />
               {geocoding ? "Buscando..." : "Encontrar ubicación"}
             </button>
 
@@ -445,20 +452,13 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <span className="text-sm font-medium text-[var(--foreground)]">Entrada privada</span>
               <InfoTooltip text="La vivienda tiene una entrada independiente que el huésped usa sin compartir pasillos o zonas interiores con otros inquilinos o el anfitrión." />
             </label>
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-[var(--foreground)]">Número de plantas del edificio</label>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => setBuildingFloors(Math.max(1, buildingFloors - 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={buildingFloors <= 1}>−</button>
-                <span className="w-6 text-center text-sm font-medium">{buildingFloors}</span>
-                <button type="button" onClick={() => setBuildingFloors(Math.min(200, buildingFloors + 1))} className="inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] text-sm font-bold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]">+</button>
-              </div>
-            </div>
+            <NumberStepper label="Número de plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
           </div>
         </CollapsibleSection>
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
 
-        <button type="submit" disabled={pending || !isDirty} className="inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
           {pending ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>

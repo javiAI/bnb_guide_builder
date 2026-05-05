@@ -3258,23 +3258,39 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
-**Propósito**: superficies de módulos del operador. Una rama Git, **3 sub-PRs internos secuenciales** con gates obligatorios.
+**Propósito**: superficies de módulos del operador. **Alt-2 (estrategia aprobada Fase -1)**: una rama Git contiene E1 como PR real contra `main`; al cerrar E1 se decide con stats explícitos si E2 + E3 continúan en sub-PRs internos sobre la misma rama o se parten en ramas reales separadas. Esto evita un PR final monolítico y permite incorporar feedback temprano antes de migrar el resto.
 
-**Umbral de partición** (gate duro): si al final de E2 el diff acumulado supera **80 archivos tocados** o **5.000 LOC netas añadidas/borradas**, 16E se parte en ramas reales separadas (`feat/liora-operator-modules-content`, `feat/liora-operator-modules-ops`, `feat/liora-operator-modules-outputs`). La decisión se toma al cerrar E2 con git diff stats explícitos en la PR description.
+**Umbral de partición** (gate duro, Alt-2): la decisión se toma al cerrar **E1** (no al cerrar E2 como en la spec original). Si el diff de E1 supera **80 archivos tocados** o **5.000 LOC netas añadidas/borradas**, E2 y E3 se ejecutan en ramas reales separadas (`feat/liora-operator-modules-ops`, `feat/liora-operator-modules-outputs`). Si E1 cabe holgadamente bajo el umbral, E2 + E3 continúan como sub-PRs internos con un PR final que acumula los tres. La decisión se documenta en la PR description de E1 con `git diff main --stat`.
 
-**Sub-PR E1 — wizard + content modules**:
-- `src/components/wizard/wizard-shell.tsx`.
-- `src/app/properties/new/welcome/page.tsx`, `step-1`, `step-2`, `step-3`, `step-4`, `review`.
-- Editores de contenido: spaces, access, amenities, systems.
-- Renombrar `src/components/amenity-selector-v2.tsx` → `amenity-selector.tsx` (sufijo prohibido por §14). Actualizar todos los imports en la misma rama.
+**Sub-PR E1 — wizard + content modules + shared upfront**:
+- **Shared upfront** (profile: "shared", consumido por múltiples módulos — se migra primero para no migrar el mismo componente dos veces):
+  - `src/components/media/*` (image picker, gallery, upload widgets).
+  - `src/components/local-guide/place-autocomplete.tsx`.
+- **Wizard**:
+  - `src/components/wizard/wizard-shell.tsx` y peers de step.
+  - `src/app/properties/new/welcome/page.tsx`, `step-1`, `step-2`, `step-3`, `step-4`, `review`.
+- **Content modules** (editores per-property):
+  - `src/app/properties/[propertyId]/property/` (datos básicos de la propiedad — antes página overview, ahora subpágina dedicada).
+  - `src/app/properties/[propertyId]/access/` (llegada, llaves, código).
+  - `src/app/properties/[propertyId]/spaces/` (espacios y habitaciones).
+  - `src/app/properties/[propertyId]/amenities/` (equipamiento).
+  - `src/app/properties/[propertyId]/systems/` (sistemas técnicos).
+  - `src/app/properties/[propertyId]/troubleshooting/` (parte content — averías y soluciones por sistema/espacio; ver Decisión F: la parte de contactos de emergencia vive en `contacts/`).
+- **Cleanup en la misma sub-PR**: renombrar `src/app/properties/[propertyId]/amenities/amenity-selector-v2.tsx` → `amenity-selector.tsx` (sufijo prohibido por §14, registrado en `FORBIDDEN_SUFFIX_LEGACY`). Actualizar todos los imports + borrar la entrada del registro.
 
 **Sub-PR E2 — output + operations modules**:
-- Editores: policies, contacts, emergency, local-guide, knowledge, ops.
-- `src/components/local-guide/place-autocomplete.tsx`, `src/components/media/*`.
+- **Operations editors**:
+  - `src/app/properties/[propertyId]/policies/` (normas).
+  - `src/app/properties/[propertyId]/contacts/` (contactos — incluye emergency contacts según Decisión F: no hay ruta `emergency/` dedicada, los contactos de emergencia se cablan dentro de `contacts/` con tags semánticos).
+  - `src/app/properties/[propertyId]/local-guide/` (guía local).
+  - `src/app/properties/[propertyId]/knowledge/` (knowledge base operator).
+  - `src/app/properties/[propertyId]/incidents/` (incidencias — top-level si existe; verificar en Fase 0 de E2).
+  - `src/app/properties/[propertyId]/ops/` y settings de propiedad si existen como rutas top-level.
 
-**Sub-PR E3 — outputs**:
-- `src/app/properties/[propertyId]/{guest-guide,publishing,analytics,reservations,media}/page.tsx`.
+**Sub-PR E3 — outputs + activity**:
+- `src/app/properties/[propertyId]/{guest-guide,publishing,analytics,reservations,media,activity}/page.tsx`.
 - `src/components/guide-preview.tsx` (operator preview del guest).
+- `activity/` añadido respecto a la spec original — la timeline de actividad consume el log de audit (15D) y necesita el redesign visual para no quedar como única página fuera del rollout.
 
 **Gates por sub-PR** (obligatorios):
 - ✅ `/simplify` ejecutado y aplicado.
@@ -3282,22 +3298,36 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - ✅ Checks relevantes verdes: `npx tsc --noEmit`, `vitest run`, axe-core.
 - ✅ PR description con diff stats (`git diff main --stat`).
 
-**PR final contra main**:
-- Solo acumula sub-PRs ya validados. **No introduce cambios conceptuales nuevos**.
-- Tabla de clasificación combinada (E1 + E2 + E3).
-- Si umbral de partición se disparó al cerrar E2, esta PR final no existe — se abren las 3 ramas separadas y E3 se ejecuta en su propia rama.
+**PR final contra main (Alt-2 condicional)**:
+- E1 va siempre como PR real contra `main` (no es un sub-PR interno).
+- E2 + E3: si el umbral de partición no se disparó al cerrar E1, continúan como sub-PRs internos sobre la misma rama y un PR final acumula los tres. Si se disparó, E2 + E3 abren ramas reales separadas y NO hay PR final acumulado de 16E.
+- Cuando exista, el PR final acumula sub-PRs ya validados — **no introduce cambios conceptuales nuevos**, solo combina la tabla de clasificación + UI Kit Parity blocks per módulo.
 
 **Tests**:
 - `config-driven.test.ts` verde.
 - `field-type-coverage.test.ts` verde.
+- `component-invariants.test.ts` verde (13 invariantes 16D.5 + governance shape).
+- `parity-static.test.ts` verde (orphan check, expected scope, FORBIDDEN_SUFFIX_LEGACY).
+- `dark-parity.test.ts` verde.
 - Suite existente de cada módulo verde.
-- Regresión completeness scoring (spotcheck Playwright sobre wizard end-to-end).
+- Regresión completeness scoring (spotcheck wizard end-to-end).
+- **Wizard E2E smoke** (Playwright): un único spec que recorre `welcome → step-1 → step-2 → step-3 → step-4 → review` verificando que los nuevos primitivos no rompen state cruzado entre steps. **Opt-out clause**: si la creación de fixtures + auth para el wizard supera 1 día de coste real, se documenta en la sub-PR de wizard la decisión de aplazar el spec a 16G + se compensa con captura visual manual en `eval-artifacts/wizard-e2e-deferred.md`. No es un STOP duro — es una decisión documentada explícita.
 
 **Criterio de done**:
-- ✅ Cada módulo con subsección dedicada en PR description final.
-- ✅ Tabla de clasificación combinada.
-- ✅ 0 sufijos prohibidos (incluido `amenity-selector-v2.tsx` renombrado).
+- ✅ Cada módulo con subsección dedicada en PR description (E1, E2, E3 independientemente — y final si aplica).
+- ✅ **UI Kit Parity block per módulo** (skill `liora-ui-kit-parity`): tabla 7-criterios (1-10) + verdict global + screenshots Liora vs implementación en `eval-artifacts/16E/<module>/`. Gate: ≥8.5 global, ≥7.5 per criterion, zero blockers (mismatched layout silhouette / token violations / a11y degradation).
+- ✅ Skills usadas listadas en cada sub-PR description: `frontend-design` (design thinking pre-implementación), `liora-ui-kit-parity` (audit post-implementación), `webapp-testing` (smoke tests Playwright wizard + opt-out).
+- ✅ `LIORA_SURFACE_ROLLOUT_PLAN.md` actualizado **granular por módulo** (no solo "16E completed") — cada módulo lista: archivos tocados, primitivos adoptados, UI Kit Parity verdict.
+- ✅ Tabla de clasificación combinada (E1 + E2 + E3 si hay PR final, o per-rama si se partió).
+- ✅ 0 sufijos prohibidos (incluido `amenity-selector-v2.tsx` renombrado + entrada borrada de `FORBIDDEN_SUFFIX_LEGACY`).
 - ✅ 0 inline `style={{}}` con valores hardcoded en módulos tocados.
+
+**Skills + UI Kit Parity (Fase -1 16E)** — mandato explícito:
+- **`frontend-design`** (pre-implementación per módulo): bloque de design thinking en la sub-PR description antes de tocar código por módulo. Cubrir: Purpose, Tone, Constraints, Differentiation. Sin AI slop, dirección estética bold consistente con la shell 16D + tokens semánticos.
+- **`liora-ui-kit-parity`** (audit post-implementación per módulo): comparar la página migrada contra la referencia correspondiente en `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html`. Mapping canónico vive en `.claude/skills/liora-ui-kit-parity/reference-mapping.md` (page-propiedades → property/, page-llegada → access/, page-espacios → spaces/, page-equipamiento → amenities/, page-sistemas → systems/, page-normas → policies/, page-contactos → contacts/, page-averias → troubleshooting/, page-guialocal → local-guide/). Aportar tabla 7-criterios (layout silhouette, visual hierarchy, density/spacing, component fidelity, token fidelity, interaction/state, dark mode) con scoring 1-10 + screenshots Liora vs implementación en `eval-artifacts/16E/<module>/`. Verdict per surface = worst-of, verdict global PR = worst-of-surfaces.
+- **`webapp-testing`** (smoke tests donde aporte): Playwright wizard E2E. Reconnaissance-then-action. Si la creación de fixtures supera 1 día, opt-out documentado (ver Tests).
+- **Reference assets**: `design-system/references/liora-ui-kits/ui_kits/operator/index.html` (shell base, leído en 16D) y `subpages.html` (módulos del operador, mapping completo en `reference-mapping.md`).
+- **Surfaces sin kit-ref (deferred kit design)**: el wizard/onboarding (`src/components/wizard/wizard-shell.tsx`, `src/app/properties/new/{welcome,step-{1..4},review}/`), el editor de datos básicos de propiedad (`src/app/properties/[propertyId]/property/`) — el `page-propiedades` del kit muestra un listado + bloque de detalle read-only (`<dl>`), no un formulario editor —, `reservations/`, `settings/`, `ai/` NO tienen una página equivalente en `subpages.html`. **Política para 16E**: aplican únicamente las invariantes Liora cross-cutting (tokens semánticos, primitivos `<Card>`/`<IconBadge>`/`<IconButton>`/`<TextLink>`/`<ButtonLink>` donde encajen, touch-target ≥44, no Tailwind named-palette, no glyphs HTML, web API guards, copy Spanish). **No se realiza UI Kit Parity audit** sobre estas superficies en 16E. **Iteración futura**: queda pendiente crear el diseño de cada una en `design-system/references/liora-ui-kits/ui_kits/operator/` (añadir bloque `page-onboarding`, `page-reservas`, `page-ajustes`, `page-ai` a `subpages.html` o un kit nuevo) y entonces aplicar el ciclo completo `frontend-design` → implementación → `liora-ui-kit-parity` audit → `webapp-testing` smoke con scoring 7-criterios. Se registra como debt en `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred kit design" con la lista de superficies + rama futura propuesta.
 
 **Hard rules heredadas de 16D.5** (enforced por `src/test/component-invariants.test.ts`):
 - Cualquier card nueva con shell canónico (`flex h-full flex-col rounded-[var(--radius-lg)] border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4`) **debe** usar `<Card variant="overview">`. Raw `<div>` con esta firma falla el test (regla 10 — primitive adoption).
@@ -3309,20 +3339,92 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 **Restricciones**:
 - ❌ Cambiar lógica config-driven (taxonomías, registries, conditional engine).
 - ❌ Cambiar API de server actions.
-- ❌ Tocar messaging, assistant (16F).
+- ❌ Tocar messaging, assistant, `ai/` (16F).
+- ❌ Inventar ruta `emergency/` dedicada — los contactos de emergencia se cablan dentro de `contacts/` (Decisión F Fase -1). Crear ruta nueva sería scope creep.
 - ❌ Re-introducir mapas inline `Record<BadgeTone, ...>` (consolidados en `src/lib/tone.ts` en 16D.5).
 - ❌ Componer nuevos `<button>` o `<Link>` "button-styled" con className raw — usar `<IconButton>` / `<IconButtonLink>` / `<ButtonLink>`.
+- ❌ Migrar guest public guide (`src/components/public-guide/ui/*`, `src/app/g/[slug]/*`) — guest mantiene su sistema visual (Inter 28/20/16/14/12, HeroCard/EssentialCard/StandardCard/WarningCard, radii 8/10/12/20). Cualquier surface guest queda con `profile: "guest"` o fuera de scope.
 
 **Dependencias / Riesgos**:
 - ⚠️ Wizard tiene 4 steps con state cruzado — verificar que el redesign no introduce re-renders perdidos.
-- ⚠️ Tres sub-PRs en la misma rama generan PR final grande. El gate de umbral fuerza la partición si pasa de 80 archivos / 5k LOC.
+- ⚠️ Tres sub-PRs en la misma rama generan PR final grande. El gate de umbral fuerza la partición si pasa de 80 archivos / 5k LOC al cerrar E1.
+- ⚠️ Mapping kit ↔ rutas no es 1:1 — reservations/, settings/, ai/ NO están mapeadas en `reference-mapping.md`. Diseñar desde tokens + patrones 16D.5 (skill `frontend-design`), sin forzar UI Kit Parity contra una página inexistente.
+- ⚠️ Shared upfront (media/* + place-autocomplete) en E1 con `profile: "shared"` significa que cualquier consumer no auditado que importe estos componentes activa el orphan check. Verificar antes del merge de E1: todo .tsx que importe estos paths está cubierto por `AUDITED_SURFACES` o tiene entrada en `ORPHAN_AUDIT_PENDING_EXCEPTIONS` con `removeBy: "16E"`.
 
-**No-alcance**: messaging, assistant, guest, shell, command palette.
+**No-alcance**: messaging, assistant, `ai/`, guest public guide, shell, command palette, ruta `emergency/` (no existe), métricas/analytics nuevas (solo re-skin de la página existente).
 
 **Preparación**:
-- **Contexto a leer**: 16A–D merged, `docs/CONFIG_DRIVEN_SYSTEM.md` §UI rule, `docs/DATA_MODEL.md` por módulo, `ui_kits/operator/subpages.html` entero, `docs/FEATURES/*.md` por módulo.
-- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` por módulo, `CLAUDE.md` § "Patrones de UI — Espacios" si los nuevos primitivos cambian reglas.
-- **Skills**: `/feature-dev` por sub-PR. `/playwright-cli` para wizard. `/simplify` antes de cada sub-PR + final.
+- **Contexto a leer**: 16A–D merged + 16D.5 governance, `docs/CONFIG_DRIVEN_SYSTEM.md` §UI rule, `docs/DATA_MODEL.md` por módulo, `design-system/references/liora-ui-kits/ui_kits/operator/index.html` (shell), `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` (todos los `page-*` blocks), `.claude/skills/liora-ui-kit-parity/reference-mapping.md`, `docs/FEATURES/*.md` por módulo, `CLAUDE.md` § "Patrones de UI — Operator shell (Fase 16D / 16D.5)" entera.
+- **Skills mandatorias** (no opcionales):
+  - `.claude/skills/frontend-design/SKILL.md` — design thinking pre-implementación per módulo.
+  - `.claude/skills/liora-ui-kit-parity/SKILL.md` — audit post-implementación per módulo, scoring 7-criterios.
+  - `.claude/skills/webapp-testing/SKILL.md` — Playwright smoke wizard E2E (opt-out documentado si fixtures > 1 día).
+- **Skills auxiliares**: `/feature-dev` por sub-PR si la complejidad lo justifica. `/simplify` obligatorio antes de cada PR (ver `CLAUDE.md` § Flujo de ramas).
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` **granular por módulo** (archivos tocados, primitivos adoptados, UI Kit Parity verdict per módulo — no solo "16E completed"), `CLAUDE.md` § "Patrones de UI — Operator shell" si los nuevos módulos introducen reglas reutilizables, `docs/ROADMAP.md` marca 16E ✅.
+
+---
+
+### Rama 16E.5 — `feat/liora-operator-content-visual-parity`
+
+**Estado**: bloqueada hasta que 16E (`feat/liora-operator-module-rollout`) cierre. Es la **siguiente rama prioritaria** después de E1 — no se ejecuta E2/E3 sin decisión explícita del usuario que opte por saltarse este paso.
+
+**Propósito**: completar la paridad visual real de los content modules migrados con baseline únicamente en E1 (Sub-PR E1 ramas 16E). E1 aplica tokens semánticos + a11y + glyph fixes + AUDITED_SURFACES, pero mantiene la estructura `CollapsibleSection` actual cuando rehacerla implica rediseño de UX/form flow. 16E.5 cierra ese gap convirtiendo cada surface en silueta Liora real (`arrival-hero`, `access-grid`, `arrival-steps`, chip strips de eyebrow row, section numbering 01/02/03, hero treatments, etc.) **sin tocar server actions, schema Prisma, ni lógica config-driven**.
+
+**Naturaleza**: required follow-up, NO optional polish. La deuda queda registrada por módulo en `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity — required follow-up" con acceptance gate concreto (UI Kit Parity ≥8.5 global / ≥7.5 per criterion + screenshots). E2/E3 continúan en sub-PRs internos sobre la misma rama de E1 SOLO si el usuario decide explícitamente que el visual parity port se ejecuta inmediatamente después; de lo contrario abre rama nueva 16E.5 con su propia PR contra `main`.
+
+**Scope inicial**:
+- `src/app/properties/[propertyId]/access/` (page-llegada).
+- `src/app/properties/[propertyId]/spaces/` (page-espacios).
+- `src/app/properties/[propertyId]/amenities/` (page-equipamiento).
+- `src/app/properties/[propertyId]/systems/` (page-sistemas).
+- `src/app/properties/[propertyId]/troubleshooting/` (page-averias).
+- `src/app/properties/[propertyId]/property/` si el baseline E1 queda visualmente por debajo del kit (revisar al cerrar 16E con stats explícitos).
+- Wizard `src/components/wizard/` + `src/app/properties/new/**/*.tsx` queda excluido — 16E lo cubre como "no-kit-ref deferred" y el kit de wizard no existe todavía. Su parity port espera a que `subpages.html` añada `page-onboarding` (rama futura distinta).
+
+**No-alcance**:
+- ❌ Cambiar server actions o cualquier lógica de persistencia.
+- ❌ Tocar Prisma / schema / migraciones.
+- ❌ Messaging, assistant, `ai/` (16F).
+- ❌ Guest public guide (`src/app/g/[slug]/*`, `src/components/public-guide/*`).
+- ❌ Outputs E3 (`reservations/`, `media/`, `analytics/`, `publishing/`, `activity/`) salvo decisión explícita de incorporar.
+- ❌ Introducir nuevas taxonomías o nuevas server actions.
+
+**Acceptance gate per módulo**:
+- ✅ UI Kit Parity ≥ 8.5 global, ≥ 7.5 per criterion (skill `liora-ui-kit-parity` con tabla 7-criterios + screenshots Liora vs implementación en `eval-artifacts/16E.5/<module>/`).
+- ✅ Layout silhouette portado: hero/header treatment donde aplique, section rhythm + numbering 01/02/03, grid/card layout parity, status/meta chips, empty states, CTA placement.
+- ✅ Cero cambios funcionales (las server actions y schemas no se tocan — el test `vitest run` de cada módulo + `tsc --noEmit` deben pasar sin modificar lógica).
+- ✅ AUDITED_SURFACES no requiere nuevas entries (los módulos ya están auditados desde E1) pero sí actualización del comentario inline cuando el surface deja de estar en "deferred kit-design" status.
+
+**Tests**:
+- `component-invariants.test.ts` verde (todas las invariantes 16D.5 + governance shape).
+- `parity-static.test.ts` verde.
+- `dark-parity.test.ts` verde — la migración visual debe mantener paridad dark-mode.
+- Suite de cada módulo verde (sin cambios funcionales esperados).
+- axe-core `serious|critical = 0` en light + dark per surface.
+
+**Criterio de done**:
+- ✅ Cada módulo del scope con `LIORA_SURFACE_ROLLOUT_PLAN.md` actualizado: status pasa de "deferred required follow-up" a "✅ migrated" con UI Kit Parity verdict (tabla 7-criterios + screenshots referenciados).
+- ✅ PR description con tabla per módulo (E1 baseline status → 16E.5 final status) + diff stats + screenshots referenced.
+- ✅ `/simplify` ejecutado sobre toda la rama antes de abrir PR.
+- ✅ `docs/ROADMAP.md` marca 16E.5 ✅.
+- ✅ `CLAUDE.md` § "Patrones de UI — Operator shell" actualizado si la migración introduce nuevos patrones reutilizables (chip-strip, hero-row, section-numbered, etc.).
+
+**Skills**:
+- `frontend-design` — design thinking pre-implementación per módulo (Purpose / Tone / Constraints / Differentiation).
+- `liora-ui-kit-parity` — audit post-implementación per módulo, scoring 7-criterios + screenshots.
+- `webapp-testing` — Playwright smoke per módulo si aporta valor (no es mandatorio).
+
+**Restricciones / Riesgos**:
+- ⚠️ La rama puede ser grande (5+ módulos × silueta visual real) — particionar en sub-PRs por módulo si supera 60 archivos / 4k LOC al cerrar el primer módulo.
+- ⚠️ Tentación de tocar server actions "porque ya estamos aquí" — bloqueado por test invariants. Si una migración visual revela que la lógica del form necesita refactor, eso va a una rama separada después.
+- ⚠️ CollapsibleSection puede no encajar con la silueta del kit en algunos módulos (e.g. arrival-hero + arrival-steps son layouts no-collapsibles). Decisión de Fase -1 per módulo: ¿se reemplaza, se complementa, o se mantiene? Documentar el reasoning en la PR description.
+
+**Dependencias**: 16E mergeada (E1 baseline aplicado a todos los content modules listados arriba).
+
+**Preparación**:
+- Releer `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` per módulo (page-llegada, page-espacios, page-equipamiento, page-sistemas, page-averias) y los selectores CSS asociados en `operator.css`.
+- Releer `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity" per módulo (escrito durante E1 con la lista exacta de gaps).
+- Skill mandatoria: `frontend-design` antes de tocar el primer módulo.
 
 ---
 

@@ -136,9 +136,9 @@ export default async function SpacesPage({
 
       {/* Layout conflicts warning */}
       {conflictingSpaces.length > 0 && (
-        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] px-4 py-3">
-          <p className="text-sm font-medium text-[var(--color-warning-700)]">Conflicto de distribución</p>
-          <p className="mt-1 text-xs text-[var(--color-warning-600)]">
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-4 py-3">
+          <p className="text-sm font-medium text-[var(--color-status-warning-text)]">Conflicto de distribución</p>
+          <p className="mt-1 text-xs text-[var(--color-status-warning-text)]">
             Los siguientes espacios no son compatibles con la distribución actual y deberían eliminarse:
             {" "}<span className="font-medium">{conflictingSpaces.map((s) => s.name || getSpaceTypeLabel(s.spaceType)).join(", ")}</span>
           </p>
@@ -147,15 +147,15 @@ export default async function SpacesPage({
 
       {/* Capacity mismatch banner */}
       {capacityMismatch && (
-        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] px-4 py-3">
-          <p className="text-sm font-medium text-[var(--color-warning-700)]">Capacidad insuficiente</p>
-          <p className="mt-1 text-xs text-[var(--color-warning-600)]">
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-4 py-3">
+          <p className="text-sm font-medium text-[var(--color-status-warning-text)]">Capacidad insuficiente</p>
+          <p className="mt-1 text-xs text-[var(--color-status-warning-text)]">
             Las camas configuradas permiten{" "}
             <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "huésped" : "huéspedes"}</span>
             {" "}pero el máximo de huéspedes es{" "}
             <span className="font-medium">{property.maxGuests}</span>.
             {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
-            <Link href={`/properties/${propertyId}/property`} className="underline hover:text-[var(--color-warning-800)]">Propiedad</Link>.
+            <Link href={`/properties/${propertyId}/property`} className="underline">Propiedad</Link>.
           </p>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   getEntityMediaAction,
   reorderMediaAction,
@@ -108,7 +109,8 @@ export function EntityGallery({
   }, []);
 
   const handleDrop = useCallback(
-    (targetIndex: number) => {
+    (e: React.DragEvent, targetIndex: number) => {
+      e.preventDefault();
       const fromIndex = dragItemRef.current;
       if (fromIndex === null || fromIndex === targetIndex) return;
 
@@ -145,11 +147,14 @@ export function EntityGallery({
     <button
       type="button"
       onClick={() => setIsCollapsed(!isCollapsed)}
-      className="flex w-full items-center gap-2 text-left text-xs font-semibold text-[var(--color-neutral-600)]"
+      className="flex min-h-[44px] w-full items-center gap-2 rounded-[var(--radius-md)] px-2 py-2 text-left text-xs font-semibold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-50)] transition-colors"
+      aria-expanded={!isCollapsed}
     >
-      <span className="transition-transform" style={{ transform: isCollapsed ? "rotate(-90deg)" : "rotate(0)" }}>
-        &#9660;
-      </span>
+      <ChevronDown
+        size={12}
+        aria-hidden="true"
+        className={`transition-transform ${isCollapsed ? "-rotate-90" : "rotate-0"}`}
+      />
       {label} ({count})
     </button>
   ) : null;
@@ -172,7 +177,7 @@ export function EntityGallery({
                   draggable
                   onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(index)}
+                  onDrop={(e) => handleDrop(e, index)}
                 />
               ))}
             </div>

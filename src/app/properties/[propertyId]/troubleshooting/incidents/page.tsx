@@ -159,7 +159,7 @@ export default async function IncidentsPage({
           </label>
           <button
             type="submit"
-            className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-3 py-1 text-white hover:bg-[var(--color-primary-600)]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-3 py-1 text-white hover:bg-[var(--color-primary-600)]"
           >
             Filtrar
           </button>

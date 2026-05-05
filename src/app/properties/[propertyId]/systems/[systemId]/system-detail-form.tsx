@@ -50,7 +50,7 @@ function FieldInput({
     <label className="block">
       <span className="text-sm font-medium text-[var(--foreground)]">
         {field.label}
-        {field.required && <span className="ml-0.5 text-[var(--color-error-500)]">*</span>}
+        {field.required && <span className="ml-0.5 text-[var(--color-status-error-text)]">*</span>}
         {field.visibility === "sensitive" && (
           <span className="ml-1 text-xs font-normal text-[var(--color-neutral-400)]">(sensible)</span>
         )}
@@ -156,16 +156,16 @@ export function SystemDetailForm({
       </div>
 
       {result && !result.success && result.error && (
-        <p className="text-xs text-[var(--color-error-600)]">{result.error}</p>
+        <p className="text-xs text-[var(--color-status-error-text)]">{result.error}</p>
       )}
       {result?.success && (
-        <p className="text-xs text-[var(--color-success-600)]">Guardado correctamente</p>
+        <p className="text-xs text-[var(--color-status-success-text)]">Guardado correctamente</p>
       )}
 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
+        className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
       >
         {isPending ? "Guardando…" : "Guardar cambios"}
       </button>

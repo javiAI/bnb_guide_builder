@@ -158,7 +158,7 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
                   type="button"
                   disabled={!customPtLabel.trim()}
                   onClick={savePtOther}
-                  className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors"
+                  className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors"
                 >
                   Guardar
                 </button>
@@ -213,7 +213,7 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
                     type="button"
                     disabled={!customRtLabel.trim()}
                     onClick={saveRtOther}
-                    className="inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors"
+                    className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40 transition-colors"
                   >
                     Guardar
                   </button>
@@ -259,7 +259,7 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
         <button
           type="submit"
           disabled={pending || !canContinue}
-          className="mt-8 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          className="mt-8 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-[var(--color-primary-600)] disabled:opacity-50"
         >
           {pending ? "Guardando…" : "Continuar"}
         </button>

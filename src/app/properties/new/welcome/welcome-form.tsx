@@ -97,7 +97,7 @@ export function WelcomeForm({ initialNickname, sessionId }: WelcomeFormProps) {
         <button
           type="submit"
           disabled={pending || !canStart}
-          className="mt-6 inline-flex w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
         >
           {pending ? "Preparando…" : "Empezar"}
         </button>

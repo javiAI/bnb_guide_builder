@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { findItem, propertyTypes, roomTypes, accessMethods, buildingAccessMethods, bedTypes, SPACE_TYPE_LABELS, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
 import { ReviewActions } from "./review-actions";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 interface Props {
   searchParams: Promise<{ sessionId?: string }>;
@@ -274,9 +275,10 @@ export default async function WizardReviewPage({ searchParams }: Props) {
       <div className="mt-6">
         <Link
           href={`/properties/new/step-4?sessionId=${sessionId}`}
-          className="text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
+          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]"
         >
-          &larr; Volver
+          <ArrowLeft size={14} aria-hidden="true" />
+          Volver
         </Link>
       </div>
     </div>
