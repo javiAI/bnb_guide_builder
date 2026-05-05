@@ -350,3 +350,31 @@ Implementar paleta real con `cmdk` o similar: búsqueda de propiedades, navegaci
 **Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
 
 Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
+
+---
+
+## 18. Bundle splitting — surfaces grandes diferidas (16E-pre)
+
+Tras la auditoría de bundle de 16E-pre (`chore/codebase-simplify-comprehensive`), el split per-domain de `taxonomy-loader` redujo páginas cliente a la baseline post-Liora. Quedan dos surfaces que siguen pesadas y cuyo split requiere refactor de UX (no solo imports), por lo que se difieren.
+
+### 18.1 `/messaging/[touchpointKey]` — lazy-load `MessageBodyEditor`
+
+**Estado actual**: la página `/properties/[propertyId]/messaging/[touchpointKey]` pesa ~224 kB First Load JS. El grueso lo aporta `MessageBodyEditor` con `fuse.js` (fuzzy matching del variable picker) + el árbol de `messaging_variables.json`.
+
+**Optimización propuesta**: `dynamic(() => import("./message-body-editor"), { ssr: false })` con un `loading` skeleton mínimo. El editor solo se monta cuando el host abre una plantilla — la lista de plantillas no lo necesita. Ahorro estimado: **~30–40 kB** en la primera carga del touchpoint.
+
+**Trigger para implementar**: cuando se mida TTI real del módulo messaging en producción y se confirme que el editor no se monta en >50% de las visitas (caso típico: host entra a revisar drafts pendientes, no a editar plantillas). Sin esa señal, el `dynamic()` añade un round-trip que puede empeorar UX para hosts que sí editan.
+
+**Scope**: 1 archivo (`src/app/properties/[propertyId]/messaging/[touchpointKey]/page.tsx` o el wrapper que lo monta), sin cambios de comportamiento. Compatible con Suspense del App Router.
+
+### 18.2 `/amenities` — split de `AmenitiesEditor` por tabs
+
+**Estado actual**: la página `/properties/[propertyId]/amenities` pesa ~143 kB. El cliente `AmenitiesEditor` carga toda la grilla de amenities + paneles de detalle de todas las categorías a la vez.
+
+**Optimización propuesta**: dividir el editor por tabs/categorías con `dynamic()` o React Server Components per-tab. Cada categoría (kitchen, bathroom, comfort, …) carga su propio chunk on-demand. Ahorro estimado: **~40–60 kB** en la primera carga (solo el tab default queda en el bundle inicial).
+
+**Trigger para implementar**: cuando se decida que el patrón "una vista única con todas las categorías" no escala — hoy hay ~25 amenities por property; si crece a >100 con per-instance customs, el split se vuelve necesario. Mientras tanto, la página tiene buena UX al ver todo a la vez.
+
+**Scope**: refactor del `AmenitiesEditor` cliente + posiblemente un cambio de UX (tabs vs scroll vertical). No es un swap mecánico — toca decisión de producto.
+
+**Por qué no se hace en 16E-pre**: 16E-pre es cleanup sin cambios visuales (restricción explícita). Ambos splits requieren tocar UX (skeleton del editor / introducir tabs), fuera del alcance de "código muerto + duplicación + perf trivial".

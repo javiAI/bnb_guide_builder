@@ -67,13 +67,102 @@ import propertyEnvironmentsJson from "../../taxonomies/property_environments.jso
 import completenessRulesJson from "../../taxonomies/completeness_rules.json";
 import guideSectionsJson from "../../taxonomies/guide_sections.json";
 import escalationRulesJson from "../../taxonomies/escalation_rules.json";
-import messagingVariablesJson from "../../taxonomies/messaging_variables.json";
-import messagingTriggersJson from "../../taxonomies/messaging_triggers.json";
 import messagingStarterPacksJson from "../../taxonomies/messaging_starter_packs.json";
-import localPlaceCategoriesJson from "../../taxonomies/local_place_categories.json";
-import localEventCategoriesJson from "../../taxonomies/local_event_categories.json";
 import localEventSourcesJson from "../../taxonomies/local_event_sources.json";
-import incidentCategoriesJson from "../../taxonomies/incident_categories.json";
+// Per-domain taxonomy modules own their own JSON import + Zod validation. The
+// loader re-exports their symbols so server-side aggregators that pull from
+// here keep working, while client bundles can import from the per-domain
+// module directly without dragging the full loader in.
+import {
+  localPlaceCategories,
+  findLocalPlaceCategory,
+  isLocalPlaceCategoryKey,
+  type LocalPlaceCategory,
+  type LocalPlaceCategoriesFile,
+} from "./taxonomies/local-place-categories";
+import {
+  localEventCategories,
+  findLocalEventCategory,
+  isLocalEventCategoryKey,
+  type LocalEventCategory,
+  type LocalEventCategoriesFile,
+} from "./taxonomies/local-event-categories";
+import {
+  incidentCategories,
+  findIncidentCategory,
+  isIncidentCategoryKey,
+  type IncidentCategory,
+  type IncidentCategoriesFile,
+  type IncidentTargetType,
+  type IncidentSeverity,
+} from "./taxonomies/incident-categories";
+import {
+  messagingVariables,
+  messagingVariablesByToken,
+  KNOWN_MESSAGING_VARIABLES,
+  MV_SEND_POLICIES,
+  MV_PREVIEW_BEHAVIORS,
+  MV_SOURCE_KINDS,
+  type MessagingVariablesFile,
+  type MessagingVariableItem,
+  type MessagingVariableGroup,
+  type MessagingVariableSource,
+  type MessagingVariableSendPolicy,
+  type MessagingVariablePreviewBehavior,
+  type MessagingVariableSourceKind,
+} from "./taxonomies/messaging-variables";
+import {
+  messagingTriggers,
+  messagingTriggersById,
+  KNOWN_MESSAGING_TRIGGERS,
+  MV_TRIGGER_ANCHORS,
+  findMessagingTrigger,
+  type MessagingTriggersFile,
+  type MessagingTriggerItem,
+  type MessagingTriggerAnchor,
+} from "./taxonomies/messaging-triggers";
+export {
+  localPlaceCategories,
+  findLocalPlaceCategory,
+  isLocalPlaceCategoryKey,
+  localEventCategories,
+  findLocalEventCategory,
+  isLocalEventCategoryKey,
+  incidentCategories,
+  findIncidentCategory,
+  isIncidentCategoryKey,
+  messagingVariables,
+  messagingVariablesByToken,
+  KNOWN_MESSAGING_VARIABLES,
+  MV_SEND_POLICIES,
+  MV_PREVIEW_BEHAVIORS,
+  MV_SOURCE_KINDS,
+  messagingTriggers,
+  messagingTriggersById,
+  KNOWN_MESSAGING_TRIGGERS,
+  MV_TRIGGER_ANCHORS,
+  findMessagingTrigger,
+};
+export type {
+  LocalPlaceCategory,
+  LocalPlaceCategoriesFile,
+  LocalEventCategory,
+  LocalEventCategoriesFile,
+  IncidentCategory,
+  IncidentCategoriesFile,
+  IncidentTargetType,
+  IncidentSeverity,
+  MessagingVariablesFile,
+  MessagingVariableItem,
+  MessagingVariableGroup,
+  MessagingVariableSource,
+  MessagingVariableSendPolicy,
+  MessagingVariablePreviewBehavior,
+  MessagingVariableSourceKind,
+  MessagingTriggersFile,
+  MessagingTriggerItem,
+  MessagingTriggerAnchor,
+};
 import { CONTACT_CHANNELS } from "./contact-actions";
 import {
   extractVariableTokens,
@@ -198,153 +287,12 @@ function loadCompletenessRules(): CompletenessRulesFile {
 export const completenessRules: CompletenessRulesFile = loadCompletenessRules();
 
 // ── Local place categories ──
-// Canonical catalog of LocalPlace category keys (prefix `lp.*`). Drives
-// category dropdowns in the host editor, public guide grouping, and the
-// MapTiler POI category mapping. Enforced at boot: every id must be
-// `lp.<slug>` so raw MapTiler category strings can never leak into the DB
-// via the place-autosuggest endpoint.
-
-const LocalPlaceCategorySchema = z
-  .object({
-    id: z.string().regex(/^lp\.[a-z][a-z0-9_]*$/, {
-      message: "local place category id must match `lp.<slug>`",
-    }),
-    label: z.string().min(1),
-    description: z.string().min(1),
-    guestLabel: z.string().min(1).optional(),
-    guestDescription: z.string().min(1).optional(),
-    icon: z.string().min(1).optional(),
-    recommended: z.boolean().optional(),
-  })
-  .strict();
-
-const LocalPlaceCategoriesFileSchema = z
-  .object({
-    file: z.string(),
-    version: z.string(),
-    locale: z.string(),
-    units_system: z.string(),
-    items: z.array(LocalPlaceCategorySchema).min(1),
-  })
-  .strict();
-
-export type LocalPlaceCategory = z.infer<typeof LocalPlaceCategorySchema>;
-export type LocalPlaceCategoriesFile = z.infer<
-  typeof LocalPlaceCategoriesFileSchema
->;
-
-function loadLocalPlaceCategories(): LocalPlaceCategoriesFile {
-  const parsed = LocalPlaceCategoriesFileSchema.safeParse(
-    localPlaceCategoriesJson,
-  );
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
-      .join("\n");
-    throw new Error(
-      `Invalid taxonomies/local_place_categories.json:\n${details}`,
-    );
-  }
-  const ids = parsed.data.items.map((i) => i.id);
-  const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
-  if (duplicates.length > 0) {
-    throw new Error(
-      `Duplicate local place category ids: ${Array.from(new Set(duplicates)).join(", ")}`,
-    );
-  }
-  return parsed.data;
-}
-
-export const localPlaceCategories: LocalPlaceCategoriesFile =
-  loadLocalPlaceCategories();
-
-const LOCAL_PLACE_CATEGORY_BY_ID: ReadonlyMap<string, LocalPlaceCategory> =
-  new Map(localPlaceCategories.items.map((item) => [item.id, item]));
-
-export function findLocalPlaceCategory(
-  id: string,
-): LocalPlaceCategory | undefined {
-  return LOCAL_PLACE_CATEGORY_BY_ID.get(id);
-}
-
-export function isLocalPlaceCategoryKey(id: string): boolean {
-  return LOCAL_PLACE_CATEGORY_BY_ID.has(id);
-}
+// Owned by `./taxonomies/local-place-categories.ts` (per-domain split for
+// client bundle isolation). Symbols re-exported at the top of this file.
 
 // ── Local event categories ──
-// Canonical catalog of LocalEvent category keys (prefix `le.*`). Drives
-// category mapping for multi-source event providers (Ticketmaster, PredictHQ,
-// Firecrawl curated sources). Every category id is enforced as `le.<slug>` at
-// boot so raw provider labels (PHQ segments, TM classifications, scraped
-// free-text) never leak into the DB or surface at render time — providers
-// that cannot map a result to a known category drop it.
-
-const LocalEventCategorySchema = z
-  .object({
-    id: z.string().regex(/^le\.[a-z][a-z0-9_]*$/, {
-      message: "local event category id must match `le.<slug>`",
-    }),
-    label: z.string().min(1),
-    description: z.string().min(1),
-    guestLabel: z.string().min(1).optional(),
-    guestDescription: z.string().min(1).optional(),
-    icon: z.string().min(1).optional(),
-    recommended: z.boolean().optional(),
-  })
-  .strict();
-
-const LocalEventCategoriesFileSchema = z
-  .object({
-    file: z.string(),
-    version: z.string(),
-    locale: z.string(),
-    units_system: z.string(),
-    items: z.array(LocalEventCategorySchema).min(1),
-  })
-  .strict();
-
-export type LocalEventCategory = z.infer<typeof LocalEventCategorySchema>;
-export type LocalEventCategoriesFile = z.infer<
-  typeof LocalEventCategoriesFileSchema
->;
-
-function loadLocalEventCategories(): LocalEventCategoriesFile {
-  const parsed = LocalEventCategoriesFileSchema.safeParse(
-    localEventCategoriesJson,
-  );
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
-      .join("\n");
-    throw new Error(
-      `Invalid taxonomies/local_event_categories.json:\n${details}`,
-    );
-  }
-  const ids = parsed.data.items.map((i) => i.id);
-  const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
-  if (duplicates.length > 0) {
-    throw new Error(
-      `Duplicate local event category ids: ${Array.from(new Set(duplicates)).join(", ")}`,
-    );
-  }
-  return parsed.data;
-}
-
-export const localEventCategories: LocalEventCategoriesFile =
-  loadLocalEventCategories();
-
-const LOCAL_EVENT_CATEGORY_BY_ID: ReadonlyMap<string, LocalEventCategory> =
-  new Map(localEventCategories.items.map((item) => [item.id, item]));
-
-export function findLocalEventCategory(
-  id: string,
-): LocalEventCategory | undefined {
-  return LOCAL_EVENT_CATEGORY_BY_ID.get(id);
-}
-
-export function isLocalEventCategoryKey(id: string): boolean {
-  return LOCAL_EVENT_CATEGORY_BY_ID.has(id);
-}
+// Owned by `./taxonomies/local-event-categories.ts` (per-domain split for
+// client bundle isolation). Symbols re-exported at the top of this file.
 
 // ── Local event sources (Firecrawl curated) ──
 // Canonical catalog of curated web sources the Firecrawl provider scrapes
@@ -413,352 +361,16 @@ export function findLocalEventSource(key: string): LocalEventSource | undefined 
 }
 
 // ── Incident categories (Rama 13D) ──
-// Guest-facing chips in the public-guide issue reporter. `defaultTargetType`
-// seeds `Incident.targetType` when the guest doesn't report against a specific
-// entity; `defaultSeverity` seeds `Incident.severity`. Both are overridable by
-// the host after the fact.
-
-const INCIDENT_TARGET_TYPES = [
-  "system",
-  "amenity",
-  "space",
-  "access",
-  "property",
-] as const;
-export type IncidentTargetType = (typeof INCIDENT_TARGET_TYPES)[number];
-
-const INCIDENT_SEVERITIES = ["low", "medium", "high"] as const;
-export type IncidentSeverity = (typeof INCIDENT_SEVERITIES)[number];
-
-const IncidentCategorySchema = z
-  .object({
-    id: z.string().regex(/^ic\.[a-z_]+$/, {
-      message: "incident category id must match `ic.<snake_case>`",
-    }),
-    label: z.string().min(1),
-    description: z.string().min(1),
-    guestLabel: z.string().min(1),
-    icon: z.string().min(1),
-    defaultSeverity: z.enum(INCIDENT_SEVERITIES),
-    defaultTargetType: z.enum(INCIDENT_TARGET_TYPES),
-  })
-  .strict();
-
-const IncidentCategoriesFileSchema = z
-  .object({
-    file: z.string(),
-    version: z.string(),
-    locale: z.string(),
-    units_system: z.string(),
-    items: z.array(IncidentCategorySchema).min(1),
-  })
-  .strict();
-
-export type IncidentCategory = z.infer<typeof IncidentCategorySchema>;
-export type IncidentCategoriesFile = z.infer<
-  typeof IncidentCategoriesFileSchema
->;
-
-function loadIncidentCategories(): IncidentCategoriesFile {
-  const parsed = IncidentCategoriesFileSchema.safeParse(incidentCategoriesJson);
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
-      .join("\n");
-    throw new Error(`Invalid taxonomies/incident_categories.json:\n${details}`);
-  }
-  const ids = parsed.data.items.map((i) => i.id);
-  const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
-  if (duplicates.length > 0) {
-    throw new Error(
-      `Duplicate incident category ids: ${Array.from(new Set(duplicates)).join(", ")}`,
-    );
-  }
-  return parsed.data;
-}
-
-export const incidentCategories: IncidentCategoriesFile =
-  loadIncidentCategories();
-
-const INCIDENT_CATEGORY_BY_ID: ReadonlyMap<string, IncidentCategory> = new Map(
-  incidentCategories.items.map((item) => [item.id, item]),
-);
-
-export function findIncidentCategory(id: string): IncidentCategory | undefined {
-  return INCIDENT_CATEGORY_BY_ID.get(id);
-}
-
-export function isIncidentCategoryKey(id: string): boolean {
-  return INCIDENT_CATEGORY_BY_ID.has(id);
-}
+// Owned by `./taxonomies/incident-categories.ts` (per-domain split for client
+// bundle isolation). Symbols re-exported at the top of this file.
 
 // ── Messaging variables ──
-// Canonical catalog of template variables (`{{var}}`) + the source each one
-// resolves from. Adding a variable = JSON entry + resolver registration in
-// `src/lib/services/messaging-variables-resolvers.ts`. The coverage test fails
-// if an entry lacks a resolver.
-
-export const MV_SEND_POLICIES = [
-  "safe_always",
-  "sensitive_prearrival",
-  "internal_only",
-] as const;
-export type MessagingVariableSendPolicy = (typeof MV_SEND_POLICIES)[number];
-
-export const MV_PREVIEW_BEHAVIORS = ["resolve", "placeholder"] as const;
-export type MessagingVariablePreviewBehavior =
-  (typeof MV_PREVIEW_BEHAVIORS)[number];
-
-export const MV_SOURCE_KINDS = [
-  "property_field",
-  "contact",
-  "knowledge_item",
-  "derived",
-  "reservation",
-] as const;
-export type MessagingVariableSourceKind = (typeof MV_SOURCE_KINDS)[number];
-
-const MvPropertyFieldSourceSchema = z
-  .object({
-    kind: z.literal("property_field"),
-    path: z.string().min(1),
-  })
-  .strict();
-
-const MvContactSourceSchema = z
-  .object({
-    kind: z.literal("contact"),
-    roleKey: z.string().min(1),
-    fallbackRoleKeys: z.array(z.string().min(1)).optional(),
-    field: z.enum(["displayName", "phone", "whatsapp", "email"]),
-  })
-  .strict();
-
-const MvKnowledgeItemSourceSchema = z
-  .object({
-    kind: z.literal("knowledge_item"),
-    topic: z.string().min(1),
-  })
-  .strict();
-
-const MvDerivedSourceSchema = z
-  .object({
-    kind: z.literal("derived"),
-    derivation: z.string().min(1),
-  })
-  .strict();
-
-const MvReservationSourceSchema = z
-  .object({
-    kind: z.literal("reservation"),
-    field: z.string().min(1),
-  })
-  .strict();
-
-const MvSourceSchema = z.discriminatedUnion("kind", [
-  MvPropertyFieldSourceSchema,
-  MvContactSourceSchema,
-  MvKnowledgeItemSourceSchema,
-  MvDerivedSourceSchema,
-  MvReservationSourceSchema,
-]);
-
-const VARIABLE_TOKEN = /^[a-z][a-z0-9_]*$/;
-
-const MvItemSchema = z
-  .object({
-    id: z.string().regex(/^mv\.[a-z][a-z0-9_]*$/, "id must match mv.<token>"),
-    variable: z
-      .string()
-      .regex(VARIABLE_TOKEN, "variable must be snake_case"),
-    label: z.string().min(1),
-    description: z.string().min(1),
-    group: z.string().min(1),
-    source: MvSourceSchema,
-    sendPolicy: z.enum(MV_SEND_POLICIES),
-    previewBehavior: z.enum(MV_PREVIEW_BEHAVIORS),
-    example: z.string().min(1),
-  })
-  .strict();
-
-const MvGroupSchema = z
-  .object({ id: z.string().min(1), label: z.string().min(1) })
-  .strict();
-
-const MessagingVariablesSchema = z
-  .object({
-    file: z.literal("messaging_variables.json"),
-    version: z.string().min(1),
-    locale: z.string().min(1),
-    units_system: z.string().min(1).optional(),
-    groups: z.array(MvGroupSchema).min(1),
-    items: z.array(MvItemSchema).min(1),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    const groupIds = new Set(data.groups.map((g) => g.id));
-    const seenVariables = new Set<string>();
-    const seenIds = new Set<string>();
-    data.items.forEach((item, idx) => {
-      if (!groupIds.has(item.group)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", idx, "group"],
-          message: `Unknown group "${item.group}"`,
-        });
-      }
-      if (seenIds.has(item.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", idx, "id"],
-          message: `Duplicate id "${item.id}"`,
-        });
-      }
-      seenIds.add(item.id);
-      if (seenVariables.has(item.variable)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", idx, "variable"],
-          message: `Duplicate variable "${item.variable}"`,
-        });
-      }
-      seenVariables.add(item.variable);
-      if (
-        item.source.kind === "reservation" &&
-        item.previewBehavior !== "placeholder"
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", idx, "previewBehavior"],
-          message:
-            "reservation vars must declare previewBehavior=placeholder (12A)",
-        });
-      }
-    });
-  });
-
-export type MessagingVariablesFile = z.infer<typeof MessagingVariablesSchema>;
-export type MessagingVariableItem = MessagingVariablesFile["items"][number];
-export type MessagingVariableGroup = MessagingVariablesFile["groups"][number];
-export type MessagingVariableSource = MessagingVariableItem["source"];
-
-function loadMessagingVariables(): MessagingVariablesFile {
-  const parsed = MessagingVariablesSchema.safeParse(messagingVariablesJson);
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
-      .join("\n");
-    throw new Error(
-      `Invalid taxonomies/messaging_variables.json:\n${details}`,
-    );
-  }
-  return parsed.data;
-}
-
-export const messagingVariables: MessagingVariablesFile =
-  loadMessagingVariables();
-
-/** Map `variable` → item for O(1) lookup in the resolver. */
-export const messagingVariablesByToken: ReadonlyMap<
-  string,
-  MessagingVariableItem
-> = new Map(messagingVariables.items.map((i) => [i.variable, i]));
-
-/** Known variable tokens (the set of legal `{{var}}` names). */
-export const KNOWN_MESSAGING_VARIABLES: ReadonlySet<string> = new Set(
-  messagingVariables.items.map((i) => i.variable),
-);
+// Owned by `./taxonomies/messaging-variables.ts` (per-domain split for client
+// bundle isolation). Symbols re-exported at the top of this file.
 
 // ── Messaging triggers ──
-// Catalog of automation trigger types. Each entry declares which reservation
-// anchor the offset is relative to (`checkIn`, `checkOut`, `bookingConfirmed`)
-// plus UX presets. `requiresReservation=true` means no draft can materialize
-// without a reservation row — enforced by the materializer service.
-
-export const MV_TRIGGER_ANCHORS = [
-  "checkIn",
-  "checkOut",
-  "bookingConfirmed",
-] as const;
-export type MessagingTriggerAnchor = (typeof MV_TRIGGER_ANCHORS)[number];
-
-const MvTriggerPresetSchema = z
-  .object({
-    label: z.string().min(1),
-    offsetMinutes: z.number().int().finite(),
-  })
-  .strict();
-
-const MvTriggerItemSchema = z
-  .object({
-    id: z.string().regex(/^[a-z][a-z0-9_]*$/),
-    label: z.string().min(1),
-    description: z.string().min(1),
-    anchorField: z.enum(MV_TRIGGER_ANCHORS),
-    requiresReservation: z.boolean(),
-    defaultOffsetMinutes: z.number().int().finite(),
-    offsetSign: z.enum([
-      "negative_typical",
-      "positive_typical",
-      "bidirectional",
-    ]),
-    presets: z.array(MvTriggerPresetSchema).min(1),
-  })
-  .strict();
-
-const MessagingTriggersSchema = z
-  .object({
-    file: z.literal("messaging_triggers.json"),
-    version: z.string().min(1),
-    locale: z.string().min(1),
-    units_system: z.string().min(1).optional(),
-    items: z.array(MvTriggerItemSchema).min(1),
-  })
-  .strict()
-  .superRefine((data, ctx) => {
-    const seen = new Set<string>();
-    data.items.forEach((item, idx) => {
-      if (seen.has(item.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", idx, "id"],
-          message: `Duplicate trigger id "${item.id}"`,
-        });
-      }
-      seen.add(item.id);
-    });
-  });
-
-export type MessagingTriggersFile = z.infer<typeof MessagingTriggersSchema>;
-export type MessagingTriggerItem = MessagingTriggersFile["items"][number];
-
-function loadMessagingTriggers(): MessagingTriggersFile {
-  const parsed = MessagingTriggersSchema.safeParse(messagingTriggersJson);
-  if (!parsed.success) {
-    const details = parsed.error.issues
-      .map((i) => `  - ${i.path.join(".") || "<root>"}: ${i.message}`)
-      .join("\n");
-    throw new Error(
-      `Invalid taxonomies/messaging_triggers.json:\n${details}`,
-    );
-  }
-  return parsed.data;
-}
-
-export const messagingTriggers: MessagingTriggersFile = loadMessagingTriggers();
-
-export const messagingTriggersById: ReadonlyMap<string, MessagingTriggerItem> =
-  new Map(messagingTriggers.items.map((t) => [t.id, t]));
-
-export const KNOWN_MESSAGING_TRIGGERS: ReadonlySet<string> = new Set(
-  messagingTriggers.items.map((t) => t.id),
-);
-
-export function findMessagingTrigger(
-  id: string,
-): MessagingTriggerItem | undefined {
-  return messagingTriggersById.get(id);
-}
+// Owned by `./taxonomies/messaging-triggers.ts` (per-domain split for client
+// bundle isolation). Symbols re-exported at the top of this file.
 
 // ── Messaging starter packs (rama 12C) ──
 // Pre-built templates + inactive automations grouped by `(tone × locale)`.

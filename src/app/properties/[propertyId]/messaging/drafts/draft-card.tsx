@@ -10,7 +10,7 @@ import {
 } from "@/lib/actions/messaging.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { Badge } from "@/components/ui/badge";
-import { findMessagingTrigger } from "@/lib/taxonomy-loader";
+import { findMessagingTrigger } from "@/lib/taxonomies/messaging-triggers";
 import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import type { DraftStatus } from "@/lib/services/messaging-automation.service";
 

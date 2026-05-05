@@ -1,19 +1,17 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
 import { runAllValidations } from "@/lib/validations/run-all";
-import { composeGuide } from "@/lib/services/guide-rendering.service";
-import { computeGuideDiff } from "@/lib/services/guide-diff.service";
-import { Prisma } from "@prisma/client";
-import type { GuideTree } from "@/lib/types/guide-tree";
+import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
-import QRCode from "qrcode";
+import type { GuideTree } from "@/lib/types/guide-tree";
 import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
-import { GuideDiffViewer } from "./guide-diff-viewer";
+import { DiffPanel, DiffPanelSkeleton } from "./diff-panel";
 import { ShareableLink } from "./shareable-link";
 
 type OutputItem = {
@@ -133,8 +131,11 @@ export default async function PublishingPage({
 
   if (!property) notFound();
 
-  // Load data in parallel — versions fetched without treeJson (large blob);
-  // published version's treeJson is fetched separately only if needed.
+  // Load data in parallel. `versions` selects a non-null `treeJson` indicator
+  // (`hasSnapshot`) plus the published tree itself when present, so the diff
+  // panel below can stream without re-querying. Column names are the actual
+  // DB names from `@map()` directives (snake_case), not the Prisma model
+  // fields — `prisma.$queryRaw` does not translate.
   const [
     spacesCount,
     amenitiesCount,
@@ -143,8 +144,8 @@ export default async function PublishingPage({
     mediaCount,
     knowledgeCount,
     versions,
+    publishedTreeRow,
     validations,
-    publishedWithTree,
   ] = await Promise.all([
     prisma.space.count({ where: { propertyId, status: "active" } }),
     prisma.propertyAmenityInstance.count({ where: { propertyId } }),
@@ -152,29 +153,40 @@ export default async function PublishingPage({
     prisma.localPlace.count({ where: { propertyId } }),
     prisma.mediaAsset.count({ where: { propertyId } }),
     prisma.knowledgeItem.count({ where: { propertyId } }),
-    prisma.guideVersion.findMany({
-      where: { propertyId },
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        version: number;
+        status: string;
+        publishedAt: Date | null;
+        createdAt: Date;
+        hasSnapshot: boolean;
+      }>
+    >`
+      SELECT id, version, status,
+             published_at AS "publishedAt",
+             created_at   AS "createdAt",
+             (tree_json IS NOT NULL AND tree_json::text != 'null') AS "hasSnapshot"
+      FROM guide_versions
+      WHERE property_id = ${propertyId}
+      ORDER BY version DESC
+    `,
+    // Pull the published version's tree once at page-load time so the diff
+    // panel below renders without an extra DB roundtrip.
+    prisma.guideVersion.findFirst({
+      where: { propertyId, status: "published", treeJson: { not: Prisma.AnyNull } },
       orderBy: { version: "desc" },
-      select: {
-        id: true,
-        version: true,
-        status: true,
-        publishedAt: true,
-        createdAt: true,
-      },
+      select: { treeJson: true },
     }),
     runAllValidations(propertyId, {
       maxGuests: property.maxGuests,
       infantsAllowed: property.infantsAllowed,
       accessMethodsJson: property.accessMethodsJson,
     }),
-    // Only fetch treeJson for the published version
-    prisma.guideVersion.findFirst({
-      where: { propertyId, status: "published" },
-      orderBy: { version: "desc" },
-      select: { id: true, version: true, status: true, treeJson: true, publishedAt: true, createdAt: true },
-    }),
   ]);
+
+  const publishedTree =
+    (publishedTreeRow?.treeJson as unknown as GuideTree | null) ?? null;
 
   const completedSections = new Set<string>();
 
@@ -194,48 +206,14 @@ export default async function PublishingPage({
   const gates = evaluateGates(outputs, completedSections);
   const readyCount = gates.filter((g) => g.ready).length;
 
-  const publishedVersion = publishedWithTree ?? versions.find((v) => v.status === "published") ?? null;
-  const publishedHasSnapshot = Boolean(publishedWithTree?.treeJson);
-  // For archived versions, check which ones have snapshots (for rollback eligibility).
-  // This is a lightweight query — only IDs, no large treeJson payloads.
-  const archivedIds = versions.filter((v) => v.status === "archived").map((v) => v.id);
-  const snapshotIds = archivedIds.length > 0
-    ? new Set(
-        (await prisma.guideVersion.findMany({
-          where: { id: { in: archivedIds }, treeJson: { not: Prisma.AnyNull } },
-          select: { id: true },
-        })).map((v) => v.id),
-      )
-    : new Set<string>();
-  const archivedVersions = versions
-    .filter((v) => v.status === "archived")
-    .map((v) => ({ ...v, hasSnapshot: snapshotIds.has(v.id) }));
+  const publishedVersion = versions.find((v) => v.status === "published") ?? null;
+  const publishedHasSnapshot = Boolean(publishedVersion?.hasSnapshot);
+  const archivedVersions = versions.filter((v) => v.status === "archived");
 
-  // Shareable link — generate QR SVG server-side when slug exists
-  const headersList = await headers();
-  const host = headersList.get("host") ?? "localhost:3000";
-  const proto = headersList.get("x-forwarded-proto") ?? "http";
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${proto}://${host}`;
-  const publicUrl = property.publicSlug
-    ? `${baseUrl}/g/${property.publicSlug}`
-    : null;
-  let qrSvg: string | null = null;
-  if (publicUrl) {
-    try {
-      qrSvg = await QRCode.toString(publicUrl, { type: "svg", margin: 1, width: 200 });
-    } catch {
-      // QR generation is non-critical — page still works without it
-    }
-  }
-
-  // Only compose live tree + diff when there's a published version to compare against
-  const publishedTree = publishedWithTree?.treeJson
-    ? (publishedWithTree.treeJson as unknown as GuideTree)
-    : null;
-  const liveTree = publishedTree
-    ? await composeGuide(propertyId, "internal", property.publicSlug)
-    : null;
-  const diff = computeGuideDiff(publishedTree, liveTree);
+  // Shareable link — shared QR generation cached per request
+  const handoff = await getPublicGuideHandoff(property.publicSlug);
+  const publicUrl = handoff?.publicUrl ?? null;
+  const qrSvg = handoff?.qrSvg ?? null;
 
   return (
     <div>
@@ -281,14 +259,16 @@ export default async function PublishingPage({
         </div>
       </div>
 
-      {/* ── Diff vs published ── */}
-      {publishedVersion && publishedHasSnapshot && (
-        <div className="mt-8">
-          <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
-            Cambios desde v{publishedVersion.version}
-          </h2>
-          <GuideDiffViewer diff={diff} />
-        </div>
+      {/* ── Diff vs published — streamed to unblock initial paint ── */}
+      {publishedVersion && publishedHasSnapshot && publishedTree && (
+        <Suspense fallback={<DiffPanelSkeleton />}>
+          <DiffPanel
+            propertyId={propertyId}
+            publishedVersionLabel={`v${publishedVersion.version}`}
+            publicSlug={property.publicSlug}
+            publishedTree={publishedTree}
+          />
+        </Suspense>
       )}
       {publishedVersion && !publishedHasSnapshot && (
         <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-warning-200)] bg-[var(--color-warning-50)] p-4">

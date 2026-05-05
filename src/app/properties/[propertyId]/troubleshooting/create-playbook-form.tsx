@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { createPlaybookAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { troubleshootingTaxonomy, getItems } from "@/lib/taxonomy-loader";
+import { troubleshootingTaxonomy } from "@/lib/taxonomies/troubleshooting";
+import { getItems } from "@/lib/taxonomies/_helpers";
 
 const troubleshootingTypes = getItems(troubleshootingTaxonomy);
 

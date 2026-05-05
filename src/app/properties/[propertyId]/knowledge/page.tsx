@@ -49,6 +49,18 @@ export default async function KnowledgePage({
     prisma.knowledgeItem.findMany({
       where: { propertyId, locale: activeLocale },
       orderBy: [{ entityType: "asc" }, { topic: "asc" }],
+      select: {
+        id: true,
+        topic: true,
+        bodyMd: true,
+        visibility: true,
+        journeyStage: true,
+        confidenceScore: true,
+        lastVerifiedAt: true,
+        chunkType: true,
+        entityType: true,
+        contextPrefix: true,
+      },
     }),
     getLocaleStatusForProperty(propertyId, [...SUPPORTED_LOCALES]),
     listMissingTranslations(propertyId, defaultLocale, [...SUPPORTED_LOCALES]),

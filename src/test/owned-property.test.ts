@@ -1,11 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest'
 import { prisma } from '@/lib/db'
-import { loadOwnedProperty } from '@/lib/auth/owned-property'
-import {
-  AuthRequiredError,
-  PropertyNotFoundError,
-  PropertyForbiddenError,
-} from '@/lib/auth/errors'
 
 describe('loadOwnedProperty', () => {
   let testWorkspaceId: string

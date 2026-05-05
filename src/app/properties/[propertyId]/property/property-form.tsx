@@ -10,7 +10,12 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { savePropertyAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { propertyTypes, roomTypes, spanishProvinces, spaceAvailabilityRules, propertyEnvironments, getItems, findItem } from "@/lib/taxonomy-loader";
+import { propertyTypes } from "@/lib/taxonomies/property-types";
+import { roomTypes } from "@/lib/taxonomies/room-types";
+import { spanishProvinces } from "@/lib/taxonomies/spanish-provinces";
+import { spaceAvailabilityRules } from "@/lib/taxonomies/space-availability-rules";
+import { propertyEnvironments } from "@/lib/taxonomies/property-environments";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { COMMON_TIMEZONES } from "@/lib/timezones";
 import dynamic from "next/dynamic";
 

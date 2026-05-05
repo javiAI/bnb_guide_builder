@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest'
 import { prisma } from '@/lib/db'
 import { signSession, createSessionPayload } from '@/lib/auth/session-crypto'
-import { requireOperator, clearOperatorCache } from '@/lib/auth/require-operator'
+import { clearOperatorCache } from '@/lib/auth/require-operator'
 
 describe('requireOperator Revalidation', () => {
   let testUserId: string

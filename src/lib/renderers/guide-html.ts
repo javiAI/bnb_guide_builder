@@ -15,9 +15,7 @@ import {
   shouldHideSection,
 } from "./_guide-display";
 import { escapeHtml } from "@/lib/utils/html-escape";
-
-/** Cap inline images per item — keeps markup lean; lightbox gallery comes in 10E. */
-const INLINE_MEDIA_CAP = 3;
+import { INLINE_MEDIA_CAP } from "./_constants";
 
 // Re-exported for callers already importing from this module (historical).
 // New consumers should import from `@/lib/utils/html-escape` directly —

@@ -10,7 +10,7 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { savePoliciesAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { getPolicyOptions, getPolicyFieldOptions } from "@/lib/taxonomy-loader";
+import { getPolicyOptions, getPolicyFieldOptions } from "@/lib/taxonomies/policies";
 import type { PoliciesData } from "@/lib/schemas/editor.schema";
 
 // ── Time options (30min intervals) ──

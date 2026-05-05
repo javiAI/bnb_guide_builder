@@ -14,39 +14,37 @@ export default async function SpacesPage({
 }) {
   const { propertyId } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: {
-      id: true,
-      maxGuests: true,
-      roomType: true,
-      layoutKey: true,
-      propertyType: true,
-      propertyEnvironment: true,
-    },
-  });
+  const [property, allSpaces, propertySystems, systemCoverages] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        maxGuests: true,
+        roomType: true,
+        layoutKey: true,
+        propertyType: true,
+        propertyEnvironment: true,
+      },
+    }),
+    prisma.space.findMany({
+      where: { propertyId },
+      orderBy: { sortOrder: "asc" },
+      include: { beds: { orderBy: { createdAt: "asc" } } },
+    }),
+    prisma.propertySystem.findMany({
+      where: { propertyId },
+      select: { id: true, systemKey: true },
+    }),
+    prisma.propertySystemCoverage.findMany({
+      where: { space: { propertyId } },
+      include: { system: { select: { id: true, systemKey: true } } },
+    }),
+  ]);
 
   if (!property) notFound();
 
-  const allSpaces = await prisma.space.findMany({
-    where: { propertyId },
-    orderBy: { sortOrder: "asc" },
-    include: { beds: { orderBy: { createdAt: "asc" } } },
-  });
   const spaces = allSpaces.filter((s) => s.status !== "archived");
   const archivedSpaces = allSpaces.filter((s) => s.status === "archived");
-
-  // All systems installed on this property (inherited by all spaces by default)
-  const propertySystems = await prisma.propertySystem.findMany({
-    where: { propertyId },
-    select: { id: true, systemKey: true },
-  });
-
-  // Explicit per-space coverage overrides
-  const systemCoverages = await prisma.propertySystemCoverage.findMany({
-    where: { space: { propertyId } },
-    include: { system: { select: { id: true, systemKey: true } } },
-  });
 
   // Build default set respecting defaultCoverageRule from taxonomy:
   // - all_relevant_spaces: shown on all spaces by default (can be overridden)

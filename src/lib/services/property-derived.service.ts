@@ -14,6 +14,7 @@
  * necessary queries and still works on its own (single-section reads + tests).
  */
 
+import { cache } from "react";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
@@ -348,11 +349,14 @@ export function recomputeAllInBackground(propertyId: string): void {
 
 /**
  * Read the cached payload. Recomputes on miss so callers always get something.
+ *
+ * Wrapped with React `cache()` so multiple callers in the same RSC render pass
+ * (e.g. AppShell + page component) share one DB read instead of double-fetching.
  */
-export async function getDerived(propertyId: string): Promise<DerivedPayload> {
+export const getDerived = cache(async (propertyId: string): Promise<DerivedPayload> => {
   const row = await prisma.propertyDerived.findUnique({
     where: { propertyId },
   });
   if (row) return row.derivedJson as unknown as DerivedPayload;
   return recomputeAll(propertyId);
-}
+});

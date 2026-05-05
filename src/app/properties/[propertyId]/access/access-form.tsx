@@ -10,8 +10,19 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveAccessAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
+import { accessMethods } from "@/lib/taxonomies/access-methods";
+import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods";
+import { parkingOptions } from "@/lib/taxonomies/parking-options";
+import { accessibilityFeatures } from "@/lib/taxonomies/accessibility-features";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { EntityGallery } from "@/components/media/entity-gallery";
+
+function sameStringList(a: string[], b: string[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
 
 const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];
 const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
@@ -42,6 +53,22 @@ const YES_NO_OPTIONS: RadioCardOption[] = [
   { id: "yes", label: "Sí", description: "" },
   { id: "no", label: "No", description: "" },
 ];
+
+const PARKING_OPTIONS: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({
+  id: item.id,
+  label: item.label,
+  description: item.description,
+  recommended: item.recommended,
+}));
+
+const ACCESSIBILITY_OPTIONS: CheckboxCardOption[] = getItems(accessibilityFeatures).map(
+  (item) => ({
+    id: item.id,
+    label: item.label,
+    description: item.description,
+    recommended: item.recommended,
+  }),
+);
 
 interface AccessFormProps {
   propertyId: string;
@@ -76,13 +103,14 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(saveAccessAction, null);
 
-  // Dirty tracking
+  // Dirty tracking — element-wise list comparison avoids re-stringifying
+  // every list on every keystroke just to compare references.
   const isDirty = isAutonomous !== (p.isAutonomousCheckin ? "yes" : "no") ||
     hasBuildingAccess !== (p.hasBuildingAccess ? "yes" : "no") ||
-    JSON.stringify(buildingMethods) !== JSON.stringify(p.buildingAccess?.methods ?? []) ||
-    JSON.stringify(unitMethods) !== JSON.stringify(p.unitAccess?.methods ?? []) ||
-    JSON.stringify(parkingTypes) !== JSON.stringify(p.parkingTypes) ||
-    JSON.stringify(axFeatures) !== JSON.stringify(p.accessibilityFeatures) ||
+    !sameStringList(buildingMethods, p.buildingAccess?.methods ?? []) ||
+    !sameStringList(unitMethods, p.unitAccess?.methods ?? []) ||
+    !sameStringList(parkingTypes, p.parkingTypes) ||
+    !sameStringList(axFeatures, p.accessibilityFeatures) ||
     checkInEnd !== (p.checkInEnd ?? "22:00");
 
   const autonomousMode = isAutonomous === "yes";
@@ -100,8 +128,6 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
   const buildingLabel = buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir";
   const unitLabel = unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir";
   const parkingLabel = parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir";
-  const parkingOpts: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
-  const axOpts: CheckboxCardOption[] = getItems(accessibilityFeatures).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
   const axLabel = axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna";
 
   return (
@@ -191,7 +217,7 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
         {/* Aparcamiento */}
         <CollapsibleSection title="Aparcamiento" selectedLabel={parkingLabel} expanded={parkingOpen} onToggle={() => setParkingOpen(!parkingOpen)}>
-          <CheckboxCardGroup name="_parkingTypes" options={parkingOpts} value={parkingTypes} onChange={setParkingTypes} />
+          <CheckboxCardGroup name="_parkingTypes" options={PARKING_OPTIONS} value={parkingTypes} onChange={setParkingTypes} />
         </CollapsibleSection>
 
         {/* Accesibilidad */}
@@ -199,7 +225,7 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
           <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
             Selecciona las características de accesibilidad de la entrada y zonas comunes. Las adaptaciones dentro de baños y dormitorios se configuran en cada espacio.
           </p>
-          <CheckboxCardGroup name="_axFeatures" options={axOpts} value={axFeatures} onChange={setAxFeatures} />
+          <CheckboxCardGroup name="_axFeatures" options={ACCESSIBILITY_OPTIONS} value={axFeatures} onChange={setAxFeatures} />
         </CollapsibleSection>
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}

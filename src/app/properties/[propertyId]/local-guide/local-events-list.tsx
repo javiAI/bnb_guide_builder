@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toggleLocalEventPublishedAction } from "@/lib/actions/editor.actions";
-import { findLocalEventCategory } from "@/lib/taxonomy-loader";
+import { findLocalEventCategory } from "@/lib/taxonomies/local-event-categories";
 import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
 import { isHttpUrl } from "@/lib/services/local-events/url-utils";
 import type { LocalEventForAdmin } from "@/lib/services/guide-local-data";

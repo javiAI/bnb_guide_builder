@@ -7,6 +7,9 @@ import { CHUNK_TYPES, ENTITY_TYPES } from "@/lib/types/knowledge";
 // format for every chunkType and entityType, and never embeds raw taxonomy keys
 // (e.g. am.wifi, ct.host, sys.internet) that are internal identifiers.
 
+// Canonical TAXONOMY_KEY_PATTERN is full-string-anchored — won't match substrings in prose output.
+const TAXONOMY_KEY_IN_TEXT = /\b(am|ct|sys|sp|pt|rm|pol)\.[a-z_]+\b/;
+
 vi.mock("@/lib/db", () => ({
   prisma: {},
 }));
@@ -79,7 +82,6 @@ describe("buildContextPrefix — spec format", () => {
   );
 
   it("never contains raw taxonomy key patterns (am.*, ct.*, sys.*, sp.*)", () => {
-    const TAXONOMY_KEY_PATTERN = /\b(am|ct|sys|sp|pt|rm|pol)\.[a-z_]+\b/;
     const prefixes = [
       buildContextPrefix({
         propertyName: "Test",
@@ -107,7 +109,7 @@ describe("buildContextPrefix — spec format", () => {
       }),
     ];
     for (const prefix of prefixes) {
-      expect(prefix).not.toMatch(TAXONOMY_KEY_PATTERN);
+      expect(prefix).not.toMatch(TAXONOMY_KEY_IN_TEXT);
     }
   });
 

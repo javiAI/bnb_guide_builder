@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import QRCode from "qrcode";
 import {
   Check,
   Eye,
@@ -10,6 +8,7 @@ import {
   ExternalLink,
   type LucideIcon,
 } from "lucide-react";
+import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import { CopyLinkButton } from "./copy-link-button";
 import { QrModalButton } from "./qr-modal-button";
 
@@ -41,10 +40,6 @@ const SHORTCUTS: ReadonlyArray<{ icon: LucideIcon; label: string; pathSegment: s
   { icon: History, label: "Historial", pathSegment: "activity" },
 ];
 
-function generateQrSvg(url: string): Promise<string> {
-  return QRCode.toString(url, { type: "svg", margin: 1, width: 240 });
-}
-
 function buildSteps(propertyId: string, scores?: Record<string, number>): RailStep[] {
   return RAIL_STEP_DEFS.map((d) => ({
     key: d.key,
@@ -65,21 +60,9 @@ export async function PublishingRail({
 
   const firstIncompleteIdx = steps.findIndex((s) => s.percent < 100);
 
-  let publicUrl: string | null = null;
-  let qrSvg: string | null = null;
-  if (publicSlug) {
-    const headersList = await headers();
-    const host = headersList.get("host") ?? "localhost:3000";
-    const proto = headersList.get("x-forwarded-proto") ?? "http";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `${proto}://${host}`;
-    publicUrl = `${baseUrl}/g/${publicSlug}`;
-    try {
-      qrSvg = await generateQrSvg(publicUrl);
-    } catch (err) {
-      console.error("[publishing-rail] QR generation failed", err);
-      qrSvg = null;
-    }
-  }
+  const handoff = await getPublicGuideHandoff(publicSlug);
+  const publicUrl = handoff?.publicUrl ?? null;
+  const qrSvg = handoff?.qrSvg ?? null;
 
   return (
     <aside

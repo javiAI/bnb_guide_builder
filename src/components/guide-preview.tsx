@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type Audience = "guest" | "ai" | "internal";
+import type { GuideAudience } from "@/lib/types/guide-tree";
 type Format = "md" | "html" | "json";
 
-const AUDIENCES: { id: Audience; label: string }[] = [
+const AUDIENCES: { id: GuideAudience; label: string }[] = [
   { id: "guest", label: "Huésped" },
   { id: "ai", label: "Asistente IA" },
   { id: "internal", label: "Interno" },
@@ -22,7 +21,7 @@ interface GuidePreviewProps {
 }
 
 export function GuidePreview({ propertyId }: GuidePreviewProps) {
-  const [audience, setAudience] = useState<Audience>("guest");
+  const [audience, setAudience] = useState<GuideAudience>("guest");
   const [format, setFormat] = useState<Format>("md");
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState(false);

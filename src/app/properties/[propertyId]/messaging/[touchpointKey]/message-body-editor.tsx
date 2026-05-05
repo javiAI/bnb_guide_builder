@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   messagingVariables,
   type MessagingVariableItem,
-} from "@/lib/taxonomy-loader";
+} from "@/lib/taxonomies/messaging-variables";
 import { previewMessageTemplateAction } from "@/lib/actions/messaging.actions";
 import type { TemplatePreviewState } from "@/lib/actions/messaging.actions";
 

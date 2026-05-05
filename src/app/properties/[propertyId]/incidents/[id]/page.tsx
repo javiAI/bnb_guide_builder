@@ -76,32 +76,32 @@ async function resolveTargetLabel(
 export default async function IncidentDetailPage({ params }: Props) {
   const { propertyId, id } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true },
-  });
-  if (!property) notFound();
-
-  const incident = await prisma.incident.findFirst({
-    where: { id, propertyId },
-    select: {
-      id: true,
-      title: true,
-      severity: true,
-      status: true,
-      origin: true,
-      reporterType: true,
-      categoryKey: true,
-      targetType: true,
-      targetId: true,
-      notes: true,
-      guestContactOptional: true,
-      occurredAt: true,
-      createdAt: true,
-      resolvedAt: true,
-    },
-  });
-  if (!incident) notFound();
+  const [property, incident] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    }),
+    prisma.incident.findFirst({
+      where: { id, propertyId },
+      select: {
+        id: true,
+        title: true,
+        severity: true,
+        status: true,
+        origin: true,
+        reporterType: true,
+        categoryKey: true,
+        targetType: true,
+        targetId: true,
+        notes: true,
+        guestContactOptional: true,
+        occurredAt: true,
+        createdAt: true,
+        resolvedAt: true,
+      },
+    }),
+  ]);
+  if (!property || !incident) notFound();
 
   const category = incident.categoryKey
     ? findIncidentCategory(incident.categoryKey)

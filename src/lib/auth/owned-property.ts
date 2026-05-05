@@ -33,7 +33,7 @@ export async function loadOwnedProperty(
   let operator: OperatorContext
   try {
     operator = await requireOperator()
-  } catch (err) {
+  } catch {
     throw new AuthRequiredError('Valid session required to access property')
   }
 

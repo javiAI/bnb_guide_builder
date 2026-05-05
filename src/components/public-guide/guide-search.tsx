@@ -1,7 +1,6 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import Fuse from "fuse.js";
 import {
   useCallback,
   useDeferredValue,
@@ -11,11 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  createFuseFromIndex,
-  FUSE_OPTIONS,
-} from "@/lib/client/guide-search-index";
+import { FUSE_OPTIONS } from "@/lib/client/guide-search-index";
 import { trackSearchMiss } from "@/lib/client/guide-analytics";
+import type Fuse from "fuse.js";
 import type {
   GuideSearchEntry,
   GuideSearchHit,
@@ -59,12 +56,23 @@ export function GuideSearch({ index, slug }: Props) {
   const optionIdPrefix = useId();
   const abortRef = useRef<AbortController | null>(null);
 
-  const fuse = useMemo<Fuse<GuideSearchEntry>>(
-    () => createFuseFromIndex(index),
-    [index],
-  );
+  // Defer Fuse load until the dialog is first opened — the library is ~30 KB
+  // minzipped and most page visits never open the search.
+  const [fuse, setFuse] = useState<Fuse<GuideSearchEntry> | null>(null);
+  useEffect(() => {
+    if (!open || fuse) return;
+    let cancelled = false;
+    void import("fuse.js").then((mod) => {
+      if (cancelled) return;
+      setFuse(new mod.default(index.entries, FUSE_OPTIONS));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, fuse, index]);
 
   const results = useMemo<GuideSearchHit[]>(() => {
+    if (!fuse) return [];
     const q = deferredQuery.trim();
     if (q.length < (FUSE_OPTIONS.minMatchCharLength ?? 1)) return [];
     return fuse
@@ -76,14 +84,17 @@ export function GuideSearch({ index, slug }: Props) {
 
   // Debounced miss-tracking. Fires once per "stable" zero-result query so
   // we don't report every keystroke of a typo in progress. Below the min
-  // length Fuse can't even run — don't log those as misses.
+  // length Fuse can't even run — don't log those as misses. Also gate on
+  // `fuse` being loaded: while the dynamic import is in flight, `results`
+  // is `[]` because the memo short-circuits, which would otherwise log a
+  // false-positive miss for every reopen of the dialog.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !fuse) return;
     const q = deferredQuery.trim();
     if (q.length < minQueryLength || results.length > 0) return;
     const handle = setTimeout(() => trackSearchMiss(q), MISS_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [open, deferredQuery, results.length, minQueryLength]);
+  }, [open, fuse, deferredQuery, results.length, minQueryLength]);
 
   // `/` anywhere on the page opens search — but never when the user is
   // already typing in a form control, otherwise we'd steal focus from
@@ -108,8 +119,16 @@ export function GuideSearch({ index, slug }: Props) {
 
   // Debounce the CTA visibility: only show when the trigger condition holds
   // steadily for SEMANTIC_DEBOUNCE_MS. Otherwise the CTA would flash while
-  // the user types.
+  // the user types. While `fuse` is null (dynamic import in flight) we don't
+  // know `results.length` for real — `fuse === null` means *loading the local
+  // index*, NOT zero local hits. Surfacing the CTA in that window would also
+  // route Enter into the semantic endpoint for queries that have local matches
+  // about to land. Hold the CTA off until the local index is ready.
   useEffect(() => {
+    if (!fuse) {
+      setShowSemanticCta(false);
+      return;
+    }
     const q = deferredQuery.trim();
     if (q.length < minQueryLength) {
       setShowSemanticCta(false);
@@ -125,7 +144,7 @@ export function GuideSearch({ index, slug }: Props) {
     }
     const handle = setTimeout(() => setShowSemanticCta(true), SEMANTIC_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [deferredQuery, results.length, minQueryLength]);
+  }, [fuse, deferredQuery, results.length, minQueryLength]);
 
   // Reset state on close. The CTA visibility is derived, but the semantic
   // payload and any in-flight request must be cleared explicitly — otherwise
@@ -212,8 +231,11 @@ export function GuideSearch({ index, slug }: Props) {
       setActiveIdx((i) => (i - 1 + results.length) % results.length);
     } else if (e.key === "Enter") {
       if (results.length === 0) {
-        // No Fuse match — trigger semantic search on Enter if the CTA
-        // would be eligible. Keeps one-key-to-act behavior.
+        // No Fuse match — but only fall through to semantic search if the
+        // local index is actually loaded. While `fuse === null` the dynamic
+        // import is still in flight; firing semantic for a query that would
+        // have matched locally once the index resolves is the wrong answer.
+        if (!fuse) return;
         if (showSemanticCta && semanticState.kind !== "loading") {
           e.preventDefault();
           void runSemanticSearch();
@@ -285,7 +307,11 @@ export function GuideSearch({ index, slug }: Props) {
             />
           </div>
           <div className="guide-search__results-wrap">
-            {deferredQuery.trim().length < minQueryLength ? null : results.length === 0 ? (
+            {deferredQuery.trim().length < minQueryLength ? null : !fuse ? (
+              // Fuse import in flight — render nothing rather than a false
+              // "no results" hint that flashes on the user's first keystroke.
+              null
+            ) : results.length === 0 ? (
               <p className="guide-search__empty" role="status">
                 {ZERO_HINT}
               </p>

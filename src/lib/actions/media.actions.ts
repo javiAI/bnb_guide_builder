@@ -18,6 +18,7 @@ import {
 } from "@/lib/schemas/editor.schema";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 import type { ActionResult } from "@/lib/types/action-result";
+import { isPrismaUniqueViolation } from "@/lib/utils";
 
 // ── Helpers ─────────────────────────────────────────────
 
@@ -336,10 +337,17 @@ export async function assignMediaAction(
       },
     });
 
-    revalidatePath(`/properties/${asset.propertyId}`, "layout");
+    // Page scope (not "layout"): we don't need to re-render the workspace
+    // shell + sidebar on every assignment toggle. Sidebar readiness updates
+    // on next navigation. Also invalidate `/publishing` because media
+    // assignments feed both guide composition (composeGuide) and readiness —
+    // a stale publishing screen would show pre-assignment state after nav.
+    revalidatePath(`/properties/${asset.propertyId}/media`);
+    revalidatePath(`/properties/${asset.propertyId}`);
+    revalidatePath(`/properties/${asset.propertyId}/publishing`);
     return { success: true, data: { assignmentId: assignment.id } };
   } catch (err) {
-    if ((err as { code?: string }).code === "P2002") {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este asset ya está asignado a esta entidad" };
     }
     throw err;
@@ -361,7 +369,9 @@ export async function unassignMediaAction(
 
   await prisma.mediaAssignment.delete({ where: { id: assignmentId } });
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/publishing`);
   return { success: true };
 }
 
@@ -401,7 +411,11 @@ export async function reorderMediaAction(
   );
 
   const propertyId = assignments[0]?.mediaAsset.propertyId;
-  if (propertyId) revalidatePath(`/properties/${propertyId}`, "layout");
+  if (propertyId) {
+    revalidatePath(`/properties/${propertyId}/media`);
+    revalidatePath(`/properties/${propertyId}`);
+    revalidatePath(`/properties/${propertyId}/publishing`);
+  }
 
   return { success: true };
 }
@@ -441,7 +455,9 @@ export async function setCoverAction(
     }),
   ]);
 
-  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`, "layout");
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/publishing`);
   return { success: true };
 }
 

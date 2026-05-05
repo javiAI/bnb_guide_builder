@@ -8,13 +8,10 @@ import {
   archiveSpaceAction,
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import {
-  spaceTypes,
-  findItem,
-  bedTypes,
-  getSpaceFeatureGroups,
-  getSpaceTypeItem,
-} from "@/lib/taxonomy-loader";
+import { spaceTypes, getSpaceTypeItem } from "@/lib/taxonomies/space-types";
+import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
+import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -153,7 +150,11 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   // ── Progress ──
   const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
-  const progressDot = computeProgressDot(features, featureGroups, hasBeds, beds.length);
+  const progressDot = useMemo(
+    () => computeProgressDot(features, featureGroups, hasBeds, beds.length),
+    [features, featureGroups, hasBeds, beds.length],
+  );
+  const featuresJson = useMemo(() => JSON.stringify(features), [features]);
 
   // ── Details save form ──
   const [detailsState, detailsAction, detailsPending] = useActionState<
@@ -352,7 +353,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
             <form id={`details-${space.id}`} action={detailsAction}>
               <input type="hidden" name="spaceId" value={space.id} />
               <input type="hidden" name="propertyId" value={propertyId} />
-              <input type="hidden" name="featuresJson" value={JSON.stringify(features)} />
+              <input type="hidden" name="featuresJson" value={featuresJson} />
 
               {featureGroups
                 .filter((g) => g.id !== "sfg.dimensions")

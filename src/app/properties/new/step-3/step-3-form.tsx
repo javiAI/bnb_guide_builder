@@ -7,7 +7,8 @@ import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveStep3Action } from "@/lib/actions/wizard.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { bedTypes, getItems } from "@/lib/taxonomy-loader";
+import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { getItems } from "@/lib/taxonomies/_helpers";
 import type { StepFormProps } from "@/lib/types/wizard";
 
 const bedTypeOptions = getItems(bedTypes).filter((item) => item.id !== "bt.crib").map((item) => ({

@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { createLocalPlaceAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { formatDistance, type PoiSuggestion } from "@/lib/services/places";
-import { findLocalPlaceCategory } from "@/lib/taxonomy-loader";
+import { findLocalPlaceCategory } from "@/lib/taxonomies/local-place-categories";
 import { PlaceAutocomplete } from "@/components/local-guide/place-autocomplete";
 
 interface CreateLocalPlaceFormProps {
