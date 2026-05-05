@@ -3256,6 +3256,75 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 
 ---
 
+### Rama 16E-pre — `chore/codebase-simplify-comprehensive`
+
+**Propósito**: Limpieza exhaustiva del repositorio antes de la rollout visual de 16E. Elimina código muerto, duplicación, archivos obsoletos, importaciones circulares, estado inerte, componentes no usados, performance bottlenecks e patterns anti-idiomáticos acumulados en fases 8–15. Resultado: línea de base limpia para que 16E escale sin deuda técnica.
+
+**Archivos a crear**: Ninguno.
+
+**Archivos a modificar**:
+- Todo el repositorio (búsqueda exhaustiva y limpieza selectiva).
+- `docs/MASTER_PLAN_V2.md` si se descubren gaps en el plan durante la auditoría.
+- `docs/ROADMAP.md` (marcar 16E-pre ✅).
+
+**Tests**:
+- Suite completa verde pre-rama (baseline).
+- Suite completa verde post-rama (garantía cero-regresión).
+- `npm run build` sin regresión de bundle size.
+
+**Criterio de done**:
+- ✅ TypeScript strict mode verde (0 errors/warnings).
+- ✅ Vitest suite 100% passing (pre + post).
+- ✅ Bundle size ≤ baseline (no regresión).
+- ✅ `/simplify` ejecutado 3+ veces (búsqueda + fix + re-búsqueda confirma completitud).
+- ✅ PR description con tabla: | Category | Count | Fixed | Deferred | Examples | Risk |
+- ✅ Dead code inventory: 0 archivos huérfanos, 0 funciones unexported sin motivo, 0 imports circulares post-merge.
+- ✅ Duplication audit: todas las oportunidades consolidadas (HIGH IMPACT) o registradas (MEDIUM/LOW).
+- ✅ Performance baseline: time-to-interactive medido (dev mode, transiciones inter-página).
+- ✅ Findings documentados en PR description o docs/HANDOFF, no como cambios de código grandes.
+
+**Restricciones**:
+- ❌ Cambios funcionales (lógica, server actions, schema, APIs públicas).
+- ❌ Cambios visuales (esto es cleanup de código, no redesign).
+- ❌ Nuevas dependencias.
+- ❌ Cambios en Prisma, config-driven system, messaging, assistant.
+- ❌ Si se toca frontend/UI: usar skills frontend/webapp correspondientes (no introducir cambios visuales).
+
+**No-alcance**: Cambios en Prisma/schema, server actions, APIs públicas, config-driven system, messaging, assistant, `ai/`, guest public guide.
+
+**Preparación**:
+- **Contexto a leer**: git log completo (patrones acumulados), `CLAUDE.md` §"Patrones de Sistemas", `docs/ARCHITECTURE_OVERVIEW.md`.
+- **Docs a actualizar al terminar**: `docs/ROADMAP.md` (marcar 16E-pre ✅).
+- **Skills mandatorias**:
+  - `/simplify` (exhaustivo 3+ pasadas, enfocado en dead code + duplication + performance).
+  - Agent `Explore` (búsquedas cross-archivo: consumo de componentes, funciones exportadas, imports circulares).
+  - Agent `code-explorer` (trazar consumo real de candidatos a eliminar, confirmation antes de delete).
+  - Agent `code-architect` (si se descubren contextos over-scoped o patterns que necesitan refactor; proponer sin implementar si el scope sale de "cleanup").
+
+**Dependencias / Riesgos**:
+- ⚠️ Eliminar código que parece muerto pero tiene consumidor oculto → búsqueda muy cuidadosa (regex exacta, multiple passes).
+- ⚠️ Refactors de state/context pueden causar re-renders inesperados → suite de tests debe pasar 100% pre y post.
+- ⚠️ Dead-code report puede ser grande (cientos de items) → triaging por impact (HIGH/MEDIUM/LOW), fixear HIGH, documentar MEDIUM/LOW.
+- ⚠️ Si se detectan bottlenecks que requieren refactor grande (>500 LOC), documentar como deuda + rama futura, no incorporar aquí.
+
+**Inventario esperado** (Fase -1):
+
+1. Dead code: componentes 0-uso, funciones unexported, test files vacíos, archivos transition (`*V2.tsx`, `legacy-*`).
+2. Duplication: card shells idénticas, constantes multidefine, hooks que duplican librerías.
+3. Performance: contextos >10 consumers, cálculos hot-path inlined, estado inerte.
+4. Patterns: prop drilling excesivo, listeners no removidos, imports circulares.
+
+**Criterio de decisión por item**:
+- `HIGH IMPACT` trivial (0 uso, clear delete, <1h fix): **FIX en esta rama**.
+- `HIGH IMPACT` refactor (>500 LOC, state/context reshape): **DOCUMENT + rama futura**, no incorporar.
+- `MEDIUM/LOW`: **DOCUMENT en tabla PR** con reasoning, leave para future cleanup branches.
+
+---
+
+### Rama 16E — `feat/liora-operator-module-rollout`
+
+---
+
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
 **Propósito**: superficies de módulos del operador. **Alt-2 (estrategia aprobada Fase -1)**: una rama Git contiene E1 como PR real contra `main`; al cerrar E1 se decide con stats explícitos si E2 + E3 continúan en sub-PRs internos sobre la misma rama o se parten en ramas reales separadas. Esto evita un PR final monolítico y permite incorporar feedback temprano antes de migrar el resto.
