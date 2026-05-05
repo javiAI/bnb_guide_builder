@@ -10,7 +10,11 @@ import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveAccessAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { accessMethods, buildingAccessMethods, parkingOptions, accessibilityFeatures, getItems, findItem } from "@/lib/taxonomy-loader";
+import { accessMethods } from "@/lib/taxonomies/access-methods";
+import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods";
+import { parkingOptions } from "@/lib/taxonomies/parking-options";
+import { accessibilityFeatures } from "@/lib/taxonomies/accessibility-features";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { EntityGallery } from "@/components/media/entity-gallery";
 
 function sameStringList(a: string[], b: string[]): boolean {

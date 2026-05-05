@@ -6,7 +6,10 @@ import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { saveStep1Action } from "@/lib/actions/wizard.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { propertyTypes, roomTypes, spaceAvailabilityRules, getItems, findItem } from "@/lib/taxonomy-loader";
+import { propertyTypes } from "@/lib/taxonomies/property-types";
+import { roomTypes } from "@/lib/taxonomies/room-types";
+import { spaceAvailabilityRules } from "@/lib/taxonomies/space-availability-rules";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import type { StepFormProps } from "@/lib/types/wizard";
 
 const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item) => ({

@@ -8,7 +8,8 @@ import {
   updateBedConfigAction,
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { bedTypes, getItems, findItem } from "@/lib/taxonomy-loader";
+import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 
 const bedTypeOptions = getItems(bedTypes);
 

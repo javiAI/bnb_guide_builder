@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { createMessageTemplateAction } from "@/lib/actions/messaging.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { automationChannels, getItems } from "@/lib/taxonomy-loader";
+import { automationChannels } from "@/lib/taxonomies/automation-channels";
+import { getItems } from "@/lib/taxonomies/_helpers";
 import { MessageBodyEditor } from "./message-body-editor";
 
 const channels = getItems(automationChannels);

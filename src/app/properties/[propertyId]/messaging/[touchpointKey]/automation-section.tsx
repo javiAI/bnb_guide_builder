@@ -8,12 +8,12 @@ import {
 } from "@/lib/actions/messaging.actions";
 import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
 import type { ActionResult } from "@/lib/types/action-result";
+import { automationChannels } from "@/lib/taxonomies/automation-channels";
 import {
-  automationChannels,
   findMessagingTrigger,
-  getItems,
   messagingTriggers,
-} from "@/lib/taxonomy-loader";
+} from "@/lib/taxonomies/messaging-triggers";
+import { getItems } from "@/lib/taxonomies/_helpers";
 
 const channels = getItems(automationChannels);
 const triggers = messagingTriggers.items;

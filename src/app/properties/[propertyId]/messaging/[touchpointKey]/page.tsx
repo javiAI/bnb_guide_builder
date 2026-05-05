@@ -20,25 +20,24 @@ export default async function TouchpointDetailPage({
 }) {
   const { propertyId, touchpointKey } = await params;
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true },
-  });
-
-  if (!property) notFound();
-
   const touchpoint = findItem(messagingTouchpoints, touchpointKey);
   if (!touchpoint) notFound();
 
-  const templates = await prisma.messageTemplate.findMany({
-    where: { propertyId, touchpointKey },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const automations = await prisma.messageAutomation.findMany({
-    where: { propertyId, touchpointKey },
-    orderBy: { createdAt: "desc" },
-  });
+  const [property, templates, automations] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    }),
+    prisma.messageTemplate.findMany({
+      where: { propertyId, touchpointKey },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.messageAutomation.findMany({
+      where: { propertyId, touchpointKey },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+  if (!property) notFound();
 
   return (
     <div>

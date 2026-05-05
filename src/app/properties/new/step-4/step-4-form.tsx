@@ -8,7 +8,9 @@ import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { saveStep4Action } from "@/lib/actions/wizard.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { accessMethods, buildingAccessMethods, getItems, findItem } from "@/lib/taxonomy-loader";
+import { accessMethods } from "@/lib/taxonomies/access-methods";
+import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods";
+import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import type { StepFormProps } from "@/lib/types/wizard";
 
 const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];

@@ -1045,7 +1045,6 @@ describe("Component invariants · accessibility hardening", () => {
     // to screen readers. Must have aria-label or title to announce purpose.
     // Patterns: <button ...><${IconName}.../></button> or <button ...>+</button>
     // Exclude primitives (src/components/ui/) which mandate aria-label via TypeScript.
-    const lucideIconRe = /from\s+["']lucide-react["']/;
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
       if (!file.endsWith(".tsx")) continue;

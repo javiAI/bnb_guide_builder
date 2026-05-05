@@ -2,7 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { useCallback, useId, useState } from "react";
-import { incidentCategories } from "@/lib/taxonomy-loader";
+import { incidentCategories } from "@/lib/taxonomies/incident-categories";
 
 /** Rama 13D — Guest-facing incident reporter.
  *

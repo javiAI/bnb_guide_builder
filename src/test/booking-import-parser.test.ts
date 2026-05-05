@@ -68,7 +68,7 @@ describe("bookingToCanonical — happy path", () => {
 
 describe("bookingToCanonical — unresolved amenities", () => {
   it("collects unresolved amenity_ids as warnings and unresolvedExternalIds", () => {
-    const { context, warnings } = bookingToCanonical(
+    const { warnings } = bookingToCanonical(
       basePayload({
         amenity_ids: ["999_unknown_id", "101"],
       }),

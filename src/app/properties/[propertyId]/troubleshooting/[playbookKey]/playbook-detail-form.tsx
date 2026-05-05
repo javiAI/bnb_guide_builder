@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { updatePlaybookAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
-import { visibilityLevelsTaxonomy, getItems } from "@/lib/taxonomy-loader";
+import { visibilityLevelsTaxonomy } from "@/lib/taxonomies/visibility-levels";
+import { getItems } from "@/lib/taxonomies/_helpers";
 
 const visibilityOptions = getItems(visibilityLevelsTaxonomy)
   .filter((v) => v.id !== "vis.sensitive")

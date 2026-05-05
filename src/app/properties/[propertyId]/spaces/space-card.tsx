@@ -8,13 +8,10 @@ import {
   archiveSpaceAction,
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import {
-  spaceTypes,
-  findItem,
-  bedTypes,
-  getSpaceFeatureGroups,
-  getSpaceTypeItem,
-} from "@/lib/taxonomy-loader";
+import { spaceTypes, getSpaceTypeItem } from "@/lib/taxonomies/space-types";
+import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
+import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";

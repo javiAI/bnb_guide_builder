@@ -1,7 +1,7 @@
 "use client";
 
 import type { GuideLocalEventItem } from "@/lib/types/guide-map";
-import { findLocalEventCategory } from "@/lib/taxonomy-loader";
+import { findLocalEventCategory } from "@/lib/taxonomies/local-event-categories";
 import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
 import { isHttpUrl } from "@/lib/services/local-events/url-utils";
 

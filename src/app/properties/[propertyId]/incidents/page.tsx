@@ -63,38 +63,39 @@ export default async function IncidentsPage({ params, searchParams }: Props) {
   const originFilter = sp.origin ?? "all";
   const statusFilter = sp.status ?? "all";
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { id: true },
-  });
-  if (!property) notFound();
-
   const where = {
     propertyId,
     ...(originFilter !== "all" ? { origin: originFilter } : {}),
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
   };
 
-  const incidents = await prisma.incident.findMany({
-    where,
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      title: true,
-      severity: true,
-      status: true,
-      origin: true,
-      reporterType: true,
-      categoryKey: true,
-      targetType: true,
-      createdAt: true,
-    },
-    take: 200,
-  });
+  const [property, incidents, guestCount] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { id: true },
+    }),
+    prisma.incident.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        title: true,
+        severity: true,
+        status: true,
+        origin: true,
+        reporterType: true,
+        categoryKey: true,
+        targetType: true,
+        createdAt: true,
+      },
+      take: 200,
+    }),
+    prisma.incident.count({
+      where: { propertyId, origin: "guest_guide", status: "open" },
+    }),
+  ]);
 
-  const guestCount = await prisma.incident.count({
-    where: { propertyId, origin: "guest_guide", status: "open" },
-  });
+  if (!property) notFound();
 
   return (
     <div>
