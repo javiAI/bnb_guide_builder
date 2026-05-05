@@ -128,31 +128,31 @@ export function MediaThumbnail({
           <button
             type="button"
             onClick={handleOpenFullSize}
-            className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
             title="Ver"
             aria-label="Ver imagen completa"
           >
-            <Eye size={14} aria-hidden="true" />
+            <Eye size={16} aria-hidden="true" />
           </button>
           {!isCover && (
             <button
               type="button"
               onClick={() => onSetCover?.(data.assignmentId)}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
               title="Marcar como portada"
               aria-label="Marcar como portada"
             >
-              <Star size={14} aria-hidden="true" />
+              <Star size={16} aria-hidden="true" />
             </button>
           )}
           <button
             type="button"
             onClick={() => onRemove?.(data.assignmentId)}
-            className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-[var(--color-danger-600)] shadow hover:bg-white"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-danger-600)] shadow hover:bg-white"
             title="Quitar"
             aria-label="Quitar imagen"
           >
-            <X size={14} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       )}

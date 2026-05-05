@@ -13,7 +13,7 @@ interface NumberStepperProps {
   suffix?: string;
 }
 
-const stepBtnCls = "flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]";
+const stepBtnCls = "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]";
 
 export function NumberStepper({
   label,

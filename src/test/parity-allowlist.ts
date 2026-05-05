@@ -361,12 +361,13 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
  * the past — i.e. a previous rama promised to remove the exception and
  * shipped without doing so.
  */
-export type LioraPhase = "16D.5" | "16E" | "16F" | "16G";
+export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16F" | "16G";
 export type RemoveBy = LioraPhase | "never";
 
 export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
   "16D.5",
   "16E",
+  "16E.5",
   "16F",
   "16G",
 ] as const;

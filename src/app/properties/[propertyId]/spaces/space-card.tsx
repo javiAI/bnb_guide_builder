@@ -294,6 +294,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
             onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
             className="rounded-[var(--radius-md)] p-1.5 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
             aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
+            aria-expanded={expanded}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

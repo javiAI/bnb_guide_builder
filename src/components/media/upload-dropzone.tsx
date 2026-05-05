@@ -165,6 +165,14 @@ export function UploadDropzone({
 
   return (
     <div>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPTED_TYPES}
+        onChange={handleInputChange}
+        className="hidden"
+      />
       {/* Drop zone — native <button> for keyboard + screen reader semantics; drag handlers stay on the same element */}
       <button
         type="button"
@@ -178,14 +186,6 @@ export function UploadDropzone({
             : "border-[var(--color-neutral-300)] hover:border-[var(--color-neutral-400)]"
         } ${compact ? "px-3 py-2" : "px-6 py-4"}`}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept={ACCEPTED_TYPES}
-          onChange={handleInputChange}
-          className="hidden"
-        />
         <div className={`text-center ${compact ? "text-xs" : "text-sm"}`}>
           <p className="font-medium text-[var(--color-neutral-600)]">
             {isDragOver ? "Soltar aquí" : compact ? "+ Añadir fotos" : "Arrastra fotos o haz clic para seleccionar"}
