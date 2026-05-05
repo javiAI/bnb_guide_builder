@@ -152,6 +152,78 @@ Adding a Playwright smoke now would exercise unchanged behavior and introduce se
 
 If none of those apply when 16E.5 ships, this deferral remains in force and is closed out as part of broader Liora replatform completion in 16G.
 
+#### 16E.5 module-by-module plan
+
+Per § Rama 16E.5 Fase -1 contract decisions 1 and 3, this section captures (a) the visual inventory of each module's E1 baseline state vs the kit's expected silhouette, and (b) the **CollapsibleSection** policy per module (replace / complement / keep). Frontend-design notes are written upfront for the next module being ported and updated as each module ships.
+
+##### Visual inventory — E1 → 16E.5 silhouette gap (5 + 1 modules)
+
+| Module | E1 surface today | Kit silhouette to port | CollapsibleSection policy |
+|--------|------------------|------------------------|---------------------------|
+| `access/` | 6 stacked `<CollapsibleSection>` (horarios, tipo, edificio, vivienda, parking, accesibilidad) + photo gallery card. Submit at bottom. Header: `Volver`/`<h1>`/`InlineSaveStatus`. | `pg` page header (eyebrow / title / sub / chips: 4 facts / actions: "Simular llegada"). 3 numbered sections in kit (`01 Horarios` with `arrival-hero` big-number; `02 Método de acceso` with `access-grid` 3-col; `03 Pasos de llegada` with `arrival-steps`). | **Replace.** `arrival-hero`, `access-grid`, `arrival-steps` are layouts, not collapsibles — collapsing hides editor state. All sections always-expanded under `<NumberedSection>`. |
+| `amenities/` | Tier-banded tabs (Esenciales/Recomendados/Destacados) with chip-grid + per-amenity detail panel. | `pg` header + `eq-toolbar` (search + category filter + add) + `eq-grp` group bands + `eq-item` rows with custom checkbox + tier-coloured borders. | **Complement.** Detail panel can stay as inline expanding card (kit `eq-item.editing` analog); top-level tier sections always-expanded. |
+| `systems/` | List/detail split (CollapsibleSection on form fields). | `pg` header + `ai-card` (smart-systems intro) + `sys-card` rows (icon + body + status pill + ring-pct circular progress). | **Replace** for the list page; **complement** for the detail editor (per-system form fields can stay collapsible). |
+| `troubleshooting/` | Tabs (TroubleshootingTabs) + list + detail editor with CollapsibleSection. No single-page kit. | Adjacent silhouette: `incidents` list with `inc` rows (critical/high/normal/resolved variants). Adapt for playbooks list + per-playbook editor. | **Keep** (playbook editor is form-heavy; CollapsibleSection survives) + numbered section grammar at the top. |
+| `spaces/` | 2 numbered sections already (Configurados / Sin configurar) with `<SpaceCard>` rows. Bed manager + space form as CollapsibleSection inside cards. | `pg` header + `01 Espacios principales` numbered section + `sp-grid` 2-col cards with photo placeholder + facts row + progress bar + status pill. | **Complement.** Top-level numbered sections + per-card content. CollapsibleSection inside `<SpaceCard>` (bed manager, features) survives. |
+| `property/` | Read-only summary + property-form (CollapsibleSection per group). Kit shows listing+detail summary, not editor. | `pg` header + property facts as `pg-chips` + numbered sections per editor group. | **Decide at module start** — kit doesn't ship an editor reference, so the bar is "consume Liora primitives + grammar without inventing novel visual language". CollapsibleSection survives unless the visual gap is large. |
+
+##### Frontend-design upfront — `access/`
+
+Skill: `frontend-design`. Output structured per `frontend-design` SKILL.md template.
+
+**Purpose**: an operator-facing editor for arrival logistics — check-in/out hours, autonomous vs in-person mode, building/unit access methods, parking, accessibility, and access-related photos. Used at property setup (wizard pre-fills it) and revisited when the host changes locks, building rules, or add accessibility features. Goal: the operator finishes editing and the guest guide reflects accurate arrival info — fewer messages on check-in day, fewer 22:00 panicked WhatsApps about lockboxes.
+
+**Tone**: kit voice in `subpages.html` page-llegada is calm, declarative, slightly editorial — "La hora más frágil de toda la estancia." Not corporate, not playful. The operator surface adopts the same register: editorial subtitles instead of imperatives, small-cap eyebrows, semantic chips that summarise state ("Check-in 16:00 · Entrada autónoma"). Avoid form-app voice ("Configura tus datos", "Completa el formulario"); the kit prefers descriptive subtitles.
+
+**Constraints**:
+- ❌ No server-action / Prisma / taxonomy changes (Fase -1 contract decision 8). The 6 fields persisted today (`checkInStart`, `checkInEnd`, `checkOutTime`, `isAutonomousCheckin`, `hasBuildingAccess`, `accessMethodsJson`) stay identical.
+- ❌ No `arrival-steps` content port. The kit's section 03 ("Pasos de llegada") is a guide-content surface (the actual arrival steps shown to guests) that lives in a different module today (`guest-guide/`); access/ is the configuration page. Implementing arrival-steps here would require backend (a new `arrival_steps` field on Property or a new GuideTree node) — out of scope. Section 03 of the silhouette therefore does not port; access/ ends at section 02 (method) + a final photos numbered section.
+- ✅ All buttons, selects, checkbox-cards reach 44 hit-area (touch-target invariant from 16D.5).
+- ✅ Foundations semantic tokens only — no `--accent-700`/`--moss-500`/`--bg-2` direct refs; map kit accent → `--color-action-primary-*`, kit moss → `--color-status-success-*`.
+- ✅ `<PageHeader>`, `<NumberedSection>`, `<PageHeaderChip>` from commit 2 used for shell + section grammar.
+- ✅ `<CheckboxCardGroup>` and `<RadioCardGroup>` are kept — they already pass the touch-target gate, and replacing them with kit-style `access-opt` cards would lose the multi-select affordance for "edificio + vivienda" combined.
+- ✅ Empty states + InfoTooltip behaviour preserved.
+
+**Differentiation** vs E1 baseline:
+- **Header**: `<PageHeader eyebrow="Propiedad · Llegada" title="Llegada y acceso" description="..." chips={[Check-in/Check-out/Modo/Edificio]} actions={[Volver]} />`. The "Simular llegada" kit action is **aspirational** (no simulator backend) — omitted; eventual surface goes to `docs/FUTURE.md` if requested.
+- **Section 01 Horarios** — `<NumberedSection number="01" title="Horarios">`. Inside: an `arrival-hero` composition (big-number current `checkInStart` + label + the editorial line that summarises the saved range) PLUS the 3 time selects below the hero, no longer in a 3-col grid (kit doesn't show selects there since it's display-only). On a real editor the selects must remain editable.
+- **Section 02 Modo de acceso** — `<NumberedSection number="02" title="Modo de acceso">`. Two yes/no questions kept (`RadioCardGroup`). Replaces the current "Tipo de acceso" copy.
+- **Section 03 Método de acceso** — `<NumberedSection number="03" title="Método de acceso">`. When `hasBuildingAccess=yes`, two sub-blocks (Edificio + Vivienda) with `<CheckboxCardGroup>` inside; otherwise just Vivienda. Custom-method "Otro" branches preserved verbatim.
+- **Section 04 Aparcamiento** — `<NumberedSection number="04">` wrapping the existing `<CheckboxCardGroup>`.
+- **Section 05 Accesibilidad** — `<NumberedSection number="05">` with the lead paragraph + `<CheckboxCardGroup>`.
+- **Section 06 Fotos del acceso** — `<NumberedSection number="06">` wrapping `<EntityGallery>`.
+- **InlineSaveStatus** moves into the `<PageHeader actions>` slot (right side) so it lives where the kit's `pg-actions` lives.
+- **Submit**: full-width button retained at the bottom; `min-h-[44px]` already enforced.
+
+**Risk register**:
+- The arrival-hero gradient in the kit uses `linear-gradient(135deg, var(--accent-700), var(--accent-500))` over a 96×96 rounded square. Foundations does not ship a corresponding gradient token. Implementation plan: solid `--color-action-primary-default` background with `--color-action-primary-on` text, rather than a gradient. Documented as a kit-vs-impl divergence on the parity audit (criterion: visual fidelity — expected -0.5 there, still ≥ 7.5).
+- Mobile responsiveness: `<PageHeader>` collapses pg-row to column at sm and the 3 hour selects already use `sm:grid-cols-3`. Verified in commit 4.
+
+**A11y baseline plan** (no axe-core run in this commit — establishes the contract for commit 4):
+- `<PageHeader>` decorative elements (eyebrow before-rule, semantic chips icons) carry `aria-hidden`.
+- `<NumberedSection>` num pill carries `aria-hidden` (the visible "01"/"02" is decoration; the heading text carries the semantic label).
+- Submit button is `<button type="submit">` (already), and the dirty-tracked disable is fine because the user can still submit when there are server-side errors that need re-saving.
+- Axe-core verdict in commit 4 must show 0 serious|critical violations in light + dark; if violations appear, fix them before parity audit.
+
+##### Token translation (kit → foundations) for `access/`
+
+| Kit token | Foundations equivalent |
+|-----------|------------------------|
+| `--bg-1` | `--color-background-page` |
+| `--bg-2` | `--color-background-elevated` (hero card) / `--color-background-muted` (chip bg, num pill) |
+| `--bg-3` | `--color-background-muted` |
+| `--border` | `--color-border-default` |
+| `--ink-12` | `--color-background-muted` (subtle bands) |
+| `--ink-24` | `--color-border-strong` (idle stepper dot) |
+| `--ink-40` | `--color-border-strong` (hover border) |
+| `--fg-1` | `--color-text-primary` |
+| `--fg-2` | `--color-text-secondary` |
+| `--fg-3` | `--color-text-muted` |
+| `--accent-500/700` | `--color-action-primary-default` / `--color-action-primary-hover` |
+| `--accent-100` | `--color-action-primary-subtle` |
+| `--accent-on` | `--color-action-primary-on` |
+| `--moss-500` | `--color-status-success-text` |
+
 ### 16F — Messaging + assistant
 
 Surfaces: messaging thread UI, AI assistant chat widget (operator + guest).
