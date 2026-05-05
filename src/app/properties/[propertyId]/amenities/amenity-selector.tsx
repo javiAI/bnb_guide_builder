@@ -126,7 +126,7 @@ function AmenityChip({
         type="button"
         onClick={handleToggle}
         disabled={isPending}
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-300)] ${isPending ? "opacity-50" : ""}`}
+        className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-300)] ${isPending ? "opacity-50" : ""}`}
       >
         {item.label}
       </button>

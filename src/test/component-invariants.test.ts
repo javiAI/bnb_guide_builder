@@ -402,7 +402,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     // Capture buttons with explicit small heights/padding that lack a 44-hit-area
     // compensator. Example: `h-6 w-6` delete buttons without `min-h-[44px]` or
     // `h-11`. Scoped to operator/shared — guest buttons have different size rules.
-    const smallDimensionRe = /\b(h-[678]|p-0\.5|p-1\b)\b/;
+    // Matches: h-6, h-7, h-8, p-0.5, p-1, p-1.5, px-1, py-1, etc.
+    const smallDimensionRe = /\b(h-[678]|p-0\.5|p-1(?:\.[5])?|p[xy]-0\.5|p[xy]-1|p[xy]-1\.5)\b/;
     const validCompensators = [
       "min-h-[44px]",
       "min-h-11",
@@ -1003,7 +1004,45 @@ describe("Component invariants · token consistency (error messages)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 15. Accessibility (icon-only buttons, drag handlers)
+// 15. Layout safety (grid column mismatches, opacity-0 accessibility)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · layout safety", () => {
+  it("elements with min-w-[44px] or h-11+ cannot be inside grid-cols-[...24px...]", () => {
+    // Grid column mismatch: element min-w-[44px] inside a 24px grid column causes
+    // overflow and layout breakage. Pattern: grid-cols-[...24px...] followed by
+    // button/div with min-w-[44px]/min-h-[44px]/h-11/recipe-icon-btn-32.
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Find grid-cols with 24px column
+      const gridMatch = /grid-cols-\[([^\]]*24px[^\]]*)\]/.exec(content);
+      if (!gridMatch) continue;
+      // Check if there's a 44-width element in the next few lines
+      const gridIdx = gridMatch.index || 0;
+      const nextChunk = content.slice(gridIdx, gridIdx + 1000);
+      // Look for buttons/elements with 44-width classes after the grid definition
+      if (/\b(min-w-\[44px\]|min-h-\[44px\]|h-11|h-12|recipe-icon-btn-32)\b/.test(nextChunk)) {
+        violations.push(
+          `${file}:${lineNumber(content, gridIdx)}  grid-cols-[...24px...] has 44-width child element — will cause overflow/misalign`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("opacity-0 hidden elements must have accessible keyboard alternative", () => {
+    // Opacity-0 hide pattern (visibility: hidden on non-hover) without keyboard
+    // fallback is inaccessible. Example: `opacity-0 group-hover:opacity-100`
+    // button without focus-visible or aria-expanded disclosure.
+    // This is complex to validate statically — skip for now, flag in review.
+    // TODO: Add this when we have disclosure/focus tracking.
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 16. Accessibility (icon-only buttons, drag handlers)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Component invariants · accessibility hardening", () => {

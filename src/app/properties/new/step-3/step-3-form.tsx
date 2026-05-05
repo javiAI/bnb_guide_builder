@@ -190,11 +190,11 @@ export function Step3Form({ sessionId, initialState, maxStepReached, snapshot, s
           <p className="mb-4 text-xs text-[var(--color-neutral-500)]">Añade cada cama indicando dónde se encuentra y de qué tipo es.</p>
 
           <div className="space-y-2">
-            <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_64px_24px] gap-2 text-xs font-medium text-[var(--color-neutral-500)] px-1">
+            <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_64px_44px] gap-2 text-xs font-medium text-[var(--color-neutral-500)] px-1">
               <span>Ubicación</span><span>Tipo de cama</span><span>Cant.</span><span />
             </div>
             {beds.map((bed, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_1fr_64px_24px] items-center gap-2">
+              <div key={idx} className="grid grid-cols-[1fr_1fr_64px_44px] items-center gap-2">
                 <select value={bed.location} onChange={(e) => updateBed(idx, "location", e.target.value)} className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1.5 text-sm">
                   {locs.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
                 </select>

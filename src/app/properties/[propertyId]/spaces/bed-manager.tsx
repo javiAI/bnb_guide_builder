@@ -139,7 +139,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
               type="button"
               disabled={addQty <= 1}
               onClick={() => setAddQty((q) => Math.max(1, q - 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
+              className="flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-sm text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
               aria-label="Reducir cantidad"
             >
               &minus;
@@ -151,7 +151,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
               type="button"
               disabled={addQty >= 10}
               onClick={() => setAddQty((q) => Math.min(10, q + 1))}
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] text-sm text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
+              className="flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-sm text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
               aria-label="Aumentar cantidad"
             >
               +
@@ -274,7 +274,7 @@ function BedRow({
             type="button"
             disabled={quantity <= 1}
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-xs text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
+            className="flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-xs text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
             aria-label={`Reducir cantidad de ${typeInfo?.label ?? bed.bedType}`}
           >
             &minus;
@@ -286,7 +286,7 @@ function BedRow({
             type="button"
             disabled={quantity >= 10}
             onClick={() => setQuantity((q) => Math.min(10, q + 1))}
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] text-xs text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
+            className="flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-xs text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40"
             aria-label={`Aumentar cantidad de ${typeInfo?.label ?? bed.bedType}`}
           >
             +

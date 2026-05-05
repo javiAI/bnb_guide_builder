@@ -132,7 +132,7 @@ export function ReadinessHeroCard({
               <Link
                 key={section.key}
                 href={`/properties/${propertyId}/${section.href}`}
-                className="group flex items-center gap-2.5 rounded-[var(--radius-sm)] px-1 py-0.5 text-[12px] transition-colors hover:bg-[var(--color-interactive-hover)]"
+                className="group flex min-h-[44px] items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm transition-colors hover:bg-[var(--color-interactive-hover)]"
               >
                 <span className="min-w-[36px] text-right font-medium tabular-nums text-[var(--color-text-primary)]">
                   {score}%

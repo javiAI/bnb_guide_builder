@@ -243,7 +243,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
               <button
                 type="button"
                 onClick={() => { setNameValue(space.name); setEditingName(false); }}
-                className="rounded-[var(--radius-md)] border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
+                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
               >
                 ✕
               </button>
