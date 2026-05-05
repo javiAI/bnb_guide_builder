@@ -1,59 +1,19 @@
-import messagingVariablesJson from "../../../taxonomies/messaging_variables.json";
-
-export const MV_SEND_POLICIES = [
-  "safe_always",
-  "sensitive_prearrival",
-  "internal_only",
-] as const;
-export type MessagingVariableSendPolicy = (typeof MV_SEND_POLICIES)[number];
-
-export const MV_PREVIEW_BEHAVIORS = ["resolve", "placeholder"] as const;
-export type MessagingVariablePreviewBehavior =
-  (typeof MV_PREVIEW_BEHAVIORS)[number];
-
-export type MessagingVariableSource =
-  | { kind: "property_field"; path: string }
-  | {
-      kind: "contact";
-      roleKey: string;
-      fallbackRoleKeys?: string[];
-      field: "displayName" | "phone" | "whatsapp" | "email";
-    }
-  | { kind: "knowledge_item"; topic: string }
-  | { kind: "derived"; derivation: string }
-  | { kind: "reservation"; field: string };
-
-export type MessagingVariableItem = {
-  id: string;
-  variable: string;
-  label: string;
-  description: string;
-  group: string;
-  source: MessagingVariableSource;
-  sendPolicy: MessagingVariableSendPolicy;
-  previewBehavior: MessagingVariablePreviewBehavior;
-  example: string;
-};
-
-export type MessagingVariableGroup = { id: string; label: string };
-
-export type MessagingVariablesFile = {
-  file: "messaging_variables.json";
-  version: string;
-  locale: string;
-  units_system?: string;
-  groups: MessagingVariableGroup[];
-  items: MessagingVariableItem[];
-};
-
-export const messagingVariables =
-  messagingVariablesJson as unknown as MessagingVariablesFile;
-
-export const messagingVariablesByToken: ReadonlyMap<
-  string,
-  MessagingVariableItem
-> = new Map(messagingVariables.items.map((i) => [i.variable, i]));
-
-export const KNOWN_MESSAGING_VARIABLES: ReadonlySet<string> = new Set(
-  messagingVariables.items.map((i) => i.variable),
-);
+// Re-export from the canonical loader so every consumer goes through the
+// eager Zod validation in `taxonomy-loader.ts` (variable token regex + send
+// policy + preview behaviour enums + group/source coverage). See
+// `local-place-categories.ts` for the full rationale.
+export {
+  messagingVariables,
+  messagingVariablesByToken,
+  KNOWN_MESSAGING_VARIABLES,
+  MV_SEND_POLICIES,
+  MV_PREVIEW_BEHAVIORS,
+} from "@/lib/taxonomy-loader";
+export type {
+  MessagingVariableItem,
+  MessagingVariableGroup,
+  MessagingVariablesFile,
+  MessagingVariableSource,
+  MessagingVariableSendPolicy,
+  MessagingVariablePreviewBehavior,
+} from "@/lib/taxonomy-loader";

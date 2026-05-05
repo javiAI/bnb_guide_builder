@@ -1,48 +1,16 @@
-import messagingTriggersJson from "../../../taxonomies/messaging_triggers.json";
-
-export const MV_TRIGGER_ANCHORS = [
-  "checkIn",
-  "checkOut",
-  "bookingConfirmed",
-] as const;
-export type MessagingTriggerAnchor = (typeof MV_TRIGGER_ANCHORS)[number];
-
-export type MessagingTriggerPreset = {
-  label: string;
-  offsetMinutes: number;
-};
-
-export type MessagingTriggerItem = {
-  id: string;
-  label: string;
-  description: string;
-  anchorField: MessagingTriggerAnchor;
-  requiresReservation: boolean;
-  defaultOffsetMinutes: number;
-  offsetSign: "negative_typical" | "positive_typical" | "bidirectional";
-  presets: MessagingTriggerPreset[];
-};
-
-export type MessagingTriggersFile = {
-  file: "messaging_triggers.json";
-  version: string;
-  locale: string;
-  units_system?: string;
-  items: MessagingTriggerItem[];
-};
-
-export const messagingTriggers =
-  messagingTriggersJson as unknown as MessagingTriggersFile;
-
-export const messagingTriggersById: ReadonlyMap<string, MessagingTriggerItem> =
-  new Map(messagingTriggers.items.map((t) => [t.id, t]));
-
-export const KNOWN_MESSAGING_TRIGGERS: ReadonlySet<string> = new Set(
-  messagingTriggers.items.map((t) => t.id),
-);
-
-export function findMessagingTrigger(
-  id: string,
-): MessagingTriggerItem | undefined {
-  return messagingTriggersById.get(id);
-}
+// Re-export from the canonical loader so every consumer goes through the
+// eager Zod validation in `taxonomy-loader.ts` (trigger id regex + anchor
+// enum + offset signs + duplicate-id rejection). See
+// `local-place-categories.ts` for the full rationale.
+export {
+  messagingTriggers,
+  messagingTriggersById,
+  KNOWN_MESSAGING_TRIGGERS,
+  MV_TRIGGER_ANCHORS,
+  findMessagingTrigger,
+} from "@/lib/taxonomy-loader";
+export type {
+  MessagingTriggerItem,
+  MessagingTriggersFile,
+  MessagingTriggerAnchor,
+} from "@/lib/taxonomy-loader";

@@ -84,14 +84,17 @@ export function GuideSearch({ index, slug }: Props) {
 
   // Debounced miss-tracking. Fires once per "stable" zero-result query so
   // we don't report every keystroke of a typo in progress. Below the min
-  // length Fuse can't even run — don't log those as misses.
+  // length Fuse can't even run — don't log those as misses. Also gate on
+  // `fuse` being loaded: while the dynamic import is in flight, `results`
+  // is `[]` because the memo short-circuits, which would otherwise log a
+  // false-positive miss for every reopen of the dialog.
   useEffect(() => {
-    if (!open) return;
+    if (!open || !fuse) return;
     const q = deferredQuery.trim();
     if (q.length < minQueryLength || results.length > 0) return;
     const handle = setTimeout(() => trackSearchMiss(q), MISS_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [open, deferredQuery, results.length, minQueryLength]);
+  }, [open, fuse, deferredQuery, results.length, minQueryLength]);
 
   // `/` anywhere on the page opens search — but never when the user is
   // already typing in a form control, otherwise we'd steal focus from
@@ -293,7 +296,11 @@ export function GuideSearch({ index, slug }: Props) {
             />
           </div>
           <div className="guide-search__results-wrap">
-            {deferredQuery.trim().length < minQueryLength ? null : results.length === 0 ? (
+            {deferredQuery.trim().length < minQueryLength ? null : !fuse ? (
+              // Fuse import in flight — render nothing rather than a false
+              // "no results" hint that flashes on the user's first keystroke.
+              null
+            ) : results.length === 0 ? (
               <p className="guide-search__empty" role="status">
                 {ZERO_HINT}
               </p>

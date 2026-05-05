@@ -13,12 +13,24 @@
 // side-effect is database writes. Callers can freeze `now` in tests.
 
 import { prisma } from "@/lib/db";
+import { mapWithConcurrency } from "@/lib/utils";
 import {
   listDueDrafts,
   materializeDraftsForReservation,
   transitionDraftAction,
   type MaterializationOutcome,
 } from "./messaging-automation.service";
+
+/** Cap on parallel `materializeDraftsForReservation` calls per tick. Each call
+ * fans out to N automations × per-reservation queries (lookup + variable
+ * resolve + draft upsert) — unbounded `Promise.all` over hundreds of
+ * reservations would saturate the Postgres connection pool and starve other
+ * requests. Tuned for a single instance against the dev pool size; revisit if
+ * the scheduler moves to a dedicated worker. */
+const MATERIALIZE_CONCURRENCY = 4;
+/** Cap on parallel `transitionDraftAction` dispatches per tick. Each call is
+ * one DB roundtrip; bounded to keep the pool free for end-user requests. */
+const DISPATCH_CONCURRENCY = 8;
 
 export interface TickReport {
   now: string;
@@ -68,23 +80,26 @@ export async function runTick(
     select: { id: true },
   });
 
-  // Materialize all reservations in parallel — each call is independent and
-  // `materializeDraftsForReservation` is idempotent. Sequential awaits would
-  // serialize N+1 round-trips per tick.
+  // Materialize reservations in parallel with bounded concurrency — each call
+  // is independent and `materializeDraftsForReservation` is idempotent, but
+  // unbounded `Promise.all` over hundreds of reservations would exhaust the
+  // Postgres pool. The cap also smooths spikes for downstream variable
+  // resolvers that hit external services (none today, but the contract holds).
   const outcomes: MaterializationOutcome[] = (
-    await Promise.all(reservations.map((r) => materializeDraftsForReservation(r.id)))
+    await mapWithConcurrency(reservations, MATERIALIZE_CONCURRENCY, (r) =>
+      materializeDraftsForReservation(r.id),
+    )
   ).flat();
 
   // 2. Dispatch due drafts. No provider here — the engine just marks them
-  // sent. A future branch swaps this for a real dispatcher.
+  // sent. A future branch swaps this for a real dispatcher. Bounded
+  // concurrency for the same pool-protection reason.
   const due = await listDueDrafts(now, { limit: options.dispatchLimit ?? 100 });
-  const results = await Promise.all(
-    due.map((draft) =>
-      transitionDraftAction(draft.id, "mark_sent", {
-        actorId: "scheduler",
-        note: "scheduler_tick_dispatch",
-      }).then((result) => ({ draft, result })),
-    ),
+  const results = await mapWithConcurrency(due, DISPATCH_CONCURRENCY, (draft) =>
+    transitionDraftAction(draft.id, "mark_sent", {
+      actorId: "scheduler",
+      note: "scheduler_tick_dispatch",
+    }).then((result) => ({ draft, result })),
   );
   const dispatchErrors: { draftId: string; reason: string }[] = [];
   for (const { draft, result } of results) {

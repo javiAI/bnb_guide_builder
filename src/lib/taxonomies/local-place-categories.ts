@@ -1,35 +1,15 @@
-import localPlaceCategoriesJson from "../../../taxonomies/local_place_categories.json";
-
-export type LocalPlaceCategory = {
-  id: string;
-  label: string;
-  description: string;
-  guestLabel?: string;
-  guestDescription?: string;
-  icon?: string;
-  recommended?: boolean;
-};
-
-export type LocalPlaceCategoriesFile = {
-  file: string;
-  version: string;
-  locale: string;
-  units_system: string;
-  items: LocalPlaceCategory[];
-};
-
-export const localPlaceCategories =
-  localPlaceCategoriesJson as unknown as LocalPlaceCategoriesFile;
-
-const LOCAL_PLACE_CATEGORY_BY_ID: ReadonlyMap<string, LocalPlaceCategory> =
-  new Map(localPlaceCategories.items.map((item) => [item.id, item]));
-
-export function findLocalPlaceCategory(
-  id: string,
-): LocalPlaceCategory | undefined {
-  return LOCAL_PLACE_CATEGORY_BY_ID.get(id);
-}
-
-export function isLocalPlaceCategoryKey(id: string): boolean {
-  return LOCAL_PLACE_CATEGORY_BY_ID.has(id);
-}
+// Re-export from the canonical loader so every consumer goes through the
+// eager Zod validation in `taxonomy-loader.ts`. The loader runs at module
+// import time, throws on invalid JSON, and rejects duplicate ids — bypassing
+// it via a hand-rolled `as unknown as` cast (the previous shape of this file)
+// is exactly the fragility the per-domain modules were originally meant to
+// avoid.
+export {
+  localPlaceCategories,
+  findLocalPlaceCategory,
+  isLocalPlaceCategoryKey,
+} from "@/lib/taxonomy-loader";
+export type {
+  LocalPlaceCategory,
+  LocalPlaceCategoriesFile,
+} from "@/lib/taxonomy-loader";

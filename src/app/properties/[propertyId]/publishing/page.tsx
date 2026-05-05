@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
@@ -8,6 +9,7 @@ import { runAllValidations } from "@/lib/validations/run-all";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
+import type { GuideTree } from "@/lib/types/guide-tree";
 import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
 import { DiffPanel, DiffPanelSkeleton } from "./diff-panel";
 import { ShareableLink } from "./shareable-link";
@@ -130,8 +132,10 @@ export default async function PublishingPage({
   if (!property) notFound();
 
   // Load data in parallel. `versions` selects a non-null `treeJson` indicator
-  // (`hasSnapshot`) without pulling the actual JSON blob — collapses what was
-  // previously a second sequential `guideVersion.findMany` for snapshot IDs.
+  // (`hasSnapshot`) plus the published tree itself when present, so the diff
+  // panel below can stream without re-querying. Column names are the actual
+  // DB names from `@map()` directives (snake_case), not the Prisma model
+  // fields — `prisma.$queryRaw` does not translate.
   const [
     spacesCount,
     amenitiesCount,
@@ -140,6 +144,7 @@ export default async function PublishingPage({
     mediaCount,
     knowledgeCount,
     versions,
+    publishedTreeRow,
     validations,
   ] = await Promise.all([
     prisma.space.count({ where: { propertyId, status: "active" } }),
@@ -158,18 +163,30 @@ export default async function PublishingPage({
         hasSnapshot: boolean;
       }>
     >`
-      SELECT id, version, status, "publishedAt", "createdAt",
-             ("treeJson" IS NOT NULL) AS "hasSnapshot"
-      FROM "GuideVersion"
-      WHERE "propertyId" = ${propertyId}
+      SELECT id, version, status,
+             published_at AS "publishedAt",
+             created_at   AS "createdAt",
+             (tree_json IS NOT NULL AND tree_json::text != 'null') AS "hasSnapshot"
+      FROM guide_versions
+      WHERE property_id = ${propertyId}
       ORDER BY version DESC
     `,
+    // Pull the published version's tree once at page-load time so the diff
+    // panel below renders without an extra DB roundtrip.
+    prisma.guideVersion.findFirst({
+      where: { propertyId, status: "published", treeJson: { not: Prisma.AnyNull } },
+      orderBy: { version: "desc" },
+      select: { treeJson: true },
+    }),
     runAllValidations(propertyId, {
       maxGuests: property.maxGuests,
       infantsAllowed: property.infantsAllowed,
       accessMethodsJson: property.accessMethodsJson,
     }),
   ]);
+
+  const publishedTree =
+    (publishedTreeRow?.treeJson as unknown as GuideTree | null) ?? null;
 
   const completedSections = new Set<string>();
 
@@ -243,12 +260,13 @@ export default async function PublishingPage({
       </div>
 
       {/* ── Diff vs published — streamed to unblock initial paint ── */}
-      {publishedVersion && publishedHasSnapshot && (
+      {publishedVersion && publishedHasSnapshot && publishedTree && (
         <Suspense fallback={<DiffPanelSkeleton />}>
           <DiffPanel
             propertyId={propertyId}
             publishedVersionLabel={`v${publishedVersion.version}`}
             publicSlug={property.publicSlug}
+            publishedTree={publishedTree}
           />
         </Suspense>
       )}

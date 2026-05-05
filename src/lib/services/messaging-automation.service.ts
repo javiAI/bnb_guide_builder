@@ -39,7 +39,14 @@ import {
 } from "@/lib/services/messaging-shared";
 import type { ReservationContextRow } from "@/lib/services/messaging-variables-resolvers";
 import { normaliseTriggerType } from "@/lib/schemas/messaging.schema";
-import { isPrismaUniqueViolation } from "@/lib/utils";
+import { isPrismaUniqueViolation, mapWithConcurrency } from "@/lib/utils";
+
+/** Cap on parallel `materializeSingleDraft` calls in the non-tx path. Each
+ * call hits the DB (template variable resolution + draft upsert); a single
+ * property with hundreds of automations is rare today but unbounded
+ * `Promise.all` would still fan out to the same pool the cron is hitting in
+ * parallel. Aligned with `messaging-scheduler.ts` MATERIALIZE_CONCURRENCY. */
+const MATERIALIZE_AUTOMATION_CONCURRENCY = 4;
 
 // ─── Public types ────────────────────────────────────────────────────────
 
@@ -171,7 +178,8 @@ export async function materializeDraftsForReservation(
   });
 
   // Prisma interactive transactions serialize queries — Promise.all would
-  // throw under a tx client. Default path (no client) parallelizes.
+  // throw under a tx client. Default path (no client) parallelizes with
+  // bounded concurrency to keep the DB pool free for concurrent requests.
   if (options.client) {
     const outcomes: MaterializationOutcome[] = [];
     for (const automation of automations) {
@@ -180,7 +188,9 @@ export async function materializeDraftsForReservation(
     return outcomes;
   }
 
-  return Promise.all(automations.map((a) => materializeSingleDraft(buildArgs(a))));
+  return mapWithConcurrency(automations, MATERIALIZE_AUTOMATION_CONCURRENCY, (a) =>
+    materializeSingleDraft(buildArgs(a)),
+  );
 }
 
 interface MaterializeArgs {

@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/db";
 import { composeGuide } from "@/lib/services/guide-rendering.service";
 import { computeGuideDiff } from "@/lib/services/guide-diff.service";
 import type { GuideTree } from "@/lib/types/guide-tree";
@@ -9,24 +7,18 @@ interface DiffPanelProps {
   propertyId: string;
   publishedVersionLabel: string;
   publicSlug: string | null;
+  /** Snapshot tree of the currently published version. Loaded by the parent
+   * page in its parallel fetch batch so this panel does not re-query. */
+  publishedTree: GuideTree;
 }
 
 export async function DiffPanel({
   propertyId,
   publishedVersionLabel,
   publicSlug,
+  publishedTree,
 }: DiffPanelProps) {
-  const [published, liveTree] = await Promise.all([
-    prisma.guideVersion.findFirst({
-      where: { propertyId, status: "published", treeJson: { not: Prisma.AnyNull } },
-      orderBy: { version: "desc" },
-      select: { treeJson: true },
-    }),
-    composeGuide(propertyId, "internal", publicSlug),
-  ]);
-  if (!published?.treeJson) return null;
-
-  const publishedTree = published.treeJson as unknown as GuideTree;
+  const liveTree = await composeGuide(propertyId, "internal", publicSlug);
   const diff = computeGuideDiff(publishedTree, liveTree);
 
   return (
