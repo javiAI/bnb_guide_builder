@@ -1051,7 +1051,7 @@ export async function createLocalPlaceAction(
     // the same POI is added twice (manual entries skip this — both NULL, and
     // Postgres treats NULLs as distinct). Surface a friendly message instead
     // of a 500. Other errors re-throw.
-    if ((err as { code?: string }).code === "P2002") {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este lugar ya está añadido" };
     }
     throw err;

@@ -158,21 +158,21 @@ export async function materializeDraftsForReservation(
     },
   });
 
-  const outcomes: MaterializationOutcome[] = [];
-  for (const automation of automations) {
-    const outcome = await materializeSingleDraft({
-      db,
-      reservation,
-      property: {
-        id: property.id,
-        timezone: property.timezone,
-        checkInStart: property.checkInStart,
-        checkOutTime: property.checkOutTime,
-      },
-      automation,
-    });
-    outcomes.push(outcome);
-  }
+  const outcomes = await Promise.all(
+    automations.map((automation) =>
+      materializeSingleDraft({
+        db,
+        reservation,
+        property: {
+          id: property.id,
+          timezone: property.timezone,
+          checkInStart: property.checkInStart,
+          checkOutTime: property.checkOutTime,
+        },
+        automation,
+      }),
+    ),
+  );
   return outcomes;
 }
 

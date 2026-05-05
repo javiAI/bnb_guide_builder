@@ -18,6 +18,7 @@ import {
 } from "@/lib/schemas/editor.schema";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 import type { ActionResult } from "@/lib/types/action-result";
+import { isPrismaUniqueViolation } from "@/lib/utils";
 
 // ── Helpers ─────────────────────────────────────────────
 
@@ -339,7 +340,7 @@ export async function assignMediaAction(
     revalidatePath(`/properties/${asset.propertyId}`, "layout");
     return { success: true, data: { assignmentId: assignment.id } };
   } catch (err) {
-    if ((err as { code?: string }).code === "P2002") {
+    if (isPrismaUniqueViolation(err)) {
       return { success: false, error: "Este asset ya está asignado a esta entidad" };
     }
     throw err;

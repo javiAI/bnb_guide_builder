@@ -157,6 +157,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
     () => computeProgressDot(features, featureGroups, hasBeds, beds.length),
     [features, featureGroups, hasBeds, beds.length],
   );
+  const featuresJson = useMemo(() => JSON.stringify(features), [features]);
 
   // ── Details save form ──
   const [detailsState, detailsAction, detailsPending] = useActionState<
@@ -355,7 +356,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
             <form id={`details-${space.id}`} action={detailsAction}>
               <input type="hidden" name="spaceId" value={space.id} />
               <input type="hidden" name="propertyId" value={propertyId} />
-              <input type="hidden" name="featuresJson" value={JSON.stringify(features)} />
+              <input type="hidden" name="featuresJson" value={featuresJson} />
 
               {featureGroups
                 .filter((g) => g.id !== "sfg.dimensions")
