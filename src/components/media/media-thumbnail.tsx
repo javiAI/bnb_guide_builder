@@ -122,9 +122,9 @@ export function MediaThumbnail({
         </div>
       )}
 
-      {/* Action overlay on hover (vertical stack on mobile, horizontal on desktop) */}
+      {/* Action overlay: hover/focus (vertical stack mobile, horizontal desktop) */}
       {isReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100 flex-col gap-1 sm:flex-row">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100 group-focus-within:bg-black/30 group-focus-within:opacity-100 flex-col gap-1 sm:flex-row">
           <button
             type="button"
             onClick={handleOpenFullSize}
