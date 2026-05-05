@@ -153,7 +153,10 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   // ── Progress ──
   const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
-  const progressDot = computeProgressDot(features, featureGroups, hasBeds, beds.length);
+  const progressDot = useMemo(
+    () => computeProgressDot(features, featureGroups, hasBeds, beds.length),
+    [features, featureGroups, hasBeds, beds.length],
+  );
 
   // ── Details save form ──
   const [detailsState, detailsAction, detailsPending] = useActionState<

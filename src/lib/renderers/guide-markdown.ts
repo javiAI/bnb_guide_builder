@@ -26,9 +26,7 @@ import {
   resolveEmptyCopy,
   shouldHideSection,
 } from "./_guide-display";
-
-/** Cap inline images per item — keeps markdown output scannable. */
-const INLINE_MEDIA_CAP = 3;
+import { INLINE_MEDIA_CAP } from "./_constants";
 
 function escapeMd(text: string): string {
   return text

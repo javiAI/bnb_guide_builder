@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -42,6 +42,22 @@ const YES_NO_OPTIONS: RadioCardOption[] = [
   { id: "yes", label: "Sí", description: "" },
   { id: "no", label: "No", description: "" },
 ];
+
+const PARKING_OPTIONS: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({
+  id: item.id,
+  label: item.label,
+  description: item.description,
+  recommended: item.recommended,
+}));
+
+const ACCESSIBILITY_OPTIONS: CheckboxCardOption[] = getItems(accessibilityFeatures).map(
+  (item) => ({
+    id: item.id,
+    label: item.label,
+    description: item.description,
+    recommended: item.recommended,
+  }),
+);
 
 interface AccessFormProps {
   propertyId: string;
@@ -87,8 +103,14 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const autonomousMode = isAutonomous === "yes";
   const showBuilding = hasBuildingAccess === "yes";
-  const buildingOptions = getBuildingOptions(autonomousMode);
-  const unitOptions = getUnitOptions(autonomousMode);
+  const buildingOptions = useMemo(
+    () => getBuildingOptions(autonomousMode),
+    [autonomousMode],
+  );
+  const unitOptions = useMemo(
+    () => getUnitOptions(autonomousMode),
+    [autonomousMode],
+  );
 
   function handleAutonomousChange(val: string) {
     setIsAutonomous(val);
@@ -97,12 +119,23 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
   const hoursLabel = p.checkInStart ? `${p.checkInStart} — ${checkInEnd === "flexible" ? "Flexible" : checkInEnd} · Salida ${p.checkOutTime ?? "—"}` : "Sin definir";
   const typeLabel = `Autónomo: ${isAutonomous === "yes" ? "Sí" : "No"} · Edificio: ${hasBuildingAccess === "yes" ? "Sí" : "No"}`;
-  const buildingLabel = buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir";
-  const unitLabel = unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir";
-  const parkingLabel = parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir";
-  const parkingOpts: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
-  const axOpts: CheckboxCardOption[] = getItems(accessibilityFeatures).map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
-  const axLabel = axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna";
+
+  const buildingLabel = useMemo(
+    () => buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir",
+    [buildingMethods],
+  );
+  const unitLabel = useMemo(
+    () => unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir",
+    [unitMethods],
+  );
+  const parkingLabel = useMemo(
+    () => parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir",
+    [parkingTypes],
+  );
+  const axLabel = useMemo(
+    () => axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna",
+    [axFeatures],
+  );
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -191,7 +224,7 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
 
         {/* Aparcamiento */}
         <CollapsibleSection title="Aparcamiento" selectedLabel={parkingLabel} expanded={parkingOpen} onToggle={() => setParkingOpen(!parkingOpen)}>
-          <CheckboxCardGroup name="_parkingTypes" options={parkingOpts} value={parkingTypes} onChange={setParkingTypes} />
+          <CheckboxCardGroup name="_parkingTypes" options={PARKING_OPTIONS} value={parkingTypes} onChange={setParkingTypes} />
         </CollapsibleSection>
 
         {/* Accesibilidad */}
@@ -199,7 +232,7 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
           <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
             Selecciona las características de accesibilidad de la entrada y zonas comunes. Las adaptaciones dentro de baños y dormitorios se configuran en cada espacio.
           </p>
-          <CheckboxCardGroup name="_axFeatures" options={axOpts} value={axFeatures} onChange={setAxFeatures} />
+          <CheckboxCardGroup name="_axFeatures" options={ACCESSIBILITY_OPTIONS} value={axFeatures} onChange={setAxFeatures} />
         </CollapsibleSection>
 
         {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
