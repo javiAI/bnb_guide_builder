@@ -204,7 +204,7 @@ export function Step3Form({ sessionId, initialState, maxStepReached, snapshot, s
                 <select value={bed.quantity} onChange={(e) => updateBed(idx, "quantity", Number(e.target.value))} className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-2 py-1.5 text-sm">
                   {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
-                {beds.length > 1 ? <button type="button" onClick={() => removeBed(idx)} className="text-[var(--color-neutral-400)] hover:text-[var(--color-status-error-text)] text-sm text-center">&times;</button> : <span />}
+                {beds.length > 1 ? <button type="button" onClick={() => removeBed(idx)} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-neutral-400)] hover:text-[var(--color-status-error-text)] hover:bg-[var(--color-status-error-bg)] transition-colors" aria-label={`Eliminar cama ${idx + 1}`}>&times;</button> : <span />}
               </div>
             ))}
           </div>
