@@ -212,102 +212,109 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   return (
     <div className={`rounded-[var(--radius-lg)] border-2 transition-colors duration-200 ${isArchived ? "border-dashed border-[var(--border)] bg-[var(--color-neutral-50)] opacity-70" : "border-[var(--border)] bg-[var(--surface-elevated)]"}`}>
-      {/* ── Card header (expand/collapse via clicking the label or chevron button) ── */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex-1 min-w-0">
-          {editingName ? (
-            <form action={renameAction} className="flex items-center gap-2">
-              <input type="hidden" name="spaceId" value={space.id} />
-              <input
-                ref={nameInputRef}
-                type="text"
-                name="name"
-                value={nameValue}
-                onChange={(e) => setNameValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setNameValue(space.name);
-                    setEditingName(false);
-                  }
-                }}
-                className="rounded-[var(--radius-md)] border border-[var(--color-primary-400)] bg-[var(--surface)] px-2 py-1 text-sm font-semibold text-[var(--foreground)] focus:outline-none w-full max-w-xs"
-                autoComplete="off"
-              />
-              <button
-                type="submit"
-                disabled={renamePending || !nameValue.trim()}
-                className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50"
-              >
-                {renamePending ? "…" : "✓"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setNameValue(space.name); setEditingName(false); }}
-                className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
-                aria-label="Cancelar renombración"
-              >
-                ✕
-              </button>
-            </form>
-          ) : (
-            <div className="flex items-center gap-1.5 group">
-              <span className="text-sm font-semibold text-[var(--foreground)] truncate">
-                {nameValue}
-              </span>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
-                className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
-                aria-label="Renombrar espacio"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-                  <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
-                </svg>
-              </button>
-            </div>
-          )}
-          <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
-            {typeInfo?.label ?? space.spaceType}
-            {capacityLabel && ` · ${capacityLabel}`}
-          </p>
-          {renameState?.error && (
-            <p className="mt-0.5 text-xs text-[var(--color-danger-500)]">{renameState.error}</p>
-          )}
+      {/* ── Card header (expand/collapse via clicking label or chevron button, or keyboard) ── */}
+      {editingName ? (
+        <div className="flex items-center gap-3 px-4 py-3">
+          <form action={renameAction} className="flex-1 flex items-center gap-2">
+            <input type="hidden" name="spaceId" value={space.id} />
+            <input
+              ref={nameInputRef}
+              type="text"
+              name="name"
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setNameValue(space.name);
+                  setEditingName(false);
+                }
+              }}
+              className="rounded-[var(--radius-md)] border border-[var(--color-primary-400)] bg-[var(--surface)] px-2 py-1 text-sm font-semibold text-[var(--foreground)] focus:outline-none w-full max-w-xs"
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              disabled={renamePending || !nameValue.trim()}
+              className="min-h-[44px] rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50 inline-flex items-center justify-center"
+            >
+              {renamePending ? "…" : "✓"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setNameValue(space.name); setEditingName(false); }}
+              className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
+              aria-label="Cancelar renombración"
+            >
+              ✕
+            </button>
+          </form>
         </div>
-
-        {/* Right: progress dot + expand toggle */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {progressDot !== "none" && (
-            <Tooltip text={progressDot === "complete" ? "Espacio completo" : "Información parcial"}>
-              <span
-                role="img"
-                aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
-                className={`h-2 w-2 rounded-full ${
-                  progressDot === "complete"
-                    ? "bg-[var(--color-status-success-icon)]"
-                    : "bg-[var(--color-status-warning-icon)]"
-                }`}
-              />
-            </Tooltip>
-          )}
+      ) : (
+        <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
-            className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
-            aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
+            onClick={() => setExpanded((prev) => !prev)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setExpanded((prev) => !prev);
+              }
+            }}
+            className="flex-1 min-w-0 min-h-[44px] text-left hover:bg-[var(--color-neutral-50)] rounded-[var(--radius-md)] transition-colors px-1 py-1 flex items-center"
             aria-expanded={expanded}
+            aria-label={expanded ? "Colapsar" : "Expandir"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-            >
-              <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+            <span className="text-sm font-semibold text-[var(--foreground)] truncate block">
+              {nameValue}
+            </span>
+            <span className="mt-0.5 text-xs text-[var(--color-neutral-500)] block">
+              {typeInfo?.label ?? space.spaceType}
+              {capacityLabel && ` · ${capacityLabel}`}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditingName(true)}
+            className="flex-shrink-0 rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
+            aria-label="Renombrar espacio"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+              <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
             </svg>
           </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {progressDot !== "none" && (
+              <Tooltip text={progressDot === "complete" ? "Espacio completo" : "Información parcial"}>
+                <span
+                  role="img"
+                  aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
+                  className={`h-2 w-2 rounded-full ${
+                    progressDot === "complete"
+                      ? "bg-[var(--color-status-success-icon)]"
+                      : "bg-[var(--color-status-warning-icon)]"
+                  }`}
+                />
+              </Tooltip>
+            )}
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
+              aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
+              aria-expanded={expanded}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              >
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Collapsible body ── */}
       <div

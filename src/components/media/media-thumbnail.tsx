@@ -122,9 +122,9 @@ export function MediaThumbnail({
         </div>
       )}
 
-      {/* Action overlay on hover */}
+      {/* Action overlay on hover (vertical stack on mobile, horizontal on desktop) */}
       {isReady && (
-        <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100 flex-col gap-1 sm:flex-row">
           <button
             type="button"
             onClick={handleOpenFullSize}
@@ -148,7 +148,7 @@ export function MediaThumbnail({
           <button
             type="button"
             onClick={() => onRemove?.(data.assignmentId)}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-danger-600)] shadow hover:bg-white"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-status-error-text)] shadow hover:bg-white"
             title="Quitar"
             aria-label="Quitar imagen"
           >
