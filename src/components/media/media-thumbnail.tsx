@@ -123,28 +123,33 @@ export function MediaThumbnail({
         </div>
       )}
 
-      {/* Mobile: single menu button; Desktop: hover overlay */}
+      {/* Mobile: trigger + in-tile action overlay; Desktop: hover overlay */}
       {isReady && (
         <>
-          {/* Mobile menu button (hidden on sm+) */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 sm:hidden">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
-                aria-label="Acciones"
-                aria-expanded={showMobileMenu}
-              >
-                <MoreVertical size={16} aria-hidden="true" />
-              </button>
-              {showMobileMenu && (
-                <div className="absolute top-full mt-1 right-0 flex flex-col gap-1 bg-white rounded-[var(--radius-md)] shadow-lg p-1 z-10">
+          {/* Mobile (hidden on sm+) — actions render IN-TILE when toggled.
+              Parent wrapper has `overflow-hidden` for image clipping; a popup
+              menu (top-full / portal-less) would get clipped. Keeping the
+              actions inside the tile bounds avoids that without dropping the
+              hidden-by-default UX (no 3 always-visible buttons on mobile). */}
+          <div className="absolute inset-0 sm:hidden">
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu((v) => !v)}
+              className="absolute right-1 top-1 z-20 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
+              aria-label={showMobileMenu ? "Cerrar acciones" : "Acciones"}
+              aria-expanded={showMobileMenu}
+            >
+              <MoreVertical size={16} aria-hidden="true" />
+            </button>
+            {showMobileMenu && (
+              <>
+                {/* Decorative scrim only — toggle is the MoreVertical button. */}
+                <div aria-hidden="true" className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 z-10 flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={() => { handleOpenFullSize(); setShowMobileMenu(false); }}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-100)]"
-                    title="Ver"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[var(--color-neutral-700)] shadow"
                     aria-label="Ver imagen completa"
                   >
                     <Eye size={16} aria-hidden="true" />
@@ -153,8 +158,7 @@ export function MediaThumbnail({
                     <button
                       type="button"
                       onClick={() => { onSetCover?.(data.assignmentId); setShowMobileMenu(false); }}
-                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-primary-600)] hover:bg-[var(--color-neutral-100)]"
-                      title="Marcar como portada"
+                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[var(--color-primary-600)] shadow"
                       aria-label="Marcar como portada"
                     >
                       <Star size={16} aria-hidden="true" />
@@ -163,15 +167,14 @@ export function MediaThumbnail({
                   <button
                     type="button"
                     onClick={() => { onRemove?.(data.assignmentId); setShowMobileMenu(false); }}
-                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-status-error-text)] hover:bg-[var(--color-neutral-100)]"
-                    title="Quitar"
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[var(--color-status-error-text)] shadow"
                     aria-label="Quitar imagen"
                   >
                     <X size={16} aria-hidden="true" />
                   </button>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
 
           {/* Desktop hover overlay (hidden on mobile) */}

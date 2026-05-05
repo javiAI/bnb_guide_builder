@@ -789,9 +789,19 @@ describe("Component invariants · primitive adoption (operator)", () => {
 
 describe("Component invariants · interactive elements use button/Link", () => {
   it("no <div>/<span> with onClick/onKeyDown handlers on audited surfaces", () => {
-    // Backdrop scrims and other aria-hidden decorations are exempt — they are
-    // not in the focus order or the AT tree, so the "use a button" rule does
-    // not apply (they exist purely to capture mouse-only dismiss gestures).
+    // Two documented exceptions:
+    //
+    //   1. `aria-hidden` decorations (backdrop scrims, mouse-only dismiss
+    //      gestures): not in focus order or AT tree, "use a button" rule
+    //      doesn't apply.
+    //
+    //   2. Canonical a11y override: `role="button"` + `tabIndex={0}` +
+    //      `onKeyDown`. This is the same pattern Radix/HeadlessUI/React Aria
+    //      use when a real <button> doesn't fit the layout (e.g. dropzone
+    //      that wraps an external <input>, or a tile that must accept drag
+    //      handlers). Requiring all three signals (role, tabIndex, keydown)
+    //      ensures keyboard parity with a native button — a div with onClick
+    //      alone still fails.
     const violations: string[] = [];
     for (const file of auditedFiles) {
       if (!file.endsWith(".tsx")) continue;
@@ -799,6 +809,10 @@ describe("Component invariants · interactive elements use button/Link", () => {
       for (const tag of iterateOpenTags(content, ["div", "span"])) {
         const { name, attrs, openIdx } = tag;
         if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
+        const hasRoleButton = /\brole=("button"|\{"button"\})/.test(attrs);
+        const hasTabIndex = /\btabIndex=\{?\s*0\s*\}?/.test(attrs);
+        const hasKeyDown = /\bonKeyDown=\{/.test(attrs);
+        if (hasRoleButton && hasTabIndex && hasKeyDown) continue;
         if (/\bon(Click|KeyDown|KeyUp|Submit)=\{/.test(attrs)) {
           violations.push(
             `${file}:${lineNumber(content, openIdx)}  <${name}> with handler — use <button> or <Link>`,

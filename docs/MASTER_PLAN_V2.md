@@ -3286,7 +3286,7 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 **Restricciones**:
 - ❌ Cambios funcionales (lógica, server actions, schema, APIs públicas).
 - ❌ Cambios visuales (esto es cleanup de código, no redesign).
-- ❌ Nuevas dependencias.
+- ❌ Nuevas runtime dependencies. ✅ `@next/bundle-analyzer` permitido como devDependency exclusivamente para auditoría de bundle (no se importa en código de producción; solo activo cuando `ANALYZE=true`).
 - ❌ Cambios en Prisma, config-driven system, messaging, assistant.
 - ❌ Si se toca frontend/UI: usar skills frontend/webapp correspondientes (no introducir cambios visuales).
 
@@ -3318,10 +3318,6 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - `HIGH IMPACT` trivial (0 uso, clear delete, <1h fix): **FIX en esta rama**.
 - `HIGH IMPACT` refactor (>500 LOC, state/context reshape): **DOCUMENT + rama futura**, no incorporar.
 - `MEDIUM/LOW`: **DOCUMENT en tabla PR** con reasoning, leave para future cleanup branches.
-
----
-
-### Rama 16E — `feat/liora-operator-module-rollout`
 
 ---
 

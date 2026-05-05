@@ -173,14 +173,24 @@ export function UploadDropzone({
         onChange={handleInputChange}
         className="hidden"
       />
-      {/* Drop zone — native <button> for keyboard + screen reader semantics; drag handlers stay on the same element */}
-      <button
-        type="button"
+      {/* Drop zone — div+role=button (not <button>) so the inner block layout
+          and drag handlers don't fight HTML5 button semantics. Input lives
+          outside the dropzone wrapper (above) and is triggered by click. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Arrastra fotos o haz clic para seleccionar"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => inputRef.current?.click()}
-        className={`block min-h-[44px] w-full cursor-pointer rounded-[var(--radius-md)] border-2 border-dashed text-left transition-colors ${
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        className={`block min-h-[44px] w-full cursor-pointer rounded-[var(--radius-md)] border-2 border-dashed text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-400)] ${
           isDragOver
             ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)]"
             : "border-[var(--color-neutral-300)] hover:border-[var(--color-neutral-400)]"
@@ -196,7 +206,7 @@ export function UploadDropzone({
             </span>
           )}
         </span>
-      </button>
+      </div>
 
       {/* Upload progress */}
       {jobs.length > 0 && (
