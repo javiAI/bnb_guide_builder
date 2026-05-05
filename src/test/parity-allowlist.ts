@@ -74,6 +74,9 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/icon-button.tsx",
       "src/components/ui/icon-button-link.tsx",
       "src/components/ui/button-link.tsx",
+      "src/components/ui/page-header.tsx",
+      "src/components/ui/numbered-section.tsx",
+      "src/components/ui/page-header-chip.tsx",
       "src/lib/tone.ts",
     ],
   },
@@ -317,6 +320,9 @@ export const LIORA_PRIMITIVE_IMPORT_PATHS: ReadonlyArray<string> = [
   "@/components/ui/icon-button",
   "@/components/ui/icon-button-link",
   "@/components/ui/button-link",
+  "@/components/ui/page-header",
+  "@/components/ui/numbered-section",
+  "@/components/ui/page-header-chip",
   "@/lib/tone",
 ];
 
