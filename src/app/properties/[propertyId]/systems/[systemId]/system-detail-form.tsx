@@ -159,7 +159,7 @@ export function SystemDetailForm({
         <p className="text-xs text-[var(--color-status-error-text)]">{result.error}</p>
       )}
       {result?.success && (
-        <p className="text-xs text-[var(--color-status-success-icon)]">Guardado correctamente</p>
+        <p className="text-xs text-[var(--color-status-success-text)]">Guardado correctamente</p>
       )}
 
       <button

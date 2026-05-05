@@ -1016,17 +1016,18 @@ describe("Component invariants · layout safety", () => {
     for (const file of operatorAuditedFiles) {
       if (!file.endsWith(".tsx")) continue;
       const content = readSrc(file);
-      // Find grid-cols with 24px column
-      const gridMatch = /grid-cols-\[([^\]]*24px[^\]]*)\]/.exec(content);
-      if (!gridMatch) continue;
-      // Check if there's a 44-width element in the next few lines
-      const gridIdx = gridMatch.index || 0;
-      const nextChunk = content.slice(gridIdx, gridIdx + 1000);
-      // Look for buttons/elements with 44-width classes after the grid definition
-      if (/\b(min-w-\[44px\]|min-h-\[44px\]|h-11|h-12|recipe-icon-btn-32)\b/.test(nextChunk)) {
-        violations.push(
-          `${file}:${lineNumber(content, gridIdx)}  grid-cols-[...24px...] has 44-width child element — will cause overflow/misalign`,
-        );
+      // Find ALL grid-cols with 24px column (not just first)
+      const gridRe = /grid-cols-\[([^\]]*24px[^\]]*)\]/g;
+      for (const gridMatch of content.matchAll(gridRe)) {
+        const gridIdx = gridMatch.index || 0;
+        // Check if there's a 44-width element in the next few lines
+        const nextChunk = content.slice(gridIdx, gridIdx + 1000);
+        // Look for buttons/elements with 44-width classes after the grid definition
+        if (/\b(min-w-\[44px\]|min-h-\[44px\]|h-11|h-12|recipe-icon-btn-32)\b/.test(nextChunk)) {
+          violations.push(
+            `${file}:${lineNumber(content, gridIdx)}  grid-cols-[...24px...] has 44-width child element — will cause overflow/misalign`,
+          );
+        }
       }
     }
     expect(violations).toEqual([]);
@@ -1046,11 +1047,11 @@ describe("Component invariants · layout safety", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Component invariants · accessibility hardening", () => {
-  it("icon-only buttons require aria-label or title (no bare Lucide icons)", () => {
-    // Icon-only buttons (button with only <Icon />) are invisible to screen readers.
-    // Must have aria-label or title to announce purpose.
-    // Pattern: <button ...><${IconName}.../></button> without aria-label/title.
-    // Exclude primitives (src/components/ui/) which have aria-label as required prop.
+  it("icon-only buttons require aria-label or title (Lucide icons or symbol-only)", () => {
+    // Icon-only buttons (button with only <Icon /> or symbol like +, ×) are invisible
+    // to screen readers. Must have aria-label or title to announce purpose.
+    // Patterns: <button ...><${IconName}.../></button> or <button ...>+</button>
+    // Exclude primitives (src/components/ui/) which mandate aria-label via TypeScript.
     const lucideIconRe = /from\s+["']lucide-react["']/;
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
@@ -1058,19 +1059,17 @@ describe("Component invariants · accessibility hardening", () => {
       // Skip primitive definitions (they mandate aria-label via TypeScript)
       if (file.startsWith("src/components/ui/")) continue;
       const content = readSrc(file);
-      // Only check files that import Lucide icons
-      if (!lucideIconRe.test(content)) continue;
       // Find all <button> tags
       for (const tag of iterateOpenTags(content, ["button"])) {
         const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
         const closingIdx = content.indexOf("</button>", attrEnd);
         if (closingIdx < 0) continue;
         const inner = content.slice(attrEnd, closingIdx).trim();
-        // Icon-only if inner content is just a self-closing Lucide component
-        // Pattern: <IconName ... /> or <IconName ... ></IconName>
-        const isIconOnly = /^<[A-Z]\w+[^>]*\/>$/.test(inner) ||
-                          /^<[A-Z]\w+[^>]*>[^<]*<\/[A-Z]\w+>$/.test(inner);
-        if (!isIconOnly) continue;
+        // Icon-only patterns: Lucide component OR symbol-only (+, ×, −, etc.)
+        const isLucideIcon = /^<[A-Z]\w+[^>]*\/>$/.test(inner) ||
+                            /^<[A-Z]\w+[^>]*>[^<]*<\/[A-Z]\w+>$/.test(inner);
+        const isSymbolOnly = /^[+\-×÷→←↑↓★☆•]$|^&\w+;$/.test(inner); // symbol or HTML entity
+        if (!isLucideIcon && !isSymbolOnly) continue;
         // Check for aria-label or title
         if (/\b(aria-label|title)=/.test(tag.attrs)) continue;
         // Skip if {...props} spread (props might contain aria-label)
@@ -1085,8 +1084,8 @@ describe("Component invariants · accessibility hardening", () => {
 
   it("drag event handlers must preventDefault to prevent browser default", () => {
     // onDrop + onDragOver without preventDefault allow browser to open dragged files.
-    // Detect handlers and check handler body for e.preventDefault() or variations.
-    // Skip handlers that are function calls — assume the function has preventDefault.
+    // Detect handlers and check handler body for e.preventDefault() specifically.
+    // stopPropagation() alone is insufficient.
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
       if (!file.endsWith(".tsx")) continue;
@@ -1096,15 +1095,15 @@ describe("Component invariants · accessibility hardening", () => {
       for (const m of content.matchAll(dragHandlerRe)) {
         const handlerName = m[1];
         const handlerBody = m[2];
-        // Check if handler calls preventDefault or stopPropagation
-        if (/preventDefault|stopPropagation/.test(handlerBody)) continue;
+        // Check if handler calls preventDefault (required)
+        if (/preventDefault/.test(handlerBody)) continue;
         // If handler is just a reference or function call, skip
         // (e.g. onDrop={handleDrop} or onDrop={(e) => handleDrop(e, index)})
         // Patterns: `funcName` or `funcName(...)` or `(e) => funcName(e, ...)`
         if (/^[a-zA-Z_]\w*(\([^)]*\))?$/.test(handlerBody.trim())) continue; // simple call
         if (/^\([^)]*\)\s*=>\s*[a-zA-Z_]\w*\([^)]*\)$/.test(handlerBody.trim())) continue; // arrow function calling another
         violations.push(
-          `${file}:${lineNumber(content, m.index ?? 0)}  ${handlerName} handler lacks preventDefault/stopPropagation — allows browser to open files`,
+          `${file}:${lineNumber(content, m.index ?? 0)}  ${handlerName} handler lacks preventDefault() — allows browser to open files`,
         );
       }
     }
@@ -1120,15 +1119,11 @@ describe("Component invariants · shared primitive compliance", () => {
   it("NumberStepper step buttons meet 44-hit-area baseline when consumed by audited surfaces", () => {
     // When an operator/shared audited surface imports NumberStepper, the
     // primitive's internal button size must meet the 44-hit-area baseline.
-    // Check at the primitive source level (stepBtnCls constant) — static
-    // walking of consumer files cannot see constant values, only references.
+    // Check that stepBtnCls or the button definitions specifically include 44-width.
     const PRIMITIVE = "src/components/ui/number-stepper.tsx";
-    const VALID_44_CLASSES = [
-      "min-h-[44px]",
-      "min-h-11",
-      "h-11",
-      "h-12",
-      "recipe-icon-btn-32",
+    const VALID_BUTTON_PATTERNS = [
+      /className=.*?(min-h-\[44px\]|min-h-11|h-11|h-12|recipe-icon-btn-32)/,
+      /stepBtnCls.*?(min-h-\[44px\]|min-h-11|h-11|h-12|recipe-icon-btn-32)/,
     ];
 
     // Find audited consumers
@@ -1144,16 +1139,16 @@ describe("Component invariants · shared primitive compliance", () => {
     // If no consumers, invariant is vacuously true
     if (auditedConsumers.length === 0) return;
 
-    // Check primitive source for at least one valid 44-hit-area class
+    // Check primitive source: look for 44-width classes in button definitions
     const primitiveContent = readSrc(PRIMITIVE);
-    const hasValidClass = VALID_44_CLASSES.some((cls) =>
-      primitiveContent.includes(cls),
+    const hasValidButtons = VALID_BUTTON_PATTERNS.some((pattern) =>
+      pattern.test(primitiveContent),
     );
 
-    expect(hasValidClass).toBe(true);
-    if (!hasValidClass) {
+    expect(hasValidButtons).toBe(true);
+    if (!hasValidButtons) {
       expect.fail(
-        `NumberStepper (${PRIMITIVE}) uses small buttons (h-8 w-8) but lacks a 44-hit-area class. Consumers: ${auditedConsumers.join(", ")}. Fix stepBtnCls to include min-h-[44px] or h-11.`,
+        `NumberStepper (${PRIMITIVE}) step buttons lack 44-hit-area class (min-h-[44px]/h-11/recipe-icon-btn-32). Consumers: ${auditedConsumers.join(", ")}. Add 44-width class to button definitions.`,
       );
     }
   });

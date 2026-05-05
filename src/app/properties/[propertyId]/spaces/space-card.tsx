@@ -212,7 +212,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   return (
     <div className={`rounded-[var(--radius-lg)] border-2 transition-colors duration-200 ${isArchived ? "border-dashed border-[var(--border)] bg-[var(--color-neutral-50)] opacity-70" : "border-[var(--border)] bg-[var(--surface-elevated)]"}`}>
-      {/* ── Card header (expand via the chevron button on the right) ── */}
+      {/* ── Card header (expand/collapse via clicking the label or chevron button) ── */}
       <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
           {editingName ? (
@@ -244,6 +244,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                 type="button"
                 onClick={() => { setNameValue(space.name); setEditingName(false); }}
                 className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
+                aria-label="Cancelar renombración"
               >
                 ✕
               </button>
@@ -256,8 +257,8 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
-                className="opacity-0 group-hover:opacity-100 rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-opacity"
-                title="Renombrar espacio"
+                className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
+                aria-label="Renombrar espacio"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
                   <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />

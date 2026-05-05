@@ -239,6 +239,7 @@ function CustomChipInput({
           type="submit"
           disabled={isPending}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          aria-label="Añadir amenidad personalizada"
         >
           +
         </button>
