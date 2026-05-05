@@ -339,9 +339,12 @@ export async function assignMediaAction(
 
     // Page scope (not "layout"): we don't need to re-render the workspace
     // shell + sidebar on every assignment toggle. Sidebar readiness updates
-    // on next navigation.
+    // on next navigation. Also invalidate `/publishing` because media
+    // assignments feed both guide composition (composeGuide) and readiness —
+    // a stale publishing screen would show pre-assignment state after nav.
     revalidatePath(`/properties/${asset.propertyId}/media`);
     revalidatePath(`/properties/${asset.propertyId}`);
+    revalidatePath(`/properties/${asset.propertyId}/publishing`);
     return { success: true, data: { assignmentId: assignment.id } };
   } catch (err) {
     if (isPrismaUniqueViolation(err)) {
@@ -368,6 +371,7 @@ export async function unassignMediaAction(
 
   revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
   revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/publishing`);
   return { success: true };
 }
 
@@ -410,6 +414,7 @@ export async function reorderMediaAction(
   if (propertyId) {
     revalidatePath(`/properties/${propertyId}/media`);
     revalidatePath(`/properties/${propertyId}`);
+    revalidatePath(`/properties/${propertyId}/publishing`);
   }
 
   return { success: true };
@@ -452,6 +457,7 @@ export async function setCoverAction(
 
   revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/media`);
   revalidatePath(`/properties/${assignment.mediaAsset.propertyId}`);
+  revalidatePath(`/properties/${assignment.mediaAsset.propertyId}/publishing`);
   return { success: true };
 }
 

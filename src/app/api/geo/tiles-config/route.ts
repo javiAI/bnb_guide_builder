@@ -13,9 +13,14 @@ export async function GET() {
     },
     {
       headers: {
-        // Stable until the API key rotates (deploy event). Long-lived cache
-        // avoids a fresh round-trip per map mount across navigations.
-        "Cache-Control": "public, max-age=86400, immutable",
+        // The payload embeds the current MapTiler API key in `styleUrl`. We
+        // can cache to avoid a round-trip per map mount, but `immutable` is
+        // unsafe — when the key rotates (env update / deploy), browsers must
+        // be able to refetch within a bounded window instead of holding a
+        // dead style URL until the cache expires. SWR keeps the UX fast on
+        // navigation while letting the cache pick up a new key in the
+        // background.
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
       },
     },
   );

@@ -119,8 +119,16 @@ export function GuideSearch({ index, slug }: Props) {
 
   // Debounce the CTA visibility: only show when the trigger condition holds
   // steadily for SEMANTIC_DEBOUNCE_MS. Otherwise the CTA would flash while
-  // the user types.
+  // the user types. While `fuse` is null (dynamic import in flight) we don't
+  // know `results.length` for real — `fuse === null` means *loading the local
+  // index*, NOT zero local hits. Surfacing the CTA in that window would also
+  // route Enter into the semantic endpoint for queries that have local matches
+  // about to land. Hold the CTA off until the local index is ready.
   useEffect(() => {
+    if (!fuse) {
+      setShowSemanticCta(false);
+      return;
+    }
     const q = deferredQuery.trim();
     if (q.length < minQueryLength) {
       setShowSemanticCta(false);
@@ -136,7 +144,7 @@ export function GuideSearch({ index, slug }: Props) {
     }
     const handle = setTimeout(() => setShowSemanticCta(true), SEMANTIC_DEBOUNCE_MS);
     return () => clearTimeout(handle);
-  }, [deferredQuery, results.length, minQueryLength]);
+  }, [fuse, deferredQuery, results.length, minQueryLength]);
 
   // Reset state on close. The CTA visibility is derived, but the semantic
   // payload and any in-flight request must be cleared explicitly — otherwise
@@ -223,8 +231,11 @@ export function GuideSearch({ index, slug }: Props) {
       setActiveIdx((i) => (i - 1 + results.length) % results.length);
     } else if (e.key === "Enter") {
       if (results.length === 0) {
-        // No Fuse match — trigger semantic search on Enter if the CTA
-        // would be eligible. Keeps one-key-to-act behavior.
+        // No Fuse match — but only fall through to semantic search if the
+        // local index is actually loaded. While `fuse === null` the dynamic
+        // import is still in flight; firing semantic for a query that would
+        // have matched locally once the index resolves is the wrong answer.
+        if (!fuse) return;
         if (showSemanticCta && semanticState.kind !== "loading") {
           e.preventDefault();
           void runSemanticSearch();
