@@ -158,22 +158,29 @@ export async function materializeDraftsForReservation(
     },
   });
 
-  const outcomes = await Promise.all(
-    automations.map((automation) =>
-      materializeSingleDraft({
-        db,
-        reservation,
-        property: {
-          id: property.id,
-          timezone: property.timezone,
-          checkInStart: property.checkInStart,
-          checkOutTime: property.checkOutTime,
-        },
-        automation,
-      }),
-    ),
-  );
-  return outcomes;
+  const buildArgs = (automation: (typeof automations)[number]) => ({
+    db,
+    reservation,
+    property: {
+      id: property.id,
+      timezone: property.timezone,
+      checkInStart: property.checkInStart,
+      checkOutTime: property.checkOutTime,
+    },
+    automation,
+  });
+
+  // Prisma interactive transactions serialize queries — Promise.all would
+  // throw under a tx client. Default path (no client) parallelizes.
+  if (options.client) {
+    const outcomes: MaterializationOutcome[] = [];
+    for (const automation of automations) {
+      outcomes.push(await materializeSingleDraft(buildArgs(automation)));
+    }
+    return outcomes;
+  }
+
+  return Promise.all(automations.map((a) => materializeSingleDraft(buildArgs(a))));
 }
 
 interface MaterializeArgs {
