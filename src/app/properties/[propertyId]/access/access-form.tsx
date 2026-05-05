@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { ArrowLeft, Clock, Clock4, Key, MapPin } from "lucide-react";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { ButtonLink } from "@/components/ui/button-link";
+import { PageHeader } from "@/components/ui/page-header";
+import { NumberedSection } from "@/components/ui/numbered-section";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { saveAccessAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods } from "@/lib/taxonomies/access-methods";
@@ -94,17 +96,8 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
   const [axFeatures, setAxFeatures] = useState<string[]>(p.accessibilityFeatures);
   const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
 
-  const [hoursOpen, setHoursOpen] = useState(true);
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [buildingOpen, setBuildingOpen] = useState(false);
-  const [unitOpen, setUnitOpen] = useState(false);
-  const [parkingOpen, setParkingOpen] = useState(false);
-  const [axOpen, setAxOpen] = useState(false);
-
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(saveAccessAction, null);
 
-  // Dirty tracking — element-wise list comparison avoids re-stringifying
-  // every list on every keystroke just to compare references.
   const isDirty = isAutonomous !== (p.isAutonomousCheckin ? "yes" : "no") ||
     hasBuildingAccess !== (p.hasBuildingAccess ? "yes" : "no") ||
     !sameStringList(buildingMethods, p.buildingAccess?.methods ?? []) ||
@@ -123,27 +116,44 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
     if (val === "yes") setCheckInEnd("flexible");
   }
 
-  const hoursLabel = p.checkInStart ? `${p.checkInStart} — ${checkInEnd === "flexible" ? "Flexible" : checkInEnd} · Salida ${p.checkOutTime ?? "—"}` : "Sin definir";
-  const typeLabel = `Autónomo: ${isAutonomous === "yes" ? "Sí" : "No"} · Edificio: ${hasBuildingAccess === "yes" ? "Sí" : "No"}`;
-  const buildingLabel = buildingMethods.length > 0 ? buildingMethods.map((id) => findItem(buildingAccessMethods, id)?.label ?? id).join(", ") : "Sin definir";
-  const unitLabel = unitMethods.length > 0 ? unitMethods.map((id) => findItem(accessMethods, id)?.label ?? id).join(", ") : "Sin definir";
-  const parkingLabel = parkingTypes.length > 0 ? parkingTypes.map((id) => findItem(parkingOptions, id)?.label ?? id).join(", ") : "Sin definir";
-  const axLabel = axFeatures.length > 0 ? axFeatures.map((id) => findItem(accessibilityFeatures, id)?.label ?? id).join(", ") : "Ninguna";
+  const checkInLabel = p.checkInStart ?? "—";
+  const checkOutLabel = p.checkOutTime ?? "—";
+  const checkInRangeText = p.checkInStart
+    ? `A partir de las ${p.checkInStart}${checkInEnd === "flexible" ? ", sin hora límite" : `, hasta las ${checkInEnd}`}`
+    : "Define un horario para que el huésped sepa cuándo puede llegar.";
+  const arrivalBigHour = p.checkInStart ? p.checkInStart.split(":")[0] : "—";
+  const arrivalBigMin = p.checkInStart ? p.checkInStart.split(":")[1] : "";
+
+  const status: "saving" | "saved" | "error" = pending ? "saving" : state?.error ? "error" : "saved";
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link href={`/properties/${propertyId}`} className="inline-flex items-center gap-1.5 text-xs text-[var(--color-neutral-500)] hover:text-[var(--color-neutral-700)]">
-            <ArrowLeft size={12} aria-hidden="true" />
-            Volver al panel
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-[var(--foreground)]">Acceso y check-in</h1>
-        </div>
-        <InlineSaveStatus status={pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : "saved"} />
-      </div>
+      <PageHeader
+        eyebrow="Propiedad · Llegada"
+        title="Llegada y acceso"
+        description="La hora más frágil de toda la estancia. Documenta aquí cómo llegan, cómo entran y qué hacer en los primeros minutos."
+        actions={
+          <>
+            <ButtonLink href={`/properties/${propertyId}`} variant="secondary" size="md">
+              <ArrowLeft size={14} aria-hidden="true" />
+              Volver
+            </ButtonLink>
+            <span className="inline-flex min-h-[44px] items-center px-1">
+              <InlineSaveStatus status={status} />
+            </span>
+          </>
+        }
+        chips={
+          <>
+            <PageHeaderChip icon={Clock4} label="Check-in" value={checkInLabel} />
+            <PageHeaderChip icon={Clock} label="Check-out" value={checkOutLabel} />
+            <PageHeaderChip icon={Key} label={isAutonomous === "yes" ? "Entrada autónoma" : "Entrada con anfitrión"} />
+            <PageHeaderChip icon={MapPin} label={hasBuildingAccess === "yes" ? "Edificio cerrado" : "Acceso directo"} />
+          </>
+        }
+      />
 
-      <form action={formAction} className="space-y-3">
+      <form action={formAction} className="space-y-2">
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === "yes" ? "true" : "false"} />
         <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
@@ -152,102 +162,135 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
         {parkingTypes.map((m) => <input key={`pk-${m}`} type="hidden" name="parkingTypes" value={m} />)}
         {axFeatures.map((m) => <input key={`ax-${m}`} type="hidden" name="accessibilityFeatures" value={m} />)}
 
-        {/* Horarios */}
-        <CollapsibleSection title="Horarios" selectedLabel={hoursLabel} expanded={hoursOpen} onToggle={() => setHoursOpen(!hoursOpen)}>
+        <NumberedSection number="01" title="Horarios">
+          <div className="mb-4 grid grid-cols-[auto_1fr] items-center gap-5 rounded-[16px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
+            <div
+              className="grid h-[96px] w-[96px] place-items-center rounded-[20px] bg-[var(--color-action-primary)] font-semibold leading-none tracking-[-0.02em] text-[var(--color-action-primary-fg)]"
+              style={{ fontSize: "40px", fontVariantNumeric: "tabular-nums" }}
+              aria-hidden="true"
+            >
+              <span>
+                {arrivalBigHour}
+                {arrivalBigMin && (
+                  <span className="ml-0.5 align-super text-[14px] font-medium opacity-70">:{arrivalBigMin}</span>
+                )}
+              </span>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                Check-in por defecto
+              </div>
+              <div className="mt-1 text-[18px] font-semibold text-[var(--color-text-primary)]">
+                {checkInRangeText}
+              </div>
+              <div className="mt-1 max-w-[60ch] text-[13px] leading-[1.5] text-[var(--color-text-secondary)]">
+                {autonomousMode
+                  ? "El huésped puede entrar solo. Las llegadas tardías reciben las instrucciones por chat."
+                  : "Coordina la llegada con el huésped — alguien estará en la propiedad para recibirle."}
+              </div>
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Check-in desde *</span>
-              <select name="checkInStart" required defaultValue={p.checkInStart ?? "16:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm focus:border-[var(--color-primary-400)] focus:outline-none">
+              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-in desde *</span>
+              <select name="checkInStart" required defaultValue={p.checkInStart ?? "16:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
                 {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Check-in hasta *</span>
-              <select name="checkInEnd" required value={checkInEnd} onChange={(e) => setCheckInEnd(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm focus:border-[var(--color-primary-400)] focus:outline-none">
+              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-in hasta *</span>
+              <select name="checkInEnd" required value={checkInEnd} onChange={(e) => setCheckInEnd(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
                 <option value="flexible">Sin límite (flexible)</option>
                 {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Check-out *</span>
-              <select name="checkOutTime" required defaultValue={p.checkOutTime ?? "11:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm focus:border-[var(--color-primary-400)] focus:outline-none">
+              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-out *</span>
+              <select name="checkOutTime" required defaultValue={p.checkOutTime ?? "11:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
                 {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </label>
           </div>
-        </CollapsibleSection>
+        </NumberedSection>
 
-        {/* Tipo de acceso */}
-        <CollapsibleSection title="Tipo de acceso" selectedLabel={typeLabel} expanded={typeOpen} onToggle={() => setTypeOpen(!typeOpen)}>
+        <NumberedSection number="02" title="Modo de acceso">
           <div className="space-y-4">
             <div>
-              <h3 className="mb-2 text-sm font-medium">¿El acceso es completamente autónomo? <InfoTooltip text="Un acceso completamente autónomo significa que el huésped puede entrar sin necesitar a nadie presente: mediante código, cerradura digital, caja de llaves, etc." /></h3>
+              <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-primary)]">
+                ¿El acceso es completamente autónomo?
+                <InfoTooltip text="Un acceso completamente autónomo significa que el huésped puede entrar sin necesitar a nadie presente: mediante código, cerradura digital, caja de llaves, etc." />
+              </h3>
               <RadioCardGroup name="_autonomousQ" options={YES_NO_OPTIONS} value={isAutonomous} onChange={handleAutonomousChange} showRecommended={false} />
             </div>
             <div>
-              <h3 className="mb-2 text-sm font-medium">¿La propiedad está dentro de un recinto, edificio o comunidad cerrada? <InfoTooltip text="Si el huésped necesita pasar por un portal, puerta de comunidad o recinto antes de llegar a la vivienda, selecciona Sí." /></h3>
+              <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-primary)]">
+                ¿La propiedad está dentro de un recinto, edificio o comunidad cerrada?
+                <InfoTooltip text="Si el huésped necesita pasar por un portal, puerta de comunidad o recinto antes de llegar a la vivienda, selecciona Sí." />
+              </h3>
               <RadioCardGroup name="_buildingQ" options={YES_NO_OPTIONS} value={hasBuildingAccess} onChange={setHasBuildingAccess} showRecommended={false} />
             </div>
           </div>
-        </CollapsibleSection>
+        </NumberedSection>
 
-        {/* Acceso edificio */}
-        {showBuilding && (
-          <CollapsibleSection title="Acceso al edificio / recinto" selectedLabel={buildingLabel} expanded={buildingOpen} onToggle={() => setBuildingOpen(!buildingOpen)}>
-            <CheckboxCardGroup name="_buildingMethods" options={buildingOptions} value={buildingMethods} onChange={setBuildingMethods} />
-            {buildingMethods.includes("ba.other") && (
-              <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-4">
-                <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="buildingCustomLabel" type="text" defaultValue={p.buildingAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
-                <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="buildingCustomDesc" rows={2} defaultValue={p.buildingAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
+        <NumberedSection number="03" title="Método de acceso">
+          <div className="space-y-5">
+            {showBuilding && (
+              <div>
+                <h3 className="mb-2 text-[13px] font-semibold text-[var(--color-text-primary)]">Acceso al edificio o recinto</h3>
+                <CheckboxCardGroup name="_buildingMethods" options={buildingOptions} value={buildingMethods} onChange={setBuildingMethods} />
+                {buildingMethods.includes("ba.other") && (
+                  <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
+                    <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="buildingCustomLabel" type="text" defaultValue={p.buildingAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
+                    <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="buildingCustomDesc" rows={2} defaultValue={p.buildingAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
+                  </div>
+                )}
               </div>
             )}
-          </CollapsibleSection>
-        )}
-
-        {/* Acceso vivienda */}
-        <CollapsibleSection title="Acceso a la vivienda" selectedLabel={unitLabel} expanded={unitOpen} onToggle={() => setUnitOpen(!unitOpen)}>
-          <CheckboxCardGroup name="_unitMethods" options={unitOptions} value={unitMethods} onChange={setUnitMethods} />
-          {unitMethods.includes("am.other") && (
-            <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-4">
-              <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="unitCustomLabel" type="text" defaultValue={p.unitAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
-              <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="unitCustomDesc" rows={2} defaultValue={p.unitAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm" /></label>
+            <div>
+              <h3 className="mb-2 text-[13px] font-semibold text-[var(--color-text-primary)]">Acceso a la vivienda</h3>
+              <CheckboxCardGroup name="_unitMethods" options={unitOptions} value={unitMethods} onChange={setUnitMethods} />
+              {unitMethods.includes("am.other") && (
+                <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
+                  <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="unitCustomLabel" type="text" defaultValue={p.unitAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
+                  <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="unitCustomDesc" rows={2} defaultValue={p.unitAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
+                </div>
+              )}
             </div>
-          )}
-        </CollapsibleSection>
+          </div>
+        </NumberedSection>
 
-        {/* Aparcamiento */}
-        <CollapsibleSection title="Aparcamiento" selectedLabel={parkingLabel} expanded={parkingOpen} onToggle={() => setParkingOpen(!parkingOpen)}>
+        <NumberedSection number="04" title="Aparcamiento">
           <CheckboxCardGroup name="_parkingTypes" options={PARKING_OPTIONS} value={parkingTypes} onChange={setParkingTypes} />
-        </CollapsibleSection>
+        </NumberedSection>
 
-        {/* Accesibilidad */}
-        <CollapsibleSection title="Accesibilidad" selectedLabel={axLabel} expanded={axOpen} onToggle={() => setAxOpen(!axOpen)}>
-          <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
+        <NumberedSection number="05" title="Accesibilidad">
+          <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
             Selecciona las características de accesibilidad de la entrada y zonas comunes. Las adaptaciones dentro de baños y dormitorios se configuran en cada espacio.
           </p>
           <CheckboxCardGroup name="_axFeatures" options={ACCESSIBILITY_OPTIONS} value={axFeatures} onChange={setAxFeatures} />
-        </CollapsibleSection>
+        </NumberedSection>
 
-        {state?.error && <p className="text-sm text-[var(--color-danger-500)]">{state.error}</p>}
+        <NumberedSection number="06" title="Fotos del acceso">
+          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
+            <EntityGallery
+              propertyId={propertyId}
+              entityType="access_method"
+              entityId={propertyId}
+              label="Fotos del acceso"
+              defaultCollapsed={false}
+            />
+            <p className="mt-2 text-[12px] text-[var(--color-text-muted)]">
+              Fotos del portal, cerradura, caja de llaves, camino de entrada, etc.
+            </p>
+          </div>
+        </NumberedSection>
 
-        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50">
+        {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
+
+        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50">
           {pending ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>
-
-      {/* Access photos (lockbox, entrance, path, etc.) */}
-      <div className="mt-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-        <EntityGallery
-          propertyId={propertyId}
-          entityType="access_method"
-          entityId={propertyId}
-          label="Fotos del acceso"
-          defaultCollapsed={false}
-        />
-        <p className="mt-2 text-xs text-[var(--color-neutral-400)]">
-          Fotos del portal, cerradura, caja de llaves, camino de entrada, etc.
-        </p>
-      </div>
     </div>
   );
 }

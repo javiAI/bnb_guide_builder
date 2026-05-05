@@ -123,7 +123,7 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 
 | Module | E1 baseline status | UI Kit Parity status | Follow-up branch |
 |--------|--------------------|----------------------|------------------|
-| `access/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `access/` | ✅ baseline migrated | ✅ parity ported (global 8.7, PASS) | `feat/liora-operator-content-visual-parity` |
 | `spaces/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `amenities/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `systems/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
@@ -219,10 +219,45 @@ Skill: `frontend-design`. Output structured per `frontend-design` SKILL.md templ
 | `--fg-1` | `--color-text-primary` |
 | `--fg-2` | `--color-text-secondary` |
 | `--fg-3` | `--color-text-muted` |
-| `--accent-500/700` | `--color-action-primary-default` / `--color-action-primary-hover` |
+| `--accent-500` / `--accent-700` | `--color-action-primary` / `--color-action-primary-hover` |
 | `--accent-100` | `--color-action-primary-subtle` |
-| `--accent-on` | `--color-action-primary-on` |
+| `--accent-on` | `--color-action-primary-fg` |
 | `--moss-500` | `--color-status-success-text` |
+
+##### Parity audit verdict — `access/`
+
+Audited surface: [src/app/properties/[propertyId]/access/access-form.tsx](../src/app/properties/[propertyId]/access/access-form.tsx)
+Kit reference: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` § `page-llegada` (lines 848–947).
+
+| Criterion | Score | Notes |
+|-----------|------:|-------|
+| 1. Layout silhouette | 8.5 | `pg` header → numbered sections → arrival-hero composition match. Adds 04 Aparcamiento / 05 Accesibilidad / 06 Fotos as functional necessities not present in kit silhouette. Kit § 03 Pasos de llegada omitted (aspirational, lives in `guest-guide/`, requires backend `arrival_steps` field — documented in §-1 contract). |
+| 2. Visual hierarchy | 9.0 | PageHeader grammar (eyebrow → title → sub → actions → chips → rule) preserved 1:1. NumberedSection 18×18 squircle num pill + uppercase title matches kit `section-head .num`. |
+| 3. Density / spacing | 8.5 | `p-5` (20px) + `gap-5` matches arrival-hero kit. PageHeader `mb-6`, NumberedSection `mb-8` within ~8px of kit gutters. Chips `px-[9px] py-1` matches kit `.chip`. |
+| 4. Component fidelity | 7.5 | `CheckboxCardGroup` primitive used for building/unit methods, parking, accessibility — drifts from kit's static `access-grid` 3-card icon layout, but functionally correct (multi-select + custom branch + conditional are not representable as a static 3-card grid). One component drift across four call sites; no missing affordances. |
+| 5. Token fidelity | 10.0 | Grep for hex (`#xxxxxx`) / `rgb(` / `oklch(` returns 0 in audited file. No primitive leaks (`--warm-*`, `--olive-*`, `--accent-*`, `--bg-*`, `--fg-*` absent from JSX). All semantic tokens. |
+| 6. Interaction / state fidelity | 8.5 | Hover (ButtonLink baked + submit `hover:bg-[var(--color-action-primary-hover)]`), disabled (`disabled:opacity-50` + dirty tracking), loading (`pending → "Guardando…"` + `<InlineSaveStatus status="saving">`), error (`status-error-text` + InlineSaveStatus). Selects use focus border-color only; could add a subtle ring in a follow-up but not blocking. |
+| 7. Dark mode | 9.0 | All tokens semantic; dark binding via `html[data-theme]` auto-applies. `dark-parity.test.ts` 4/4 passing. Pre-paint script in `layout.tsx` prevents FOUC. Visual confirmation deferred (see Playwright note below). |
+
+**Global**: (8.5 + 9.0 + 8.5 + 7.5 + 10.0 + 8.5 + 9.0) / 7 = **8.7**.
+
+**Verdict**: **PASS** — global 8.7 ≥ 8.5, every criterion ≥ 7.5, zero blockers.
+
+**Blocker check** (all clear):
+
+- ✅ No hex/rgb/oklch literals in audited JSX (grep verified).
+- ✅ No primitive token leaks.
+- ✅ No forbidden suffix sightings (`*V2`, `New*`, `Better*`, `*Old`, `legacy-*`).
+- ✅ All clickables ≥44 hit area: `ButtonLink size="md"` (44 visual), submit `min-h-[44px]`, InlineSaveStatus wrapper `min-h-[44px]`, RadioCardGroup/CheckboxCardGroup primitives audited 16D.5.
+- ✅ No FOUC (pre-paint theme script in `layout.tsx`).
+- ✅ Operator surface (no guest leak surface to check).
+
+**Playwright screenshot deferral**: the e2e harness in [playwright.config.ts](../playwright.config.ts) is configured for guest-only specs (`/g/[slug]/...`) — there is no operator authentication fixture infrastructure (`getServerSession()` mocking, OAuth state seeding) in the current `e2e/` directory. Adding operator auth fixtures is a 16E.5 cross-module deliverable, not a per-module deliverable. Visual screenshot capture is therefore deferred to a follow-up commit within this branch (or 16F if the auth fixture lands there first); the 7-criteria audit above stands on static code review + the four parity gate suites (37/37 passing).
+
+**Recommendations (non-blocking)**:
+
+- Follow-up: add a 1px focus ring on `<select>` (currently border-color only) — would push criterion 6 from 8.5 → 9.0.
+- Follow-up: when `access-grid` becomes reusable across modules with similar single-select+icon+desc patterns, extract a `<MethodGrid>` composite primitive — would push criterion 4 from 7.5 → 9.0. Defer until pattern reappears in ≥2 modules per Fase -1 contract decision 4.
 
 ### 16F — Messaging + assistant
 
