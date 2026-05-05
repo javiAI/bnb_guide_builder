@@ -108,7 +108,7 @@ function AmenityChip({
             type="button"
             onClick={handleToggle}
             disabled={isPending}
-            className="ml-0.5 rounded-full p-0.5 hover:bg-white/20 transition-colors"
+            className="ml-0.5 rounded-full recipe-icon-btn-32 hover:bg-white/20 transition-colors"
             aria-label="Quitar"
           >
             <svg viewBox="0 0 12 12" className="h-3 w-3">

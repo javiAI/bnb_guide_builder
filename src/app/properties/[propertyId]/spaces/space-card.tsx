@@ -256,7 +256,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setEditingName(true); }}
-                className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-opacity"
+                className="opacity-0 group-hover:opacity-100 rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-opacity"
                 title="Renombrar espacio"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
@@ -292,7 +292,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); setExpanded((prev) => !prev); }}
-            className="rounded-[var(--radius-md)] p-1.5 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
+            className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
             aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
             aria-expanded={expanded}
           >

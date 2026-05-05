@@ -285,11 +285,13 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               className="w-full rounded-[var(--radius-md)] border border-[var(--color-primary-400)] bg-[var(--surface-elevated)] px-3 py-1.5 text-lg font-bold text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)]"
             />
           ) : (
-            <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group">
-              <span className="text-lg font-bold text-[var(--foreground)]">{nickname}</span>
-              <Pencil size={16} aria-hidden="true" className="text-[var(--color-neutral-400)] group-hover:text-[var(--color-primary-500)] transition-colors" />
+            <>
+              <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group">
+                <span className="text-lg font-bold text-[var(--foreground)]">{nickname}</span>
+                <Pencil size={16} aria-hidden="true" className="text-[var(--color-neutral-400)] group-hover:text-[var(--color-primary-500)] transition-colors" />
+              </button>
               <input type="hidden" name="propertyNickname" value={nickname} />
-            </button>
+            </>
           )}
         </div>
 

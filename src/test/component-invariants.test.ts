@@ -397,6 +397,48 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     }
     expect(violations).toEqual([]);
   });
+
+  it("buttons/links with small fixed dimensions declare a compensating 44-hit-area class", () => {
+    // Capture buttons with explicit small heights/padding that lack a 44-hit-area
+    // compensator. Example: `h-6 w-6` delete buttons without `min-h-[44px]` or
+    // `h-11`. Scoped to operator/shared — guest buttons have different size rules.
+    const smallDimensionRe = /\b(h-[678]|p-0\.5|p-1\b)\b/;
+    const validCompensators = [
+      "min-h-[44px]",
+      "min-h-11",
+      "min-w-[44px]",
+      "min-w-11",
+      "h-11",
+      "h-12",
+      "h-14",
+      "h-16",
+      "w-11",
+      "w-12",
+      "recipe-icon-btn-32",
+    ];
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button", "Link", "a"])) {
+        const { name, attrs, openIdx } = tag;
+        if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
+        if (/\bdisabled\b(?!=)/.test(attrs)) continue;
+        const cls = extractClassName(attrs);
+        if (cls === null) continue;
+        // Detect small-dimension marker
+        if (!smallDimensionRe.test(cls)) continue;
+        // Check for compensating 44-hit-area class
+        const hasCompensator = validCompensators.some((t) => cls.includes(t));
+        if (!hasCompensator) {
+          violations.push(
+            `${file}:${lineNumber(content, openIdx)}  <${name}> has small size (h-6/h-7/h-8/p-1/p-1.5) but lacks 44-hit-area class (min-h-[44px]/h-11/recipe-icon-btn-32)`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -442,6 +484,29 @@ describe("Component invariants · HTML validity", () => {
         if (/<a\b|<Link\b/.test(inner)) {
           violations.push(
             `${file}:${lineNumber(content, tag.openIdx)}  <${tag.name}> contains nested anchor/Link`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("no form controls (<input>/<select>/<textarea>) nested inside <button>", () => {
+    // Invalid HTML nesting — form controls cannot be interactive descendants
+    // of a button. Example from PR #100: `<input type="file">` was nested
+    // inside the dropzone `<button>`, breaking form control semantics.
+    const violations: string[] = [];
+    for (const file of auditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
+        if (/<input\b|<select\b|<textarea\b/.test(inner)) {
+          violations.push(
+            `${file}:${lineNumber(content, tag.openIdx)}  <button> contains nested form control (<input>/<select>/<textarea>)`,
           );
         }
       }
@@ -883,5 +948,52 @@ describe("Component invariants · <ButtonLink size='sm'> on audited operator sur
       }
     }
     expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 14. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · shared primitive compliance", () => {
+  it("NumberStepper step buttons meet 44-hit-area baseline when consumed by audited surfaces", () => {
+    // When an operator/shared audited surface imports NumberStepper, the
+    // primitive's internal button size must meet the 44-hit-area baseline.
+    // Check at the primitive source level (stepBtnCls constant) — static
+    // walking of consumer files cannot see constant values, only references.
+    const PRIMITIVE = "src/components/ui/number-stepper.tsx";
+    const VALID_44_CLASSES = [
+      "min-h-[44px]",
+      "min-h-11",
+      "h-11",
+      "h-12",
+      "recipe-icon-btn-32",
+    ];
+
+    // Find audited consumers
+    const auditedConsumers: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      if (/from\s+["']@\/components\/ui\/number-stepper["']/.test(content)) {
+        auditedConsumers.push(file);
+      }
+    }
+
+    // If no consumers, invariant is vacuously true
+    if (auditedConsumers.length === 0) return;
+
+    // Check primitive source for at least one valid 44-hit-area class
+    const primitiveContent = readSrc(PRIMITIVE);
+    const hasValidClass = VALID_44_CLASSES.some((cls) =>
+      primitiveContent.includes(cls),
+    );
+
+    expect(hasValidClass).toBe(true);
+    if (!hasValidClass) {
+      expect.fail(
+        `NumberStepper (${PRIMITIVE}) uses small buttons (h-8 w-8) but lacks a 44-hit-area class. Consumers: ${auditedConsumers.join(", ")}. Fix stepBtnCls to include min-h-[44px] or h-11.`,
+      );
+    }
   });
 });
