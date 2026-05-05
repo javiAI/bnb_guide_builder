@@ -1003,7 +1003,78 @@ describe("Component invariants · token consistency (error messages)", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 15. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
+// 15. Accessibility (icon-only buttons, drag handlers)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · accessibility hardening", () => {
+  it("icon-only buttons require aria-label or title (no bare Lucide icons)", () => {
+    // Icon-only buttons (button with only <Icon />) are invisible to screen readers.
+    // Must have aria-label or title to announce purpose.
+    // Pattern: <button ...><${IconName}.../></button> without aria-label/title.
+    // Exclude primitives (src/components/ui/) which have aria-label as required prop.
+    const lucideIconRe = /from\s+["']lucide-react["']/;
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      // Skip primitive definitions (they mandate aria-label via TypeScript)
+      if (file.startsWith("src/components/ui/")) continue;
+      const content = readSrc(file);
+      // Only check files that import Lucide icons
+      if (!lucideIconRe.test(content)) continue;
+      // Find all <button> tags
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx).trim();
+        // Icon-only if inner content is just a self-closing Lucide component
+        // Pattern: <IconName ... /> or <IconName ... ></IconName>
+        const isIconOnly = /^<[A-Z]\w+[^>]*\/>$/.test(inner) ||
+                          /^<[A-Z]\w+[^>]*>[^<]*<\/[A-Z]\w+>$/.test(inner);
+        if (!isIconOnly) continue;
+        // Check for aria-label or title
+        if (/\b(aria-label|title)=/.test(tag.attrs)) continue;
+        // Skip if {...props} spread (props might contain aria-label)
+        if (/\{\.\.\.\w+\}/.test(tag.attrs)) continue;
+        violations.push(
+          `${file}:${lineNumber(content, tag.openIdx)}  icon-only <button> lacks aria-label/title — screen readers won't announce purpose`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("drag event handlers must preventDefault to prevent browser default", () => {
+    // onDrop + onDragOver without preventDefault allow browser to open dragged files.
+    // Detect handlers and check handler body for e.preventDefault() or variations.
+    // Skip handlers that are function calls — assume the function has preventDefault.
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Find all onDrop= and onDragOver= handlers
+      const dragHandlerRe = /\b(onDrop|onDragOver)=\{([^}]+)\}/g;
+      for (const m of content.matchAll(dragHandlerRe)) {
+        const handlerName = m[1];
+        const handlerBody = m[2];
+        // Check if handler calls preventDefault or stopPropagation
+        if (/preventDefault|stopPropagation/.test(handlerBody)) continue;
+        // If handler is just a reference or function call, skip
+        // (e.g. onDrop={handleDrop} or onDrop={(e) => handleDrop(e, index)})
+        // Patterns: `funcName` or `funcName(...)` or `(e) => funcName(e, ...)`
+        if (/^[a-zA-Z_]\w*(\([^)]*\))?$/.test(handlerBody.trim())) continue; // simple call
+        if (/^\([^)]*\)\s*=>\s*[a-zA-Z_]\w*\([^)]*\)$/.test(handlerBody.trim())) continue; // arrow function calling another
+        violations.push(
+          `${file}:${lineNumber(content, m.index ?? 0)}  ${handlerName} handler lacks preventDefault/stopPropagation — allows browser to open files`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 16. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Component invariants · shared primitive compliance", () => {

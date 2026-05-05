@@ -109,7 +109,8 @@ export function EntityGallery({
   }, []);
 
   const handleDrop = useCallback(
-    (targetIndex: number) => {
+    (e: React.DragEvent, targetIndex: number) => {
+      e.preventDefault();
       const fromIndex = dragItemRef.current;
       if (fromIndex === null || fromIndex === targetIndex) return;
 
@@ -176,7 +177,7 @@ export function EntityGallery({
                   draggable
                   onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(index)}
+                  onDrop={(e) => handleDrop(e, index)}
                 />
               ))}
             </div>
