@@ -319,7 +319,7 @@ function BedRow({
           <button
             type="submit"
             disabled={deletePending}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-neutral-400)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-icon)] disabled:opacity-40"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-neutral-400)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
             title="Eliminar cama"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">

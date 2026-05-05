@@ -46,7 +46,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
             ))}
           </select>
           {fieldError("playbookKey") && (
-            <p className="mt-1 text-xs text-[var(--color-status-error-solid)]">{fieldError("playbookKey")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("playbookKey")}</p>
           )}
         </label>
 
@@ -54,7 +54,7 @@ export function CreatePlaybookForm({ propertyId }: CreatePlaybookFormProps) {
           <span className="text-xs text-[var(--color-neutral-500)]">Título *</span>
           <input name="title" type="text" required placeholder="Ej: Huésped no puede entrar" className={inputClass} />
           {fieldError("title") && (
-            <p className="mt-1 text-xs text-[var(--color-status-error-solid)]">{fieldError("title")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("title")}</p>
           )}
         </label>
 

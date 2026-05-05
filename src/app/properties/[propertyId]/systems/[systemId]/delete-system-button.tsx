@@ -37,7 +37,7 @@ export function DeleteSystemButton({ systemId, propertyId }: Props) {
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-status-error-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-error-icon)] hover:bg-[var(--color-status-error-bg)] disabled:opacity-50 transition-colors"
+      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-status-error-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-error-text)] hover:bg-[var(--color-status-error-bg)] disabled:opacity-50 transition-colors"
     >
       {isPending ? "Eliminando…" : "Eliminar sistema"}
     </button>

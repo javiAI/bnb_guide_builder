@@ -60,7 +60,7 @@ export function CreateSystemForm({ propertyId, existingKeys }: Props) {
           ))}
         </select>
         {result?.fieldErrors?.systemKey && (
-          <p className="mt-1 text-xs text-[var(--color-status-error-icon)]">{result.fieldErrors.systemKey[0]}</p>
+          <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{result.fieldErrors.systemKey[0]}</p>
         )}
       </div>
 
@@ -73,7 +73,7 @@ export function CreateSystemForm({ propertyId, existingKeys }: Props) {
       </button>
 
       {result && !result.success && result.error && (
-        <p className="text-xs text-[var(--color-status-error-icon)]">{result.error}</p>
+        <p className="text-xs text-[var(--color-status-error-text)]">{result.error}</p>
       )}
     </form>
   );

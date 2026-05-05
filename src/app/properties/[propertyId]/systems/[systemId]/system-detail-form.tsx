@@ -50,7 +50,7 @@ function FieldInput({
     <label className="block">
       <span className="text-sm font-medium text-[var(--foreground)]">
         {field.label}
-        {field.required && <span className="ml-0.5 text-[var(--color-status-error-solid)]">*</span>}
+        {field.required && <span className="ml-0.5 text-[var(--color-status-error-text)]">*</span>}
         {field.visibility === "sensitive" && (
           <span className="ml-1 text-xs font-normal text-[var(--color-neutral-400)]">(sensible)</span>
         )}
@@ -156,7 +156,7 @@ export function SystemDetailForm({
       </div>
 
       {result && !result.success && result.error && (
-        <p className="text-xs text-[var(--color-status-error-icon)]">{result.error}</p>
+        <p className="text-xs text-[var(--color-status-error-text)]">{result.error}</p>
       )}
       {result?.success && (
         <p className="text-xs text-[var(--color-status-success-icon)]">Guardado correctamente</p>

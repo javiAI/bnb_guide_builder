@@ -513,6 +513,29 @@ describe("Component invariants · HTML validity", () => {
     }
     expect(violations).toEqual([]);
   });
+
+  it("no block elements (<div>/<p>/<section>) nested inside <button>", () => {
+    // Invalid HTML nesting — block-level elements have semantics that break
+    // inside button context. Browser repair is inconsistent. Example: a
+    // dropzone `<button>` with nested `<div>` + `<p>` loses affordance.
+    const violations: string[] = [];
+    for (const file of auditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["button"])) {
+        const attrEnd = tag.openIdx + 1 + tag.name.length + tag.attrs.length + 1;
+        const closingIdx = content.indexOf("</button>", attrEnd);
+        if (closingIdx < 0) continue;
+        const inner = content.slice(attrEnd, closingIdx);
+        if (/<div\b|<p\b|<section\b|<article\b|<header\b|<footer\b|<main\b/.test(inner)) {
+          violations.push(
+            `${file}:${lineNumber(content, tag.openIdx)}  <button> contains nested block element (<div>/<p>/<section>/...)`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -952,7 +975,35 @@ describe("Component invariants · <ButtonLink size='sm'> on audited operator sur
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 14. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
+// 14. Token consistency (operator surfaces use correct semantic tokens)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Component invariants · token consistency (error messages)", () => {
+  it("error/validation messages use status-error-text tone (not status-error-solid/-icon)", () => {
+    // status-error-solid reserves accent red for filled surfaces/buttons.
+    // Inline copy (error text, validation feedback) must use status-error-text.
+    // In dark mode, -solid is dimmer and lower-contrast. -icon is for icons only.
+    // Flag ONLY text- and color- usage; exclude bg- (filled surfaces like hero cards can use -solid correctly).
+    const violations: string[] = [];
+    for (const file of operatorAuditedFiles) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      // Flag text- and color- use of -solid or -icon; EXCLUDE bg- (filled surfaces)
+      const badTokens = /\b(?:text|color)-\[var\(--color-status-error-(solid|icon)\)/g;
+      for (const m of content.matchAll(badTokens)) {
+        violations.push(
+          `${file}:${lineNumber(content, m.index ?? 0)}  uses status-error-${
+            m[1]
+          } for inline text — must be status-error-text for readability`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 15. Shared primitive compliance (button-size invariants for primitives used on audited surfaces)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Component invariants · shared primitive compliance", () => {

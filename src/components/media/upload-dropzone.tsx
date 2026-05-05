@@ -186,16 +186,16 @@ export function UploadDropzone({
             : "border-[var(--color-neutral-300)] hover:border-[var(--color-neutral-400)]"
         } ${compact ? "px-3 py-2" : "px-6 py-4"}`}
       >
-        <div className={`text-center ${compact ? "text-xs" : "text-sm"}`}>
-          <p className="font-medium text-[var(--color-neutral-600)]">
+        <span className={`block text-center ${compact ? "text-xs" : "text-sm"}`}>
+          <span className="block font-medium text-[var(--color-neutral-600)]">
             {isDragOver ? "Soltar aquí" : compact ? "+ Añadir fotos" : "Arrastra fotos o haz clic para seleccionar"}
-          </p>
+          </span>
           {!compact && (
-            <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
+            <span className="block mt-1 text-xs text-[var(--color-neutral-400)]">
               JPG, PNG, WebP, AVIF, GIF (max 10MB) o MP4 (max 100MB)
-            </p>
+            </span>
           )}
-        </div>
+        </span>
       </button>
 
       {/* Upload progress */}
