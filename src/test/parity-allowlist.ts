@@ -373,7 +373,7 @@ export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
 ] as const;
 
 /** Active Liora phase the allowlist is being audited against. */
-export const CURRENT_LIORA_PHASE: LioraPhase = "16E";
+export const CURRENT_LIORA_PHASE: LioraPhase = "16E.5";
 
 export interface ExceptionEntry {
   file: string;

@@ -3491,6 +3491,35 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - Releer `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity" per módulo (escrito durante E1 con la lista exacta de gaps).
 - Skill mandatoria: `frontend-design` antes de tocar el primer módulo.
 
+#### Fase -1 — decisiones aprobadas (contrato de la rama)
+
+Capturado de la aprobación del usuario en kickoff de 16E.5 (2026-05-05). Este bloque es spec ejecutable, no historial — cada bullet es una restricción enforced.
+
+1. **Orden de migración fijo**: `access/` → `amenities/` → `systems/` → `troubleshooting/` → `spaces/` → `property/` (este último solo si el baseline de 16E queda visualmente por debajo del kit). El primer módulo cierra end-to-end (kit-read → frontend-design → impl → screenshots → liora-ui-kit-parity audit → docs) y se reporta diff stats + verdict ANTES de continuar con el siguiente.
+2. **Particionado**: si la rama supera **60 archivos** o **4k LOC** al cerrar el primer módulo (access/), se parte en sub-PRs `16E.5-A` (access + amenities), `16E.5-B` (systems + troubleshooting), `16E.5-C` (spaces + property condicional). Decisión se toma con datos reales tras commit 4, no especulativamente.
+3. **CollapsibleSection per-módulo**: la decisión "reemplazar / complementar / mantener" se toma en frontend-design step de cada módulo y se documenta en la PR description con reasoning. No es global — algunos módulos (access con `arrival-hero` + `arrival-steps`) requerirán reemplazo; otros (sistemas con cards densas) pueden mantenerlo.
+4. **Primitivos a extraer**: `<PageHeader>` (eyebrow + title + sub + chips + actions + rule), `<NumberedSection>` (`<span class="num">01</span>` + título + body), `<PageHeaderChip>` (chip strip del eyebrow row). Viven en `src/components/ui/` con tests de invariantes propios. Otros primitivos (silhouette-specific: `arrival-hero`, `access-grid`, `sp-grid`, `eq-toolbar`, `sys-card`, `inc-row`) se mantienen como composiciones inline en cada module hasta que aparezcan en ≥2 módulos — promoción solo cuando la duplicación sea real.
+5. **No-CSS-classes del kit**: el kit usa selectores `.pg`, `.access-grid`, `.sp-grid`, `.eq-toolbar`, `.sys-card`, `.inc`, etc. La implementación **no** copia esas clases — re-construye la silueta con tokens semánticos foundations + Tailwind arbitrary values. El kit es referencia visual, no fuente de CSS production.
+6. **Screenshots Playwright obligatorios**: cada módulo cierra con `eval-artifacts/16E.5/<module>/{liora-light,liora-dark,impl-light,impl-dark}.png` (4 archivos mínimo). Capturados con `webapp-testing` skill o spec dedicado. PR description referencia las rutas.
+7. **UI Kit Parity per módulo**: tabla 7-criterios completa con scoring + verdict (≥8.5 global / ≥7.5 per criterion) en PR description per módulo. Sin verdict → módulo no cierra.
+8. **Restricciones duras** (test invariants enforced):
+   - ❌ Server actions (`src/lib/actions/**`).
+   - ❌ Prisma schema / migraciones.
+   - ❌ Taxonomías (`taxonomies/*.json`).
+   - ❌ Registries (`src/config/registries/**`).
+   - ❌ Conditional engine (`src/lib/conditional-engine/**`).
+   - ❌ Guest public guide (`src/components/public-guide/**`, `src/app/g/**`).
+   - ❌ Messaging / assistant (16F).
+9. **Skills mandatorias**: `frontend-design` (pre-impl per módulo, design thinking output Purpose/Tone/Constraints/Differentiation), `liora-ui-kit-parity` (post-impl per módulo, 7-criterios audit), `webapp-testing` (Playwright screenshots per módulo, smoke optional).
+10. **Governance bump**: commit 1 sube `CURRENT_LIORA_PHASE` a `"16E.5"` en `src/test/parity-allowlist.ts`. Excepciones con `removeBy: "16D.5"` o anterior cuyo deadline venció se cierran o se suben con commit explícito que documente motivo.
+
+**Secuencia de commits planificada**:
+- **Commit 1** (governance): bump `CURRENT_LIORA_PHASE = "16E.5"` + cleanup excepciones vencidas si aparecen.
+- **Commit 2** (primitives): `<PageHeader>`, `<NumberedSection>`, `<PageHeaderChip>` + tests de invariantes.
+- **Commit 3** (baseline + a11y): inventario visual de los 5 módulos + axe-core baseline + frontend-design upfront para access/.
+- **Commit 4** (access/ end-to-end): impl + screenshots + parity audit + docs update.
+- **STOP** — reporte diff stats + parity verdict al usuario para review antes de continuar con amenities/.
+
 ---
 
 ### Rama 16F — `feat/liora-messaging-assistant-redesign`
