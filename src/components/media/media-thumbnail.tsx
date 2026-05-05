@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Eye, Star, X } from "lucide-react";
+import { Eye, Star, X, MoreVertical } from "lucide-react";
 import { getMediaDownloadUrlAction } from "@/lib/actions/media.actions";
 
 export interface MediaThumbnailData {
@@ -39,6 +39,7 @@ export function MediaThumbnail({
 }: MediaThumbnailProps) {
   const [imgSrc, setImgSrc] = useState(data.downloadUrl);
   const [imgError, setImgError] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const imgRetryRef = useRef(0);
 
   const isCover = data.usageKey === "cover";
@@ -122,39 +123,90 @@ export function MediaThumbnail({
         </div>
       )}
 
-      {/* Action overlay: hover/focus (vertical stack mobile, horizontal desktop) */}
+      {/* Mobile: single menu button; Desktop: hover overlay */}
       {isReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100 group-focus-within:bg-black/30 group-focus-within:opacity-100 flex-col gap-1 sm:flex-row">
-          <button
-            type="button"
-            onClick={handleOpenFullSize}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
-            title="Ver"
-            aria-label="Ver imagen completa"
-          >
-            <Eye size={16} aria-hidden="true" />
-          </button>
-          {!isCover && (
+        <>
+          {/* Mobile menu button (hidden on sm+) */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/0 sm:hidden">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
+                aria-label="Acciones"
+                aria-expanded={showMobileMenu}
+              >
+                <MoreVertical size={16} aria-hidden="true" />
+              </button>
+              {showMobileMenu && (
+                <div className="absolute top-full mt-1 right-0 flex flex-col gap-1 bg-white rounded-[var(--radius-md)] shadow-lg p-1 z-10">
+                  <button
+                    type="button"
+                    onClick={() => { handleOpenFullSize(); setShowMobileMenu(false); }}
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-100)]"
+                    title="Ver"
+                    aria-label="Ver imagen completa"
+                  >
+                    <Eye size={16} aria-hidden="true" />
+                  </button>
+                  {!isCover && (
+                    <button
+                      type="button"
+                      onClick={() => { onSetCover?.(data.assignmentId); setShowMobileMenu(false); }}
+                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-primary-600)] hover:bg-[var(--color-neutral-100)]"
+                      title="Marcar como portada"
+                      aria-label="Marcar como portada"
+                    >
+                      <Star size={16} aria-hidden="true" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { onRemove?.(data.assignmentId); setShowMobileMenu(false); }}
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded text-[var(--color-status-error-text)] hover:bg-[var(--color-neutral-100)]"
+                    title="Quitar"
+                    aria-label="Quitar imagen"
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop hover overlay (hidden on mobile) */}
+          <div className="absolute inset-0 hidden sm:flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100 group-focus-within:bg-black/30 group-focus-within:opacity-100 gap-1">
             <button
               type="button"
-              onClick={() => onSetCover?.(data.assignmentId)}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
-              title="Marcar como portada"
-              aria-label="Marcar como portada"
+              onClick={handleOpenFullSize}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-neutral-700)] shadow hover:bg-white"
+              title="Ver"
+              aria-label="Ver imagen completa"
             >
-              <Star size={16} aria-hidden="true" />
+              <Eye size={16} aria-hidden="true" />
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => onRemove?.(data.assignmentId)}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-status-error-text)] shadow hover:bg-white"
-            title="Quitar"
-            aria-label="Quitar imagen"
-          >
-            <X size={16} aria-hidden="true" />
-          </button>
-        </div>
+            {!isCover && (
+              <button
+                type="button"
+                onClick={() => onSetCover?.(data.assignmentId)}
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
+                title="Marcar como portada"
+                aria-label="Marcar como portada"
+              >
+                <Star size={16} aria-hidden="true" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onRemove?.(data.assignmentId)}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-status-error-text)] shadow hover:bg-white"
+              title="Quitar"
+              aria-label="Quitar imagen"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

@@ -236,6 +236,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
               type="submit"
               disabled={renamePending || !nameValue.trim()}
               className="min-h-[44px] rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50 inline-flex items-center justify-center"
+              aria-label="Guardar nuevo nombre del espacio"
             >
               {renamePending ? "…" : "✓"}
             </button>
@@ -262,7 +263,6 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
             }}
             className="flex-1 min-w-0 min-h-[44px] text-left hover:bg-[var(--color-neutral-50)] rounded-[var(--radius-md)] transition-colors px-1 py-1 flex items-center"
             aria-expanded={expanded}
-            aria-label={expanded ? "Colapsar" : "Expandir"}
           >
             <span className="text-sm font-semibold text-[var(--foreground)] truncate block">
               {nameValue}

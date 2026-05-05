@@ -147,7 +147,7 @@ export function EntityGallery({
     <button
       type="button"
       onClick={() => setIsCollapsed(!isCollapsed)}
-      className="flex w-full items-center gap-2 text-left text-xs font-semibold text-[var(--color-neutral-600)]"
+      className="flex min-h-[44px] w-full items-center gap-2 rounded-[var(--radius-md)] px-2 py-2 text-left text-xs font-semibold text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-50)] transition-colors"
       aria-expanded={!isCollapsed}
     >
       <ChevronDown

@@ -1033,13 +1033,6 @@ describe("Component invariants · layout safety", () => {
     expect(violations).toEqual([]);
   });
 
-  it("opacity-0 hidden elements must have accessible keyboard alternative", () => {
-    // Opacity-0 hide pattern (visibility: hidden on non-hover) without keyboard
-    // fallback is inaccessible. Example: `opacity-0 group-hover:opacity-100`
-    // button without focus-visible or aria-expanded disclosure.
-    // This is complex to validate statically — skip for now, flag in review.
-    // TODO: Add this when we have disclosure/focus tracking.
-  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

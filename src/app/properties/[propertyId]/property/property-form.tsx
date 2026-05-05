@@ -286,7 +286,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             />
           ) : (
             <>
-              <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group">
+              <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group min-h-[44px] rounded-[var(--radius-md)] px-1 py-2 transition-colors hover:bg-[var(--color-neutral-50)]">
                 <span className="text-lg font-bold text-[var(--foreground)]">{nickname}</span>
                 <Pencil size={16} aria-hidden="true" className="text-[var(--color-neutral-400)] group-hover:text-[var(--color-primary-500)] transition-colors" />
               </button>
