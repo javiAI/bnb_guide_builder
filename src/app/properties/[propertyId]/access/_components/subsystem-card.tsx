@@ -171,9 +171,11 @@ export function SubsystemCard({
       )}
 
       {/* Header — icon inline with title (flex-row). Icon: outline-only olive
-         (V3). Empty state falls back to neutral muted icon. pr-9 reserves room
-         for the corner badge so the title can't collide with it. */}
-      <span className="flex w-full items-center gap-3 pr-9">
+         (V3). Empty state falls back to neutral muted icon. mt-4 empuja el row
+         por debajo del badge (badge_bottom = 14+20 = 34px; header_top con
+         p-5+mt-4 = 36px → 2px clearance) para que el title disponga del ancho
+         completo sin reserva horizontal y no se trunque a 220px de card. */}
+      <span className="mt-4 flex w-full items-center gap-3">
         <span
           aria-hidden="true"
           className={cn(
