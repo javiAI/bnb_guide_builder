@@ -126,6 +126,7 @@ export function SubsystemCard({
           id={bodyId}
           role="region"
           aria-labelledby={titleId}
+          style={{ viewTransitionName: `cockpit-card-${cockpitId}-body` } as React.CSSProperties}
           className="border-t border-[var(--color-border-default)] p-5"
           onClick={(e) => e.stopPropagation()}
         >

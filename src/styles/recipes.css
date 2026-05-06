@@ -93,6 +93,29 @@
     animation-duration: 320ms;
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+  /*
+   * Active-card body — only renders in the "expanded" DOM, so on expand only
+   * the `new` pseudo plays (40ms delay lets the silhouette settle before the
+   * body fades in); on collapse only the `old` pseudo plays (no delay so the
+   * body starts fading immediately while the silhouette also morphs).
+   */
+  ::view-transition-old(cockpit-card-building-body),
+  ::view-transition-new(cockpit-card-building-body),
+  ::view-transition-old(cockpit-card-unit-body),
+  ::view-transition-new(cockpit-card-unit-body),
+  ::view-transition-old(cockpit-card-parking-body),
+  ::view-transition-new(cockpit-card-parking-body),
+  ::view-transition-old(cockpit-card-accessibility-body),
+  ::view-transition-new(cockpit-card-accessibility-body) {
+    animation-duration: 280ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  ::view-transition-new(cockpit-card-building-body),
+  ::view-transition-new(cockpit-card-unit-body),
+  ::view-transition-new(cockpit-card-parking-body),
+  ::view-transition-new(cockpit-card-accessibility-body) {
+    animation-delay: 40ms;
+  }
 }
 /*
  * Per-row reorder when selection toggles push selected items to the top.

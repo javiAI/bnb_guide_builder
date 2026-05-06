@@ -933,7 +933,7 @@ function BuildingPanel({
             onCustomLabelChange={setBuildingCustomLabel}
             onCustomDescChange={setBuildingCustomDesc}
             isPrimary={primary === item.id}
-            onMakePrimary={() => setPrimary(item.id)}
+            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
           />
         ))}
       </MethodList>
@@ -998,7 +998,7 @@ function UnitPanel({
             onCustomLabelChange={setUnitCustomLabel}
             onCustomDescChange={setUnitCustomDesc}
             isPrimary={primary === item.id}
-            onMakePrimary={() => setPrimary(item.id)}
+            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
           />
         ))}
       </MethodList>
@@ -1078,7 +1078,7 @@ function ParkingPanel({
             onCustomLabelChange={setParkingCustomLabel}
             onCustomDescChange={setParkingCustomDesc}
             isPrimary={primary === item.id}
-            onMakePrimary={() => setPrimary(item.id)}
+            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
           />
         ))}
       </MethodList>
