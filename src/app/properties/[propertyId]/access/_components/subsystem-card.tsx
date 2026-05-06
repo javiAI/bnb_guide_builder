@@ -33,19 +33,11 @@ interface SubsystemCardProps {
   children: ReactNode;
 }
 
-// Container-aware visible cap. Below 220px we show 2 + N; below 280px we show
-// 3 + N; default is 4 + N. While the first measurement is pending (width=0)
-// we default to 4 to avoid flashing a "0 visible" state before paint.
-const STRIP_CAPS: ReadonlyArray<{ minPx: number; n: number }> = [
-  { minPx: 280, n: 4 },
-  { minPx: 220, n: 3 },
-  { minPx: 0, n: 2 },
-];
+// Container-aware visible cap. While the first measurement is pending
+// (width === 0) we default to 4 so the card doesn't flash "0 visible" pre-paint.
 function resolveStripCap(widthPx: number): number {
-  if (widthPx === 0) return 4;
-  for (const cap of STRIP_CAPS) {
-    if (widthPx >= cap.minPx) return cap.n;
-  }
+  if (widthPx === 0 || widthPx >= 280) return 4;
+  if (widthPx >= 220) return 3;
   return 2;
 }
 
