@@ -26,6 +26,7 @@ interface MethodRowProps {
 }
 
 export function MethodRow({
+  id,
   icon: Icon,
   name,
   description,
@@ -43,8 +44,22 @@ export function MethodRow({
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
 
+  // Per-row view-transition-name lets the browser FLIP-animate primary swap
+  // reorders. id may contain non-ident chars (e.g. "rm.smart_lock"); CSS
+  // <custom-ident> only allows letters/digits/hyphens/underscores so we
+  // sanitize. The matching `view-transition-class: method-row` lets us tune
+  // timing once via class selector instead of per-id rules. Parent card uses
+  // 320ms cubic-bezier and the matching rule in recipes.css makes rows finish
+  // at the same instant — no expand desync.
+  const safeId = id.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const rowStyle = {
+    viewTransitionName: `method-row-${safeId}`,
+    viewTransitionClass: "method-row",
+  } as React.CSSProperties;
+
   return (
     <div
+      style={rowStyle}
       className={cn(
         "group rounded-[12px] border-[1.5px]",
         "transition-[border-color,background-color] duration-150 ease-out",

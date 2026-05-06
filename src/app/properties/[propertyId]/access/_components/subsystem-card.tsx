@@ -32,12 +32,26 @@ interface SubsystemCardProps {
   children: ReactNode;
 }
 
-// Container-aware visible cap. While the first measurement is pending
-// (width === 0) we default to 4 so the card doesn't flash "0 visible" pre-paint.
-function resolveStripCap(widthPx: number): number {
-  if (widthPx === 0 || widthPx >= 280) return 4;
-  if (widthPx >= 220) return 3;
-  return 2;
+// Container-aware visible cap, computed from real measurements:
+//  card_p5 = 20px each side (40px total)
+//  tile    = 32px (h-8 w-8)
+//  gap     = 8px (gap-2)
+//  +N chip = 32px min-width (only present when there's overflow)
+// The algorithm tries to fit ALL tiles first (no +N chip needed); if not, it
+// computes the max number of tiles that fit alongside a +N chip:
+//   visible*(TILE+GAP) + PLUS_N <= available  →  visible = floor((avail-PLUS_N)/(TILE+GAP))
+// During the first paint (width === 0) we default to 4 to avoid a "0 visible"
+// flash before useMeasure resolves.
+function resolveStripCap(widthPx: number, totalCount: number): number {
+  if (widthPx === 0) return Math.min(4, totalCount);
+  const PARENT_PAD = 40;
+  const TILE = 32;
+  const GAP = 8;
+  const PLUS_N = 32;
+  const available = widthPx - PARENT_PAD;
+  const allTilesWidth = totalCount * TILE + Math.max(0, totalCount - 1) * GAP;
+  if (allTilesWidth <= available) return totalCount;
+  return Math.max(1, Math.floor((available - PLUS_N) / (TILE + GAP)));
 }
 
 export function SubsystemCard({
@@ -70,9 +84,40 @@ export function SubsystemCard({
     if (!p) return [...selectedItems];
     return [p, ...selectedItems.filter((it) => it.id !== primaryId)];
   })();
-  const stripVisibleMax = resolveStripCap(width);
+  const stripVisibleMax = resolveStripCap(width, ordered.length);
   const visible = ordered.slice(0, stripVisibleMax);
   const hidden = ordered.slice(stripVisibleMax);
+
+  // Tile renderer — used by both the single-selection branch (with inline
+  // label) and the multi-selection branch (inside the combined HoverCard
+  // trigger). The primary tile carries a 14×14 corner star (≈25% bigger than
+  // the previous 10×10 marker) with a 2px outline against the elevated bg so
+  // it stays legible over the tile's olive border.
+  const renderTile = (item: SubsystemSelectedItem, isPrimary: boolean) => {
+    const ItemIcon = item.icon;
+    return (
+      <span
+        role="img"
+        aria-label={item.label}
+        className={cn(
+          "relative grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
+          isPrimary
+            ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary)]"
+            : "border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+        )}
+      >
+        <ItemIcon size={14} aria-hidden="true" />
+        {isPrimary && (
+          <span
+            aria-hidden="true"
+            className="absolute -right-[4px] -top-[4px] grid h-[14px] w-[14px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] outline outline-2 outline-[var(--color-background-elevated)]"
+          >
+            <Star size={9} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+          </span>
+        )}
+      </span>
+    );
+  };
 
   if (role === "active") {
     return (
@@ -201,53 +246,36 @@ export function SubsystemCard({
       </span>
 
       {/* Body — icon strip OR empty hint, vertical-centered between header and footer.
-         overflow-visible so the corner star (-3/-3) on the primary tile isn't clipped. */}
+         overflow-visible so the corner star (-4/-4) on the primary tile isn't clipped.
+         Three render branches:
+         - 0 selections: "Añade características" hint
+         - 1 selection:  tile + inline label (no hover — label already visible)
+         - 2+ selections: strip (visible tiles + optional +N chip), wrapped in a
+                          single combined HoverCard whose content lists ALL ordered
+                          items with the primary row highlighted (icon + label,
+                          plus a ⭐ marker on the primary). */}
       <span className="mt-4 flex flex-1 flex-col justify-center">
-        {visible.length > 0 ? (
-          <span className="flex flex-nowrap items-center gap-2 overflow-visible">
-            {visible.map((item) => {
-              const isPrimary = item.id === primaryId;
-              const ItemIcon = item.icon;
-              return (
-                <HoverCard
-                  key={item.id}
-                  trigger={
-                    <span
-                      role="img"
-                      aria-label={item.label}
-                      className={cn(
-                        "relative grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
-                        isPrimary
-                          ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary)]"
-                          : "border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-                      )}
-                    >
-                      <ItemIcon size={14} aria-hidden="true" />
-                      {isPrimary && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute -right-[3px] -top-[3px] grid h-[11px] w-[11px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] outline outline-2 outline-[var(--color-background-elevated)]"
-                        >
-                          <Star size={7} fill="currentColor" strokeWidth={0} aria-hidden="true" />
-                        </span>
-                      )}
-                    </span>
-                  }
-                  content={
-                    <span className="flex items-center gap-2.5 px-2.5 py-2 text-[13px] text-[var(--color-text-primary)]">
-                      <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]">
-                        <ItemIcon size={12} aria-hidden="true" />
-                      </span>
-                      <span className="truncate">{item.label}</span>
-                    </span>
-                  }
-                />
-              );
-            })}
-            {hidden.length > 0 && (
-              <HoverCard
-                contentClassName="max-w-[320px]"
-                trigger={
+        {ordered.length === 0 ? (
+          <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
+            <Plus size={14} aria-hidden="true" className="flex-none" />
+            <span className="truncate">Añade características</span>
+          </span>
+        ) : ordered.length === 1 ? (
+          <span className="flex flex-nowrap items-center gap-3 overflow-visible">
+            {renderTile(ordered[0]!, ordered[0]!.id === primaryId)}
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--color-text-primary)]">
+              {ordered[0]!.label}
+            </span>
+          </span>
+        ) : (
+          <HoverCard
+            contentClassName="max-w-[360px]"
+            trigger={
+              <span className="flex flex-nowrap items-center gap-2 overflow-visible">
+                {visible.map((item) => (
+                  <span key={item.id}>{renderTile(item, item.id === primaryId)}</span>
+                ))}
+                {hidden.length > 0 && (
                   <span
                     role="img"
                     aria-label={`${hidden.length} más`}
@@ -255,33 +283,57 @@ export function SubsystemCard({
                   >
                     +{hidden.length}
                   </span>
-                }
-                content={
-                  <ul className="flex flex-col">
-                    {hidden.map((it) => {
-                      const ItemIcon = it.icon;
-                      return (
-                        <li
-                          key={it.id}
-                          className="flex items-center gap-2.5 px-2.5 py-2 text-[13px]"
-                        >
-                          <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]">
-                            <ItemIcon size={12} aria-hidden="true" />
-                          </span>
-                          <span className="truncate">{it.label}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                }
-              />
-            )}
-          </span>
-        ) : (
-          <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
-            <Plus size={14} aria-hidden="true" className="flex-none" />
-            <span className="truncate">Añade características</span>
-          </span>
+                )}
+              </span>
+            }
+            content={
+              <ul className="flex flex-col">
+                {ordered.map((it) => {
+                  const isP = it.id === primaryId;
+                  const ItemIcon = it.icon;
+                  return (
+                    <li
+                      key={it.id}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px]",
+                        isP && "bg-[var(--color-action-primary-subtle)]",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px]",
+                          isP
+                            ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
+                            : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+                        )}
+                      >
+                        <ItemIcon size={12} aria-hidden="true" />
+                      </span>
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 truncate",
+                          isP
+                            ? "font-semibold text-[var(--color-action-primary)]"
+                            : "text-[var(--color-text-primary)]",
+                        )}
+                      >
+                        {it.label}
+                      </span>
+                      {isP && (
+                        <Star
+                          size={11}
+                          fill="currentColor"
+                          strokeWidth={0}
+                          aria-hidden="true"
+                          className="flex-none text-[var(--color-action-primary)]"
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            }
+          />
         )}
       </span>
 
