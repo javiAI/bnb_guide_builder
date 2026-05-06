@@ -1,9 +1,10 @@
 "use client";
 
-import { Camera, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Camera, Check, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { useMeasure } from "@/lib/hooks/use-measure";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
 
@@ -32,10 +33,21 @@ interface SubsystemCardProps {
   children: ReactNode;
 }
 
-// Visible icon strip cap. Beyond this, the overflow renders a "+N" tile that
-// reveals the hidden items via HoverCard. Cards are 200px tall × roughly the
-// column width — 4 fits comfortably at xl, 3 at sm-lg.
-const STRIP_VISIBLE_MAX = 4;
+// Container-aware visible cap. Below 220px we show 2 + N; below 280px we show
+// 3 + N; default is 4 + N. While the first measurement is pending (width=0)
+// we default to 4 to avoid flashing a "0 visible" state before paint.
+const STRIP_CAPS: ReadonlyArray<{ minPx: number; n: number }> = [
+  { minPx: 280, n: 4 },
+  { minPx: 220, n: 3 },
+  { minPx: 0, n: 2 },
+];
+function resolveStripCap(widthPx: number): number {
+  if (widthPx === 0) return 4;
+  for (const cap of STRIP_CAPS) {
+    if (widthPx >= cap.minPx) return cap.n;
+  }
+  return 2;
+}
 
 export function SubsystemCard({
   role,
@@ -55,6 +67,7 @@ export function SubsystemCard({
 }: SubsystemCardProps) {
   const titleId = useId();
   const bodyId = useId();
+  const [cardRef, { width }] = useMeasure<HTMLButtonElement>();
 
   // Per-card view-transition-name lets the browser morph each card individually.
   const cardStyle = { viewTransitionName: `cockpit-card-${cockpitId}` } as React.CSSProperties;
@@ -67,8 +80,9 @@ export function SubsystemCard({
     if (!p) return [...selectedItems];
     return [p, ...selectedItems.filter((it) => it.id !== primaryId)];
   })();
-  const visible = ordered.slice(0, STRIP_VISIBLE_MAX);
-  const hidden = ordered.slice(STRIP_VISIBLE_MAX);
+  const stripVisibleMax = resolveStripCap(width);
+  const visible = ordered.slice(0, stripVisibleMax);
+  const hidden = ordered.slice(stripVisibleMax);
 
   if (role === "active") {
     return (
@@ -83,35 +97,23 @@ export function SubsystemCard({
           aria-labelledby={titleId}
           onClick={onCollapse}
           className={cn(
-            "group flex w-full items-start gap-4 p-5 text-left",
+            "group flex w-full items-center gap-3 p-5 text-left",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
             "hover:bg-[var(--color-background-muted)]/40",
           )}
         >
           <span
             aria-hidden="true"
-            className="grid h-10 w-10 flex-none place-items-center rounded-[10px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
+            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]"
           >
             <Icon size={20} aria-hidden="true" />
           </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="flex min-w-0 items-center gap-2">
-              <span
-                id={titleId}
-                className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
-              >
-                {title}
-              </span>
-              {status === "configured" && (
-                <CheckCircle2
-                  size={16}
-                  aria-label="Configurado"
-                  className="flex-none text-[var(--color-status-success-text)]"
-                />
-              )}
-              {status === "pending" && (
-                <span className="sr-only">Por completar</span>
-              )}
+          <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span
+              id={titleId}
+              className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
+            >
+              {title}
             </span>
             {expandedSubtitle && (
               <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
@@ -135,6 +137,7 @@ export function SubsystemCard({
 
   return (
     <button
+      ref={cardRef}
       type="button"
       aria-expanded={false}
       aria-controls={bodyId}
@@ -142,7 +145,7 @@ export function SubsystemCard({
       onClick={onExpand}
       style={cardStyle}
       className={cn(
-        "group flex h-full w-full flex-col rounded-[20px] border bg-[var(--color-background-elevated)] p-5 text-left",
+        "group relative flex h-full w-full flex-col rounded-[20px] border bg-[var(--color-background-elevated)] p-5 text-left",
         "transition-[border-color,box-shadow,transform] duration-200 ease-out",
         status === "pending"
           ? "border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)]"
@@ -152,38 +155,55 @@ export function SubsystemCard({
         "min-h-[44px] h-[200px]",
       )}
     >
-      {/* Header — icon row, then title row.
-         Status: configured shows a small CheckCircle2 next to the title;
-         partial tints the whole card via border + bg (set above); empty stays neutral. */}
-      <span className="flex w-full flex-col gap-2.5">
+      {/* Status corner badge — top-right of the card. ✓ for configured (success
+         tone), ⚠ for partial/pending (warning tone). Empty state has no badge.
+         Native title= attribute renders a tooltip on hover (zero JS). */}
+      {status === "configured" && (
+        <span
+          aria-label="Configurado"
+          title="Configurado"
+          className="absolute right-3.5 top-3.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-[var(--color-status-success-bg)]"
+        >
+          <Check size={12} strokeWidth={3} aria-hidden="true" />
+        </span>
+      )}
+      {status === "pending" && (
+        <span
+          aria-label="Falta configuración"
+          title="Falta configuración"
+          className="absolute right-3.5 top-3.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-[var(--color-status-warning-bg)]"
+        >
+          <AlertTriangle size={12} strokeWidth={2.5} aria-hidden="true" />
+        </span>
+      )}
+
+      {/* Header — icon inline with title (flex-row). Icon: outline-only olive
+         (V3). Empty state falls back to neutral muted icon. The pr-9 reserves
+         space for the corner badge so titles don't collide with it. */}
+      <span className="flex w-full items-center gap-3 pr-9">
         <span
           aria-hidden="true"
-          className="grid h-9 w-9 flex-none place-items-center rounded-[10px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
-        >
-          <Icon size={18} aria-hidden="true" />
-        </span>
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span
-            id={titleId}
-            className="block min-w-0 flex-1 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
-          >
-            {title}
-          </span>
-          {status === "configured" && (
-            <CheckCircle2
-              size={16}
-              aria-label="Configurado"
-              className="flex-none text-[var(--color-status-success-text)]"
-            />
+          className={cn(
+            "grid h-10 w-10 flex-none place-items-center rounded-[12px]",
+            status === "empty"
+              ? "border border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
+              : "border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]",
           )}
-          {status === "pending" && <span className="sr-only">Por completar</span>}
+        >
+          <Icon size={20} aria-hidden="true" />
+        </span>
+        <span
+          id={titleId}
+          className="block min-w-0 flex-1 truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
+        >
+          {title}
         </span>
       </span>
 
       {/* Body — icon strip OR empty hint, vertical-centered between header and footer */}
       <span className="mt-4 flex flex-1 flex-col justify-center">
         {visible.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-2">
+          <span className="flex flex-nowrap items-center gap-2 overflow-hidden">
             {visible.map((item) => {
               const isPrimary = item.id === primaryId;
               const ItemIcon = item.icon;
@@ -193,13 +213,21 @@ export function SubsystemCard({
                   title={item.label}
                   aria-label={item.label}
                   className={cn(
-                    "grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
+                    "relative grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
                     isPrimary
                       ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary)]"
                       : "border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
                   )}
                 >
                   <ItemIcon size={14} aria-hidden="true" />
+                  {isPrimary && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-[3px] -top-[3px] grid h-[11px] w-[11px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
+                    >
+                      <Star size={7} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                    </span>
+                  )}
                 </span>
               );
             })}
@@ -208,7 +236,7 @@ export function SubsystemCard({
                 trigger={
                   <span
                     aria-label={`${hidden.length} más`}
-                    className="grid h-8 min-w-[32px] place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
+                    className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
                   >
                     +{hidden.length}
                   </span>
@@ -241,7 +269,8 @@ export function SubsystemCard({
         )}
       </span>
 
-      {/* Footer — photo count, anchored at bottom */}
+      {/* Footer — media count, anchored at bottom. Warnings live in the
+         corner badge above; the footer never carries a competing chip. */}
       <span className="mt-3 inline-flex min-h-[16px] items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
         {photoCount > 0 ? (
           <>
