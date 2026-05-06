@@ -37,11 +37,21 @@ export function HoverCard({
         >
           {content}
           {/* Arrow merges with popover border. Open SVG path strokes only the
-             slant edges (not the base) — the base sits flush with the popover
-             edge so the popover's own border continues into the slants without
-             visible double-line. fill-bg-elevated closes the triangle visually. */}
+             slants (no top edge). translateY(-1) shifts the SVG 1px INTO the
+             popover so the bg-elevated fill covers the popover's border in the
+             stem region — produces a clean notch where the popover border stops
+             and the arrow slants continue. The math is rotation-agnostic: for
+             side=bottom, translateY(-1) in SVG-local frame composes with Radix's
+             180° rotation → +1 in screen → into popover (below arrow); for
+             side=top, the 0° rotation passes -1 through unchanged → into popover
+             (above arrow). Either way, into popover. */}
           <RadixHoverCard.Arrow asChild width={14} height={7}>
-            <svg viewBox="0 0 14 7" fill="none" aria-hidden="true">
+            <svg
+              viewBox="0 0 14 7"
+              fill="none"
+              aria-hidden="true"
+              style={{ display: "block", transform: "translateY(-1px)" }}
+            >
               <path
                 d="M0 0 L7 7 L14 0"
                 fill="var(--color-background-elevated)"
