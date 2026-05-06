@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Camera, Check, Star, Video } from "lucide-react";
+import { AlertTriangle, Camera, Check, Plus, Star, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -26,8 +26,6 @@ interface SubsystemCardProps {
   photoCount: number;
   videoCount?: number;
   status: SubsystemStatus;
-  emptyHintIcon: LucideIcon;
-  emptyHintLabel: string;
   onExpand: () => void;
   onCollapse: () => void;
   expandedSubtitle?: string;
@@ -52,8 +50,6 @@ export function SubsystemCard({
   photoCount,
   videoCount = 0,
   status,
-  emptyHintIcon: EmptyIcon,
-  emptyHintLabel,
   onExpand,
   onCollapse,
   expandedSubtitle,
@@ -279,8 +275,8 @@ export function SubsystemCard({
           </span>
         ) : (
           <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
-            <EmptyIcon size={14} aria-hidden="true" className="flex-none" />
-            <span className="truncate">{emptyHintLabel}</span>
+            <Plus size={14} aria-hidden="true" className="flex-none" />
+            <span className="truncate">Añade características</span>
           </span>
         )}
       </span>

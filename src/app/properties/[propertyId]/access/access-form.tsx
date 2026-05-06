@@ -683,8 +683,6 @@ export function AccessForm({
                       primaryId={effectivePrimaryBuilding}
                       photoCount={buildingPhotoCount}
                       status={buildingStatus}
-                      emptyHintIcon={MapPin}
-                      emptyHintLabel="Pulsa para añadir →"
                       cockpitId="building"
                       onExpand={() => setExpandedCardAnimated("building")}
                       onCollapse={() => setExpandedCardAnimated(null)}
@@ -716,8 +714,6 @@ export function AccessForm({
                       primaryId={effectivePrimaryUnit}
                       photoCount={unitPhotoCount}
                       status={unitStatus}
-                      emptyHintIcon={Key}
-                      emptyHintLabel="Pulsa para añadir →"
                       cockpitId="unit"
                       onExpand={() => setExpandedCardAnimated("unit")}
                       onCollapse={() => setExpandedCardAnimated(null)}
@@ -750,8 +746,6 @@ export function AccessForm({
                       primaryId={effectivePrimaryParking}
                       photoCount={parkingPhotoCount}
                       status={parkingStatus}
-                      emptyHintIcon={MapPin}
-                      emptyHintLabel="Pulsa para añadir →"
                       cockpitId="parking"
                       onExpand={() => setExpandedCardAnimated("parking")}
                       onCollapse={() => setExpandedCardAnimated(null)}
@@ -782,8 +776,6 @@ export function AccessForm({
                     primaryId={null}
                     photoCount={accessibilityPhotoCount}
                     status={axStatus}
-                    emptyHintIcon={MapPin}
-                    emptyHintLabel="Pulsa para añadir →"
                     cockpitId="accessibility"
                       onExpand={() => setExpandedCardAnimated("accessibility")}
                     onCollapse={() => setExpandedCardAnimated(null)}
