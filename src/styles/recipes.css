@@ -114,8 +114,27 @@
   ::view-transition-new(cockpit-card-unit-body),
   ::view-transition-new(cockpit-card-parking-body),
   ::view-transition-new(cockpit-card-accessibility-body) {
-    animation-delay: 40ms;
+    animation-delay: 140ms;
   }
+}
+
+/*
+ * Card status tints — color-mix with bg-elevated keeps dark theme legible.
+ * Status border colors are 1.5px so the card frame itself signals state.
+ */
+.recipe-card-configured {
+  border: 1.5px solid var(--color-status-success-border);
+  background: color-mix(in oklch, var(--color-status-success-bg) 35%, var(--color-background-elevated));
+}
+html[data-theme="dark"] .recipe-card-configured {
+  background: color-mix(in oklch, var(--color-status-success-bg) 50%, var(--color-background-elevated));
+}
+.recipe-card-partial {
+  border: 1.5px solid var(--color-status-warning-border);
+  background: color-mix(in oklch, var(--color-status-warning-bg) 50%, var(--color-background-elevated));
+}
+html[data-theme="dark"] .recipe-card-partial {
+  background: color-mix(in oklch, var(--color-status-warning-bg) 60%, var(--color-background-elevated));
 }
 /*
  * Per-row reorder when selection toggles push selected items to the top.

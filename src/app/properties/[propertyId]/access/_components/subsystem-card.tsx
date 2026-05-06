@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Camera, Check, Star } from "lucide-react";
+import { AlertTriangle, Camera, Check, Star, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -24,6 +24,7 @@ interface SubsystemCardProps {
   selectedItems: readonly SubsystemSelectedItem[];
   primaryId: string | null;
   photoCount: number;
+  videoCount?: number;
   status: SubsystemStatus;
   emptyHintIcon: LucideIcon;
   emptyHintLabel: string;
@@ -49,6 +50,7 @@ export function SubsystemCard({
   selectedItems,
   primaryId,
   photoCount,
+  videoCount = 0,
   status,
   emptyHintIcon: EmptyIcon,
   emptyHintLabel,
@@ -138,24 +140,27 @@ export function SubsystemCard({
       onClick={onExpand}
       style={cardStyle}
       className={cn(
-        "group relative flex h-full w-full flex-col rounded-[20px] border bg-[var(--color-background-elevated)] p-5 text-left",
+        "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
         "transition-[border-color,box-shadow,transform] duration-200 ease-out",
-        status === "pending"
-          ? "border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)]"
-          : "border-[var(--color-border-default)]",
-        "hover:border-[var(--color-border-strong)] hover:shadow-[var(--elevation-surface-md)] hover:-translate-y-[1px]",
+        status === "configured"
+          ? "recipe-card-configured"
+          : status === "pending"
+            ? "recipe-card-partial"
+            : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
+        "hover:shadow-[var(--elevation-surface-md)] hover:-translate-y-[1px]",
+        status === "empty" && "hover:border-[var(--color-border-strong)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
       )}
     >
       {/* Status corner badge — top-right of the card. ✓ for configured (success
          tone), ⚠ for partial/pending (warning tone). Empty state has no badge.
-         Native title= attribute renders a tooltip on hover (zero JS). */}
+         White SVG over solid status border colour for legibility on tinted bg. */}
       {status === "configured" && (
         <span
           aria-label="Configurado"
           title="Configurado"
-          className="absolute right-3.5 top-3.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-[var(--color-status-success-bg)]"
+          className="absolute right-[14px] top-[14px] grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-white"
         >
           <Check size={12} strokeWidth={3} aria-hidden="true" />
         </span>
@@ -164,15 +169,15 @@ export function SubsystemCard({
         <span
           aria-label="Falta configuración"
           title="Falta configuración"
-          className="absolute right-3.5 top-3.5 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-[var(--color-status-warning-bg)]"
+          className="absolute right-[14px] top-[14px] grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-white"
         >
           <AlertTriangle size={12} strokeWidth={2.5} aria-hidden="true" />
         </span>
       )}
 
       {/* Header — icon inline with title (flex-row). Icon: outline-only olive
-         (V3). Empty state falls back to neutral muted icon. The pr-9 reserves
-         space for the corner badge so titles don't collide with it. */}
+         (V3). Empty state falls back to neutral muted icon. pr-9 reserves room
+         for the corner badge so the title can't collide with it. */}
       <span className="flex w-full items-center gap-3 pr-9">
         <span
           aria-hidden="true"
@@ -193,41 +198,55 @@ export function SubsystemCard({
         </span>
       </span>
 
-      {/* Body — icon strip OR empty hint, vertical-centered between header and footer */}
+      {/* Body — icon strip OR empty hint, vertical-centered between header and footer.
+         overflow-visible so the corner star (-3/-3) on the primary tile isn't clipped. */}
       <span className="mt-4 flex flex-1 flex-col justify-center">
         {visible.length > 0 ? (
-          <span className="flex flex-nowrap items-center gap-2 overflow-hidden">
+          <span className="flex flex-nowrap items-center gap-2 overflow-visible">
             {visible.map((item) => {
               const isPrimary = item.id === primaryId;
               const ItemIcon = item.icon;
               return (
-                <span
+                <HoverCard
                   key={item.id}
-                  title={item.label}
-                  aria-label={item.label}
-                  className={cn(
-                    "relative grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
-                    isPrimary
-                      ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary)]"
-                      : "border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-                  )}
-                >
-                  <ItemIcon size={14} aria-hidden="true" />
-                  {isPrimary && (
+                  trigger={
                     <span
-                      aria-hidden="true"
-                      className="absolute -right-[3px] -top-[3px] grid h-[11px] w-[11px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
+                      role="img"
+                      aria-label={item.label}
+                      className={cn(
+                        "relative grid h-8 w-8 flex-none place-items-center rounded-[8px] border",
+                        isPrimary
+                          ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary)]"
+                          : "border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+                      )}
                     >
-                      <Star size={7} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                      <ItemIcon size={14} aria-hidden="true" />
+                      {isPrimary && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute -right-[3px] -top-[3px] grid h-[11px] w-[11px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] outline outline-2 outline-[var(--color-background-elevated)]"
+                        >
+                          <Star size={7} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
+                  }
+                  content={
+                    <span className="flex items-center gap-2.5 px-2.5 py-2 text-[13px] text-[var(--color-text-primary)]">
+                      <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]">
+                        <ItemIcon size={12} aria-hidden="true" />
+                      </span>
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                  }
+                />
               );
             })}
             {hidden.length > 0 && (
               <HoverCard
                 trigger={
                   <span
+                    role="img"
                     aria-label={`${hidden.length} más`}
                     className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
                   >
@@ -235,16 +254,21 @@ export function SubsystemCard({
                   </span>
                 }
                 content={
-                  <ul className="flex flex-col gap-1">
-                    {hidden.map((it) => {
+                  <ul className="flex flex-col">
+                    {hidden.map((it, i) => {
                       const ItemIcon = it.icon;
                       return (
-                        <li key={it.id} className="flex items-center gap-2">
-                          <ItemIcon
-                            size={12}
-                            aria-hidden="true"
-                            className="flex-none text-[var(--color-text-secondary)]"
-                          />
+                        <li
+                          key={it.id}
+                          className={cn(
+                            "flex items-center gap-2.5 px-2.5 py-2 text-[13px]",
+                            i > 0 &&
+                              "border-t border-[color-mix(in_oklch,var(--color-border-default)_60%,transparent)]",
+                          )}
+                        >
+                          <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]">
+                            <ItemIcon size={12} aria-hidden="true" />
+                          </span>
                           <span className="truncate">{it.label}</span>
                         </li>
                       );
@@ -262,16 +286,45 @@ export function SubsystemCard({
         )}
       </span>
 
-      {/* Footer — media count, anchored at bottom. Warnings live in the
-         corner badge above; the footer never carries a competing chip. */}
-      <span className="mt-3 inline-flex min-h-[16px] items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-        {photoCount > 0 ? (
-          <>
-            <Camera size={12} aria-hidden="true" />
-            {photoCount} {photoCount === 1 ? "foto" : "fotos"}
-          </>
-        ) : null}
-      </span>
+      {/* Footer — media counts. Photo + video, greyed when 0. Empty cards skip
+         the footer entirely (status === "empty"). When neither photo nor video
+         is set, render a single greyed "sin media" line. */}
+      {status !== "empty" && (
+        <span className="mt-3 inline-flex min-h-[16px] items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
+          {photoCount === 0 && videoCount === 0 ? (
+            <span className="text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]">
+              sin media
+            </span>
+          ) : (
+            <>
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1",
+                  photoCount === 0 &&
+                    "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
+                )}
+              >
+                <Camera size={11} aria-hidden="true" />
+                {photoCount > 0
+                  ? `${photoCount} ${photoCount === 1 ? "foto" : "fotos"}`
+                  : "sin foto"}
+              </span>
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1",
+                  videoCount === 0 &&
+                    "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
+                )}
+              >
+                <Video size={11} aria-hidden="true" />
+                {videoCount > 0
+                  ? `${videoCount} ${videoCount === 1 ? "vídeo" : "vídeos"}`
+                  : "sin vídeo"}
+              </span>
+            </>
+          )}
+        </span>
+      )}
     </button>
   );
 }

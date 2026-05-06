@@ -30,7 +30,7 @@ export function HoverCard({
         <RadixHoverCard.Content
           sideOffset={gap}
           className={cn(
-            "z-50 max-w-[240px] rounded-[12px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-2.5 text-[12px] text-[var(--color-text-primary)] shadow-[var(--elevation-surface-md)]",
+            "z-50 min-w-[140px] max-w-[240px] rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-1.5 text-[13px] text-[var(--color-text-primary)] shadow-[var(--elevation-surface-lg)]",
             "data-[state=open]:animate-hovercard-in data-[state=closed]:animate-hovercard-out",
             contentClassName,
           )}
@@ -39,7 +39,7 @@ export function HoverCard({
           <RadixHoverCard.Arrow
             width={10}
             height={5}
-            className="fill-[var(--color-background-elevated)]"
+            className="fill-[var(--color-background-elevated)] drop-shadow-[0_1px_0_var(--color-border-default)]"
           />
         </RadixHoverCard.Content>
       </RadixHoverCard.Portal>

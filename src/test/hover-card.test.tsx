@@ -85,7 +85,7 @@ describe("HoverCard primitive", () => {
     const cls = shell!.className;
     expect(cls).toContain("bg-[var(--color-background-elevated)]");
     expect(cls).toContain("border-[var(--color-border-default)]");
-    expect(cls).toContain("shadow-[var(--elevation-surface-md)]");
+    expect(cls).toContain("shadow-[var(--elevation-surface-lg)]");
     expect(cls).toContain("max-w-[240px]");
   });
 });
