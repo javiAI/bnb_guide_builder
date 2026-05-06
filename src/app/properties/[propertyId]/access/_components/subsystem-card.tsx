@@ -246,6 +246,7 @@ export function SubsystemCard({
             })}
             {hidden.length > 0 && (
               <HoverCard
+                contentClassName="max-w-[320px]"
                 trigger={
                   <span
                     role="img"
@@ -257,16 +258,12 @@ export function SubsystemCard({
                 }
                 content={
                   <ul className="flex flex-col">
-                    {hidden.map((it, i) => {
+                    {hidden.map((it) => {
                       const ItemIcon = it.icon;
                       return (
                         <li
                           key={it.id}
-                          className={cn(
-                            "flex items-center gap-2.5 px-2.5 py-2 text-[13px]",
-                            i > 0 &&
-                              "border-t border-[color-mix(in_oklch,var(--color-border-default)_60%,transparent)]",
-                          )}
+                          className="flex items-center gap-2.5 px-2.5 py-2 text-[13px]"
                         >
                           <span className="grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]">
                             <ItemIcon size={12} aria-hidden="true" />

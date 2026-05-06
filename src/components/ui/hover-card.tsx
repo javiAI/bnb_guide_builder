@@ -36,11 +36,20 @@ export function HoverCard({
           )}
         >
           {content}
-          <RadixHoverCard.Arrow
-            width={10}
-            height={5}
-            className="fill-[var(--color-background-elevated)] drop-shadow-[0_1px_0_var(--color-border-default)]"
-          />
+          {/* Arrow merges with popover border. Open SVG path strokes only the
+             slant edges (not the base) — the base sits flush with the popover
+             edge so the popover's own border continues into the slants without
+             visible double-line. fill-bg-elevated closes the triangle visually. */}
+          <RadixHoverCard.Arrow asChild width={14} height={7}>
+            <svg viewBox="0 0 14 7" fill="none" aria-hidden="true">
+              <path
+                d="M0 0 L7 7 L14 0"
+                fill="var(--color-background-elevated)"
+                stroke="var(--color-border-default)"
+                strokeWidth="1"
+              />
+            </svg>
+          </RadixHoverCard.Arrow>
         </RadixHoverCard.Content>
       </RadixHoverCard.Portal>
     </RadixHoverCard.Root>
