@@ -114,12 +114,10 @@ html[data-theme="dark"] .recipe-card-partial {
   background: color-mix(in oklch, var(--color-status-warning-bg) 60%, var(--color-background-elevated));
 }
 /*
- * Per-row reorder when selection toggles push selected items to the top.
- * Each MethodRow has view-transition-name `method-row-<id>` (id slugified —
- * `.` → `-`). The CSS spec doesn't accept wildcards in pseudo-element args,
- * so we leave the row group animation at UA defaults (~250ms linear) — the
- * named transition-name on each row is enough to enable individual FLIP
- * animation of position changes.
+ * Reduced-motion fallback for the cockpit-card-* group above. We deliberately
+ * do NOT name MethodRow rows individually — that escapes them from the parent
+ * card's snapshot and desyncs from the 320ms morph. Without their own names,
+ * rows compose into the cockpit-card snapshot and animate as one unit.
  */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),

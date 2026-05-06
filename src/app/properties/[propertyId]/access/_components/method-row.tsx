@@ -26,7 +26,6 @@ interface MethodRowProps {
 }
 
 export function MethodRow({
-  id,
   icon: Icon,
   name,
   description,
@@ -41,17 +40,11 @@ export function MethodRow({
   isPrimary,
   onMakePrimary,
 }: MethodRowProps) {
-  // Slugify id (`.` → `-`) — CSS idents can't contain dots. The view-transition
-  // lives on the OUTER container so the whole row (header + inline inputs)
-  // morphs as a unit when reorder happens.
-  const transitionName = `method-row-${id.replace(/\./g, "-")}`;
-
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
 
   return (
     <div
-      style={{ viewTransitionName: transitionName } as React.CSSProperties}
       className={cn(
         "group rounded-[12px] border-[1.5px]",
         "transition-[border-color,background-color] duration-150 ease-out",
