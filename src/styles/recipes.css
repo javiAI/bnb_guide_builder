@@ -47,3 +47,41 @@
   .recipe-icon-btn-32 { min-height: 44px; min-width: 44px; }
   .recipe-icon-btn-32::before { inset: 0; }
 }
+
+/*
+ * Cockpit view-transition tuning. Each card has view-transition-name set in
+ * subsystem-card.tsx as `cockpit-card-${id}`; here we tune timing/easing for all
+ * four. Default UA value is ~250ms linear-ish; we want slightly longer + emphasis.
+ */
+@supports (view-transition-name: none) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 280ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  ::view-transition-old(cockpit-card-building),
+  ::view-transition-new(cockpit-card-building),
+  ::view-transition-old(cockpit-card-unit),
+  ::view-transition-new(cockpit-card-unit),
+  ::view-transition-old(cockpit-card-parking),
+  ::view-transition-new(cockpit-card-parking),
+  ::view-transition-old(cockpit-card-accessibility),
+  ::view-transition-new(cockpit-card-accessibility) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+/*
+ * Per-row reorder when selection toggles push selected items to the top.
+ * Each MethodRow has view-transition-name `method-row-<id>` (id slugified —
+ * `.` → `-`). The CSS spec doesn't accept wildcards in pseudo-element args,
+ * so we leave the row group animation at UA defaults (~250ms linear) — the
+ * named transition-name on each row is enough to enable individual FLIP
+ * animation of position changes.
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.01ms !important;
+  }
+}

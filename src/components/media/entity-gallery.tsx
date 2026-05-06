@@ -18,12 +18,32 @@ interface EntityGalleryProps {
   propertyId: string;
   entityType: MediaEntityType;
   entityId: string;
+  /**
+   * Per-subsystem scoping (rama 16E.5):
+   *   - `undefined` → no filter (current behavior — every assignment).
+   *   - `null` → only assignments with `usageKey IS NULL` (legacy/unscoped).
+   *   - `string` → only assignments matching that exact key.
+   *
+   * When `usageKey !== undefined`, the gallery enters scoped mode and disables
+   * reorder + setCover affordances. Reorder operates on the full entity pool
+   * and setCover uses `usageKey="cover"` — both are incompatible with
+   * subsystem scoping until `reorderMediaAction` and `setCoverAction` accept
+   * a usageKey scope. Re-enable in a future branch that refactors them.
+   */
+  usageKey?: string | null;
   /** Label shown above the gallery. If omitted, no header is rendered. */
   label?: string;
   /** Start collapsed (default false). */
   defaultCollapsed?: boolean;
   /** Use compact dropzone layout. */
   compact?: boolean;
+  /**
+   * When true (and the gallery is in scoped mode for `usageKey === null`),
+   * suppresses the upload dropzone — uploads to the "Sin clasificar" bucket
+   * are not meaningful (a new upload would not be tagged anywhere). Only
+   * delete is allowed for legacy unscoped photos.
+   */
+  uploadDisabled?: boolean;
 }
 
 type AssignmentWithUrl = MediaAssignmentWithAsset & { downloadUrl: string | null };
@@ -46,10 +66,13 @@ export function EntityGallery({
   propertyId,
   entityType,
   entityId,
+  usageKey,
   label,
   defaultCollapsed = false,
   compact = false,
+  uploadDisabled = false,
 }: EntityGalleryProps) {
+  const isScoped = usageKey !== undefined;
   const [assignments, setAssignments] = useState<AssignmentWithUrl[]>([]);
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,12 +80,12 @@ export function EntityGallery({
   const dragItemRef = useRef<number | null>(null);
 
   const loadMedia = useCallback(async () => {
-    const result = await getEntityMediaAction(entityType, entityId);
+    const result = await getEntityMediaAction(entityType, entityId, usageKey);
     if (result.success && result.data) {
       setAssignments(result.data.assignments);
     }
     setIsLoading(false);
-  }, [entityType, entityId]);
+  }, [entityType, entityId, usageKey]);
 
   useEffect(() => {
     loadMedia();
@@ -168,29 +191,40 @@ export function EntityGallery({
           {/* Thumbnail grid */}
           {count > 0 && (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-              {assignments.map((a, index) => (
-                <MediaThumbnail
-                  key={a.id}
-                  data={toThumbnailData(a)}
-                  onRemove={optimisticRemove}
-                  onSetCover={optimisticSetCover}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, index)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                />
-              ))}
+              {assignments.map((a, index) =>
+                isScoped ? (
+                  <MediaThumbnail
+                    key={a.id}
+                    data={toThumbnailData(a)}
+                    onRemove={optimisticRemove}
+                  />
+                ) : (
+                  <MediaThumbnail
+                    key={a.id}
+                    data={toThumbnailData(a)}
+                    onRemove={optimisticRemove}
+                    onSetCover={optimisticSetCover}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                  />
+                ),
+              )}
             </div>
           )}
 
-          {/* Upload dropzone */}
-          <UploadDropzone
-            propertyId={propertyId}
-            entityType={entityType}
-            entityId={entityId}
-            onUploadComplete={loadMedia}
-            compact={compact || count > 0}
-          />
+          {/* Upload dropzone — suppressed for "Sin clasificar" (uploadDisabled) */}
+          {!uploadDisabled && (
+            <UploadDropzone
+              propertyId={propertyId}
+              entityType={entityType}
+              entityId={entityId}
+              usageKey={typeof usageKey === "string" ? usageKey : undefined}
+              onUploadComplete={loadMedia}
+              compact={compact || count > 0}
+            />
+          )}
         </>
       )}
     </div>

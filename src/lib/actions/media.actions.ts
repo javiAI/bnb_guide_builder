@@ -464,17 +464,33 @@ export async function setCoverAction(
 /**
  * Get all media assignments for an entity, ordered by sortOrder.
  * Returns download URLs for ready assets.
+ *
+ * `usageKey` semantics (strict):
+ *   - `undefined` → no filter (returns every assignment for the entity).
+ *   - `null` → only assignments with `usageKey IS NULL` (legacy/unscoped).
+ *   - `string` → only assignments matching that exact usage key.
  */
 export async function getEntityMediaAction(
   entityType: MediaEntityType,
   entityId: string,
+  usageKey?: string | null,
 ): Promise<ActionResult<{ assignments: (MediaAssignmentWithAsset & { downloadUrl: string | null })[] }>> {
   if (!VALID_ENTITY_TYPES.includes(entityType)) {
     return { success: false, error: `Tipo de entidad no válido: ${entityType}` };
   }
 
+  const where: { entityType: MediaEntityType; entityId: string; usageKey?: string | null } = {
+    entityType,
+    entityId,
+  };
+  if (usageKey === null) {
+    where.usageKey = null;
+  } else if (typeof usageKey === "string") {
+    where.usageKey = usageKey;
+  }
+
   const assignments = await prisma.mediaAssignment.findMany({
-    where: { entityType, entityId },
+    where,
     orderBy: { sortOrder: "asc" },
     include: {
       mediaAsset: {

@@ -154,10 +154,10 @@ export function MediaThumbnail({
                   >
                     <Eye size={16} aria-hidden="true" />
                   </button>
-                  {!isCover && (
+                  {!isCover && onSetCover && (
                     <button
                       type="button"
-                      onClick={() => { onSetCover?.(data.assignmentId); setShowMobileMenu(false); }}
+                      onClick={() => { onSetCover(data.assignmentId); setShowMobileMenu(false); }}
                       className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white text-[var(--color-primary-600)] shadow"
                       aria-label="Marcar como portada"
                     >
@@ -188,10 +188,10 @@ export function MediaThumbnail({
             >
               <Eye size={16} aria-hidden="true" />
             </button>
-            {!isCover && (
+            {!isCover && onSetCover && (
               <button
                 type="button"
-                onClick={() => onSetCover?.(data.assignmentId)}
+                onClick={() => onSetCover(data.assignmentId)}
                 className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-[var(--color-primary-600)] shadow hover:bg-white"
                 title="Marcar como portada"
                 aria-label="Marcar como portada"

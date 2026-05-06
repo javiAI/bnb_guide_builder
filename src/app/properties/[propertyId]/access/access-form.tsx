@@ -1,12 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { ArrowLeft, Clock, Clock4, Key, MapPin } from "lucide-react";
-import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
-import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
-import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { useActionState, useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
+import {
+  ArrowLeft,
+  Camera,
+  Clock,
+  Clock4,
+  FileText,
+  Key,
+  MapPin,
+} from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
+import { TextLink } from "@/components/ui/text-link";
+import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { PageHeader } from "@/components/ui/page-header";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
@@ -18,6 +25,75 @@ import { parkingOptions } from "@/lib/taxonomies/parking-options";
 import { accessibilityFeatures } from "@/lib/taxonomies/accessibility-features";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { EntityGallery } from "@/components/media/entity-gallery";
+import {
+  ACCESS_COCKPIT_IDS,
+  ACCESS_USAGE_KEYS,
+  SUBSYSTEM_HEADER_ICONS,
+  type AccessCockpitId,
+  buildingIconFor,
+  unitIconFor,
+  parkingIconFor,
+  accessibilityIconFor,
+} from "@/lib/icons/access-icons";
+import { CockpitGrid, type CardRole } from "./_components/cockpit-grid";
+import { SubsystemCard, type SubsystemStatus } from "./_components/subsystem-card";
+import { MethodList } from "./_components/method-list";
+import { MethodRow } from "./_components/method-row";
+import { ArrivalSteps, type ArrivalStepStatus } from "./_components/arrival-steps";
+
+const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
+
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = String(Math.floor(i / 2)).padStart(2, "0");
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${h}:${m}`;
+});
+
+interface AccessibilityGroup {
+  key: string;
+  label: string;
+  ids: readonly string[];
+}
+
+const ACCESSIBILITY_GROUPS: readonly AccessibilityGroup[] = [
+  {
+    key: "entrance",
+    label: "Entrada y recorrido",
+    ids: [
+      "ax.single_level_home",
+      "ax.step_free_guest_entrance",
+      "ax.guest_entrance_wide_81cm",
+      "ax.step_free_path_to_entrance",
+      "ax.accessible_parking_spot",
+    ],
+  },
+  {
+    key: "interior",
+    label: "Movilidad interior",
+    ids: ["ax.step_free_bedroom_access", "ax.bedroom_entrance_wide_81cm"],
+  },
+  {
+    key: "bathroom",
+    label: "Baño",
+    ids: [
+      "ax.step_free_bathroom_access",
+      "ax.bathroom_entrance_wide_81cm",
+      "ax.step_free_shower",
+      "ax.shower_grab_bar",
+      "ax.toilet_grab_bar",
+    ],
+  },
+  {
+    key: "equipment",
+    label: "Equipamiento",
+    ids: ["ax.shower_bath_chair", "ax.ceiling_mobile_hoist"],
+  },
+  {
+    key: "other",
+    label: "Otra característica",
+    ids: ["ax.other"],
+  },
+];
 
 function sameStringList(a: string[], b: string[]): boolean {
   if (a === b) return true;
@@ -26,115 +102,377 @@ function sameStringList(a: string[], b: string[]): boolean {
   return true;
 }
 
-const AUTONOMOUS_BUILDING_IDS = ["ba.portal_code", "ba.access_link", "ba.intercom_auto", "ba.lockbox", "ba.intercom_host", "ba.open_access"];
-const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
-
-function getBuildingOptions(autonomous: boolean): CheckboxCardOption[] {
-  const all = getItems(buildingAccessMethods);
-  const filtered = autonomous
-    ? all.filter((item) => AUTONOMOUS_BUILDING_IDS.includes(item.id) || item.id === "ba.other")
-    : all;
-  return filtered.map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
+function statusFor(
+  arr: string[],
+  customLabel: string | null | undefined,
+  customSentinel: string | null,
+  primary?: string | null,
+): SubsystemStatus {
+  if (arr.length === 0) return "empty";
+  // *.other selected without a custom label = layer is incomplete, not configured.
+  // Operator picked "Otro" but never typed the name → reality says "por completar".
+  if (customSentinel && arr.includes(customSentinel) && !customLabel?.trim())
+    return "pending";
+  // If the layer carries a primary concept and the stored primary is no longer
+  // among the selected methods (deselected without re-promotion), the layer
+  // is in an inconsistent state.
+  if (primary !== undefined && primary !== null && !arr.includes(primary))
+    return "pending";
+  return "configured";
 }
 
-function getUnitOptions(autonomous: boolean): CheckboxCardOption[] {
-  const all = getItems(accessMethods);
-  const filtered = autonomous
-    ? all.filter((item) => AUTONOMOUS_UNIT_IDS.includes(item.id) || item.id === "am.other")
-    : all;
-  return filtered.map((item) => ({ id: item.id, label: item.label, description: item.description, recommended: item.recommended }));
+// Wrap state updates that change item order in a View Transition so the rows
+// FLIP-animate to their new positions. flushSync is required so React commits
+// synchronously inside the transition callback (otherwise the new DOM would not
+// be ready when the browser captures the "after" snapshot).
+function withViewTransition(update: () => void): void {
+  if (
+    typeof document !== "undefined" &&
+    typeof (
+      document as Document & {
+        startViewTransition?: (cb: () => void) => unknown;
+      }
+    ).startViewTransition === "function"
+  ) {
+    (
+      document as Document & { startViewTransition: (cb: () => void) => unknown }
+    ).startViewTransition(() => {
+      flushSync(update);
+    });
+    return;
+  }
+  update();
 }
 
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const h = String(Math.floor(i / 2)).padStart(2, "0");
-  const m = i % 2 === 0 ? "00" : "30";
-  return `${h}:${m}`;
-});
+// Selected-first ordering for method rows. Within "selected", primary (if any)
+// goes first; the rest preserve taxonomy order. Within "unselected", taxonomy
+// order is preserved.
+function sortSelectedFirst<T extends { id: string }>(
+  items: readonly T[],
+  selected: readonly string[],
+  primary?: string | null,
+): T[] {
+  const sel = items.filter((it) => selected.includes(it.id));
+  const rest = items.filter((it) => !selected.includes(it.id));
+  if (!primary) return [...sel, ...rest];
+  const primaryItem = sel.filter((it) => it.id === primary);
+  const others = sel.filter((it) => it.id !== primary);
+  return [...primaryItem, ...others, ...rest];
+}
 
-const YES_NO_OPTIONS: RadioCardOption[] = [
-  { id: "yes", label: "Sí", description: "" },
-  { id: "no", label: "No", description: "" },
-];
+function truncate(s: string | null, n: number): string {
+  if (!s) return "";
+  return s.length > n ? `${s.slice(0, n - 1)}…` : s;
+}
 
-const PARKING_OPTIONS: CheckboxCardOption[] = getItems(parkingOptions).map((item) => ({
-  id: item.id,
-  label: item.label,
-  description: item.description,
-  recommended: item.recommended,
-}));
+function countWords(s: string | null): number {
+  if (!s) return 0;
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
 
-const ACCESSIBILITY_OPTIONS: CheckboxCardOption[] = getItems(accessibilityFeatures).map(
-  (item) => ({
-    id: item.id,
-    label: item.label,
-    description: item.description,
-    recommended: item.recommended,
-  }),
-);
+function stepStatus(hasContent: boolean, photoCount: number): ArrivalStepStatus {
+  if (hasContent && photoCount >= 1) return "done";
+  if (hasContent || photoCount >= 1) return "cur";
+  return "empty";
+}
+
+// ESC handler must NOT collapse the cockpit while the user is typing inside an
+// input/textarea/select/contenteditable — that would feel like the editor swallowed
+// their work. Restrict collapse-on-ESC to non-editable focus targets.
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
+}
 
 interface AccessFormProps {
   propertyId: string;
+  publicSlug: string | null;
+  streetAddress: string | null;
+  propertyMediaCount: number;
+  buildingPhotoCount: number;
+  unitPhotoCount: number;
+  parkingPhotoCount: number;
+  accessibilityPhotoCount: number;
+  legacyAccessPhotoCount: number;
   property: {
     checkInStart: string | null;
     checkInEnd: string | null;
     checkOutTime: string | null;
-    isAutonomousCheckin: boolean;
-    hasBuildingAccess: boolean;
-    buildingAccess: { methods: string[]; customLabel?: string | null; customDesc?: string | null } | null;
-    unitAccess: { methods: string[]; customLabel?: string | null; customDesc?: string | null } | null;
+    buildingAccess: {
+      methods: string[];
+      customLabel?: string | null;
+      customDesc?: string | null;
+      primary?: string | null;
+    } | null;
+    unitAccess: {
+      methods: string[];
+      customLabel?: string | null;
+      customDesc?: string | null;
+    } | null;
+    primaryUnitMethod: string | null;
     parkingTypes: string[];
+    parkingCustomLabel: string | null;
+    parkingCustomDesc: string | null;
+    parkingPrimary: string | null;
     accessibilityFeatures: string[];
+    accessibilityCustomLabel: string | null;
+    accessibilityCustomDesc: string | null;
   };
 }
 
-export function AccessForm({ propertyId, property: p }: AccessFormProps) {
-  const [isAutonomous, setIsAutonomous] = useState<string>(p.isAutonomousCheckin ? "yes" : "no");
-  const [hasBuildingAccess, setHasBuildingAccess] = useState<string>(p.hasBuildingAccess ? "yes" : "no");
-  const [buildingMethods, setBuildingMethods] = useState<string[]>(p.buildingAccess?.methods ?? []);
+export function AccessForm({
+  propertyId,
+  publicSlug,
+  streetAddress,
+  propertyMediaCount,
+  buildingPhotoCount,
+  unitPhotoCount,
+  parkingPhotoCount,
+  accessibilityPhotoCount,
+  legacyAccessPhotoCount,
+  property: p,
+}: AccessFormProps) {
+  const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
+  const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
+  const [checkOutTime, setCheckOutTime] = useState(p.checkOutTime ?? "11:00");
+  const [buildingMethods, setBuildingMethods] = useState<string[]>(
+    p.buildingAccess?.methods ?? [],
+  );
   const [unitMethods, setUnitMethods] = useState<string[]>(p.unitAccess?.methods ?? []);
   const [parkingTypes, setParkingTypes] = useState<string[]>(p.parkingTypes);
   const [axFeatures, setAxFeatures] = useState<string[]>(p.accessibilityFeatures);
-  const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
+  const [buildingCustomLabel, setBuildingCustomLabel] = useState(
+    p.buildingAccess?.customLabel ?? "",
+  );
+  const [buildingCustomDesc, setBuildingCustomDesc] = useState(
+    p.buildingAccess?.customDesc ?? "",
+  );
+  const [unitCustomLabel, setUnitCustomLabel] = useState(
+    p.unitAccess?.customLabel ?? "",
+  );
+  const [unitCustomDesc, setUnitCustomDesc] = useState(p.unitAccess?.customDesc ?? "");
+  const [parkingCustomLabel, setParkingCustomLabel] = useState(
+    p.parkingCustomLabel ?? "",
+  );
+  const [parkingCustomDesc, setParkingCustomDesc] = useState(
+    p.parkingCustomDesc ?? "",
+  );
+  const [axCustomLabel, setAxCustomLabel] = useState(
+    p.accessibilityCustomLabel ?? "",
+  );
+  const [axCustomDesc, setAxCustomDesc] = useState(
+    p.accessibilityCustomDesc ?? "",
+  );
+  // Primary marker per layer (NOT accessibility — a11y features are independent
+  // attributes, not a primary/secondary hierarchy). Stored as the user's
+  // explicit choice; the "effective" primary is derived against the current
+  // selected set so a deselected primary auto-falls-back to methods[0].
+  const [primaryBuilding, setPrimaryBuilding] = useState<string | null>(
+    p.buildingAccess?.primary ?? null,
+  );
+  const [primaryUnit, setPrimaryUnit] = useState<string | null>(
+    p.primaryUnitMethod ?? null,
+  );
+  const [primaryParking, setPrimaryParking] = useState<string | null>(
+    p.parkingPrimary ?? null,
+  );
 
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(saveAccessAction, null);
+  const [expandedCard, setExpandedCard] = useState<AccessCockpitId | null>(null);
 
-  const isDirty = isAutonomous !== (p.isAutonomousCheckin ? "yes" : "no") ||
-    hasBuildingAccess !== (p.hasBuildingAccess ? "yes" : "no") ||
+  // View Transitions API: morphs each card from idle position+size to expanded
+  // (and back) without flicker. Falls back to snap behavior if unsupported.
+  const setExpandedCardAnimated = useCallback((next: AccessCockpitId | null) => {
+    if (
+      typeof document !== "undefined" &&
+      typeof (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function"
+    ) {
+      (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+        flushSync(() => setExpandedCard(next));
+      });
+      return;
+    }
+    setExpandedCard(next);
+  }, []);
+
+  useEffect(() => {
+    if (!expandedCard) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (isEditableTarget(e.target)) return;
+      setExpandedCardAnimated(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expandedCard, setExpandedCardAnimated]);
+
+  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
+    saveAccessAction,
+    null,
+  );
+
+  const isAutonomousDerived =
+    unitMethods.length > 0 && unitMethods.every((m) => AUTONOMOUS_UNIT_IDS.includes(m));
+  const hasBuildingAccessDerived = buildingMethods.length > 0;
+
+  // Effective primary = user's explicit choice if still selected, else first
+  // selected method. The hidden form input emits this value, not raw state.
+  const effectivePrimaryBuilding =
+    buildingMethods.length === 0
+      ? null
+      : primaryBuilding && buildingMethods.includes(primaryBuilding)
+        ? primaryBuilding
+        : buildingMethods[0];
+  const effectivePrimaryUnit =
+    unitMethods.length === 0
+      ? null
+      : primaryUnit && unitMethods.includes(primaryUnit)
+        ? primaryUnit
+        : unitMethods[0];
+  const effectivePrimaryParking =
+    parkingTypes.length === 0
+      ? null
+      : primaryParking && parkingTypes.includes(primaryParking)
+        ? primaryParking
+        : parkingTypes[0];
+
+  const isDirty =
+    checkInStart !== (p.checkInStart ?? "16:00") ||
+    checkInEnd !== (p.checkInEnd ?? "22:00") ||
+    checkOutTime !== (p.checkOutTime ?? "11:00") ||
     !sameStringList(buildingMethods, p.buildingAccess?.methods ?? []) ||
     !sameStringList(unitMethods, p.unitAccess?.methods ?? []) ||
     !sameStringList(parkingTypes, p.parkingTypes) ||
     !sameStringList(axFeatures, p.accessibilityFeatures) ||
-    checkInEnd !== (p.checkInEnd ?? "22:00");
+    buildingCustomLabel !== (p.buildingAccess?.customLabel ?? "") ||
+    buildingCustomDesc !== (p.buildingAccess?.customDesc ?? "") ||
+    unitCustomLabel !== (p.unitAccess?.customLabel ?? "") ||
+    unitCustomDesc !== (p.unitAccess?.customDesc ?? "") ||
+    parkingCustomLabel !== (p.parkingCustomLabel ?? "") ||
+    parkingCustomDesc !== (p.parkingCustomDesc ?? "") ||
+    axCustomLabel !== (p.accessibilityCustomLabel ?? "") ||
+    axCustomDesc !== (p.accessibilityCustomDesc ?? "") ||
+    effectivePrimaryBuilding !== (p.buildingAccess?.primary ?? null) ||
+    effectivePrimaryUnit !== (p.primaryUnitMethod ?? null) ||
+    effectivePrimaryParking !== (p.parkingPrimary ?? null);
 
-  const autonomousMode = isAutonomous === "yes";
-  const showBuilding = hasBuildingAccess === "yes";
-  const buildingOptions = getBuildingOptions(autonomousMode);
-  const unitOptions = getUnitOptions(autonomousMode);
-
-  function handleAutonomousChange(val: string) {
-    setIsAutonomous(val);
-    if (val === "yes") setCheckInEnd("flexible");
-  }
-
-  const checkInLabel = p.checkInStart ?? "—";
-  const checkOutLabel = p.checkOutTime ?? "—";
-  const checkInRangeText = p.checkInStart
-    ? `A partir de las ${p.checkInStart}${checkInEnd === "flexible" ? ", sin hora límite" : `, hasta las ${checkInEnd}`}`
+  const checkInRangeText = checkInStart
+    ? `A partir de las ${checkInStart}${checkInEnd === "flexible" ? ", sin hora límite" : `, hasta las ${checkInEnd}`}`
     : "Define un horario para que el huésped sepa cuándo puede llegar.";
-  const arrivalBigHour = p.checkInStart ? p.checkInStart.split(":")[0] : "—";
-  const arrivalBigMin = p.checkInStart ? p.checkInStart.split(":")[1] : "";
+  const arrivalBigHour = checkInStart.split(":")[0];
+  const arrivalBigMin = checkInStart.split(":")[1];
 
-  const status: "saving" | "saved" | "error" = pending ? "saving" : state?.error ? "error" : "saved";
+  const status: "saving" | "saved" | "error" = pending
+    ? "saving"
+    : state?.error
+      ? "error"
+      : "saved";
+
+  const allBuilding = getItems(buildingAccessMethods);
+  const allUnit = getItems(accessMethods);
+  const allParking = getItems(parkingOptions);
+
+  const toggleMember = useCallback(
+    <T,>(arr: T[], setArr: (next: T[]) => void, item: T) => {
+      const idx = arr.indexOf(item);
+      const next = idx === -1 ? [...arr, item] : arr.filter((_, i) => i !== idx);
+      withViewTransition(() => setArr(next));
+    },
+    [],
+  );
+
+  const buildingStatus = statusFor(
+    buildingMethods,
+    buildingCustomLabel,
+    "ba.other",
+    effectivePrimaryBuilding,
+  );
+  const unitStatus = statusFor(
+    unitMethods,
+    unitCustomLabel,
+    "am.other",
+    effectivePrimaryUnit,
+  );
+  const parkingStatus = statusFor(
+    parkingTypes,
+    parkingCustomLabel,
+    "pk.other",
+    effectivePrimaryParking,
+  );
+  const axStatus = statusFor(axFeatures, axCustomLabel, "ax.other");
+
+  // Selected items per layer — drives the collapsed-card icon strip.
+  // Order is the operator's selection order; the SubsystemCard re-orders to
+  // primary-first internally and pages the rest into a HoverReveal.
+  const buildingItems = buildingMethods
+    .map((id) => {
+      const item = findItem(buildingAccessMethods, id);
+      if (!item) return null;
+      return { id, icon: buildingIconFor(id), label: item.label };
+    })
+    .filter((it): it is { id: string; icon: ReturnType<typeof buildingIconFor>; label: string } => it !== null);
+  const unitItems = unitMethods
+    .map((id) => {
+      const item = findItem(accessMethods, id);
+      if (!item) return null;
+      return { id, icon: unitIconFor(id), label: item.label };
+    })
+    .filter((it): it is { id: string; icon: ReturnType<typeof unitIconFor>; label: string } => it !== null);
+  const parkingItems = parkingTypes
+    .map((id) => {
+      const item = findItem(parkingOptions, id);
+      if (!item) return null;
+      return { id, icon: parkingIconFor(id), label: item.label };
+    })
+    .filter((it): it is { id: string; icon: ReturnType<typeof parkingIconFor>; label: string } => it !== null);
+  const axItems = axFeatures
+    .map((id) => {
+      const item = findItem(accessibilityFeatures, id);
+      if (!item) return null;
+      return { id, icon: accessibilityIconFor(id), label: item.label };
+    })
+    .filter((it): it is { id: string; icon: ReturnType<typeof accessibilityIconFor>; label: string } => it !== null);
+
+  const accessMethodMediaCount =
+    buildingPhotoCount + unitPhotoCount + legacyAccessPhotoCount;
+
+  const step1HasContent = Boolean(streetAddress && streetAddress.trim().length >= 10);
+  const step2HasContent = buildingMethods.length > 0;
+  const step3HasContent = unitMethods.length > 0;
+
+  const buildingMethodsText =
+    buildingMethods.length > 0
+      ? buildingMethods
+          .map((id) => findItem(buildingAccessMethods, id)?.label)
+          .filter(Boolean)
+          .join(" · ")
+      : "Sin redactar — describe cómo entrar al portal o edificio.";
+  const unitMethodsText =
+    unitMethods.length > 0
+      ? unitMethods
+          .map((id) => findItem(accessMethods, id)?.label)
+          .filter(Boolean)
+          .join(" · ")
+      : "Sin redactar — describe cómo abrir la puerta del piso.";
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <PageHeader
         eyebrow="Propiedad · Llegada"
         title="Llegada y acceso"
         description="La hora más frágil de toda la estancia. Documenta aquí cómo llegan, cómo entran y qué hacer en los primeros minutos."
         actions={
           <>
-            <ButtonLink href={`/properties/${propertyId}`} variant="secondary" size="md">
+            <ButtonLink
+              href={`/properties/${propertyId}`}
+              variant="secondary"
+              size="md"
+            >
               <ArrowLeft size={14} aria-hidden="true" />
               Volver
             </ButtonLink>
@@ -145,22 +483,108 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
         }
         chips={
           <>
-            <PageHeaderChip icon={Clock4} label="Check-in" value={checkInLabel} />
-            <PageHeaderChip icon={Clock} label="Check-out" value={checkOutLabel} />
-            <PageHeaderChip icon={Key} label={isAutonomous === "yes" ? "Entrada autónoma" : "Entrada con anfitrión"} />
-            <PageHeaderChip icon={MapPin} label={hasBuildingAccess === "yes" ? "Edificio cerrado" : "Acceso directo"} />
+            <PageHeaderChip icon={Clock4} label="Check-in" value={checkInStart} />
+            <PageHeaderChip icon={Clock} label="Check-out" value={checkOutTime} />
+            {isAutonomousDerived && (
+              <PageHeaderChip icon={Key} label="Entrada autónoma" />
+            )}
+            {hasBuildingAccessDerived && (
+              <PageHeaderChip icon={MapPin} label="Edificio cerrado" />
+            )}
           </>
         }
       />
 
       <form action={formAction} className="space-y-2">
         <input type="hidden" name="propertyId" value={propertyId} />
-        <input type="hidden" name="isAutonomousCheckin" value={isAutonomous === "yes" ? "true" : "false"} />
-        <input type="hidden" name="hasBuildingAccess" value={hasBuildingAccess === "yes" ? "true" : "false"} />
-        {buildingMethods.map((m) => <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />)}
-        {unitMethods.map((m) => <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />)}
-        {parkingTypes.map((m) => <input key={`pk-${m}`} type="hidden" name="parkingTypes" value={m} />)}
-        {axFeatures.map((m) => <input key={`ax-${m}`} type="hidden" name="accessibilityFeatures" value={m} />)}
+        <input
+          type="hidden"
+          name="isAutonomousCheckin"
+          value={isAutonomousDerived ? "true" : "false"}
+        />
+        <input
+          type="hidden"
+          name="hasBuildingAccess"
+          value={hasBuildingAccessDerived ? "true" : "false"}
+        />
+        {buildingMethods.map((m) => (
+          <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />
+        ))}
+        {unitMethods.map((m) => (
+          <input key={`um-${m}`} type="hidden" name="unitMethods" value={m} />
+        ))}
+        {parkingTypes.map((m) => (
+          <input key={`pk-${m}`} type="hidden" name="parkingTypes" value={m} />
+        ))}
+        {axFeatures.map((m) => (
+          <input key={`ax-${m}`} type="hidden" name="accessibilityFeatures" value={m} />
+        ))}
+        <input type="hidden" name="checkInStart" value={checkInStart} />
+        <input type="hidden" name="checkInEnd" value={checkInEnd} />
+        <input type="hidden" name="checkOutTime" value={checkOutTime} />
+        <input
+          type="hidden"
+          name="primaryBuildingMethod"
+          value={effectivePrimaryBuilding ?? ""}
+        />
+        <input
+          type="hidden"
+          name="primaryUnitMethod"
+          value={effectivePrimaryUnit ?? ""}
+        />
+        <input
+          type="hidden"
+          name="primaryParkingMethod"
+          value={effectivePrimaryParking ?? ""}
+        />
+        {buildingMethods.includes("ba.other") && (
+          <>
+            <input
+              type="hidden"
+              name="buildingCustomLabel"
+              value={buildingCustomLabel}
+            />
+            <input
+              type="hidden"
+              name="buildingCustomDesc"
+              value={buildingCustomDesc}
+            />
+          </>
+        )}
+        {unitMethods.includes("am.other") && (
+          <>
+            <input type="hidden" name="unitCustomLabel" value={unitCustomLabel} />
+            <input type="hidden" name="unitCustomDesc" value={unitCustomDesc} />
+          </>
+        )}
+        {parkingTypes.includes("pk.other") && (
+          <>
+            <input
+              type="hidden"
+              name="parkingCustomLabel"
+              value={parkingCustomLabel}
+            />
+            <input
+              type="hidden"
+              name="parkingCustomDesc"
+              value={parkingCustomDesc}
+            />
+          </>
+        )}
+        {axFeatures.includes("ax.other") && (
+          <>
+            <input
+              type="hidden"
+              name="accessibilityCustomLabel"
+              value={axCustomLabel}
+            />
+            <input
+              type="hidden"
+              name="accessibilityCustomDesc"
+              value={axCustomDesc}
+            />
+          </>
+        )}
 
         <NumberedSection number="01" title="Horarios">
           <div className="mb-4 grid grid-cols-[auto_1fr] items-center gap-5 rounded-[16px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
@@ -172,7 +596,9 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
               <span>
                 {arrivalBigHour}
                 {arrivalBigMin && (
-                  <span className="ml-0.5 align-super text-[14px] font-medium opacity-70">:{arrivalBigMin}</span>
+                  <span className="ml-0.5 align-super text-[14px] font-medium opacity-70">
+                    :{arrivalBigMin}
+                  </span>
                 )}
               </span>
             </div>
@@ -184,113 +610,566 @@ export function AccessForm({ propertyId, property: p }: AccessFormProps) {
                 {checkInRangeText}
               </div>
               <div className="mt-1 max-w-[60ch] text-[13px] leading-[1.5] text-[var(--color-text-secondary)]">
-                {autonomousMode
+                {isAutonomousDerived
                   ? "El huésped puede entrar solo. Las llegadas tardías reciben las instrucciones por chat."
-                  : "Coordina la llegada con el huésped — alguien estará en la propiedad para recibirle."}
+                  : hasBuildingAccessDerived
+                    ? "Acceso a través de un edificio o recinto cerrado — coordina la llegada con el huésped."
+                    : "Coordina la llegada con el huésped — alguien estará en la propiedad para recibirle."}
               </div>
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="block">
-              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-in desde *</span>
-              <select name="checkInStart" required defaultValue={p.checkInStart ?? "16:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+              <span className="text-[12px] text-[var(--color-text-secondary)]">
+                Check-in desde *
+              </span>
+              <select
+                value={checkInStart}
+                onChange={(e) => setCheckInStart(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none"
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="block">
-              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-in hasta *</span>
-              <select name="checkInEnd" required value={checkInEnd} onChange={(e) => setCheckInEnd(e.target.value)} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
+              <span className="text-[12px] text-[var(--color-text-secondary)]">
+                Check-in hasta *
+              </span>
+              <select
+                value={checkInEnd}
+                onChange={(e) => setCheckInEnd(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none"
+              >
                 <option value="flexible">Sin límite (flexible)</option>
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="block">
-              <span className="text-[12px] text-[var(--color-text-secondary)]">Check-out *</span>
-              <select name="checkOutTime" required defaultValue={p.checkOutTime ?? "11:00"} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none">
-                {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+              <span className="text-[12px] text-[var(--color-text-secondary)]">
+                Check-out *
+              </span>
+              <select
+                value={checkOutTime}
+                onChange={(e) => setCheckOutTime(e.target.value)}
+                required
+                className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm focus:border-[var(--color-action-primary)] focus:outline-none"
+              >
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
         </NumberedSection>
 
-        <NumberedSection number="02" title="Modo de acceso">
-          <div className="space-y-4">
-            <div>
-              <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-primary)]">
-                ¿El acceso es completamente autónomo?
-                <InfoTooltip text="Un acceso completamente autónomo significa que el huésped puede entrar sin necesitar a nadie presente: mediante código, cerradura digital, caja de llaves, etc." />
-              </h3>
-              <RadioCardGroup name="_autonomousQ" options={YES_NO_OPTIONS} value={isAutonomous} onChange={handleAutonomousChange} showRecommended={false} />
-            </div>
-            <div>
-              <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[var(--color-text-primary)]">
-                ¿La propiedad está dentro de un recinto, edificio o comunidad cerrada?
-                <InfoTooltip text="Si el huésped necesita pasar por un portal, puerta de comunidad o recinto antes de llegar a la vivienda, selecciona Sí." />
-              </h3>
-              <RadioCardGroup name="_buildingQ" options={YES_NO_OPTIONS} value={hasBuildingAccess} onChange={setHasBuildingAccess} showRecommended={false} />
-            </div>
-          </div>
-        </NumberedSection>
-
-        <NumberedSection number="03" title="Método de acceso">
-          <div className="space-y-5">
-            {showBuilding && (
-              <div>
-                <h3 className="mb-2 text-[13px] font-semibold text-[var(--color-text-primary)]">Acceso al edificio o recinto</h3>
-                <CheckboxCardGroup name="_buildingMethods" options={buildingOptions} value={buildingMethods} onChange={setBuildingMethods} />
-                {buildingMethods.includes("ba.other") && (
-                  <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-                    <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="buildingCustomLabel" type="text" defaultValue={p.buildingAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
-                    <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="buildingCustomDesc" rows={2} defaultValue={p.buildingAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
-                  </div>
-                )}
-              </div>
-            )}
-            <div>
-              <h3 className="mb-2 text-[13px] font-semibold text-[var(--color-text-primary)]">Acceso a la vivienda</h3>
-              <CheckboxCardGroup name="_unitMethods" options={unitOptions} value={unitMethods} onChange={setUnitMethods} />
-              {unitMethods.includes("am.other") && (
-                <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-                  <label className="block"><span className="text-sm font-medium">Nombre del método *</span><input name="unitCustomLabel" type="text" defaultValue={p.unitAccess?.customLabel ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
-                  <label className="block"><span className="text-sm font-medium">Descripción</span><textarea name="unitCustomDesc" rows={2} defaultValue={p.unitAccess?.customDesc ?? ""} className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm" /></label>
-                </div>
-              )}
-            </div>
-          </div>
-        </NumberedSection>
-
-        <NumberedSection number="04" title="Aparcamiento">
-          <CheckboxCardGroup name="_parkingTypes" options={PARKING_OPTIONS} value={parkingTypes} onChange={setParkingTypes} />
-        </NumberedSection>
-
-        <NumberedSection number="05" title="Accesibilidad">
+        <NumberedSection number="02" title="Acceso">
           <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
-            Selecciona las características de accesibilidad de la entrada y zonas comunes. Las adaptaciones dentro de baños y dormitorios se configuran en cada espacio.
+            Pulsa una tarjeta para revisar o modificar.
           </p>
-          <CheckboxCardGroup name="_axFeatures" options={ACCESSIBILITY_OPTIONS} value={axFeatures} onChange={setAxFeatures} />
-        </NumberedSection>
-
-        <NumberedSection number="06" title="Fotos del acceso">
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
-            <EntityGallery
-              propertyId={propertyId}
-              entityType="access_method"
-              entityId={propertyId}
-              label="Fotos del acceso"
-              defaultCollapsed={false}
-            />
-            <p className="mt-2 text-[12px] text-[var(--color-text-muted)]">
-              Fotos del portal, cerradura, caja de llaves, camino de entrada, etc.
-            </p>
+          <div className="[--cockpit-cols:1] sm:[--cockpit-cols:2] xl:[--cockpit-cols:4]">
+            <CockpitGrid expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
+              {(id, role) => {
+                const cardId = id as AccessCockpitId;
+                if (cardId === "building") {
+                  return (
+                    <SubsystemCard
+                      role={role}
+                      icon={SUBSYSTEM_HEADER_ICONS.building}
+                      title="Edificio"
+                      selectedItems={buildingItems}
+                      primaryId={effectivePrimaryBuilding}
+                      photoCount={buildingPhotoCount}
+                      status={buildingStatus}
+                      emptyHintIcon={MapPin}
+                      emptyHintLabel="Pulsa para añadir →"
+                      cockpitId="building"
+                      onExpand={() => setExpandedCardAnimated("building")}
+                      onCollapse={() => setExpandedCardAnimated(null)}
+                      expandedSubtitle="Métodos para entrar al portal, recinto o comunidad. Si la vivienda no está dentro de un edificio cerrado, deja esta sección vacía."
+                    >
+                      <BuildingPanel
+                        allBuilding={allBuilding}
+                        buildingMethods={buildingMethods}
+                        setBuildingMethods={setBuildingMethods}
+                        buildingCustomLabel={buildingCustomLabel}
+                        setBuildingCustomLabel={setBuildingCustomLabel}
+                        buildingCustomDesc={buildingCustomDesc}
+                        setBuildingCustomDesc={setBuildingCustomDesc}
+                        toggleMember={toggleMember}
+                        propertyId={propertyId}
+                        primary={effectivePrimaryBuilding}
+                        setPrimary={setPrimaryBuilding}
+                      />
+                    </SubsystemCard>
+                  );
+                }
+                if (cardId === "unit") {
+                  return (
+                    <SubsystemCard
+                      role={role}
+                      icon={SUBSYSTEM_HEADER_ICONS.unit}
+                      title="Vivienda"
+                      selectedItems={unitItems}
+                      primaryId={effectivePrimaryUnit}
+                      photoCount={unitPhotoCount}
+                      status={unitStatus}
+                      emptyHintIcon={Key}
+                      emptyHintLabel="Pulsa para añadir →"
+                      cockpitId="unit"
+                      onExpand={() => setExpandedCardAnimated("unit")}
+                      onCollapse={() => setExpandedCardAnimated(null)}
+                      expandedSubtitle="Métodos para abrir la puerta del piso o casa."
+                    >
+                      <UnitPanel
+                        allUnit={allUnit}
+                        unitMethods={unitMethods}
+                        setUnitMethods={setUnitMethods}
+                        unitCustomLabel={unitCustomLabel}
+                        setUnitCustomLabel={setUnitCustomLabel}
+                        unitCustomDesc={unitCustomDesc}
+                        setUnitCustomDesc={setUnitCustomDesc}
+                        toggleMember={toggleMember}
+                        propertyId={propertyId}
+                        legacyCount={legacyAccessPhotoCount}
+                        primary={effectivePrimaryUnit}
+                        setPrimary={setPrimaryUnit}
+                      />
+                    </SubsystemCard>
+                  );
+                }
+                if (cardId === "parking") {
+                  return (
+                    <SubsystemCard
+                      role={role}
+                      icon={SUBSYSTEM_HEADER_ICONS.parking}
+                      title="Aparcamiento"
+                      selectedItems={parkingItems}
+                      primaryId={effectivePrimaryParking}
+                      photoCount={parkingPhotoCount}
+                      status={parkingStatus}
+                      emptyHintIcon={MapPin}
+                      emptyHintLabel="Pulsa para añadir →"
+                      cockpitId="parking"
+                      onExpand={() => setExpandedCardAnimated("parking")}
+                      onCollapse={() => setExpandedCardAnimated(null)}
+                      expandedSubtitle="Tipos de aparcamiento disponibles para el huésped."
+                    >
+                      <ParkingPanel
+                        allParking={allParking}
+                        parkingTypes={parkingTypes}
+                        setParkingTypes={setParkingTypes}
+                        parkingCustomLabel={parkingCustomLabel}
+                        setParkingCustomLabel={setParkingCustomLabel}
+                        parkingCustomDesc={parkingCustomDesc}
+                        setParkingCustomDesc={setParkingCustomDesc}
+                        toggleMember={toggleMember}
+                        propertyId={propertyId}
+                        primary={effectivePrimaryParking}
+                        setPrimary={setPrimaryParking}
+                      />
+                    </SubsystemCard>
+                  );
+                }
+                return (
+                  <SubsystemCard
+                    role={role}
+                    icon={SUBSYSTEM_HEADER_ICONS.accessibility}
+                    title="Accesibilidad"
+                    selectedItems={axItems}
+                    primaryId={null}
+                    photoCount={accessibilityPhotoCount}
+                    status={axStatus}
+                    emptyHintIcon={MapPin}
+                    emptyHintLabel="Pulsa para añadir →"
+                    cockpitId="accessibility"
+                      onExpand={() => setExpandedCardAnimated("accessibility")}
+                    onCollapse={() => setExpandedCardAnimated(null)}
+                    expandedSubtitle="Características de accesibilidad de la entrada y zonas comunes. Las adaptaciones internas se configuran en cada espacio."
+                  >
+                    <AccessibilityPanel
+                      axFeatures={axFeatures}
+                      setAxFeatures={setAxFeatures}
+                      axCustomLabel={axCustomLabel}
+                      setAxCustomLabel={setAxCustomLabel}
+                      axCustomDesc={axCustomDesc}
+                      setAxCustomDesc={setAxCustomDesc}
+                      toggleMember={toggleMember}
+                      propertyId={propertyId}
+                    />
+                  </SubsystemCard>
+                );
+              }}
+            </CockpitGrid>
           </div>
         </NumberedSection>
 
-        {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
+        <NumberedSection
+          number="03"
+          title="Pasos de llegada"
+          action={
+            publicSlug && (
+              <TextLink href={`/g/${publicSlug}/preview`} size="sm" arrow>
+                Previsualizar guía
+              </TextLink>
+            )
+          }
+        >
+          <ArrivalSteps
+            items={[
+              {
+                id: "step-1",
+                num: "Paso 1",
+                title: "Cómo llegar",
+                body: streetAddress
+                  ? truncate(streetAddress, 140)
+                  : "Sin redactar — añade la dirección de la propiedad para que el huésped sepa cómo llegar.",
+                status: stepStatus(step1HasContent, propertyMediaCount),
+                meta: [
+                  {
+                    icon: FileText,
+                    label: `${countWords(streetAddress)} palabras`,
+                  },
+                  {
+                    icon: Camera,
+                    label: `${propertyMediaCount} ${propertyMediaCount === 1 ? "foto" : "fotos"}`,
+                  },
+                ],
+              },
+              {
+                id: "step-2",
+                num: "Paso 2",
+                title: "Entrada al edificio",
+                body: buildingMethodsText,
+                status: stepStatus(step2HasContent, buildingPhotoCount),
+                meta: [
+                  {
+                    icon: Camera,
+                    label: `${buildingPhotoCount} ${buildingPhotoCount === 1 ? "foto" : "fotos"}`,
+                  },
+                ],
+              },
+              {
+                id: "step-3",
+                num: "Paso 3",
+                title: "Abrir la puerta del piso",
+                body: unitMethodsText,
+                status: stepStatus(step3HasContent, unitPhotoCount),
+                meta: [
+                  {
+                    icon: Camera,
+                    label: `${accessMethodMediaCount} ${accessMethodMediaCount === 1 ? "foto" : "fotos"}`,
+                  },
+                ],
+              },
+            ]}
+          />
+        </NumberedSection>
 
-        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50">
+        {state?.error && (
+          <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={pending || !isDirty}
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
+        >
           {pending ? "Guardando…" : "Guardar cambios"}
         </button>
       </form>
     </div>
   );
 }
+
+// ── Sub-card panels (rendered inside SubsystemCard's expanded body) ──
+
+interface BuildingPanelProps {
+  allBuilding: ReturnType<typeof getItems>;
+  buildingMethods: string[];
+  setBuildingMethods: (next: string[]) => void;
+  buildingCustomLabel: string;
+  setBuildingCustomLabel: (s: string) => void;
+  buildingCustomDesc: string;
+  setBuildingCustomDesc: (s: string) => void;
+  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
+  propertyId: string;
+  primary: string | null;
+  setPrimary: (id: string | null) => void;
+}
+
+function BuildingPanel({
+  allBuilding,
+  buildingMethods,
+  setBuildingMethods,
+  buildingCustomLabel,
+  setBuildingCustomLabel,
+  buildingCustomDesc,
+  setBuildingCustomDesc,
+  toggleMember,
+  propertyId,
+  primary,
+  setPrimary,
+}: BuildingPanelProps) {
+  const sortedBuilding = sortSelectedFirst(allBuilding, buildingMethods, primary);
+  return (
+    <div className="space-y-4">
+      <MethodList>
+        {sortedBuilding.map((item) => (
+          <MethodRow
+            key={item.id}
+            id={item.id}
+            icon={buildingIconFor(item.id)}
+            name={item.label}
+            description={item.description}
+            selected={buildingMethods.includes(item.id)}
+            recommended={item.recommended}
+            onClick={() => toggleMember(buildingMethods, setBuildingMethods, item.id)}
+            isOther={item.id === "ba.other"}
+            customLabel={buildingCustomLabel}
+            customDesc={buildingCustomDesc}
+            onCustomLabelChange={setBuildingCustomLabel}
+            onCustomDescChange={setBuildingCustomDesc}
+            isPrimary={primary === item.id}
+            onMakePrimary={() => setPrimary(item.id)}
+          />
+        ))}
+      </MethodList>
+      <EntityGallery
+        propertyId={propertyId}
+        entityType="access_method"
+        entityId={propertyId}
+        usageKey={ACCESS_USAGE_KEYS.building}
+        label="Fotos del edificio"
+        defaultCollapsed
+      />
+    </div>
+  );
+}
+
+interface UnitPanelProps {
+  allUnit: ReturnType<typeof getItems>;
+  unitMethods: string[];
+  setUnitMethods: (next: string[]) => void;
+  unitCustomLabel: string;
+  setUnitCustomLabel: (s: string) => void;
+  unitCustomDesc: string;
+  setUnitCustomDesc: (s: string) => void;
+  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
+  propertyId: string;
+  legacyCount: number;
+  primary: string | null;
+  setPrimary: (id: string | null) => void;
+}
+
+function UnitPanel({
+  allUnit,
+  unitMethods,
+  setUnitMethods,
+  unitCustomLabel,
+  setUnitCustomLabel,
+  unitCustomDesc,
+  setUnitCustomDesc,
+  toggleMember,
+  propertyId,
+  legacyCount,
+  primary,
+  setPrimary,
+}: UnitPanelProps) {
+  const sortedUnit = sortSelectedFirst(allUnit, unitMethods, primary);
+  return (
+    <div className="space-y-4">
+      <MethodList>
+        {sortedUnit.map((item) => (
+          <MethodRow
+            key={item.id}
+            id={item.id}
+            icon={unitIconFor(item.id)}
+            name={item.label}
+            description={item.description}
+            selected={unitMethods.includes(item.id)}
+            recommended={item.recommended}
+            onClick={() => toggleMember(unitMethods, setUnitMethods, item.id)}
+            isOther={item.id === "am.other"}
+            customLabel={unitCustomLabel}
+            customDesc={unitCustomDesc}
+            onCustomLabelChange={setUnitCustomLabel}
+            onCustomDescChange={setUnitCustomDesc}
+            isPrimary={primary === item.id}
+            onMakePrimary={() => setPrimary(item.id)}
+          />
+        ))}
+      </MethodList>
+      <EntityGallery
+        propertyId={propertyId}
+        entityType="access_method"
+        entityId={propertyId}
+        usageKey={ACCESS_USAGE_KEYS.unit}
+        label="Fotos de la vivienda"
+        defaultCollapsed
+      />
+      {legacyCount > 0 && (
+        <details className="rounded-[12px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-3">
+          <summary className="cursor-pointer text-[12px] font-medium text-[var(--color-text-secondary)]">
+            Fotos sin clasificar ({legacyCount})
+          </summary>
+          <div className="mt-3">
+            <EntityGallery
+              propertyId={propertyId}
+              entityType="access_method"
+              entityId={propertyId}
+              usageKey={null}
+              uploadDisabled
+              compact
+            />
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
+interface ParkingPanelProps {
+  allParking: ReturnType<typeof getItems>;
+  parkingTypes: string[];
+  setParkingTypes: (next: string[]) => void;
+  parkingCustomLabel: string;
+  setParkingCustomLabel: (s: string) => void;
+  parkingCustomDesc: string;
+  setParkingCustomDesc: (s: string) => void;
+  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
+  propertyId: string;
+  primary: string | null;
+  setPrimary: (id: string | null) => void;
+}
+
+function ParkingPanel({
+  allParking,
+  parkingTypes,
+  setParkingTypes,
+  parkingCustomLabel,
+  setParkingCustomLabel,
+  parkingCustomDesc,
+  setParkingCustomDesc,
+  toggleMember,
+  propertyId,
+  primary,
+  setPrimary,
+}: ParkingPanelProps) {
+  const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
+  return (
+    <div className="space-y-4">
+      <MethodList>
+        {sortedParking.map((item) => (
+          <MethodRow
+            key={item.id}
+            id={item.id}
+            icon={parkingIconFor(item.id)}
+            name={item.label}
+            description={item.description}
+            selected={parkingTypes.includes(item.id)}
+            recommended={item.recommended}
+            onClick={() => toggleMember(parkingTypes, setParkingTypes, item.id)}
+            isOther={item.id === "pk.other"}
+            customLabel={parkingCustomLabel}
+            customDesc={parkingCustomDesc}
+            onCustomLabelChange={setParkingCustomLabel}
+            onCustomDescChange={setParkingCustomDesc}
+            isPrimary={primary === item.id}
+            onMakePrimary={() => setPrimary(item.id)}
+          />
+        ))}
+      </MethodList>
+      <EntityGallery
+        propertyId={propertyId}
+        entityType="access_method"
+        entityId={propertyId}
+        usageKey={ACCESS_USAGE_KEYS.parking}
+        label="Fotos del aparcamiento"
+        defaultCollapsed
+      />
+    </div>
+  );
+}
+
+interface AccessibilityPanelProps {
+  axFeatures: string[];
+  setAxFeatures: (next: string[]) => void;
+  axCustomLabel: string;
+  setAxCustomLabel: (s: string) => void;
+  axCustomDesc: string;
+  setAxCustomDesc: (s: string) => void;
+  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
+  propertyId: string;
+}
+
+function AccessibilityPanel({
+  axFeatures,
+  setAxFeatures,
+  axCustomLabel,
+  setAxCustomLabel,
+  axCustomDesc,
+  setAxCustomDesc,
+  toggleMember,
+  propertyId,
+}: AccessibilityPanelProps) {
+  return (
+    <div className="space-y-5">
+      {ACCESSIBILITY_GROUPS.map((group) => {
+        const sortedIds = [
+          ...group.ids.filter((id) => axFeatures.includes(id)),
+          ...group.ids.filter((id) => !axFeatures.includes(id)),
+        ];
+        return (
+          <div key={group.key}>
+            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+              {group.label}
+            </h4>
+            <MethodList>
+              {sortedIds.map((id) => {
+                const item = findItem(accessibilityFeatures, id);
+                if (!item) return null;
+                return (
+                  <MethodRow
+                    key={id}
+                    id={id}
+                    icon={accessibilityIconFor(id)}
+                    name={item.label}
+                    description={item.description}
+                    selected={axFeatures.includes(id)}
+                    onClick={() => toggleMember(axFeatures, setAxFeatures, id)}
+                    isOther={id === "ax.other"}
+                    customLabel={axCustomLabel}
+                    customDesc={axCustomDesc}
+                    onCustomLabelChange={setAxCustomLabel}
+                    onCustomDescChange={setAxCustomDesc}
+                  />
+                );
+              })}
+            </MethodList>
+          </div>
+        );
+      })}
+      <EntityGallery
+        propertyId={propertyId}
+        entityType="access_method"
+        entityId={propertyId}
+        usageKey={ACCESS_USAGE_KEYS.accessibility}
+        label="Fotos de accesibilidad"
+        defaultCollapsed
+      />
+    </div>
+  );
+}
+

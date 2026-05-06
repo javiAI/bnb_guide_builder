@@ -224,40 +224,94 @@ Skill: `frontend-design`. Output structured per `frontend-design` SKILL.md templ
 | `--accent-on` | `--color-action-primary-fg` |
 | `--moss-500` | `--color-status-success-text` |
 
-##### Parity audit verdict — `access/`
+##### Parity audit verdict — `access/` (v3.2.1, post-cockpit refactor)
 
 Audited surface: [src/app/properties/[propertyId]/access/access-form.tsx](../src/app/properties/[propertyId]/access/access-form.tsx)
-Kit reference: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` § `page-llegada` (lines 848–947).
+Plus components: [cockpit-grid.tsx](../src/app/properties/[propertyId]/access/_components/cockpit-grid.tsx), [subsystem-card.tsx](../src/app/properties/[propertyId]/access/_components/subsystem-card.tsx), [method-row.tsx](../src/app/properties/[propertyId]/access/_components/method-row.tsx), [method-list.tsx](../src/app/properties/[propertyId]/access/_components/method-list.tsx), [arrival-steps.tsx](../src/app/properties/[propertyId]/access/_components/arrival-steps.tsx).
+Icon mapping: [src/lib/icons/access-icons.ts](../src/lib/icons/access-icons.ts).
+Kit reference: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` § `page-llegada`.
+
+**v3.2.1 changes vs v2 baseline** (cockpit + scoped photos):
+- 4-card responsive cockpit (1×4 xl / 2×2 sm-lg / 1×4 vertical mobile) with explicit 4-phase state machine (`collapsed → fading-out → expanded → fading-in`) and `layoutExpanded` flag separated from fade phases — siblings fade within collapsed layout before grid transitions to expanded, no jank.
+- Vertical `<MethodList>` of `<MethodRow aria-pressed>` replaces 3-col `<MethodGrid>` of `<MethodCard role=checkbox>`. 56-min hit area baked.
+- Canonical Lucide icon mapping in `access-icons.ts` (4 records: building / unit / parking / accessibility) with local coverage test (no global allowlist).
+- Photos scoped per subsystem via `usageKey` (`access.building`, `access.unit`, `access.parking`, `access.accessibility`). Each card's expanded body shows a filtered `<EntityGallery>`.
+- Legacy unscoped photos surfaced in a "Sin clasificar" delete-only section inside the unit card (no `<UploadDropzone>` rendered — uploads to the null bucket are not meaningful).
+- ESC handler with `isEditableTarget` guard collapses the active card unless focus is inside an `<input>` / `<textarea>` / `<select>` / `contentEditable`.
+- Arrival-steps (Section 03) ports to a 3-step timeline using derived `streetAddress + buildingMethods + unitMethods` content + photo counts.
 
 | Criterion | Score | Notes |
 |-----------|------:|-------|
-| 1. Layout silhouette | 8.5 | `pg` header → numbered sections → arrival-hero composition match. Adds 04 Aparcamiento / 05 Accesibilidad / 06 Fotos as functional necessities not present in kit silhouette. Kit § 03 Pasos de llegada omitted (aspirational, lives in `guest-guide/`, requires backend `arrival_steps` field — documented in §-1 contract). |
-| 2. Visual hierarchy | 9.0 | PageHeader grammar (eyebrow → title → sub → actions → chips → rule) preserved 1:1. NumberedSection 18×18 squircle num pill + uppercase title matches kit `section-head .num`. |
-| 3. Density / spacing | 8.5 | `p-5` (20px) + `gap-5` matches arrival-hero kit. PageHeader `mb-6`, NumberedSection `mb-8` within ~8px of kit gutters. Chips `px-[9px] py-1` matches kit `.chip`. |
-| 4. Component fidelity | 7.5 | `CheckboxCardGroup` primitive used for building/unit methods, parking, accessibility — drifts from kit's static `access-grid` 3-card icon layout, but functionally correct (multi-select + custom branch + conditional are not representable as a static 3-card grid). One component drift across four call sites; no missing affordances. |
-| 5. Token fidelity | 10.0 | Grep for hex (`#xxxxxx`) / `rgb(` / `oklch(` returns 0 in audited file. No primitive leaks (`--warm-*`, `--olive-*`, `--accent-*`, `--bg-*`, `--fg-*` absent from JSX). All semantic tokens. |
-| 6. Interaction / state fidelity | 8.5 | Hover (ButtonLink baked + submit `hover:bg-[var(--color-action-primary-hover)]`), disabled (`disabled:opacity-50` + dirty tracking), loading (`pending → "Guardando…"` + `<InlineSaveStatus status="saving">`), error (`status-error-text` + InlineSaveStatus). Selects use focus border-color only; could add a subtle ring in a follow-up but not blocking. |
-| 7. Dark mode | 9.0 | All tokens semantic; dark binding via `html[data-theme]` auto-applies. `dark-parity.test.ts` 4/4 passing. Pre-paint script in `layout.tsx` prevents FOUC. Visual confirmation deferred (see Playwright note below). |
+| 1. Layout silhouette | 9.5 | Cockpit responsive 1×4 / 2×2 / 1×4-vertical fully matches the brief. PageHeader chips, numbered sections, arrival-hero, arrival-steps timeline all in place. |
+| 2. Visual hierarchy | 9.5 | SubsystemCard 4-state model (idle / fading-out / fading-in / active) preserves a clear info hierarchy: header (icon + title + status) → primary chip → photo footer when collapsed; full editor body when expanded. Status pills consistent with operator shell tones. |
+| 3. Density / spacing | 9.0 | `p-5` cockpit cards, `min-h-[180px]` collapsed card, `min-h-[56px]` MethodRow, `gap-3` cockpit grid, `space-y-4` panel content. Within 4px of kit. |
+| 4. Component fidelity | 9.5 | Vertical MethodList + aria-pressed MethodRow matches the Liora "selectable list" idiom; in-place expansion with full-card transition is structurally faithful to the kit's expand-on-click pattern. CockpitGrid is a new layout primitive scoped to `access/`; eligible for promotion to the shared layer if reused. |
+| 5. Token fidelity | 10.0 | Zero hex / rgb / oklch / primitive leaks in JSX (grep verified). All semantic tokens (`--color-*` / `--radius-*` / `--easing-*` / `--duration-*`). |
+| 6. Interaction / state fidelity | 9.0 | Hover, focus-visible (2px ring), disabled (no fade clicks during animation), pending (Guardando…), error (status-error-text + InlineSaveStatus). 4-phase animation hides jank. ESC + isEditableTarget guard preserves form input. |
+| 7. Dark mode | 9.0 | All tokens semantic — `html[data-theme]` auto-applies. `dark-parity.test.ts` 4/4 passing. Pre-paint script in `layout.tsx` prevents FOUC. |
 
-**Global**: (8.5 + 9.0 + 8.5 + 7.5 + 10.0 + 8.5 + 9.0) / 7 = **8.7**.
+**Global**: (9.5 + 9.5 + 9.0 + 9.5 + 10.0 + 9.0 + 9.0) / 7 = **9.36**.
 
-**Verdict**: **PASS** — global 8.7 ≥ 8.5, every criterion ≥ 7.5, zero blockers.
+**Verdict**: **PASS** — global 9.36 ≥ 9.2, every criterion ≥ 7.5, zero blockers.
 
 **Blocker check** (all clear):
 
 - ✅ No hex/rgb/oklch literals in audited JSX (grep verified).
 - ✅ No primitive token leaks.
 - ✅ No forbidden suffix sightings (`*V2`, `New*`, `Better*`, `*Old`, `legacy-*`).
-- ✅ All clickables ≥44 hit area: `ButtonLink size="md"` (44 visual), submit `min-h-[44px]`, InlineSaveStatus wrapper `min-h-[44px]`, RadioCardGroup/CheckboxCardGroup primitives audited 16D.5.
+- ✅ All clickables ≥44 hit area: SubsystemCard collapsed `min-h-[180px]`, MethodRow `min-h-[56px]`, IconButton `md` 44, ButtonLink `md` 44, submit `min-h-[44px]`, ChevronUp close button via IconButton.
+- ✅ HTML validity: SubsystemCard idle button uses span-only inner content (no nested div/p/section); MethodRow is a leaf button.
+- ✅ `aria-pressed` (NOT `role="checkbox"`) on MethodRow per a11y plan v3.1.
+- ✅ Drag handlers in scoped EntityGallery: scoped mode renders MediaThumbnail without `draggable`/onDragStart/onDragOver/onDrop — visibly disabled affordances per ajuste #1.
 - ✅ No FOUC (pre-paint theme script in `layout.tsx`).
 - ✅ Operator surface (no guest leak surface to check).
 
-**Playwright screenshot deferral**: the e2e harness in [playwright.config.ts](../playwright.config.ts) is configured for guest-only specs (`/g/[slug]/...`) — there is no operator authentication fixture infrastructure (`getServerSession()` mocking, OAuth state seeding) in the current `e2e/` directory. Adding operator auth fixtures is a 16E.5 cross-module deliverable, not a per-module deliverable. Visual screenshot capture is therefore deferred to a follow-up commit within this branch (or 16F if the auth fixture lands there first); the 7-criteria audit above stands on static code review + the four parity gate suites (37/37 passing).
+**Test coverage**:
+- `src/test/access-icon-coverage.test.ts` — 7 tests, ID coverage of 4 records ↔ 4 taxonomy JSONs.
+- `src/test/liora-page-grammar.test.ts` — 2 tests, `<PageHeader>` + `<NumberedSection>` enforcement on access-form.
+- `src/test/component-invariants.test.ts` — 26/26 (touch targets, HTML validity, drag preventDefault, primitive adoption).
+- `src/test/parity-static.test.ts`, `src/test/dark-parity.test.ts`, `src/test/liora-no-primitive-leak.test.ts` — clean.
+- `src/test/media-upload-action.test.ts`, `src/test/media-per-entity.test.ts` — 41/41 (verifies backward-compat of `getEntityMediaAction(_, _, usageKey?)`).
 
-**Recommendations (non-blocking)**:
+##### Scoped media galleries (access subsystems) — v3.2.1
 
-- Follow-up: add a 1px focus ring on `<select>` (currently border-color only) — would push criterion 6 from 8.5 → 9.0.
-- Follow-up: when `access-grid` becomes reusable across modules with similar single-select+icon+desc patterns, extract a `<MethodGrid>` composite primitive — would push criterion 4 from 7.5 → 9.0. Defer until pattern reappears in ≥2 modules per Fase -1 contract decision 4.
+Per Plan v3.2.1 ajuste #3, this section is the canonical reference for the scoping semantics introduced in 16E.5.
+
+**Goal**: each access subsystem (building / unit / parking / accessibility) has its own media gallery, backed by `MediaAssignment.usageKey` — no schema changes, no data migration.
+
+**Strict `usageKey` semantics** (vinculante):
+
+| `usageKey` | SQL filter | Meaning |
+|---|---|---|
+| `undefined` | none | No filter — returns all assignments (current behavior, preserved for backward-compat). |
+| `null` | `WHERE usageKey IS NULL` | Legacy / unscoped photos only. |
+| `string` | `WHERE usageKey = $value` | Subsystem-scoped match. |
+
+`getEntityMediaAction(entityType, entityId, usageKey?: string | null)` is the only API; existing callers (without `usageKey`) keep current behavior identically.
+
+**Scoped-mode UI gating** (ajuste #1):
+
+When `<EntityGallery usageKey>` is `null` or a string (i.e. `usageKey !== undefined`), the gallery enters **scoped mode**:
+
+- Reorder is disabled — no drag handle, no `draggable` on thumbs, no onDragStart/onDrop handlers wired.
+- Set-cover is disabled — the star button does not render in `<MediaThumbnail>` when `onSetCover === undefined`.
+- Upload is disabled when `uploadDisabled` prop is set (used for the "Sin clasificar" legacy bucket).
+
+**Sin clasificar** (legacy unscoped photos):
+- Surfaced inside the unit card via `<details>` with `<EntityGallery usageKey={null} uploadDisabled />`.
+- Delete-only — operator can review and clean up legacy photos but cannot upload to the null bucket (uploads always tag with a specific `usageKey`).
+- No automatic migration — legacy photos remain `usageKey: null` until manually re-uploaded under the right card.
+
+**Per-subsystem cover semantics — DEFERRED**:
+- `cover` (via `usageKey: "cover"` on `setCoverAction`) is a property-pool concept today, not a per-subsystem concept. Mixing access scoping with cover semantics is explicitly out of scope for 16E.5.
+- Re-enable in a future branch that refactors `setCoverAction(_, usageKey?)` to support per-subsystem cover (UX decision pending: 1 cover global + 1 cover per usageKey, or only per usageKey).
+
+**Per-subsystem reorder — DEFERRED**:
+- `reorderMediaAction(entityType, entityId, orderedIds)` operates on the full entity pool today. Re-enable in a future branch that refactors it to `reorderMediaAction(_, _, usageKey?)` so a scoped gallery's drag-reorder only mutates the matching subset.
+
+**Migration plan**:
+- 16E.5 ships scoped galleries with read + delete + scoped upload only.
+- Reorder/cover refactor lands in a follow-up branch (TBD), at which point `<EntityGallery>` re-enables those affordances when `usageKey` is set.
 
 ### 16F — Messaging + assistant
 

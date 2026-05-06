@@ -269,6 +269,15 @@ Esta sección es la spec normativa heredable. Si en una rama futura el agente no
 - Polymorphism `as="a"` rompería el gate por la misma razón — por eso primitivos como `IconButton`/`IconButtonLink`/`ButtonLink` están separados deliberadamente (no `as` poly).
 - Si en 16E o posterior el rigor lo requiere, opción A: introducir `@typescript-eslint/parser` explícito en devDependencies y reescribir las invariantes sobre AST. Hoy: heurística suficiente para el scope auditado, documentada como tal.
 
+## Icon policy — Operator UI
+
+- `lucide-react` es la librería estándar para iconos nuevos en operator UI. Versión instalada: `^0.460.0`.
+- NO usar `react-icons`, `@heroicons/react`, `@radix-ui/react-icons` u otra librería de iconos nueva salvo aprobación explícita.
+- NO añadir SVG inline nuevo en componentes operator. Excepción: marcas/logos de terceros (Google sign-in, etc.), justificados en PR.
+- Si un icono Lucide deseado no existe en la versión instalada, elegir el equivalente Lucide más cercano y documentar la decisión en el commit/PR.
+- Para mappings canónicos taxonomy ID → icono (e.g. `src/lib/icons/access-icons.ts`), añadir test de coverage local que valide que los keys del Record matchean exactamente los IDs de la taxonomía (ver `src/test/access-icon-coverage.test.ts`).
+- NO existe `LIORA_LUCIDE_ALLOWLIST` ni test global que enforce nombres permitidos. La política se verifica en code review y en tests locales de coverage cuando aplique.
+
 ## Patrones de UI — Espacios
 
 - Botones de feature activos: estilo sólido `bg-[var(--color-primary-500)] text-white` — **no** `bg-primary-50 text-primary-700` (bajo contraste sobre surface-elevated)
