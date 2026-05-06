@@ -33,10 +33,11 @@ interface SubsystemCardProps {
 }
 
 // Container-aware visible cap, computed from real measurements:
-//  card_p5 = 20px each side (40px total)
 //  tile    = 32px (h-8 w-8)
 //  gap     = 8px (gap-2)
 //  +N chip = 32px min-width (only present when there's overflow)
+// useMeasure observes the button's content-box (excludes padding+border), so
+// `widthPx` is already the inner available width — no extra subtraction.
 // The algorithm tries to fit ALL tiles first (no +N chip needed); if not, it
 // computes the max number of tiles that fit alongside a +N chip:
 //   visible*(TILE+GAP) + PLUS_N <= available  →  visible = floor((avail-PLUS_N)/(TILE+GAP))
@@ -44,14 +45,12 @@ interface SubsystemCardProps {
 // flash before useMeasure resolves.
 function resolveStripCap(widthPx: number, totalCount: number): number {
   if (widthPx === 0) return Math.min(4, totalCount);
-  const PARENT_PAD = 40;
   const TILE = 32;
   const GAP = 8;
   const PLUS_N = 32;
-  const available = widthPx - PARENT_PAD;
   const allTilesWidth = totalCount * TILE + Math.max(0, totalCount - 1) * GAP;
-  if (allTilesWidth <= available) return totalCount;
-  return Math.max(1, Math.floor((available - PLUS_N) / (TILE + GAP)));
+  if (allTilesWidth <= widthPx) return totalCount;
+  return Math.max(1, Math.floor((widthPx - PLUS_N) / (TILE + GAP)));
 }
 
 export function SubsystemCard({
@@ -88,11 +87,10 @@ export function SubsystemCard({
   const visible = ordered.slice(0, stripVisibleMax);
   const hidden = ordered.slice(stripVisibleMax);
 
-  // Tile renderer — used by both the single-selection branch (with inline
-  // label) and the multi-selection branch (inside the combined HoverCard
-  // trigger). The primary tile carries a 14×14 corner star (≈25% bigger than
-  // the previous 10×10 marker) with a 2px outline against the elevated bg so
-  // it stays legible over the tile's olive border.
+  // Tile renderer — invoked from the HoverCard trigger for every selected
+  // item. The primary tile carries a 14×14 corner star with a 2px outline
+  // against the elevated bg so the marker stays legible over the tile's
+  // olive border.
   const renderTile = (item: SubsystemSelectedItem, isPrimary: boolean) => {
     const ItemIcon = item.icon;
     return (
@@ -112,7 +110,17 @@ export function SubsystemCard({
             aria-hidden="true"
             className="absolute -right-[4px] -top-[4px] grid h-[14px] w-[14px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] outline outline-2 outline-[var(--color-background-elevated)]"
           >
-            <Star size={9} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+            {/* lucide Star path is geometrically biased ~0.35 above the viewBox center
+               (top tip y≈2.3, bottom y≈21.0 within 24-tall viewBox), so place-items-center
+               leaves it visually high. translate-y-[0.5px] nudges it to the optical center
+               of the 14px circle. */}
+            <Star
+              size={9}
+              fill="currentColor"
+              strokeWidth={0}
+              aria-hidden="true"
+              className="translate-y-[0.5px]"
+            />
           </span>
         )}
       </span>
@@ -181,13 +189,13 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        "transition-[border-color,box-shadow,transform] duration-200 ease-out",
+        "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured"
           : status === "pending"
             ? "recipe-card-partial"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
-        "hover:shadow-[var(--elevation-surface-md)] hover:-translate-y-[1px]",
+        "hover:shadow-[var(--elevation-surface-md)]",
         status === "empty" && "hover:border-[var(--color-border-strong)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
@@ -254,28 +262,19 @@ export function SubsystemCard({
 
       {/* Body — icon strip OR empty hint, vertical-centered between header and footer.
          overflow-visible so the corner star (-4/-4) on the primary tile isn't clipped.
-         Three render branches:
+         Two render branches (single + multi unified for hover-behavior parity):
          - 0 selections: "Añade características" hint
-         - 1 selection:  tile + inline label (no hover — label already visible)
-         - 2+ selections: strip (visible tiles + optional +N chip), wrapped in a
+         - ≥1 selections: strip (visible tiles + optional +N chip), wrapped in a
                           single combined HoverCard whose content lists ALL ordered
                           items with the primary row highlighted (icon + label,
-                          plus a ⭐ marker on the primary). */}
+                          plus a ⭐ marker on the primary). With 1 item the trigger
+                          is a single tile and the popover lists that one row —
+                          identical hover affordance as the multi case. */}
       <span className="mt-4 flex flex-1 flex-col justify-center">
         {ordered.length === 0 ? (
           <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
             <Plus size={14} aria-hidden="true" className="flex-none" />
             <span className="truncate">Añade características</span>
-          </span>
-        ) : ordered.length === 1 ? (
-          <span className="flex flex-nowrap items-center gap-3 overflow-visible">
-            {renderTile(ordered[0]!, ordered[0]!.id === primaryId)}
-            <span
-              title={ordered[0]!.label}
-              className="min-w-0 flex-1 line-clamp-2 text-[13px] font-medium text-[var(--color-text-primary)]"
-            >
-              {ordered[0]!.label}
-            </span>
           </span>
         ) : (
           <HoverCard
