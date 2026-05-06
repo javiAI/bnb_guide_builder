@@ -148,14 +148,16 @@ export function SubsystemCard({
         "min-h-[44px] h-[200px]",
       )}
     >
-      {/* Status corner badge — top-right of the card. ✓ for configured (success
-         tone), ⚠ for partial/pending (warning tone). Empty state has no badge.
-         White SVG over solid status border colour for legibility on tinted bg. */}
+      {/* Status corner badge — esquina sup-der. Posición top-2 right-2 (8px
+         del borde) en lugar de top-[14px]/right-[14px]: deja el badge en y:8-28
+         y x: card_right-8 → -28. Combinado con pr-3 en el header row, libera
+         espacio horizontal al title sin necesidad de empujar el row hacia
+         abajo (preserva el spacing original del top de la card al título). */}
       {status === "configured" && (
         <span
           aria-label="Configurado"
           title="Configurado"
-          className="absolute right-[14px] top-[14px] grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-white"
+          className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-white"
         >
           <Check size={12} strokeWidth={3} aria-hidden="true" />
         </span>
@@ -164,18 +166,21 @@ export function SubsystemCard({
         <span
           aria-label="Falta configuración"
           title="Falta configuración"
-          className="absolute right-[14px] top-[14px] grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-white"
+          className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-white"
         >
           <AlertTriangle size={12} strokeWidth={2.5} aria-hidden="true" />
         </span>
       )}
 
       {/* Header — icon inline with title (flex-row). Icon: outline-only olive
-         (V3). Empty state falls back to neutral muted icon. mt-4 empuja el row
-         por debajo del badge (badge_bottom = 14+20 = 34px; header_top con
-         p-5+mt-4 = 36px → 2px clearance) para que el title disponga del ancho
-         completo sin reserva horizontal y no se trunque a 220px de card. */}
-      <span className="mt-4 flex w-full items-center gap-3">
+         (V3). Empty state falls back to neutral muted icon. pr-3 reserva 12px
+         a la derecha — suficiente para que el title container termine 4px a
+         la izquierda del badge (badge left edge = card_right-28; container
+         right edge con pr-3 = card_right-32). A 220px de card, title
+         disponible = 220-40(p-5×2)-40(icon)-12(gap)-12(pr-3) = 116px, que
+         cubre "Accesibilidad" (~109px). Verticalmente, glyphs del title
+         (y~35-46) no tocan el bottom del badge (y=28). */}
+      <span className="flex w-full items-center gap-3 pr-3">
         <span
           aria-hidden="true"
           className={cn(
