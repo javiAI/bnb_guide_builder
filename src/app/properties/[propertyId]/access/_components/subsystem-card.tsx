@@ -219,12 +219,18 @@ export function SubsystemCard({
 
       {/* Header — icon inline with title (flex-row). Icon: outline-only olive
          (V3). Empty state falls back to neutral muted icon. pr-3 reserva 12px
-         a la derecha — suficiente para que el title container termine 4px a
-         la izquierda del badge (badge left edge = card_right-28; container
-         right edge con pr-3 = card_right-32). A 220px de card, title
-         disponible = 220-40(p-5×2)-40(icon)-12(gap)-12(pr-3) = 116px, que
-         cubre "Accesibilidad" (~109px). Verticalmente, glyphs del title
-         (y~35-46) no tocan el bottom del badge (y=28). */}
+         a la derecha — suficiente para que el title container termine a la
+         izquierda del badge (badge left edge = card_right-28; container right
+         edge con pr-3 = card_right-32 para evitar overlap horizontal cuando
+         el title hace wrap a 2 lineas).
+         Title usa line-clamp-2 (2 lineas max + ellipsis) en lugar de truncate,
+         con title={title} para mostrar el texto completo via tooltip nativo
+         del browser al hover/long-press. Al ancho minimo de carta del nuevo
+         grid policy (md: 2 cols con sidebar 256 → card ~250px), title
+         disponible = 250-40(p-5)-40(icon)-12(gap)-12(pr-3) = 146px, que
+         cubre "Aparcamiento" (~100px) y "Accesibilidad" (~107px) en una
+         linea. Si el titulo aun asi no cabe en 2 lineas, el ellipsis y el
+         tooltip nativo lo cubren. */}
       <span className="flex w-full items-center gap-3 pr-3">
         <span
           aria-hidden="true"
@@ -239,7 +245,8 @@ export function SubsystemCard({
         </span>
         <span
           id={titleId}
-          className="block min-w-0 flex-1 truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
+          title={title}
+          className="min-w-0 flex-1 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
         >
           {title}
         </span>
@@ -263,7 +270,10 @@ export function SubsystemCard({
         ) : ordered.length === 1 ? (
           <span className="flex flex-nowrap items-center gap-3 overflow-visible">
             {renderTile(ordered[0]!, ordered[0]!.id === primaryId)}
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--color-text-primary)]">
+            <span
+              title={ordered[0]!.label}
+              className="min-w-0 flex-1 line-clamp-2 text-[13px] font-medium text-[var(--color-text-primary)]"
+            >
               {ordered[0]!.label}
             </span>
           </span>
@@ -310,8 +320,9 @@ export function SubsystemCard({
                         <ItemIcon size={12} aria-hidden="true" />
                       </span>
                       <span
+                        title={it.label}
                         className={cn(
-                          "min-w-0 flex-1 truncate",
+                          "min-w-0 flex-1 line-clamp-2",
                           isP
                             ? "font-semibold text-[var(--color-action-primary)]"
                             : "text-[var(--color-text-primary)]",
