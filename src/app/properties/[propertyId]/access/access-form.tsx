@@ -11,6 +11,7 @@ import {
   Key,
   MapPin,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
 import { TextLink } from "@/components/ui/text-link";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
@@ -24,6 +25,7 @@ import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods"
 import { parkingOptions } from "@/lib/taxonomies/parking-options";
 import { accessibilityFeatures } from "@/lib/taxonomies/accessibility-features";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
+import type { ItemTaxonomyFile } from "@/lib/types/taxonomy";
 import { EntityGallery } from "@/components/media/entity-gallery";
 import {
   ACCESS_COCKPIT_IDS,
@@ -176,6 +178,36 @@ function stepStatus(hasContent: boolean, photoCount: number): ArrivalStepStatus 
   return "empty";
 }
 
+// Effective primary = operator's explicit choice if still selected, else first
+// selected method, else null. Used both for the hidden form field and for the
+// collapsed-card icon strip's primary highlight.
+function pickPrimary(selected: readonly string[], stored: string | null): string | null {
+  if (selected.length === 0) return null;
+  if (stored && selected.includes(stored)) return stored;
+  return selected[0];
+}
+
+interface SubsystemItem {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+}
+
+// Build the icon-strip items the SubsystemCard consumes. Order is the operator's
+// selection order; the card re-orders to primary-first internally.
+function toSubsystemItems(
+  ids: readonly string[],
+  taxonomy: ItemTaxonomyFile,
+  iconFor: (id: string) => LucideIcon,
+): SubsystemItem[] {
+  return ids
+    .map((id): SubsystemItem | null => {
+      const item = findItem(taxonomy, id);
+      return item ? { id, icon: iconFor(id), label: item.label } : null;
+    })
+    .filter((it): it is SubsystemItem => it !== null);
+}
+
 // ESC handler must NOT collapse the cockpit while the user is typing inside an
 // input/textarea/select/contenteditable — that would feel like the editor swallowed
 // their work. Restrict collapse-on-ESC to non-editable focus targets.
@@ -322,24 +354,9 @@ export function AccessForm({
 
   // Effective primary = user's explicit choice if still selected, else first
   // selected method. The hidden form input emits this value, not raw state.
-  const effectivePrimaryBuilding =
-    buildingMethods.length === 0
-      ? null
-      : primaryBuilding && buildingMethods.includes(primaryBuilding)
-        ? primaryBuilding
-        : buildingMethods[0];
-  const effectivePrimaryUnit =
-    unitMethods.length === 0
-      ? null
-      : primaryUnit && unitMethods.includes(primaryUnit)
-        ? primaryUnit
-        : unitMethods[0];
-  const effectivePrimaryParking =
-    parkingTypes.length === 0
-      ? null
-      : primaryParking && parkingTypes.includes(primaryParking)
-        ? primaryParking
-        : parkingTypes[0];
+  const effectivePrimaryBuilding = pickPrimary(buildingMethods, primaryBuilding);
+  const effectivePrimaryUnit = pickPrimary(unitMethods, primaryUnit);
+  const effectivePrimaryParking = pickPrimary(parkingTypes, primaryParking);
 
   const isDirty =
     checkInStart !== (p.checkInStart ?? "16:00") ||
@@ -407,36 +424,10 @@ export function AccessForm({
   const axStatus = statusFor(axFeatures, axCustomLabel, "ax.other");
 
   // Selected items per layer — drives the collapsed-card icon strip.
-  // Order is the operator's selection order; the SubsystemCard re-orders to
-  // primary-first internally and pages the rest into a HoverReveal.
-  const buildingItems = buildingMethods
-    .map((id) => {
-      const item = findItem(buildingAccessMethods, id);
-      if (!item) return null;
-      return { id, icon: buildingIconFor(id), label: item.label };
-    })
-    .filter((it): it is { id: string; icon: ReturnType<typeof buildingIconFor>; label: string } => it !== null);
-  const unitItems = unitMethods
-    .map((id) => {
-      const item = findItem(accessMethods, id);
-      if (!item) return null;
-      return { id, icon: unitIconFor(id), label: item.label };
-    })
-    .filter((it): it is { id: string; icon: ReturnType<typeof unitIconFor>; label: string } => it !== null);
-  const parkingItems = parkingTypes
-    .map((id) => {
-      const item = findItem(parkingOptions, id);
-      if (!item) return null;
-      return { id, icon: parkingIconFor(id), label: item.label };
-    })
-    .filter((it): it is { id: string; icon: ReturnType<typeof parkingIconFor>; label: string } => it !== null);
-  const axItems = axFeatures
-    .map((id) => {
-      const item = findItem(accessibilityFeatures, id);
-      if (!item) return null;
-      return { id, icon: accessibilityIconFor(id), label: item.label };
-    })
-    .filter((it): it is { id: string; icon: ReturnType<typeof accessibilityIconFor>; label: string } => it !== null);
+  const buildingItems = toSubsystemItems(buildingMethods, buildingAccessMethods, buildingIconFor);
+  const unitItems = toSubsystemItems(unitMethods, accessMethods, unitIconFor);
+  const parkingItems = toSubsystemItems(parkingTypes, parkingOptions, parkingIconFor);
+  const axItems = toSubsystemItems(axFeatures, accessibilityFeatures, accessibilityIconFor);
 
   const accessMethodMediaCount =
     buildingPhotoCount + unitPhotoCount + legacyAccessPhotoCount;

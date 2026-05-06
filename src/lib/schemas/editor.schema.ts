@@ -52,6 +52,11 @@ const accessLayerSchema = z.object({
   methods: z.array(z.string()),
   customLabel: z.string().nullable().optional(),
   customDesc: z.string().nullable().optional(),
+  // Operator's choice of "first thing the guest sees". Persisted into
+  // `accessMethodsJson.<sub>.primary` for building/parking and the dedicated
+  // `Property.primaryAccessMethod` column for unit. Optional in input shape;
+  // saveAccessAction normalizes to methods[0] when missing or stale.
+  primary: z.string().nullable().optional(),
 });
 
 export const accessSchema = z.object({
