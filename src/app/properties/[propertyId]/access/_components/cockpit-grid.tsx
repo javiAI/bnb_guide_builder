@@ -16,9 +16,7 @@ export function CockpitGrid({ expandedId, ids, children }: CockpitGridProps) {
     <div
       className="grid gap-3"
       style={{
-        gridTemplateColumns: expanded
-          ? "1fr"
-          : "repeat(var(--cockpit-cols, 4), minmax(0, 1fr))",
+        gridTemplateColumns: expanded ? "1fr" : "repeat(4, minmax(0, 1fr))",
       }}
     >
       {ids.map((id) => {
