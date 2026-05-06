@@ -61,7 +61,12 @@ export function MethodRow({
     <div
       style={rowStyle}
       className={cn(
-        "group rounded-[12px] border-[1.5px]",
+        // `method-row` is a NON-Tailwind class, used purely as a CSS hook for
+        // the `html.vt-expand .method-row` rule in recipes.css. Without it the
+        // expand-only suppression of view-transition-name has no selector to
+        // target (Tailwind utilities + view-transition-class can't be matched
+        // by descendant selectors against the original DOM).
+        "method-row group rounded-[12px] border-[1.5px]",
         "transition-[border-color,background-color] duration-150 ease-out",
         selected
           ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)]"

@@ -319,13 +319,29 @@ export function AccessForm({
 
   // View Transitions API: morphs each card from idle position+size to expanded
   // (and back) without flicker. Falls back to snap behavior if unsupported.
+  //
+  // The `vt-expand` class on <html> is the discriminator that prevents the
+  // expand-desync regression: MethodRow rows carry `view-transition-name:
+  // method-row-${id}` so they FLIP during primary-swap, but if those names
+  // were honored during expand the rows would escape the parent card's
+  // snapshot and animate independently — content would arrive ahead of
+  // silhouette. The CSS rule `html.vt-expand .method-row { view-transition-
+  // name: none !important; }` short-circuits the row names ONLY while the
+  // class is on <html>, so during expand the rows compose into the
+  // cockpit-card snapshot and morph as one unit. The class is removed in
+  // `finished.finally` so subsequent primary-swap transitions get the FLIP.
   const setExpandedCardAnimated = useCallback((next: AccessCockpitId | null) => {
-    if (
-      typeof document !== "undefined" &&
-      typeof (document as Document & { startViewTransition?: (cb: () => void) => unknown }).startViewTransition === "function"
-    ) {
-      (document as Document & { startViewTransition: (cb: () => void) => unknown }).startViewTransition(() => {
+    type DocVT = Document & {
+      startViewTransition?: (cb: () => void) => { finished?: Promise<void> };
+    };
+    const docVT = document as DocVT;
+    if (typeof document !== "undefined" && typeof docVT.startViewTransition === "function") {
+      document.documentElement.classList.add("vt-expand");
+      const transition = docVT.startViewTransition!(() => {
         flushSync(() => setExpandedCard(next));
+      });
+      transition.finished?.finally(() => {
+        document.documentElement.classList.remove("vt-expand");
       });
       return;
     }

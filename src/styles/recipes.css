@@ -94,20 +94,31 @@
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   /* MethodRow rows carry view-transition-class: method-row + a unique
-     view-transition-name per row (`method-row-${safeId}`). Two scenarios:
-     (a) primary swap (card stays expanded) — old + new snapshots both exist,
-         browser FLIP-morphs each row to its new position over 320ms.
-     (b) expand (card morphs collapsed→expanded) — rows have NO old snapshot,
-         only new; default UA fade-in at 320ms cubic-bezier ends in sync with
-         parent card's 320ms morph, so silhouette + body content land together.
-     Matched timing is the contract. If we ever change the parent duration, we
-     change both lines below to match — otherwise the desync that 5o documented
-     comes back. */
+     view-transition-name per row (`method-row-${safeId}`). The names exist
+     so primary-swap reorders FLIP-animate each row to its new position over
+     320ms. During card expand/collapse the names are suppressed via
+     `html.vt-expand .method-row { view-transition-name: none !important; }`
+     (rule below) — this folds the rows back into the parent card's
+     snapshot so silhouette + body content morph as one unit instead of
+     desyncing. The `vt-expand` class is added/removed by
+     `setExpandedCardAnimated` in access-form.tsx around the expand
+     transition. Timing matches the parent card's 320ms cubic-bezier so
+     primary-swap FLIPs feel coherent with the rest of the cockpit. */
   ::view-transition-old(.method-row),
   ::view-transition-new(.method-row) {
     animation-duration: 320ms;
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+}
+
+/* Expand/collapse phase only: suppress row VT names so rows compose into the
+   cockpit-card snapshot and animate as one unit with the parent silhouette.
+   `vt-expand` is added to <html> by setExpandedCardAnimated immediately
+   before startViewTransition and removed in `transition.finished.finally`.
+   !important is required because the row's inline `view-transition-name`
+   has higher specificity than a plain class rule. */
+html.vt-expand .method-row {
+  view-transition-name: none !important;
 }
 
 /*
