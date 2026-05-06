@@ -77,6 +77,7 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/page-header.tsx",
       "src/components/ui/numbered-section.tsx",
       "src/components/ui/page-header-chip.tsx",
+      "src/components/ui/hover-card.tsx",
       "src/lib/tone.ts",
     ],
   },
@@ -323,6 +324,7 @@ export const LIORA_PRIMITIVE_IMPORT_PATHS: ReadonlyArray<string> = [
   "@/components/ui/page-header",
   "@/components/ui/numbered-section",
   "@/components/ui/page-header-chip",
+  "@/components/ui/hover-card",
   "@/lib/tone",
 ];
 

@@ -5,7 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { CardRole } from "./cockpit-grid";
-import { HoverReveal } from "./hover-reveal";
+import { HoverCard } from "@/components/ui/hover-card";
 
 export type SubsystemStatus = "configured" | "pending" | "empty";
 
@@ -33,7 +33,7 @@ interface SubsystemCardProps {
 }
 
 // Visible icon strip cap. Beyond this, the overflow renders a "+N" tile that
-// reveals the hidden items via HoverReveal. Cards are 200px tall × roughly the
+// reveals the hidden items via HoverCard. Cards are 200px tall × roughly the
 // column width — 4 fits comfortably at xl, 3 at sm-lg.
 const STRIP_VISIBLE_MAX = 4;
 
@@ -204,7 +204,7 @@ export function SubsystemCard({
               );
             })}
             {hidden.length > 0 && (
-              <HoverReveal
+              <HoverCard
                 trigger={
                   <span
                     aria-label={`${hidden.length} más`}

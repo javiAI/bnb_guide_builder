@@ -49,6 +49,29 @@
 }
 
 /*
+ * HoverCard primitive (src/components/ui/hover-card.tsx) — open/close animations
+ * driven by Radix `data-state="open|closed"` attribute. Reduced-motion is already
+ * handled by the existing rule at the bottom of this file (it short-circuits all
+ * named view-transitions; standard CSS animations also respect the user's
+ * preference via the global `*` rule below if added — for now reduced-motion
+ * users get the animation but capped at the same min duration).
+ */
+@keyframes hovercard-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes hovercard-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(4px); }
+}
+.animate-hovercard-in  { animation: hovercard-in 120ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.animate-hovercard-out { animation: hovercard-out 100ms cubic-bezier(0.4, 0, 1, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .animate-hovercard-in,
+  .animate-hovercard-out { animation-duration: 0.01ms !important; }
+}
+
+/*
  * Cockpit view-transition tuning. Each card has view-transition-name set in
  * subsystem-card.tsx as `cockpit-card-${id}`; here we tune timing/easing for all
  * four. Default UA value is ~250ms linear-ish; we want slightly longer + emphasis.
