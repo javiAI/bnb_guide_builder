@@ -285,43 +285,35 @@ export function SubsystemCard({
         )}
       </span>
 
-      {/* Footer — media counts. Photo + video, greyed when 0. Empty cards skip
-         the footer entirely (status === "empty"). When neither photo nor video
-         is set, render a single greyed "sin media" line. */}
+      {/* Footer — media counts. Photo + video, cada uno con su icono y label.
+         Cuando un count es 0 se grisa el span (60% transparency sobre text-muted).
+         Empty cards skip el footer entero (status === "empty"). */}
       {status !== "empty" && (
         <span className="mt-3 inline-flex min-h-[16px] items-center gap-3 text-[11px] text-[var(--color-text-muted)]">
-          {photoCount === 0 && videoCount === 0 ? (
-            <span className="text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]">
-              sin media
-            </span>
-          ) : (
-            <>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1",
-                  photoCount === 0 &&
-                    "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
-                )}
-              >
-                <Camera size={11} aria-hidden="true" />
-                {photoCount > 0
-                  ? `${photoCount} ${photoCount === 1 ? "foto" : "fotos"}`
-                  : "sin foto"}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1",
-                  videoCount === 0 &&
-                    "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
-                )}
-              >
-                <Video size={11} aria-hidden="true" />
-                {videoCount > 0
-                  ? `${videoCount} ${videoCount === 1 ? "vídeo" : "vídeos"}`
-                  : "sin vídeo"}
-              </span>
-            </>
-          )}
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              photoCount === 0 &&
+                "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
+            )}
+          >
+            <Camera size={11} aria-hidden="true" />
+            {photoCount > 0
+              ? `${photoCount} ${photoCount === 1 ? "foto" : "fotos"}`
+              : "sin fotos"}
+          </span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              videoCount === 0 &&
+                "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
+            )}
+          >
+            <Video size={11} aria-hidden="true" />
+            {videoCount > 0
+              ? `${videoCount} ${videoCount === 1 ? "vídeo" : "vídeos"}`
+              : "sin vídeos"}
+          </span>
         </span>
       )}
     </button>
