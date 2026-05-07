@@ -313,6 +313,43 @@ When `<EntityGallery usageKey>` is `null` or a string (i.e. `usageKey !== undefi
 - 16E.5 ships scoped galleries with read + delete + scoped upload only.
 - Reorder/cover refactor lands in a follow-up branch (TBD), at which point `<EntityGallery>` re-enables those affordances when `usageKey` is set.
 
+##### Approved pattern: "Operator Entity Card — media-backed summary"
+
+First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-system pattern for operator entity surfaces.** Not yet extracted to `src/components/ui/`; extraction candidate after a second surface (spaces) adopts it.
+
+**Silhouette**:
+- `<article>` shell with `aria-labelledby={titleId}` + `view-transition-name: cockpit-card-${id}`. Two sibling expand `<button>`s (media + body) — never a single button-wrapped card.
+- Media area on top (140px tall, rounded top, overflow-hidden). Renders one of: image / static map / video poster / brand-token gradient placeholder.
+- Top-left title overlay (`"Principal"` / method label / `"Mapa"` / `"<method> · Mapa"`) over the media. Uses `--color-background-overlay` bg + `--color-text-on-overlay` text (intentionally dark in both themes).
+- Interactive dot row (when slides > 1): plain `<button>` controls with `recipe-dot-24` (24 visual, 44 hit), `aria-current="true"` on active, keyboard nav (ArrowLeft/Right + Home/End with wrap). **No `role="tab"` / `role="tablist"` / `aria-selected`** — dots are independent media indicators, not a tabs pattern.
+- Body button below: header (icon-badge + title + status pill) + method-tile strip (with HoverCard popover for overflow) + sr-only photo/video count.
+
+**Media classification** (long-term convention, no caption fallback):
+- `kind: "map"` if `usageKey.endsWith(".map")`.
+- `kind: "image"` if `mimeType.startsWith("image/")` AND NOT `.map`.
+- `kind: "video"` if `mimeType.startsWith("video/")` AND NOT `.map`.
+- `caption` is **never** used for kind classification (caption is editorial text).
+
+**Slide ordering within a subsystem**: image → map → video; within each kind by `[sortOrder asc, createdAt asc]`. The first slide is the carousel default.
+
+**Title overlay resolution**:
+- `usageKey === "access.<sub>"` → `"Principal"`.
+- `usageKey === "access.<sub>.<methodId>"` → method label via `getAccessMethodLabel(methodId)`.
+- `usageKey === "access.<sub>.map"` → `"Mapa"`.
+- `usageKey === "access.<sub>.<methodId>.map"` → `"<methodLabel> · Mapa"`.
+
+**Empty placeholder**: `linear-gradient(135deg, --color-action-primary-subtle, --color-background-muted)` + centered subsystem icon at 32px in `--color-action-primary`. Hint pill `"+ Añade portada"` only when `status === "empty"`.
+
+**Future applicability**: spaces (probable next adopter), amenities with featured media (probable), systems (evaluate), troubleshooting (probably better as incident rows).
+
+**Scope locks** (commit 7a — collapsed branch only):
+- Active/expanded branch unchanged.
+- `saveAccessAction`, `accessSchema`, Prisma schema, taxonomies, guest guide unchanged.
+- Per-method UPLOAD UI deferred (data path lights up via `usageKey` convention; picker is follow-up).
+- Map UPLOAD UI deferred (renderer reads `.map` rows in 7a; toggle to upload-as-map is follow-up).
+- Auto-cycle / hover-cycle deferred (paging is purely manual via dots).
+- Video poster server-side extraction deferred (placeholder Video icon when `posterUrl` absent).
+
 ### 16F — Messaging + assistant
 
 Surfaces: messaging thread UI, AI assistant chat widget (operator + guest).

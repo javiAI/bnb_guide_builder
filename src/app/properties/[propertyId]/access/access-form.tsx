@@ -39,6 +39,7 @@ import {
 } from "@/lib/icons/access-icons";
 import { CockpitGrid, type CardRole } from "./_components/cockpit-grid";
 import { SubsystemCard, type SubsystemStatus } from "./_components/subsystem-card";
+import type { SubsystemSlides } from "./_components/subsystem-card.types";
 import { MethodList } from "./_components/method-list";
 import { MethodRow } from "./_components/method-row";
 import { ArrivalSteps, type ArrivalStepStatus } from "./_components/arrival-steps";
@@ -232,6 +233,7 @@ interface AccessFormProps {
   parkingPhotoCount: number;
   accessibilityPhotoCount: number;
   legacyAccessPhotoCount: number;
+  subsystemSlides: SubsystemSlides;
   property: {
     checkInStart: string | null;
     checkInEnd: string | null;
@@ -268,6 +270,7 @@ export function AccessForm({
   parkingPhotoCount,
   accessibilityPhotoCount,
   legacyAccessPhotoCount,
+  subsystemSlides,
   property: p,
 }: AccessFormProps) {
   const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
@@ -697,6 +700,7 @@ export function AccessForm({
                     selectedItems={buildingItems}
                     primaryId={effectivePrimaryBuilding}
                     photoCount={buildingPhotoCount}
+                    slides={subsystemSlides.building}
                     status={buildingStatus}
                     cockpitId="building"
                     onExpand={() => setExpandedCardAnimated("building")}
@@ -728,6 +732,7 @@ export function AccessForm({
                     selectedItems={unitItems}
                     primaryId={effectivePrimaryUnit}
                     photoCount={unitPhotoCount}
+                    slides={subsystemSlides.unit}
                     status={unitStatus}
                     cockpitId="unit"
                     onExpand={() => setExpandedCardAnimated("unit")}
@@ -760,6 +765,7 @@ export function AccessForm({
                     selectedItems={parkingItems}
                     primaryId={effectivePrimaryParking}
                     photoCount={parkingPhotoCount}
+                    slides={subsystemSlides.parking}
                     status={parkingStatus}
                     cockpitId="parking"
                     onExpand={() => setExpandedCardAnimated("parking")}
@@ -790,6 +796,7 @@ export function AccessForm({
                   selectedItems={axItems}
                   primaryId={null}
                   photoCount={accessibilityPhotoCount}
+                  slides={subsystemSlides.accessibility}
                   status={axStatus}
                   cockpitId="accessibility"
                   onExpand={() => setExpandedCardAnimated("accessibility")}

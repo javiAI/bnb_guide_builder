@@ -32,6 +32,12 @@
   --color-text-placeholder: var(--warm-500);
   --color-text-on-accent:  var(--warm-25);
   --color-text-on-primary: var(--warm-25);
+  /* Text on `--color-background-overlay` — overlay surface is intentionally
+     dark in BOTH themes (light: rgb(20 16 10 / 0.45), dark: rgb(0 0 0 / 0.65))
+     for legibility over photos, so text on it must be light in both themes.
+     Cannot reuse `--color-text-on-primary` (it flips light→dark in dark mode
+     because the action-primary surface is olive-light there). */
+  --color-text-on-overlay: var(--warm-25);
 
   /* ─── Border ─── */
   --color-border-subtle:   var(--warm-150);
@@ -277,6 +283,7 @@
   --color-text-placeholder: var(--warm-400); /* lifted from 500 → ≥4.5:1 on input bg */
   --color-text-on-accent:  var(--warm-950);
   --color-text-on-primary: var(--warm-950);
+  --color-text-on-overlay: var(--warm-25);
 
   --color-border-subtle:   var(--warm-850);
   --color-border-default:  var(--warm-800);

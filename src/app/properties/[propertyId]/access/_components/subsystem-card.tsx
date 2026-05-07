@@ -1,11 +1,27 @@
 "use client";
 
-import { AlertTriangle, Camera, Check, Plus, Star, Video } from "lucide-react";
+import {
+  AlertTriangle,
+  Camera,
+  Check,
+  Plus,
+  Star,
+  Video,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import {
+  useCallback,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
+import type { SubsystemSlide } from "./subsystem-card.types";
 
 export type SubsystemStatus = "configured" | "pending" | "empty";
 
@@ -25,6 +41,7 @@ interface SubsystemCardProps {
   photoCount: number;
   videoCount?: number;
   status: SubsystemStatus;
+  slides?: readonly SubsystemSlide[];
   onExpand: () => void;
   onCollapse: () => void;
   expandedSubtitle?: string;
@@ -55,6 +72,7 @@ export function SubsystemCard({
   photoCount,
   videoCount = 0,
   status,
+  slides,
   onExpand,
   onCollapse,
   expandedSubtitle,
@@ -169,30 +187,114 @@ export function SubsystemCard({
     );
   }
 
+  // ────────────────────────────────────────────────────────────────────
+  // Collapsed branch — Liora "spaces-card" silhouette:
+  //   <article>
+  //     <div media-area>      ← media expand <button> + dots (siblings)
+  //     <button body-expand>  ← header + strip + foot pill
+  //   </article>
+  //
+  // Two sibling expand buttons (media + body) → no nested interactive HTML;
+  // dots are siblings of both, never inside them. Tab-stops per card =
+  // 1 (media-expand) + N dots + 1 (body-expand). View-transition-name
+  // sits on the <article> so the morph animates the whole shell.
+  // ────────────────────────────────────────────────────────────────────
+
   return (
-    <button
-      type="button"
-      aria-expanded={false}
-      aria-controls={bodyId}
+    <CollapsedCard
+      cardStyle={cardStyle}
+      titleId={titleId}
+      bodyId={bodyId}
+      Icon={Icon}
+      title={title}
+      status={status}
+      slides={slides ?? []}
+      ordered={ordered}
+      visible={visible}
+      hidden={hidden}
+      primaryId={primaryId}
+      photoCount={photoCount}
+      videoCount={videoCount}
+      renderTile={renderTile}
+      onExpand={onExpand}
+    />
+  );
+}
+
+// ── Collapsed card body ─────────────────────────────────────────────────
+
+interface CollapsedCardProps {
+  cardStyle: React.CSSProperties;
+  titleId: string;
+  bodyId: string;
+  Icon: LucideIcon;
+  title: string;
+  status: SubsystemStatus;
+  slides: readonly SubsystemSlide[];
+  ordered: readonly SubsystemSelectedItem[];
+  visible: readonly SubsystemSelectedItem[];
+  hidden: readonly SubsystemSelectedItem[];
+  primaryId: string | null;
+  photoCount: number;
+  videoCount: number;
+  renderTile: (item: SubsystemSelectedItem, isPrimary: boolean) => ReactNode;
+  onExpand: () => void;
+}
+
+function CollapsedCard({
+  cardStyle,
+  titleId,
+  bodyId,
+  Icon,
+  title,
+  status,
+  slides,
+  ordered,
+  visible,
+  hidden,
+  primaryId,
+  photoCount,
+  videoCount,
+  renderTile,
+  onExpand,
+}: CollapsedCardProps) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
+  const activeSlide = slides[safeIdx];
+
+  const focusDot = useCallback((i: number) => {
+    dotRefs.current[i]?.focus();
+  }, []);
+
+  const handleDotKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+      if (slides.length <= 1) return;
+      const last = slides.length - 1;
+      let next = i;
+      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
+      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = last;
+      else return;
+      e.preventDefault();
+      setCurrentIdx(next);
+      focusDot(next);
+    },
+    [slides.length, focusDot],
+  );
+
+  return (
+    <article
+      data-component="subsystem-card-collapsed"
       aria-labelledby={titleId}
-      onClick={onExpand}
       style={cardStyle}
       className={cn(
-        "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        // Card-level hover (border + shadow) fires anywhere on the card —
-        // the entire <button> is the click target, so the visual lift should
-        // accompany any pointer that's "on the card", not just over content.
-        // The popover trigger is independently scoped to the strip itself
-        // (see `items-start` on the strip wrapper below — it prevents the
-        // Radix HoverCard.Trigger inline-flex wrapper from being stretched
-        // by the parent flex-col, so the popover opens only over the strip
-        // and not when hovering the empty area to the right of a short list).
-        //
-        // shadow uses Tailwind arbitrary-property `[box-shadow:...]` because
-        // `shadow-[var(--…)]` is mis-parsed by Tailwind v3 as a shadow COLOR
-        // (sets --tw-shadow-color, leaves box-shadow untouched) — that's why
-        // earlier hover passes silently produced no drop. Arbitrary-property
-        // syntax emits a literal `box-shadow` rule.
+        "group relative flex min-h-[260px] w-full flex-col overflow-hidden rounded-[20px] text-left",
+        // Card-level hover (border + shadow). Same arbitrary-property
+        // [box-shadow:...] dance as the previous <button> — `shadow-[var(--…)]`
+        // is mis-parsed by Tailwind v3 as a shadow color. We use a literal
+        // box-shadow rule via `[box-shadow:var(--elevation-surface-lg)]`.
         "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
@@ -200,186 +302,299 @@ export function SubsystemCard({
             ? "recipe-card-partial hover:border-[var(--color-status-warning-icon)]"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
         "hover:[box-shadow:var(--elevation-surface-lg)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
-        "min-h-[44px] h-[200px]",
+        "focus-within:[box-shadow:var(--elevation-surface-md)]",
       )}
     >
-      {/* Status corner badge — esquina sup-der. Posición top-2 right-2 (8px
-         del borde) en lugar de top-[14px]/right-[14px]: deja el badge en y:8-28
-         y x: card_right-8 → -28. Combinado con pr-3 en el header row, libera
-         espacio horizontal al title sin necesidad de empujar el row hacia
-         abajo (preserva el spacing original del top de la card al título). */}
-      {status === "configured" && (
-        <span
-          aria-label="Configurado"
-          title="Configurado"
-          className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-success-border)] text-white"
-        >
-          <Check size={12} strokeWidth={3} aria-hidden="true" />
-        </span>
-      )}
-      {status === "pending" && (
-        <span
-          aria-label="Falta configuración"
-          title="Falta configuración"
-          className="absolute right-2 top-2 grid h-5 w-5 place-items-center rounded-full bg-[var(--color-status-warning-border)] text-white"
-        >
-          <AlertTriangle size={12} strokeWidth={2.5} aria-hidden="true" />
-        </span>
-      )}
-
-      {/* Header — icon inline with title (flex-row). Icon: outline-only olive
-         (V3). Empty state falls back to neutral muted icon. pr-3 reserva 12px
-         a la derecha — suficiente para que el title container termine a la
-         izquierda del badge (badge left edge = card_right-28; container right
-         edge con pr-3 = card_right-32 para evitar overlap horizontal cuando
-         el title hace wrap a 2 lineas).
-         Title usa line-clamp-2 (2 lineas max + ellipsis) en lugar de truncate,
-         con title={title} para mostrar el texto completo via tooltip nativo
-         del browser al hover/long-press. Al ancho minimo de carta del nuevo
-         grid policy (md: 2 cols con sidebar 256 → card ~250px), title
-         disponible = 250-40(p-5)-40(icon)-12(gap)-12(pr-3) = 146px, que
-         cubre "Aparcamiento" (~100px) y "Accesibilidad" (~107px) en una
-         linea. Si el titulo aun asi no cabe en 2 lineas, el ellipsis y el
-         tooltip nativo lo cubren. */}
-      <span className="flex w-full items-center gap-3 pr-3">
-        <span
-          aria-hidden="true"
+      {/* ── Media area ─────────────────────────────────────────── */}
+      <div className="relative h-[140px] w-full flex-none">
+        <button
+          type="button"
+          aria-label={`Abrir ${title}`}
+          aria-controls={bodyId}
+          aria-expanded={false}
+          onClick={onExpand}
           className={cn(
-            "grid h-10 w-10 flex-none place-items-center rounded-[12px]",
-            status === "empty"
-              ? "border border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
-              : "border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]",
+            "block h-full w-full text-left",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
           )}
         >
-          <Icon size={20} aria-hidden="true" />
-        </span>
-        <span
-          id={titleId}
-          title={title}
-          className="min-w-0 flex-1 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
-        >
-          {title}
-        </span>
-      </span>
+          {activeSlide ? (
+            <Slide slide={activeSlide} eager={safeIdx === 0} />
+          ) : (
+            <Placeholder Icon={Icon} showHint={status === "empty"} />
+          )}
+          {activeSlide && (
+            <span
+              aria-hidden="true"
+              className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]"
+            >
+              <span className="truncate">{activeSlide.title}</span>
+            </span>
+          )}
+        </button>
 
-      {/* Body — icon strip OR empty hint, vertical-centered between header and footer.
-         overflow-visible so the corner star (-4/-4) on the primary tile isn't clipped.
-         Two render branches (single + multi unified for hover-behavior parity):
-         - 0 selections: "Añade características" hint
-         - ≥1 selections: strip (visible tiles + optional +N chip), wrapped in a
-                          single combined HoverCard whose content lists ALL ordered
-                          items with the primary row highlighted (icon + label,
-                          plus a ⭐ marker on the primary). With 1 item the trigger
-                          is a single tile and the popover lists that one row —
-                          identical hover affordance as the multi case. */}
-      <span className="mt-4 flex flex-1 flex-col items-start justify-center">
-        {ordered.length === 0 ? (
-          <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
-            <Plus size={14} aria-hidden="true" className="flex-none" />
-            <span className="truncate">Añade características</span>
-          </span>
-        ) : (
-          <HoverCard
-            contentClassName="max-w-[360px]"
-            trigger={
-              <span className="flex flex-nowrap items-center gap-2 overflow-visible">
-                {visible.map((item) => (
-                  <span key={item.id}>{renderTile(item, item.id === primaryId)}</span>
-                ))}
-                {hidden.length > 0 && (
+        {slides.length > 1 && (
+          <div
+            aria-label={`Medios de ${title}`}
+            className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
+          >
+            {slides.map((slide, i) => {
+              const isActive = i === safeIdx;
+              return (
+                <button
+                  key={slide.id}
+                  ref={(el) => {
+                    dotRefs.current[i] = el;
+                  }}
+                  type="button"
+                  aria-current={isActive ? "true" : undefined}
+                  aria-label={`Mostrar ${slide.title}`}
+                  onClick={() => setCurrentIdx(i)}
+                  onKeyDown={(e) => handleDotKeyDown(e, i)}
+                  className={cn(
+                    "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-overlay)]",
+                  )}
+                >
                   <span
-                    role="img"
-                    aria-label={`${hidden.length} más`}
-                    className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
-                  >
-                    +{hidden.length}
-                  </span>
-                )}
-              </span>
-            }
-            content={
-              <ul className="flex flex-col">
-                {ordered.map((it) => {
-                  const isP = it.id === primaryId;
-                  const ItemIcon = it.icon;
-                  return (
-                    <li
-                      key={it.id}
-                      className={cn(
-                        "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px]",
-                        isP && "bg-[var(--color-action-primary-subtle)]",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px]",
-                          isP
-                            ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
-                            : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-                        )}
-                      >
-                        <ItemIcon size={12} aria-hidden="true" />
-                      </span>
-                      <span
-                        title={it.label}
-                        className={cn(
-                          "min-w-0 flex-1 line-clamp-2",
-                          isP
-                            ? "font-semibold text-[var(--color-action-primary)]"
-                            : "text-[var(--color-text-primary)]",
-                        )}
-                      >
-                        {it.label}
-                      </span>
-                      {isP && (
-                        <Star
-                          size={11}
-                          fill="currentColor"
-                          strokeWidth={0}
-                          aria-hidden="true"
-                          className="flex-none text-[var(--color-action-primary)]"
-                        />
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            }
-          />
+                    aria-hidden="true"
+                    data-active={isActive ? "true" : undefined}
+                    className={cn(
+                      "h-2 w-2 rounded-full transition-[background-color,box-shadow] duration-150",
+                      isActive
+                        ? "bg-[var(--color-action-primary)] [box-shadow:0_0_0_2px_var(--color-background-elevated)]"
+                        : "bg-[color-mix(in_oklch,var(--color-text-subtle)_60%,transparent)]",
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
         )}
-      </span>
+      </div>
 
-      {/* Footer — media counts. Photo + video, cada uno con su icono y label.
-         Cuando un count es 0 se grisa el span (60% transparency sobre text-muted).
-         Aparece en TODOS los estados (configured / pending / empty) — en empty
-         ambos counts son 0 así que ambos labels salen greyed. */}
-      <span className="mt-3 inline-flex min-h-[18px] items-center gap-3 text-[12px] text-[var(--color-text-muted)]">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1",
-            photoCount === 0 &&
-              "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
+      {/* ── Body ───────────────────────────────────────────────── */}
+      <button
+        type="button"
+        aria-expanded={false}
+        aria-controls={bodyId}
+        aria-labelledby={titleId}
+        onClick={onExpand}
+        className={cn(
+          "flex flex-1 flex-col gap-3 p-4 text-left",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
+        )}
+      >
+        {/* Header row: icon-badge + title + status pill on the right.
+           Status pill drops on `empty` (placeholder + hint convey state). */}
+        <span className="flex w-full items-center gap-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "grid h-10 w-10 flex-none place-items-center rounded-[12px]",
+              status === "empty"
+                ? "border border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
+                : "border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]",
+            )}
+          >
+            <Icon size={20} aria-hidden="true" />
+          </span>
+          <span
+            id={titleId}
+            title={title}
+            className="min-w-0 flex-1 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
+          >
+            {title}
+          </span>
+          <StatusPill status={status} />
+        </span>
+
+        {/* Strip — visible-cap policy + HoverCard popover with full ordered
+           list. items-start on the wrapper keeps the Radix Trigger inline-flex
+           wrapper from being stretched by the parent flex-col (preserves the
+           6h hover scope fix: popover opens only over the strip itself). */}
+        <span className="flex flex-1 flex-col items-start justify-end overflow-visible">
+          {ordered.length === 0 ? (
+            <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
+              <Plus size={14} aria-hidden="true" className="flex-none" />
+              <span className="truncate">Añade características</span>
+            </span>
+          ) : (
+            <HoverCard
+              contentClassName="max-w-[360px]"
+              trigger={
+                <span className="flex flex-nowrap items-center gap-2 overflow-visible">
+                  {visible.map((item) => (
+                    <span key={item.id}>
+                      {renderTile(item, item.id === primaryId)}
+                    </span>
+                  ))}
+                  {hidden.length > 0 && (
+                    <span
+                      role="img"
+                      aria-label={`${hidden.length} más`}
+                      className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
+                    >
+                      +{hidden.length}
+                    </span>
+                  )}
+                </span>
+              }
+              content={
+                <ul className="flex flex-col">
+                  {ordered.map((it) => {
+                    const isP = it.id === primaryId;
+                    const ItemIcon = it.icon;
+                    return (
+                      <li
+                        key={it.id}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px]",
+                          isP && "bg-[var(--color-action-primary-subtle)]",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px]",
+                            isP
+                              ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
+                              : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+                          )}
+                        >
+                          <ItemIcon size={12} aria-hidden="true" />
+                        </span>
+                        <span
+                          title={it.label}
+                          className={cn(
+                            "min-w-0 flex-1 line-clamp-2",
+                            isP
+                              ? "font-semibold text-[var(--color-action-primary)]"
+                              : "text-[var(--color-text-primary)]",
+                          )}
+                        >
+                          {it.label}
+                        </span>
+                        {isP && (
+                          <Star
+                            size={11}
+                            fill="currentColor"
+                            strokeWidth={0}
+                            aria-hidden="true"
+                            className="flex-none text-[var(--color-action-primary)]"
+                          />
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              }
+            />
           )}
-        >
+        </span>
+
+        {/* Visually-hidden media counts — kept for AT users / regression tests
+           that previously asserted the photo/video counts. The visible carousel
+           + dot count already conveys the same information sighted users. */}
+        <span className="sr-only">
           <Camera size={12} aria-hidden="true" />
-          {photoCount > 0
-            ? `${photoCount} ${photoCount === 1 ? "foto" : "fotos"}`
-            : "sin fotos"}
-        </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1",
-            videoCount === 0 &&
-              "text-[color-mix(in_oklch,var(--color-text-muted)_60%,transparent)]",
-          )}
-        >
+          {photoCount} {photoCount === 1 ? "foto" : "fotos"},{" "}
           <Video size={12} aria-hidden="true" />
-          {videoCount > 0
-            ? `${videoCount} ${videoCount === 1 ? "vídeo" : "vídeos"}`
-            : "sin vídeos"}
+          {videoCount} {videoCount === 1 ? "vídeo" : "vídeos"}
         </span>
+      </button>
+    </article>
+  );
+}
+
+// ── Slide / placeholder / pill helpers ──────────────────────────────────
+
+function Slide({
+  slide,
+  eager,
+}: {
+  slide: SubsystemSlide;
+  eager: boolean;
+}) {
+  if (slide.kind === "image" || slide.kind === "map") {
+    return (
+      <Image
+        src={slide.url}
+        alt={slide.alt || slide.title}
+        fill
+        sizes="(max-width: 640px) 100vw, 320px"
+        priority={eager}
+        unoptimized
+        className="object-cover"
+      />
+    );
+  }
+  // Video kind — `MediaAsset` has no posterUrl/thumbnail in schema, so the
+  // collapsed view always renders a placeholder icon. Real video element
+  // lives in the expanded gallery (out of 7a scope).
+  return (
+    <span
+      className="grid h-full w-full place-items-center bg-[var(--color-background-muted)] text-[var(--color-text-subtle)]"
+      aria-hidden="true"
+    >
+      <Video size={28} />
+      <span className="sr-only">{slide.alt || slide.title}</span>
+    </span>
+  );
+}
+
+function Placeholder({
+  Icon,
+  showHint,
+}: {
+  Icon: LucideIcon;
+  showHint: boolean;
+}) {
+  return (
+    <span
+      className="relative grid h-full w-full place-items-center"
+      style={{
+        background:
+          "linear-gradient(135deg, var(--color-action-primary-subtle), var(--color-background-muted))",
+      }}
+      aria-hidden={showHint ? undefined : "true"}
+    >
+      <Icon
+        size={32}
+        aria-hidden="true"
+        className="text-[var(--color-action-primary)]"
+      />
+      {showHint && (
+        <span className="absolute bottom-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)] backdrop-blur-[2px]">
+          <Plus size={10} aria-hidden="true" />
+          Añade portada
+        </span>
+      )}
+    </span>
+  );
+}
+
+function StatusPill({ status }: { status: SubsystemStatus }) {
+  if (status === "empty") return null;
+  if (status === "configured") {
+    return (
+      <span
+        aria-label="Configurado"
+        title="Configurado"
+        className="inline-flex flex-none items-center gap-1 rounded-[8px] bg-[var(--color-status-success-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-status-success-text)]"
+      >
+        <Check size={11} strokeWidth={3} aria-hidden="true" />
+        Configurado
       </span>
-    </button>
+    );
+  }
+  return (
+    <span
+      aria-label="Pendiente"
+      title="Pendiente"
+      className="inline-flex flex-none items-center gap-1 rounded-[8px] bg-[var(--color-status-warning-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-status-warning-text)]"
+    >
+      <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
+      Pendiente
+    </span>
   );
 }

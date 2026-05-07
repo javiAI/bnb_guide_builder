@@ -49,6 +49,24 @@
 }
 
 /*
+ * Touch-target slop for media-carousel dot indicators: 24 visual + 10px
+ * ::before slop on every side = 44 hit area on fine pointers. On coarse
+ * pointers (touch primary) the visual itself grows to 44 — slop collapses.
+ */
+.recipe-dot-24 {
+  position: relative;
+}
+.recipe-dot-24::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+@media (pointer: coarse) {
+  .recipe-dot-24 { min-height: 44px; min-width: 44px; }
+  .recipe-dot-24::before { inset: 0; }
+}
+
+/*
  * HoverCard primitive (src/components/ui/hover-card.tsx) — open/close animations
  * driven by Radix `data-state="open|closed"` attribute. Reduced-motion is already
  * handled by the existing rule at the bottom of this file (it short-circuits all
