@@ -192,15 +192,19 @@ export function SubsystemCard({
         // Hover affordance: single md shadow drop + per-status border
         // deepening (success/warning icon-tier; empty → action-primary).
         // No transform (avoids subpixel jitter on the title and corner star).
-        // No inset overlay — that washed out warm-tinted bgs and read as
-        // "muted" rather than "lifted".
+        //
+        // shadow uses Tailwind arbitrary-property `[box-shadow:...]` rather
+        // than `shadow-[...]`: the latter treats `var(--…)` as a shadow
+        // COLOR (sets --tw-shadow-color, leaves box-shadow untouched), which
+        // is why earlier hover passes never produced a visible drop. The
+        // arbitrary-property form emits a literal `box-shadow` rule.
         "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
           : status === "pending"
             ? "recipe-card-partial hover:border-[var(--color-status-warning-icon)]"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
-        "hover:shadow-[var(--elevation-surface-md)]",
+        "hover:[box-shadow:var(--elevation-surface-lg)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
       )}
