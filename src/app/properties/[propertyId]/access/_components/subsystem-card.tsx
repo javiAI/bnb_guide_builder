@@ -158,6 +158,16 @@ export function SubsystemCard({
         style={cardStyle}
         className="overflow-hidden rounded-[20px] border border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-surface-sm)]"
       >
+        {/* Media-first layout: cover area on top, title button below.
+           The carousel is display-only here (no click-through) — the title
+           button is the sole collapse trigger. */}
+        <MediaCarousel
+          slides={slides ?? []}
+          cockpitId={cockpitId}
+          propertyId={propertyId}
+          title={title}
+          variant="active"
+        />
         <button
           type="button"
           aria-expanded={true}
@@ -280,95 +290,6 @@ function CollapsedCard({
   renderTile,
   onExpand,
 }: CollapsedCardProps) {
-  const router = useRouter();
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
-  const activeSlide = slides[safeIdx];
-
-  const handleAddCoverClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (uploading) return;
-    setUploadError(null);
-    fileInputRef.current?.click();
-  }, [uploading]);
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError(null);
-      let assetId: string | null = null;
-      try {
-        const req = await requestUploadAction(propertyId, file.name, file.type);
-        if (!req.success || !req.data) {
-          setUploadError(req.error ?? "Error al preparar la subida");
-          return;
-        }
-        assetId = req.data.assetId;
-        const put = await fetch(req.data.uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!put.ok) {
-          setUploadError(`Subida falló (${put.status})`);
-          deleteMediaAction(assetId).catch(() => {});
-          return;
-        }
-        const confirm = await confirmUploadAction(assetId);
-        if (!confirm.success) {
-          setUploadError(confirm.error ?? "Error al verificar");
-          return;
-        }
-        const assign = await assignMediaAction(
-          assetId,
-          "access_method",
-          propertyId,
-          `access.${cockpitId}`,
-        );
-        if (!assign.success) {
-          setUploadError(assign.error ?? "Error al asignar");
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Error desconocido");
-        if (assetId) deleteMediaAction(assetId).catch(() => {});
-      } finally {
-        setUploading(false);
-      }
-    },
-    [propertyId, cockpitId, router],
-  );
-
-  const focusDot = useCallback((i: number) => {
-    dotRefs.current[i]?.focus();
-  }, []);
-
-  const handleDotKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-      if (slides.length <= 1) return;
-      const last = slides.length - 1;
-      let next = i;
-      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
-      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
-      else if (e.key === "Home") next = 0;
-      else if (e.key === "End") next = last;
-      else return;
-      e.preventDefault();
-      setCurrentIdx(next);
-      focusDot(next);
-    },
-    [slides.length, focusDot],
-  );
-
   return (
     <article
       data-component="subsystem-card-collapsed"
@@ -386,124 +307,15 @@ function CollapsedCard({
         "focus-within:[box-shadow:var(--elevation-surface-md)]",
       )}
     >
-      {/* ── Media area ─────────────────────────────────────────── */}
-      <div className="relative h-[140px] w-full flex-none">
-        <button
-          type="button"
-          aria-label={`Abrir ${title}`}
-          aria-controls={bodyId}
-          aria-expanded={false}
-          onClick={onExpand}
-          className={cn(
-            "block h-full w-full text-left",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
-          )}
-        >
-          {activeSlide ? (
-            <Slide slide={activeSlide} eager={safeIdx === 0} />
-          ) : (
-            <Placeholder subsystemId={cockpitId} />
-          )}
-          {activeSlide && (
-            <span
-              aria-hidden="true"
-              className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]"
-            >
-              <span className="truncate">{activeSlide.title}</span>
-            </span>
-          )}
-        </button>
-
-        {slides.length === 0 && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-hidden="true"
-              tabIndex={-1}
-            />
-            <button
-              type="button"
-              aria-label={`Añade portada de ${title}`}
-              onClick={handleAddCoverClick}
-              disabled={uploading}
-              className={cn(
-                "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
-                "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
-                "backdrop-blur-[2px] transition-colors duration-150",
-                "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
-                "disabled:cursor-not-allowed disabled:opacity-80",
-                // 44 hit area via slop pseudo-element (visual 36 stays discreet).
-                "before:absolute before:inset-[-4px] before:content-['']",
-                "[@media(pointer:coarse)]:min-h-[44px]",
-              )}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 size={13} aria-hidden="true" className="animate-spin" />
-                  Subiendo…
-                </>
-              ) : (
-                <>
-                  <Plus size={13} aria-hidden="true" />
-                  Añade portada
-                </>
-              )}
-            </button>
-            {uploadError && (
-              <span
-                role="alert"
-                className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
-              >
-                <span className="truncate">{uploadError}</span>
-              </span>
-            )}
-          </>
-        )}
-
-        {slides.length > 1 && (
-          <div
-            aria-label={`Medios de ${title}`}
-            className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
-          >
-            {slides.map((slide, i) => {
-              const isActive = i === safeIdx;
-              return (
-                <button
-                  key={slide.id}
-                  ref={(el) => {
-                    dotRefs.current[i] = el;
-                  }}
-                  type="button"
-                  aria-current={isActive ? "true" : undefined}
-                  aria-label={`Mostrar ${slide.title}`}
-                  onClick={() => setCurrentIdx(i)}
-                  onKeyDown={(e) => handleDotKeyDown(e, i)}
-                  className={cn(
-                    "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-overlay)]",
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    data-active={isActive ? "true" : undefined}
-                    className={cn(
-                      "h-2 w-2 rounded-full transition-[background-color,box-shadow] duration-150",
-                      isActive
-                        ? "bg-[var(--color-action-primary)] [box-shadow:0_0_0_2px_var(--color-background-elevated)]"
-                        : "bg-[color-mix(in_oklch,var(--color-text-subtle)_60%,transparent)]",
-                    )}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <MediaCarousel
+        slides={slides}
+        cockpitId={cockpitId}
+        propertyId={propertyId}
+        title={title}
+        variant="collapsed"
+        bodyId={bodyId}
+        onExpand={onExpand}
+      />
 
       {/* ── Body ───────────────────────────────────────────────── */}
       <button
@@ -630,6 +442,265 @@ function CollapsedCard({
         </span>
       </button>
     </article>
+  );
+}
+
+// ── Shared media carousel ───────────────────────────────────────────────
+//
+// Used by both the collapsed card (with a click-through to expand) and the
+// active card (display-only — the title button below handles collapse).
+// Encapsulates: slide rendering, dot navigation (click + keyboard), title
+// overlay, and the "Añade portada" upload affordance shown when the
+// subsystem has no media.
+//
+// `variant` controls:
+//   - height: 140px collapsed / 240px active
+//   - whether the slide surface itself is a button (collapsed: yes — the
+//     wrapper carries the click-through to expand) or a non-interactive
+//     div (active: no — the title button is the sole collapse trigger)
+
+interface MediaCarouselProps {
+  slides: readonly SubsystemSlide[];
+  cockpitId: string;
+  propertyId: string;
+  title: string;
+  variant: "collapsed" | "active";
+  bodyId?: string; // collapsed only: aria-controls target on the expand button
+  onExpand?: () => void; // collapsed only: invoked on media click
+}
+
+function MediaCarousel({
+  slides,
+  cockpitId,
+  propertyId,
+  title,
+  variant,
+  bodyId,
+  onExpand,
+}: MediaCarouselProps) {
+  const router = useRouter();
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
+  const activeSlide = slides[safeIdx];
+
+  const handleAddCoverClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (uploading) return;
+      setUploadError(null);
+      fileInputRef.current?.click();
+    },
+    [uploading],
+  );
+
+  const handleFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+
+      setUploading(true);
+      setUploadError(null);
+      let assetId: string | null = null;
+      try {
+        const req = await requestUploadAction(propertyId, file.name, file.type);
+        if (!req.success || !req.data) {
+          setUploadError(req.error ?? "Error al preparar la subida");
+          return;
+        }
+        assetId = req.data.assetId;
+        const put = await fetch(req.data.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type },
+        });
+        if (!put.ok) {
+          setUploadError(`Subida falló (${put.status})`);
+          deleteMediaAction(assetId).catch(() => {});
+          return;
+        }
+        const confirm = await confirmUploadAction(assetId);
+        if (!confirm.success) {
+          setUploadError(confirm.error ?? "Error al verificar");
+          return;
+        }
+        const assign = await assignMediaAction(
+          assetId,
+          "access_method",
+          propertyId,
+          `access.${cockpitId}`,
+        );
+        if (!assign.success) {
+          setUploadError(assign.error ?? "Error al asignar");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : "Error desconocido");
+        if (assetId) deleteMediaAction(assetId).catch(() => {});
+      } finally {
+        setUploading(false);
+      }
+    },
+    [propertyId, cockpitId, router],
+  );
+
+  const focusDot = useCallback((i: number) => {
+    dotRefs.current[i]?.focus();
+  }, []);
+
+  const handleDotKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+      if (slides.length <= 1) return;
+      const last = slides.length - 1;
+      let next = i;
+      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
+      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = last;
+      else return;
+      e.preventDefault();
+      setCurrentIdx(next);
+      focusDot(next);
+    },
+    [slides.length, focusDot],
+  );
+
+  const heightClass = variant === "active" ? "h-[240px]" : "h-[140px]";
+
+  const slideContent = activeSlide ? (
+    <Slide slide={activeSlide} eager={safeIdx === 0} />
+  ) : (
+    <Placeholder subsystemId={cockpitId} />
+  );
+
+  const titleOverlay = activeSlide ? (
+    <span
+      aria-hidden="true"
+      className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]"
+    >
+      <span className="truncate">{activeSlide.title}</span>
+    </span>
+  ) : null;
+
+  return (
+    <div className={cn("relative w-full flex-none", heightClass)}>
+      {variant === "collapsed" && onExpand ? (
+        <button
+          type="button"
+          aria-label={`Abrir ${title}`}
+          aria-controls={bodyId}
+          aria-expanded={false}
+          onClick={onExpand}
+          className={cn(
+            "block h-full w-full text-left",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
+          )}
+        >
+          {slideContent}
+          {titleOverlay}
+        </button>
+      ) : (
+        <div className="block h-full w-full">
+          {slideContent}
+          {titleOverlay}
+        </div>
+      )}
+
+      {slides.length === 0 && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
+            onChange={handleFileChange}
+            className="hidden"
+            aria-hidden="true"
+            tabIndex={-1}
+          />
+          <button
+            type="button"
+            aria-label={`Añade portada de ${title}`}
+            onClick={handleAddCoverClick}
+            disabled={uploading}
+            className={cn(
+              "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
+              "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
+              "backdrop-blur-[2px] transition-colors duration-150",
+              "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+              "disabled:cursor-not-allowed disabled:opacity-80",
+              // 44 hit area via slop pseudo-element (visual 36 stays discreet).
+              "before:absolute before:inset-[-4px] before:content-['']",
+              "[@media(pointer:coarse)]:min-h-[44px]",
+            )}
+          >
+            {uploading ? (
+              <>
+                <Loader2 size={13} aria-hidden="true" className="animate-spin" />
+                Subiendo…
+              </>
+            ) : (
+              <>
+                <Plus size={13} aria-hidden="true" />
+                Añade portada
+              </>
+            )}
+          </button>
+          {uploadError && (
+            <span
+              role="alert"
+              className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
+            >
+              <span className="truncate">{uploadError}</span>
+            </span>
+          )}
+        </>
+      )}
+
+      {slides.length > 1 && (
+        <div
+          aria-label={`Medios de ${title}`}
+          className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
+        >
+          {slides.map((slide, i) => {
+            const isActive = i === safeIdx;
+            return (
+              <button
+                key={slide.id}
+                ref={(el) => {
+                  dotRefs.current[i] = el;
+                }}
+                type="button"
+                aria-current={isActive ? "true" : undefined}
+                aria-label={`Mostrar ${slide.title}`}
+                onClick={() => setCurrentIdx(i)}
+                onKeyDown={(e) => handleDotKeyDown(e, i)}
+                className={cn(
+                  "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-overlay)]",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  data-active={isActive ? "true" : undefined}
+                  className={cn(
+                    "h-2 w-2 rounded-full transition-[background-color,box-shadow] duration-150",
+                    isActive
+                      ? "bg-[var(--color-action-primary)] [box-shadow:0_0_0_2px_var(--color-background-elevated)]"
+                      : "bg-[color-mix(in_oklch,var(--color-text-subtle)_60%,transparent)]",
+                  )}
+                />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
