@@ -239,6 +239,7 @@
   --elevation-surface-sm:     var(--shadow-sm);
   --elevation-surface-md:     var(--shadow-md);
   --elevation-surface-lg:     var(--shadow-lg);
+  --elevation-surface-xl:     var(--shadow-xl);
   --elevation-floating:       var(--shadow-md);
   --elevation-popover:        var(--shadow-md);
   --elevation-dropdown:       var(--shadow-md);
@@ -469,6 +470,7 @@
   --elevation-surface-sm:     var(--shadow-sm-dark);
   --elevation-surface-md:     var(--shadow-md-dark);
   --elevation-surface-lg:     var(--shadow-lg-dark);
+  --elevation-surface-xl:     var(--shadow-xl-dark);
   --elevation-floating:       var(--shadow-md-dark);
   --elevation-popover:        var(--shadow-md-dark);
   --elevation-dropdown:       var(--shadow-md-dark);
