@@ -140,24 +140,6 @@ html.vt-expand .method-row {
 }
 
 /*
- * Card status tints — color-mix with bg-elevated keeps dark theme legible.
- * Status border colors are 1.5px so the card frame itself signals state.
- */
-.recipe-card-configured {
-  border: 1.5px solid var(--color-status-success-border);
-  background: color-mix(in oklch, var(--color-status-success-bg) 35%, var(--color-background-elevated));
-}
-html[data-theme="dark"] .recipe-card-configured {
-  background: color-mix(in oklch, var(--color-status-success-bg) 50%, var(--color-background-elevated));
-}
-.recipe-card-partial {
-  border: 1.5px solid var(--color-status-warning-border);
-  background: color-mix(in oklch, var(--color-status-warning-bg) 50%, var(--color-background-elevated));
-}
-html[data-theme="dark"] .recipe-card-partial {
-  background: color-mix(in oklch, var(--color-status-warning-bg) 60%, var(--color-background-elevated));
-}
-/*
  * Reduced-motion fallback for all named view-transitions (cockpit cards +
  * method rows). MethodRow rows ARE named individually (`method-row-${id}`
  * with class `method-row`) so primary-swap reorders FLIP smoothly; matched

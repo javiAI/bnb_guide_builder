@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Camera,
   Check,
+  Loader2,
   Plus,
   Star,
   Video,
@@ -14,11 +15,20 @@ import {
   useId,
   useRef,
   useState,
+  type ChangeEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
+import {
+  assignMediaAction,
+  confirmUploadAction,
+  deleteMediaAction,
+  requestUploadAction,
+} from "@/lib/actions/media.actions";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
 import type { SubsystemSlide } from "./subsystem-card.types";
@@ -34,6 +44,7 @@ export interface SubsystemSelectedItem {
 interface SubsystemCardProps {
   role: CardRole;
   cockpitId: string;
+  propertyId: string;
   icon: LucideIcon;
   title: string;
   selectedItems: readonly SubsystemSelectedItem[];
@@ -65,6 +76,7 @@ function resolveVisibleCap(totalCount: number): number {
 export function SubsystemCard({
   role,
   cockpitId,
+  propertyId,
   icon: Icon,
   title,
   selectedItems,
@@ -156,7 +168,7 @@ export function SubsystemCard({
         >
           <span
             aria-hidden="true"
-            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]"
+            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
           >
             <Icon size={20} aria-hidden="true" />
           </span>
@@ -205,6 +217,8 @@ export function SubsystemCard({
       cardStyle={cardStyle}
       titleId={titleId}
       bodyId={bodyId}
+      cockpitId={cockpitId}
+      propertyId={propertyId}
       Icon={Icon}
       title={title}
       status={status}
@@ -227,6 +241,8 @@ interface CollapsedCardProps {
   cardStyle: React.CSSProperties;
   titleId: string;
   bodyId: string;
+  cockpitId: string;
+  propertyId: string;
   Icon: LucideIcon;
   title: string;
   status: SubsystemStatus;
@@ -245,6 +261,8 @@ function CollapsedCard({
   cardStyle,
   titleId,
   bodyId,
+  cockpitId,
+  propertyId,
   Icon,
   title,
   status,
@@ -258,10 +276,73 @@ function CollapsedCard({
   renderTile,
   onExpand,
 }: CollapsedCardProps) {
+  const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
   const activeSlide = slides[safeIdx];
+
+  const handleAddCoverClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (uploading) return;
+    setUploadError(null);
+    fileInputRef.current?.click();
+  }, [uploading]);
+
+  const handleFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+
+      setUploading(true);
+      setUploadError(null);
+      let assetId: string | null = null;
+      try {
+        const req = await requestUploadAction(propertyId, file.name, file.type);
+        if (!req.success || !req.data) {
+          setUploadError(req.error ?? "Error al preparar la subida");
+          return;
+        }
+        assetId = req.data.assetId;
+        const put = await fetch(req.data.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type },
+        });
+        if (!put.ok) {
+          setUploadError(`Subida falló (${put.status})`);
+          deleteMediaAction(assetId).catch(() => {});
+          return;
+        }
+        const confirm = await confirmUploadAction(assetId);
+        if (!confirm.success) {
+          setUploadError(confirm.error ?? "Error al verificar");
+          return;
+        }
+        const assign = await assignMediaAction(
+          assetId,
+          "access_method",
+          propertyId,
+          `access.${cockpitId}`,
+        );
+        if (!assign.success) {
+          setUploadError(assign.error ?? "Error al asignar");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : "Error desconocido");
+        if (assetId) deleteMediaAction(assetId).catch(() => {});
+      } finally {
+        setUploading(false);
+      }
+    },
+    [propertyId, cockpitId, router],
+  );
 
   const focusDot = useCallback((i: number) => {
     dotRefs.current[i]?.focus();
@@ -296,11 +377,7 @@ function CollapsedCard({
         // is mis-parsed by Tailwind v3 as a shadow color. We use a literal
         // box-shadow rule via `[box-shadow:var(--elevation-surface-lg)]`.
         "transition-[border-color,box-shadow] duration-200 ease-out",
-        status === "configured"
-          ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
-          : status === "pending"
-            ? "recipe-card-partial hover:border-[var(--color-status-warning-icon)]"
-            : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
+        "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
         "hover:[box-shadow:var(--elevation-surface-lg)]",
         "focus-within:[box-shadow:var(--elevation-surface-md)]",
       )}
@@ -321,7 +398,7 @@ function CollapsedCard({
           {activeSlide ? (
             <Slide slide={activeSlide} eager={safeIdx === 0} />
           ) : (
-            <Placeholder Icon={Icon} showHint={status === "empty"} />
+            <Placeholder subsystemId={cockpitId} />
           )}
           {activeSlide && (
             <span
@@ -332,6 +409,57 @@ function CollapsedCard({
             </span>
           )}
         </button>
+
+        {slides.length === 0 && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
+              onChange={handleFileChange}
+              className="hidden"
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            <button
+              type="button"
+              aria-label={`Añade portada de ${title}`}
+              onClick={handleAddCoverClick}
+              disabled={uploading}
+              className={cn(
+                "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
+                "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
+                "backdrop-blur-[2px] transition-colors duration-150",
+                "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+                "disabled:cursor-not-allowed disabled:opacity-80",
+                // 44 hit area via slop pseudo-element (visual 36 stays discreet).
+                "before:absolute before:inset-[-4px] before:content-['']",
+                "[@media(pointer:coarse)]:min-h-[44px]",
+              )}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={13} aria-hidden="true" className="animate-spin" />
+                  Subiendo…
+                </>
+              ) : (
+                <>
+                  <Plus size={13} aria-hidden="true" />
+                  Añade portada
+                </>
+              )}
+            </button>
+            {uploadError && (
+              <span
+                role="alert"
+                className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
+              >
+                <span className="truncate">{uploadError}</span>
+              </span>
+            )}
+          </>
+        )}
 
         {slides.length > 1 && (
           <div
@@ -390,12 +518,7 @@ function CollapsedCard({
         <span className="flex w-full items-center gap-3">
           <span
             aria-hidden="true"
-            className={cn(
-              "grid h-10 w-10 flex-none place-items-center rounded-[12px]",
-              status === "empty"
-                ? "border border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]"
-                : "border-[1.5px] border-[var(--color-action-primary)] bg-transparent text-[var(--color-action-primary)]",
-            )}
+            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
           >
             <Icon size={20} aria-hidden="true" />
           </span>
@@ -543,38 +666,26 @@ function Slide({
 }
 
 function Placeholder({
-  Icon,
-  showHint,
+  subsystemId,
 }: {
-  Icon: LucideIcon;
-  showHint: boolean;
+  subsystemId: string;
 }) {
+  // Per-subsystem identity gradient — terra (building) / olive (unit) /
+  // info (parking) / warning (accessibility). Tokens live in semantic.css
+  // and resolve per theme. No icon, no hint — the gradient alone is the
+  // empty signal; the body header (icon-badge + title) carries identity.
+  const gradient = `linear-gradient(135deg, var(--color-subsystem-${subsystemId}-from), var(--color-subsystem-${subsystemId}-to))`;
   return (
     <span
-      className="relative grid h-full w-full place-items-center"
-      style={{
-        background:
-          "linear-gradient(135deg, var(--color-action-primary-subtle), var(--color-background-muted))",
-      }}
-      aria-hidden={showHint ? undefined : "true"}
-    >
-      <Icon
-        size={32}
-        aria-hidden="true"
-        className="text-[var(--color-action-primary)]"
-      />
-      {showHint && (
-        <span className="absolute bottom-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)] backdrop-blur-[2px]">
-          <Plus size={10} aria-hidden="true" />
-          Añade portada
-        </span>
-      )}
-    </span>
+      aria-hidden="true"
+      className="block h-full w-full"
+      style={{ background: gradient }}
+    />
   );
 }
 
+
 function StatusPill({ status }: { status: SubsystemStatus }) {
-  if (status === "empty") return null;
   if (status === "configured") {
     return (
       <span

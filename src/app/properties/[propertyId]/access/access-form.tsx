@@ -599,8 +599,11 @@ export function AccessForm({
         <NumberedSection number="01" title="Horarios">
           <div className="mb-4 grid grid-cols-[auto_1fr] items-center gap-5 rounded-[16px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
             <div
-              className="grid h-[96px] w-[96px] place-items-center rounded-[20px] bg-[var(--color-action-primary)] font-semibold leading-none tracking-[-0.02em] text-[var(--color-action-primary-fg)]"
-              style={{ fontSize: "40px", fontVariantNumeric: "tabular-nums" }}
+              className="grid h-[96px] w-[96px] place-items-center rounded-[20px] bg-[var(--color-action-primary)] font-semibold leading-none tracking-[-0.02em] text-[var(--color-text-on-accent)]"
+              style={{
+                fontSize: "40px",
+                fontVariantNumeric: "tabular-nums",
+              }}
               aria-hidden="true"
             >
               <span>
@@ -703,6 +706,7 @@ export function AccessForm({
                     slides={subsystemSlides.building}
                     status={buildingStatus}
                     cockpitId="building"
+                    propertyId={propertyId}
                     onExpand={() => setExpandedCardAnimated("building")}
                     onCollapse={() => setExpandedCardAnimated(null)}
                     expandedSubtitle="Métodos para entrar al portal, recinto o comunidad. Si la vivienda no está dentro de un edificio cerrado, deja esta sección vacía."
@@ -735,6 +739,7 @@ export function AccessForm({
                     slides={subsystemSlides.unit}
                     status={unitStatus}
                     cockpitId="unit"
+                    propertyId={propertyId}
                     onExpand={() => setExpandedCardAnimated("unit")}
                     onCollapse={() => setExpandedCardAnimated(null)}
                     expandedSubtitle="Métodos para abrir la puerta del piso o casa."
@@ -768,6 +773,7 @@ export function AccessForm({
                     slides={subsystemSlides.parking}
                     status={parkingStatus}
                     cockpitId="parking"
+                    propertyId={propertyId}
                     onExpand={() => setExpandedCardAnimated("parking")}
                     onCollapse={() => setExpandedCardAnimated(null)}
                     expandedSubtitle="Tipos de aparcamiento disponibles para el huésped."
@@ -799,6 +805,7 @@ export function AccessForm({
                   slides={subsystemSlides.accessibility}
                   status={axStatus}
                   cockpitId="accessibility"
+                  propertyId={propertyId}
                   onExpand={() => setExpandedCardAnimated("accessibility")}
                   onCollapse={() => setExpandedCardAnimated(null)}
                   expandedSubtitle="Características de accesibilidad de la entrada y zonas comunes. Las adaptaciones internas se configuran en cada espacio."

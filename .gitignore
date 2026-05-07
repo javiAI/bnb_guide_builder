@@ -73,9 +73,9 @@ design-system/**/__MACOSX/
 design-system/preview/
 design-system/tmp/
 
-# Throwaway capture/probe scripts (Liora parity audit)
-.tmp-*.mjs
+# Canonical scratch folder for all design mockups, capture scripts, parity artifacts
+# Convention: every new design batch goes in tmp/<feature>-<version>/<batch>/
+tmp/
 
 # Claude Code skill lockfile (per-machine)
 skills-lock.json
-.tmp-mockups-v6/

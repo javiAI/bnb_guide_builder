@@ -142,6 +142,23 @@
   --color-status-neutral-icon:    var(--warm-600);
   --color-status-neutral-border:  var(--warm-200);
 
+  /* ─── Subsystem identity (access cockpit empty placeholders) ──────
+     Each access subsystem owns a soft gradient pair so an empty card
+     is still visually distinguishable at a glance. Hues chosen for
+     maximum separation around the wheel: terra (40°) / olive (130°) /
+     warning (80°) / info (235°). Light tier uses *-100 → *-50 (subtle,
+     sits cleanly under the title overlay). Dark tier mixes *-700 with
+     warm-900 at low % so the gradient stays readable on dark surfaces
+     without clashing with --color-background-elevated. */
+  --color-subsystem-building-from:        var(--terra-600);
+  --color-subsystem-building-to:          var(--terra-200);
+  --color-subsystem-unit-from:            var(--olive-600);
+  --color-subsystem-unit-to:              var(--olive-200);
+  --color-subsystem-parking-from:         var(--info-600);
+  --color-subsystem-parking-to:           var(--info-200);
+  --color-subsystem-accessibility-from:   var(--warning-600);
+  --color-subsystem-accessibility-to:     var(--warning-200);
+
   /* ─── Iconography (semantic) ──────────────────────────────────────
      Icons inherit currentColor by default. Use these tokens only when
      the icon's color is decoupled from surrounding text. */
@@ -382,6 +399,19 @@
   --color-status-neutral-text:    var(--warm-100);
   --color-status-neutral-icon:    var(--warm-300);
   --color-status-neutral-border:  var(--warm-800);
+
+  /* Subsystem identity (dark) — match the light-tier intent: subtle
+     hue tint over the elevated dark surface. color-mix at 22%/12% is
+     the same weighting used by --color-status-*-bg in dark, so the
+     placeholders sit at the same visual "elevation" as status pills. */
+  --color-subsystem-building-from:        color-mix(in oklch, var(--terra-500) 85%, var(--warm-900));
+  --color-subsystem-building-to:          color-mix(in oklch, var(--terra-500) 22%, var(--warm-900));
+  --color-subsystem-unit-from:            color-mix(in oklch, var(--olive-500) 85%, var(--warm-900));
+  --color-subsystem-unit-to:              color-mix(in oklch, var(--olive-500) 22%, var(--warm-900));
+  --color-subsystem-parking-from:         color-mix(in oklch, var(--info-500) 85%, var(--warm-900));
+  --color-subsystem-parking-to:           color-mix(in oklch, var(--info-500) 22%, var(--warm-900));
+  --color-subsystem-accessibility-from:   color-mix(in oklch, var(--warning-500) 85%, var(--warm-900));
+  --color-subsystem-accessibility-to:     color-mix(in oklch, var(--warning-500) 22%, var(--warm-900));
 
   /* Iconography */
   --color-icon-primary:   var(--warm-100);
