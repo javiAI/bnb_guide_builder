@@ -4,7 +4,6 @@ import { AlertTriangle, Camera, Check, Plus, Star, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { useMeasure } from "@/lib/hooks/use-measure";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
 
@@ -32,25 +31,18 @@ interface SubsystemCardProps {
   children: ReactNode;
 }
 
-// Container-aware visible cap, computed from real measurements:
-//  tile    = 32px (h-8 w-8)
-//  gap     = 8px (gap-2)
-//  +N chip = 32px min-width (only present when there's overflow)
-// useMeasure observes the button's content-box (excludes padding+border), so
-// `widthPx` is already the inner available width — no extra subtraction.
-// The algorithm tries to fit ALL tiles first (no +N chip needed); if not, it
-// computes the max number of tiles that fit alongside a +N chip:
-//   visible*(TILE+GAP) + PLUS_N <= available  →  visible = floor((avail-PLUS_N)/(TILE+GAP))
-// During the first paint (width === 0) we default to 4 to avoid a "0 visible"
-// flash before useMeasure resolves.
-function resolveStripCap(widthPx: number, totalCount: number): number {
-  if (widthPx === 0) return Math.min(4, totalCount);
-  const TILE = 32;
-  const GAP = 8;
-  const PLUS_N = 32;
-  const allTilesWidth = totalCount * TILE + Math.max(0, totalCount - 1) * GAP;
-  if (allTilesWidth <= widthPx) return totalCount;
-  return Math.max(1, Math.floor((widthPx - PLUS_N) / (TILE + GAP)));
+// Visible-cap policy: at most 5 chips total (tiles + the optional +N chip).
+//  N <= 5 → render all N tiles, no +N chip ("+1" never appears, and the rare
+//           5-tile case shows the full set instead of "4 tiles + +1").
+//  N >= 6 → render 4 tiles + a "+N-4" chip = 5 chips total.
+// This is purely a function of `ordered.length`, NOT of measured width — that
+// avoids the inconsistency we used to see when the collapsed `<button>`
+// remounted after expand/collapse: useMeasure restarted at width=0 and the
+// fallback would change the visible count between renders. With the new
+// policy the count is stable across mounts.
+const STRIP_VISIBLE_MAX = 5;
+function resolveVisibleCap(totalCount: number): number {
+  return totalCount <= STRIP_VISIBLE_MAX ? totalCount : 4;
 }
 
 export function SubsystemCard({
@@ -70,7 +62,6 @@ export function SubsystemCard({
 }: SubsystemCardProps) {
   const titleId = useId();
   const bodyId = useId();
-  const [cardRef, { width }] = useMeasure<HTMLButtonElement>();
 
   // Per-card view-transition-name lets the browser morph each card individually.
   const cardStyle = { viewTransitionName: `cockpit-card-${cockpitId}` } as React.CSSProperties;
@@ -83,9 +74,9 @@ export function SubsystemCard({
     if (!p) return [...selectedItems];
     return [p, ...selectedItems.filter((it) => it.id !== primaryId)];
   })();
-  const stripVisibleMax = resolveStripCap(width, ordered.length);
-  const visible = ordered.slice(0, stripVisibleMax);
-  const hidden = ordered.slice(stripVisibleMax);
+  const visibleCap = resolveVisibleCap(ordered.length);
+  const visible = ordered.slice(0, visibleCap);
+  const hidden = ordered.slice(visibleCap);
 
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
@@ -180,7 +171,6 @@ export function SubsystemCard({
 
   return (
     <button
-      ref={cardRef}
       type="button"
       aria-expanded={false}
       aria-controls={bodyId}
@@ -189,15 +179,20 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        // Hover affordance: single md shadow drop + per-status border
-        // deepening (success/warning icon-tier; empty → action-primary).
-        // No transform (avoids subpixel jitter on the title and corner star).
+        // Card-level hover (border + shadow) fires anywhere on the card —
+        // the entire <button> is the click target, so the visual lift should
+        // accompany any pointer that's "on the card", not just over content.
+        // The popover trigger is independently scoped to the strip itself
+        // (see `items-start` on the strip wrapper below — it prevents the
+        // Radix HoverCard.Trigger inline-flex wrapper from being stretched
+        // by the parent flex-col, so the popover opens only over the strip
+        // and not when hovering the empty area to the right of a short list).
         //
-        // shadow uses Tailwind arbitrary-property `[box-shadow:...]` rather
-        // than `shadow-[...]`: the latter treats `var(--…)` as a shadow
-        // COLOR (sets --tw-shadow-color, leaves box-shadow untouched), which
-        // is why earlier hover passes never produced a visible drop. The
-        // arbitrary-property form emits a literal `box-shadow` rule.
+        // shadow uses Tailwind arbitrary-property `[box-shadow:...]` because
+        // `shadow-[var(--…)]` is mis-parsed by Tailwind v3 as a shadow COLOR
+        // (sets --tw-shadow-color, leaves box-shadow untouched) — that's why
+        // earlier hover passes silently produced no drop. Arbitrary-property
+        // syntax emits a literal `box-shadow` rule.
         "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
@@ -278,7 +273,7 @@ export function SubsystemCard({
                           plus a ⭐ marker on the primary). With 1 item the trigger
                           is a single tile and the popover lists that one row —
                           identical hover affordance as the multi case. */}
-      <span className="mt-4 flex flex-1 flex-col justify-center">
+      <span className="mt-4 flex flex-1 flex-col items-start justify-center">
         {ordered.length === 0 ? (
           <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
             <Plus size={14} aria-hidden="true" className="flex-none" />
