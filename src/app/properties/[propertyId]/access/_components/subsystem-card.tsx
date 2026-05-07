@@ -110,16 +110,16 @@ export function SubsystemCard({
             aria-hidden="true"
             className="absolute -right-[4px] -top-[4px] grid h-[14px] w-[14px] place-items-center rounded-full bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] outline outline-2 outline-[var(--color-background-elevated)]"
           >
-            {/* lucide Star path is geometrically biased ~0.35 above the viewBox center
-               (top tip y≈2.3, bottom y≈21.0 within 24-tall viewBox), so place-items-center
-               leaves it visually high. translate-y-[0.5px] nudges it to the optical center
-               of the 14px circle. */}
+            {/* Even-on-even pixel grid: badge 14 × star 10 = 2px margin each
+               side, integer positioning. place-items-center centers cleanly
+               without sub-pixel rounding inconsistencies. No CSS transform on
+               the star — children stay solidary with the badge during any
+               parent state change. */}
             <Star
-              size={9}
+              size={10}
               fill="currentColor"
               strokeWidth={0}
               aria-hidden="true"
-              className="translate-y-[0.5px]"
             />
           </span>
         )}
@@ -189,20 +189,20 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        // transform-gpu baseline (translate3d 0,0,0) promotes the card to its own
-        // GPU compositor layer permanently. The hover translate is then a pure
-        // compositor transform of the rasterized layer — children (title, corner
-        // star) move uniformly with the card and DON'T re-rasterize at fractional
-        // pixel positions, which is what previously caused the perceived
-        // "title/star drift" reported when the card lifted on hover.
-        "transform-gpu transition-[border-color,box-shadow,transform] duration-200 ease-out",
+        // Hover affordance — best-practice clickable card pattern: shadow
+        // elevation (sm → md) + border tint shift to action-primary on the
+        // empty state. NO transform on the card: any translate causes either
+        // sub-pixel re-rasterization of children (title, star) or a perceived
+        // "everything moved" that the user reads as decentered. Static
+        // children + state-only changes signal interactivity without motion.
+        "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured"
           : status === "pending"
             ? "recipe-card-partial"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
-        "hover:-translate-y-[1px] hover:shadow-[var(--elevation-surface-lg)]",
-        status === "empty" && "hover:border-[var(--color-border-strong)]",
+        "hover:shadow-[var(--elevation-surface-md)]",
+        status === "empty" && "hover:border-[var(--color-action-primary)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
       )}
