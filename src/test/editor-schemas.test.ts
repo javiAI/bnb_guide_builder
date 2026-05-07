@@ -97,6 +97,8 @@ describe("Access editor schema", () => {
       checkOutTime: "11:00",
       isAutonomousCheckin: true,
       hasBuildingAccess: false,
+      hasParking: true,
+      hasAccessibilityConsiderations: null,
       unitAccess: { methods: ["am.smart_lock"] },
     });
     expect(result.success).toBe(true);
@@ -109,6 +111,8 @@ describe("Access editor schema", () => {
       checkOutTime: "11:00",
       isAutonomousCheckin: false,
       hasBuildingAccess: false,
+      hasParking: true,
+      hasAccessibilityConsiderations: null,
       unitAccess: { methods: [] },
     });
     expect(result.success).toBe(false);
