@@ -189,20 +189,24 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        // Hover affordance — best-practice clickable card pattern: shadow
-        // elevation (sm → md) + border tint shift to action-primary on the
-        // empty state. NO transform on the card: any translate causes either
-        // sub-pixel re-rasterization of children (title, star) or a perceived
-        // "everything moved" that the user reads as decentered. Static
-        // children + state-only changes signal interactivity without motion.
+        // Hover affordance — best-practice elevated-card pattern (Linear /
+        // Vercel / Stripe lineage): strong shadow elevation jump (sm → lg)
+        // + per-status border deepening, signal it's clickable without any
+        // motion. NO transform on the card: a translate causes child
+        // re-rasterization (title/star) or perceived decentering.
+        //
+        // Per-state border deepens within its own status palette — shifts
+        // to the icon-tier color (success-600 / warning-600), which is much
+        // more saturated than the default border-200 tier. Empty shifts to
+        // action-primary (no status palette to deepen). Status semantics
+        // stay readable during hover; just more salient.
         "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
-          ? "recipe-card-configured"
+          ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
           : status === "pending"
-            ? "recipe-card-partial"
-            : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
-        "hover:shadow-[var(--elevation-surface-md)]",
-        status === "empty" && "hover:border-[var(--color-action-primary)]",
+            ? "recipe-card-partial hover:border-[var(--color-status-warning-icon)]"
+            : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
+        "hover:shadow-[var(--elevation-surface-lg)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
       )}
