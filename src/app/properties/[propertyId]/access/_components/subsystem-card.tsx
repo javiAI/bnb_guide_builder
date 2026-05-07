@@ -189,41 +189,18 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        // Hover affordance — multi-layer elevation pattern (Linear / Stripe
-        // lineage), tuned for warm-on-warm canvas where single-shadow
-        // approaches drown:
-        //
-        //   1. Baseline shadow xs at rest. Card sits on a barely-perceptible
-        //      1px hairline so the hover delta has somewhere to grow FROM.
-        //      Without baseline, none → lg looks flat because the cards
-        //      already feel "stuck to the page".
-        //
-        //   2. Hover shadow xl (24px Y, 48px blur, 0.18 opacity warm-grey)
-        //      — 1.8x the opacity and 2x the spread vs lg. Visibly lifts
-        //      the card on warm-beige bg where lg blends in.
-        //
-        //   3. Hover inset darkening (4% text-primary overlay, infinite
-        //      radius) — adds a uniform "the surface itself responded" tint
-        //      that works for all 3 status backgrounds without overriding
-        //      their semantic color. color-mix tokenizes the overlay so no
-        //      raw color literals leak into audited surface code.
-        //
-        //   4. Per-status border deepening: shifts to the icon-tier color
-        //      (success-600 / warning-600) — 4 saturation steps deeper
-        //      than the resting border-200 tier. Empty shifts to
-        //      action-primary.
-        //
-        // NO transform: any translate/scale either jitters children at
-        // sub-pixel positions or reads as "everything moved". State-only
-        // changes give a clear interactive signal without motion.
-        "shadow-[var(--elevation-surface-xs)]",
+        // Hover affordance: single md shadow drop + per-status border
+        // deepening (success/warning icon-tier; empty → action-primary).
+        // No transform (avoids subpixel jitter on the title and corner star).
+        // No inset overlay — that washed out warm-tinted bgs and read as
+        // "muted" rather than "lifted".
         "transition-[border-color,box-shadow] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured hover:border-[var(--color-status-success-icon)]"
           : status === "pending"
             ? "recipe-card-partial hover:border-[var(--color-status-warning-icon)]"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
-        "hover:shadow-[inset_0_0_0_9999px_color-mix(in_oklch,transparent,var(--color-text-primary)_4%),var(--elevation-surface-xl)]",
+        "hover:shadow-[var(--elevation-surface-md)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",
       )}
