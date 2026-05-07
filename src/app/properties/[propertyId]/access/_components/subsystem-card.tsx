@@ -189,13 +189,19 @@ export function SubsystemCard({
       style={cardStyle}
       className={cn(
         "group relative flex h-full w-full flex-col rounded-[20px] p-5 text-left",
-        "transition-[border-color,box-shadow] duration-200 ease-out",
+        // transform-gpu baseline (translate3d 0,0,0) promotes the card to its own
+        // GPU compositor layer permanently. The hover translate is then a pure
+        // compositor transform of the rasterized layer — children (title, corner
+        // star) move uniformly with the card and DON'T re-rasterize at fractional
+        // pixel positions, which is what previously caused the perceived
+        // "title/star drift" reported when the card lifted on hover.
+        "transform-gpu transition-[border-color,box-shadow,transform] duration-200 ease-out",
         status === "configured"
           ? "recipe-card-configured"
           : status === "pending"
             ? "recipe-card-partial"
             : "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
-        "hover:shadow-[var(--elevation-surface-md)]",
+        "hover:-translate-y-[1px] hover:shadow-[var(--elevation-surface-lg)]",
         status === "empty" && "hover:border-[var(--color-border-strong)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
         "min-h-[44px] h-[200px]",

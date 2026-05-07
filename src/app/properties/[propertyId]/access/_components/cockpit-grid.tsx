@@ -10,28 +10,22 @@ interface CockpitGridProps {
   children: (id: string, role: CardRole) => ReactNode;
 }
 
-// Column policy: only {1, 2, 4} are allowed — never 3 cards in a row with a
-// stranded 4th below. With 4 subsystems this constraint forces the layout to
-// look like one of {1×4 stack, 2×2 grid, 1×4 row}. The previous
-// `auto-fit minmax(220px, 1fr)` produced a 3+1 layout in the 684–915px
-// content-width band, which is the regression we're fixing.
+// Column policy: only {1, 2} are allowed.
 //
 // Breakpoints:
 //   < md   (<768)   → 1 col (1×4 stack)
-//   md     (≥768)   → 2 cols (2×2)
-//   xl     (≥1280)  → 4 cols (1×4 row)
+//   ≥ md   (≥768)   → 2 cols (2×2 grid)
 //
-// md (instead of sm) for the 2-col jump so the narrowest 2-col card stays
-// wide enough to fit the longest taxonomy title ("Aparcamiento" /
-// "Accesibilidad") without truncation. At sm (640) viewport with the
-// operator shell sidebar (~256px), content collapses to ~384px and 2 cards
-// fit at ~186px each — too narrow for the title (needs ~211px). At md (768)
-// with sidebar, content is ~512px and cards land at ~250px each, which fits
-// the title comfortably on a single line.
-//
-// xl (instead of lg) for the 4-col jump because at lg (1024) with sidebar,
-// content is ~750px and 4 cards would shrink to ~180px each (cramped). At
-// xl (1280), content is ~1024px and 4 cards land at ~245px each.
+// 4-col layout is intentionally NOT supported here. The access page wraps
+// CockpitGrid in `max-w-5xl px-6` (1024 - 48 = 976 effective content). With
+// 4 cols + gap-3 (3 gaps × 12 = 36), each card is (976-36)/4 = 235px wide.
+// content-box = 235 - 40 (p-5) - 3 (border 1.5×2) = 192. Title area =
+// 192 - 40 (icon) - 12 (gap) - 12 (pr-3) = 128px — too narrow for the
+// longest taxonomy titles "Aparcamiento" (~140px) / "Accesibilidad" (~150px).
+// Result on wide viewports was the title truncating to "Aparcamien…".
+// Falling back to 2×2 above md gives cards (976-12)/2 = 482px wide — title
+// has ~370px of room, fits trivially. If a future redesign widens the page
+// container, 4-col can be re-evaluated here against the new content width.
 export function CockpitGrid({ expandedId, ids, children }: CockpitGridProps) {
   const expanded = expandedId !== null;
   return (
@@ -39,7 +33,7 @@ export function CockpitGrid({ expandedId, ids, children }: CockpitGridProps) {
       className={
         expanded
           ? "grid gap-3 grid-cols-1"
-          : "grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+          : "grid gap-3 grid-cols-1 md:grid-cols-2"
       }
     >
       {ids.map((id) => {

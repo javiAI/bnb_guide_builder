@@ -685,133 +685,131 @@ export function AccessForm({
           <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
             Pulsa una tarjeta para revisar o modificar.
           </p>
-          <div className="[--cockpit-cols:1] sm:[--cockpit-cols:2] xl:[--cockpit-cols:4]">
-            <CockpitGrid expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
-              {(id, role) => {
-                const cardId = id as AccessCockpitId;
-                if (cardId === "building") {
-                  return (
-                    <SubsystemCard
-                      role={role}
-                      icon={SUBSYSTEM_HEADER_ICONS.building}
-                      title="Edificio"
-                      selectedItems={buildingItems}
-                      primaryId={effectivePrimaryBuilding}
-                      photoCount={buildingPhotoCount}
-                      status={buildingStatus}
-                      cockpitId="building"
-                      onExpand={() => setExpandedCardAnimated("building")}
-                      onCollapse={() => setExpandedCardAnimated(null)}
-                      expandedSubtitle="Métodos para entrar al portal, recinto o comunidad. Si la vivienda no está dentro de un edificio cerrado, deja esta sección vacía."
-                    >
-                      <BuildingPanel
-                        allBuilding={allBuilding}
-                        buildingMethods={buildingMethods}
-                        setBuildingMethods={setBuildingMethods}
-                        buildingCustomLabel={buildingCustomLabel}
-                        setBuildingCustomLabel={setBuildingCustomLabel}
-                        buildingCustomDesc={buildingCustomDesc}
-                        setBuildingCustomDesc={setBuildingCustomDesc}
-                        toggleMember={toggleMember}
-                        propertyId={propertyId}
-                        primary={effectivePrimaryBuilding}
-                        setPrimary={setPrimaryBuilding}
-                      />
-                    </SubsystemCard>
-                  );
-                }
-                if (cardId === "unit") {
-                  return (
-                    <SubsystemCard
-                      role={role}
-                      icon={SUBSYSTEM_HEADER_ICONS.unit}
-                      title="Vivienda"
-                      selectedItems={unitItems}
-                      primaryId={effectivePrimaryUnit}
-                      photoCount={unitPhotoCount}
-                      status={unitStatus}
-                      cockpitId="unit"
-                      onExpand={() => setExpandedCardAnimated("unit")}
-                      onCollapse={() => setExpandedCardAnimated(null)}
-                      expandedSubtitle="Métodos para abrir la puerta del piso o casa."
-                    >
-                      <UnitPanel
-                        allUnit={allUnit}
-                        unitMethods={unitMethods}
-                        setUnitMethods={setUnitMethods}
-                        unitCustomLabel={unitCustomLabel}
-                        setUnitCustomLabel={setUnitCustomLabel}
-                        unitCustomDesc={unitCustomDesc}
-                        setUnitCustomDesc={setUnitCustomDesc}
-                        toggleMember={toggleMember}
-                        propertyId={propertyId}
-                        legacyCount={legacyAccessPhotoCount}
-                        primary={effectivePrimaryUnit}
-                        setPrimary={setPrimaryUnit}
-                      />
-                    </SubsystemCard>
-                  );
-                }
-                if (cardId === "parking") {
-                  return (
-                    <SubsystemCard
-                      role={role}
-                      icon={SUBSYSTEM_HEADER_ICONS.parking}
-                      title="Aparcamiento"
-                      selectedItems={parkingItems}
-                      primaryId={effectivePrimaryParking}
-                      photoCount={parkingPhotoCount}
-                      status={parkingStatus}
-                      cockpitId="parking"
-                      onExpand={() => setExpandedCardAnimated("parking")}
-                      onCollapse={() => setExpandedCardAnimated(null)}
-                      expandedSubtitle="Tipos de aparcamiento disponibles para el huésped."
-                    >
-                      <ParkingPanel
-                        allParking={allParking}
-                        parkingTypes={parkingTypes}
-                        setParkingTypes={setParkingTypes}
-                        parkingCustomLabel={parkingCustomLabel}
-                        setParkingCustomLabel={setParkingCustomLabel}
-                        parkingCustomDesc={parkingCustomDesc}
-                        setParkingCustomDesc={setParkingCustomDesc}
-                        toggleMember={toggleMember}
-                        propertyId={propertyId}
-                        primary={effectivePrimaryParking}
-                        setPrimary={setPrimaryParking}
-                      />
-                    </SubsystemCard>
-                  );
-                }
+          <CockpitGrid expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
+            {(id, role) => {
+              const cardId = id as AccessCockpitId;
+              if (cardId === "building") {
                 return (
                   <SubsystemCard
                     role={role}
-                    icon={SUBSYSTEM_HEADER_ICONS.accessibility}
-                    title="Accesibilidad"
-                    selectedItems={axItems}
-                    primaryId={null}
-                    photoCount={accessibilityPhotoCount}
-                    status={axStatus}
-                    cockpitId="accessibility"
-                      onExpand={() => setExpandedCardAnimated("accessibility")}
+                    icon={SUBSYSTEM_HEADER_ICONS.building}
+                    title="Edificio"
+                    selectedItems={buildingItems}
+                    primaryId={effectivePrimaryBuilding}
+                    photoCount={buildingPhotoCount}
+                    status={buildingStatus}
+                    cockpitId="building"
+                    onExpand={() => setExpandedCardAnimated("building")}
                     onCollapse={() => setExpandedCardAnimated(null)}
-                    expandedSubtitle="Características de accesibilidad de la entrada y zonas comunes. Las adaptaciones internas se configuran en cada espacio."
+                    expandedSubtitle="Métodos para entrar al portal, recinto o comunidad. Si la vivienda no está dentro de un edificio cerrado, deja esta sección vacía."
                   >
-                    <AccessibilityPanel
-                      axFeatures={axFeatures}
-                      setAxFeatures={setAxFeatures}
-                      axCustomLabel={axCustomLabel}
-                      setAxCustomLabel={setAxCustomLabel}
-                      axCustomDesc={axCustomDesc}
-                      setAxCustomDesc={setAxCustomDesc}
+                    <BuildingPanel
+                      allBuilding={allBuilding}
+                      buildingMethods={buildingMethods}
+                      setBuildingMethods={setBuildingMethods}
+                      buildingCustomLabel={buildingCustomLabel}
+                      setBuildingCustomLabel={setBuildingCustomLabel}
+                      buildingCustomDesc={buildingCustomDesc}
+                      setBuildingCustomDesc={setBuildingCustomDesc}
                       toggleMember={toggleMember}
                       propertyId={propertyId}
+                      primary={effectivePrimaryBuilding}
+                      setPrimary={setPrimaryBuilding}
                     />
                   </SubsystemCard>
                 );
-              }}
-            </CockpitGrid>
-          </div>
+              }
+              if (cardId === "unit") {
+                return (
+                  <SubsystemCard
+                    role={role}
+                    icon={SUBSYSTEM_HEADER_ICONS.unit}
+                    title="Vivienda"
+                    selectedItems={unitItems}
+                    primaryId={effectivePrimaryUnit}
+                    photoCount={unitPhotoCount}
+                    status={unitStatus}
+                    cockpitId="unit"
+                    onExpand={() => setExpandedCardAnimated("unit")}
+                    onCollapse={() => setExpandedCardAnimated(null)}
+                    expandedSubtitle="Métodos para abrir la puerta del piso o casa."
+                  >
+                    <UnitPanel
+                      allUnit={allUnit}
+                      unitMethods={unitMethods}
+                      setUnitMethods={setUnitMethods}
+                      unitCustomLabel={unitCustomLabel}
+                      setUnitCustomLabel={setUnitCustomLabel}
+                      unitCustomDesc={unitCustomDesc}
+                      setUnitCustomDesc={setUnitCustomDesc}
+                      toggleMember={toggleMember}
+                      propertyId={propertyId}
+                      legacyCount={legacyAccessPhotoCount}
+                      primary={effectivePrimaryUnit}
+                      setPrimary={setPrimaryUnit}
+                    />
+                  </SubsystemCard>
+                );
+              }
+              if (cardId === "parking") {
+                return (
+                  <SubsystemCard
+                    role={role}
+                    icon={SUBSYSTEM_HEADER_ICONS.parking}
+                    title="Aparcamiento"
+                    selectedItems={parkingItems}
+                    primaryId={effectivePrimaryParking}
+                    photoCount={parkingPhotoCount}
+                    status={parkingStatus}
+                    cockpitId="parking"
+                    onExpand={() => setExpandedCardAnimated("parking")}
+                    onCollapse={() => setExpandedCardAnimated(null)}
+                    expandedSubtitle="Tipos de aparcamiento disponibles para el huésped."
+                  >
+                    <ParkingPanel
+                      allParking={allParking}
+                      parkingTypes={parkingTypes}
+                      setParkingTypes={setParkingTypes}
+                      parkingCustomLabel={parkingCustomLabel}
+                      setParkingCustomLabel={setParkingCustomLabel}
+                      parkingCustomDesc={parkingCustomDesc}
+                      setParkingCustomDesc={setParkingCustomDesc}
+                      toggleMember={toggleMember}
+                      propertyId={propertyId}
+                      primary={effectivePrimaryParking}
+                      setPrimary={setPrimaryParking}
+                    />
+                  </SubsystemCard>
+                );
+              }
+              return (
+                <SubsystemCard
+                  role={role}
+                  icon={SUBSYSTEM_HEADER_ICONS.accessibility}
+                  title="Accesibilidad"
+                  selectedItems={axItems}
+                  primaryId={null}
+                  photoCount={accessibilityPhotoCount}
+                  status={axStatus}
+                  cockpitId="accessibility"
+                  onExpand={() => setExpandedCardAnimated("accessibility")}
+                  onCollapse={() => setExpandedCardAnimated(null)}
+                  expandedSubtitle="Características de accesibilidad de la entrada y zonas comunes. Las adaptaciones internas se configuran en cada espacio."
+                >
+                  <AccessibilityPanel
+                    axFeatures={axFeatures}
+                    setAxFeatures={setAxFeatures}
+                    axCustomLabel={axCustomLabel}
+                    setAxCustomLabel={setAxCustomLabel}
+                    axCustomDesc={axCustomDesc}
+                    setAxCustomDesc={setAxCustomDesc}
+                    toggleMember={toggleMember}
+                    propertyId={propertyId}
+                  />
+                </SubsystemCard>
+              );
+            }}
+          </CockpitGrid>
         </NumberedSection>
 
         <NumberedSection
