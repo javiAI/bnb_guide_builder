@@ -167,10 +167,17 @@ export async function saveAccessAction(
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
   const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
+  const hasParking = formData.get("hasParking") === "true";
   const buildingMethods = formData.getAll("buildingMethods") as string[];
   const unitMethods = formData.getAll("unitMethods") as string[];
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
+
+  // Tri-state field: "true"/"false" persisted, anything else (including the
+  // sentinel "null" or absent) → DB NULL = unanswered.
+  const accessibilityRaw = formData.get("hasAccessibilityConsiderations");
+  const hasAccessibilityConsiderations: boolean | null =
+    accessibilityRaw === "true" ? true : accessibilityRaw === "false" ? false : null;
 
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
   const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
@@ -211,8 +218,17 @@ export async function saveAccessAction(
       customLabel: (formData.get("unitCustomLabel") as string) || null,
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
-    parkingTypes: parkingTypes.filter((id) => validParkingIds.has(id)),
-    accessibilityFeatures: accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
+    hasParking,
+    // Drop parkingTypes if hasParking=false — opt-out should not persist stale
+    // selections. Same shape as hasBuildingAccess gate above.
+    parkingTypes: hasParking ? parkingTypes.filter((id) => validParkingIds.has(id)) : [],
+    hasAccessibilityConsiderations,
+    // Drop features when explicitly opted out (false). Keep when true OR null
+    // (null = unanswered, but a half-completed list is still legitimate input).
+    accessibilityFeatures:
+      hasAccessibilityConsiderations === false
+        ? []
+        : accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -252,6 +268,8 @@ export async function saveAccessAction(
       checkOutTime: d.checkOutTime,
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
+      hasParking: d.hasParking,
+      hasAccessibilityConsiderations: d.hasAccessibilityConsiderations,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
         building: d.buildingAccess

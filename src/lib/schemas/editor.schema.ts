@@ -67,7 +67,12 @@ export const accessSchema = z.object({
   hasBuildingAccess: z.boolean(),
   buildingAccess: accessLayerSchema.optional(),
   unitAccess: accessLayerSchema.refine((d) => d.methods.length > 0, { message: "Selecciona al menos un método de acceso a la vivienda" }),
+  hasParking: z.boolean(),
   parkingTypes: z.array(z.string()).optional().default([]),
+  // null = unanswered (cockpit shows pending), false = explicit opt-out
+  // (configured by declaration, features array stays empty), true = has features
+  // (configured iff accessibilityFeatures non-empty).
+  hasAccessibilityConsiderations: z.boolean().nullable(),
   accessibilityFeatures: z.array(z.string()).optional().default([]),
 });
 

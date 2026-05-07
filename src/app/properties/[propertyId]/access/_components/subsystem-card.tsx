@@ -33,7 +33,11 @@ import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
 import type { SubsystemSlide } from "./subsystem-card.types";
 
-export type SubsystemStatus = "configured" | "pending" | "empty";
+// Every subsystem resolves to one of these two — "empty" was removed in 7b
+// when explicit scope toggles (hasBuildingAccess / hasParking /
+// hasAccessibilityConsiderations) made it possible for every card to declare
+// configured-or-pending deterministically.
+export type SubsystemStatus = "configured" | "pending";
 
 export interface SubsystemSelectedItem {
   id: string;

@@ -105,23 +105,76 @@ function sameStringList(a: string[], b: string[]): boolean {
   return true;
 }
 
-function statusFor(
+// Items-level "do we have a complete selection" check, independent of the
+// subsystem-scope toggle. Splits the old `statusFor` into two layers so the
+// scope toggle (`hasBuildingAccess` / `hasParking` / `hasAccessibilityConsiderations`)
+// can opt the entire subsystem out without inspecting items.
+function itemsConfigured(
   arr: string[],
   customLabel: string | null | undefined,
   customSentinel: string | null,
   primary?: string | null,
-): SubsystemStatus {
-  if (arr.length === 0) return "empty";
-  // *.other selected without a custom label = layer is incomplete, not configured.
-  // Operator picked "Otro" but never typed the name → reality says "por completar".
+): boolean {
+  if (arr.length === 0) return false;
+  // *.other selected without a custom label = layer is incomplete.
   if (customSentinel && arr.includes(customSentinel) && !customLabel?.trim())
-    return "pending";
-  // If the layer carries a primary concept and the stored primary is no longer
-  // among the selected methods (deselected without re-promotion), the layer
-  // is in an inconsistent state.
+    return false;
+  // Primary deselected without re-promotion = inconsistent state.
   if (primary !== undefined && primary !== null && !arr.includes(primary))
-    return "pending";
-  return "configured";
+    return false;
+  return true;
+}
+
+// Per-subsystem completeness. Every subsystem resolves deterministically to
+// "configured" or "pending" — no "empty" state. The contract:
+//   building: hasBuildingAccess=false → configured (opt-out by declaration);
+//             true → configured iff items are complete.
+//   unit:     always required (every property has a unit door); configured
+//             iff items are complete.
+//   parking:  hasParking=false → configured (opt-out);
+//             true → configured iff items are complete.
+//   accessibility: hasAccessibilityConsiderations=null → pending (unanswered);
+//             false → configured (opt-out, "sin consideraciones");
+//             true → configured iff items are complete.
+function deriveBuildingStatus(
+  hasBuilding: boolean,
+  methods: string[],
+  customLabel: string | null,
+  primary: string | null,
+): SubsystemStatus {
+  if (!hasBuilding) return "configured";
+  return itemsConfigured(methods, customLabel, "ba.other", primary)
+    ? "configured"
+    : "pending";
+}
+function deriveUnitStatus(
+  methods: string[],
+  customLabel: string | null,
+  primary: string | null,
+): SubsystemStatus {
+  return itemsConfigured(methods, customLabel, "am.other", primary)
+    ? "configured"
+    : "pending";
+}
+function deriveParkingStatus(
+  hasParking: boolean,
+  types: string[],
+  customLabel: string | null,
+  primary: string | null,
+): SubsystemStatus {
+  if (!hasParking) return "configured";
+  return itemsConfigured(types, customLabel, "pk.other", primary)
+    ? "configured"
+    : "pending";
+}
+function deriveAccessibilityStatus(
+  hasConsiderations: boolean | null,
+  features: string[],
+  customLabel: string | null,
+): SubsystemStatus {
+  if (hasConsiderations === null) return "pending";
+  if (hasConsiderations === false) return "configured";
+  return itemsConfigured(features, customLabel, "ax.other") ? "configured" : "pending";
 }
 
 // Wrap state updates that change item order in a View Transition so the rows
@@ -238,6 +291,10 @@ interface AccessFormProps {
     checkInStart: string | null;
     checkInEnd: string | null;
     checkOutTime: string | null;
+    isAutonomousCheckin: boolean;
+    hasBuildingAccess: boolean;
+    hasParking: boolean;
+    hasAccessibilityConsiderations: boolean | null;
     buildingAccess: {
       methods: string[];
       customLabel?: string | null;
@@ -318,6 +375,15 @@ export function AccessForm({
     p.parkingPrimary ?? null,
   );
 
+  // Subsystem-scope toggles. Each one is the operator's explicit declaration
+  // for whether the subsystem applies at all — independent of selected items.
+  // Together with the items array, they let `deriveSubsystemStatus` resolve
+  // every card to "configured" or "pending" deterministically.
+  const [hasBuildingAccess, setHasBuildingAccess] = useState<boolean>(p.hasBuildingAccess);
+  const [hasParking, setHasParking] = useState<boolean>(p.hasParking);
+  const [hasAccessibilityConsiderations, setHasAccessibilityConsiderations] =
+    useState<boolean | null>(p.hasAccessibilityConsiderations);
+
   const [expandedCard, setExpandedCard] = useState<AccessCockpitId | null>(null);
 
   // View Transitions API: morphs each card from idle position+size to expanded
@@ -369,7 +435,6 @@ export function AccessForm({
 
   const isAutonomousDerived =
     unitMethods.length > 0 && unitMethods.every((m) => AUTONOMOUS_UNIT_IDS.includes(m));
-  const hasBuildingAccessDerived = buildingMethods.length > 0;
 
   // Effective primary = user's explicit choice if still selected, else first
   // selected method. The hidden form input emits this value, not raw state.
@@ -395,7 +460,10 @@ export function AccessForm({
     axCustomDesc !== (p.accessibilityCustomDesc ?? "") ||
     effectivePrimaryBuilding !== (p.buildingAccess?.primary ?? null) ||
     effectivePrimaryUnit !== (p.primaryUnitMethod ?? null) ||
-    effectivePrimaryParking !== (p.parkingPrimary ?? null);
+    effectivePrimaryParking !== (p.parkingPrimary ?? null) ||
+    hasBuildingAccess !== p.hasBuildingAccess ||
+    hasParking !== p.hasParking ||
+    hasAccessibilityConsiderations !== p.hasAccessibilityConsiderations;
 
   const checkInRangeText = checkInStart
     ? `A partir de las ${checkInStart}${checkInEnd === "flexible" ? ", sin hora límite" : `, hasta las ${checkInEnd}`}`
@@ -422,25 +490,24 @@ export function AccessForm({
     [],
   );
 
-  const buildingStatus = statusFor(
+  const buildingStatus = deriveBuildingStatus(
+    hasBuildingAccess,
     buildingMethods,
     buildingCustomLabel,
-    "ba.other",
     effectivePrimaryBuilding,
   );
-  const unitStatus = statusFor(
-    unitMethods,
-    unitCustomLabel,
-    "am.other",
-    effectivePrimaryUnit,
-  );
-  const parkingStatus = statusFor(
+  const unitStatus = deriveUnitStatus(unitMethods, unitCustomLabel, effectivePrimaryUnit);
+  const parkingStatus = deriveParkingStatus(
+    hasParking,
     parkingTypes,
     parkingCustomLabel,
-    "pk.other",
     effectivePrimaryParking,
   );
-  const axStatus = statusFor(axFeatures, axCustomLabel, "ax.other");
+  const axStatus = deriveAccessibilityStatus(
+    hasAccessibilityConsiderations,
+    axFeatures,
+    axCustomLabel,
+  );
 
   // Selected items per layer — drives the collapsed-card icon strip.
   const buildingItems = toSubsystemItems(buildingMethods, buildingAccessMethods, buildingIconFor);
@@ -498,7 +565,7 @@ export function AccessForm({
             {isAutonomousDerived && (
               <PageHeaderChip icon={Key} label="Entrada autónoma" />
             )}
-            {hasBuildingAccessDerived && (
+            {hasBuildingAccess && (
               <PageHeaderChip icon={MapPin} label="Edificio cerrado" />
             )}
           </>
@@ -515,7 +582,23 @@ export function AccessForm({
         <input
           type="hidden"
           name="hasBuildingAccess"
-          value={hasBuildingAccessDerived ? "true" : "false"}
+          value={hasBuildingAccess ? "true" : "false"}
+        />
+        <input
+          type="hidden"
+          name="hasParking"
+          value={hasParking ? "true" : "false"}
+        />
+        <input
+          type="hidden"
+          name="hasAccessibilityConsiderations"
+          value={
+            hasAccessibilityConsiderations === null
+              ? ""
+              : hasAccessibilityConsiderations
+                ? "true"
+                : "false"
+          }
         />
         {buildingMethods.map((m) => (
           <input key={`bm-${m}`} type="hidden" name="buildingMethods" value={m} />
@@ -625,7 +708,7 @@ export function AccessForm({
               <div className="mt-1 max-w-[60ch] text-[13px] leading-[1.5] text-[var(--color-text-secondary)]">
                 {isAutonomousDerived
                   ? "El huésped puede entrar solo. Las llegadas tardías reciben las instrucciones por chat."
-                  : hasBuildingAccessDerived
+                  : hasBuildingAccess
                     ? "Acceso a través de un edificio o recinto cerrado — coordina la llegada con el huésped."
                     : "Coordina la llegada con el huésped — alguien estará en la propiedad para recibirle."}
               </div>
@@ -723,6 +806,8 @@ export function AccessForm({
                       propertyId={propertyId}
                       primary={effectivePrimaryBuilding}
                       setPrimary={setPrimaryBuilding}
+                      hasBuildingAccess={hasBuildingAccess}
+                      setHasBuildingAccess={setHasBuildingAccess}
                     />
                   </SubsystemCard>
                 );
@@ -790,6 +875,8 @@ export function AccessForm({
                       propertyId={propertyId}
                       primary={effectivePrimaryParking}
                       setPrimary={setPrimaryParking}
+                      hasParking={hasParking}
+                      setHasParking={setHasParking}
                     />
                   </SubsystemCard>
                 );
@@ -819,6 +906,8 @@ export function AccessForm({
                     setAxCustomDesc={setAxCustomDesc}
                     toggleMember={toggleMember}
                     propertyId={propertyId}
+                    hasAccessibilityConsiderations={hasAccessibilityConsiderations}
+                    setHasAccessibilityConsiderations={setHasAccessibilityConsiderations}
                   />
                 </SubsystemCard>
               );
@@ -906,6 +995,92 @@ export function AccessForm({
 
 // ── Sub-card panels (rendered inside SubsystemCard's expanded body) ──
 
+// Scope toggle. Two-state ("Sí" / "No") for building + parking; tri-state
+// ("Sí" / "No" / "Pendiente") for accessibility. The "Pendiente" option only
+// renders when `tristate` is true. Sí ⇄ No is a controlled boolean; tri-state
+// uses a `null` value for the "Pendiente" case (operator hasn't answered yet).
+function ScopeToggle({
+  label,
+  description,
+  value,
+  onChange,
+  tristate = false,
+  yesLabel = "Sí",
+  noLabel = "No",
+}: {
+  label: string;
+  description: string;
+  value: boolean | null;
+  onChange: (next: boolean | null) => void;
+  tristate?: boolean;
+  yesLabel?: string;
+  noLabel?: string;
+}) {
+  return (
+    <div className="rounded-[12px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-semibold text-[var(--color-text-primary)]">
+            {label}
+          </div>
+          <p className="mt-0.5 text-[12px] leading-[1.5] text-[var(--color-text-secondary)]">
+            {description}
+          </p>
+        </div>
+        <div
+          role="radiogroup"
+          aria-label={label}
+          className="inline-flex shrink-0 items-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-0.5"
+        >
+          <ScopeToggleOption
+            label={yesLabel}
+            active={value === true}
+            onClick={() => onChange(true)}
+          />
+          <ScopeToggleOption
+            label={noLabel}
+            active={value === false}
+            onClick={() => onChange(false)}
+          />
+          {tristate && (
+            <ScopeToggleOption
+              label="Pendiente"
+              active={value === null}
+              onClick={() => onChange(null)}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScopeToggleOption({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={
+        active
+          ? "min-h-[32px] rounded-[calc(var(--radius-md)-2px)] bg-[var(--color-action-primary)] px-3 text-[12px] font-semibold text-[var(--color-text-on-accent)]"
+          : "min-h-[32px] rounded-[calc(var(--radius-md)-2px)] px-3 text-[12px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
 interface BuildingPanelProps {
   allBuilding: ReturnType<typeof getItems>;
   buildingMethods: string[];
@@ -918,6 +1093,8 @@ interface BuildingPanelProps {
   propertyId: string;
   primary: string | null;
   setPrimary: (id: string | null) => void;
+  hasBuildingAccess: boolean;
+  setHasBuildingAccess: (next: boolean) => void;
 }
 
 function BuildingPanel({
@@ -932,39 +1109,51 @@ function BuildingPanel({
   propertyId,
   primary,
   setPrimary,
+  hasBuildingAccess,
+  setHasBuildingAccess,
 }: BuildingPanelProps) {
   const sortedBuilding = sortSelectedFirst(allBuilding, buildingMethods, primary);
   return (
     <div className="space-y-4">
-      <MethodList>
-        {sortedBuilding.map((item) => (
-          <MethodRow
-            key={item.id}
-            id={item.id}
-            icon={buildingIconFor(item.id)}
-            name={item.label}
-            description={item.description}
-            selected={buildingMethods.includes(item.id)}
-            recommended={item.recommended}
-            onClick={() => toggleMember(buildingMethods, setBuildingMethods, item.id)}
-            isOther={item.id === "ba.other"}
-            customLabel={buildingCustomLabel}
-            customDesc={buildingCustomDesc}
-            onCustomLabelChange={setBuildingCustomLabel}
-            onCustomDescChange={setBuildingCustomDesc}
-            isPrimary={primary === item.id}
-            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
-          />
-        ))}
-      </MethodList>
-      <EntityGallery
-        propertyId={propertyId}
-        entityType="access_method"
-        entityId={propertyId}
-        usageKey={ACCESS_USAGE_KEYS.building}
-        label="Fotos del edificio"
-        defaultCollapsed
+      <ScopeToggle
+        label="¿Hay edificio o portal cerrado?"
+        description="Si la vivienda no está dentro de un edificio o recinto cerrado, marca «No» — esta sección quedará completa sin métodos."
+        value={hasBuildingAccess}
+        onChange={(next) => setHasBuildingAccess(next === true)}
       />
+      {hasBuildingAccess && (
+        <>
+          <MethodList>
+            {sortedBuilding.map((item) => (
+              <MethodRow
+                key={item.id}
+                id={item.id}
+                icon={buildingIconFor(item.id)}
+                name={item.label}
+                description={item.description}
+                selected={buildingMethods.includes(item.id)}
+                recommended={item.recommended}
+                onClick={() => toggleMember(buildingMethods, setBuildingMethods, item.id)}
+                isOther={item.id === "ba.other"}
+                customLabel={buildingCustomLabel}
+                customDesc={buildingCustomDesc}
+                onCustomLabelChange={setBuildingCustomLabel}
+                onCustomDescChange={setBuildingCustomDesc}
+                isPrimary={primary === item.id}
+                onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+              />
+            ))}
+          </MethodList>
+          <EntityGallery
+            propertyId={propertyId}
+            entityType="access_method"
+            entityId={propertyId}
+            usageKey={ACCESS_USAGE_KEYS.building}
+            label="Fotos del edificio"
+            defaultCollapsed
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -1063,6 +1252,8 @@ interface ParkingPanelProps {
   propertyId: string;
   primary: string | null;
   setPrimary: (id: string | null) => void;
+  hasParking: boolean;
+  setHasParking: (next: boolean) => void;
 }
 
 function ParkingPanel({
@@ -1077,39 +1268,51 @@ function ParkingPanel({
   propertyId,
   primary,
   setPrimary,
+  hasParking,
+  setHasParking,
 }: ParkingPanelProps) {
   const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
   return (
     <div className="space-y-4">
-      <MethodList>
-        {sortedParking.map((item) => (
-          <MethodRow
-            key={item.id}
-            id={item.id}
-            icon={parkingIconFor(item.id)}
-            name={item.label}
-            description={item.description}
-            selected={parkingTypes.includes(item.id)}
-            recommended={item.recommended}
-            onClick={() => toggleMember(parkingTypes, setParkingTypes, item.id)}
-            isOther={item.id === "pk.other"}
-            customLabel={parkingCustomLabel}
-            customDesc={parkingCustomDesc}
-            onCustomLabelChange={setParkingCustomLabel}
-            onCustomDescChange={setParkingCustomDesc}
-            isPrimary={primary === item.id}
-            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
-          />
-        ))}
-      </MethodList>
-      <EntityGallery
-        propertyId={propertyId}
-        entityType="access_method"
-        entityId={propertyId}
-        usageKey={ACCESS_USAGE_KEYS.parking}
-        label="Fotos del aparcamiento"
-        defaultCollapsed
+      <ScopeToggle
+        label="¿La propiedad ofrece aparcamiento?"
+        description="Si no hay aparcamiento disponible para el huésped, marca «No» — esta sección quedará completa sin tipos."
+        value={hasParking}
+        onChange={(next) => setHasParking(next === true)}
       />
+      {hasParking && (
+        <>
+          <MethodList>
+            {sortedParking.map((item) => (
+              <MethodRow
+                key={item.id}
+                id={item.id}
+                icon={parkingIconFor(item.id)}
+                name={item.label}
+                description={item.description}
+                selected={parkingTypes.includes(item.id)}
+                recommended={item.recommended}
+                onClick={() => toggleMember(parkingTypes, setParkingTypes, item.id)}
+                isOther={item.id === "pk.other"}
+                customLabel={parkingCustomLabel}
+                customDesc={parkingCustomDesc}
+                onCustomLabelChange={setParkingCustomLabel}
+                onCustomDescChange={setParkingCustomDesc}
+                isPrimary={primary === item.id}
+                onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+              />
+            ))}
+          </MethodList>
+          <EntityGallery
+            propertyId={propertyId}
+            entityType="access_method"
+            entityId={propertyId}
+            usageKey={ACCESS_USAGE_KEYS.parking}
+            label="Fotos del aparcamiento"
+            defaultCollapsed
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -1123,6 +1326,8 @@ interface AccessibilityPanelProps {
   setAxCustomDesc: (s: string) => void;
   toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
   propertyId: string;
+  hasAccessibilityConsiderations: boolean | null;
+  setHasAccessibilityConsiderations: (next: boolean | null) => void;
 }
 
 function AccessibilityPanel({
@@ -1134,52 +1339,65 @@ function AccessibilityPanel({
   setAxCustomDesc,
   toggleMember,
   propertyId,
+  hasAccessibilityConsiderations,
+  setHasAccessibilityConsiderations,
 }: AccessibilityPanelProps) {
   return (
     <div className="space-y-5">
-      {ACCESSIBILITY_GROUPS.map((group) => {
-        const sortedIds = [
-          ...group.ids.filter((id) => axFeatures.includes(id)),
-          ...group.ids.filter((id) => !axFeatures.includes(id)),
-        ];
-        return (
-          <div key={group.key}>
-            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-              {group.label}
-            </h4>
-            <MethodList>
-              {sortedIds.map((id) => {
-                const item = findItem(accessibilityFeatures, id);
-                if (!item) return null;
-                return (
-                  <MethodRow
-                    key={id}
-                    id={id}
-                    icon={accessibilityIconFor(id)}
-                    name={item.label}
-                    description={item.description}
-                    selected={axFeatures.includes(id)}
-                    onClick={() => toggleMember(axFeatures, setAxFeatures, id)}
-                    isOther={id === "ax.other"}
-                    customLabel={axCustomLabel}
-                    customDesc={axCustomDesc}
-                    onCustomLabelChange={setAxCustomLabel}
-                    onCustomDescChange={setAxCustomDesc}
-                  />
-                );
-              })}
-            </MethodList>
-          </div>
-        );
-      })}
-      <EntityGallery
-        propertyId={propertyId}
-        entityType="access_method"
-        entityId={propertyId}
-        usageKey={ACCESS_USAGE_KEYS.accessibility}
-        label="Fotos de accesibilidad"
-        defaultCollapsed
+      <ScopeToggle
+        label="¿Hay consideraciones de accesibilidad?"
+        description="Marca «Sí» si la propiedad tiene características o adaptaciones que el huésped deba conocer; «No» si no aplica; «Pendiente» si aún no lo has revisado."
+        value={hasAccessibilityConsiderations}
+        onChange={setHasAccessibilityConsiderations}
+        tristate
       />
+      {hasAccessibilityConsiderations === true && (
+        <>
+          {ACCESSIBILITY_GROUPS.map((group) => {
+            const sortedIds = [
+              ...group.ids.filter((id) => axFeatures.includes(id)),
+              ...group.ids.filter((id) => !axFeatures.includes(id)),
+            ];
+            return (
+              <div key={group.key}>
+                <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                  {group.label}
+                </h4>
+                <MethodList>
+                  {sortedIds.map((id) => {
+                    const item = findItem(accessibilityFeatures, id);
+                    if (!item) return null;
+                    return (
+                      <MethodRow
+                        key={id}
+                        id={id}
+                        icon={accessibilityIconFor(id)}
+                        name={item.label}
+                        description={item.description}
+                        selected={axFeatures.includes(id)}
+                        onClick={() => toggleMember(axFeatures, setAxFeatures, id)}
+                        isOther={id === "ax.other"}
+                        customLabel={axCustomLabel}
+                        customDesc={axCustomDesc}
+                        onCustomLabelChange={setAxCustomLabel}
+                        onCustomDescChange={setAxCustomDesc}
+                      />
+                    );
+                  })}
+                </MethodList>
+              </div>
+            );
+          })}
+          <EntityGallery
+            propertyId={propertyId}
+            entityType="access_method"
+            entityId={propertyId}
+            usageKey={ACCESS_USAGE_KEYS.accessibility}
+            label="Fotos de accesibilidad"
+            defaultCollapsed
+          />
+        </>
+      )}
     </div>
   );
 }
