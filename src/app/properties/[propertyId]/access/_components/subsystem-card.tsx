@@ -1,36 +1,15 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Camera,
-  Check,
-  Loader2,
-  Plus,
-  Star,
-  Video,
-} from "lucide-react";
+import { AlertTriangle, Camera, Check, Plus, Star, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  useCallback,
-  useId,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  type TouchEvent,
-} from "react";
-import { useRouter } from "next/navigation";
+import { useId, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import {
-  assignMediaAction,
-  confirmUploadAction,
-  deleteMediaAction,
-  requestUploadAction,
-} from "@/lib/actions/media.actions";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
+import {
+  MediaCarousel,
+  type MediaCarouselSlide,
+} from "@/components/ui/media-carousel";
 import type { SubsystemSlide } from "./subsystem-card.types";
 import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
 
@@ -78,6 +57,80 @@ function resolveVisibleCap(totalCount: number): number {
   return totalCount <= STRIP_VISIBLE_MAX ? totalCount : 4;
 }
 
+// Per-subsystem identity gradient — terra (building) / olive (unit) /
+// info (parking) / warning (accessibility). Tokens live in semantic.css
+// and resolve per theme. Listed statically so the token-coverage gate
+// sees each token literal — template-literal interpolation hid the
+// suffix from its regex.
+const SUBSYSTEM_GRADIENTS: Record<string, string> = {
+  building:
+    "linear-gradient(135deg, var(--color-subsystem-building-from), var(--color-subsystem-building-to))",
+  unit:
+    "linear-gradient(135deg, var(--color-subsystem-unit-from), var(--color-subsystem-unit-to))",
+  parking:
+    "linear-gradient(135deg, var(--color-subsystem-parking-from), var(--color-subsystem-parking-to))",
+  accessibility:
+    "linear-gradient(135deg, var(--color-subsystem-accessibility-from), var(--color-subsystem-accessibility-to))",
+};
+
+// Map domain `SubsystemSlide` (which carries access-feature kinds incl.
+// `live-map`) to the feature-agnostic `MediaCarouselSlide` consumed by the
+// shared primitive. live-map slides become `kind: "custom"` and inject the
+// MultiPinMap via the render fn — keeps the carousel decoupled from
+// access-specific UI so it can be reused (next adopter: spaces).
+function toCarouselSlides(
+  slides: readonly SubsystemSlide[],
+): MediaCarouselSlide[] {
+  return slides
+    .map((s): MediaCarouselSlide | null => {
+      if (s.kind === "live-map") {
+        if (!s.liveAnchor) return null;
+        const pins: MultiPinSpec[] = (s.livePins ?? []).map((p) => ({
+          id: p.id,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          kind:
+            p.feeType === "free"
+              ? "confirmed-free"
+              : p.feeType === "paid"
+                ? "confirmed-paid"
+                : "confirmed-unknown",
+          label: p.label,
+        }));
+        const anchor = s.liveAnchor;
+        return {
+          id: s.id,
+          title: s.title,
+          kind: "custom",
+          render: (height: number) => (
+            <div className="absolute inset-0">
+              <MultiPinMap anchor={anchor} pins={pins} height={height} />
+            </div>
+          ),
+        };
+      }
+      if (s.kind === "image" || s.kind === "map") {
+        return {
+          id: s.id,
+          title: s.title,
+          kind: s.kind,
+          url: s.url,
+          alt: s.alt || s.title,
+        };
+      }
+      if (s.kind === "video") {
+        return {
+          id: s.id,
+          title: s.title,
+          kind: "video",
+          alt: s.alt || s.title,
+        };
+      }
+      return null;
+    })
+    .filter((s): s is MediaCarouselSlide => s !== null);
+}
+
 export function SubsystemCard({
   role,
   cockpitId,
@@ -112,6 +165,14 @@ export function SubsystemCard({
   const visibleCap = resolveVisibleCap(ordered.length);
   const visible = ordered.slice(0, visibleCap);
   const hidden = ordered.slice(visibleCap);
+
+  const carouselSlides = useMemo(
+    () => toCarouselSlides(slides ?? []),
+    [slides],
+  );
+  const placeholderGradient =
+    SUBSYSTEM_GRADIENTS[cockpitId] ?? SUBSYSTEM_GRADIENTS.building;
+  const uploadUsageKey = `access.${cockpitId}`;
 
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
@@ -163,11 +224,13 @@ export function SubsystemCard({
            The carousel is display-only here (no click-through) — the title
            button is the sole collapse trigger. */}
         <MediaCarousel
-          slides={slides ?? []}
-          cockpitId={cockpitId}
+          slides={carouselSlides}
           propertyId={propertyId}
           title={title}
           variant="active"
+          uploadEntityType="access_method"
+          uploadUsageKey={uploadUsageKey}
+          placeholderGradient={placeholderGradient}
         />
         <button
           type="button"
@@ -228,70 +291,6 @@ export function SubsystemCard({
   // ────────────────────────────────────────────────────────────────────
 
   return (
-    <CollapsedCard
-      cardStyle={cardStyle}
-      titleId={titleId}
-      bodyId={bodyId}
-      cockpitId={cockpitId}
-      propertyId={propertyId}
-      Icon={Icon}
-      title={title}
-      status={status}
-      slides={slides ?? []}
-      ordered={ordered}
-      visible={visible}
-      hidden={hidden}
-      primaryId={primaryId}
-      photoCount={photoCount}
-      videoCount={videoCount}
-      renderTile={renderTile}
-      onExpand={onExpand}
-    />
-  );
-}
-
-// ── Collapsed card body ─────────────────────────────────────────────────
-
-interface CollapsedCardProps {
-  cardStyle: React.CSSProperties;
-  titleId: string;
-  bodyId: string;
-  cockpitId: string;
-  propertyId: string;
-  Icon: LucideIcon;
-  title: string;
-  status: SubsystemStatus;
-  slides: readonly SubsystemSlide[];
-  ordered: readonly SubsystemSelectedItem[];
-  visible: readonly SubsystemSelectedItem[];
-  hidden: readonly SubsystemSelectedItem[];
-  primaryId: string | null;
-  photoCount: number;
-  videoCount: number;
-  renderTile: (item: SubsystemSelectedItem, isPrimary: boolean) => ReactNode;
-  onExpand: () => void;
-}
-
-function CollapsedCard({
-  cardStyle,
-  titleId,
-  bodyId,
-  cockpitId,
-  propertyId,
-  Icon,
-  title,
-  status,
-  slides,
-  ordered,
-  visible,
-  hidden,
-  primaryId,
-  photoCount,
-  videoCount,
-  renderTile,
-  onExpand,
-}: CollapsedCardProps) {
-  return (
     <article
       data-component="subsystem-card-collapsed"
       aria-labelledby={titleId}
@@ -309,11 +308,13 @@ function CollapsedCard({
       )}
     >
       <MediaCarousel
-        slides={slides}
-        cockpitId={cockpitId}
+        slides={carouselSlides}
         propertyId={propertyId}
         title={title}
         variant="collapsed"
+        uploadEntityType="access_method"
+        uploadUsageKey={uploadUsageKey}
+        placeholderGradient={placeholderGradient}
         bodyId={bodyId}
         onExpand={onExpand}
       />
@@ -446,406 +447,7 @@ function CollapsedCard({
   );
 }
 
-// ── Shared media carousel ───────────────────────────────────────────────
-//
-// Used by both the collapsed card (with a click-through to expand) and the
-// active card (display-only — the title button below handles collapse).
-// Encapsulates: slide rendering, dot navigation (click + keyboard), title
-// overlay, and the "Añade portada" upload affordance shown when the
-// subsystem has no media.
-//
-// `variant` controls:
-//   - height: 140px collapsed / 240px active
-//   - whether the slide surface itself is a button (collapsed: yes — the
-//     wrapper carries the click-through to expand) or a non-interactive
-//     div (active: no — the title button is the sole collapse trigger)
-
-interface MediaCarouselProps {
-  slides: readonly SubsystemSlide[];
-  cockpitId: string;
-  propertyId: string;
-  title: string;
-  variant: "collapsed" | "active";
-  bodyId?: string; // collapsed only: aria-controls target on the expand button
-  onExpand?: () => void; // collapsed only: invoked on media click
-}
-
-function MediaCarousel({
-  slides,
-  cockpitId,
-  propertyId,
-  title,
-  variant,
-  bodyId,
-  onExpand,
-}: MediaCarouselProps) {
-  const router = useRouter();
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const touchStartXRef = useRef<number | null>(null);
-  const touchStartTimeRef = useRef<number>(0);
-  const swipedRef = useRef(false);
-  const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
-  const activeSlide = slides[safeIdx];
-
-  const handleAddCoverClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      if (uploading) return;
-      setUploadError(null);
-      fileInputRef.current?.click();
-    },
-    [uploading],
-  );
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError(null);
-      let assetId: string | null = null;
-      try {
-        const req = await requestUploadAction(propertyId, file.name, file.type);
-        if (!req.success || !req.data) {
-          setUploadError(req.error ?? "Error al preparar la subida");
-          return;
-        }
-        assetId = req.data.assetId;
-        const put = await fetch(req.data.uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!put.ok) {
-          setUploadError(`Subida falló (${put.status})`);
-          deleteMediaAction(assetId).catch(() => {});
-          return;
-        }
-        const confirm = await confirmUploadAction(assetId);
-        if (!confirm.success) {
-          setUploadError(confirm.error ?? "Error al verificar");
-          return;
-        }
-        const assign = await assignMediaAction(
-          assetId,
-          "access_method",
-          propertyId,
-          `access.${cockpitId}`,
-        );
-        if (!assign.success) {
-          setUploadError(assign.error ?? "Error al asignar");
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Error desconocido");
-        if (assetId) deleteMediaAction(assetId).catch(() => {});
-      } finally {
-        setUploading(false);
-      }
-    },
-    [propertyId, cockpitId, router],
-  );
-
-  const focusDot = useCallback((i: number) => {
-    dotRefs.current[i]?.focus();
-  }, []);
-
-  const handleDotKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-      if (slides.length <= 1) return;
-      const last = slides.length - 1;
-      let next = i;
-      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
-      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
-      else if (e.key === "Home") next = 0;
-      else if (e.key === "End") next = last;
-      else return;
-      e.preventDefault();
-      setCurrentIdx(next);
-      focusDot(next);
-    },
-    [slides.length, focusDot],
-  );
-
-  const heightClass = variant === "active" ? "h-[240px]" : "h-[140px]";
-  const heightPx = variant === "active" ? 240 : 140;
-  const isLiveMap = activeSlide?.kind === "live-map";
-
-  // Touch swipe — advance / retreat slides on horizontal drag.
-  // Skipped over live-map slides so MapLibre can handle pan/zoom natively.
-  const handleTouchStart = useCallback(
-    (e: TouchEvent<HTMLDivElement>) => {
-      if (isLiveMap || slides.length <= 1) return;
-      touchStartXRef.current = e.touches[0]?.clientX ?? null;
-      touchStartTimeRef.current = Date.now();
-      swipedRef.current = false;
-    },
-    [isLiveMap, slides.length],
-  );
-
-  const handleTouchEnd = useCallback(
-    (e: TouchEvent<HTMLDivElement>) => {
-      const startX = touchStartXRef.current;
-      touchStartXRef.current = null;
-      if (startX === null || isLiveMap || slides.length <= 1) return;
-      const endX = e.changedTouches[0]?.clientX ?? startX;
-      const dx = endX - startX;
-      const dt = Date.now() - touchStartTimeRef.current;
-      if (Math.abs(dx) <= 50 || dt >= 500) return;
-      swipedRef.current = true;
-      const last = slides.length - 1;
-      setCurrentIdx((i) => {
-        if (dx < 0) return i === last ? 0 : i + 1;
-        return i === 0 ? last : i - 1;
-      });
-    },
-    [isLiveMap, slides.length],
-  );
-
-  const handleExpandClick = useCallback(() => {
-    if (swipedRef.current) {
-      swipedRef.current = false;
-      return;
-    }
-    onExpand?.();
-  }, [onExpand]);
-
-  const slideContent = activeSlide ? (
-    <Slide slide={activeSlide} eager={safeIdx === 0} height={heightPx} />
-  ) : (
-    <Placeholder subsystemId={cockpitId} />
-  );
-
-  const titleOverlay = activeSlide ? (
-    <span
-      aria-hidden="true"
-      className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]"
-    >
-      <span className="truncate">{activeSlide.title}</span>
-    </span>
-  ) : null;
-
-  return (
-    <div
-      className={cn("relative w-full flex-none", heightClass)}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      {variant === "collapsed" && onExpand && !isLiveMap ? (
-        <button
-          type="button"
-          aria-label={`Abrir ${title}`}
-          aria-controls={bodyId}
-          aria-expanded={false}
-          onClick={handleExpandClick}
-          className={cn(
-            "block h-full w-full text-left",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
-          )}
-        >
-          {slideContent}
-          {titleOverlay}
-        </button>
-      ) : (
-        <div className="block h-full w-full">
-          {slideContent}
-          {titleOverlay}
-        </div>
-      )}
-
-      {slides.length === 0 && (
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
-            onChange={handleFileChange}
-            className="hidden"
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-          <button
-            type="button"
-            aria-label={`Añade portada de ${title}`}
-            onClick={handleAddCoverClick}
-            disabled={uploading}
-            className={cn(
-              "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
-              "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
-              "backdrop-blur-[2px] transition-colors duration-150",
-              "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
-              "disabled:cursor-not-allowed disabled:opacity-80",
-              // 44 hit area via slop pseudo-element (visual 36 stays discreet).
-              "before:absolute before:inset-[-4px] before:content-['']",
-              "[@media(pointer:coarse)]:min-h-[44px]",
-            )}
-          >
-            {uploading ? (
-              <>
-                <Loader2 size={13} aria-hidden="true" className="animate-spin" />
-                Subiendo…
-              </>
-            ) : (
-              <>
-                <Plus size={13} aria-hidden="true" />
-                Añade portada
-              </>
-            )}
-          </button>
-          {uploadError && (
-            <span
-              role="alert"
-              className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
-            >
-              <span className="truncate">{uploadError}</span>
-            </span>
-          )}
-        </>
-      )}
-
-      {slides.length > 1 && (
-        <div
-          aria-label={`Medios de ${title}`}
-          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
-        >
-          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-2 py-1 backdrop-blur-[2px]">
-            {slides.map((slide, i) => {
-              const isActive = i === safeIdx;
-              return (
-                <button
-                  key={slide.id}
-                  ref={(el) => {
-                    dotRefs.current[i] = el;
-                  }}
-                  type="button"
-                  aria-current={isActive ? "true" : undefined}
-                  aria-label={`Mostrar ${slide.title}`}
-                  onClick={() => setCurrentIdx(i)}
-                  onKeyDown={(e) => handleDotKeyDown(e, i)}
-                  className={cn(
-                    "recipe-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
-                  )}
-                >
-                  <span
-                    aria-hidden="true"
-                    data-active={isActive ? "true" : undefined}
-                    className={cn(
-                      "h-1.5 rounded-full transition-[width,background-color] duration-200",
-                      isActive
-                        ? "w-4 bg-[var(--color-text-on-overlay)]"
-                        : "w-1.5 bg-[color-mix(in_oklch,var(--color-text-on-overlay)_45%,transparent)]",
-                    )}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Slide / placeholder / pill helpers ──────────────────────────────────
-
-function Slide({
-  slide,
-  eager,
-  height,
-}: {
-  slide: SubsystemSlide;
-  eager: boolean;
-  height: number;
-}) {
-  if (slide.kind === "live-map") {
-    if (!slide.liveAnchor) return null;
-    const pins: MultiPinSpec[] = (slide.livePins ?? []).map((p) => ({
-      id: p.id,
-      latitude: p.latitude,
-      longitude: p.longitude,
-      kind:
-        p.feeType === "free"
-          ? "confirmed-free"
-          : p.feeType === "paid"
-            ? "confirmed-paid"
-            : "confirmed-unknown",
-      label: p.label,
-    }));
-    return (
-      <div className="absolute inset-0">
-        <MultiPinMap anchor={slide.liveAnchor} pins={pins} height={height} />
-      </div>
-    );
-  }
-  if (slide.kind === "image" || slide.kind === "map") {
-    return (
-      // R2 returns presigned URLs that rotate every 10 min — incompatible with
-      // next/image's static remotePatterns. Plain <img> matches the pattern in
-      // MediaThumbnail and avoids adding a brittle host allowlist for this PR.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={slide.url}
-        alt={slide.alt || slide.title}
-        loading={eager ? "eager" : "lazy"}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
-    );
-  }
-  // Video kind — `MediaAsset` has no posterUrl/thumbnail in schema, so the
-  // collapsed view always renders a placeholder icon. Real video element
-  // lives in the expanded gallery (out of 7a scope).
-  return (
-    <span
-      role="img"
-      aria-label={slide.alt || slide.title}
-      className="grid h-full w-full place-items-center bg-[var(--color-background-muted)] text-[var(--color-text-subtle)]"
-    >
-      <Video size={28} aria-hidden="true" />
-    </span>
-  );
-}
-
-// Per-subsystem identity gradient — terra (building) / olive (unit) /
-// info (parking) / warning (accessibility). Tokens live in semantic.css
-// and resolve per theme. Listed statically so the token-coverage gate
-// sees each token literal — template-literal interpolation hid the
-// suffix from its regex.
-const SUBSYSTEM_GRADIENTS: Record<string, string> = {
-  building:
-    "linear-gradient(135deg, var(--color-subsystem-building-from), var(--color-subsystem-building-to))",
-  unit:
-    "linear-gradient(135deg, var(--color-subsystem-unit-from), var(--color-subsystem-unit-to))",
-  parking:
-    "linear-gradient(135deg, var(--color-subsystem-parking-from), var(--color-subsystem-parking-to))",
-  accessibility:
-    "linear-gradient(135deg, var(--color-subsystem-accessibility-from), var(--color-subsystem-accessibility-to))",
-};
-
-function Placeholder({
-  subsystemId,
-}: {
-  subsystemId: string;
-}) {
-  const gradient = SUBSYSTEM_GRADIENTS[subsystemId] ?? SUBSYSTEM_GRADIENTS.building;
-  return (
-    <span
-      aria-hidden="true"
-      className="block h-full w-full"
-      style={{ background: gradient }}
-    />
-  );
-}
-
+// ── Status pill ─────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: SubsystemStatus }) {
   if (status === "configured") {
