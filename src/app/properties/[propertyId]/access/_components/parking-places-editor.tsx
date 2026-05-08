@@ -393,7 +393,7 @@ export function ParkingPlacesEditor({
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-[13px] font-semibold text-[var(--color-text-primary)]">
           Pines de aparcamiento{" "}
-          <span className="font-normal text-[var(--color-text-tertiary)]">
+          <span className="font-normal text-[var(--color-text-subtle)]">
             ({places.length})
           </span>
         </h4>
@@ -422,7 +422,7 @@ export function ParkingPlacesEditor({
       />
 
       {showManualForm && (
-        <p className="text-[11px] text-[var(--color-text-tertiary)]">
+        <p className="text-[11px] text-[var(--color-text-subtle)]">
           Haz clic en el mapa para colocar el pin — autorrellenará nombre y
           dirección si encontramos un POI cercano.
         </p>
@@ -471,7 +471,7 @@ export function ParkingPlacesEditor({
       )}
 
       {hiddenCount > 0 && (
-        <p className="text-[12px] text-[var(--color-text-tertiary)]">
+        <p className="text-[12px] text-[var(--color-text-subtle)]">
           +{hiddenCount} sugerencias adicionales ocultas tras el cap.
         </p>
       )}
@@ -532,7 +532,7 @@ export function ParkingPlacesEditor({
       )}
 
       {suggestions !== null && suggestions.length === 0 && places.length === 0 && (
-        <p className="text-[12px] text-[var(--color-text-tertiary)]">
+        <p className="text-[12px] text-[var(--color-text-subtle)]">
           Sin resultados cercanos. Puedes añadir un pin manual.
         </p>
       )}
@@ -899,7 +899,7 @@ function ManualPinForm({
             <Loader2
               size={12}
               aria-hidden="true"
-              className="ml-1 inline-block animate-spin text-[var(--color-text-tertiary)]"
+              className="ml-1 inline-block animate-spin text-[var(--color-text-subtle)]"
             />
           )}
         </h5>

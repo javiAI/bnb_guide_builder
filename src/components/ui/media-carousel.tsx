@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Plus, Video } from "lucide-react";
+import { Expand, Loader2, Plus, Video } from "lucide-react";
 import {
   useCallback,
   useRef,
@@ -70,6 +70,16 @@ export interface MediaCarouselProps {
   placeholderGradient?: string;
   /** Click on the cover (collapsed variant) — typically expands the card. */
   onExpand?: () => void;
+  /** Click on the cover (active variant) — typically collapses the card.
+   *  When set, the active variant gets a full-overlay click target so any
+   *  click on the image area (excluding the lightbox button + dots) collapses
+   *  the card. Mirrors the collapsed variant's expand-overlay pattern. */
+  onCollapse?: () => void;
+  /** When set, a hover-revealed Expand icon appears top-right on the media
+   *  area; clicking it requests the lightbox to open at the current slide
+   *  index. Stops propagation so it doesn't trigger the cover expand/collapse
+   *  button beneath it. */
+  onLightboxOpen?: (idx: number) => void;
   /** `aria-controls` target for the cover-expand button (collapsed only). */
   bodyId?: string;
   /** Controlled active-slide index. When provided together with
@@ -103,6 +113,8 @@ export function MediaCarousel({
   uploadUsageKey,
   placeholderGradient,
   onExpand,
+  onCollapse,
+  onLightboxOpen,
   bodyId,
   currentIdx: controlledIdx,
   onCurrentIdxChange,
@@ -327,6 +339,26 @@ export function MediaCarousel({
     onExpand?.();
   }, [onExpand]);
 
+  const handleCollapseClick = useCallback(() => {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    onCollapse?.();
+  }, [onCollapse]);
+
+  const handleLightboxClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (swipedRef.current) {
+        swipedRef.current = false;
+        return;
+      }
+      onLightboxOpen?.(safeIdx);
+    },
+    [onLightboxOpen, safeIdx],
+  );
+
   // ── Slide content renderer ────────────────────────────────────────────
   const renderSlideContent = (slide: MediaCarouselSlide, index: number) => {
     if (slide.kind === "custom") return slide.render(heightPx);
@@ -436,7 +468,7 @@ export function MediaCarousel({
   return (
     <div
       ref={trackContainerRef}
-      className={cn("relative w-full flex-none overflow-hidden", heightClass)}
+      className={cn("group/cover relative w-full flex-none overflow-hidden", heightClass)}
       onPointerDown={canSwipe ? handlePointerDown : undefined}
       onPointerMove={canSwipe ? handlePointerMove : undefined}
       onPointerUp={canSwipe ? handlePointerUp : undefined}
@@ -473,8 +505,7 @@ export function MediaCarousel({
 
       {/* Cover expand button — full overlay so the user can click anywhere on
          the cover to expand, including over custom (display-only) slides
-         like the parking live-map. Omitted only for `active` variant where
-         the parent handles collapse via the title button. */}
+         like the parking live-map. */}
       {variant === "collapsed" && onExpand && (
         <button
           type="button"
@@ -487,6 +518,45 @@ export function MediaCarousel({
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
           )}
         />
+      )}
+
+      {/* Active-variant collapse overlay — clicking anywhere on the cover
+         collapses the card. Mirrors the collapsed expand-overlay so the cover
+         remains the primary interaction target across both branches. */}
+      {variant === "active" && onCollapse && (
+        <button
+          type="button"
+          aria-label={`Cerrar ${title}`}
+          aria-expanded={true}
+          onClick={handleCollapseClick}
+          className={cn(
+            "absolute inset-0 z-[2] block h-full w-full text-left",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
+          )}
+        />
+      )}
+
+      {/* Hover-revealed lightbox button — sits above both expand/collapse
+         overlays (z-[3]) and stops click propagation so it doesn't trigger
+         the cover button beneath. Visible on hover (fine pointer) and always
+         visible on coarse pointer where hover is unreliable. */}
+      {onLightboxOpen && (
+        <button
+          type="button"
+          aria-label={`Ampliar media de ${title}`}
+          onClick={handleLightboxClick}
+          className={cn(
+            "absolute right-2 top-2 z-[3] grid h-9 w-9 place-items-center rounded-full",
+            "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]",
+            "opacity-0 transition-opacity duration-150 group-hover/cover:opacity-100 focus-visible:opacity-100",
+            "[@media(pointer:coarse)]:opacity-100",
+            "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+            "before:absolute before:inset-[-4px] before:content-['']",
+          )}
+        >
+          <Expand size={16} aria-hidden="true" />
+        </button>
       )}
 
       {slides.length > 1 && (

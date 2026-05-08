@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/media-carousel";
 import type { SubsystemSlide } from "./subsystem-card.types";
 import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
+import { MediaLightbox } from "./media-lightbox";
 
 // Every subsystem resolves to one of these two — "empty" was removed in 7b
 // when explicit opt-outs (`ba.no_building` / `pk.no_parking` chips + the
@@ -188,6 +189,14 @@ export function SubsystemCard({
     setCarouselIdx((prev) => Math.min(prev, max));
   }, [carouselSlides.length]);
 
+  // Lightbox state — opens via the hover-revealed Expand button on either
+  // carousel branch. The lightbox consumes the domain-typed `slides` directly
+  // so live-map kinds reach an interactive MultiPinMap (the cover variant is
+  // display-only; the lightbox is the only place coords become draggable).
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const handleLightboxOpen = (idx: number) => setLightboxIdx(idx);
+  const handleLightboxClose = () => setLightboxIdx(null);
+
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
   // against the elevated bg so the marker stays legible over the tile's
@@ -235,8 +244,9 @@ export function SubsystemCard({
         className="overflow-hidden rounded-[20px] border border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-surface-sm)]"
       >
         {/* Media-first layout: cover area on top, title button below.
-           The carousel is display-only here (no click-through) — the title
-           button is the sole collapse trigger. */}
+           The cover doubles as a collapse trigger via `onCollapse` — clicking
+           anywhere on the image (except the lightbox button) collapses the
+           card, mirroring the collapsed expand-overlay pattern. */}
         <MediaCarousel
           slides={carouselSlides}
           propertyId={propertyId}
@@ -247,6 +257,14 @@ export function SubsystemCard({
           placeholderGradient={placeholderGradient}
           currentIdx={carouselIdx}
           onCurrentIdxChange={setCarouselIdx}
+          onCollapse={onCollapse}
+          onLightboxOpen={handleLightboxOpen}
+        />
+        <MediaLightbox
+          slides={slides ?? []}
+          index={lightboxIdx}
+          onIndexChange={setLightboxIdx}
+          onClose={handleLightboxClose}
         />
         <button
           type="button"
@@ -333,8 +351,15 @@ export function SubsystemCard({
         placeholderGradient={placeholderGradient}
         bodyId={bodyId}
         onExpand={onExpand}
+        onLightboxOpen={handleLightboxOpen}
         currentIdx={carouselIdx}
         onCurrentIdxChange={setCarouselIdx}
+      />
+      <MediaLightbox
+        slides={slides ?? []}
+        index={lightboxIdx}
+        onIndexChange={setLightboxIdx}
+        onClose={handleLightboxClose}
       />
 
       {/* ── Body ───────────────────────────────────────────────── */}

@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Check, ImageIcon, ImageUp, Loader2, Star } from "lucide-react";
+import { Check, Loader2, Star, Upload } from "lucide-react";
 import {
   assignMediaAction,
   confirmUploadAction,
@@ -39,11 +39,15 @@ interface MethodRowProps {
     propertyId: string;
     usageKey: string;
   };
-  // Count of media slides currently attached to this method's `usageKey`.
-  // When > 0 the upload affordance switches to an always-visible "has media"
-  // state (filled icon + action-primary tone + numeric pip when ≥ 2) so the
-  // operator can see at a glance which methods already have photos.
-  mediaCount?: number;
+  // Preview of media currently attached to this method's `usageKey`.
+  // When `count > 0`, the upload affordance switches to an always-visible
+  // 32×32 thumbnail (using `firstUrl`) with a hover-revealed Upload overlay
+  // and a numeric badge when `count > 1`. This makes attached-media state
+  // unmistakable at a glance without expanding the card.
+  mediaPreview?: {
+    count: number;
+    firstUrl?: string;
+  };
 }
 
 const ACCEPTED_PHOTO_TYPES = ".jpg,.jpeg,.png,.webp,.avif,.gif";
@@ -64,7 +68,7 @@ export function MethodRow({
   isPrimary,
   onMakePrimary,
   mediaUpload,
-  mediaCount = 0,
+  mediaPreview,
 }: MethodRowProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +78,10 @@ export function MethodRow({
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
   const showUpload = mediaUpload !== undefined && selected;
+  const mediaCount = mediaPreview?.count ?? 0;
+  const previewUrl = mediaPreview?.firstUrl;
   const hasMedia = mediaCount > 0;
+  const hasThumbnail = hasMedia && Boolean(previewUrl);
 
   const handleUploadClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -234,22 +241,48 @@ export function MethodRow({
               "relative flex min-h-[44px] min-w-[44px] flex-none items-center justify-center rounded-[12px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
               "disabled:cursor-not-allowed",
-              uploading || hasMedia
-                ? "text-[var(--color-action-primary)]"
-                : "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-[var(--color-action-primary)]",
+              hasThumbnail
+                ? "text-[var(--color-text-on-overlay)]"
+                : hasMedia || uploading
+                  ? "text-[var(--color-action-primary)]"
+                  : "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-[var(--color-action-primary)]",
             )}
           >
             {uploading ? (
               <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            ) : hasThumbnail ? (
+              <span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-[8px] ring-2 ring-[var(--color-action-primary)] ring-offset-1 ring-offset-[var(--color-action-primary-subtle)]">
+                {/* Always-visible 32×32 thumbnail = unmistakable "media attached"
+                    signal. Hover scrim + Upload icon make the action obvious
+                    on top. presigned R2 URL — plain <img>, same pattern as
+                    MediaThumbnail. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewUrl}
+                  alt=""
+                  draggable={false}
+                  className="absolute inset-0 h-full w-full select-none object-cover"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 grid place-items-center bg-[var(--color-background-overlay)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                >
+                  <Upload size={14} aria-hidden="true" />
+                </span>
+              </span>
             ) : hasMedia ? (
-              <ImageIcon size={18} aria-hidden="true" className="fill-[var(--color-action-primary-subtle)]" />
+              // Media attached but no preview URL surfaced (rare — slide
+              // collection is image/map/video and only image/map carry url).
+              // Fall back to a solid-tone Upload icon so the operator still
+              // sees that this method has media.
+              <Upload size={18} aria-hidden="true" />
             ) : (
-              <ImageUp size={18} aria-hidden="true" />
+              <Upload size={18} aria-hidden="true" />
             )}
             {hasMedia && mediaCount > 1 && !uploading && (
               <span
                 aria-hidden="true"
-                className="absolute right-1 top-1 grid h-[14px] min-w-[14px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[9px] font-bold leading-none text-[var(--color-action-primary-fg)]"
+                className="absolute -right-0.5 -top-0.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[10px] font-bold leading-none text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
               >
                 {mediaCount > 9 ? "9+" : mediaCount}
               </span>
