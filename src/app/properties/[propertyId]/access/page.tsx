@@ -31,11 +31,17 @@ const SUBSYSTEM_TAXONOMY: Record<AccessCockpitId, ItemTaxonomyFile> = {
   accessibility: accessibilityFeatures,
 };
 
+// `live-map` is synthesized after this sort runs; the entry exists only to
+// satisfy `Record<SubsystemSlide["kind"], number>`.
 const KIND_ORDER: Record<SubsystemSlide["kind"], number> = {
   image: 0,
   map: 1,
   video: 2,
+  "live-map": 3,
 };
+
+const LP_PARKING_CATEGORY = "lp.parking";
+const LIVE_MAP_USAGE_KEY = "access.parking.live-map";
 
 function parseSubsystem(usageKey: string): AccessCockpitId | null {
   const segs = usageKey.split(".");
@@ -103,6 +109,7 @@ export default async function AccessPage({ params }: Props) {
         hasBuildingAccess: true,
         hasParking: true,
         hasAccessibilityConsiderations: true,
+        parkingMapInCover: true,
       },
     }),
     // Single grouped query — replaces 4 separate `count(...)` calls. Pulls
@@ -151,8 +158,19 @@ export default async function AccessPage({ params }: Props) {
     // and editor. Sort matches the existing local-place repository convention
     // so a future shared loader can drop in without re-sorting.
     prisma.localPlace.findMany({
-      where: { propertyId, categoryKey: "lp.parking" },
+      where: { propertyId, categoryKey: LP_PARKING_CATEGORY },
       orderBy: [{ createdAt: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        shortNote: true,
+        distanceMeters: true,
+        latitude: true,
+        longitude: true,
+        address: true,
+        provider: true,
+        providerMetadata: true,
+      },
     }),
   ]);
 
@@ -279,6 +297,72 @@ export default async function AccessPage({ params }: Props) {
       ? { latitude: property.latitude, longitude: property.longitude }
       : null;
 
+  // Project `LocalPlace` rows to the minimal `ParkingPlace` shape consumed by
+  // the access form. `feeType` lives inside `providerMetadata` (Json) per the
+  // 16E.6 decision to avoid a column migration; defensive parse — `unknown`
+  // shape, only "free"/"paid" survive, anything else collapses to null.
+  const parkingPlacesProjected: Array<{
+    id: string;
+    name: string;
+    shortNote: string | null;
+    distanceMeters: number | null;
+    latitude: number | null;
+    longitude: number | null;
+    address: string | null;
+    provider: string | null;
+    feeType: "free" | "paid" | null;
+  }> = parkingPlaces.map((row) => {
+    const meta = row.providerMetadata;
+    let feeType: "free" | "paid" | null = null;
+    if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+      const v = (meta as { feeType?: unknown }).feeType;
+      if (v === "free" || v === "paid") feeType = v;
+    }
+    return {
+      id: row.id,
+      name: row.name,
+      shortNote: row.shortNote,
+      distanceMeters: row.distanceMeters,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      address: row.address,
+      provider: row.provider,
+      feeType,
+    };
+  });
+
+  // Inject a synthetic "live-map" slide into the parking carousel when the
+  // operator has flipped the cover toggle on AND the data exists to render it
+  // (≥1 confirmed pin with coords + property anchor). The slide leads the
+  // parking carousel so it surfaces as the cover when the card collapses.
+  const livePins = parkingPlacesProjected
+    .filter((p) => p.latitude !== null && p.longitude !== null)
+    .map((p) => ({
+      id: p.id,
+      latitude: p.latitude as number,
+      longitude: p.longitude as number,
+      label: p.name,
+      feeType: p.feeType,
+    }));
+  if (
+    property.parkingMapInCover &&
+    livePins.length > 0 &&
+    propertyCoords !== null
+  ) {
+    const liveMapSlide: SubsystemSlide = {
+      id: "parking-live-map",
+      kind: "live-map",
+      url: "",
+      alt: "Mapa interactivo de aparcamientos",
+      blurhash: null,
+      title: "Mapa",
+      usageKey: LIVE_MAP_USAGE_KEY,
+      livePins,
+      liveAnchor: propertyCoords,
+    };
+    subsystemSlides.parking = [liveMapSlide, ...subsystemSlides.parking];
+  }
+
   return (
     <AccessForm
       propertyId={propertyId}
@@ -291,8 +375,9 @@ export default async function AccessPage({ params }: Props) {
       accessibilityPhotoCount={accessibilityPhotoCount}
       legacyAccessPhotoCount={legacyAccessPhotoCount}
       subsystemSlides={subsystemSlides}
-      parkingPlaces={parkingPlaces}
+      parkingPlaces={parkingPlacesProjected}
       propertyCoords={propertyCoords}
+      parkingMapInCover={property.parkingMapInCover}
       property={{
         checkInStart: property.checkInStart,
         checkInEnd: property.checkInEnd,

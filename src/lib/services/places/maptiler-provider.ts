@@ -4,6 +4,7 @@ import {
   type LocalPoiProvider,
   type PoiSuggestion,
   type ProviderMetadata,
+  type ReverseParams,
   type SearchParams,
 } from "./provider";
 import { mapMapTilerCategoryToLp } from "./maptiler-category-mapping";
@@ -84,6 +85,60 @@ export class MapTilerPlacesProvider implements LocalPoiProvider {
     }
 
     return suggestions;
+  }
+
+  async reverse(params: ReverseParams): Promise<PoiSuggestion | null> {
+    const { latitude, longitude, language, preferCategoryKey, signal } = params;
+    const url =
+      `${MAPTILER_ENDPOINT}/${longitude},${latitude}.json?key=${this.apiKey}` +
+      `&limit=5` +
+      `&language=${language}` +
+      `&types=poi`;
+
+    let data: MapTilerGeocodingResponse;
+    try {
+      const res = await fetch(url, { signal });
+      if (!res.ok) {
+        throw new PoiProviderUnavailableError(
+          `MapTiler returned ${res.status}`,
+          this.name,
+        );
+      }
+      data = (await res.json()) as MapTilerGeocodingResponse;
+    } catch (err) {
+      if (err instanceof PoiProviderUnavailableError) throw err;
+      if ((err as { name?: string }).name === "AbortError") {
+        throw err;
+      }
+      throw new PoiProviderUnavailableError(
+        `MapTiler reverse fetch failed: ${(err as Error).message}`,
+        this.name,
+      );
+    }
+
+    const retrievedAt = new Date().toISOString();
+    const features = data.features ?? [];
+    const anchor = { latitude, longitude };
+
+    const candidates: PoiSuggestion[] = [];
+    for (const feature of features) {
+      const mapped = this.mapFeature(feature, anchor, retrievedAt);
+      if (!mapped) continue;
+      const parsed = PoiSuggestionSchema.safeParse(mapped);
+      if (!parsed.success) continue;
+      candidates.push(parsed.data);
+    }
+
+    if (candidates.length === 0) return null;
+
+    if (preferCategoryKey) {
+      const matching = candidates.find(
+        (c) => c.categoryKey === preferCategoryKey,
+      );
+      if (matching) return matching;
+    }
+
+    return candidates[0] ?? null;
   }
 
   private mapFeature(

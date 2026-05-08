@@ -117,6 +117,11 @@ model Property {
   // "unanswered" is a real state distinct from both yes and no.
   hasAccessibilityConsiderations Boolean? @map("has_accessibility_considerations")
   hasPrivateEntrance      Boolean  @default(false) @map("has_private_entrance")
+  // When true, the parking subsystem cockpit card surfaces an interactive
+  // mini-map slide built live from `LocalPlace` rows tagged `lp.parking`. The
+  // toggle is operator-controlled and only meaningful once at least one pin
+  // exists; the page renders the map slide conditionally on both flag + pins.
+  parkingMapInCover       Boolean  @default(false) @map("parking_map_in_cover")
   infrastructureJson      Json?    @map("infrastructure_json")
   publicSlug              String?  @unique @map("public_slug")
   brandLogoUrl            String?  @map("brand_logo_url")

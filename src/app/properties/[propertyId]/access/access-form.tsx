@@ -287,6 +287,7 @@ export interface ParkingPlace {
   longitude: number | null;
   address: string | null;
   provider: string | null;
+  feeType: "free" | "paid" | null;
 }
 
 export interface PropertyCoords {
@@ -307,6 +308,7 @@ interface AccessFormProps {
   subsystemSlides: SubsystemSlides;
   parkingPlaces: ParkingPlace[];
   propertyCoords: PropertyCoords | null;
+  parkingMapInCover: boolean;
   property: {
     checkInStart: string | null;
     checkInEnd: string | null;
@@ -350,6 +352,7 @@ export function AccessForm({
   subsystemSlides,
   parkingPlaces,
   propertyCoords,
+  parkingMapInCover,
   property: p,
 }: AccessFormProps) {
   const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
@@ -901,6 +904,7 @@ export function AccessForm({
                       setHasParking={setHasParking}
                       parkingPlaces={parkingPlaces}
                       propertyCoords={propertyCoords}
+                      parkingMapInCover={parkingMapInCover}
                     />
                   </SubsystemCard>
                 );
@@ -1280,6 +1284,7 @@ interface ParkingPanelProps {
   setHasParking: (next: boolean) => void;
   parkingPlaces: ParkingPlace[];
   propertyCoords: PropertyCoords | null;
+  parkingMapInCover: boolean;
 }
 
 function ParkingPanel({
@@ -1298,6 +1303,7 @@ function ParkingPanel({
   setHasParking,
   parkingPlaces,
   propertyCoords,
+  parkingMapInCover,
 }: ParkingPanelProps) {
   const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
   return (
@@ -1335,6 +1341,7 @@ function ParkingPanel({
             propertyId={propertyId}
             places={parkingPlaces}
             propertyCoords={propertyCoords}
+            parkingMapInCover={parkingMapInCover}
           />
           <EntityGallery
             propertyId={propertyId}

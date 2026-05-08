@@ -19,6 +19,12 @@ export const ProviderMetadataSchema = z
     confidence: z.number().min(0).max(1).nullable(),
     /** ISO-8601 timestamp of the upstream fetch. */
     retrievedAt: z.string().datetime(),
+    /** Operator-assigned fee classification for parking pins. Optional for
+     * back-compat with rows persisted before 16E.6 introduced this field;
+     * `null` means the operator has not yet classified the pin. Persisted on
+     * `LocalPlace.providerMetadata` (Json column) instead of a dedicated
+     * Prisma column to avoid a migration in scope. */
+    feeType: z.enum(["free", "paid"]).nullable().optional(),
   })
   .strict();
 
@@ -59,12 +65,26 @@ export interface SearchParams {
   signal?: AbortSignal;
 }
 
+export interface ReverseParams {
+  latitude: number;
+  longitude: number;
+  language: "es" | "en";
+  /** When set, prefer the closest feature whose `categoryKey` matches.
+   * Falls back to the closest feature regardless of category if no match. */
+  preferCategoryKey?: string;
+  signal?: AbortSignal;
+}
+
 export interface LocalPoiProvider {
   /** Stable identifier persisted in `LocalPlace.provider`. Must never change
    * once rows reference it — the `(propertyId, provider, providerPlaceId)`
    * uniqueness contract depends on it. */
   readonly name: string;
   search(params: SearchParams): Promise<PoiSuggestion[]>;
+  /** Optional reverse-geocoding lookup at a coordinate. Providers that don't
+   * implement it return `undefined` from this method (consumers must guard);
+   * `null` from a returned promise means "no match found, query succeeded". */
+  reverse?(params: ReverseParams): Promise<PoiSuggestion | null>;
 }
 
 // ── Errors ──

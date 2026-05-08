@@ -45,9 +45,11 @@ const TARGETS: Target[] = [
     path: "src/lib/actions/parking.actions.ts",
     required: [
       "confirmParkingPlaceAction",
+      "confirmParkingPlacesBulkAction",
       "addManualParkingPlaceAction",
       "updateParkingPlaceAction",
       "deleteParkingPlaceAction",
+      "setParkingMapInCoverAction",
     ],
   },
   {

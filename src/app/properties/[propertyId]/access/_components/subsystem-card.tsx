@@ -31,6 +31,7 @@ import {
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
 import type { SubsystemSlide } from "./subsystem-card.types";
+import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
 
 // Every subsystem resolves to one of these two — "empty" was removed in 7b
 // when explicit scope toggles (hasBuildingAccess / hasParking /
@@ -570,9 +571,11 @@ function MediaCarousel({
   );
 
   const heightClass = variant === "active" ? "h-[240px]" : "h-[140px]";
+  const heightPx = variant === "active" ? 240 : 140;
+  const isLiveMap = activeSlide?.kind === "live-map";
 
   const slideContent = activeSlide ? (
-    <Slide slide={activeSlide} eager={safeIdx === 0} />
+    <Slide slide={activeSlide} eager={safeIdx === 0} height={heightPx} />
   ) : (
     <Placeholder subsystemId={cockpitId} />
   );
@@ -588,7 +591,7 @@ function MediaCarousel({
 
   return (
     <div className={cn("relative w-full flex-none", heightClass)}>
-      {variant === "collapsed" && onExpand ? (
+      {variant === "collapsed" && onExpand && !isLiveMap ? (
         <button
           type="button"
           aria-label={`Abrir ${title}`}
@@ -708,10 +711,32 @@ function MediaCarousel({
 function Slide({
   slide,
   eager,
+  height,
 }: {
   slide: SubsystemSlide;
   eager: boolean;
+  height: number;
 }) {
+  if (slide.kind === "live-map") {
+    if (!slide.liveAnchor) return null;
+    const pins: MultiPinSpec[] = (slide.livePins ?? []).map((p) => ({
+      id: p.id,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      kind:
+        p.feeType === "free"
+          ? "confirmed-free"
+          : p.feeType === "paid"
+            ? "confirmed-paid"
+            : "confirmed-unknown",
+      label: p.label,
+    }));
+    return (
+      <div className="absolute inset-0">
+        <MultiPinMap anchor={slide.liveAnchor} pins={pins} height={height} />
+      </div>
+    );
+  }
   if (slide.kind === "image" || slide.kind === "map") {
     return (
       // R2 returns presigned URLs that rotate every 10 min — incompatible with

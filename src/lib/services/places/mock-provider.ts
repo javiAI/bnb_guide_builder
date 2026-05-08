@@ -2,6 +2,7 @@ import {
   PoiSuggestionSchema,
   type LocalPoiProvider,
   type PoiSuggestion,
+  type ReverseParams,
   type SearchParams,
 } from "./provider";
 import { haversineMeters } from "./distance";
@@ -48,6 +49,45 @@ export class MockPlacesProvider implements LocalPoiProvider {
       if (out.length >= limit) break;
     }
     return out;
+  }
+
+  async reverse(params: ReverseParams): Promise<PoiSuggestion | null> {
+    const retrievedAt = new Date().toISOString();
+    const anchor = { latitude: params.latitude, longitude: params.longitude };
+    let nearest: { entry: SeedPlace; distance: number } | null = null;
+    for (const entry of this.seed) {
+      if (params.preferCategoryKey && entry.categoryKey !== params.preferCategoryKey) {
+        continue;
+      }
+      const distance = haversineMeters(anchor, {
+        latitude: entry.latitude,
+        longitude: entry.longitude,
+      });
+      if (!nearest || distance < nearest.distance) {
+        nearest = { entry, distance };
+      }
+    }
+    if (!nearest) return null;
+    const { entry, distance } = nearest;
+    const suggestion = {
+      provider: this.name,
+      providerPlaceId: entry.id,
+      name: entry.name,
+      categoryKey: entry.categoryKey,
+      latitude: entry.latitude,
+      longitude: entry.longitude,
+      address: entry.address,
+      website: entry.website,
+      distanceMeters: Math.round(distance),
+      providerMetadata: {
+        nativeCategory: entry.categoryKey.replace(/^lp\./, ""),
+        placeTypes: ["poi", entry.categoryKey.replace(/^lp\./, "")],
+        confidence: 1,
+        retrievedAt,
+      },
+    };
+    const parsed = PoiSuggestionSchema.safeParse(suggestion);
+    return parsed.success ? parsed.data : null;
   }
 }
 
