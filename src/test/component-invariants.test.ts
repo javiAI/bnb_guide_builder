@@ -367,8 +367,9 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         // Width signals — required when the button-shape is fixed-square
         // (icon-only). `min-h-[44px]` alone is the text-bearing pattern (44
         // floor, content drives width, not a fixed square) and is exempted.
-        // `recipe-icon-btn-32` bakes both dimensions via the pseudo-element +
-        // coarse-pointer media query; no width signal needed.
+        // `recipe-icon-btn-32` and `recipe-dot-24` both bake both dimensions
+        // via the pseudo-element + coarse-pointer media query; no width signal
+        // needed.
         const widthTokens = [
           "min-w-[44px]",
           "min-w-11",
@@ -378,7 +379,9 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           "w-14",
           "w-16",
         ];
-        const hasSlop = cls.includes("recipe-icon-btn-32");
+        const hasSlop =
+          cls.includes("recipe-icon-btn-32") ||
+          cls.includes("recipe-dot-24");
         const hasHeight = heightTokens.some((t) => cls.includes(t));
         const hasWidth = widthTokens.some((t) => cls.includes(t));
         const isTextBearingFloor =
@@ -416,6 +419,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "w-11",
       "w-12",
       "recipe-icon-btn-32",
+      "recipe-dot-24",
     ];
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {

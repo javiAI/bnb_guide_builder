@@ -106,6 +106,16 @@ model Property {
   infantsAllowed          Boolean  @default(false) @map("infants_allowed")
   isAutonomousCheckin     Boolean  @default(false) @map("is_autonomous_checkin")
   hasBuildingAccess       Boolean  @default(false) @map("has_building_access")
+  // Tri-state via Boolean + nullable: true = "tengo plazas/zona de parking" (operator
+  // configures parkingTypes), false = "sin parking" (opt-out, completeness reaches
+  // configured by declaration). Default true matches the access cockpit's prior
+  // implicit assumption that the subsystem is in scope unless declared otherwise.
+  hasParking              Boolean  @default(true) @map("has_parking")
+  // Nullable ternary for accessibility: null = unanswered (status pending), false =
+  // "sin consideraciones" (opt-out → configured), true = has features (configured
+  // when accessibilityFeatures is non-empty). Cannot default to a boolean because
+  // "unanswered" is a real state distinct from both yes and no.
+  hasAccessibilityConsiderations Boolean? @map("has_accessibility_considerations")
   hasPrivateEntrance      Boolean  @default(false) @map("has_private_entrance")
   infrastructureJson      Json?    @map("infrastructure_json")
   publicSlug              String?  @unique @map("public_slug")

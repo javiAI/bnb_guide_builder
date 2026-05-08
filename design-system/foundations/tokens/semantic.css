@@ -32,6 +32,12 @@
   --color-text-placeholder: var(--warm-500);
   --color-text-on-accent:  var(--warm-25);
   --color-text-on-primary: var(--warm-25);
+  /* Text on `--color-background-overlay` — overlay surface is intentionally
+     dark in BOTH themes (light: rgb(20 16 10 / 0.45), dark: rgb(0 0 0 / 0.65))
+     for legibility over photos, so text on it must be light in both themes.
+     Cannot reuse `--color-text-on-primary` (it flips light→dark in dark mode
+     because the action-primary surface is olive-light there). */
+  --color-text-on-overlay: var(--warm-25);
 
   /* ─── Border ─── */
   --color-border-subtle:   var(--warm-150);
@@ -136,6 +142,23 @@
   --color-status-neutral-icon:    var(--warm-600);
   --color-status-neutral-border:  var(--warm-200);
 
+  /* ─── Subsystem identity (access cockpit empty placeholders) ──────
+     Each access subsystem owns a soft gradient pair so an empty card
+     is still visually distinguishable at a glance. Hues chosen for
+     maximum separation around the wheel: terra (40°) / olive (130°) /
+     warning (80°) / info (235°). Light tier uses *-100 → *-50 (subtle,
+     sits cleanly under the title overlay). Dark tier mixes *-700 with
+     warm-900 at low % so the gradient stays readable on dark surfaces
+     without clashing with --color-background-elevated. */
+  --color-subsystem-building-from:        var(--terra-600);
+  --color-subsystem-building-to:          var(--terra-200);
+  --color-subsystem-unit-from:            var(--olive-600);
+  --color-subsystem-unit-to:              var(--olive-200);
+  --color-subsystem-parking-from:         var(--info-600);
+  --color-subsystem-parking-to:           var(--info-200);
+  --color-subsystem-accessibility-from:   var(--warning-600);
+  --color-subsystem-accessibility-to:     var(--warning-200);
+
   /* ─── Iconography (semantic) ──────────────────────────────────────
      Icons inherit currentColor by default. Use these tokens only when
      the icon's color is decoupled from surrounding text. */
@@ -238,6 +261,7 @@
   --elevation-surface-xs:     var(--shadow-xs);
   --elevation-surface-sm:     var(--shadow-sm);
   --elevation-surface-md:     var(--shadow-md);
+  --elevation-surface-lg:     var(--shadow-lg);
   --elevation-floating:       var(--shadow-md);
   --elevation-popover:        var(--shadow-md);
   --elevation-dropdown:       var(--shadow-md);
@@ -276,6 +300,7 @@
   --color-text-placeholder: var(--warm-400); /* lifted from 500 → ≥4.5:1 on input bg */
   --color-text-on-accent:  var(--warm-950);
   --color-text-on-primary: var(--warm-950);
+  --color-text-on-overlay: var(--warm-25);
 
   --color-border-subtle:   var(--warm-850);
   --color-border-default:  var(--warm-800);
@@ -375,6 +400,19 @@
   --color-status-neutral-icon:    var(--warm-300);
   --color-status-neutral-border:  var(--warm-800);
 
+  /* Subsystem identity (dark) — match the light-tier intent: subtle
+     hue tint over the elevated dark surface. color-mix at 22%/12% is
+     the same weighting used by --color-status-*-bg in dark, so the
+     placeholders sit at the same visual "elevation" as status pills. */
+  --color-subsystem-building-from:        color-mix(in oklch, var(--terra-500) 85%, var(--warm-900));
+  --color-subsystem-building-to:          color-mix(in oklch, var(--terra-500) 22%, var(--warm-900));
+  --color-subsystem-unit-from:            color-mix(in oklch, var(--olive-500) 85%, var(--warm-900));
+  --color-subsystem-unit-to:              color-mix(in oklch, var(--olive-500) 22%, var(--warm-900));
+  --color-subsystem-parking-from:         color-mix(in oklch, var(--info-500) 85%, var(--warm-900));
+  --color-subsystem-parking-to:           color-mix(in oklch, var(--info-500) 22%, var(--warm-900));
+  --color-subsystem-accessibility-from:   color-mix(in oklch, var(--warning-500) 85%, var(--warm-900));
+  --color-subsystem-accessibility-to:     color-mix(in oklch, var(--warning-500) 22%, var(--warm-900));
+
   /* Iconography */
   --color-icon-primary:   var(--warm-100);
   --color-icon-secondary: var(--warm-200);
@@ -467,6 +505,7 @@
   --elevation-surface-xs:     var(--shadow-xs-dark);
   --elevation-surface-sm:     var(--shadow-sm-dark);
   --elevation-surface-md:     var(--shadow-md-dark);
+  --elevation-surface-lg:     var(--shadow-lg-dark);
   --elevation-floating:       var(--shadow-md-dark);
   --elevation-popover:        var(--shadow-md-dark);
   --elevation-dropdown:       var(--shadow-md-dark);

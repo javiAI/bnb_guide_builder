@@ -160,7 +160,7 @@ Full per-branch body in `docs/MASTER_PLAN_V2.md` §FASE 16.
 These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora branches:
 
 1. Path canonical: `design-system/` (kebab, tracked in Git).
-2. Foundations is the only source of palette. Kits provide layout/hierarchy only — their cool blue-grey accent is discarded.
+2. Foundations is the only source of palette. Kits provide layout/hierarchy only — their cool blue-grey accent is discarded as a wholesale palette adopter.
 3. Dark mode is global via `html[data-theme]`. 16A installs infra (pre-paint script, semantic dark bindings) without visible toggle. 16D adds visible toggle in operator topbar (`light | dark | auto`, `localStorage.theme`). Guest inherits via the global toggle; falls back to `prefers-color-scheme` on `auto`.
 4. shadcn is NOT adopted wholesale. Per-component justification required.
 5. Brand themes per-property (`src/config/brand-palette.ts` + `--guide-brand-light/dark` injection in `guide-renderer.tsx`) are **permanent architecture** — not touched in 16G.

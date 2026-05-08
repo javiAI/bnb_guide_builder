@@ -24,6 +24,12 @@ interface UploadDropzoneProps {
   propertyId: string;
   entityType: MediaEntityType;
   entityId: string;
+  /**
+   * Optional usage-key tag attached to the new MediaAssignment row. Lets a
+   * subsystem-scoped gallery (e.g. `access.building`) classify uploads at
+   * write time so subsequent reads can filter by `usageKey`.
+   */
+  usageKey?: string;
   onUploadComplete?: () => void;
   compact?: boolean;
 }
@@ -33,6 +39,7 @@ export function UploadDropzone({
   propertyId,
   entityType,
   entityId,
+  usageKey,
   onUploadComplete,
   compact = false,
 }: UploadDropzoneProps) {
@@ -90,7 +97,7 @@ export function UploadDropzone({
 
         // 4. Assign to entity
         updateJob(jobId, { progress: "assigning" });
-        const assignResult = await assignMediaAction(assetId, entityType, entityId);
+        const assignResult = await assignMediaAction(assetId, entityType, entityId, usageKey);
         if (!assignResult.success) {
           updateJob(jobId, { progress: "error", error: assignResult.error });
           return false;
@@ -107,7 +114,7 @@ export function UploadDropzone({
         return false;
       }
     },
-    [propertyId, entityType, entityId, updateJob],
+    [propertyId, entityType, entityId, usageKey, updateJob],
   );
 
   const handleFiles = useCallback(

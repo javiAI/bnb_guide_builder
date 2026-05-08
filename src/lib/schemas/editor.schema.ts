@@ -52,6 +52,15 @@ const accessLayerSchema = z.object({
   methods: z.array(z.string()),
   customLabel: z.string().nullable().optional(),
   customDesc: z.string().nullable().optional(),
+  // Operator's choice of "first thing the guest sees". Used by buildingAccess
+  // (persisted into `accessMethodsJson.building.primary`) and unitAccess
+  // (persisted into the dedicated `Property.primaryAccessMethod` column).
+  // Parking does NOT use accessLayerSchema — it carries `parkingTypes: string[]`
+  // at the top of accessSchema and its primary is computed in saveAccessAction
+  // from a separate FormData field, then stored at `accessMethodsJson.parking.primary`.
+  // Optional in input shape; saveAccessAction normalizes to methods[0] when
+  // missing or stale.
+  primary: z.string().nullable().optional(),
 });
 
 export const accessSchema = z.object({
@@ -62,7 +71,12 @@ export const accessSchema = z.object({
   hasBuildingAccess: z.boolean(),
   buildingAccess: accessLayerSchema.optional(),
   unitAccess: accessLayerSchema.refine((d) => d.methods.length > 0, { message: "Selecciona al menos un método de acceso a la vivienda" }),
+  hasParking: z.boolean(),
   parkingTypes: z.array(z.string()).optional().default([]),
+  // null = unanswered (cockpit shows pending), false = explicit opt-out
+  // (configured by declaration, features array stays empty), true = has features
+  // (configured iff accessibilityFeatures non-empty).
+  hasAccessibilityConsiderations: z.boolean().nullable(),
   accessibilityFeatures: z.array(z.string()).optional().default([]),
 });
 

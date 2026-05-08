@@ -167,14 +167,40 @@ export async function saveAccessAction(
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
   const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
+  const hasParking = formData.get("hasParking") === "true";
   const buildingMethods = formData.getAll("buildingMethods") as string[];
   const unitMethods = formData.getAll("unitMethods") as string[];
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
 
+  // Tri-state field: "true"/"false" persisted, anything else (including the
+  // sentinel "null" or absent) → DB NULL = unanswered.
+  const accessibilityRaw = formData.get("hasAccessibilityConsiderations");
+  const hasAccessibilityConsiderations: boolean | null =
+    accessibilityRaw === "true" ? true : accessibilityRaw === "false" ? false : null;
+
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
   const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
   const validAccessibilityIds = new Set(accessibilityFeatures_taxonomy.items.map((i) => i.id));
+
+  const parkingCustomLabel =
+    (formData.get("parkingCustomLabel") as string) || null;
+  const parkingCustomDesc =
+    (formData.get("parkingCustomDesc") as string) || null;
+  const accessibilityCustomLabel =
+    (formData.get("accessibilityCustomLabel") as string) || null;
+  const accessibilityCustomDesc =
+    (formData.get("accessibilityCustomDesc") as string) || null;
+
+  // Primary marker per layer (NOT accessibility — features are independent
+  // attributes). Stored explicitly so the operator's choice of "first thing
+  // the guest sees" survives save/reload.
+  const primaryBuildingRaw =
+    (formData.get("primaryBuildingMethod") as string) || null;
+  const primaryUnitRaw =
+    (formData.get("primaryUnitMethod") as string) || null;
+  const primaryParkingRaw =
+    (formData.get("primaryParkingMethod") as string) || null;
 
   const raw = {
     checkInStart: formData.get("checkInStart") as string,
@@ -192,8 +218,17 @@ export async function saveAccessAction(
       customLabel: (formData.get("unitCustomLabel") as string) || null,
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
-    parkingTypes: parkingTypes.filter((id) => validParkingIds.has(id)),
-    accessibilityFeatures: accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
+    hasParking,
+    // Drop parkingTypes if hasParking=false — opt-out should not persist stale
+    // selections. Same shape as hasBuildingAccess gate above.
+    parkingTypes: hasParking ? parkingTypes.filter((id) => validParkingIds.has(id)) : [],
+    hasAccessibilityConsiderations,
+    // Drop features when explicitly opted out (false). Keep when true OR null
+    // (null = unanswered, but a half-completed list is still legitimate input).
+    accessibilityFeatures:
+      hasAccessibilityConsiderations === false
+        ? []
+        : accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -203,6 +238,28 @@ export async function saveAccessAction(
 
   const d = result.data;
 
+  // Custom labels/descs are only meaningful when the corresponding `*.other`
+  // sentinel is selected. Drop them otherwise so a deselect-then-reselect
+  // doesn't resurrect stale text.
+  const parkingHasOther = d.parkingTypes.includes("pk.other");
+  const accessibilityHasOther = d.accessibilityFeatures.includes("ax.other");
+
+  // Primary must reference a still-selected method. If a tampered FormData
+  // sends a primary not in the array, fall back to methods[0] (or null).
+  const buildingMethodsValid = d.buildingAccess?.methods ?? [];
+  const primaryBuilding =
+    primaryBuildingRaw && buildingMethodsValid.includes(primaryBuildingRaw)
+      ? primaryBuildingRaw
+      : (buildingMethodsValid[0] ?? null);
+  const primaryUnit =
+    primaryUnitRaw && d.unitAccess.methods.includes(primaryUnitRaw)
+      ? primaryUnitRaw
+      : (d.unitAccess.methods[0] ?? null);
+  const primaryParking =
+    primaryParkingRaw && d.parkingTypes.includes(primaryParkingRaw)
+      ? primaryParkingRaw
+      : (d.parkingTypes[0] ?? null);
+
   await prisma.property.update({
     where: { id: propertyId },
     data: {
@@ -211,12 +268,35 @@ export async function saveAccessAction(
       checkOutTime: d.checkOutTime,
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
-      primaryAccessMethod: d.unitAccess.methods[0] ?? null,
+      hasParking: d.hasParking,
+      hasAccessibilityConsiderations: d.hasAccessibilityConsiderations,
+      primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
-        building: d.buildingAccess ?? null,
+        building: d.buildingAccess
+          ? { ...d.buildingAccess, primary: primaryBuilding }
+          : null,
         unit: d.unitAccess,
-        parking: d.parkingTypes.length > 0 ? { types: d.parkingTypes } : null,
-        accessibility: d.accessibilityFeatures.length > 0 ? { features: d.accessibilityFeatures } : null,
+        parking:
+          d.parkingTypes.length > 0
+            ? {
+                types: d.parkingTypes,
+                customLabel: parkingHasOther ? parkingCustomLabel : null,
+                customDesc: parkingHasOther ? parkingCustomDesc : null,
+                primary: primaryParking,
+              }
+            : null,
+        accessibility:
+          d.accessibilityFeatures.length > 0
+            ? {
+                features: d.accessibilityFeatures,
+                customLabel: accessibilityHasOther
+                  ? accessibilityCustomLabel
+                  : null,
+                customDesc: accessibilityHasOther
+                  ? accessibilityCustomDesc
+                  : null,
+              }
+            : null,
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,

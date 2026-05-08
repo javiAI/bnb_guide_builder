@@ -74,6 +74,10 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/icon-button.tsx",
       "src/components/ui/icon-button-link.tsx",
       "src/components/ui/button-link.tsx",
+      "src/components/ui/page-header.tsx",
+      "src/components/ui/numbered-section.tsx",
+      "src/components/ui/page-header-chip.tsx",
+      "src/components/ui/hover-card.tsx",
       "src/lib/tone.ts",
     ],
   },
@@ -317,6 +321,10 @@ export const LIORA_PRIMITIVE_IMPORT_PATHS: ReadonlyArray<string> = [
   "@/components/ui/icon-button",
   "@/components/ui/icon-button-link",
   "@/components/ui/button-link",
+  "@/components/ui/page-header",
+  "@/components/ui/numbered-section",
+  "@/components/ui/page-header-chip",
+  "@/components/ui/hover-card",
   "@/lib/tone",
 ];
 
@@ -373,7 +381,7 @@ export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
 ] as const;
 
 /** Active Liora phase the allowlist is being audited against. */
-export const CURRENT_LIORA_PHASE: LioraPhase = "16E";
+export const CURRENT_LIORA_PHASE: LioraPhase = "16E.5";
 
 export interface ExceptionEntry {
   file: string;

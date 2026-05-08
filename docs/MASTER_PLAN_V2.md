@@ -3446,13 +3446,13 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - `src/app/properties/[propertyId]/property/` si el baseline E1 queda visualmente por debajo del kit (revisar al cerrar 16E con stats explícitos).
 - Wizard `src/components/wizard/` + `src/app/properties/new/**/*.tsx` queda excluido — 16E lo cubre como "no-kit-ref deferred" y el kit de wizard no existe todavía. Su parity port espera a que `subpages.html` añada `page-onboarding` (rama futura distinta).
 
-**No-alcance**:
-- ❌ Cambiar server actions o cualquier lógica de persistencia.
-- ❌ Tocar Prisma / schema / migraciones.
+**No-alcance** (planificación inicial v3.2.1 — *parcialmente superseded por 7a–7c en `access/`*; ver § "Excepciones intencionales al 'no-alcance' — `access/` 7a–7c (PR #102)" más abajo para el contrato vigente del cockpit):
+- ❌ Cambiar server actions o cualquier lógica de persistencia. *(Vigente para el resto de módulos. En `access/` 7a–7c se mantiene: ningún cambio de firma; nuevo caller threadea `usageKey` ya soportado.)*
+- ❌ Tocar Prisma / schema / migraciones. *(**Superseded en `access/` 7a–7c**: migración aditiva 7b añade `hasParking` + `hasAccessibilityConsiderations` — backward-compatible.)*
 - ❌ Messaging, assistant, `ai/` (16F).
 - ❌ Guest public guide (`src/app/g/[slug]/*`, `src/components/public-guide/*`).
 - ❌ Outputs E3 (`reservations/`, `media/`, `analytics/`, `publishing/`, `activity/`) salvo decisión explícita de incorporar.
-- ❌ Introducir nuevas taxonomías o nuevas server actions.
+- ❌ Introducir nuevas taxonomías o nuevas server actions. *(Taxonomías: vigente. Server actions: vigente — no se añadieron ni se modificaron firmas.)*
 
 **Acceptance gate per módulo**:
 - ✅ UI Kit Parity ≥ 8.5 global, ≥ 7.5 per criterion (skill `liora-ui-kit-parity` con tabla 7-criterios + screenshots Liora vs implementación en `eval-artifacts/16E.5/<module>/`).
@@ -3490,6 +3490,48 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - Releer `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` per módulo (page-llegada, page-espacios, page-equipamiento, page-sistemas, page-averias) y los selectores CSS asociados en `operator.css`.
 - Releer `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Deferred visual parity" per módulo (escrito durante E1 con la lista exacta de gaps).
 - Skill mandatoria: `frontend-design` antes de tocar el primer módulo.
+
+#### Fase -1 — decisiones aprobadas (contrato de la rama)
+
+Capturado de la aprobación del usuario en kickoff de 16E.5 (2026-05-05). Este bloque es spec ejecutable, no historial — cada bullet es una restricción enforced.
+
+1. **Orden de migración fijo**: `access/` → `amenities/` → `systems/` → `troubleshooting/` → `spaces/` → `property/` (este último solo si el baseline de 16E queda visualmente por debajo del kit). El primer módulo cierra end-to-end (kit-read → frontend-design → impl → screenshots → liora-ui-kit-parity audit → docs) y se reporta diff stats + verdict ANTES de continuar con el siguiente.
+2. **Particionado**: si la rama supera **60 archivos** o **4k LOC** al cerrar el primer módulo (access/), se parte en sub-PRs `16E.5-A` (access + amenities), `16E.5-B` (systems + troubleshooting), `16E.5-C` (spaces + property condicional). Decisión se toma con datos reales tras commit 4, no especulativamente.
+3. **CollapsibleSection per-módulo**: la decisión "reemplazar / complementar / mantener" se toma en frontend-design step de cada módulo y se documenta en la PR description con reasoning. No es global — algunos módulos (access con `arrival-hero` + `arrival-steps`) requerirán reemplazo; otros (sistemas con cards densas) pueden mantenerlo.
+4. **Primitivos a extraer**: `<PageHeader>` (eyebrow + title + sub + chips + actions + rule), `<NumberedSection>` (`<span class="num">01</span>` + título + body), `<PageHeaderChip>` (chip strip del eyebrow row). Viven en `src/components/ui/` con tests de invariantes propios. Otros primitivos (silhouette-specific: `arrival-hero`, `access-grid`, `sp-grid`, `eq-toolbar`, `sys-card`, `inc-row`) se mantienen como composiciones inline en cada module hasta que aparezcan en ≥2 módulos — promoción solo cuando la duplicación sea real.
+5. **No-CSS-classes del kit**: el kit usa selectores `.pg`, `.access-grid`, `.sp-grid`, `.eq-toolbar`, `.sys-card`, `.inc`, etc. La implementación **no** copia esas clases — re-construye la silueta con tokens semánticos foundations + Tailwind arbitrary values. El kit es referencia visual, no fuente de CSS production.
+6. **Screenshots Playwright obligatorios**: cada módulo cierra con `eval-artifacts/16E.5/<module>/{liora-light,liora-dark,impl-light,impl-dark}.png` (4 archivos mínimo). Capturados con `webapp-testing` skill o spec dedicado. PR description referencia las rutas.
+7. **UI Kit Parity per módulo**: tabla 7-criterios completa con scoring + verdict (≥8.5 global / ≥7.5 per criterion) en PR description per módulo. Sin verdict → módulo no cierra.
+8. **Restricciones duras** (planificación v3.2.1 — *parcialmente superseded en `access/` 7a–7c, ver § "Excepciones intencionales" abajo*):
+   - ❌ Server actions (`src/lib/actions/**`). *(Vigente — sin desviación.)*
+   - ❌ Prisma schema / migraciones. *(**Superseded en `access/` 7a–7c**: migración aditiva 7b.)*
+   - ❌ Taxonomías (`taxonomies/*.json`). *(Vigente — sin desviación.)*
+   - ❌ Registries (`src/config/registries/**`).
+   - ❌ Conditional engine (`src/lib/conditional-engine/**`).
+   - ❌ Guest public guide (`src/components/public-guide/**`, `src/app/g/**`).
+   - ❌ Messaging / assistant (16F).
+9. **Skills mandatorias**: `frontend-design` (pre-impl per módulo, design thinking output Purpose/Tone/Constraints/Differentiation), `liora-ui-kit-parity` (post-impl per módulo, 7-criterios audit), `webapp-testing` (Playwright screenshots per módulo, smoke optional).
+10. **Governance bump**: commit 1 sube `CURRENT_LIORA_PHASE` a `"16E.5"` en `src/test/parity-allowlist.ts`. Excepciones con `removeBy: "16D.5"` o anterior cuyo deadline venció se cierran o se suben con commit explícito que documente motivo.
+
+**Secuencia de commits planificada**:
+- **Commit 1** (governance): bump `CURRENT_LIORA_PHASE = "16E.5"` + cleanup excepciones vencidas si aparecen.
+- **Commit 2** (primitives): `<PageHeader>`, `<NumberedSection>`, `<PageHeaderChip>` + tests de invariantes.
+- **Commit 3** (baseline + a11y): inventario visual de los 5 módulos + axe-core baseline + frontend-design upfront para access/.
+- **Commit 4** (access/ end-to-end): impl + screenshots + parity audit + docs update.
+- **STOP** — reporte diff stats + parity verdict al usuario para review antes de continuar con amenities/.
+
+#### Excepciones intencionales al "no-alcance" — `access/` 7a–7c (PR #102)
+
+> Las restricciones del bloque "No-alcance" arriba (no schema, no server actions, no taxonomies, no active branch) reflejan la planificación inicial de 16E.5 v3.2.1. La iteración 7a–7c de la silueta `access/` (plan v6.2 en `/Users/javierabrilibanez/.claude/plans/federated-strolling-perlis.md`) se desvió de tres de esas restricciones de forma deliberada y backward-compatible. Cada desviación queda registrada aquí — y en `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Scope exceptions vs original v6.2 plan" — para que un future audit no la marque como scope creep no documentado.
+
+| Restricción original | Desviación 7a–7c | Justificación |
+|---|---|---|
+| ❌ Tocar Prisma / schema / migraciones | ✅ Migración aditiva `20260507180000_add_property_scope_toggles_7b` añade `hasParking BOOLEAN NOT NULL DEFAULT true` y `hasAccessibilityConsiderations BOOLEAN` (nullable) | Necesario para resolver "configured / pending / empty" determinísticamente por subsistema. Aditiva, sin breaking change ni data loss; default seguro para las propiedades existentes. |
+| ❌ Cambiar server actions o cualquier lógica de persistencia | ✅ Sin cambios de firma — la nueva afford `+ Añade portada` invoca acciones existentes (`requestUploadAction`, `confirmUploadAction`, `assignMediaAction`, `deleteMediaAction`) threadeando `usageKey: access.<cockpitId>` (parámetro opcional ya soportado) | No se añaden ni se renombran server actions. Solo se añade un caller dentro del componente. |
+| ❌ Cambio de active branch | ✅ Active branch reusa el mismo primitivo `<MediaCarousel variant="active">` (subsystem-card.tsx:155-213) | El plan v6.2 § "Goals" decía "scope is collapsed branch only" — la implementación 7a optó por unificar el carousel entre branches en lugar de duplicar el slide rendering. La lógica estructural de expand/collapse trigger no cambia; solo el área de media es consistente. |
+| ❌ Introducir nuevas taxonomías | (sin desviación) | Taxonomías intactas. `parkingOptions`, `accessibilityFeatures`, `buildingAccessMethods`, `accessMethods` se leen sin modificar. |
+
+Otros límites del 7a–7c: el upload affordance inline en `<MediaCarousel>` es **image-only** (`accept=".jpg,.jpeg,.png,.webp,.avif,.gif"`); maps (`.map` suffix) y videos siguen diferidos a la galería expandida / future per-method UI. Auto-cycle, video poster server-side, per-method picker — diferidos como se planificó.
 
 ---
 

@@ -33,6 +33,12 @@
       "label": "Sin aparcamiento disponible",
       "description": "No hay opción de aparcamiento viable cerca de la propiedad.",
       "recommended": false
+    },
+    {
+      "id": "pk.other",
+      "label": "Otro tipo de aparcamiento",
+      "description": "Tipo de aparcamiento no incluido en las opciones anteriores.",
+      "recommended": false
     }
   ]
 }

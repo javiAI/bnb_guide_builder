@@ -87,6 +87,12 @@
       "label": "Grúa fija o móvil",
       "description": "Sistema de grúa (fija en techo o móvil) para transferencias asistidas.",
       "recommended": false
+    },
+    {
+      "id": "ax.other",
+      "label": "Otra característica de accesibilidad",
+      "description": "Característica de accesibilidad no incluida en las opciones anteriores.",
+      "recommended": false
     }
   ]
 }
