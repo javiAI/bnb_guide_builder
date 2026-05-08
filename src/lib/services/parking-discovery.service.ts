@@ -10,9 +10,11 @@ const HARD_CAP = 8;
 // `warningKey: "few_results"` so the UI can hint "Pocos resultados — añade un
 // pin manual". 4 is the spec threshold.
 const SOFT_WARNING_FLOOR = 4;
-// Provider limit. Larger than HARD_CAP so we have headroom after filtering out
-// non-`lp.parking` categories and pins already confirmed in DB.
-const PROVIDER_LIMIT = 16;
+// Provider limit. MapTiler caps at 10; headroom over HARD_CAP=8 covers the
+// usual filter+dedupe shrinkage (a `parking` query returns mostly `lp.parking`
+// so 2 of slack is normally enough — when it bites, the UI surfaces
+// `warningKey: "few_results"`).
+const PROVIDER_LIMIT = 10;
 
 const PARKING_CATEGORY_KEY = "lp.parking";
 const SEARCH_QUERY = "parking";

@@ -37,7 +37,10 @@ export class MapTilerPlacesProvider implements LocalPoiProvider {
   constructor(private readonly apiKey: string) {}
 
   async search(params: SearchParams): Promise<PoiSuggestion[]> {
-    const limit = params.limit ?? 8;
+    // MapTiler's geocoding endpoint rejects `limit > 10` with HTTP 400
+    // (`querystring/limit must be <= 10`). Clamp here so callers can ask
+    // for headroom without triggering an upstream validation error.
+    const limit = Math.min(params.limit ?? 8, 10);
     const query = encodeURIComponent(params.query.trim());
     const { latitude, longitude } = params.anchor;
     const url =

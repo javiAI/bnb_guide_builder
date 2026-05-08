@@ -124,6 +124,10 @@ export async function searchNearbyParkingsAction(
       return { success: false, error: "Proveedor de mapas no configurado" };
     }
     if (err instanceof PoiProviderUnavailableError) {
+      console.error(
+        `[parking-search] propertyId=${propertyId} provider unavailable:`,
+        err.message,
+      );
       return { success: false, error: "Proveedor de mapas no disponible" };
     }
     console.error(`[parking-search] propertyId=${propertyId} error:`, err);
