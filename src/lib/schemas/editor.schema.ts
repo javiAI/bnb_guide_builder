@@ -52,10 +52,14 @@ const accessLayerSchema = z.object({
   methods: z.array(z.string()),
   customLabel: z.string().nullable().optional(),
   customDesc: z.string().nullable().optional(),
-  // Operator's choice of "first thing the guest sees". Persisted into
-  // `accessMethodsJson.<sub>.primary` for building/parking and the dedicated
-  // `Property.primaryAccessMethod` column for unit. Optional in input shape;
-  // saveAccessAction normalizes to methods[0] when missing or stale.
+  // Operator's choice of "first thing the guest sees". Used by buildingAccess
+  // (persisted into `accessMethodsJson.building.primary`) and unitAccess
+  // (persisted into the dedicated `Property.primaryAccessMethod` column).
+  // Parking does NOT use accessLayerSchema — it carries `parkingTypes: string[]`
+  // at the top of accessSchema and its primary is computed in saveAccessAction
+  // from a separate FormData field, then stored at `accessMethodsJson.parking.primary`.
+  // Optional in input shape; saveAccessAction normalizes to methods[0] when
+  // missing or stale.
   primary: z.string().nullable().optional(),
 });
 

@@ -3446,13 +3446,13 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 - `src/app/properties/[propertyId]/property/` si el baseline E1 queda visualmente por debajo del kit (revisar al cerrar 16E con stats explícitos).
 - Wizard `src/components/wizard/` + `src/app/properties/new/**/*.tsx` queda excluido — 16E lo cubre como "no-kit-ref deferred" y el kit de wizard no existe todavía. Su parity port espera a que `subpages.html` añada `page-onboarding` (rama futura distinta).
 
-**No-alcance**:
-- ❌ Cambiar server actions o cualquier lógica de persistencia.
-- ❌ Tocar Prisma / schema / migraciones.
+**No-alcance** (planificación inicial v3.2.1 — *parcialmente superseded por 7a–7c en `access/`*; ver § "Excepciones intencionales al 'no-alcance' — `access/` 7a–7c (PR #102)" más abajo para el contrato vigente del cockpit):
+- ❌ Cambiar server actions o cualquier lógica de persistencia. *(Vigente para el resto de módulos. En `access/` 7a–7c se mantiene: ningún cambio de firma; nuevo caller threadea `usageKey` ya soportado.)*
+- ❌ Tocar Prisma / schema / migraciones. *(**Superseded en `access/` 7a–7c**: migración aditiva 7b añade `hasParking` + `hasAccessibilityConsiderations` — backward-compatible.)*
 - ❌ Messaging, assistant, `ai/` (16F).
 - ❌ Guest public guide (`src/app/g/[slug]/*`, `src/components/public-guide/*`).
 - ❌ Outputs E3 (`reservations/`, `media/`, `analytics/`, `publishing/`, `activity/`) salvo decisión explícita de incorporar.
-- ❌ Introducir nuevas taxonomías o nuevas server actions.
+- ❌ Introducir nuevas taxonomías o nuevas server actions. *(Taxonomías: vigente. Server actions: vigente — no se añadieron ni se modificaron firmas.)*
 
 **Acceptance gate per módulo**:
 - ✅ UI Kit Parity ≥ 8.5 global, ≥ 7.5 per criterion (skill `liora-ui-kit-parity` con tabla 7-criterios + screenshots Liora vs implementación en `eval-artifacts/16E.5/<module>/`).
@@ -3502,10 +3502,10 @@ Capturado de la aprobación del usuario en kickoff de 16E.5 (2026-05-05). Este b
 5. **No-CSS-classes del kit**: el kit usa selectores `.pg`, `.access-grid`, `.sp-grid`, `.eq-toolbar`, `.sys-card`, `.inc`, etc. La implementación **no** copia esas clases — re-construye la silueta con tokens semánticos foundations + Tailwind arbitrary values. El kit es referencia visual, no fuente de CSS production.
 6. **Screenshots Playwright obligatorios**: cada módulo cierra con `eval-artifacts/16E.5/<module>/{liora-light,liora-dark,impl-light,impl-dark}.png` (4 archivos mínimo). Capturados con `webapp-testing` skill o spec dedicado. PR description referencia las rutas.
 7. **UI Kit Parity per módulo**: tabla 7-criterios completa con scoring + verdict (≥8.5 global / ≥7.5 per criterion) en PR description per módulo. Sin verdict → módulo no cierra.
-8. **Restricciones duras** (test invariants enforced):
-   - ❌ Server actions (`src/lib/actions/**`).
-   - ❌ Prisma schema / migraciones.
-   - ❌ Taxonomías (`taxonomies/*.json`).
+8. **Restricciones duras** (planificación v3.2.1 — *parcialmente superseded en `access/` 7a–7c, ver § "Excepciones intencionales" abajo*):
+   - ❌ Server actions (`src/lib/actions/**`). *(Vigente — sin desviación.)*
+   - ❌ Prisma schema / migraciones. *(**Superseded en `access/` 7a–7c**: migración aditiva 7b.)*
+   - ❌ Taxonomías (`taxonomies/*.json`). *(Vigente — sin desviación.)*
    - ❌ Registries (`src/config/registries/**`).
    - ❌ Conditional engine (`src/lib/conditional-engine/**`).
    - ❌ Guest public guide (`src/components/public-guide/**`, `src/app/g/**`).

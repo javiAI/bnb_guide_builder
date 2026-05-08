@@ -21,7 +21,6 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { cn } from "@/lib/cn";
 import {
   assignMediaAction,
@@ -715,14 +714,16 @@ function Slide({
 }) {
   if (slide.kind === "image" || slide.kind === "map") {
     return (
-      <Image
+      // R2 returns presigned URLs that rotate every 10 min — incompatible with
+      // next/image's static remotePatterns. Plain <img> matches the pattern in
+      // MediaThumbnail and avoids adding a brittle host allowlist for this PR.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
         src={slide.url}
         alt={slide.alt || slide.title}
-        fill
-        sizes="(max-width: 640px) 100vw, 320px"
-        priority={eager}
-        unoptimized
-        className="object-cover"
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+        className="absolute inset-0 h-full w-full object-cover"
       />
     );
   }
