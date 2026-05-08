@@ -43,6 +43,7 @@ import type { SubsystemSlides } from "./_components/subsystem-card.types";
 import { MethodList } from "./_components/method-list";
 import { MethodRow } from "./_components/method-row";
 import { ArrivalSteps, type ArrivalStepStatus } from "./_components/arrival-steps";
+import { ParkingPlacesEditor } from "./_components/parking-places-editor";
 
 const AUTONOMOUS_UNIT_IDS = ["am.smart_lock", "am.keypad", "am.lockbox"];
 
@@ -276,7 +277,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Minimal `LocalPlace` projection consumed by the parking panel (16E.6). */
+/** Minimal `LocalPlace` projection consumed by the parking panel. */
 export interface ParkingPlace {
   id: string;
   name: string;
@@ -1263,33 +1264,6 @@ function UnitPanel({
   );
 }
 
-// 16E.6: minimal placeholder consumer for parking pins. The rich
-// `<ParkingPlacesEditor>` (suggestions + multi-pin map + manual entry) lands
-// in the next commit. This placeholder keeps the data layer end-to-end
-// verifiable without forcing a single 400-line UI commit.
-function ParkingPlacesPlaceholder({
-  places,
-  propertyCoords,
-}: {
-  places: ParkingPlace[];
-  propertyCoords: PropertyCoords | null;
-}) {
-  if (places.length === 0) {
-    return (
-      <p className="text-sm text-[var(--color-text-tertiary)]">
-        {propertyCoords
-          ? "Sin pines de aparcamiento configurados todavía."
-          : "Sin coordenadas de propiedad — el editor de pines requiere ubicación geocodificada."}
-      </p>
-    );
-  }
-  return (
-    <p className="text-sm text-[var(--color-text-secondary)]">
-      {places.length} {places.length === 1 ? "pin de aparcamiento" : "pines de aparcamiento"} configurados.
-    </p>
-  );
-}
-
 interface ParkingPanelProps {
   allParking: ReturnType<typeof getItems>;
   parkingTypes: string[];
@@ -1357,7 +1331,8 @@ function ParkingPanel({
               />
             ))}
           </MethodList>
-          <ParkingPlacesPlaceholder
+          <ParkingPlacesEditor
+            propertyId={propertyId}
             places={parkingPlaces}
             propertyCoords={propertyCoords}
           />
