@@ -453,7 +453,7 @@ export function MediaCarousel({
           aria-label={`Medios de ${title}`}
           className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
-          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1 py-[3px] backdrop-blur-[2px]">
+          <div className="pointer-events-auto inline-flex items-center gap-px rounded-full bg-[var(--color-background-overlay)] px-1 py-[2px] backdrop-blur-[2px]">
             {slides.map((slide, i) => {
               const isActive = i === safeIdx;
               return (
@@ -468,7 +468,7 @@ export function MediaCarousel({
                   onClick={() => setCurrentIdx(i)}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "recipe-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
+                    "recipe-dot-pagination grid flex-none place-items-center rounded-full p-0.5",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >
@@ -476,9 +476,9 @@ export function MediaCarousel({
                     aria-hidden="true"
                     data-active={isActive ? "true" : undefined}
                     className={cn(
-                      "h-[3px] rounded-full transition-[width,background-color] duration-200",
+                      "h-1 rounded-full transition-[width,background-color] duration-200",
                       isActive
-                        ? "w-2 bg-[var(--color-text-on-overlay)]"
+                        ? "w-2.5 bg-[var(--color-text-on-overlay)]"
                         : "w-1 bg-[color-mix(in_oklch,var(--color-text-on-overlay)_45%,transparent)]",
                     )}
                   />

@@ -67,6 +67,27 @@
 }
 
 /*
+ * Touch-target slop for compact carousel paginator dots (a tightly-packed row
+ * of related controls inside a small pill). Provides 44 vertical hit via
+ * ::before vertical-only slop while keeping horizontal hit narrow so adjacent
+ * dots' slop zones don't intercept each other's visible centers. WCAG 2.5.8
+ * inline-target exception applies (row of related controls). On coarse
+ * pointers (touch primary) the visual grows to 44×44 — slop collapses.
+ */
+.recipe-dot-pagination {
+  position: relative;
+}
+.recipe-dot-pagination::before {
+  content: "";
+  position: absolute;
+  inset: -20px 0;
+}
+@media (pointer: coarse) {
+  .recipe-dot-pagination { min-height: 44px; min-width: 44px; }
+  .recipe-dot-pagination::before { inset: 0; }
+}
+
+/*
  * HoverCard primitive (src/components/ui/hover-card.tsx) — open/close animations
  * driven by Radix `data-state="open|closed"` attribute. Reduced-motion is already
  * handled by the existing rule at the bottom of this file (it short-circuits all
