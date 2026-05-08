@@ -10,7 +10,7 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
@@ -166,11 +166,15 @@ export async function saveAccessAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
   const buildingMethods = formData.getAll("buildingMethods") as string[];
   const unitMethods = formData.getAll("unitMethods") as string[];
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
+  // `hasBuildingAccess` is derived from the buildingMethods selection —
+  // `ba.no_building` is the explicit opt-out chip (replaces the old yes/no
+  // toggle). Empty selection = unanswered → false (legacy default).
+  const hasBuildingAccess =
+    !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
   // `hasParking` is derived from the parkingTypes selection — `pk.no_parking`
   // is the explicit opt-out chip (replaces the old yes/no toggle). Empty
   // selection = unanswered → false (legacy default).
@@ -184,6 +188,7 @@ export async function saveAccessAction(
     accessibilityRaw === "true" ? true : accessibilityRaw === "false" ? false : null;
 
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
+  const validBuildingIds = new Set(buildingAccessMethods.items.map((i) => i.id));
   const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
   const validAccessibilityIds = new Set(accessibilityFeatures_taxonomy.items.map((i) => i.id));
 
@@ -212,11 +217,21 @@ export async function saveAccessAction(
     checkOutTime: formData.get("checkOutTime") as string,
     isAutonomousCheckin: formData.get("isAutonomousCheckin") === "true",
     hasBuildingAccess,
-    buildingAccess: hasBuildingAccess ? {
-      methods: buildingMethods,
-      customLabel: (formData.get("buildingCustomLabel") as string) || null,
-      customDesc: (formData.get("buildingCustomDesc") as string) || null,
-    } : undefined,
+    // Filter for valid IDs and enforce `ba.no_building` exclusivity server-side
+    // as defense-in-depth: client UI already prevents mixed selections, but a
+    // tampered FormData could send both `ba.no_building` and a positive method.
+    buildingAccess: {
+      methods: (() => {
+        const valid = buildingMethods.filter((id) => validBuildingIds.has(id));
+        return valid.includes("ba.no_building") ? ["ba.no_building"] : valid;
+      })(),
+      customLabel: hasBuildingAccess
+        ? (formData.get("buildingCustomLabel") as string) || null
+        : null,
+      customDesc: hasBuildingAccess
+        ? (formData.get("buildingCustomDesc") as string) || null
+        : null,
+    },
     unitAccess: {
       methods: unitMethods,
       customLabel: (formData.get("unitCustomLabel") as string) || null,
@@ -254,9 +269,11 @@ export async function saveAccessAction(
 
   // Primary must reference a still-selected method. If a tampered FormData
   // sends a primary not in the array, fall back to methods[0] (or null).
+  // `ba.no_building` is opt-out — primary is always null in that case.
   const buildingMethodsValid = d.buildingAccess?.methods ?? [];
-  const primaryBuilding =
-    primaryBuildingRaw && buildingMethodsValid.includes(primaryBuildingRaw)
+  const primaryBuilding = buildingMethodsValid.includes("ba.no_building")
+    ? null
+    : primaryBuildingRaw && buildingMethodsValid.includes(primaryBuildingRaw)
       ? primaryBuildingRaw
       : (buildingMethodsValid[0] ?? null);
   const primaryUnit =
@@ -281,9 +298,10 @@ export async function saveAccessAction(
       hasAccessibilityConsiderations: d.hasAccessibilityConsiderations,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
-        building: d.buildingAccess
-          ? { ...d.buildingAccess, primary: primaryBuilding }
-          : null,
+        building:
+          d.buildingAccess && d.buildingAccess.methods.length > 0
+            ? { ...d.buildingAccess, primary: primaryBuilding }
+            : null,
         unit: d.unitAccess,
         parking:
           d.parkingTypes.length > 0

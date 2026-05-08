@@ -73,6 +73,13 @@
       "description": "Método de acceso al edificio no incluido en las opciones anteriores.",
       "recommended": false,
       "autonomous": false
+    },
+    {
+      "id": "ba.no_building",
+      "label": "Acceso directo a la vivienda",
+      "description": "La vivienda no está dentro de un edificio o portal cerrado — se entra directamente.",
+      "recommended": false,
+      "autonomous": true
     }
   ]
 }

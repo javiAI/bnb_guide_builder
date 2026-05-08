@@ -15,6 +15,7 @@ import {
   Footprints,
   GripHorizontal,
   Handshake,
+  Home,
   Key,
   KeyRound,
   KeySquare,
@@ -64,6 +65,7 @@ export const BUILDING_ACCESS_ICONS: Record<string, LucideIcon> = {
   "ba.key_pickup": MapPin,
   "ba.in_person": Handshake,
   "ba.other": Ellipsis,
+  "ba.no_building": Home,
 };
 
 export const UNIT_ACCESS_ICONS: Record<string, LucideIcon> = {

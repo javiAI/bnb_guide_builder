@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Camera, Check, Plus, Star, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { useId, useMemo, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
@@ -14,8 +14,8 @@ import type { SubsystemSlide } from "./subsystem-card.types";
 import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
 
 // Every subsystem resolves to one of these two — "empty" was removed in 7b
-// when explicit opt-outs (hasBuildingAccess / hasAccessibilityConsiderations
-// toggles + the `pk.no_parking` taxonomy chip) made it possible for every
+// when explicit opt-outs (`ba.no_building` / `pk.no_parking` chips + the
+// `hasAccessibilityConsiderations` tri-state) made it possible for every
 // card to declare configured-or-pending deterministically.
 export type SubsystemStatus = "configured" | "pending";
 
@@ -178,6 +178,16 @@ export function SubsystemCard({
     SUBSYSTEM_GRADIENTS[cockpitId] ?? SUBSYSTEM_GRADIENTS.building;
   const uploadUsageKey = `access.${cockpitId}`;
 
+  // Active slide index — owned here so it survives the `role` flip (the
+  // collapsed and active branches render two MediaCarousel instances; the
+  // user expects the slide they were viewing to stay put). Clamp when the
+  // slides set shrinks so we never point past the last slide.
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  useEffect(() => {
+    const max = Math.max(0, carouselSlides.length - 1);
+    setCarouselIdx((prev) => Math.min(prev, max));
+  }, [carouselSlides.length]);
+
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
   // against the elevated bg so the marker stays legible over the tile's
@@ -235,6 +245,8 @@ export function SubsystemCard({
           uploadEntityType="access_method"
           uploadUsageKey={uploadUsageKey}
           placeholderGradient={placeholderGradient}
+          currentIdx={carouselIdx}
+          onCurrentIdxChange={setCarouselIdx}
         />
         <button
           type="button"
@@ -321,6 +333,8 @@ export function SubsystemCard({
         placeholderGradient={placeholderGradient}
         bodyId={bodyId}
         onExpand={onExpand}
+        currentIdx={carouselIdx}
+        onCurrentIdxChange={setCarouselIdx}
       />
 
       {/* ── Body ───────────────────────────────────────────────── */}

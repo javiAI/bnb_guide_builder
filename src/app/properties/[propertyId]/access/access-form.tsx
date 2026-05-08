@@ -107,10 +107,10 @@ function sameStringList(a: string[], b: string[]): boolean {
 }
 
 // Items-level "do we have a complete selection" check, independent of the
-// subsystem-scope toggle. Splits the old `statusFor` into two layers so the
-// scope toggle (`hasBuildingAccess` / `hasAccessibilityConsiderations`) can
-// opt the entire subsystem out without inspecting items. Parking opts out via
-// the `pk.no_parking` taxonomy chip instead of a separate boolean.
+// subsystem-scope opt-out. Splits the old `statusFor` into two layers so the
+// opt-out (`ba.no_building` / `pk.no_parking` chips, or the
+// `hasAccessibilityConsiderations` tri-state) can opt the entire subsystem
+// out without inspecting items.
 function itemsConfigured(
   arr: string[],
   customLabel: string | null | undefined,
@@ -129,8 +129,8 @@ function itemsConfigured(
 
 // Per-subsystem completeness. Every subsystem resolves deterministically to
 // "configured" or "pending" — no "empty" state. The contract:
-//   building: hasBuildingAccess=false → configured (opt-out by declaration);
-//             true → configured iff items are complete.
+//   building: `ba.no_building` selected → configured (explicit opt-out);
+//             empty → pending; positive methods → configured iff items complete.
 //   unit:     always required (every property has a unit door); configured
 //             iff items are complete.
 //   parking:  `pk.no_parking` selected → configured (explicit opt-out);
@@ -139,12 +139,14 @@ function itemsConfigured(
 //             false → configured (opt-out, "sin consideraciones");
 //             true → configured iff items are complete.
 function deriveBuildingStatus(
-  hasBuilding: boolean,
   methods: string[],
   customLabel: string | null,
   primary: string | null,
 ): SubsystemStatus {
-  if (!hasBuilding) return "configured";
+  // Explicit opt-out via the `ba.no_building` taxonomy chip — replaces the old
+  // `hasBuildingAccess=false` toggle. Mutually exclusive with any positive method.
+  if (methods.includes("ba.no_building")) return "configured";
+  if (methods.length === 0) return "pending";
   return itemsConfigured(methods, customLabel, "ba.other", primary)
     ? "configured"
     : "pending";
@@ -360,9 +362,16 @@ export function AccessForm({
   const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
   const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
   const [checkOutTime, setCheckOutTime] = useState(p.checkOutTime ?? "11:00");
-  const [buildingMethods, setBuildingMethods] = useState<string[]>(
-    p.buildingAccess?.methods ?? [],
-  );
+  // Migration: legacy `hasBuildingAccess=false` (toggle-driven opt-out) maps to
+  // the new `ba.no_building` chip. Operators who opted out via the old toggle
+  // see the chip pre-selected so the dirty check stays clean and a no-op save
+  // persists the new shape.
+  const initialBuildingMethods =
+    p.hasBuildingAccess === false &&
+    (!p.buildingAccess?.methods || p.buildingAccess.methods.length === 0)
+      ? ["ba.no_building"]
+      : (p.buildingAccess?.methods ?? []);
+  const [buildingMethods, setBuildingMethods] = useState<string[]>(initialBuildingMethods);
   const [unitMethods, setUnitMethods] = useState<string[]>(p.unitAccess?.methods ?? []);
   const [parkingTypes, setParkingTypes] = useState<string[]>(p.parkingTypes);
   const [axFeatures, setAxFeatures] = useState<string[]>(p.accessibilityFeatures);
@@ -402,13 +411,16 @@ export function AccessForm({
     p.parkingPrimary ?? null,
   );
 
-  // Subsystem-scope toggles. Each one is the operator's explicit declaration
-  // for whether the subsystem applies at all — independent of selected items.
-  // Together with the items array, they let `deriveSubsystemStatus` resolve
-  // every card to "configured" or "pending" deterministically.
-  const [hasBuildingAccess, setHasBuildingAccess] = useState<boolean>(p.hasBuildingAccess);
+  // Subsystem-scope opt-outs. Building uses the `ba.no_building` taxonomy chip
+  // (mutually exclusive); parking uses `pk.no_parking` (same pattern).
+  // Accessibility keeps a tri-state boolean because there is no "n/a" item in
+  // the taxonomy and the chip count there is naturally large.
   const [hasAccessibilityConsiderations, setHasAccessibilityConsiderations] =
     useState<boolean | null>(p.hasAccessibilityConsiderations);
+  // Derived: there IS a building when at least one positive method is selected
+  // (and the opt-out chip is NOT selected). Drives the header chip + tooltip.
+  const hasBuildingAccess =
+    !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
 
   const [expandedCard, setExpandedCard] = useState<AccessCockpitId | null>(null);
   // Wraps the cockpit grid so the click-outside effect knows the bounds of
@@ -504,7 +516,7 @@ export function AccessForm({
     checkInStart !== (p.checkInStart ?? "16:00") ||
     checkInEnd !== (p.checkInEnd ?? "22:00") ||
     checkOutTime !== (p.checkOutTime ?? "11:00") ||
-    !sameStringList(buildingMethods, p.buildingAccess?.methods ?? []) ||
+    !sameStringList(buildingMethods, initialBuildingMethods) ||
     !sameStringList(unitMethods, p.unitAccess?.methods ?? []) ||
     !sameStringList(parkingTypes, p.parkingTypes) ||
     !sameStringList(axFeatures, p.accessibilityFeatures) ||
@@ -519,7 +531,6 @@ export function AccessForm({
     effectivePrimaryBuilding !== (p.buildingAccess?.primary ?? null) ||
     effectivePrimaryUnit !== (p.primaryUnitMethod ?? null) ||
     effectivePrimaryParking !== (p.parkingPrimary ?? null) ||
-    hasBuildingAccess !== p.hasBuildingAccess ||
     hasAccessibilityConsiderations !== p.hasAccessibilityConsiderations;
 
   const checkInRangeText = checkInStart
@@ -548,7 +559,6 @@ export function AccessForm({
   );
 
   const buildingStatus = deriveBuildingStatus(
-    hasBuildingAccess,
     buildingMethods,
     buildingCustomLabel,
     effectivePrimaryBuilding,
@@ -634,11 +644,6 @@ export function AccessForm({
           type="hidden"
           name="isAutonomousCheckin"
           value={isAutonomousDerived ? "true" : "false"}
-        />
-        <input
-          type="hidden"
-          name="hasBuildingAccess"
-          value={hasBuildingAccess ? "true" : "false"}
         />
         <input
           type="hidden"
@@ -854,12 +859,9 @@ export function AccessForm({
                       setBuildingCustomLabel={setBuildingCustomLabel}
                       buildingCustomDesc={buildingCustomDesc}
                       setBuildingCustomDesc={setBuildingCustomDesc}
-                      toggleMember={toggleMember}
                       propertyId={propertyId}
                       primary={effectivePrimaryBuilding}
                       setPrimary={setPrimaryBuilding}
-                      hasBuildingAccess={hasBuildingAccess}
-                      setHasBuildingAccess={setHasBuildingAccess}
                     />
                   </SubsystemCard>
                 );
@@ -1142,13 +1144,12 @@ interface BuildingPanelProps {
   setBuildingCustomLabel: (s: string) => void;
   buildingCustomDesc: string;
   setBuildingCustomDesc: (s: string) => void;
-  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
   propertyId: string;
   primary: string | null;
   setPrimary: (id: string | null) => void;
-  hasBuildingAccess: boolean;
-  setHasBuildingAccess: (next: boolean) => void;
 }
+
+const NO_BUILDING_ID = "ba.no_building";
 
 function BuildingPanel({
   allBuilding,
@@ -1158,54 +1159,72 @@ function BuildingPanel({
   setBuildingCustomLabel,
   buildingCustomDesc,
   setBuildingCustomDesc,
-  toggleMember,
   propertyId,
   primary,
   setPrimary,
-  hasBuildingAccess,
-  setHasBuildingAccess,
 }: BuildingPanelProps) {
   const sortedBuilding = sortSelectedFirst(allBuilding, buildingMethods, primary);
+  const isNoBuilding = buildingMethods.includes(NO_BUILDING_ID);
+
+  // `ba.no_building` is mutually exclusive — replaces the old `hasBuildingAccess`
+  // toggle. Selecting it clears every other method; selecting any positive
+  // method clears `ba.no_building`. Mirrors `toggleParkingType`.
+  const toggleBuildingMethod = useCallback(
+    (id: string) => {
+      withViewTransition(() => {
+        if (id === NO_BUILDING_ID) {
+          setBuildingMethods(
+            buildingMethods.includes(NO_BUILDING_ID) ? [] : [NO_BUILDING_ID],
+          );
+          return;
+        }
+        if (buildingMethods.includes(NO_BUILDING_ID)) {
+          setBuildingMethods([id]);
+          return;
+        }
+        const idx = buildingMethods.indexOf(id);
+        const next =
+          idx === -1
+            ? [...buildingMethods, id]
+            : buildingMethods.filter((_, i) => i !== idx);
+        setBuildingMethods(next);
+      });
+    },
+    [buildingMethods, setBuildingMethods],
+  );
+
   return (
     <div className="space-y-4">
-      <ScopeToggle
-        label="¿Hay edificio o portal cerrado?"
-        description="Si la vivienda no está dentro de un edificio o recinto cerrado, marca «No» — esta sección quedará completa sin métodos."
-        value={hasBuildingAccess}
-        onChange={(next) => setHasBuildingAccess(next === true)}
-      />
-      {hasBuildingAccess && (
-        <>
-          <MethodList>
-            {sortedBuilding.map((item) => (
-              <MethodRow
-                key={item.id}
-                id={item.id}
-                icon={buildingIconFor(item.id)}
-                name={item.label}
-                description={item.description}
-                selected={buildingMethods.includes(item.id)}
-                recommended={item.recommended}
-                onClick={() => toggleMember(buildingMethods, setBuildingMethods, item.id)}
-                isOther={item.id === "ba.other"}
-                customLabel={buildingCustomLabel}
-                customDesc={buildingCustomDesc}
-                onCustomLabelChange={setBuildingCustomLabel}
-                onCustomDescChange={setBuildingCustomDesc}
-                isPrimary={primary === item.id}
-                onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
-              />
-            ))}
-          </MethodList>
-          <EntityGallery
-            propertyId={propertyId}
-            entityType="access_method"
-            entityId={propertyId}
-            usageKey={ACCESS_USAGE_KEYS.building}
-            label="Fotos del edificio"
-            defaultCollapsed
+      <MethodList>
+        {sortedBuilding.map((item) => (
+          <MethodRow
+            key={item.id}
+            id={item.id}
+            icon={buildingIconFor(item.id)}
+            name={item.label}
+            description={item.description}
+            selected={buildingMethods.includes(item.id)}
+            recommended={item.recommended}
+            onClick={() => toggleBuildingMethod(item.id)}
+            isOther={item.id === "ba.other"}
+            customLabel={buildingCustomLabel}
+            customDesc={buildingCustomDesc}
+            onCustomLabelChange={setBuildingCustomLabel}
+            onCustomDescChange={setBuildingCustomDesc}
+            isPrimary={primary === item.id}
+            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
           />
-        </>
+        ))}
+      </MethodList>
+      {!isNoBuilding && (
+        <EntityGallery
+          propertyId={propertyId}
+          entityType="access_method"
+          entityId={propertyId}
+          usageKey={ACCESS_USAGE_KEYS.building}
+          label="Fotos del edificio"
+          defaultCollapsed
+        />
       )}
     </div>
   );

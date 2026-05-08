@@ -72,6 +72,13 @@ export interface MediaCarouselProps {
   onExpand?: () => void;
   /** `aria-controls` target for the cover-expand button (collapsed only). */
   bodyId?: string;
+  /** Controlled active-slide index. When provided together with
+   *  `onCurrentIdxChange`, the carousel becomes controlled — useful when the
+   *  parent needs the active slide to persist across mounts (e.g. when the
+   *  collapsed and active branches render two `<MediaCarousel>` instances
+   *  and the user expects the slide they were viewing to stay put). */
+  currentIdx?: number;
+  onCurrentIdxChange?: (idx: number) => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -97,9 +104,27 @@ export function MediaCarousel({
   placeholderGradient,
   onExpand,
   bodyId,
+  currentIdx: controlledIdx,
+  onCurrentIdxChange,
 }: MediaCarouselProps) {
   const router = useRouter();
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const [uncontrolledIdx, setUncontrolledIdx] = useState(0);
+  const isControlled = controlledIdx !== undefined && onCurrentIdxChange !== undefined;
+  const currentIdx = isControlled ? controlledIdx : uncontrolledIdx;
+  const setCurrentIdx = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      if (isControlled) {
+        const value =
+          typeof next === "function"
+            ? (next as (prev: number) => number)(controlledIdx)
+            : next;
+        onCurrentIdxChange(value);
+      } else {
+        setUncontrolledIdx(next);
+      }
+    },
+    [isControlled, controlledIdx, onCurrentIdxChange],
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
@@ -350,13 +375,29 @@ export function MediaCarousel({
           aria-hidden="true"
           tabIndex={-1}
         />
+        {/* Cover expand overlay (collapsed only) — clicking the empty gradient
+           expands the card. Sits below the upload button via z-index, so a
+           click on "Añade portada" still uploads (e.stopPropagation on it). */}
+        {variant === "collapsed" && onExpand && (
+          <button
+            type="button"
+            aria-label={`Abrir ${title}`}
+            aria-controls={bodyId}
+            aria-expanded={false}
+            onClick={handleExpandClick}
+            className={cn(
+              "absolute inset-0 z-[1] block h-full w-full text-left",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
+            )}
+          />
+        )}
         <button
           type="button"
           aria-label={`Añade portada de ${title}`}
           onClick={handleAddCoverClick}
           disabled={uploading}
           className={cn(
-            "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
+            "absolute bottom-3 left-1/2 z-[2] inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
             "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
             "backdrop-blur-[2px] transition-colors duration-150",
             "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
@@ -382,7 +423,7 @@ export function MediaCarousel({
         {uploadError && (
           <span
             role="alert"
-            className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
+            className="absolute bottom-12 left-1/2 z-[2] inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
           >
             <span className="truncate">{uploadError}</span>
           </span>
