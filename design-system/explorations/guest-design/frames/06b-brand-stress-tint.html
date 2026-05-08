@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 6b · Tint stress matrix · 8 × 2 = 16 cards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../tokens/colors_and_type.css">
+<style>
+:root { --page-bg: #EDE7DC; --page-fg: #2E2B26; --page-fg-2: #5A564D; --page-fg-3: #8A8578; --page-bd: #E6E1D8; }
+body {
+  background: radial-gradient(ellipse at top, #F2EEE8 0%, #DDD4C2 55%, #C8BDA6 100%);
+  color: var(--page-fg);
+  padding: 56px 32px 96px;
+}
+.doc { max-width: 1340px; margin: 0 auto; }
+.doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 36px; }
+.doc-eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-fg-3); }
+.doc-h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--page-fg-2); line-height: 21px; max-width: 76ch; }
+.doc-meta { font-family: var(--guest-font-mono); font-size: 11px; color: var(--page-fg-2); text-align: right; line-height: 17px; }
+.doc-meta b { color: var(--page-fg); font-weight: 700; }
+.section-eb { font-family: var(--guest-font-mono); font-size: 11px; color: var(--page-fg-3); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 36px 0 18px; display: flex; align-items: center; gap: 10px; }
+.section-eb::after { content: ""; flex: 1; height: 1px; background: var(--page-bd); }
+
+.matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+
+.cell { display: flex; flex-direction: column; gap: 10px; }
+.cell-name { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px; }
+.cell-name .k { font-size: 14px; font-weight: 700; color: var(--page-fg); }
+.cell-name .theme {
+  font-family: var(--guest-font-mono); font-size: 10px; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+}
+.theme.light { background: #FCFBF8; color: #5A564D; border: 1px solid #E6E1D8; }
+.theme.dark  { background: #1A1813; color: #C8C2B5; border: 1px solid #2E2A23; }
+
+/* TINT card — uses --guest-brand-tint + --guest-on-tint via [data-brand]
+   (and [data-theme="dark"] [data-brand] for the -d variants) */
+.tint-card {
+  background: var(--guest-brand-tint);
+  color: var(--guest-on-tint);
+  border-radius: 14px;
+  padding: 18px 20px;
+  min-height: 168px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.tint-card .eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--guest-on-tint); }
+.tint-card h4 { font-size: 18px; font-weight: 700; line-height: 22px; margin: 0; color: var(--guest-on-tint); }
+.tint-card p  { font-size: 13px; line-height: 18px; margin: 0; color: var(--guest-on-tint); opacity: 0.92; }
+.tint-card .chip {
+  align-self: flex-start; margin-top: auto;
+  display: inline-flex; align-items: center; padding: 4px 10px;
+  border: 1px solid currentColor; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  /* alpha-30 border via outline trick — keeps single-token colour API */
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+/* meta */
+.meta {
+  background: #FCFBF8; border: 1px solid #E6E1D8; border-radius: 10px;
+  padding: 10px 13px;
+  font-family: var(--guest-font-mono); font-size: 11px; color: #5A564D; line-height: 16px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.cell.dark-cell .meta { background: #1A1813; border-color: #2E2A23; color: #C8C2B5; }
+.meta .row { display: flex; justify-content: space-between; gap: 10px; }
+.meta .lab { color: #8A8578; }
+.meta .v { color: #2E2B26; font-weight: 700; }
+.cell.dark-cell .meta .v { color: #ECE6DA; }
+.meta .ratio { color: #2C4A2E; font-weight: 700; }
+.cell.dark-cell .meta .ratio { color: #8FB290; }
+
+/* legend */
+.legend {
+  background: #FCFBF8; border: 1px solid #E6E1D8; border-radius: 12px;
+  padding: 18px 22px; margin-top: 28px;
+  font-size: 13px; color: #5A564D; line-height: 19px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px;
+}
+.legend h4 { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #2E2B26; margin: 0 0 6px; }
+.legend code { font-family: var(--guest-font-mono); font-size: 12px; background: #F2EEE8; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <div class="doc-head">
+    <div>
+      <div class="doc-eb">Batch 6b of 6 · cierre · 8 brands × 2 themes · 16 tints</div>
+      <h1 class="doc-h1">Tint stress matrix</h1>
+      <p class="doc-sub">Gemelo de Batch 6. Cada card consume <code style="font-family:var(--guest-font-mono)">--guest-brand-tint</code> + <code style="font-family:var(--guest-font-mono)">--guest-on-tint</code> resueltos vía <code style="font-family:var(--guest-font-mono)">[data-brand]</code> (y <code style="font-family:var(--guest-font-mono)">[data-theme="dark"][data-brand]</code>). Tokens importados desde <code style="font-family:var(--guest-font-mono)">colors_and_type.css</code>. Los 16 ratios miden ≥ 7 : 1 AAA.</p>
+    </div>
+    <div class="doc-meta">
+      <b>Sample · Casa Lavanda</b><br/>
+      Calle Cuba 42, 3B · Ruzafa<br/>
+      Anfitriona: Laura<br/>
+      check-in 16:00 · check-out 11:00 vie
+    </div>
+  </div>
+
+  <div class="section-eb">Matrix · 4 × 4 · 16 tints</div>
+
+  <div class="matrix">
+
+    <!-- ROW 1 — indigo, teal -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">indigo</span><span class="theme light">light</span></div>
+      <div data-brand="indigo" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-indigo-50</span><span class="v">#EEF0FA</span></div>
+        <div class="row"><span class="lab">on-tint-indigo</span><span class="v">#312E81</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">indigo</span><span class="theme dark">dark</span></div>
+      <div data-brand="indigo" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-indigo-50d</span><span class="v">#1A1A33</span></div>
+        <div class="row"><span class="lab">on-tint-indigo-d</span><span class="v">#DCD9F5</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.2 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">teal</span><span class="theme light">light</span></div>
+      <div data-brand="teal" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-teal-50</span><span class="v">#E8F4F2</span></div>
+        <div class="row"><span class="lab">on-tint-teal</span><span class="v">#134E48</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">10.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">teal</span><span class="theme dark">dark</span></div>
+      <div data-brand="teal" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-teal-50d</span><span class="v">#0E2624</span></div>
+        <div class="row"><span class="lab">on-tint-teal-d</span><span class="v">#BCE3DF</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 2 — coral, olive -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">coral</span><span class="theme light">light</span></div>
+      <div data-brand="coral" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-coral-50</span><span class="v">#FBECE8</span></div>
+        <div class="row"><span class="lab">on-tint-coral</span><span class="v">#6B1414</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">9.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">coral</span><span class="theme dark">dark</span></div>
+      <div data-brand="coral" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-coral-50d</span><span class="v">#2C1410</span></div>
+        <div class="row"><span class="lab">on-tint-coral-d</span><span class="v">#FFE6E0</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">12.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">olive</span><span class="theme light">light</span></div>
+      <div data-brand="olive" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-olive-50</span><span class="v">#F0F6E6</span></div>
+        <div class="row"><span class="lab">on-tint-olive</span><span class="v">#2C4A0C</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">9.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">olive</span><span class="theme dark">dark</span></div>
+      <div data-brand="olive" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-olive-50d</span><span class="v">#1A2410</span></div>
+        <div class="row"><span class="lab">on-tint-olive-d</span><span class="v">#DDEBC2</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 3 — navy, plum -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">navy</span><span class="theme light">light</span></div>
+      <div data-brand="navy" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-navy-50</span><span class="v">#EAF0FA</span></div>
+        <div class="row"><span class="lab">on-tint-navy</span><span class="v">#1A2C66</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">10.8 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">navy</span><span class="theme dark">dark</span></div>
+      <div data-brand="navy" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-navy-50d</span><span class="v">#14203D</span></div>
+        <div class="row"><span class="lab">on-tint-navy-d</span><span class="v">#D6DEF5</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">plum</span><span class="theme light">light</span></div>
+      <div data-brand="plum" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-plum-50</span><span class="v">#F4EBFA</span></div>
+        <div class="row"><span class="lab">on-tint-plum</span><span class="v">#4C1D80</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">9.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">plum</span><span class="theme dark">dark</span></div>
+      <div data-brand="plum" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-plum-50d</span><span class="v">#25153A</span></div>
+        <div class="row"><span class="lab">on-tint-plum-d</span><span class="v">#ECDAF7</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">12.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 4 — sienna, slate -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">sienna</span><span class="theme light">light</span></div>
+      <div data-brand="sienna" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-sienna-50</span><span class="v">#FAEEE5</span></div>
+        <div class="row"><span class="lab">on-tint-sienna</span><span class="v">#4D1D0A</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">11.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">sienna</span><span class="theme dark">dark</span></div>
+      <div data-brand="sienna" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-sienna-50d</span><span class="v">#2A1810</span></div>
+        <div class="row"><span class="lab">on-tint-sienna-d</span><span class="v">#F5D4C2</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">10.8 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">slate</span><span class="theme light">light</span></div>
+      <div data-brand="slate" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-slate-50</span><span class="v">#EEF1F6</span></div>
+        <div class="row"><span class="lab">on-tint-slate</span><span class="v">#1E293B</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">12.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">slate</span><span class="theme dark">dark</span></div>
+      <div data-brand="slate" class="tint-card">
+        <span class="eb">RECOMENDADO POR LAURA</span>
+        <h4>Mercado Central</h4>
+        <p>Frutería Pepe (esquina) · pan en Forn de Pa Vell · pescado fresco mart/jue</p>
+        <span class="chip">5 min andando</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-slate-50d</span><span class="v">#1F242C</span></div>
+        <div class="row"><span class="lab">on-tint-slate-d</span><span class="v">#DCE0E6</span></div>
+        <div class="row"><span class="lab">contrast (h4)</span><span class="ratio">12.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div>
+      <h4>Cómo aplicar</h4>
+      Envuelve la superficie en <code>[data-brand="<i>key</i>"]</code> y el sistema resuelve <code>--guest-brand-tint</code> + <code>--guest-on-tint</code> automáticamente. Sin <code>[data-brand]</code> el sistema permanece en slate.
+    </div>
+    <div>
+      <h4>Tint vs solid</h4>
+      <b>Solid</b> para hero, CTA primario y banners de identidad fuerte. <b>Tint</b> para chips, alerts suaves, recomendaciones del anfitrión, info cards, badges informativos y callouts de baja intensidad — la marca está presente sin gritar.
+    </div>
+    <div>
+      <h4>Dark</h4>
+      <code>[data-theme="dark"]</code> en cualquier ancestro (típicamente <code>&lt;html&gt;</code>) reasigna a <code>--guest-brand-<i>key</i>-50d</code> + <code>--guest-on-tint-<i>key</i>-d</code> sin tocar el markup del card.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

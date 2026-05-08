@@ -2780,10 +2780,10 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 7. Command palette funcional fuera de scope de Fase 16. 16D solo prepara slot visual no interactivo en topbar; el palette real va a `feat/operator-command-palette` (registrado en `docs/FUTURE.md`).
 8. Reglas duras §14 ARCHITECTURE_OVERVIEW + "Replatform de diseño (Liora)" en CLAUDE.md aplican: sin sufijos `*V2`, `New*`, `Better*`, `*Old`, `legacy-*`. Tabla de clasificación obligatoria por PR. axe-core `serious|critical = 0` invariante. Targets ≥44×44 invariante. Componentes consumen tokens semánticos / componente, nunca primitivos.
 9. Cero cambios funcionales: pipeline `composeGuide → filterByAudience → normalizeGuideForPresentation`, registries, taxonomies, server actions, routes y APIs quedan intactos. Liora es solo capa visual.
-10. Guest base visual = v2 de `ui_kits/guest/index.html`. v1 ya borrado del paquete. Reincorporación de elementos v1 puntuales requiere bloque "Excepciones v1" justificado en la PR de 16C.
+10. Guest base visual definitivo = bundle `design-system/explorations/guest-design/` (producido en Claude Design, mayo 2026). Es la fuente única y final para `audience=guest`: `DESIGN.md` spec canónico de las 9 secciones, `tokens/colors_and_type.css` (doublet API completo `--guest-on-solid-{key}` + `--guest-on-tint-{key}` × light/dark, 8 brands), 7 frame sheets HTML como ground truth visual, audits AAA 7:1 hero / AA 4.5:1 body. Lo consume la rama 16H mediante clean rewrite. Cualquier identidad visual previa para guest queda superada — el kit `ui_kits/guest/index.html v2` consumido por 16C permanece como registro histórico merged, no como ground truth para ramas posteriores.
 11. Nada se "difiere" sin destino: cada item temporal va con (a) entry en `docs/FUTURE.md`, (b) rama nombrada y registrada, o (c) decisión arquitectura permanente documentada.
 
-**Las 7 ramas 16A–16G son secuenciales con dependencias internas, no paralelas.**
+**Las 8 ramas 16A–16H son secuenciales con dependencias internas, no paralelas.** 16A–16G operan sobre el shell operator + reskin guest sobre `ui_kits/guest/index.html v2`. 16H reescribe limpio el guest contra el bundle definitivo `design-system/explorations/guest-design/` y cierra la fase.
 
 ---
 
@@ -3642,20 +3642,138 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - ✅ Grep gate verde.
 - ✅ `liora-legacy-alias-registry.test.ts` muestra registro vacío.
 - ✅ Tablas de clasificación de 16A–F vaciadas de `deleted` pendientes.
-- ✅ `LIORA_SURFACE_ROLLOUT_PLAN.md` marca Fase 16 completa.
-- ✅ `docs/ROADMAP.md` cierra Fase 16.
+- ✅ `LIORA_SURFACE_ROLLOUT_PLAN.md` marca operator/messaging completos y deja el slot guest abierto para 16H.
+- ✅ `docs/ROADMAP.md` registra cierre del barrido legacy y deja Fase 16 abierta hasta el merge de 16H.
 
 **Restricciones**:
 - ❌ Cambios funcionales.
 - ❌ Re-skin adicional.
 - ❌ Borrar `src/config/brand-palette.ts` (decisión permanente 5).
+- ❌ Tocar `src/components/public-guide/` o `src/app/g/[slug]/`. El reemplazo del rendering público guest pertenece a 16H, que ejecuta clean rewrite contra el bundle definitivo.
 
 **No-alcance**: nuevas features.
 
 **Preparación**:
 - **Contexto a leer**: tablas de clasificación acumuladas de 16A–F, `LIORA_DESIGN_ADOPTION_PLAN.md` (registro de aliases con ownership 16G).
-- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` (Fase 16 completa), `docs/ROADMAP.md` (cierre Fase 16), `CLAUDE.md` § "Replatform de diseño (Liora)" (estado: ✅ completada).
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` (operator/messaging completos, guest pending 16H), `docs/ROADMAP.md` (16G ✅, 16H ⏳), `CLAUDE.md` § "Replatform de diseño (Liora)" (estado: 16H pendiente).
 - **Skills**: `/simplify` obligatorio.
+
+---
+
+### Rama 16H — `feat/liora-guest-visual-redesign-16H`
+
+**Propósito**: aterrizar el sistema visual definitivo de la guía pública del huésped (`audience=guest`) consumiendo el bundle `design-system/explorations/guest-design/` como ground truth y reemplazando completo el rendering actual de `src/components/public-guide/` y `src/app/g/[slug]/`. Estrategia: **clean rewrite** — no migración section-by-section sobre `guide.css`. Cierra Fase 16.
+
+**Ground truth (bundle definitivo, ya existente en repo)**:
+- `design-system/explorations/guest-design/DESIGN.md` — spec canónico de las 9 secciones (essentials, arrival, spaces, amenities, how-to, rules, checkout, local, emergency).
+- `design-system/explorations/guest-design/tokens/colors_and_type.css` — fuente literal de los `--guest-*`. Doublet API completo (`--guest-on-solid-{key}` + `--guest-on-tint-{key}`), 8 brands × light/dark, todos los pares ≥ 7:1 AAA hero / 4.5:1 AA body.
+- `design-system/explorations/guest-design/frames/01-07*.html` — ground truth visual (token sheet, mobile/desktop screens, overlays, dark parity, brand stress solid + tint, components). Se leen visualmente en navegador y se replican en React; no se sirven en producción.
+- `design-system/explorations/guest-design/_process/` — trazabilidad (chat transcript + baseline). Read-only, no se consume para implementar.
+
+**Decisiones del bundle (lockeadas, no se renegocian en esta rama)**:
+- Independencia visual del operator: `--guest-*` prefijado, coexiste con `--color-*` operator sin colisión.
+- Doublet API por brand: `--guest-on-solid-{key}` (texto sobre `-800`) + `--guest-on-tint-{key}` (texto sobre `-50`). Mismas variantes en dark con sufijo `-d`.
+- Activación: `[data-brand="<key>"]` wrapper para mappings light; `[data-theme="dark"][data-brand="<key>"]` descendant-form para dark.
+- Theme: `[data-theme="dark"]` en `<html>` flip global (heredado del toggle operator instalado en 16D).
+- WCAG: AAA 7:1 para hero text en las 64 combinaciones brand × theme. AA 4.5:1 mínimo para body.
+- Targets: ≥ 44 hit area en todo elemento clickable. Sm 32 visual con slop declarado vía pseudo-elemento.
+
+**Scope estricto**: tokens guest nuevos, primitivos guest nuevos, reescritura completa de las 9 secciones del rendering público + overlays cross-cutting, tests de regresión visual y de contraste. Cero cambios en operator, messaging, schema, server actions, taxonomies, registries, pipeline `composeGuide → filterByAudience → normalizeGuideForPresentation`, ni APIs.
+
+**Archivos a crear**:
+- `design-system/foundations/tokens/guest-primitives.css` — escalas guest (color base, accent, status). Factorizado de `tokens/colors_and_type.css` del bundle. NO toca `primitives.css` operator.
+- `design-system/foundations/tokens/guest-semantic.css` — `--guest-color-*` semantic roles + dark binding completo. Append al import chain de `design-system.css`.
+- `design-system/foundations/tokens/guest-brand.css` — doublet API + activación `[data-brand]` para las 8 brands × light/dark.
+- Nuevos primitivos en `src/components/public-guide/ui/` consumiendo `--guest-*` (taxonomía de cards definida por el bundle, no por el set legacy `HeroCard`/`EssentialCard`/`StandardCard`/`WarningCard` heredado de 16C).
+- `src/test/guest-contrast-regression.test.ts` — recorre todos los pairings `--guest-color-*` y assert ratios ≥ 4.5/7.
+- `src/test/e2e/guest-brand-visual-regression.spec.ts` — Playwright con cada una de las 8 brands inyectada, screenshot hero, diff vs baseline.
+
+**Archivos a modificar**:
+- `design-system/foundations/tokens/components.css` — añadir aliases `--guest-card-*`, `--guest-button-*`, etc.
+- `design-system/foundations/design-system.css` — append imports guest.
+- `src/app/g/[slug]/page.tsx` — consume nuevo rendering guest.
+
+**Archivos a borrar (clean rewrite)**:
+- `src/components/public-guide/ui/guide.css` (reskin de 16C contra `ui_kits/guest/index.html v2`, superado por bundle).
+- `src/components/public-guide/ui/guide-card.tsx` (cards 16C, superadas por taxonomía del bundle).
+- Resto de componentes guest legacy en `src/components/public-guide/` reemplazados por los nuevos primitivos.
+
+**8 commits secuenciales**:
+
+1. **`design-system/foundations/tokens/guest-primitives.css`** — escalas guest factorizadas del bundle. `validate:design-system` runs.
+2. **`design-system/foundations/tokens/guest-semantic.css`** + dark binding completo. Append al import chain. Validate runs.
+3. **`design-system/foundations/tokens/guest-brand.css`** — doublet API + `[data-brand]` activation × light/dark + actualización de aliases en `components.css`.
+4. **Borrado del rendering guest legacy** + creación de los nuevos primitivos en `src/components/public-guide/ui/` consumiendo `--guest-*`. Taxonomía de cards definida por el bundle.
+5. **Reescritura de las 9 secciones** en `src/app/g/[slug]/`: Essentials → Arrival → Spaces → Amenities → How-to → Rules → Checkout → Local → Emergency, replicando frames 02-mobile.html / 03-desktop.html / 05-dark-parity.html.
+6. **Reescritura de overlays cross-cutting**: search, TOC drawer, lightbox, PWA install nudge, issue reporter, language switcher, replicando frame 04-mobile-overlays.html.
+7. **Tests**:
+   - `guest-contrast-regression.test.ts` — recorre `--guest-color-*` pairings, assert ≥ 4.5/7.
+   - `guest-brand-visual-regression.spec.ts` — Playwright con las 8 brands × light/dark, screenshot hero, diff vs baseline.
+   - Mantener verdes los 5 invariantes anti-leak (`guest-leak-invariants.test.ts`) — el nuevo rendering pasa igual o mejor.
+8. **Final gates** verde + cleanup tablas de clasificación + cierre de Fase 16.
+
+**Gate CI**:
+- `npm run validate:design-system` — gates estructurales (no primitive leak guest → operator, dark coverage `--guest-*` 100%, REFERENCE ONLY headers, gitignore hardening).
+- `npm run typecheck` — `prisma generate` previo.
+- Vitest:
+  - `guest-leak-invariants.test.ts` (5 invariantes preservados).
+  - `presenter-coverage.test.ts`.
+  - `guide-empty-states.test.ts`.
+  - `guide-presentation.test.ts`.
+  - `guest-contrast-regression.test.ts` (nuevo).
+- Playwright 4 viewports (375×667, 768×1024, 1280×800, 1680×1140) + axe-core `serious|critical = 0`.
+- `guest-brand-visual-regression.spec.ts` — 8 brands × light/dark sin diff sobre baseline.
+- `liora-no-primitive-leak.test.ts` extendido: `src/components/public-guide/**/*.tsx` no consume `--color-*` operator (solo `--guest-*`).
+- Grep gate: cero referencias residuales a `HeroCard` / `EssentialCard` / `StandardCard` / `WarningCard` / `guide.css` legacy en el código nuevo.
+
+**Criterio de done**:
+- ✅ Suite completa verde (typecheck, lint, vitest, playwright, axe-core).
+- ✅ 8 brands × light/dark renderizan con contraste ≥ 7:1 hero, ≥ 4.5:1 body en las 64 combinaciones.
+- ✅ Smoke test manual: `/g/<slug>` toggle `data-theme` flip limpio + swap `brandPaletteKey` entre las 8 sin regresión visual.
+- ✅ Lighthouse: PWA installable, performance ≥ 90, accessibility ≥ 95.
+- ✅ Bundle size ≤ baseline post-16G.
+- ✅ `LIORA_SURFACE_ROLLOUT_PLAN.md` marca Fase 16 completa.
+- ✅ `docs/ROADMAP.md` cierra Fase 16.
+- ✅ `CLAUDE.md` § "Replatform de diseño (Liora)" actualizado a estado ✅ completada.
+- ✅ `design-system/explorations/guest-design/` permanece read-only en repo (registro de origen del sistema).
+
+**Restricciones**:
+- ❌ Cambios funcionales: pipeline `composeGuide → filterByAudience → normalizeGuideForPresentation`, registries, taxonomies, server actions, routes, APIs intactos.
+- ❌ Tocar primitivos operator (`primitives.css`, `semantic.css` operator). El sistema guest es independiente.
+- ❌ Heredar nombres de cards del intento previo (HeroCard / EssentialCard / StandardCard / WarningCard de 16C). La nueva taxonomía la define el bundle.
+- ❌ Migración section-by-section sobre `guide.css`. La estrategia es clean rewrite — `guide.css` y `guide-card.tsx` se borran completos.
+- ❌ Mezclar tokens operator y guest en el mismo selector. Coexisten por prefijo, no por mapping.
+- ❌ Convivencia legacy: cero `*V2`, `*New`, `*Old`, `legacy-*` en el código nuevo.
+
+**No-alcance**:
+- Nuevas features funcionales (assistant, messaging, knowledge, taxonomies).
+- Reskin operator adicional (cerrado por 16D / 16D.5 / 16E).
+- Reskin messaging adicional (cerrado por 16F).
+
+**Preparación**:
+- **Contexto a leer (obligatorio)**:
+  - `design-system/explorations/guest-design/README.md` — los 3 roles del bundle (tokens / frames / DESIGN.md).
+  - `design-system/explorations/guest-design/DESIGN.md` — spec canónico 9 secciones.
+  - `design-system/explorations/guest-design/tokens/colors_and_type.css` — fuente literal de los `--guest-*`.
+  - `design-system/explorations/guest-design/frames/*.html` — open en navegador (`open frames/02-mobile.html`), replicar visualmente.
+  - `design-system/foundations/tokens/primitives.css` (operator) — referencia de arquitectura, NO modificar.
+  - `design-system/foundations/tokens/semantic.css` (operator) — referencia de arquitectura, NO modificar.
+  - `design-system/foundations/tokens/components.css` — añadir aliases guest aquí.
+  - `taxonomies/guide_sections.json` — 9 secciones + flags (`hideWhenEmptyForGuest`, `emptyCopyGuest`, `journeyStage`, `offlineCacheTier`, `includesMedia`, `includesMap`, `includesEvents`).
+  - `src/config/brand-palette.ts` — 8 brand palettes light + dark.
+  - `prisma/schema.prisma` — entity shape (no se modifica).
+- **Contexto a NO leer (contaminado)**:
+  - `docs/FEATURES/GUEST_GUIDE_UX.md` — intento previo, drop como ground truth.
+  - `src/components/public-guide/ui/guide.css` — será borrado.
+  - `src/components/public-guide/ui/guide-card.tsx` — será borrado.
+  - `design-system/references/liora-ui-kits/ui_kits/guest/` — kit guest disowned por su paleta cool-blue.
+- **Docs a actualizar al terminar**:
+  - `LIORA_SURFACE_ROLLOUT_PLAN.md` — Fase 16 completa.
+  - `docs/ROADMAP.md` — cierre Fase 16.
+  - `CLAUDE.md` § "Replatform de diseño (Liora)" — estado ✅ completada.
+  - `CLAUDE.md` § "Patrones — Guía pública (audience=guest)" — actualizar referencias a UI guest (cards, tipografía, spacing) al sistema definitivo del bundle. La regla dura "el huésped nunca ve el modelo interno" + invariantes anti-leak (5 tests) se preservan idénticos.
+  - `docs/FEATURES/GUEST_GUIDE_UX.md` — reemplazado o reescrito apuntando al bundle como ground truth.
+- **Skills**: `/simplify` obligatorio antes de PR. `/feature-dev` recomendado.
 
 ---
 

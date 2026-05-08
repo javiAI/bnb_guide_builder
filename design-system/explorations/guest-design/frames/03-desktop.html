@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 3 · Desktop · Guest Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+@import url("https://rsms.me/inter/inter.css");
+
+/* ============================================================
+   --guest-* tokens (light)
+   ============================================================ */
+:root {
+  --stone-00:#FCFBF8; --stone-05:#FAF7F2; --stone-08:#F6F3EC; --stone-12:#F2EEE8;
+  --stone-24:#E6E1D8; --stone-32:#D8D2C6; --stone-40:#C8C2B5; --stone-56:#8A8578;
+  --stone-72:#5A564D; --stone-88:#2E2B26; --stone-94:#1C1A16;
+  --slate-50:#F3F6FA; --slate-100:#E8EDF4; --slate-200:#CFD8E6; --slate-400:#6D82A4;
+  --slate-500:#3A5070; --slate-600:#2B3C54; --slate-700:#1E2A3A; --slate-800:#16202E;
+  --amber-50:#FBF4EA; --amber-100:#F7EADA; --amber-500:#B7793A; --amber-700:#7A4A18;
+  --moss-50:#F2F6EE; --moss-100:#E3ECDF; --moss-500:#4F7A52; --moss-700:#2C4A2E;
+  --clay-50:#FBECE8; --clay-100:#F5DCD6; --clay-500:#B64A38; --clay-700:#7A2E22;
+
+  --bg-page:    var(--stone-05);
+  --bg-surface: var(--stone-00);
+  --bg-subtle:  var(--stone-08);
+  --bg-muted:   var(--stone-12);
+  --tx-1: var(--stone-88); --tx-2: var(--stone-72); --tx-3: var(--stone-56); --tx-4: var(--stone-40);
+  --tx-on: var(--stone-05);
+  --bd-sub: var(--stone-12); --bd: var(--stone-24); --bd-strong: var(--stone-40);
+
+  --brand:#B91C1C; --brand-50:#FBECE8; --brand-fg:#2A0808;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-feat: "cv11","ss01","ss03","cv02","cv05";
+
+  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:20px;
+  --el-1: 0 1px 2px rgba(28,26,22,.04), 0 1px 1px rgba(28,26,22,.03);
+  --el-2: 0 2px 8px rgba(28,26,22,.06), 0 8px 24px rgba(28,26,22,.04);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-feature-settings: var(--font-feat);
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  color: var(--tx-1);
+  background: radial-gradient(ellipse at top, #EDE7DC 0%, #DDD4C2 55%, #C8BDA6 100%);
+  min-height: 100vh; padding: 56px 24px 96px;
+}
+
+/* doc head */
+.doc-head { max-width: 1336px; margin: 0 auto 36px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; color: var(--stone-88); }
+.doc-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stone-72); }
+.doc-title { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--stone-72); line-height: 21px; max-width: 70ch; }
+.doc-meta { font-family: var(--font-mono); font-size: 11px; color: var(--stone-72); text-align: right; line-height: 18px; }
+.doc-meta b { color: var(--stone-88); font-weight: 600; }
+
+/* stage stacks frames vertically */
+.stage { max-width: 1336px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+
+/* ============================================================
+   DESKTOP FRAME · 1280 × 800
+   ============================================================ */
+.frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.frame {
+  width: 1280px; height: 800px;
+  background: var(--bg-page);
+  border-radius: 14px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(28,26,22,0.18), 0 0 0 1px rgba(28,26,22,0.06);
+  display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 56px 1fr;
+}
+.caption { display: flex; flex-direction: column; gap: 3px; align-items: center; text-align: center; max-width: 900px; }
+.caption .name { font-size: 13px; font-weight: 600; color: var(--stone-88); letter-spacing: -0.005em; }
+.caption .src { font-family: var(--font-mono); font-size: 11px; color: var(--stone-72); line-height: 15px; }
+.caption .src b { color: var(--stone-88); font-weight: 600; }
+
+/* sidebar */
+.side { grid-row: 1 / span 2; background: var(--bg-surface); border-right: 1px solid var(--bd); display: flex; flex-direction: column; }
+.side-brand { padding: 14px 18px 10px; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid var(--bd-sub); }
+.side-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; font-weight: 800; font-size: 13px; letter-spacing: -0.04em; }
+.side-mark .dot { width: 5px; height: 5px; background: var(--brand); border-radius: 50%; box-shadow: 0 0 0 2px rgba(185,28,28,0.25); position: absolute; transform: translate(7px, -7px); }
+.side-mark-wrap { position: relative; }
+.side-name { font-size: 13px; font-weight: 700; color: var(--tx-1); letter-spacing: -0.01em; line-height: 14px; }
+.side-pname { font-size: 10px; color: var(--tx-3); margin-top: 2px; line-height: 12px; }
+.side-prop { padding: 12px 14px; margin: 10px; background: var(--bg-subtle); border: 1px solid var(--bd-sub); border-radius: 10px; display: flex; flex-direction: column; gap: 4px; }
+.side-prop .pname { font-size: 12px; font-weight: 700; color: var(--tx-1); }
+.side-prop .pmeta { font-size: 10px; color: var(--tx-3); display: flex; align-items: center; gap: 4px; }
+.side-prop .pmeta svg { width: 10px; height: 10px; }
+.side-prop .pdates { font-family: var(--font-mono); font-size: 10px; color: var(--tx-2); padding-top: 4px; border-top: 1px dashed var(--bd); margin-top: 4px; display: flex; justify-content: space-between; }
+.side-nav { flex: 1; padding: 6px 8px; overflow: auto; display: flex; flex-direction: column; gap: 1px; }
+.side-section-label { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tx-3); padding: 10px 10px 4px; }
+.side-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--tx-2); font-size: 12px; font-weight: 500; cursor: pointer; min-height: 32px; }
+.side-item:hover { background: var(--bg-subtle); }
+.side-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--tx-3); }
+.side-item.active { background: var(--slate-700); color: var(--tx-on); font-weight: 600; }
+.side-item.active svg { color: var(--tx-on); }
+.side-item .badge { margin-left: auto; font-size: 9px; background: var(--brand-50); color: var(--brand-fg); padding: 1px 5px; border-radius: 4px; font-weight: 700; letter-spacing: 0.05em; }
+.side-item.active .badge { background: rgba(255,255,255,0.18); color: var(--tx-on); }
+.side-host { padding: 10px; border-top: 1px solid var(--bd-sub); }
+.side-host-card { background: var(--bg-subtle); border: 1px solid var(--bd-sub); border-radius: 10px; padding: 9px 10px; display: flex; gap: 9px; align-items: center; cursor: pointer; }
+.side-host-av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #C8B89A, #8E7B5A); flex-shrink: 0; display: grid; place-items: center; color: white; font-weight: 700; font-size: 12px; }
+.side-host-main { flex: 1; min-width: 0; }
+.side-host-t { font-size: 12px; font-weight: 700; color: var(--tx-1); }
+.side-host-s { font-size: 10px; color: var(--tx-3); display: flex; align-items: center; gap: 4px; }
+.side-host-s::before { content: ""; width: 5px; height: 5px; background: var(--moss-500); border-radius: 50%; }
+
+/* topbar */
+.top { background: var(--bg-surface); border-bottom: 1px solid var(--bd-sub); padding: 0 22px; display: flex; align-items: center; gap: 14px; }
+.crumb { display: flex; align-items: center; gap: 8px; color: var(--tx-3); font-size: 12px; font-weight: 500; }
+.crumb b { color: var(--tx-1); font-weight: 600; }
+.crumb svg { width: 12px; height: 12px; }
+.top-spacer { flex: 1; }
+.top-pill { background: var(--bg-subtle); border: 1px solid var(--bd); border-radius: 999px; padding: 5px 11px 5px 9px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--tx-2); font-family: var(--font-mono); cursor: pointer; min-height: 30px; }
+.top-pill svg { width: 12px; height: 12px; color: var(--tx-3); }
+.top-pill b { font-weight: 700; color: var(--tx-1); }
+.top-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--bd); background: var(--bg-surface); display: grid; place-items: center; cursor: pointer; color: var(--tx-2); }
+.top-btn svg { width: 14px; height: 14px; }
+.top-av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #B7793A, #7A4A18); color: white; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+
+/* main area */
+.main { padding: 22px 26px; overflow: auto; }
+.main::-webkit-scrollbar { display: none; }
+.s-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--tx-3); display: inline-flex; align-items: center; gap: 7px; }
+.s-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px rgba(185,28,28,0.10); }
+.s-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 32px; margin: 6px 0 4px; }
+.s-sub { font-size: 14px; color: var(--tx-2); line-height: 19px; max-width: 70ch; }
+.s-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 18px; }
+.s-meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-3); display: flex; gap: 16px; align-items: center; line-height: 16px; }
+.s-meta b { color: var(--tx-1); font-weight: 600; }
+
+/* ============================================================
+   COMPONENTS — desktop variants
+   ============================================================ */
+
+/* hero strip */
+.hero {
+  background: var(--slate-700); color: var(--tx-on); border-radius: 16px; padding: 22px 24px;
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr 360px; gap: 28px; align-items: center;
+}
+.hero::before { content:""; position:absolute; inset:-50% -10% auto auto; width: 50%; height: 130%; background: radial-gradient(ellipse at top right, rgba(242,192,120,0.18), transparent 60%); pointer-events: none; }
+.hero-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.78; display: flex; align-items: center; gap: 7px; }
+.hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px rgba(185,28,28,0.30); }
+.hero-greet { font-size: 30px; font-weight: 700; line-height: 34px; letter-spacing: -0.02em; margin-top: 8px; }
+.hero-addr { font-size: 13px; opacity: 0.82; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+.hero-addr svg { width: 13px; height: 13px; }
+.hero-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.14); border-radius: 12px; overflow: hidden; }
+.hero-metric { background: var(--slate-700); padding: 11px 6px; text-align: center; }
+.hero-metric .k { font-size: 9px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.hero-metric .v { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; line-height: 22px; }
+.hero-metric .sub { font-size: 9px; opacity: 0.62; font-weight: 500; }
+
+/* card primitives */
+.card { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; padding: 16px 18px; }
+.card-tag { background: var(--slate-700); color: var(--tx-on); font-size: 9px; padding: 2px 7px; border-radius: 5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; display: inline-block; }
+.card-tag.brand { background: var(--brand-50); color: var(--brand-fg); }
+.card-t { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; }
+.card-s { font-size: 12px; color: var(--tx-2); line-height: 16px; margin-top: 4px; }
+.h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.10em; font-weight: 700; color: var(--tx-3); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.h2 .pill { background: var(--bg-muted); color: var(--tx-2); padding: 1px 6px; border-radius: 4px; font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.h2 .lnk { font-size: 11px; color: var(--slate-500); font-weight: 600; text-transform: none; letter-spacing: 0; cursor: pointer; }
+
+/* essential card with dark border */
+.ess { background: var(--bg-surface); border: 2px solid var(--slate-700); border-radius: 14px; padding: 14px 16px; position: relative; }
+.ess-tag { position: absolute; top: -9px; left: 14px; background: var(--slate-700); color: var(--tx-on); font-size: 9px; padding: 2px 7px; border-radius: 5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.ess-row { display: flex; gap: 12px; align-items: flex-start; }
+.ess-ic { width: 36px; height: 36px; border-radius: 9px; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; flex-shrink: 0; }
+.ess-ic svg { width: 17px; height: 17px; }
+.ess-t { font-size: 14px; font-weight: 700; line-height: 17px; }
+.ess-sub { font-size: 12px; color: var(--tx-2); line-height: 16px; margin-top: 2px; }
+.code { font-family: var(--font-mono); background: var(--stone-88); color: var(--stone-05); font-size: 13px; font-weight: 700; letter-spacing: 0.10em; padding: 2px 8px; border-radius: 5px; }
+
+/* wifi double */
+.wifi-cells { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.wifi-cell { background: var(--bg-subtle); border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px; position: relative; cursor: pointer; min-height: 56px; }
+.wifi-k { font-size: 9px; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.wifi-v { font-size: 14px; font-weight: 700; font-family: var(--font-mono); margin-top: 2px; }
+.wifi-copy { position: absolute; right: 9px; top: 9px; color: var(--slate-500); width: 13px; height: 13px; }
+
+/* list cards */
+.list { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 12px; overflow: hidden; }
+.row { display: flex; gap: 12px; padding: 11px 14px; align-items: center; border-bottom: 1px solid var(--bd-sub); cursor: pointer; min-height: 52px; }
+.row:last-child { border-bottom: none; }
+.row:hover { background: var(--bg-subtle); }
+.row-ic { width: 32px; height: 32px; border-radius: 8px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; flex-shrink: 0; }
+.row-ic svg { width: 15px; height: 15px; }
+.row-ic.tonal { background: var(--slate-100); color: var(--slate-700); }
+.row-main { flex: 1; min-width: 0; }
+.row-t { font-size: 13px; font-weight: 600; line-height: 17px; }
+.row-s { font-size: 11px; color: var(--tx-3); line-height: 14px; margin-top: 1px; }
+.row-meta { font-size: 10px; color: var(--tx-3); font-weight: 500; background: var(--bg-muted); padding: 2px 7px; border-radius: 4px; flex-shrink: 0; font-family: var(--font-mono); }
+.row-chev { color: var(--tx-4); flex-shrink: 0; }
+
+/* warn band */
+.warn { padding: 12px 14px; background: var(--amber-50); border: 1px solid var(--amber-100); border-left: 4px solid var(--amber-500); border-radius: 10px; display: flex; gap: 10px; align-items: flex-start; }
+.warn svg { color: var(--amber-700); flex-shrink: 0; margin-top: 1px; width: 16px; height: 16px; }
+.warn-body { font-size: 12px; color: var(--tx-1); line-height: 16px; }
+.warn-body b { color: var(--amber-700); }
+
+/* ============================================================
+   SCREEN-SPECIFIC PIECES
+   ============================================================ */
+
+/* timeline (Llegada / Salida) */
+.tl { padding-left: 22px; position: relative; }
+.tl::before { content: ""; position: absolute; left: 6px; top: 4px; bottom: 4px; width: 2px; background: var(--bd); }
+.tl-step { padding: 4px 0 12px; position: relative; }
+.tl-step::before { content: ""; position: absolute; left: -19px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-surface); border: 2px solid var(--bd); }
+.tl-step.done::before { background: var(--moss-500); border-color: var(--moss-500); }
+.tl-step.current::before { background: var(--slate-700); border-color: var(--slate-700); box-shadow: 0 0 0 4px var(--slate-100); }
+.tl-t { font-size: 13px; font-weight: 600; line-height: 17px; display: flex; align-items: baseline; gap: 8px; }
+.tl-t .time { font-family: var(--font-mono); font-size: 11px; color: var(--tx-3); font-weight: 500; }
+.tl-s { font-size: 12px; color: var(--tx-2); margin-top: 2px; line-height: 16px; }
+
+/* lockbox visual */
+.lockbox { display: grid; grid-template-columns: 110px 1fr; gap: 16px; align-items: center; padding: 14px 16px; }
+.lockbox-graphic {
+  width: 110px; height: 130px; border-radius: 10px;
+  background: linear-gradient(170deg, #2E2B26, #1C1A16); position: relative; box-shadow: var(--el-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 12px 8px;
+}
+.lockbox-graphic .ring { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #5A564D; }
+.lockbox-dials { display: flex; gap: 4px; background: #0A0907; padding: 5px 6px; border-radius: 5px; border: 1px solid #3A3833; }
+.lockbox-dials .dial { width: 16px; height: 24px; background: linear-gradient(180deg, #444039, #1C1A16); border-radius: 3px; color: #F2C078; font-family: var(--font-mono); font-size: 12px; font-weight: 700; display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+.lockbox-handle { width: 60px; height: 14px; background: #5A564D; border-radius: 3px 3px 7px 7px; }
+.lockbox-info .lockbox-code { font-family: var(--font-mono); font-size: 22px; font-weight: 800; letter-spacing: 0.20em; color: var(--tx-1); }
+
+/* Spaces grid */
+.space-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.space-card { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; overflow: hidden; }
+.space-thumbs { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 2px; height: 140px; background: var(--bd); }
+.thumb { position: relative; overflow: hidden; }
+.thumb::after { content: attr(data-label); position: absolute; left: 8px; bottom: 6px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px rgba(0,0,0,.5); letter-spacing: 0.05em; text-transform: uppercase; }
+.thumb.t-a { background: linear-gradient(135deg, #C8B89A, #8E7B5A); }
+.thumb.t-b { background: linear-gradient(135deg, #B5A28A, #756147); }
+.thumb.t-c { background: linear-gradient(135deg, #D9CCB6, #A89878); }
+.thumb.t-d { background: linear-gradient(135deg, #BFAE8E, #8B7657); }
+.thumb.t-e { background: linear-gradient(135deg, #ADA188, #6F5F46); }
+.thumb.t-f { background: linear-gradient(135deg, #D4C4A8, #998668); }
+.space-body { padding: 14px 16px 16px; }
+.space-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.space-t { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.space-meta { font-size: 12px; color: var(--tx-3); margin-top: 2px; }
+.space-link { font-size: 12px; color: var(--slate-500); font-weight: 600; display: flex; align-items: center; gap: 3px; flex-shrink: 0; cursor: pointer; }
+.space-feat { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.feat { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--bg-subtle); color: var(--tx-2); border: 1px solid var(--bd-sub); font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
+.feat svg { width: 11px; height: 11px; }
+
+/* Master / detail (Cómo usar) */
+.md-grid { display: grid; grid-template-columns: 320px 1fr; gap: 18px; }
+.md-list { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 12px; overflow: hidden; align-self: start; }
+.md-item { display: flex; gap: 12px; padding: 12px 14px; align-items: center; border-bottom: 1px solid var(--bd-sub); cursor: pointer; min-height: 56px; }
+.md-item:last-child { border-bottom: none; }
+.md-item:hover { background: var(--bg-subtle); }
+.md-item.active { background: var(--slate-700); }
+.md-item.active .md-t, .md-item.active .md-s { color: var(--tx-on); }
+.md-item.active .md-s { opacity: 0.78; }
+.md-item.active .md-ic { background: rgba(255,255,255,0.18); color: var(--tx-on); }
+.md-ic { width: 32px; height: 32px; border-radius: 8px; background: var(--slate-100); color: var(--slate-700); display: grid; place-items: center; flex-shrink: 0; }
+.md-ic svg { width: 15px; height: 15px; }
+.md-main { flex: 1; min-width: 0; }
+.md-t { font-size: 13px; font-weight: 600; line-height: 16px; }
+.md-s { font-size: 11px; color: var(--tx-3); margin-top: 2px; line-height: 14px; }
+.md-detail { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; padding: 18px 20px; }
+.md-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bd-sub); }
+.md-detail-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; }
+.md-detail-ic svg { width: 19px; height: 19px; }
+.md-detail-t { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.md-detail-s { font-size: 12px; color: var(--tx-3); margin-top: 2px; }
+.steps { padding: 0; margin: 0; counter-reset: step; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.steps li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: flex-start; counter-increment: step; }
+.steps li::before { content: counter(step); width: 22px; height: 22px; border-radius: 50%; background: var(--slate-700); color: var(--tx-on); font-size: 11px; font-weight: 700; display: grid; place-items: center; line-height: 1; flex-shrink: 0; }
+.steps .stp-t { font-size: 13px; font-weight: 600; line-height: 17px; }
+.steps .stp-s { font-size: 12px; color: var(--tx-2); line-height: 16px; margin-top: 2px; }
+.trouble { background: var(--amber-50); border: 1px solid var(--amber-100); border-radius: 10px; padding: 10px 13px; margin-top: 14px; font-size: 12px; color: var(--amber-700); display: flex; gap: 9px; align-items: flex-start; line-height: 16px; }
+.trouble svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+/* rules grid */
+.rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rule-card { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.rule-card.warn-card { background: var(--amber-50); border-color: var(--amber-100); border-left: 4px solid var(--amber-500); }
+.rule-card .rule-ic { width: 36px; height: 36px; border-radius: 9px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; flex-shrink: 0; }
+.rule-card .rule-ic svg { width: 16px; height: 16px; }
+.rule-card.warn-card .rule-ic { background: var(--amber-100); color: var(--amber-700); }
+.rule-t { font-size: 14px; font-weight: 700; line-height: 18px; }
+.rule-s { font-size: 12px; color: var(--tx-2); line-height: 16px; margin-top: 3px; }
+.rule-fine { font-family: var(--font-mono); font-size: 10px; color: var(--amber-700); font-weight: 700; margin-top: 6px; padding: 2px 7px; background: var(--amber-100); border-radius: 4px; display: inline-block; }
+
+/* horizontal timeline (Salida) */
+.hl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.hl-card { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; padding: 16px 18px; }
+.hl-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.hl-stage { font-size: 14px; font-weight: 700; letter-spacing: -0.005em; }
+.hl-when { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 5px; background: var(--slate-100); color: var(--slate-700); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.hl-when.brand { background: var(--brand-50); color: var(--brand-fg); }
+
+/* Local */
+.local-grid { display: grid; grid-template-columns: 580px 1fr; gap: 18px; height: 100%; }
+.map-big {
+  border-radius: 14px; border: 1px solid var(--bd); overflow: hidden; position: relative;
+  background:
+    linear-gradient(135deg, #E8E2D2 0%, #D6CDB7 50%, #C8BDA6 100%);
+  height: 100%;
+}
+.map-big::before {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(0deg, transparent 49%, rgba(255,255,255,.30) 49%, rgba(255,255,255,.30) 51%, transparent 51%),
+    linear-gradient(90deg, transparent 49%, rgba(255,255,255,.30) 49%, rgba(255,255,255,.30) 51%, transparent 51%);
+  background-size: 56px 56px; opacity: 0.55;
+}
+.map-pin { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(30,42,58,0.4); border: 3px solid white; transform: translate(-50%, -100%); cursor: pointer; }
+.map-pin svg { width: 14px; height: 14px; }
+.map-pin.small { width: 22px; height: 22px; background: var(--bg-surface); color: var(--slate-700); border: 2px solid var(--slate-700); }
+.map-pin.small svg { width: 11px; height: 11px; }
+.map-pin .label { position: absolute; top: 100%; left: 50%; transform: translate(-50%, 4px); white-space: nowrap; background: white; color: var(--tx-1); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; box-shadow: var(--el-1); border: 1px solid var(--bd); }
+.map-attr { position: absolute; right: 10px; bottom: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--tx-2); background: rgba(255,255,255,.8); padding: 3px 7px; border-radius: 4px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip { font-size: 11px; padding: 6px 11px; border-radius: 999px; font-weight: 500; background: var(--bg-surface); border: 1px solid var(--bd); cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; gap: 5px; }
+.chip.active { background: var(--slate-700); color: var(--tx-on); border-color: var(--slate-700); font-weight: 600; }
+.places { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.place { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 10px; padding: 10px 11px; display: flex; flex-direction: column; gap: 3px; }
+.place-top { display: flex; align-items: center; gap: 8px; }
+.place-ic { width: 26px; height: 26px; border-radius: 7px; background: var(--slate-100); color: var(--slate-700); display: grid; place-items: center; }
+.place-ic svg { width: 13px; height: 13px; }
+.place-dist { margin-left: auto; font-size: 10px; color: var(--tx-3); font-weight: 600; }
+.place-t { font-size: 12px; font-weight: 700; line-height: 15px; }
+.place-s { font-size: 10px; color: var(--tx-3); line-height: 13px; }
+.place-hours { font-size: 10px; font-weight: 600; color: var(--moss-700); display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+.place-hours::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--moss-500); }
+.place-hours.closed { color: var(--tx-3); }
+.place-hours.closed::before { background: var(--tx-4); }
+
+/* Emergency */
+.emg-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
+.emg-card { background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 14px; overflow: hidden; }
+.emg-head { display: flex; align-items: center; gap: 8px; padding: 11px 14px; color: white; }
+.emg-head.host { background: var(--slate-700); }
+.emg-head.urgent { background: var(--clay-500); }
+.emg-head.pol { background: var(--slate-500); }
+.emg-head svg { width: 15px; height: 15px; }
+.emg-head .t { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.emg-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.emg-row { display: flex; gap: 12px; align-items: center; }
+.emg-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--slate-100); color: var(--slate-700); display: grid; place-items: center; flex-shrink: 0; }
+.emg-ic.urg { background: var(--clay-100); color: var(--clay-700); }
+.emg-ic svg { width: 18px; height: 18px; }
+.emg-t { font-size: 14px; font-weight: 700; line-height: 17px; }
+.emg-s { font-size: 11px; color: var(--tx-3); margin-top: 2px; line-height: 14px; }
+.emg-num { font-family: var(--font-mono); font-size: 22px; font-weight: 800; letter-spacing: 0.06em; color: var(--tx-1); }
+.emg-num.brand { color: var(--clay-700); }
+.emg-call { background: var(--clay-500); color: white; border: none; padding: 9px 14px; border-radius: 9px; font-family: inherit; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; min-height: 44px; justify-content: center; }
+.emg-call.tonal { background: var(--slate-700); }
+.emg-call.outline { background: var(--bg-surface); color: var(--tx-1); border: 1px solid var(--bd); }
+.emg-call svg { width: 13px; height: 13px; }
+
+/* events row */
+.events { display: flex; gap: 8px; }
+.event { flex: 1; background: var(--bg-surface); border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px; display: flex; flex-direction: column; gap: 2px; }
+.event-date { font-family: var(--font-mono); font-size: 10px; color: var(--brand); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.event-t { font-size: 12px; font-weight: 700; line-height: 15px; }
+.event-s { font-size: 10px; color: var(--tx-3); line-height: 13px; }
+
+/* recommended pill */
+.rec-pill { background: var(--brand-50); color: var(--brand-fg); border: 1px solid color-mix(in oklab, var(--brand) 30%, transparent); font-size: 10px; padding: 3px 8px; border-radius: 999px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px; }
+.rec-pill svg { width: 11px; height: 11px; }
+
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div>
+    <div class="doc-eyebrow">Batch 3 of 5 · Desktop · 1280 × 800 · light</div>
+    <h1 class="doc-title">Las 9 secciones · web del huésped</h1>
+    <p class="doc-sub">Misma información, sistema y voz que móvil — densidad y jerarquía adaptadas al escritorio. Sidebar persistente con las 9 secciones, contexto de propiedad arriba, contenido principal con vistas dobles cuando aprovechan el ancho.</p>
+  </div>
+  <div class="doc-meta">
+    <b>casa-lavanda · ruzafa</b><br/>
+    laura · hoy 16:00 → vie 11:00<br/>
+    brand: <b>coral</b> · accent: <b>slate</b>
+  </div>
+</div>
+
+<div class="stage">
+  <!-- ====================================================
+       01 · ESENCIALES  (Inicio)              gs.essentials
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="01 Esenciales">
+    <!-- SIDEBAR -->
+    <aside class="side">
+      <div class="side-brand">
+        <div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div>
+        <div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div>
+      </div>
+      <div class="side-prop">
+        <div class="pname">Casa Lavanda</div>
+        <div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B · Ruzafa</div>
+        <div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div>
+      </div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item active"><i data-lucide="sparkles"></i>Esenciales<span class="badge">HOY</span></div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host">
+        <div class="side-host-card">
+          <div class="side-host-av">J</div>
+          <div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div>
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i>
+        </div>
+      </div>
+    </aside>
+    <!-- TOPBAR -->
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>Esenciales</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="wifi"></i>Wi-Fi · <b>Ruzafa_3B</b></div>
+      <div class="top-pill"><i data-lucide="key-round"></i>Caja · <b>5274</b></div>
+      <div class="top-btn"><i data-lucide="search"></i></div>
+      <div class="top-btn"><i data-lucide="bell"></i></div>
+      <div class="top-av">L</div>
+    </header>
+    <!-- MAIN -->
+    <main class="main">
+      <div class="hero">
+        <div>
+          <div class="hero-eyebrow"><span class="dot"></span>Día 1 · llegada</div>
+          <div class="hero-greet">Hola, Laura.</div>
+          <div class="hero-addr"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B · Ruzafa, Valencia</div>
+        </div>
+        <div class="hero-metrics">
+          <div class="hero-metric"><div class="k">Check-in</div><div class="v">16:00</div><div class="sub">hoy</div></div>
+          <div class="hero-metric"><div class="k">Salida</div><div class="v">11:00</div><div class="sub">vie</div></div>
+          <div class="hero-metric"><div class="k">Caja</div><div class="v">5274</div><div class="sub">lockbox</div></div>
+          <div class="hero-metric"><div class="k">Piso</div><div class="v">3B</div><div class="sub">3ª planta</div></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-top:18px">
+        <div class="ess">
+          <span class="ess-tag">Acceso · Día 1</span>
+          <div class="ess-row">
+            <div class="ess-ic"><i data-lucide="key-round"></i></div>
+            <div style="flex:1">
+              <div class="ess-t">Caja de llaves a la derecha del portal</div>
+              <div class="ess-sub">Código <span class="code">5274</span> · debajo del interfono · gira y tira hacia abajo</div>
+            </div>
+          </div>
+        </div>
+        <div class="ess">
+          <span class="ess-tag">Wi-Fi</span>
+          <div class="wifi-cells" style="margin-top:6px">
+            <div class="wifi-cell"><span class="wifi-k">Red</span><div class="wifi-v">Ruzafa_3B</div><i data-lucide="copy" class="wifi-copy"></i></div>
+            <div class="wifi-cell"><span class="wifi-k">Contraseña</span><div class="wifi-v">naranja24</div><i data-lucide="copy" class="wifi-copy"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="warn"><i data-lucide="alert-triangle"></i><div class="warn-body"><b>Silencio desde las 22:00.</b> Vecindad residencial · finca de 1962 con paredes finas · multas reales del ayuntamiento.</div></div>
+      </div>
+
+      <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div class="h2">Lo primero <span class="lnk">3 acciones</span></div>
+          <div class="list">
+            <div class="row"><div class="row-ic tonal"><i data-lucide="wifi"></i></div><div class="row-main"><div class="row-t">Conecta a Ruzafa_3B</div><div class="row-s">Copia la contraseña con un clic</div></div><span class="row-meta">~10 s</span></div>
+            <div class="row"><div class="row-ic tonal"><i data-lucide="message-circle"></i></div><div class="row-main"><div class="row-t">Avisa a Javier de tu llegada</div><div class="row-s">Plantilla en el chat: "Estoy abajo"</div></div><span class="row-meta">~30 s</span></div>
+            <div class="row"><div class="row-ic tonal"><i data-lucide="thermometer-snowflake"></i></div><div class="row-main"><div class="row-t">Enciende el aire si hace falta</div><div class="row-s">Mando azul · pestaña "Cómo usar"</div></div><span class="row-meta">~1 min</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="h2">Hoy en Ruzafa <span class="lnk">Ver todo</span></div>
+          <div class="list">
+            <div class="row"><div class="row-ic"><i data-lucide="coffee"></i></div><div class="row-main"><div class="row-t">Café Berlín · brunch hasta 13:00</div><div class="row-s">2 min a pie · cocina hasta 12:30</div></div><span class="row-meta">2 min</span></div>
+            <div class="row"><div class="row-ic"><i data-lucide="shopping-basket"></i></div><div class="row-main"><div class="row-t">Mercado de Ruzafa</div><div class="row-s">Cierra a las 14:30</div></div><span class="row-meta">4 min</span></div>
+            <div class="row"><div class="row-ic"><i data-lucide="utensils"></i></div><div class="row-main"><div class="row-t">Canalla Bistro · cena</div><div class="row-s">Reserva recomendada para 20:30</div></div><span class="row-meta">3 min</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">01 · Esenciales</div>
+    <div class="src"><b>gs.essentials</b> · taxonomies/guide_sections.json · quickActionSlots: wifi_copy · access_how · whatsapp_host · maps_open</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       02 · LLEGADA                          gs.arrival
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="02 Llegada">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item active"><i data-lucide="map-pinned"></i>Llegada<span class="badge">HOY</span></div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>Llegada</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="clock"></i>Llegada en <b>~25 min</b></div>
+      <div class="top-pill"><i data-lucide="key-round"></i>Caja · <b>5274</b></div>
+      <div class="top-btn"><i data-lucide="search"></i></div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>tu llegada · hoy 16:00</div>
+          <h1 class="s-title">Paso a paso hasta el sofá</h1>
+          <p class="s-sub">Aterrizaje, transporte y entrada al apartamento. Cinco hitos · acceso por caja de llaves.</p>
+        </div>
+        <div class="s-meta"><span><b>5</b> pasos</span><span><b>~25</b> min restantes</span><span>Acceso · <b>caja de llaves</b></span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:18px">
+        <div class="card">
+          <div class="h2">Trayecto <span class="pill">en curso</span></div>
+          <div class="tl">
+            <div class="tl-step done"><div class="tl-t">Aeropuerto de Valencia · aterrizaje<span class="time">14:10</span></div><div class="tl-s">Terminal única · sigue indicación "Salida"</div></div>
+            <div class="tl-step done"><div class="tl-t">Metro L1 · Bailén → Xàtiva<span class="time">14:45</span></div><div class="tl-s">Baja en Xàtiva · 2,80 € sencillo · 18 min</div></div>
+            <div class="tl-step current"><div class="tl-t">Caminando hacia Calle Cuba 42<span class="time">ahora</span></div><div class="tl-s">15 min cruzando el parque de Colón · acera derecha</div></div>
+            <div class="tl-step"><div class="tl-t">Caja de llaves a la derecha del portal<span class="time">16:00</span></div><div class="tl-s">Debajo del interfono · 4 ruedas numéricas</div></div>
+            <div class="tl-step"><div class="tl-t">Apartamento 3B · 3ª planta</div><div class="tl-s">Ascensor al fondo a la izquierda · puerta 3B</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="padding:0">
+            <div class="lockbox">
+              <div class="lockbox-graphic">
+                <div class="ring"></div>
+                <div class="lockbox-dials"><div class="dial">5</div><div class="dial">2</div><div class="dial">7</div><div class="dial">4</div></div>
+                <div class="lockbox-handle"></div>
+              </div>
+              <div class="lockbox-info">
+                <span class="card-tag">Lockbox</span>
+                <div class="lockbox-code" style="margin-top:8px">5 2 7 4</div>
+                <div class="card-s">Gira las 4 ruedas, tira hacia abajo, saca la llave 3B.</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="h2">Entrada al edificio <span class="pill">3 pasos</span></div>
+            <div class="list">
+              <div class="row"><div class="row-ic tonal"><i data-lucide="building"></i></div><div class="row-main"><div class="row-t">Portal · Calle Cuba 42</div><div class="row-s">Una sola puerta · llave grande · empuja</div></div><i data-lucide="chevron-right" class="row-chev" style="width:14px;height:14px"></i></div>
+              <div class="row"><div class="row-ic tonal"><i data-lucide="elevator-up"></i></div><div class="row-main"><div class="row-t">Ascensor a la planta 3</div><div class="row-s">Al fondo a la izquierda · cabe equipaje grande</div></div><i data-lucide="chevron-right" class="row-chev" style="width:14px;height:14px"></i></div>
+              <div class="row"><div class="row-ic tonal"><i data-lucide="door-closed"></i></div><div class="row-main"><div class="row-t">Puerta 3B · llave pequeña</div><div class="row-s">Dos vueltas · empuja con el hombro al final</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">02 · Llegada</div>
+    <div class="src"><b>gs.arrival</b> · taxonomies/guide_sections.json · access: <b>am.lockbox</b> · access_methods.json + building_access_methods.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       03 · ESPACIOS                         gs.spaces
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="03 Espacios">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item active"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>La casa</span><i data-lucide="chevron-right"></i><span>Espacios</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="ruler"></i><b>62</b> m² · 2 dorm · 1 baño</div>
+      <div class="top-btn"><i data-lucide="search"></i></div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>Casa Lavanda · 4 espacios</div>
+          <h1 class="s-title">La casa por dentro</h1>
+          <p class="s-sub">Apartamento de 62 m² con balcón a Calle Cuba. Vajilla servicio de 6, ropa de cama 2 sets por dormitorio.</p>
+        </div>
+      </div>
+
+      <div class="space-grid">
+        <div class="space-card">
+          <div class="space-thumbs"><div class="thumb t-a" data-label="cama"></div><div class="thumb t-b" data-label="armario"></div><div class="thumb t-c" data-label="balcón"></div></div>
+          <div class="space-body">
+            <div class="space-row"><div><div class="space-t">Dormitorio principal</div><div class="space-meta">14 m² · balcón a Calle Cuba</div></div><div class="space-link">Ver galería<i data-lucide="chevron-right" style="width:13px;height:13px"></i></div></div>
+            <div class="space-feat"><span class="feat"><i data-lucide="bed-double"></i>Cama 150 · matrimonio</span><span class="feat"><i data-lucide="wind"></i>A/A propio</span><span class="feat"><i data-lucide="shirt"></i>Armario 6 cajones</span><span class="feat"><i data-lucide="lamp"></i>Mesilla con lámpara de lectura</span></div>
+          </div>
+        </div>
+
+        <div class="space-card">
+          <div class="space-thumbs"><div class="thumb t-d" data-label="literas"></div><div class="thumb t-e" data-label="mesa"></div><div class="thumb t-f" data-label="ventana"></div></div>
+          <div class="space-body">
+            <div class="space-row"><div><div class="space-t">Dormitorio secundario</div><div class="space-meta">9 m² · interior · bajo a patio</div></div><div class="space-link">Ver galería<i data-lucide="chevron-right" style="width:13px;height:13px"></i></div></div>
+            <div class="space-feat"><span class="feat"><i data-lucide="bed-single"></i>2 camas 90 · individuales</span><span class="feat"><i data-lucide="laptop"></i>Mesa de trabajo</span><span class="feat"><i data-lucide="archive"></i>Cajonera y estantería</span></div>
+          </div>
+        </div>
+
+        <div class="space-card">
+          <div class="space-thumbs"><div class="thumb t-c" data-label="encimera"></div><div class="thumb t-a" data-label="horno"></div><div class="thumb t-e" data-label="vajilla"></div></div>
+          <div class="space-body">
+            <div class="space-row"><div><div class="space-t">Cocina abierta al salón</div><div class="space-meta">Totalmente equipada · 6 personas</div></div><div class="space-link">Ver galería<i data-lucide="chevron-right" style="width:13px;height:13px"></i></div></div>
+            <div class="space-feat"><span class="feat"><i data-lucide="flame"></i>Inducción 4 fuegos</span><span class="feat"><i data-lucide="microwave"></i>Horno + microondas</span><span class="feat"><i data-lucide="utensils"></i>Vajilla 6</span><span class="feat"><i data-lucide="coffee"></i>Cafetera de cápsulas</span></div>
+          </div>
+        </div>
+
+        <div class="space-card">
+          <div class="space-thumbs"><div class="thumb t-b" data-label="ducha"></div><div class="thumb t-f" data-label="lavabo"></div><div class="thumb t-d" data-label="toallas"></div></div>
+          <div class="space-body">
+            <div class="space-row"><div><div class="space-t">Baño completo</div><div class="space-meta">Ducha walk-in · sin plato</div></div><div class="space-link">Ver galería<i data-lucide="chevron-right" style="width:13px;height:13px"></i></div></div>
+            <div class="space-feat"><span class="feat"><i data-lucide="shower-head"></i>Ducha walk-in</span><span class="feat"><i data-lucide="wind"></i>Secador</span><span class="feat"><i data-lucide="washing-machine"></i>Lavadora Bosch en armario</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">03 · Espacios</div>
+    <div class="src"><b>gs.spaces</b> · taxonomies/space_types.json + space_features.json + room_types.json + bed_types.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       04 · CÓMO USAR                        gs.howto
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="04 Cómo usar">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item active"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>La casa</span><i data-lucide="chevron-right"></i><span>Cómo usar</span><i data-lucide="chevron-right"></i><b>Climatización</b></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="search"></i>Buscar un sistema...</div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>Cómo usar · 5 sistemas</div>
+          <h1 class="s-title">Las cosas que necesitas saber</h1>
+          <p class="s-sub">Pasos cortos por sistema. Selecciona uno a la izquierda — la guía detallada aparece a la derecha.</p>
+        </div>
+      </div>
+
+      <div class="md-grid">
+        <div class="md-list">
+          <div class="md-item active"><div class="md-ic"><i data-lucide="thermometer-snowflake"></i></div><div class="md-main"><div class="md-t">Climatización · split del salón</div><div class="md-s">Mando azul · 4 pasos</div></div><i data-lucide="chevron-right" style="width:14px;height:14px;color:rgba(255,255,255,.6)"></i></div>
+          <div class="md-item"><div class="md-ic"><i data-lucide="wifi"></i></div><div class="md-main"><div class="md-t">Wi-Fi · Ruzafa_3B</div><div class="md-s">2,4 GHz + 5 GHz · 300 Mbps simétricos</div></div></div>
+          <div class="md-item"><div class="md-ic"><i data-lucide="chef-hat"></i></div><div class="md-main"><div class="md-t">Cocina · inducción + horno</div><div class="md-s">Vitrocerámica · horno combinado</div></div></div>
+          <div class="md-item"><div class="md-ic"><i data-lucide="washing-machine"></i></div><div class="md-main"><div class="md-t">Lavadora Bosch</div><div class="md-s">Programa Eco 40 recomendado</div></div></div>
+          <div class="md-item"><div class="md-ic"><i data-lucide="flame"></i></div><div class="md-main"><div class="md-t">Calefacción central</div><div class="md-s">Activa de 7 a 23 h en el edificio</div></div></div>
+        </div>
+
+        <div class="md-detail">
+          <div class="md-detail-head">
+            <div class="md-detail-ic"><i data-lucide="thermometer-snowflake"></i></div>
+            <div style="flex:1">
+              <div class="md-detail-t">Climatización · split del salón</div>
+              <div class="md-detail-s">Mitsubishi Electric · MSZ-AP25 · enfría y calienta</div>
+            </div>
+            <span class="card-tag" style="background:var(--moss-100);color:var(--moss-700)">4 pasos · ~2 min</span>
+          </div>
+
+          <ol class="steps">
+            <li><div><div class="stp-t">Coge el mando azul</div><div class="stp-s">Está en la mesita junto al sofá. No el blanco — ese es el televisor.</div></div></li>
+            <li><div><div class="stp-t">Pulsa el botón de encendido</div><div class="stp-s">Espera el pitido y la luz verde fija en el split del salón.</div></div></li>
+            <li><div><div class="stp-t">Selecciona modo y temperatura</div><div class="stp-s">Frío 23 °C · calor 21 °C. Las flechas de la derecha suben y bajan grados.</div></div></li>
+            <li><div><div class="stp-t">Cierra ventanas y balcón</div><div class="stp-s">El edificio es de 1962 · el aire se escapa rápido y el split trabaja de más.</div></div></li>
+          </ol>
+
+          <div class="trouble"><i data-lucide="alert-circle"></i><div><b>¿No arranca?</b> Vuelve a colocar las pilas del mando comprobando la polaridad. Si la luz del split parpadea naranja, desenchufa el aparato 30 segundos y avisa a Javier por chat.</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">04 · Cómo usar</div>
+    <div class="src"><b>gs.howto</b> · taxonomies/system_taxonomy.json + system_subtypes.json + troubleshooting_taxonomy.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       05 · EQUIPAMIENTO                     gs.amenities
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="05 Equipamiento">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item active"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>La casa</span><i data-lucide="chevron-right"></i><span>Equipamiento</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="package-check"></i><b>14</b> elementos · 3 destacados</div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>Equipamiento · destacado primero</div>
+          <h1 class="s-title">Lo que ya está aquí</h1>
+          <p class="s-sub">14 elementos · agrupados por uso. Lo recomendado para tu estancia, encima.</p>
+        </div>
+      </div>
+
+      <div class="ess" style="margin-bottom:16px">
+        <span class="ess-tag">Wi-Fi</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:center">
+          <div class="ess-row">
+            <div class="ess-ic"><i data-lucide="wifi"></i></div>
+            <div><div class="ess-t">Ruzafa_3B · 300 Mbps simétricos</div><div class="ess-sub">Doble banda 2,4 GHz + 5 GHz · cobertura completa del piso</div></div>
+          </div>
+          <div class="wifi-cells">
+            <div class="wifi-cell"><span class="wifi-k">Red</span><div class="wifi-v">Ruzafa_3B</div><i data-lucide="copy" class="wifi-copy"></i></div>
+            <div class="wifi-cell"><span class="wifi-k">Contraseña</span><div class="wifi-v">naranja24</div><i data-lucide="copy" class="wifi-copy"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+        <div>
+          <div class="h2" style="display:flex;align-items:center;gap:8px"><span class="rec-pill"><i data-lucide="star"></i>Recomendado</span></div>
+          <div class="list">
+            <div class="row"><div class="row-ic tonal"><i data-lucide="thermometer"></i></div><div class="row-main"><div class="row-t">Aire acondicionado</div><div class="row-s">Split en salón y dormitorio</div></div></div>
+            <div class="row"><div class="row-ic tonal"><i data-lucide="washing-machine"></i></div><div class="row-main"><div class="row-t">Lavadora Bosch</div><div class="row-s">Cápsulas de detergente debajo</div></div></div>
+            <div class="row"><div class="row-ic tonal"><i data-lucide="coffee"></i></div><div class="row-main"><div class="row-t">Cafetera de cápsulas</div><div class="row-s">8 cápsulas cortesía en el armario</div></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="h2">Cocina <span class="pill">5</span></div>
+          <div class="list">
+            <div class="row"><div class="row-ic"><i data-lucide="flame"></i></div><div class="row-main"><div class="row-t">Vitrocerámica de inducción</div><div class="row-s">4 fuegos · control táctil</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="microwave"></i></div><div class="row-main"><div class="row-t">Horno + microondas</div><div class="row-s">Aparato combinado</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="refrigerator"></i></div><div class="row-main"><div class="row-t">Frigorífico combi</div><div class="row-s">Congelador independiente abajo</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="utensils"></i></div><div class="row-main"><div class="row-t">Vajilla servicio de 6</div><div class="row-s">Vasos, platos, cubiertos, copas</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="droplet"></i></div><div class="row-main"><div class="row-t">Lavavajillas</div><div class="row-s">Pastillas debajo del fregadero</div></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="h2">Confort <span class="pill">3</span></div>
+          <div class="list">
+            <div class="row"><div class="row-ic"><i data-lucide="bath"></i></div><div class="row-main"><div class="row-t">Toallas y juego de cama</div><div class="row-s">2 sets por dormitorio · cambio semanal</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="iron"></i></div><div class="row-main"><div class="row-t">Plancha y tabla</div><div class="row-s">Armario entrada · estante superior</div></div></div>
+            <div class="row"><div class="row-ic"><i data-lucide="briefcase"></i></div><div class="row-main"><div class="row-t">Espacio de teletrabajo</div><div class="row-s">Mesa y silla en dormitorio secundario</div></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">05 · Equipamiento</div>
+    <div class="src"><b>gs.amenities</b> · taxonomies/amenity_taxonomy.json + amenity_subtypes.json + amenity_destinations_summary.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       06 · NORMAS                           gs.rules
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="06 Normas">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item active"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>La casa</span><i data-lucide="chevron-right"></i><span>Normas</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="alert-triangle"></i><b>2</b> con sanción real</div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>Normas de la casa · 4 categorías</div>
+          <h1 class="s-title">Vivir bien con los vecinos</h1>
+          <p class="s-sub">Vivienda residencial en finca de 1962 · paredes finas y vecinas mayores · respeto y silencio.</p>
+        </div>
+      </div>
+
+      <div class="rules-grid">
+        <div class="rule-card warn-card">
+          <div class="rule-ic"><i data-lucide="cigarette-off"></i></div>
+          <div>
+            <div class="rule-t">No fumar en el interior</div>
+            <div class="rule-s">Permitido en el balcón con la puerta cerrada. Detector de humo activo en el pasillo · ceniceros en la mesa exterior.</div>
+            <span class="rule-fine">Recargo · 150 €</span>
+          </div>
+        </div>
+        <div class="rule-card warn-card">
+          <div class="rule-ic"><i data-lucide="moon"></i></div>
+          <div>
+            <div class="rule-t">Silencio desde las 22:00</div>
+            <div class="rule-s">Televisión y música a volumen bajo · sin reuniones en el balcón · evita arrastrar muebles.</div>
+            <span class="rule-fine">Multa municipal real</span>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-ic"><i data-lucide="paw-print"></i></div>
+          <div>
+            <div class="rule-t">Mascotas con aviso previo</div>
+            <div class="rule-s">Perro o gato bienvenidos. Avisa a Javier al reservar para preparar manta, comedero y bebedero.</div>
+          </div>
+        </div>
+        <div class="rule-card">
+          <div class="rule-ic"><i data-lucide="users-round"></i></div>
+          <div>
+            <div class="rule-t">Sin eventos ni fiestas</div>
+            <div class="rule-s">Máximo 4 huéspedes registrados · sin invitados externos a partir de las 22:00.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="card" style="padding:13px 16px">
+          <div class="h2" style="margin-bottom:8px">Buenas costumbres del edificio</div>
+          <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--tx-2);line-height:18px">
+            <li>Saluda a los vecinos en el ascensor — son mayores y agradecen.</li>
+            <li>Tira la basura entre 20:00 y 22:00 (orgánica, esquina Cuba con Sueca).</li>
+            <li>No dejes el carro o bicicleta en el portal.</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:13px 16px">
+          <div class="h2" style="margin-bottom:8px">¿Tienes un evento especial?</div>
+          <p style="margin:0;font-size:12px;color:var(--tx-2);line-height:18px">Habla primero con Javier: cumpleaños tranquilo en casa con 4-6 personas hasta las 22:00 puede aprobarse caso por caso.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">06 · Normas</div>
+    <div class="src"><b>gs.rules</b> · taxonomies/policy_taxonomy.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       07 · SALIDA                           gs.checkout
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="07 Salida">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item active"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>Estancia</span><i data-lucide="chevron-right"></i><span>Salida</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="clock"></i>Salida en <b>3 días</b> · vie 11:00</div>
+      <div class="top-pill"><i data-lucide="message-circle"></i>Pedir salida tardía</div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>tu salida · viernes 11:00</div>
+          <h1 class="s-title">Cómo dejar la casa</h1>
+          <p class="s-sub">Tres momentos: la noche antes, la mañana y la entrega. Sin estrés · empieza temprano.</p>
+        </div>
+        <div class="s-meta"><span><b>9</b> tareas</span><span><b>~25</b> min en total</span></div>
+      </div>
+
+      <div class="hl-grid">
+        <div class="hl-card">
+          <div class="hl-head"><span class="hl-stage">La noche antes</span><span class="hl-when">jue 22:00</span></div>
+          <div class="tl">
+            <div class="tl-step"><div class="tl-t">Lavavajillas en marcha</div><div class="tl-s">Programa Eco · 90 min</div></div>
+            <div class="tl-step"><div class="tl-t">Lava sábanas y toallas</div><div class="tl-s">40 °C · ciclo Eco · cuelga en el tendedero</div></div>
+            <div class="tl-step"><div class="tl-t">Cierra ventanas y baja persianas</div><div class="tl-s">Ruido del barrio el viernes por la mañana</div></div>
+          </div>
+        </div>
+
+        <div class="hl-card">
+          <div class="hl-head"><span class="hl-stage">La mañana</span><span class="hl-when">vie 09:30</span></div>
+          <div class="tl">
+            <div class="tl-step"><div class="tl-t">Desayuno tranquilo</div><div class="tl-s">Café cortesía en el armario · cápsulas debajo</div></div>
+            <div class="tl-step"><div class="tl-t">Apaga aire y calefacción</div><div class="tl-s">Mando azul · botón rojo</div></div>
+            <div class="tl-step"><div class="tl-t">Saca la basura al contenedor</div><div class="tl-s">Orgánica · marrón · esquina Cuba con Sueca</div></div>
+            <div class="tl-step"><div class="tl-t">Revisa que no olvidas nada</div><div class="tl-s">Cargadores · pasaporte · neceser del baño</div></div>
+          </div>
+        </div>
+
+        <div class="hl-card">
+          <div class="hl-head"><span class="hl-stage">Entrega</span><span class="hl-when brand">vie 11:00</span></div>
+          <div class="tl">
+            <div class="tl-step current"><div class="tl-t">Devuelve la llave a la caja</div><div class="tl-s">Misma caja · gira las ruedas para mezclar el código</div></div>
+            <div class="tl-step"><div class="tl-t">Confirma con Javier por chat</div><div class="tl-s">"Salida hecha, llave dentro" · plantilla en la app</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <div class="warn"><i data-lucide="info"></i><div class="warn-body"><b>Salida tardía</b> hasta las 13:00 si está disponible · 25 € · pídelo a Javier la víspera por chat.</div></div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">07 · Salida</div>
+    <div class="src"><b>gs.checkout</b> · taxonomies/policy_taxonomy.json (subset: <b>rm.checkout</b>)</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       08 · GUÍA LOCAL                       gs.local
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="08 Guía local">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item active"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>Alrededor</span><i data-lucide="chevron-right"></i><span>Guía local · Ruzafa</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="circle-check"></i>Mostrando <b>abierto ahora</b></div>
+      <div class="top-pill"><i data-lucide="map-pin"></i>500 m alrededor</div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>tu barrio · Ruzafa</div>
+          <h1 class="s-title">Lo útil, cerca</h1>
+          <p class="s-sub">Mercado, cafés, farmacia, cajeros y restaurantes a 5 minutos a pie.</p>
+        </div>
+        <div class="s-meta"><span><b>6</b> lugares</span><span><b>3</b> eventos esta semana</span></div>
+      </div>
+
+      <div class="local-grid" style="height:430px">
+        <div class="map-big">
+          <!-- Ruzafa is a real neighborhood — pins are illustrative -->
+          <div class="map-pin" style="left:48%;top:54%"><i data-lucide="home"></i><span class="label">Calle Cuba 42</span></div>
+          <div class="map-pin small" style="left:38%;top:38%"><i data-lucide="shopping-basket"></i></div>
+          <div class="map-pin small" style="left:54%;top:42%"><i data-lucide="coffee"></i></div>
+          <div class="map-pin small" style="left:62%;top:62%"><i data-lucide="pill"></i></div>
+          <div class="map-pin small" style="left:46%;top:68%"><i data-lucide="banknote"></i></div>
+          <div class="map-pin small" style="left:32%;top:60%"><i data-lucide="shopping-cart"></i></div>
+          <div class="map-pin small" style="left:60%;top:30%"><i data-lucide="wine"></i></div>
+          <div class="map-attr">Ruzafa · Valencia · 500 m</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;min-height:0">
+          <div class="chips">
+            <span class="chip active"><i data-lucide="circle-check" style="width:11px;height:11px"></i>Abierto ahora</span>
+            <span class="chip">Café</span>
+            <span class="chip">Super</span>
+            <span class="chip">Farmacia</span>
+            <span class="chip">Cajero</span>
+            <span class="chip">Cena</span>
+          </div>
+          <div class="places" style="overflow:auto">
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="shopping-basket"></i></div><span class="place-dist">4 min</span></div><div class="place-t">Mercado de Ruzafa</div><div class="place-s">Fruta, pan y pescado fresco</div><span class="place-hours">Hasta 14:30</span></div>
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="coffee"></i></div><span class="place-dist">2 min</span></div><div class="place-t">Café Berlín</div><div class="place-s">Brunch y especialidad</div><span class="place-hours">Abierto</span></div>
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="pill"></i></div><span class="place-dist">3 min</span></div><div class="place-t">Farmacia Sorní</div><div class="place-s">De turno 24 h</div><span class="place-hours">Abierto</span></div>
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="banknote"></i></div><span class="place-dist">1 min</span></div><div class="place-t">CaixaBank ATM</div><div class="place-s">Cajero sin comisión</div><span class="place-hours">24 h</span></div>
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="shopping-cart"></i></div><span class="place-dist">5 min</span></div><div class="place-t">Mercadona</div><div class="place-s">Supermercado de barrio</div><span class="place-hours closed">Cierra a 21:30</span></div>
+            <div class="place"><div class="place-top"><div class="place-ic"><i data-lucide="wine"></i></div><span class="place-dist">3 min</span></div><div class="place-t">Canalla Bistro</div><div class="place-s">Reserva recomendada</div><span class="place-hours closed">Abre a 20:00</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="h2">Esta semana en el barrio<span class="lnk">Ver todo</span></div>
+        <div class="events">
+          <div class="event"><span class="event-date">Sáb · 18:00</span><div class="event-t">Plaça del Mercat</div><div class="event-s">Vermut popular al aire libre</div></div>
+          <div class="event"><span class="event-date">Dom · 11:00</span><div class="event-t">Ruta de tapas</div><div class="event-s">Oficina de turismo de Valencia</div></div>
+          <div class="event"><span class="event-date">Mié · 21:30</span><div class="event-t">Cinema Berlanga</div><div class="event-s">Ciclo al aire libre · cultura local</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">08 · Guía local</div>
+    <div class="src"><b>gs.local</b> · taxonomies/local_place_categories.json + local_event_categories.json + local_event_sources.json</div>
+  </div>
+  </div>
+
+  <!-- ====================================================
+       09 · AYUDA Y EMERGENCIAS              gs.emergency
+       ==================================================== -->
+  <div class="frame-wrap">
+  <div class="frame" data-screen-label="09 Ayuda">
+    <aside class="side">
+      <div class="side-brand"><div class="side-mark-wrap"><div class="side-mark">L<span class="dot"></span></div></div><div><div class="side-name">Latch</div><div class="side-pname">Guía del huésped</div></div></div>
+      <div class="side-prop"><div class="pname">Casa Lavanda</div><div class="pmeta"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div><div class="pdates"><span>16 oct 16:00</span><span>20 oct 11:00</span></div></div>
+      <nav class="side-nav">
+        <div class="side-section-label">Estancia</div>
+        <div class="side-item"><i data-lucide="sparkles"></i>Esenciales</div>
+        <div class="side-item"><i data-lucide="map-pinned"></i>Llegada</div>
+        <div class="side-item"><i data-lucide="log-out"></i>Salida</div>
+        <div class="side-section-label">La casa</div>
+        <div class="side-item"><i data-lucide="layout-grid"></i>Espacios</div>
+        <div class="side-item"><i data-lucide="settings-2"></i>Cómo usar</div>
+        <div class="side-item"><i data-lucide="package-check"></i>Equipamiento</div>
+        <div class="side-item"><i data-lucide="scroll-text"></i>Normas</div>
+        <div class="side-section-label">Alrededor</div>
+        <div class="side-item"><i data-lucide="map"></i>Guía local</div>
+        <div class="side-item active"><i data-lucide="life-buoy"></i>Ayuda y emergencias</div>
+      </nav>
+      <div class="side-host"><div class="side-host-card"><div class="side-host-av">J</div><div class="side-host-main"><div class="side-host-t">Javier</div><div class="side-host-s">Conectado · responde &lt; 1 h</div></div><i data-lucide="message-circle" style="width:14px;height:14px;color:var(--slate-500)"></i></div></div>
+    </aside>
+    <header class="top">
+      <div class="crumb"><b>Casa Lavanda</b><i data-lucide="chevron-right"></i><span>Ayuda y emergencias</span></div>
+      <div class="top-spacer"></div>
+      <div class="top-pill"><i data-lucide="phone"></i>Disponible <b>24 h</b></div>
+      <div class="top-av">L</div>
+    </header>
+    <main class="main">
+      <div class="s-head">
+        <div>
+          <div class="s-eyebrow"><span class="dot"></span>Ayuda · 24 h</div>
+          <h1 class="s-title">Si necesitas ayuda</h1>
+          <p class="s-sub">Empieza por Javier para casi todo. Llama al 112 si hay riesgo inmediato — el sistema escala automáticamente si tu anfitrión no responde.</p>
+        </div>
+      </div>
+
+      <div class="emg-grid">
+        <div class="emg-card">
+          <div class="emg-head host"><i data-lucide="message-circle"></i><span class="t">Tu anfitrión primero</span></div>
+          <div class="emg-body">
+            <div class="emg-row">
+              <div class="emg-ic"><i data-lucide="user-round"></i></div>
+              <div style="flex:1">
+                <div class="emg-t">Javier · anfitrión</div>
+                <div class="emg-s">Responde en menos de 1 h · es-ES y EN · vive a 12 minutos en bici</div>
+              </div>
+              <button class="emg-call tonal"><i data-lucide="message-circle"></i>WhatsApp</button>
+            </div>
+            <div class="emg-row">
+              <div class="emg-ic"><i data-lucide="phone"></i></div>
+              <div style="flex:1">
+                <div class="emg-t">Llamada directa</div>
+                <div class="emg-s">Solo para urgencias en horario nocturno</div>
+              </div>
+              <button class="emg-call outline"><i data-lucide="phone"></i>+34 612 84 09 22</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="emg-card">
+          <div class="emg-head urgent"><i data-lucide="life-buoy"></i><span class="t">Urgencias</span></div>
+          <div class="emg-body">
+            <div style="text-align:center;padding:12px 0 4px">
+              <div class="emg-num brand">112</div>
+              <div class="emg-s" style="margin-top:6px">Médico · bomberos · seguridad ciudadana</div>
+            </div>
+            <button class="emg-call" style="width:100%"><i data-lucide="phone"></i>Llamar al 112</button>
+          </div>
+        </div>
+
+        <div class="emg-card">
+          <div class="emg-head pol"><i data-lucide="shield"></i><span class="t">Atención turística</span></div>
+          <div class="emg-body">
+            <div style="text-align:center;padding:12px 0 4px">
+              <div class="emg-num">96 354 09 35</div>
+              <div class="emg-s" style="margin-top:6px">Policía Turística de Valencia · es · en · fr</div>
+            </div>
+            <button class="emg-call outline" style="width:100%"><i data-lucide="phone"></i>Llamar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
+        <div class="card">
+          <div class="h2">Cómo se escala una ayuda <span class="pill">automático</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;align-items:start;margin-top:6px">
+            <div style="text-align:center">
+              <div style="width:42px;height:42px;border-radius:10px;background:var(--slate-700);color:white;display:grid;place-items:center;margin:0 auto 6px"><i data-lucide="user-round" style="width:18px;height:18px"></i></div>
+              <div style="font-size:11px;font-weight:700">0 min</div>
+              <div style="font-size:10px;color:var(--tx-3);line-height:13px">Mensaje a Javier</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:42px;height:42px;border-radius:10px;background:var(--slate-100);color:var(--slate-700);display:grid;place-items:center;margin:0 auto 6px"><i data-lucide="users" style="width:18px;height:18px"></i></div>
+              <div style="font-size:11px;font-weight:700">+60 min</div>
+              <div style="font-size:10px;color:var(--tx-3);line-height:13px">Equipo de soporte</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:42px;height:42px;border-radius:10px;background:var(--amber-100);color:var(--amber-700);display:grid;place-items:center;margin:0 auto 6px"><i data-lucide="sparkles" style="width:18px;height:18px"></i></div>
+              <div style="font-size:11px;font-weight:700">+90 min</div>
+              <div style="font-size:10px;color:var(--tx-3);line-height:13px">Limpiadora local</div>
+            </div>
+            <div style="text-align:center">
+              <div style="width:42px;height:42px;border-radius:10px;background:var(--clay-100);color:var(--clay-700);display:grid;place-items:center;margin:0 auto 6px"><i data-lucide="life-buoy" style="width:18px;height:18px"></i></div>
+              <div style="font-size:11px;font-weight:700">si urge</div>
+              <div style="font-size:10px;color:var(--tx-3);line-height:13px">Servicios de emergencia</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="h2">Antes de llamar al 112</div>
+          <ul style="margin:0;padding-left:18px;font-size:12px;color:var(--tx-2);line-height:18px">
+            <li>Da la dirección completa: Calle Cuba 42, 3B, Valencia.</li>
+            <li>Indica la planta y la puerta · "tercero, puerta B".</li>
+            <li>Cuelga solo cuando te lo pidan ellos.</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="caption">
+    <div class="name">09 · Ayuda y emergencias</div>
+    <div class="src"><b>gs.emergency</b> · escalation_rules.json + contact_types.json + incident_categories.json</div>
+  </div>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
