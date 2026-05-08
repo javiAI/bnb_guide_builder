@@ -42,6 +42,15 @@ const TARGETS: Target[] = [
     ],
   },
   {
+    path: "src/lib/actions/parking.actions.ts",
+    required: [
+      "confirmParkingPlaceAction",
+      "addManualParkingPlaceAction",
+      "updateParkingPlaceAction",
+      "deleteParkingPlaceAction",
+    ],
+  },
+  {
     path: "src/lib/services/incident-from-guest.service.ts",
     required: ["createIncidentFromGuest"],
   },

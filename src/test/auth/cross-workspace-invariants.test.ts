@@ -23,6 +23,7 @@ const ROOT = process.cwd();
 const TARGETS: ReadonlyArray<{ path: string; minOccurrences: number }> = [
   { path: "src/lib/actions/guide.actions.ts", minOccurrences: 3 },
   { path: "src/lib/actions/incident.actions.ts", minOccurrences: 5 },
+  { path: "src/lib/actions/parking.actions.ts", minOccurrences: 5 },
 ];
 
 describe("cross-workspace invariants", () => {
