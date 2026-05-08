@@ -167,11 +167,15 @@ export async function saveAccessAction(
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
   const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
-  const hasParking = formData.get("hasParking") === "true";
   const buildingMethods = formData.getAll("buildingMethods") as string[];
   const unitMethods = formData.getAll("unitMethods") as string[];
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
+  // `hasParking` is derived from the parkingTypes selection — `pk.no_parking`
+  // is the explicit opt-out chip (replaces the old yes/no toggle). Empty
+  // selection = unanswered → false (legacy default).
+  const hasParking =
+    !parkingTypes.includes("pk.no_parking") && parkingTypes.length > 0;
 
   // Tri-state field: "true"/"false" persisted, anything else (including the
   // sentinel "null" or absent) → DB NULL = unanswered.
@@ -219,9 +223,13 @@ export async function saveAccessAction(
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
     hasParking,
-    // Drop parkingTypes if hasParking=false — opt-out should not persist stale
-    // selections. Same shape as hasBuildingAccess gate above.
-    parkingTypes: hasParking ? parkingTypes.filter((id) => validParkingIds.has(id)) : [],
+    // Filter for valid IDs and enforce `pk.no_parking` exclusivity server-side
+    // as defense-in-depth: client UI already prevents mixed selections, but a
+    // tampered FormData could send both `pk.no_parking` and a positive type.
+    parkingTypes: (() => {
+      const valid = parkingTypes.filter((id) => validParkingIds.has(id));
+      return valid.includes("pk.no_parking") ? ["pk.no_parking"] : valid;
+    })(),
     hasAccessibilityConsiderations,
     // Drop features when explicitly opted out (false). Keep when true OR null
     // (null = unanswered, but a half-completed list is still legitimate input).
@@ -255,8 +263,9 @@ export async function saveAccessAction(
     primaryUnitRaw && d.unitAccess.methods.includes(primaryUnitRaw)
       ? primaryUnitRaw
       : (d.unitAccess.methods[0] ?? null);
-  const primaryParking =
-    primaryParkingRaw && d.parkingTypes.includes(primaryParkingRaw)
+  const primaryParking = d.parkingTypes.includes("pk.no_parking")
+    ? null
+    : primaryParkingRaw && d.parkingTypes.includes(primaryParkingRaw)
       ? primaryParkingRaw
       : (d.parkingTypes[0] ?? null);
 

@@ -108,8 +108,9 @@ function sameStringList(a: string[], b: string[]): boolean {
 
 // Items-level "do we have a complete selection" check, independent of the
 // subsystem-scope toggle. Splits the old `statusFor` into two layers so the
-// scope toggle (`hasBuildingAccess` / `hasParking` / `hasAccessibilityConsiderations`)
-// can opt the entire subsystem out without inspecting items.
+// scope toggle (`hasBuildingAccess` / `hasAccessibilityConsiderations`) can
+// opt the entire subsystem out without inspecting items. Parking opts out via
+// the `pk.no_parking` taxonomy chip instead of a separate boolean.
 function itemsConfigured(
   arr: string[],
   customLabel: string | null | undefined,
@@ -132,8 +133,8 @@ function itemsConfigured(
 //             true → configured iff items are complete.
 //   unit:     always required (every property has a unit door); configured
 //             iff items are complete.
-//   parking:  hasParking=false → configured (opt-out);
-//             true → configured iff items are complete.
+//   parking:  `pk.no_parking` selected → configured (explicit opt-out);
+//             empty → pending; positive types → configured iff items complete.
 //   accessibility: hasAccessibilityConsiderations=null → pending (unanswered);
 //             false → configured (opt-out, "sin consideraciones");
 //             true → configured iff items are complete.
@@ -158,12 +159,14 @@ function deriveUnitStatus(
     : "pending";
 }
 function deriveParkingStatus(
-  hasParking: boolean,
   types: string[],
   customLabel: string | null,
   primary: string | null,
 ): SubsystemStatus {
-  if (!hasParking) return "configured";
+  // Explicit opt-out via the `pk.no_parking` taxonomy chip — replaces the old
+  // `hasParking=false` toggle. Mutually exclusive with any positive type.
+  if (types.includes("pk.no_parking")) return "configured";
+  if (types.length === 0) return "pending";
   return itemsConfigured(types, customLabel, "pk.other", primary)
     ? "configured"
     : "pending";
@@ -315,7 +318,6 @@ interface AccessFormProps {
     checkOutTime: string | null;
     isAutonomousCheckin: boolean;
     hasBuildingAccess: boolean;
-    hasParking: boolean;
     hasAccessibilityConsiderations: boolean | null;
     buildingAccess: {
       methods: string[];
@@ -405,7 +407,6 @@ export function AccessForm({
   // Together with the items array, they let `deriveSubsystemStatus` resolve
   // every card to "configured" or "pending" deterministically.
   const [hasBuildingAccess, setHasBuildingAccess] = useState<boolean>(p.hasBuildingAccess);
-  const [hasParking, setHasParking] = useState<boolean>(p.hasParking);
   const [hasAccessibilityConsiderations, setHasAccessibilityConsiderations] =
     useState<boolean | null>(p.hasAccessibilityConsiderations);
 
@@ -487,7 +488,6 @@ export function AccessForm({
     effectivePrimaryUnit !== (p.primaryUnitMethod ?? null) ||
     effectivePrimaryParking !== (p.parkingPrimary ?? null) ||
     hasBuildingAccess !== p.hasBuildingAccess ||
-    hasParking !== p.hasParking ||
     hasAccessibilityConsiderations !== p.hasAccessibilityConsiderations;
 
   const checkInRangeText = checkInStart
@@ -523,7 +523,6 @@ export function AccessForm({
   );
   const unitStatus = deriveUnitStatus(unitMethods, unitCustomLabel, effectivePrimaryUnit);
   const parkingStatus = deriveParkingStatus(
-    hasParking,
     parkingTypes,
     parkingCustomLabel,
     effectivePrimaryParking,
@@ -608,11 +607,6 @@ export function AccessForm({
           type="hidden"
           name="hasBuildingAccess"
           value={hasBuildingAccess ? "true" : "false"}
-        />
-        <input
-          type="hidden"
-          name="hasParking"
-          value={hasParking ? "true" : "false"}
         />
         <input
           type="hidden"
@@ -896,12 +890,9 @@ export function AccessForm({
                       setParkingCustomLabel={setParkingCustomLabel}
                       parkingCustomDesc={parkingCustomDesc}
                       setParkingCustomDesc={setParkingCustomDesc}
-                      toggleMember={toggleMember}
                       propertyId={propertyId}
                       primary={effectivePrimaryParking}
                       setPrimary={setPrimaryParking}
-                      hasParking={hasParking}
-                      setHasParking={setHasParking}
                       parkingPlaces={parkingPlaces}
                       propertyCoords={propertyCoords}
                       parkingMapInCover={parkingMapInCover}
@@ -1276,16 +1267,15 @@ interface ParkingPanelProps {
   setParkingCustomLabel: (s: string) => void;
   parkingCustomDesc: string;
   setParkingCustomDesc: (s: string) => void;
-  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
   propertyId: string;
   primary: string | null;
   setPrimary: (id: string | null) => void;
-  hasParking: boolean;
-  setHasParking: (next: boolean) => void;
   parkingPlaces: ParkingPlace[];
   propertyCoords: PropertyCoords | null;
   parkingMapInCover: boolean;
 }
+
+const NO_PARKING_ID = "pk.no_parking";
 
 function ParkingPanel({
   allParking,
@@ -1295,48 +1285,68 @@ function ParkingPanel({
   setParkingCustomLabel,
   parkingCustomDesc,
   setParkingCustomDesc,
-  toggleMember,
   propertyId,
   primary,
   setPrimary,
-  hasParking,
-  setHasParking,
   parkingPlaces,
   propertyCoords,
   parkingMapInCover,
 }: ParkingPanelProps) {
   const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
+  const isNoParking = parkingTypes.includes(NO_PARKING_ID);
+
+  // `pk.no_parking` is mutually exclusive — replaces the old `hasParking=No`
+  // toggle. Selecting it clears every other type; selecting any other type
+  // clears `pk.no_parking`. Pre-existing LocalPlace pins are NOT auto-deleted
+  // (decision in the v6.2 plan): they stay persisted but hidden in the editor
+  // while no_parking is active, so toggling back doesn't lose data.
+  const toggleParkingType = useCallback(
+    (id: string) => {
+      withViewTransition(() => {
+        if (id === NO_PARKING_ID) {
+          setParkingTypes(parkingTypes.includes(NO_PARKING_ID) ? [] : [NO_PARKING_ID]);
+          return;
+        }
+        if (parkingTypes.includes(NO_PARKING_ID)) {
+          setParkingTypes([id]);
+          return;
+        }
+        const idx = parkingTypes.indexOf(id);
+        const next =
+          idx === -1
+            ? [...parkingTypes, id]
+            : parkingTypes.filter((_, i) => i !== idx);
+        setParkingTypes(next);
+      });
+    },
+    [parkingTypes, setParkingTypes],
+  );
+
   return (
     <div className="space-y-4">
-      <ScopeToggle
-        label="¿La propiedad ofrece aparcamiento?"
-        description="Si no hay aparcamiento disponible para el huésped, marca «No» — esta sección quedará completa sin tipos."
-        value={hasParking}
-        onChange={(next) => setHasParking(next === true)}
-      />
-      {hasParking && (
+      <MethodList>
+        {sortedParking.map((item) => (
+          <MethodRow
+            key={item.id}
+            id={item.id}
+            icon={parkingIconFor(item.id)}
+            name={item.label}
+            description={item.description}
+            selected={parkingTypes.includes(item.id)}
+            recommended={item.recommended}
+            onClick={() => toggleParkingType(item.id)}
+            isOther={item.id === "pk.other"}
+            customLabel={parkingCustomLabel}
+            customDesc={parkingCustomDesc}
+            onCustomLabelChange={setParkingCustomLabel}
+            onCustomDescChange={setParkingCustomDesc}
+            isPrimary={primary === item.id}
+            onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+          />
+        ))}
+      </MethodList>
+      {!isNoParking && (
         <>
-          <MethodList>
-            {sortedParking.map((item) => (
-              <MethodRow
-                key={item.id}
-                id={item.id}
-                icon={parkingIconFor(item.id)}
-                name={item.label}
-                description={item.description}
-                selected={parkingTypes.includes(item.id)}
-                recommended={item.recommended}
-                onClick={() => toggleMember(parkingTypes, setParkingTypes, item.id)}
-                isOther={item.id === "pk.other"}
-                customLabel={parkingCustomLabel}
-                customDesc={parkingCustomDesc}
-                onCustomLabelChange={setParkingCustomLabel}
-                onCustomDescChange={setParkingCustomDesc}
-                isPrimary={primary === item.id}
-                onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
-              />
-            ))}
-          </MethodList>
           <ParkingPlacesEditor
             propertyId={propertyId}
             places={parkingPlaces}

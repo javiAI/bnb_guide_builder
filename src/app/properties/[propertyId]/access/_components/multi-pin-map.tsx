@@ -41,20 +41,25 @@ const PIN_VISUAL: Record<
   MultiPinSpec["kind"],
   { bg: string; ring: string; size: number }
 > = {
+  // Anchor uses a teardrop silhouette (rendered separately below) so it reads
+  // as "the property" at a glance against the round parking discs. `bg`/`ring`
+  // here only seed the teardrop fill / icon stroke colors.
   anchor: {
     bg: "var(--color-action-primary)",
     ring: "var(--color-text-on-accent)",
-    size: 30,
+    size: 36,
   },
+  // Free/paid carry distinct glyphs (P-in-circle vs parking-meter) on top of
+  // the color cue — colorblind operators relied on icon shape alone.
   "confirmed-free": {
     bg: "var(--color-status-success-solid)",
     ring: "var(--color-background-elevated)",
-    size: 16,
+    size: 24,
   },
   "confirmed-paid": {
     bg: "var(--color-status-info-solid)",
     ring: "var(--color-background-elevated)",
-    size: 16,
+    size: 24,
   },
   "confirmed-unknown": {
     bg: "var(--color-text-secondary)",
@@ -73,12 +78,51 @@ const PIN_VISUAL: Record<
   },
 };
 
-// Inline SVG (Lucide `MapPinHouse` flavor) — house glyph centered inside a
-// pin shape. The anchor marker uses this to read as "your property" at a
-// glance, distinct from the round dots used for parking pins.
-const ANCHOR_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.4 12 3l9 7.4V21H3z"/><path d="M9 21v-7h6v7"/></svg>`;
+// Inline Lucide `Home` glyph (currentColor stroke) — sits inside the anchor
+// teardrop head so the property reads as "home" against the parking discs.
+const ANCHOR_HOME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+
+// Lucide `CircleParking` (filled "P" disc) — free pins. Sized to fit the
+// 24px disc with a 4px inset.
+const PARKING_FREE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>`;
+
+// Lucide `ParkingMeter` (post + meter head + base) — paid pins. Same 16px box.
+const PARKING_PAID_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9a3 3 0 1 1 6 0"/><path d="M12 12v3"/><path d="M11 15h2"/><path d="M19 9a7 7 0 1 0-13.6 2.3C6.4 14 8 16 8 18v3h8v-3c0-2 1.6-4 2.6-6.7A7 7 0 0 0 19 9"/><path d="M12 18H8"/></svg>`;
+
+const PIN_ICON_SVG: Partial<Record<MultiPinSpec["kind"], string>> = {
+  "confirmed-free": PARKING_FREE_SVG,
+  "confirmed-paid": PARKING_PAID_SVG,
+};
+
+function createAnchorElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElement {
+  const v = PIN_VISUAL.anchor;
+  const height = Math.round(v.size * 1.25);
+  const el = document.createElement("div");
+  el.style.width = `${v.size}px`;
+  el.style.height = `${height}px`;
+  el.style.position = "relative";
+  el.style.cursor = clickable ? "pointer" : "default";
+  el.style.outlineOffset = "2px";
+  el.style.color = v.ring;
+  el.style.filter = "drop-shadow(var(--shadow-md))";
+  // Teardrop SVG (single path: round head + tapered tail). The icon overlays
+  // the head via absolute positioning so the SVG itself stays anchored to the
+  // marker's geographic point (tip at (0,0) in the SVG's coordinate system).
+  el.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${v.size}" height="${height}" viewBox="0 0 24 30" aria-hidden="true" style="position:absolute;inset:0;">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 7.5 9 16 11.3 18 .4.3 1 .3 1.4 0C15 28 24 19.5 24 12 24 5.4 18.6 0 12 0Z" fill="${v.bg}" stroke="${v.ring}" stroke-width="1.5"/>
+    </svg>
+    <span style="position:absolute;top:5px;left:0;right:0;display:grid;place-items:center;height:24px;color:${v.ring};">${ANCHOR_HOME_SVG}</span>
+  `;
+  if (spec.label) {
+    el.title = spec.label;
+    el.setAttribute("aria-label", spec.label);
+  }
+  return el;
+}
 
 function createPinElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElement {
+  if (spec.kind === "anchor") return createAnchorElement(spec, clickable);
   const v = PIN_VISUAL[spec.kind];
   const el = document.createElement("div");
   el.style.width = `${v.size}px`;
@@ -89,11 +133,12 @@ function createPinElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElemen
   el.style.boxShadow = "var(--shadow-md)";
   el.style.cursor = clickable ? "pointer" : "default";
   el.style.outlineOffset = "2px";
-  if (spec.kind === "anchor") {
+  const iconSvg = PIN_ICON_SVG[spec.kind];
+  if (iconSvg) {
     el.style.display = "grid";
     el.style.placeItems = "center";
-    el.style.color = "var(--color-text-on-accent)";
-    el.innerHTML = ANCHOR_ICON_SVG;
+    el.style.color = v.ring;
+    el.innerHTML = iconSvg;
   }
   if (spec.label) {
     el.title = spec.label;
@@ -203,6 +248,8 @@ export function MultiPinMap({
     };
     const anchorMarker = new maplibregl.Marker({
       element: createPinElement(anchorSpec, false),
+      // Teardrop tip points to the property — align it with the geo point.
+      anchor: "bottom",
     })
       .setLngLat([anchor.longitude, anchor.latitude])
       .addTo(map);

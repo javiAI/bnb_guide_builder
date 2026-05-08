@@ -19,6 +19,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
+  type TouchEvent,
 } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
@@ -34,9 +35,9 @@ import type { SubsystemSlide } from "./subsystem-card.types";
 import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
 
 // Every subsystem resolves to one of these two — "empty" was removed in 7b
-// when explicit scope toggles (hasBuildingAccess / hasParking /
-// hasAccessibilityConsiderations) made it possible for every card to declare
-// configured-or-pending deterministically.
+// when explicit opt-outs (hasBuildingAccess / hasAccessibilityConsiderations
+// toggles + the `pk.no_parking` taxonomy chip) made it possible for every
+// card to declare configured-or-pending deterministically.
 export type SubsystemStatus = "configured" | "pending";
 
 export interface SubsystemSelectedItem {
@@ -484,6 +485,9 @@ function MediaCarousel({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+  const swipedRef = useRef(false);
   const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
   const activeSlide = slides[safeIdx];
 
@@ -574,6 +578,45 @@ function MediaCarousel({
   const heightPx = variant === "active" ? 240 : 140;
   const isLiveMap = activeSlide?.kind === "live-map";
 
+  // Touch swipe — advance / retreat slides on horizontal drag.
+  // Skipped over live-map slides so MapLibre can handle pan/zoom natively.
+  const handleTouchStart = useCallback(
+    (e: TouchEvent<HTMLDivElement>) => {
+      if (isLiveMap || slides.length <= 1) return;
+      touchStartXRef.current = e.touches[0]?.clientX ?? null;
+      touchStartTimeRef.current = Date.now();
+      swipedRef.current = false;
+    },
+    [isLiveMap, slides.length],
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: TouchEvent<HTMLDivElement>) => {
+      const startX = touchStartXRef.current;
+      touchStartXRef.current = null;
+      if (startX === null || isLiveMap || slides.length <= 1) return;
+      const endX = e.changedTouches[0]?.clientX ?? startX;
+      const dx = endX - startX;
+      const dt = Date.now() - touchStartTimeRef.current;
+      if (Math.abs(dx) <= 50 || dt >= 500) return;
+      swipedRef.current = true;
+      const last = slides.length - 1;
+      setCurrentIdx((i) => {
+        if (dx < 0) return i === last ? 0 : i + 1;
+        return i === 0 ? last : i - 1;
+      });
+    },
+    [isLiveMap, slides.length],
+  );
+
+  const handleExpandClick = useCallback(() => {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    onExpand?.();
+  }, [onExpand]);
+
   const slideContent = activeSlide ? (
     <Slide slide={activeSlide} eager={safeIdx === 0} height={heightPx} />
   ) : (
@@ -590,14 +633,18 @@ function MediaCarousel({
   ) : null;
 
   return (
-    <div className={cn("relative w-full flex-none", heightClass)}>
+    <div
+      className={cn("relative w-full flex-none", heightClass)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {variant === "collapsed" && onExpand && !isLiveMap ? (
         <button
           type="button"
           aria-label={`Abrir ${title}`}
           aria-controls={bodyId}
           aria-expanded={false}
-          onClick={onExpand}
+          onClick={handleExpandClick}
           className={cn(
             "block h-full w-full text-left",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
@@ -667,39 +714,41 @@ function MediaCarousel({
       {slides.length > 1 && (
         <div
           aria-label={`Medios de ${title}`}
-          className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
+          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
-          {slides.map((slide, i) => {
-            const isActive = i === safeIdx;
-            return (
-              <button
-                key={slide.id}
-                ref={(el) => {
-                  dotRefs.current[i] = el;
-                }}
-                type="button"
-                aria-current={isActive ? "true" : undefined}
-                aria-label={`Mostrar ${slide.title}`}
-                onClick={() => setCurrentIdx(i)}
-                onKeyDown={(e) => handleDotKeyDown(e, i)}
-                className={cn(
-                  "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-overlay)]",
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  data-active={isActive ? "true" : undefined}
+          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-2 py-1 backdrop-blur-[2px]">
+            {slides.map((slide, i) => {
+              const isActive = i === safeIdx;
+              return (
+                <button
+                  key={slide.id}
+                  ref={(el) => {
+                    dotRefs.current[i] = el;
+                  }}
+                  type="button"
+                  aria-current={isActive ? "true" : undefined}
+                  aria-label={`Mostrar ${slide.title}`}
+                  onClick={() => setCurrentIdx(i)}
+                  onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "h-2 w-2 rounded-full transition-[background-color,box-shadow] duration-150",
-                    isActive
-                      ? "bg-[var(--color-action-primary)] [box-shadow:0_0_0_2px_var(--color-background-elevated)]"
-                      : "bg-[color-mix(in_oklch,var(--color-text-subtle)_60%,transparent)]",
+                    "recipe-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
-                />
-              </button>
-            );
-          })}
+                >
+                  <span
+                    aria-hidden="true"
+                    data-active={isActive ? "true" : undefined}
+                    className={cn(
+                      "h-1.5 rounded-full transition-[width,background-color] duration-200",
+                      isActive
+                        ? "w-4 bg-[var(--color-text-on-overlay)]"
+                        : "w-1.5 bg-[color-mix(in_oklch,var(--color-text-on-overlay)_45%,transparent)]",
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

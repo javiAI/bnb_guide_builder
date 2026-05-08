@@ -31,12 +31,13 @@ const SUBSYSTEM_TAXONOMY: Record<AccessCockpitId, ItemTaxonomyFile> = {
   accessibility: accessibilityFeatures,
 };
 
-// `live-map` is synthesized after this sort runs; the entry exists only to
-// satisfy `Record<SubsystemSlide["kind"], number>`.
+// Maps trail other media so the carousel cover stays visual when photos/videos
+// exist. `live-map` is synthesized after this sort runs (appended last) and
+// the entry exists only to satisfy `Record<SubsystemSlide["kind"], number>`.
 const KIND_ORDER: Record<SubsystemSlide["kind"], number> = {
   image: 0,
-  map: 1,
-  video: 2,
+  video: 1,
+  map: 2,
   "live-map": 3,
 };
 
@@ -107,7 +108,6 @@ export default async function AccessPage({ params }: Props) {
         primaryAccessMethod: true,
         isAutonomousCheckin: true,
         hasBuildingAccess: true,
-        hasParking: true,
         hasAccessibilityConsiderations: true,
         parkingMapInCover: true,
       },
@@ -360,7 +360,10 @@ export default async function AccessPage({ params }: Props) {
       livePins,
       liveAnchor: propertyCoords,
     };
-    subsystemSlides.parking = [liveMapSlide, ...subsystemSlides.parking];
+    // Append last — when other media (photos/videos) exists they lead the
+    // carousel and the live map closes it; when parking has no other media,
+    // the live map is the only slide and serves as the cover.
+    subsystemSlides.parking = [...subsystemSlides.parking, liveMapSlide];
   }
 
   return (
@@ -384,7 +387,6 @@ export default async function AccessPage({ params }: Props) {
         checkOutTime: property.checkOutTime,
         isAutonomousCheckin: property.isAutonomousCheckin,
         hasBuildingAccess: property.hasBuildingAccess,
-        hasParking: property.hasParking,
         hasAccessibilityConsiderations: property.hasAccessibilityConsiderations,
         buildingAccess: accessJson?.building ?? null,
         unitAccess: accessJson?.unit ?? null,
