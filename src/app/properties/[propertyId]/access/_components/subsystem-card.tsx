@@ -740,16 +740,28 @@ function Slide({
   );
 }
 
+// Per-subsystem identity gradient — terra (building) / olive (unit) /
+// info (parking) / warning (accessibility). Tokens live in semantic.css
+// and resolve per theme. Listed statically so the token-coverage gate
+// sees each token literal — template-literal interpolation hid the
+// suffix from its regex.
+const SUBSYSTEM_GRADIENTS: Record<string, string> = {
+  building:
+    "linear-gradient(135deg, var(--color-subsystem-building-from), var(--color-subsystem-building-to))",
+  unit:
+    "linear-gradient(135deg, var(--color-subsystem-unit-from), var(--color-subsystem-unit-to))",
+  parking:
+    "linear-gradient(135deg, var(--color-subsystem-parking-from), var(--color-subsystem-parking-to))",
+  accessibility:
+    "linear-gradient(135deg, var(--color-subsystem-accessibility-from), var(--color-subsystem-accessibility-to))",
+};
+
 function Placeholder({
   subsystemId,
 }: {
   subsystemId: string;
 }) {
-  // Per-subsystem identity gradient — terra (building) / olive (unit) /
-  // info (parking) / warning (accessibility). Tokens live in semantic.css
-  // and resolve per theme. No icon, no hint — the gradient alone is the
-  // empty signal; the body header (icon-badge + title) carries identity.
-  const gradient = `linear-gradient(135deg, var(--color-subsystem-${subsystemId}-from), var(--color-subsystem-${subsystemId}-to))`;
+  const gradient = SUBSYSTEM_GRADIENTS[subsystemId] ?? SUBSYSTEM_GRADIENTS.building;
   return (
     <span
       aria-hidden="true"
