@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Check, ImagePlus, Loader2, Star } from "lucide-react";
+import { Check, ImageIcon, ImageUp, Loader2, Star } from "lucide-react";
 import {
   assignMediaAction,
   confirmUploadAction,
@@ -39,6 +39,11 @@ interface MethodRowProps {
     propertyId: string;
     usageKey: string;
   };
+  // Count of media slides currently attached to this method's `usageKey`.
+  // When > 0 the upload affordance switches to an always-visible "has media"
+  // state (filled icon + action-primary tone + numeric pip when ≥ 2) so the
+  // operator can see at a glance which methods already have photos.
+  mediaCount?: number;
 }
 
 const ACCEPTED_PHOTO_TYPES = ".jpg,.jpeg,.png,.webp,.avif,.gif";
@@ -59,6 +64,7 @@ export function MethodRow({
   isPrimary,
   onMakePrimary,
   mediaUpload,
+  mediaCount = 0,
 }: MethodRowProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +74,7 @@ export function MethodRow({
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
   const showUpload = mediaUpload !== undefined && selected;
+  const hasMedia = mediaCount > 0;
 
   const handleUploadClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -216,20 +223,36 @@ export function MethodRow({
             type="button"
             onClick={handleUploadClick}
             disabled={uploading}
-            aria-label={uploading ? `Subiendo foto a ${name}` : `Añadir foto a ${name}`}
+            aria-label={
+              uploading
+                ? `Subiendo foto a ${name}`
+                : hasMedia
+                  ? `Añadir otra foto a ${name} (${mediaCount} ${mediaCount === 1 ? "adjunta" : "adjuntas"})`
+                  : `Añadir foto a ${name}`
+            }
             className={cn(
-              "flex min-h-[44px] min-w-[44px] flex-none items-center justify-center rounded-[12px]",
+              "relative flex min-h-[44px] min-w-[44px] flex-none items-center justify-center rounded-[12px]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
               "disabled:cursor-not-allowed",
-              uploading
+              uploading || hasMedia
                 ? "text-[var(--color-action-primary)]"
                 : "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-[var(--color-action-primary)]",
             )}
           >
             {uploading ? (
               <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            ) : hasMedia ? (
+              <ImageIcon size={18} aria-hidden="true" className="fill-[var(--color-action-primary-subtle)]" />
             ) : (
-              <ImagePlus size={18} aria-hidden="true" />
+              <ImageUp size={18} aria-hidden="true" />
+            )}
+            {hasMedia && mediaCount > 1 && !uploading && (
+              <span
+                aria-hidden="true"
+                className="absolute right-1 top-1 grid h-[14px] min-w-[14px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[9px] font-bold leading-none text-[var(--color-action-primary-fg)]"
+              >
+                {mediaCount > 9 ? "9+" : mediaCount}
+              </span>
             )}
           </button>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
   ArrowLeft,
@@ -359,6 +359,19 @@ export function AccessForm({
   parkingMapInCover,
   property: p,
 }: AccessFormProps) {
+  // Flat dict { usageKey -> count } derived from already-fetched slides.
+  // Drives the "has photo" indicator on each MethodRow so operators can see
+  // at a glance which methods already carry media.
+  const methodMediaCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const sub of Object.values(subsystemSlides)) {
+      for (const slide of sub) {
+        counts[slide.usageKey] = (counts[slide.usageKey] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [subsystemSlides]);
+
   const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
   const [checkInEnd, setCheckInEnd] = useState(p.checkInEnd ?? "22:00");
   const [checkOutTime, setCheckOutTime] = useState(p.checkOutTime ?? "11:00");
@@ -862,6 +875,7 @@ export function AccessForm({
                       propertyId={propertyId}
                       primary={effectivePrimaryBuilding}
                       setPrimary={setPrimaryBuilding}
+                      methodMediaCounts={methodMediaCounts}
                     />
                   </SubsystemCard>
                 );
@@ -896,6 +910,7 @@ export function AccessForm({
                       legacyCount={legacyAccessPhotoCount}
                       primary={effectivePrimaryUnit}
                       setPrimary={setPrimaryUnit}
+                      methodMediaCounts={methodMediaCounts}
                     />
                   </SubsystemCard>
                 );
@@ -931,6 +946,7 @@ export function AccessForm({
                       parkingPlaces={parkingPlaces}
                       propertyCoords={propertyCoords}
                       parkingMapInCover={parkingMapInCover}
+                      methodMediaCounts={methodMediaCounts}
                     />
                   </SubsystemCard>
                 );
@@ -962,6 +978,7 @@ export function AccessForm({
                     propertyId={propertyId}
                     hasAccessibilityConsiderations={hasAccessibilityConsiderations}
                     setHasAccessibilityConsiderations={setHasAccessibilityConsiderations}
+                    methodMediaCounts={methodMediaCounts}
                   />
                 </SubsystemCard>
               );
@@ -1147,6 +1164,7 @@ interface BuildingPanelProps {
   propertyId: string;
   primary: string | null;
   setPrimary: (id: string | null) => void;
+  methodMediaCounts: Record<string, number>;
 }
 
 const NO_BUILDING_ID = "ba.no_building";
@@ -1162,6 +1180,7 @@ function BuildingPanel({
   propertyId,
   primary,
   setPrimary,
+  methodMediaCounts,
 }: BuildingPanelProps) {
   const sortedBuilding = sortSelectedFirst(allBuilding, buildingMethods, primary);
   const isNoBuilding = buildingMethods.includes(NO_BUILDING_ID);
@@ -1221,6 +1240,9 @@ function BuildingPanel({
                     usageKey: `${ACCESS_USAGE_KEYS.building}.${item.id}`,
                   }
             }
+            mediaCount={
+              methodMediaCounts[`${ACCESS_USAGE_KEYS.building}.${item.id}`] ?? 0
+            }
           />
         ))}
       </MethodList>
@@ -1251,6 +1273,7 @@ interface UnitPanelProps {
   legacyCount: number;
   primary: string | null;
   setPrimary: (id: string | null) => void;
+  methodMediaCounts: Record<string, number>;
 }
 
 function UnitPanel({
@@ -1266,6 +1289,7 @@ function UnitPanel({
   legacyCount,
   primary,
   setPrimary,
+  methodMediaCounts,
 }: UnitPanelProps) {
   const sortedUnit = sortSelectedFirst(allUnit, unitMethods, primary);
   return (
@@ -1292,6 +1316,9 @@ function UnitPanel({
               propertyId,
               usageKey: `${ACCESS_USAGE_KEYS.unit}.${item.id}`,
             }}
+            mediaCount={
+              methodMediaCounts[`${ACCESS_USAGE_KEYS.unit}.${item.id}`] ?? 0
+            }
           />
         ))}
       </MethodList>
@@ -1338,6 +1365,7 @@ interface ParkingPanelProps {
   parkingPlaces: ParkingPlace[];
   propertyCoords: PropertyCoords | null;
   parkingMapInCover: boolean;
+  methodMediaCounts: Record<string, number>;
 }
 
 const NO_PARKING_ID = "pk.no_parking";
@@ -1356,6 +1384,7 @@ function ParkingPanel({
   parkingPlaces,
   propertyCoords,
   parkingMapInCover,
+  methodMediaCounts,
 }: ParkingPanelProps) {
   const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
   const isNoParking = parkingTypes.includes(NO_PARKING_ID);
@@ -1415,6 +1444,9 @@ function ParkingPanel({
                     usageKey: `${ACCESS_USAGE_KEYS.parking}.${item.id}`,
                   }
             }
+            mediaCount={
+              methodMediaCounts[`${ACCESS_USAGE_KEYS.parking}.${item.id}`] ?? 0
+            }
           />
         ))}
       </MethodList>
@@ -1451,6 +1483,7 @@ interface AccessibilityPanelProps {
   propertyId: string;
   hasAccessibilityConsiderations: boolean | null;
   setHasAccessibilityConsiderations: (next: boolean | null) => void;
+  methodMediaCounts: Record<string, number>;
 }
 
 function AccessibilityPanel({
@@ -1464,6 +1497,7 @@ function AccessibilityPanel({
   propertyId,
   hasAccessibilityConsiderations,
   setHasAccessibilityConsiderations,
+  methodMediaCounts,
 }: AccessibilityPanelProps) {
   return (
     <div className="space-y-5">
@@ -1508,6 +1542,11 @@ function AccessibilityPanel({
                           propertyId,
                           usageKey: `${ACCESS_USAGE_KEYS.accessibility}.${id}`,
                         }}
+                        mediaCount={
+                          methodMediaCounts[
+                            `${ACCESS_USAGE_KEYS.accessibility}.${id}`
+                          ] ?? 0
+                        }
                       />
                     );
                   })}
