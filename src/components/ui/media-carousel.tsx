@@ -453,7 +453,7 @@ export function MediaCarousel({
           aria-label={`Medios de ${title}`}
           className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
-          <div className="pointer-events-auto inline-flex items-center gap-px rounded-full bg-[var(--color-background-overlay)] px-0.5 py-px backdrop-blur-[2px]">
+          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1 py-1 backdrop-blur-[2px]">
             {slides.map((slide, i) => {
               const isActive = i === safeIdx;
               return (
@@ -468,7 +468,7 @@ export function MediaCarousel({
                   onClick={() => setCurrentIdx(i)}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "recipe-dot-pagination grid flex-none place-items-center rounded-full",
+                    "recipe-dot-pagination grid flex-none place-items-center rounded-full p-0.5",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >
