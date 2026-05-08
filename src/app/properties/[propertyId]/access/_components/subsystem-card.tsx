@@ -104,7 +104,11 @@ function toCarouselSlides(
           kind: "custom",
           render: (height: number) => (
             <div className="absolute inset-0">
-              <MultiPinMap anchor={anchor} pins={pins} height={height} />
+              {/* Cover map is display-only: pointer events fall through to
+                  the carousel so swipe to the next slide works, and
+                  tap-to-expand reaches the cover button. The expanded editor
+                  uses ParkingPlacesEditor with its own interactive map. */}
+              <MultiPinMap anchor={anchor} pins={pins} height={height} interactive={false} />
             </div>
           ),
         };

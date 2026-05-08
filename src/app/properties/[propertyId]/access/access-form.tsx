@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
   ArrowLeft,
@@ -411,6 +411,12 @@ export function AccessForm({
     useState<boolean | null>(p.hasAccessibilityConsiderations);
 
   const [expandedCard, setExpandedCard] = useState<AccessCockpitId | null>(null);
+  // Wraps the cockpit grid so the click-outside effect knows the bounds of
+  // the expanded surface. A click landing outside this wrapper collapses
+  // the card; clicks landing inside Radix portals (popovers, dialogs,
+  // dropdowns rendered to document.body) are excluded so opening a select
+  // doesn't auto-collapse the card behind it.
+  const expandedCardWrapperRef = useRef<HTMLDivElement | null>(null);
 
   // View Transitions API: morphs each card from idle position+size to expanded
   // (and back) without flicker. Falls back to snap behavior if unsupported.
@@ -452,6 +458,32 @@ export function AccessForm({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [expandedCard, setExpandedCardAnimated]);
+
+  // Click outside the expanded card collapses it. We bind on `mousedown` so
+  // the collapse fires before any focus shift in the click target — keeps
+  // the gesture snappy. Radix renders popovers / dialogs / menus into a
+  // body-level portal, so a `contains` check on the wrapper alone would
+  // collapse the card whenever the operator interacts with one of those
+  // surfaces; the closest-selector escape hatch covers the three Radix
+  // wrappers we use today (HoverCard, Dialog, DropdownMenu).
+  useEffect(() => {
+    if (!expandedCard) return;
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target;
+      if (!(target instanceof Node)) return;
+      const wrapper = expandedCardWrapperRef.current;
+      if (wrapper && wrapper.contains(target)) return;
+      if (target instanceof Element) {
+        const portalEscape = target.closest(
+          '[data-radix-popper-content-wrapper],[role="dialog"],[role="menu"]',
+        );
+        if (portalEscape) return;
+      }
+      setExpandedCardAnimated(null);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
   }, [expandedCard, setExpandedCardAnimated]);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
@@ -793,6 +825,7 @@ export function AccessForm({
           <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
             Pulsa una tarjeta para revisar o modificar.
           </p>
+          <div ref={expandedCardWrapperRef}>
           <CockpitGrid expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
             {(id, role) => {
               const cardId = id as AccessCockpitId;
@@ -932,6 +965,7 @@ export function AccessForm({
               );
             }}
           </CockpitGrid>
+          </div>
         </NumberedSection>
 
         <NumberedSection

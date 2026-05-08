@@ -35,6 +35,13 @@ interface MultiPinMapProps {
    * it doesn't trigger a fitBounds. */
   previewPin?: { latitude: number; longitude: number } | null;
   height?: number;
+  /** Whether MapLibre handles its own pointer/wheel/keyboard events. When
+   * false the map renders as a static, display-only canvas: NavigationControl
+   * is omitted, the click handler is not attached, and pan/zoom/rotate are
+   * fully disabled — pointer events pass through to the parent (e.g. the
+   * carousel can swipe over the map slide). Default true preserves the
+   * existing editor behavior. */
+  interactive?: boolean;
 }
 
 const PIN_VISUAL: Record<
@@ -157,6 +164,7 @@ export function MultiPinMap({
   onMapClick,
   previewPin = null,
   height = 280,
+  interactive = true,
 }: MultiPinMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -204,16 +212,24 @@ export function MultiPinMap({
       center: [anchor.longitude, anchor.latitude],
       zoom: 14,
       attributionControl: false,
+      // When `interactive` is false MapLibre disables drag-pan, scroll-zoom,
+      // touch-zoom-rotate, double-click-zoom and keyboard handlers as a unit
+      // — pointer events fall through to the parent (e.g. carousel swipe).
+      interactive,
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    if (interactive) {
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    }
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
-    map.on("click", (ev) => {
-      onMapClickRef.current?.(ev.lngLat.lat, ev.lngLat.lng);
-    });
-    if (onMapClickRef.current) {
-      map.on("load", () => {
-        map.getCanvas().style.cursor = "crosshair";
+    if (interactive) {
+      map.on("click", (ev) => {
+        onMapClickRef.current?.(ev.lngLat.lat, ev.lngLat.lng);
       });
+      if (onMapClickRef.current) {
+        map.on("load", () => {
+          map.getCanvas().style.cursor = "crosshair";
+        });
+      }
     }
     mapRef.current = map;
     setMapReady(true);
@@ -228,8 +244,11 @@ export function MultiPinMap({
     };
     // The map mounts once per style URL — anchor/pin updates run in the
     // effect below so the user's pan/zoom is preserved across re-renders.
+    // `interactive` is a deliberate dep: flipping it must rebuild the map
+    // because MapLibre's interaction handlers can only be configured at
+    // construction time.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styleUrl]);
+  }, [styleUrl, interactive]);
 
   useEffect(() => {
     const map = mapRef.current;

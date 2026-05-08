@@ -26,9 +26,12 @@ import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 // The carousel renders four kinds:
 //   - "image" / "map":  presigned <img> from R2.
 //   - "video":          icon placeholder (no inline player in collapsed view).
-//   - "custom":         consumer-provided ReactNode — e.g. a live MapLibre
-//                       instance. Swipe is disabled while a custom slide is
-//                       active so the consumer can handle its own gestures.
+//   - "custom":         consumer-provided ReactNode — e.g. a display-only
+//                       MapLibre instance. Custom slides MUST NOT capture
+//                       pointer events: the carousel owns swipe + tap-to-
+//                       expand across all slide kinds. If a consumer needs
+//                       a fully interactive surface, it belongs in the
+//                       expanded variant, not the collapsed cover.
 
 interface BaseSlide {
   id: string;
@@ -112,9 +115,7 @@ export function MediaCarousel({
   const swipedRef = useRef(false);
 
   const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
-  const activeSlide = slides[safeIdx];
-  const isCustomActive = activeSlide?.kind === "custom";
-  const canSwipe = !isCustomActive && slides.length > 1;
+  const canSwipe = slides.length > 1;
 
   const heightClass = variant === "active" ? "h-[240px]" : "h-[140px]";
   const heightPx = variant === "active" ? 240 : 140;
@@ -430,10 +431,10 @@ export function MediaCarousel({
       </div>
 
       {/* Cover expand button — full overlay so the user can click anywhere on
-         the cover to expand. Omitted for `active` variant (parent handles
-         collapse via the title button) and when the active slide is custom
-         (e.g. an interactive map needs its own pointer events). */}
-      {variant === "collapsed" && onExpand && !isCustomActive && (
+         the cover to expand, including over custom (display-only) slides
+         like the parking live-map. Omitted only for `active` variant where
+         the parent handles collapse via the title button. */}
+      {variant === "collapsed" && onExpand && (
         <button
           type="button"
           aria-label={`Abrir ${title}`}
@@ -448,43 +449,45 @@ export function MediaCarousel({
       )}
 
       {slides.length > 1 && (
+        // Instagram / Apple Photos pattern: no backdrop pill — tiny circles
+        // sit directly over the photo with a drop-shadow for legibility.
+        // Active = full-opacity white; inactive = 50% white. Same size at
+        // all states so the row width is stable and the eye reads them as
+        // page indicators, not pills. The 24×24 hit recipe (visual 6 +
+        // pseudo slop) preserves the 44 hit area on fine pointers.
         <div
           aria-label={`Medios de ${title}`}
-          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
+          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1.5"
         >
-          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1.5 py-0.5 backdrop-blur-[2px]">
-            {slides.map((slide, i) => {
-              const isActive = i === safeIdx;
-              return (
-                <button
-                  key={slide.id}
-                  ref={(el) => {
-                    dotRefs.current[i] = el;
-                  }}
-                  type="button"
-                  aria-current={isActive ? "true" : undefined}
-                  aria-label={`Mostrar ${slide.title}`}
-                  onClick={() => setCurrentIdx(i)}
-                  onKeyDown={(e) => handleDotKeyDown(e, i)}
+          {slides.map((slide, i) => {
+            const isActive = i === safeIdx;
+            return (
+              <button
+                key={slide.id}
+                ref={(el) => {
+                  dotRefs.current[i] = el;
+                }}
+                type="button"
+                aria-current={isActive ? "true" : undefined}
+                aria-label={`Mostrar ${slide.title}`}
+                onClick={() => setCurrentIdx(i)}
+                onKeyDown={(e) => handleDotKeyDown(e, i)}
+                className={cn(
+                  "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)]",
+                )}
+              >
+                <span
+                  aria-hidden="true"
+                  data-active={isActive ? "true" : undefined}
                   className={cn(
-                    "recipe-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
+                    "h-1.5 w-1.5 rounded-full bg-[var(--color-text-on-overlay)] drop-shadow-sm transition-opacity duration-200",
+                    isActive ? "opacity-100" : "opacity-50",
                   )}
-                >
-                  <span
-                    aria-hidden="true"
-                    data-active={isActive ? "true" : undefined}
-                    className={cn(
-                      "h-1 rounded-full transition-[width,background-color] duration-200",
-                      isActive
-                        ? "w-2.5 bg-[var(--color-text-on-overlay)]"
-                        : "w-1 bg-[color-mix(in_oklch,var(--color-text-on-overlay)_45%,transparent)]",
-                    )}
-                  />
-                </button>
-              );
-            })}
-          </div>
+                />
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
