@@ -1213,6 +1213,14 @@ function BuildingPanel({
             onCustomDescChange={setBuildingCustomDesc}
             isPrimary={primary === item.id}
             onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+            mediaUpload={
+              item.id === NO_BUILDING_ID
+                ? undefined
+                : {
+                    propertyId,
+                    usageKey: `${ACCESS_USAGE_KEYS.building}.${item.id}`,
+                  }
+            }
           />
         ))}
       </MethodList>
@@ -1280,6 +1288,10 @@ function UnitPanel({
             onCustomDescChange={setUnitCustomDesc}
             isPrimary={primary === item.id}
             onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+            mediaUpload={{
+              propertyId,
+              usageKey: `${ACCESS_USAGE_KEYS.unit}.${item.id}`,
+            }}
           />
         ))}
       </MethodList>
@@ -1395,6 +1407,14 @@ function ParkingPanel({
             onCustomDescChange={setParkingCustomDesc}
             isPrimary={primary === item.id}
             onMakePrimary={() => withViewTransition(() => setPrimary(item.id))}
+            mediaUpload={
+              item.id === "pk.no_parking"
+                ? undefined
+                : {
+                    propertyId,
+                    usageKey: `${ACCESS_USAGE_KEYS.parking}.${item.id}`,
+                  }
+            }
           />
         ))}
       </MethodList>
@@ -1484,6 +1504,10 @@ function AccessibilityPanel({
                         customDesc={axCustomDesc}
                         onCustomLabelChange={setAxCustomLabel}
                         onCustomDescChange={setAxCustomDesc}
+                        mediaUpload={{
+                          propertyId,
+                          usageKey: `${ACCESS_USAGE_KEYS.accessibility}.${id}`,
+                        }}
                       />
                     );
                   })}

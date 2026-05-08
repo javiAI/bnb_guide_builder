@@ -1,7 +1,15 @@
 "use client";
 
+import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Check, Star } from "lucide-react";
+import { Check, ImagePlus, Loader2, Star } from "lucide-react";
+import {
+  assignMediaAction,
+  confirmUploadAction,
+  deleteMediaAction,
+  requestUploadAction,
+} from "@/lib/actions/media.actions";
 import { cn } from "@/lib/cn";
 
 interface MethodRowProps {
@@ -23,7 +31,17 @@ interface MethodRowProps {
   // (building / unit / parking). Accessibility omits this entirely.
   isPrimary?: boolean;
   onMakePrimary?: () => void;
+  // When set AND `selected` is true, an "add photo" affordance appears on
+  // hover/focus-within. The uploaded asset is tagged with `usageKey` so the
+  // collapsed-card carousel labels it with the method's chip overlay (the
+  // taxonomy lookup happens server-side in `page.tsx`).
+  mediaUpload?: {
+    propertyId: string;
+    usageKey: string;
+  };
 }
+
+const ACCEPTED_PHOTO_TYPES = ".jpg,.jpeg,.png,.webp,.avif,.gif";
 
 export function MethodRow({
   id,
@@ -40,9 +58,78 @@ export function MethodRow({
   onCustomDescChange,
   isPrimary,
   onMakePrimary,
+  mediaUpload,
 }: MethodRowProps) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
+  const showUpload = mediaUpload !== undefined && selected;
+
+  const handleUploadClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (uploading) return;
+      setUploadError(null);
+      fileInputRef.current?.click();
+    },
+    [uploading],
+  );
+
+  const handleFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !mediaUpload) return;
+
+      setUploading(true);
+      setUploadError(null);
+      let assetId: string | null = null;
+      try {
+        const req = await requestUploadAction(mediaUpload.propertyId, file.name, file.type);
+        if (!req.success || !req.data) {
+          setUploadError(req.error ?? "Error al preparar la subida");
+          return;
+        }
+        assetId = req.data.assetId;
+        const put = await fetch(req.data.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type },
+        });
+        if (!put.ok) {
+          setUploadError(`Subida falló (${put.status})`);
+          deleteMediaAction(assetId).catch(() => {});
+          return;
+        }
+        const confirm = await confirmUploadAction(assetId);
+        if (!confirm.success) {
+          setUploadError(confirm.error ?? "Error al verificar");
+          return;
+        }
+        const assign = await assignMediaAction(
+          assetId,
+          "access_method",
+          mediaUpload.propertyId,
+          mediaUpload.usageKey,
+        );
+        if (!assign.success) {
+          setUploadError(assign.error ?? "Error al asignar");
+          return;
+        }
+        router.refresh();
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : "Error desconocido");
+        if (assetId) deleteMediaAction(assetId).catch(() => {});
+      } finally {
+        setUploading(false);
+      }
+    },
+    [mediaUpload, router],
+  );
 
   // Per-row view-transition-name lets the browser FLIP-animate primary swap
   // reorders. id may contain non-ident chars (e.g. "rm.smart_lock"); CSS
@@ -124,6 +211,28 @@ export function MethodRow({
             />
           )}
         </button>
+        {showUpload && (
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            aria-label={uploading ? `Subiendo foto a ${name}` : `Añadir foto a ${name}`}
+            className={cn(
+              "flex min-h-[44px] min-w-[44px] flex-none items-center justify-center rounded-[12px]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
+              "disabled:cursor-not-allowed",
+              uploading
+                ? "text-[var(--color-action-primary)]"
+                : "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-[var(--color-action-primary)]",
+            )}
+          >
+            {uploading ? (
+              <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            ) : (
+              <ImagePlus size={18} aria-hidden="true" />
+            )}
+          </button>
+        )}
         {showStar && (
           <button
             type="button"
@@ -146,6 +255,33 @@ export function MethodRow({
           </button>
         )}
       </div>
+      {showUpload && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES}
+          onChange={handleFileChange}
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      )}
+      {uploadError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-2 border-t border-[var(--color-status-error-border)] bg-[var(--color-status-error-bg)] px-3 py-2 text-[12px] text-[var(--color-status-error-text)]"
+        >
+          <span className="min-w-0 flex-1 truncate">{uploadError}</span>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="flex-none text-[11px] font-semibold uppercase tracking-[0.04em] underline-offset-2 hover:underline"
+            aria-label="Cerrar error"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
       {showInline && (
         <div className="space-y-3 border-t border-[var(--color-action-primary)]/30 px-3 py-3">
           <label className="block">
