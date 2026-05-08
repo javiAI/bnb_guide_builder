@@ -276,6 +276,23 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** Minimal `LocalPlace` projection consumed by the parking panel (16E.6). */
+export interface ParkingPlace {
+  id: string;
+  name: string;
+  shortNote: string | null;
+  distanceMeters: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+  provider: string | null;
+}
+
+export interface PropertyCoords {
+  latitude: number;
+  longitude: number;
+}
+
 interface AccessFormProps {
   propertyId: string;
   publicSlug: string | null;
@@ -287,6 +304,8 @@ interface AccessFormProps {
   accessibilityPhotoCount: number;
   legacyAccessPhotoCount: number;
   subsystemSlides: SubsystemSlides;
+  parkingPlaces: ParkingPlace[];
+  propertyCoords: PropertyCoords | null;
   property: {
     checkInStart: string | null;
     checkInEnd: string | null;
@@ -328,6 +347,8 @@ export function AccessForm({
   accessibilityPhotoCount,
   legacyAccessPhotoCount,
   subsystemSlides,
+  parkingPlaces,
+  propertyCoords,
   property: p,
 }: AccessFormProps) {
   const [checkInStart, setCheckInStart] = useState(p.checkInStart ?? "16:00");
@@ -877,6 +898,8 @@ export function AccessForm({
                       setPrimary={setPrimaryParking}
                       hasParking={hasParking}
                       setHasParking={setHasParking}
+                      parkingPlaces={parkingPlaces}
+                      propertyCoords={propertyCoords}
                     />
                   </SubsystemCard>
                 );
@@ -1240,6 +1263,33 @@ function UnitPanel({
   );
 }
 
+// 16E.6: minimal placeholder consumer for parking pins. The rich
+// `<ParkingPlacesEditor>` (suggestions + multi-pin map + manual entry) lands
+// in the next commit. This placeholder keeps the data layer end-to-end
+// verifiable without forcing a single 400-line UI commit.
+function ParkingPlacesPlaceholder({
+  places,
+  propertyCoords,
+}: {
+  places: ParkingPlace[];
+  propertyCoords: PropertyCoords | null;
+}) {
+  if (places.length === 0) {
+    return (
+      <p className="text-sm text-[var(--color-text-tertiary)]">
+        {propertyCoords
+          ? "Sin pines de aparcamiento configurados todavía."
+          : "Sin coordenadas de propiedad — el editor de pines requiere ubicación geocodificada."}
+      </p>
+    );
+  }
+  return (
+    <p className="text-sm text-[var(--color-text-secondary)]">
+      {places.length} {places.length === 1 ? "pin de aparcamiento" : "pines de aparcamiento"} configurados.
+    </p>
+  );
+}
+
 interface ParkingPanelProps {
   allParking: ReturnType<typeof getItems>;
   parkingTypes: string[];
@@ -1254,6 +1304,8 @@ interface ParkingPanelProps {
   setPrimary: (id: string | null) => void;
   hasParking: boolean;
   setHasParking: (next: boolean) => void;
+  parkingPlaces: ParkingPlace[];
+  propertyCoords: PropertyCoords | null;
 }
 
 function ParkingPanel({
@@ -1270,6 +1322,8 @@ function ParkingPanel({
   setPrimary,
   hasParking,
   setHasParking,
+  parkingPlaces,
+  propertyCoords,
 }: ParkingPanelProps) {
   const sortedParking = sortSelectedFirst(allParking, parkingTypes, primary);
   return (
@@ -1303,6 +1357,10 @@ function ParkingPanel({
               />
             ))}
           </MethodList>
+          <ParkingPlacesPlaceholder
+            places={parkingPlaces}
+            propertyCoords={propertyCoords}
+          />
           <EntityGallery
             propertyId={propertyId}
             entityType="access_method"

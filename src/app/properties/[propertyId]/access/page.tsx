@@ -79,67 +79,82 @@ function resolveOverlayTitle(
 export default async function AccessPage({ params }: Props) {
   const { propertyId } = await params;
 
-  const [property, accessAssignments, legacyAccessPhotoCount, propertyMediaCount] =
-    await Promise.all([
-      prisma.property.findUnique({
-        where: { id: propertyId },
-        select: {
-          id: true,
-          publicSlug: true,
-          streetAddress: true,
-          checkInStart: true,
-          checkInEnd: true,
-          checkOutTime: true,
-          accessMethodsJson: true,
-          primaryAccessMethod: true,
-          isAutonomousCheckin: true,
-          hasBuildingAccess: true,
-          hasParking: true,
-          hasAccessibilityConsiderations: true,
-        },
-      }),
-      // Single grouped query — replaces 4 separate `count(...)` calls. Pulls
-      // the full slide payload for every subsystem in one round-trip. Worst
-      // case ~5 slides × 4 cards = 20 rows; cheap.
-      prisma.mediaAssignment.findMany({
-        where: {
-          entityType: "access_method",
-          entityId: propertyId,
-          OR: ACCESS_COCKPIT_IDS.flatMap((sub) => {
-            const root = ACCESS_USAGE_KEYS[sub];
-            return [{ usageKey: root }, { usageKey: { startsWith: `${root}.` } }];
-          }),
-        },
-        select: {
-          id: true,
-          sortOrder: true,
-          createdAt: true,
-          usageKey: true,
-          mediaAsset: {
-            select: {
-              id: true,
-              mimeType: true,
-              storageKey: true,
-              blurhash: true,
-              caption: true,
-            },
+  const [
+    property,
+    accessAssignments,
+    legacyAccessPhotoCount,
+    propertyMediaCount,
+    parkingPlaces,
+  ] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        id: true,
+        publicSlug: true,
+        streetAddress: true,
+        latitude: true,
+        longitude: true,
+        checkInStart: true,
+        checkInEnd: true,
+        checkOutTime: true,
+        accessMethodsJson: true,
+        primaryAccessMethod: true,
+        isAutonomousCheckin: true,
+        hasBuildingAccess: true,
+        hasParking: true,
+        hasAccessibilityConsiderations: true,
+      },
+    }),
+    // Single grouped query — replaces 4 separate `count(...)` calls. Pulls
+    // the full slide payload for every subsystem in one round-trip. Worst
+    // case ~5 slides × 4 cards = 20 rows; cheap.
+    prisma.mediaAssignment.findMany({
+      where: {
+        entityType: "access_method",
+        entityId: propertyId,
+        OR: ACCESS_COCKPIT_IDS.flatMap((sub) => {
+          const root = ACCESS_USAGE_KEYS[sub];
+          return [{ usageKey: root }, { usageKey: { startsWith: `${root}.` } }];
+        }),
+      },
+      select: {
+        id: true,
+        sortOrder: true,
+        createdAt: true,
+        usageKey: true,
+        mediaAsset: {
+          select: {
+            id: true,
+            mimeType: true,
+            storageKey: true,
+            blurhash: true,
+            caption: true,
           },
         },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      }),
-      // Legacy assignments (no `usageKey`) — pre-segmentation, surfaced in
-      // the unit panel only as an upgrade hint.
-      prisma.mediaAssignment.count({
-        where: {
-          entityType: "access_method",
-          entityId: propertyId,
-          usageKey: null,
-        },
-      }),
-      prisma.mediaAssignment.count({
-        where: { entityType: "property", entityId: propertyId },
-      }),
-    ]);
+      },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    }),
+    // Legacy assignments (no `usageKey`) — pre-segmentation, surfaced in
+    // the unit panel only as an upgrade hint.
+    prisma.mediaAssignment.count({
+      where: {
+        entityType: "access_method",
+        entityId: propertyId,
+        usageKey: null,
+      },
+    }),
+    prisma.mediaAssignment.count({
+      where: { entityType: "property", entityId: propertyId },
+    }),
+    // Parking pins (16E.6): `LocalPlace` rows tagged `lp.parking` for this
+    // property — the cockpit's parking panel renders them as a multi-pin map
+    // and editor. Sort matches the existing local-place repository convention
+    // so a future shared loader can drop in without re-sorting.
+    prisma.localPlace.findMany({
+      where: { propertyId, categoryKey: "lp.parking" },
+      orderBy: [{ createdAt: "asc" }],
+    }),
+  ]);
 
   if (!property) redirect("/");
 
@@ -259,6 +274,11 @@ export default async function AccessPage({ params }: Props) {
     } | null;
   } | null;
 
+  const propertyCoords =
+    property.latitude !== null && property.longitude !== null
+      ? { latitude: property.latitude, longitude: property.longitude }
+      : null;
+
   return (
     <AccessForm
       propertyId={propertyId}
@@ -271,6 +291,8 @@ export default async function AccessPage({ params }: Props) {
       accessibilityPhotoCount={accessibilityPhotoCount}
       legacyAccessPhotoCount={legacyAccessPhotoCount}
       subsystemSlides={subsystemSlides}
+      parkingPlaces={parkingPlaces}
+      propertyCoords={propertyCoords}
       property={{
         checkInStart: property.checkInStart,
         checkInEnd: property.checkInEnd,
