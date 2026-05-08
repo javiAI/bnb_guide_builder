@@ -417,7 +417,7 @@ export function MediaCarousel({
           <div
             key={slide.id}
             aria-hidden={i === safeIdx ? undefined : "true"}
-            className="relative h-full w-full flex-none"
+            className="relative h-full w-full flex-none overflow-hidden"
           >
             {renderSlideContent(slide, i)}
             <span
@@ -449,45 +449,43 @@ export function MediaCarousel({
       )}
 
       {slides.length > 1 && (
-        // Instagram / Apple Photos pattern: no backdrop pill — tiny circles
-        // sit directly over the photo with a drop-shadow for legibility.
-        // Active = full-opacity white; inactive = 50% white. Same size at
-        // all states so the row width is stable and the eye reads them as
-        // page indicators, not pills. The 24×24 hit recipe (visual 6 +
-        // pseudo slop) preserves the 44 hit area on fine pointers.
         <div
           aria-label={`Medios de ${title}`}
-          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1.5"
+          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
-          {slides.map((slide, i) => {
-            const isActive = i === safeIdx;
-            return (
-              <button
-                key={slide.id}
-                ref={(el) => {
-                  dotRefs.current[i] = el;
-                }}
-                type="button"
-                aria-current={isActive ? "true" : undefined}
-                aria-label={`Mostrar ${slide.title}`}
-                onClick={() => setCurrentIdx(i)}
-                onKeyDown={(e) => handleDotKeyDown(e, i)}
-                className={cn(
-                  "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)]",
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  data-active={isActive ? "true" : undefined}
+          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1 py-[3px] backdrop-blur-[2px]">
+            {slides.map((slide, i) => {
+              const isActive = i === safeIdx;
+              return (
+                <button
+                  key={slide.id}
+                  ref={(el) => {
+                    dotRefs.current[i] = el;
+                  }}
+                  type="button"
+                  aria-current={isActive ? "true" : undefined}
+                  aria-label={`Mostrar ${slide.title}`}
+                  onClick={() => setCurrentIdx(i)}
+                  onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "h-1.5 w-1.5 rounded-full bg-[var(--color-text-on-overlay)] drop-shadow-sm transition-opacity duration-200",
-                    isActive ? "opacity-100" : "opacity-50",
+                    "recipe-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
-                />
-              </button>
-            );
-          })}
+                >
+                  <span
+                    aria-hidden="true"
+                    data-active={isActive ? "true" : undefined}
+                    className={cn(
+                      "h-[3px] rounded-full transition-[width,background-color] duration-200",
+                      isActive
+                        ? "w-2 bg-[var(--color-text-on-overlay)]"
+                        : "w-1 bg-[color-mix(in_oklch,var(--color-text-on-overlay)_45%,transparent)]",
+                    )}
+                  />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
