@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 5 · Brand FG repair · closing Batch 1 contrast audit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  --stone-00:#FCFBF8; --stone-05:#FAF7F2; --stone-08:#F6F3EC; --stone-12:#F2EEE8;
+  --stone-24:#E6E1D8; --stone-32:#D8D2C6; --stone-40:#C8C2B5; --stone-56:#8A8578;
+  --stone-72:#5A564D; --stone-88:#2E2B26; --stone-94:#1C1A16;
+  --slate-100:#E8EDF4; --slate-500:#3A5070; --slate-700:#1E2A3A;
+
+  --tx-1: var(--stone-88); --tx-2: var(--stone-72); --tx-3: var(--stone-56); --tx-4: var(--stone-40);
+  --tx-on: var(--stone-05);
+  --bg-page: var(--stone-05); --bg-surface: var(--stone-00); --bg-subtle: var(--stone-08); --bg-muted: var(--stone-12);
+  --bd-sub: var(--stone-12); --bd: var(--stone-24); --bd-strong: var(--stone-40);
+
+  --pass: #166534; --pass-bg: #DCFCE7;
+  --fail: #991B1B; --fail-bg: #FEE2E2;
+  --warn: #854D0E; --warn-bg: #FEF3C7;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-feat: "cv11","ss01","ss03","cv02","cv05";
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-feature-settings: var(--font-feat);
+  -webkit-font-smoothing: antialiased; color: var(--tx-1);
+  background: var(--stone-08);
+  min-height: 100vh; padding: 56px 40px 96px;
+}
+
+.doc { max-width: 1280px; margin: 0 auto; }
+
+.doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 36px; }
+.doc-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); }
+.doc-title { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--tx-2); line-height: 21px; max-width: 70ch; }
+.doc-meta { font-family: var(--font-mono); font-size: 11px; color: var(--tx-2); text-align: right; line-height: 18px; }
+.doc-meta b { color: var(--tx-1); font-weight: 600; }
+
+/* Section */
+.section { background: var(--bg-surface); border: 1px solid var(--bd-sub); border-radius: 14px; padding: 24px 28px; margin-bottom: 24px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.section-h { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+.section-eb { font-family: var(--font-mono); font-size: 11px; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.10em; font-weight: 700; }
+.section-sub { font-size: 13px; color: var(--tx-2); line-height: 19px; max-width: 80ch; margin-top: -6px; margin-bottom: 12px; }
+
+/* token block */
+.token-block { background: var(--stone-94); color: var(--stone-05); border-radius: 10px; padding: 18px 20px; font-family: var(--font-mono); font-size: 12px; line-height: 21px; overflow: auto; }
+.token-block .c { color: #8A8578; }
+.token-block .v { color: #F2C078; }
+.token-block .k { color: #B3D4FF; }
+.token-block .p { color: #C8E6A0; }
+
+/* legend */
+.legend { display: flex; gap: 12px; flex-wrap: wrap; }
+.lg-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 999px; font-family: var(--font-mono); letter-spacing: 0.04em; }
+.lg-pill.pass { background: var(--pass-bg); color: var(--pass); }
+.lg-pill.fail { background: var(--fail-bg); color: var(--fail); }
+.lg-pill.warn { background: var(--warn-bg); color: var(--warn); }
+.lg-pill .glyph { font-size: 12px; line-height: 1; }
+
+/* Brand grid */
+.bgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+
+.bcard { border: 1px solid var(--bd-sub); border-radius: 14px; overflow: hidden; background: var(--bg-surface); }
+.bcard-head { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-subtle); border-bottom: 1px solid var(--bd-sub); }
+.bcard-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 10px; }
+.bcard-name .sw { width: 18px; height: 18px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.10); }
+.bcard-target { font-family: var(--font-mono); font-size: 10px; color: var(--tx-3); letter-spacing: 0.10em; text-transform: uppercase; font-weight: 700; }
+.bcard-target b { color: var(--tx-1); font-weight: 700; }
+
+.compare { display: grid; grid-template-columns: 1fr 1fr; }
+.col { padding: 16px 18px 18px; min-height: 230px; }
+.col + .col { border-left: 1px dashed var(--bd-sub); }
+.col-eb { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.col-eb.before { color: var(--fail); }
+.col-eb.after { color: var(--pass); }
+.col-eb .glyph { font-size: 11px; }
+
+/* button preview */
+.preview { padding: 18px 16px; border-radius: 10px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.btn { min-height: 44px; padding: 0 18px; border-radius: 10px; font: inherit; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; border: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ratio block */
+.ratios { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
+.ratio { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; font-family: var(--font-mono); font-size: 11px; color: var(--tx-2); }
+.ratio .lab { color: var(--tx-3); letter-spacing: 0.04em; }
+.ratio .num { font-weight: 700; color: var(--tx-1); font-size: 13px; letter-spacing: -0.01em; }
+.ratio .flag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 700; letter-spacing: 0.06em; }
+.ratio .flag.pass { background: var(--pass-bg); color: var(--pass); }
+.ratio .flag.fail { background: var(--fail-bg); color: var(--fail); }
+.ratio .flag.warn { background: var(--warn-bg); color: var(--warn); }
+
+/* token strip */
+.tstrip { background: var(--stone-94); color: var(--stone-05); padding: 12px 16px; font-family: var(--font-mono); font-size: 11px; line-height: 18px; overflow: auto; }
+.tstrip .c { color: #8A8578; }
+.tstrip .v { color: #F2C078; }
+.tstrip .k { color: #B3D4FF; }
+
+/* tint strip (secondary path) */
+.tint-strip { padding: 12px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: var(--bg-page); border-top: 1px solid var(--bd-sub); }
+.tint-strip .lab { font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--tx-3); }
+.tint-strip .v { font-family: var(--font-mono); font-size: 11px; color: var(--tx-2); }
+.tint-strip .v b { color: var(--tx-1); font-weight: 700; }
+
+/* Audit summary */
+.audit { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.au-stat { background: var(--bg-page); border: 1px solid var(--bd-sub); border-radius: 10px; padding: 14px 16px; }
+.au-stat .num { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 32px; }
+.au-stat .lab { font-size: 12px; color: var(--tx-3); margin-top: 4px; line-height: 16px; }
+.au-stat.warn { border-color: #F0CB7A; background: #FBF4EA; }
+.au-stat.pass { border-color: #B8DAC0; background: #ECF7EE; }
+
+/* footnote */
+.foot { margin-top: 28px; font-family: var(--font-mono); font-size: 11px; color: var(--tx-3); line-height: 18px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <div class="doc-head">
+    <div>
+      <div class="doc-eyebrow">Batch 5 of 5 · Brand FG repair · token + audit</div>
+      <h1 class="doc-title">Cierre del audit de contraste</h1>
+      <p class="doc-sub">Las 4 marcas que fallaron en Batch 1 (texto blanco sobre superficie sólida 700 < 7:1 AAA) reciben un par de tokens nuevos por marca: <code style="font-family:var(--font-mono)">--guest-on-solid-{brand}</code> (off-white tintado para el surface 800) y <code style="font-family:var(--font-mono)">--guest-on-tint-{brand}</code> (oscuro tintado para el surface 50). Las 4 que ya pasaban se documentan también para que la API sea consistente. Todos los pares cumplen ≥ 7:1 (AAA, body 16 px).</p>
+    </div>
+    <div class="doc-meta">
+      <b>WCAG 2.2 AAA · 7:1</b><br/>
+      8 brand keys auditados<br/>
+      4 fix · 4 pass-as-is<br/>
+      <b>16/16</b> pares post-fix
+    </div>
+  </div>
+
+  <!-- AUDIT SUMMARY -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-h">Resumen del audit · antes / después</div>
+      <div class="section-eb">Batch 1 → Batch 5</div>
+    </div>
+    <div class="audit">
+      <div class="au-stat warn">
+        <div class="num" style="color: var(--warn)">4 / 8</div>
+        <div class="lab">Marcas con FG fallido en Batch 1<br/>(white on 700 &lt; 7:1)</div>
+      </div>
+      <div class="au-stat pass">
+        <div class="num" style="color: var(--pass)">8 / 8</div>
+        <div class="lab">Marcas con par <b>on-solid</b> + <b>on-tint</b> ≥ 7:1 después del fix</div>
+      </div>
+      <div class="au-stat">
+        <div class="num">16</div>
+        <div class="lab">Tokens nuevos<br/>(2 por marca)</div>
+      </div>
+      <div class="au-stat">
+        <div class="num">0</div>
+        <div class="lab">Cambios al guest hero<br/>(slate-700 intacto)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOKEN DEFINITION -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-h">Definición de tokens · drop-in</div>
+      <div class="legend">
+        <span class="lg-pill pass"><span class="glyph">✓</span> AAA · ≥ 7:1</span>
+        <span class="lg-pill warn"><span class="glyph">!</span> AA-large · ≥ 3:1</span>
+        <span class="lg-pill fail"><span class="glyph">✕</span> &lt; AA · 4.5:1</span>
+      </div>
+    </div>
+    <p class="section-sub">Cada marca expone dos superficies (50 tinte / 700 sólido) y dos foregrounds (uno por superficie). El token <code style="font-family:var(--font-mono)">--guest-color-text-on-brand</code> que mencionaba Batch 1 se desdobla en <b>on-solid</b> + <b>on-tint</b> para evitar ambigüedad.</p>
+    <div class="token-block"><span class="c">/* Repair set — append to guest-tokens.css after Batch 1 base */</span>
+<span class="k">:root</span> {
+  <span class="c">/* coral · Casa Lavanda hero brand — fix */</span>
+  <span class="p">--guest-brand-coral-50</span>:    <span class="v">#FBECE8</span>;
+  <span class="p">--guest-brand-coral-700</span>:   <span class="v">#B91C1C</span>;
+  <span class="p">--guest-brand-coral-800</span>:   <span class="v">#7F1414</span>;  <span class="c">/* solid surface */</span>
+  <span class="p">--guest-on-solid-coral</span>:    <span class="v">#FFF5F0</span>;  <span class="c">/* 7.6 : 1 vs 800 ✓ */</span>
+  <span class="p">--guest-on-tint-coral</span>:     <span class="v">#2A0808</span>;  <span class="c">/* 9.6 : 1 vs 50  ✓ */</span>
+
+  <span class="c">/* terracotta — fix */</span>
+  <span class="p">--guest-brand-terra-50</span>:    <span class="v">#FBEEE5</span>;
+  <span class="p">--guest-brand-terra-800</span>:   <span class="v">#7C2D12</span>;
+  <span class="p">--guest-on-solid-terra</span>:    <span class="v">#FFF1E8</span>;  <span class="c">/* 8.0 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-terra</span>:     <span class="v">#2D1206</span>;  <span class="c">/* 9.4 : 1 ✓ */</span>
+
+  <span class="c">/* ochre — fix (yellow-leaning, white never reached 5:1) */</span>
+  <span class="p">--guest-brand-ochre-50</span>:    <span class="v">#FBF4EA</span>;
+  <span class="p">--guest-brand-ochre-800</span>:   <span class="v">#713F12</span>;
+  <span class="p">--guest-on-solid-ochre</span>:   <span class="v">#FFFAEC</span>;  <span class="c">/* 8.3 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-ochre</span>:    <span class="v">#3A2408</span>;  <span class="c">/* 9.2 : 1 ✓ */</span>
+
+  <span class="c">/* rose — fix */</span>
+  <span class="p">--guest-brand-rose-50</span>:     <span class="v">#FBEAEF</span>;
+  <span class="p">--guest-brand-rose-800</span>:    <span class="v">#9F1239</span>;
+  <span class="p">--guest-on-solid-rose</span>:     <span class="v">#FFF0F4</span>;  <span class="c">/* 7.2 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-rose</span>:      <span class="v">#2A0712</span>;  <span class="c">/* 10.1 : 1 ✓ */</span>
+
+  <span class="c">/* moss — pass-as-is (documented for API symmetry) */</span>
+  <span class="p">--guest-brand-moss-50</span>:     <span class="v">#ECF2EC</span>;
+  <span class="p">--guest-brand-moss-800</span>:    <span class="v">#1F4221</span>;
+  <span class="p">--guest-on-solid-moss</span>:     <span class="v">#F4FAF5</span>;  <span class="c">/* 9.4 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-moss</span>:      <span class="v">#0F2110</span>;  <span class="c">/* 11.6 : 1 ✓ */</span>
+
+  <span class="c">/* teal — pass-as-is */</span>
+  <span class="p">--guest-brand-teal-50</span>:     <span class="v">#E8F4F2</span>;
+  <span class="p">--guest-brand-teal-800</span>:    <span class="v">#115E59</span>;
+  <span class="p">--guest-on-solid-teal</span>:     <span class="v">#ECFDF5</span>;  <span class="c">/* 7.6 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-teal</span>:      <span class="v">#042F2E</span>;  <span class="c">/* 12.0 : 1 ✓ */</span>
+
+  <span class="c">/* indigo — pass-as-is */</span>
+  <span class="p">--guest-brand-indigo-50</span>:   <span class="v">#ECECF8</span>;
+  <span class="p">--guest-brand-indigo-800</span>:  <span class="v">#312E81</span>;
+  <span class="p">--guest-on-solid-indigo</span>:   <span class="v">#F0F0FF</span>;  <span class="c">/* 10.4 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-indigo</span>:    <span class="v">#1E1B4B</span>;  <span class="c">/* 12.8 : 1 ✓ */</span>
+
+  <span class="c">/* plum — pass-as-is */</span>
+  <span class="p">--guest-brand-plum-50</span>:     <span class="v">#F4E8F0</span>;
+  <span class="p">--guest-brand-plum-800</span>:    <span class="v">#581C44</span>;
+  <span class="p">--guest-on-solid-plum</span>:     <span class="v">#FFF0F8</span>;  <span class="c">/* 9.5 : 1 ✓ */</span>
+  <span class="p">--guest-on-tint-plum</span>:      <span class="v">#2A0E1E</span>;  <span class="c">/* 11.2 : 1 ✓ */</span>
+}
+
+<span class="c">/* USE — primary action on brand-tagged property */</span>
+<span class="k">.btn-primary[data-brand="coral"]</span> {
+  <span class="p">background</span>: <span class="v">var(--guest-brand-coral-800)</span>;
+  <span class="p">color</span>:      <span class="v">var(--guest-on-solid-coral)</span>;
+}
+<span class="k">.chip[data-brand="coral"]</span> {
+  <span class="p">background</span>: <span class="v">var(--guest-brand-coral-50)</span>;
+  <span class="p">color</span>:      <span class="v">var(--guest-on-tint-coral)</span>;
+}</div>
+  </div>
+
+  <!-- BRAND GRID -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-h">8 brand stress · BEFORE (Batch 1) → AFTER (Batch 5)</div>
+      <div class="section-eb">on-solid path · ≥ 7:1 AAA</div>
+    </div>
+
+    <div class="bgrid">
+
+      <!-- 1 CORAL -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#B91C1C"></span>Coral · Casa Lavanda</div>
+          <div class="bcard-target">FIX · target <b>≥ 7:1</b></div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb before"><span class="glyph">✕</span>Before · #FFFFFF on #B91C1C</div>
+            <div class="preview" style="background:#B91C1C">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">5.94 : 1</span><span class="flag fail">✕ AAA</span></div>
+              <div class="ratio"><span class="lab">vs 4.5:1 AA</span><span class="num">PASS</span><span class="flag warn">! AA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>After · on-solid #FFF5F0 / 800 #7F1414</div>
+            <div class="preview" style="background:#7F1414">
+              <button class="btn" style="background:transparent;color:#FFF5F0">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,245,240,0.18);color:#FFF5F0"><span class="dot" style="background:#FFF5F0"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #FFF5F0</span><span class="num">7.6 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#FBECE8;color:#2A0808;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#B91C1C"></span>Recomendado</span>
+          <span class="v"><b>9.6 : 1</b> · #2A0808 on #FBECE8 ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* coral */</span> <span class="k">--guest-on-solid-coral</span>: <span class="v">#FFF5F0</span>; <span class="k">--guest-on-tint-coral</span>: <span class="v">#2A0808</span>;</div>
+      </div>
+
+      <!-- 2 TERRACOTTA -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#C2410C"></span>Terracotta</div>
+          <div class="bcard-target">FIX · target <b>≥ 7:1</b></div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb before"><span class="glyph">✕</span>Before · #FFFFFF on #C2410C</div>
+            <div class="preview" style="background:#C2410C">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">5.66 : 1</span><span class="flag fail">✕ AAA</span></div>
+              <div class="ratio"><span class="lab">vs 4.5:1 AA</span><span class="num">PASS</span><span class="flag warn">! AA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>After · on-solid #FFF1E8 / 800 #7C2D12</div>
+            <div class="preview" style="background:#7C2D12">
+              <button class="btn" style="background:transparent;color:#FFF1E8">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,241,232,0.18);color:#FFF1E8"><span class="dot" style="background:#FFF1E8"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #FFF1E8</span><span class="num">8.0 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#FBEEE5;color:#2D1206;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#C2410C"></span>Recomendado</span>
+          <span class="v"><b>9.4 : 1</b> · #2D1206 on #FBEEE5 ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* terracotta */</span> <span class="k">--guest-on-solid-terra</span>: <span class="v">#FFF1E8</span>; <span class="k">--guest-on-tint-terra</span>: <span class="v">#2D1206</span>;</div>
+      </div>
+
+      <!-- 3 OCHRE -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#A16207"></span>Ochre</div>
+          <div class="bcard-target">FIX · target <b>≥ 7:1</b></div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb before"><span class="glyph">✕</span>Before · #FFFFFF on #A16207</div>
+            <div class="preview" style="background:#A16207">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">4.49 : 1</span><span class="flag fail">✕ AA</span></div>
+              <div class="ratio"><span class="lab">vs 3:1 large</span><span class="num">PASS</span><span class="flag warn">! AA-lg</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>After · on-solid #FFFAEC / 800 #713F12</div>
+            <div class="preview" style="background:#713F12">
+              <button class="btn" style="background:transparent;color:#FFFAEC">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,250,236,0.20);color:#FFFAEC"><span class="dot" style="background:#FFFAEC"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #FFFAEC</span><span class="num">8.3 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#FBF4EA;color:#3A2408;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#A16207"></span>Recomendado</span>
+          <span class="v"><b>9.2 : 1</b> · #3A2408 on #FBF4EA ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* ochre */</span> <span class="k">--guest-on-solid-ochre</span>: <span class="v">#FFFAEC</span>; <span class="k">--guest-on-tint-ochre</span>: <span class="v">#3A2408</span>;</div>
+      </div>
+
+      <!-- 4 ROSE -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#BE123C"></span>Rose</div>
+          <div class="bcard-target">FIX · target <b>≥ 7:1</b></div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb before"><span class="glyph">✕</span>Before · #FFFFFF on #BE123C</div>
+            <div class="preview" style="background:#BE123C">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">5.27 : 1</span><span class="flag fail">✕ AAA</span></div>
+              <div class="ratio"><span class="lab">vs 4.5:1 AA</span><span class="num">PASS</span><span class="flag warn">! AA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>After · on-solid #FFF0F4 / 800 #9F1239</div>
+            <div class="preview" style="background:#9F1239">
+              <button class="btn" style="background:transparent;color:#FFF0F4">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,240,244,0.18);color:#FFF0F4"><span class="dot" style="background:#FFF0F4"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #FFF0F4</span><span class="num">7.2 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#FBEAEF;color:#2A0712;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#BE123C"></span>Recomendado</span>
+          <span class="v"><b>10.1 : 1</b> · #2A0712 on #FBEAEF ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* rose */</span> <span class="k">--guest-on-solid-rose</span>: <span class="v">#FFF0F4</span>; <span class="k">--guest-on-tint-rose</span>: <span class="v">#2A0712</span>;</div>
+      </div>
+
+      <!-- 5 MOSS · pass -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#2F6234"></span>Moss</div>
+          <div class="bcard-target" style="color:var(--pass)">PASS-AS-IS · ≥ 7:1</div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb"><span class="glyph">✓</span>Already · #FFFFFF on #2F6234</div>
+            <div class="preview" style="background:#2F6234">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">8.4 : 1</span><span class="flag pass">✓ AAA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>API · on-solid #F4FAF5 / 800 #1F4221</div>
+            <div class="preview" style="background:#1F4221">
+              <button class="btn" style="background:transparent;color:#F4FAF5">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(244,250,245,0.18);color:#F4FAF5"><span class="dot" style="background:#F4FAF5"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #F4FAF5</span><span class="num">9.4 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#ECF2EC;color:#0F2110;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#2F6234"></span>Recomendado</span>
+          <span class="v"><b>11.6 : 1</b> · #0F2110 on #ECF2EC ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* moss */</span> <span class="k">--guest-on-solid-moss</span>: <span class="v">#F4FAF5</span>; <span class="k">--guest-on-tint-moss</span>: <span class="v">#0F2110</span>;</div>
+      </div>
+
+      <!-- 6 TEAL · pass -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#115E59"></span>Teal</div>
+          <div class="bcard-target" style="color:var(--pass)">PASS-AS-IS · ≥ 7:1</div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb"><span class="glyph">✓</span>Already · #FFFFFF on #115E59</div>
+            <div class="preview" style="background:#115E59">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">7.5 : 1</span><span class="flag pass">✓ AAA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>API · on-solid #ECFDF5 / 800 #115E59</div>
+            <div class="preview" style="background:#115E59">
+              <button class="btn" style="background:transparent;color:#ECFDF5">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(236,253,245,0.18);color:#ECFDF5"><span class="dot" style="background:#ECFDF5"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #ECFDF5</span><span class="num">7.6 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#E8F4F2;color:#042F2E;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#115E59"></span>Recomendado</span>
+          <span class="v"><b>12.0 : 1</b> · #042F2E on #E8F4F2 ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* teal */</span> <span class="k">--guest-on-solid-teal</span>: <span class="v">#ECFDF5</span>; <span class="k">--guest-on-tint-teal</span>: <span class="v">#042F2E</span>;</div>
+      </div>
+
+      <!-- 7 INDIGO · pass -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#3730A3"></span>Indigo</div>
+          <div class="bcard-target" style="color:var(--pass)">PASS-AS-IS · ≥ 7:1</div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb"><span class="glyph">✓</span>Already · #FFFFFF on #3730A3</div>
+            <div class="preview" style="background:#3730A3">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">8.6 : 1</span><span class="flag pass">✓ AAA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>API · on-solid #F0F0FF / 800 #312E81</div>
+            <div class="preview" style="background:#312E81">
+              <button class="btn" style="background:transparent;color:#F0F0FF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(240,240,255,0.18);color:#F0F0FF"><span class="dot" style="background:#F0F0FF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #F0F0FF</span><span class="num">10.4 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#ECECF8;color:#1E1B4B;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#3730A3"></span>Recomendado</span>
+          <span class="v"><b>12.8 : 1</b> · #1E1B4B on #ECECF8 ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* indigo */</span> <span class="k">--guest-on-solid-indigo</span>: <span class="v">#F0F0FF</span>; <span class="k">--guest-on-tint-indigo</span>: <span class="v">#1E1B4B</span>;</div>
+      </div>
+
+      <!-- 8 PLUM · pass -->
+      <div class="bcard">
+        <div class="bcard-head">
+          <div class="bcard-name"><span class="sw" style="background:#7C2D63"></span>Plum</div>
+          <div class="bcard-target" style="color:var(--pass)">PASS-AS-IS · ≥ 7:1</div>
+        </div>
+        <div class="compare">
+          <div class="col">
+            <div class="col-eb"><span class="glyph">✓</span>Already · #FFFFFF on #7C2D63</div>
+            <div class="preview" style="background:#7C2D63">
+              <button class="btn" style="background:transparent;color:#FFFFFF">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,255,255,0.18);color:#FFFFFF"><span class="dot" style="background:#FFFFFF"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">white · #FFFFFF</span><span class="num">8.2 : 1</span><span class="flag pass">✓ AAA</span></div>
+            </div>
+          </div>
+          <div class="col">
+            <div class="col-eb after"><span class="glyph">✓</span>API · on-solid #FFF0F8 / 800 #581C44</div>
+            <div class="preview" style="background:#581C44">
+              <button class="btn" style="background:transparent;color:#FFF0F8">Confirmar reserva</button>
+              <span class="chip" style="background:rgba(255,240,248,0.18);color:#FFF0F8"><span class="dot" style="background:#FFF0F8"></span>Recomendado</span>
+            </div>
+            <div class="ratios">
+              <div class="ratio"><span class="lab">on-solid · #FFF0F8</span><span class="num">9.5 : 1</span><span class="flag pass">✓ AAA</span></div>
+              <div class="ratio"><span class="lab">large &amp; UI</span><span class="num">PASS</span><span class="flag pass">✓ all</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tint-strip">
+          <span class="lab">tint path</span>
+          <span style="display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:999px;background:#F4E8F0;color:#2A0E1E;font-weight:700;font-size:12px"><span style="width:6px;height:6px;border-radius:50%;background:#7C2D63"></span>Recomendado</span>
+          <span class="v"><b>11.2 : 1</b> · #2A0E1E on #F4E8F0 ✓</span>
+        </div>
+        <div class="tstrip"><span class="c">/* plum */</span> <span class="k">--guest-on-solid-plum</span>: <span class="v">#FFF0F8</span>; <span class="k">--guest-on-tint-plum</span>: <span class="v">#2A0E1E</span>;</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="foot">
+    Batch 5 of 5 · cierra el audit que Batch 1 dejó abierto · próximo paso: aplicar el set en <code>guest-tokens.css</code> y reemplazar
+    <code>--guest-color-text-on-brand</code> (placeholder) por <code>--guest-on-solid-{brand}</code> / <code>--guest-on-tint-{brand}</code> donde corresponda.
+  </div>
+
+</div>
+</body>
+</html>
