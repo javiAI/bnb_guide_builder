@@ -3520,6 +3520,19 @@ Capturado de la aprobación del usuario en kickoff de 16E.5 (2026-05-05). Este b
 - **Commit 4** (access/ end-to-end): impl + screenshots + parity audit + docs update.
 - **STOP** — reporte diff stats + parity verdict al usuario para review antes de continuar con amenities/.
 
+#### Excepciones intencionales al "no-alcance" — `access/` 7a–7c (PR #102)
+
+> Las restricciones del bloque "No-alcance" arriba (no schema, no server actions, no taxonomies, no active branch) reflejan la planificación inicial de 16E.5 v3.2.1. La iteración 7a–7c de la silueta `access/` (plan v6.2 en `/Users/javierabrilibanez/.claude/plans/federated-strolling-perlis.md`) se desvió de tres de esas restricciones de forma deliberada y backward-compatible. Cada desviación queda registrada aquí — y en `LIORA_SURFACE_ROLLOUT_PLAN.md` § "Scope exceptions vs original v6.2 plan" — para que un future audit no la marque como scope creep no documentado.
+
+| Restricción original | Desviación 7a–7c | Justificación |
+|---|---|---|
+| ❌ Tocar Prisma / schema / migraciones | ✅ Migración aditiva `20260507180000_add_property_scope_toggles_7b` añade `hasParking BOOLEAN NOT NULL DEFAULT true` y `hasAccessibilityConsiderations BOOLEAN` (nullable) | Necesario para resolver "configured / pending / empty" determinísticamente por subsistema. Aditiva, sin breaking change ni data loss; default seguro para las propiedades existentes. |
+| ❌ Cambiar server actions o cualquier lógica de persistencia | ✅ Sin cambios de firma — la nueva afford `+ Añade portada` invoca acciones existentes (`requestUploadAction`, `confirmUploadAction`, `assignMediaAction`, `deleteMediaAction`) threadeando `usageKey: access.<cockpitId>` (parámetro opcional ya soportado) | No se añaden ni se renombran server actions. Solo se añade un caller dentro del componente. |
+| ❌ Cambio de active branch | ✅ Active branch reusa el mismo primitivo `<MediaCarousel variant="active">` (subsystem-card.tsx:155-213) | El plan v6.2 § "Goals" decía "scope is collapsed branch only" — la implementación 7a optó por unificar el carousel entre branches en lugar de duplicar el slide rendering. La lógica estructural de expand/collapse trigger no cambia; solo el área de media es consistente. |
+| ❌ Introducir nuevas taxonomías | (sin desviación) | Taxonomías intactas. `parkingOptions`, `accessibilityFeatures`, `buildingAccessMethods`, `accessMethods` se leen sin modificar. |
+
+Otros límites del 7a–7c: el upload affordance inline en `<MediaCarousel>` es **image-only** (`accept=".jpg,.jpeg,.png,.webp,.avif,.gif"`); maps (`.map` suffix) y videos siguen diferidos a la galería expandida / future per-method UI. Auto-cycle, video poster server-side, per-method picker — diferidos como se planificó.
+
 ---
 
 ### Rama 16F — `feat/liora-messaging-assistant-redesign`

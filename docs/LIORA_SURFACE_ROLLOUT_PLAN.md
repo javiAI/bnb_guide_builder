@@ -224,7 +224,52 @@ Skill: `frontend-design`. Output structured per `frontend-design` SKILL.md templ
 | `--accent-on` | `--color-action-primary-fg` |
 | `--moss-500` | `--color-status-success-text` |
 
-##### Parity audit verdict — `access/` (v3.2.1, post-cockpit refactor)
+##### Parity audit verdict — `access/` (v3.2.1, pre-7a — historical)
+
+> **Historical record.** This verdict was emitted on the 16E.5 v3.2.1 cockpit refactor (4-card 1×4 / 2×2 grid + scoped EntityGallery). The 7a–7c silhouette refactor (commits on the same branch) supersedes the collapsed-card structure scored here: media-backed carousel, interactive dots, foot status pill, and shared `<MediaCarousel>` primitive across collapsed and active branches. Re-running `liora-ui-kit-parity` against the deployed 7a route is the responsibility of a follow-up audit on the same branch — until then, see "Expected parity target — `access/` (v6/v7, post-7a refactor)" below for the implementation target. **Do not paste the v3.2.1 PASS into PR descriptions for 7a-or-later work** — that block is frozen against an earlier silhouette.
+
+##### Expected parity target — `access/` (v6/v7, post-7a refactor)
+
+> **Target, not measurement.** This block records the implementation target the 7a–7c work was built against. It is **not** a parity-audit verdict — no `liora-ui-kit-parity` run has been executed against the deployed Next.js route post-7a. The official PASS/NEEDS WORK verdict is emitted only when that audit runs (deferred follow-up on the same branch). Forbidden language until that audit ships: `Verdict PASS`, `Global X.X` stated as a measurement, "blockers clear" — those phrases must wait for a real run.
+
+**What 7a–7c add over the v3.2.1 silhouette** (collapsed-branch deltas, plus deliberate scope expansions documented as exceptions in the PR — see § Scope exceptions vs original v6.2 plan below):
+
+- Media-backed `<article>` shell (140px media area + body + foot pill) replacing the icon-strip-foot collapsed card.
+- Interactive `<MediaCarousel>` with title overlay (`Principal` / method label / `Mapa` / `<methodLabel> · Mapa`) per slide.
+- Plain-button dot row when `slides.length > 1`: `aria-current="true"` on active dot, `aria-label="Mostrar <slide title>"` per dot, ArrowLeft/Right + Home/End nav, `recipe-dot-24` (24 visual / 44 hit). **No `role="tab"` / `aria-selected`** — independent media indicators, not a tabs pattern.
+- Status pill in the body foot (`configured` / `pending`); empty state conveyed by gradient placeholder + `+ Añade portada` upload affordance.
+- Inline image upload affordance baked into `<MediaCarousel>`: image-only (`accept=".jpg,.jpeg,.png,.webp,.avif,.gif"`), tags with `usageKey: access.<cockpitId>` on assignment. Map and video uploads remain deferred to the expanded gallery / future per-method UI.
+- Active/expanded branch reuses the **same** `<MediaCarousel>` primitive (`variant="active"`, 240px, no click-through) — the carousel is unified across both branches, not duplicated.
+- Per-subsystem schema scope toggles (`hasParking`, `hasAccessibilityConsiderations`) added in commit 7b + migration `20260507180000_add_property_scope_toggles_7b`.
+- Static `SUBSYSTEM_GRADIENTS` (commit 7c) replaces template-literal `var()` so `liora-token-coverage.test.ts` sees each token literal in source.
+
+**Expected scoring after re-audit** (target ≥ 8.5 global, ≥ 7.5 per criterion — to be confirmed by a real `liora-ui-kit-parity` run):
+
+| Criterion | Target | Notes |
+|-----------|------:|-------|
+| 1. Layout silhouette | ≥ 8.5 | Media-on-top + body + foot mirrors the kit's `.sp-card` more closely than v3.2.1's icon-strip header. |
+| 2. Visual hierarchy | ≥ 8.5 | Header (icon-badge + title + status pill), tile strip (HoverCard popover for overflow), foot status pill. Title overlay sits over media, not in body. |
+| 3. Density / spacing | ≥ 8.0 | 140px media / `p-4` body / `min-h-[260px]` shell. Within 4px of kit. |
+| 4. Component fidelity | ≥ 8.5 | `<MediaCarousel>` shared across collapsed + active. HoverCard popover preserved from 6h. |
+| 5. Token fidelity | ≥ 9.5 | Zero hex/rgb/oklch literals. `SUBSYSTEM_GRADIENTS` static so token-coverage gate sees each literal. |
+| 6. Interaction / state fidelity | ≥ 8.0 | Dot click + keyboard (ArrowLeft/Right/Home/End), focus-visible, hover lift, disabled (uploading), error (inline). |
+| 7. Dark mode | ≥ 8.5 | All tokens semantic; `--color-text-on-overlay` + `--color-background-overlay` resolve per theme. |
+
+**Expected blockers**: none, assuming the re-audit confirms (a) HTML validity in collapsed and active (no nested interactive elements), (b) all clickables ≥ 44 hit area, (c) no primitive token leaks, (d) zero hex/rgb in JSX. The 7-suite local gate (`component-invariants`, `parity-static`, `dark-parity`, `access-icon-coverage`, `hover-card`, `liora-page-grammar`, `editor-schemas`) plus `liora-token-coverage` is 107/107 green at commit 7c.
+
+##### Scope exceptions vs original v6.2 plan — `access/` 7a–7c
+
+The original plan v6.2 (`/Users/javierabrilibanez/.claude/plans/federated-strolling-perlis.md`) locked the following out of 7a: schema changes, server actions, taxonomies, active-branch redesign. Reality drifted on three of those during 7a–7c implementation. Each is documented here as intentional, with rationale, so a future audit doesn't flag them as undocumented scope creep:
+
+| Original lock | Reality (7a–7c) | Status / rationale |
+|---|---|---|
+| No Prisma / schema change | `hasParking BOOLEAN NOT NULL DEFAULT true` + `hasAccessibilityConsiderations BOOLEAN` added in 7b (migration `20260507180000_add_property_scope_toggles_7b`) | **Intentional, backward-compatible.** Required so that "configured / pending / empty" status resolves deterministically per subsystem instead of leaking the legacy "empty" state into both pending and opted-out cases. Migration is additive (new nullable + new column with safe default). |
+| No server-action change | `requestUploadAction` / `confirmUploadAction` / `assignMediaAction` / `deleteMediaAction` are invoked from the new in-card upload affordance — they themselves are not modified | **No action signature change.** The new caller threads `usageKey: access.<cockpitId>` (an existing optional parameter on `assignMediaAction`); no new actions added. |
+| No taxonomy change | None at runtime — `parkingOptions` / `accessibilityFeatures` / `buildingAccessMethods` / `accessMethods` are read-only (existing files) | **Compliant.** Taxonomies untouched. |
+| No active-branch redesign | Active branch reuses `<MediaCarousel variant="active">` (subsystem-card.tsx:155–213) — same primitive as collapsed | **Intentional unification.** Plan v6.2 § "Goals" said "scope is collapsed branch only" — the 7a implementation chose to share the carousel between branches rather than duplicate the slide rendering. The structural collapse-trigger / expand-trigger logic is unchanged; only the media area is now consistent. Documented in PR #102 description. |
+| Map / video upload | Image-only via the in-card affordance (`accept=".jpg,.jpeg,.png,.webp,.avif,.gif"`) | **Image-only is the entire 7a contract for in-card upload.** Map (`.map` suffix) and video uploads remain deferred to the expanded EntityGallery / future per-method UI. |
+
+###### Original v3.2.1 verdict (frozen)
 
 Audited surface: [src/app/properties/[propertyId]/access/access-form.tsx](../src/app/properties/[propertyId]/access/access-form.tsx)
 Plus components: [cockpit-grid.tsx](../src/app/properties/[propertyId]/access/_components/cockpit-grid.tsx), [subsystem-card.tsx](../src/app/properties/[propertyId]/access/_components/subsystem-card.tsx), [method-row.tsx](../src/app/properties/[propertyId]/access/_components/method-row.tsx), [method-list.tsx](../src/app/properties/[propertyId]/access/_components/method-list.tsx), [arrival-steps.tsx](../src/app/properties/[propertyId]/access/_components/arrival-steps.tsx).
@@ -323,6 +368,8 @@ First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-sys
 - Top-left title overlay (`"Principal"` / method label / `"Mapa"` / `"<method> · Mapa"`) over the media. Uses `--color-background-overlay` bg + `--color-text-on-overlay` text (intentionally dark in both themes).
 - Interactive dot row (when slides > 1): plain `<button>` controls with `recipe-dot-24` (24 visual, 44 hit), `aria-current="true"` on active, keyboard nav (ArrowLeft/Right + Home/End with wrap). **No `role="tab"` / `role="tablist"` / `aria-selected`** — dots are independent media indicators, not a tabs pattern.
 - Body button below: header (icon-badge + title + status pill) + method-tile strip (with HoverCard popover for overflow) + sr-only photo/video count.
+- Inline upload affordance (only when `slides.length === 0`): `+ Añade portada` button overlaid on the gradient placeholder. Image-only (`accept=".jpg,.jpeg,.png,.webp,.avif,.gif"`); on success, the new asset is assigned with `usageKey: access.<cockpitId>` so it shows up only in that subsystem's carousel. Map (`.map` suffix) and video uploads remain deferred to the expanded gallery / future per-method UI.
+- Shared `<MediaCarousel>` primitive across collapsed (`variant="collapsed"`, 140px, click-through to expand) and active (`variant="active"`, 240px, display-only) — the active branch does not duplicate slide rendering. The collapse/expand triggers themselves remain in the surrounding card structure, not the carousel.
 
 **Media classification** (long-term convention, no caption fallback):
 - `kind: "map"` if `usageKey.endsWith(".map")`.
@@ -342,13 +389,19 @@ First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-sys
 
 **Future applicability**: spaces (probable next adopter), amenities with featured media (probable), systems (evaluate), troubleshooting (probably better as incident rows).
 
-**Scope locks** (commit 7a — collapsed branch only):
-- Active/expanded branch unchanged.
-- `saveAccessAction`, `accessSchema`, Prisma schema, taxonomies, guest guide unchanged.
-- Per-method UPLOAD UI deferred (data path lights up via `usageKey` convention; picker is follow-up).
-- Map UPLOAD UI deferred (renderer reads `.map` rows in 7a; toggle to upload-as-map is follow-up).
+**Scope locks** (commits 7a–7c — silhouette refactor):
+- `saveAccessAction`, `accessSchema`, taxonomies, guest guide unchanged.
+- Active/expanded branch reuses the shared `<MediaCarousel>` primitive (intentional unification — see "Scope exceptions vs original v6.2 plan" above). The structural expand/collapse trigger logic is untouched; only the media area is consistent across branches.
+- Schema scope toggles `hasParking` / `hasAccessibilityConsiderations` added in 7b (additive, backward-compatible — see exception table). No other Prisma model changes.
+- Per-method UPLOAD UI deferred (data path lights up via `usageKey` convention; per-method picker is follow-up).
+- Map UPLOAD UI deferred (renderer reads `.map` rows; toggle to upload-as-map is follow-up). The in-card affordance is image-only by contract.
+- Video UPLOAD UI deferred to the expanded gallery — collapsed view shows a placeholder Video icon when a video slide is the active one.
 - Auto-cycle / hover-cycle deferred (paging is purely manual via dots).
 - Video poster server-side extraction deferred (placeholder Video icon when `posterUrl` absent).
+
+**A11y contract** (binding for any future implementation): interactive dots are plain `<button>` controls, keyboard-accessible, the active dot is marked with `aria-current="true"`. No tablist/tab semantics unless a future implementation adopts full tabs behavior (with the wiring it implies — roving tabindex, `aria-controls` to a panel, `aria-orientation`).
+
+**Extraction status**: APPROVED pattern, **not yet extracted** to `src/components/ui/`. Lives inline in `src/app/properties/[propertyId]/access/_components/subsystem-card.tsx` as the only implementation today. Extraction trigger: when a second surface (probable: `spaces/`) adopts this anatomy. Extraction spec lives in plan v6.2 § Sub-step H — do **not** extract speculatively before a second adopter exists.
 
 ### 16F — Messaging + assistant
 

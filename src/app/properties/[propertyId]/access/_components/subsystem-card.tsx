@@ -731,11 +731,11 @@ function Slide({
   // lives in the expanded gallery (out of 7a scope).
   return (
     <span
+      role="img"
+      aria-label={slide.alt || slide.title}
       className="grid h-full w-full place-items-center bg-[var(--color-background-muted)] text-[var(--color-text-subtle)]"
-      aria-hidden="true"
     >
-      <Video size={28} />
-      <span className="sr-only">{slide.alt || slide.title}</span>
+      <Video size={28} aria-hidden="true" />
     </span>
   );
 }
