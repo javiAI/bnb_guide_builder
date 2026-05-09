@@ -5,12 +5,11 @@
  * local pre-commit check. Catches:
  *   1. Missing required structure
  *   2. Empty mandatory docs/styles/tokens
- *   3. tokens.json malformed, has legacy keys, or references missing primitives
- *   4. tailwind.tokens.ts missing the `warmAnalyticalTheme` export
- *   5. Dark coverage gaps in semantic.css
- *   6. Reference CSS missing the REFERENCE ONLY header
- *   7. Residue files (.DS_Store, __MACOSX, index_v1.html)
- *   8. .gitignore patterns silently re-ignoring the package
+ *   3. tailwind.tokens.ts missing the `warmAnalyticalTheme` export
+ *   4. Dark coverage gaps in semantic.css
+ *   5. Reference CSS missing the REFERENCE ONLY header
+ *   6. Residue files (.DS_Store, __MACOSX, index_v1.html)
+ *   7. .gitignore patterns silently re-ignoring the package
  *
  * Usage:
  *   npm run validate:design-system
@@ -81,7 +80,6 @@ function check2MandatoryFiles(): void {
     join(FOUNDATIONS, "tokens", "components.css"),
     join(FOUNDATIONS, "tokens", "shadcn.css"),
     join(FOUNDATIONS, "tokens", "tailwind.tokens.ts"),
-    join(FOUNDATIONS, "tokens", "tokens.json"),
   ];
   let okCount = 0;
   for (const path of files) {
@@ -105,90 +103,7 @@ function check2MandatoryFiles(): void {
   }
 }
 
-interface TokenNode {
-  $value?: string;
-  $type?: string;
-  $description?: string;
-  [key: string]: unknown;
-}
-
-function collectTokenPaths(
-  node: unknown,
-  prefix: string[],
-  out: Set<string>,
-): void {
-  if (typeof node !== "object" || node === null) return;
-  const obj = node as Record<string, unknown>;
-  if ("$value" in obj) {
-    out.add(prefix.join("."));
-    return;
-  }
-  for (const [key, child] of Object.entries(obj)) {
-    if (key.startsWith("$")) continue;
-    collectTokenPaths(child, [...prefix, key], out);
-  }
-}
-
-function collectTokenReferences(
-  node: unknown,
-  out: Set<string>,
-): void {
-  if (typeof node !== "object" || node === null) return;
-  const obj = node as Record<string, unknown>;
-  if (typeof obj.$value === "string") {
-    const matches = obj.$value.matchAll(/\{([^}]+)\}/g);
-    for (const m of matches) out.add(m[1]);
-  }
-  for (const [key, child] of Object.entries(obj)) {
-    if (key.startsWith("$")) continue;
-    collectTokenReferences(child, out);
-  }
-}
-
-function check3TokensJson(): void {
-  const path = join(FOUNDATIONS, "tokens", "tokens.json");
-  const raw = readFileOrFail(path, "tokens-json");
-  if (raw === null) return;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    fail("tokens-json", `invalid JSON: ${(err as Error).message}`);
-    return;
-  }
-
-  const declared = new Set<string>();
-  collectTokenPaths(parsed, [], declared);
-  const refs = new Set<string>();
-  collectTokenReferences(parsed, refs);
-
-  const legacyKeys = [...declared].filter((p) => /\.(success|warning)\.300$/.test(p));
-  if (legacyKeys.length > 0) {
-    fail(
-      "tokens-json",
-      `legacy keys present: ${legacyKeys.join(", ")} (must be removed)`,
-    );
-  }
-
-  const missing: string[] = [];
-  for (const ref of refs) {
-    if (!declared.has(ref)) missing.push(ref);
-  }
-  if (missing.length > 0) {
-    fail(
-      "tokens-json",
-      `${missing.length} reference(s) point to undeclared tokens: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? "…" : ""}`,
-    );
-  } else {
-    ok(
-      "tokens-json",
-      `valid JSON, no legacy keys, ${declared.size} tokens / ${refs.size} refs all resolve`,
-    );
-  }
-}
-
-function check4TailwindExport(): void {
+function check3TailwindExport(): void {
   const path = join(FOUNDATIONS, "tokens", "tailwind.tokens.ts");
   const raw = readFileOrFail(path, "tailwind-export");
   if (raw === null) return;
@@ -199,7 +114,7 @@ function check4TailwindExport(): void {
   ok("tailwind-export", "warmAnalyticalTheme exported");
 }
 
-function check5DarkCoverage(): void {
+function check4DarkCoverage(): void {
   const path = join(FOUNDATIONS, "tokens", "semantic.css");
   const raw = readFileOrFail(path, "dark-coverage");
   if (raw === null) return;
@@ -232,7 +147,7 @@ function check5DarkCoverage(): void {
   ok("dark-coverage", `all ${rootColors.size} --color-* tokens have dark bindings`);
 }
 
-function check6ReferenceHeader(): void {
+function check5ReferenceHeader(): void {
   const path = join(REFERENCES, "colors_and_type.css");
   const raw = readFileOrFail(path, "reference-header");
   if (raw === null) return;
@@ -265,7 +180,7 @@ async function walkDir(dir: string, out: string[]): Promise<void> {
   }
 }
 
-async function check7Residues(): Promise<void> {
+async function check6Residues(): Promise<void> {
   const all: string[] = [];
   await walkDir(PKG_ROOT, all);
   const offenders = all.filter((p) => {
@@ -285,9 +200,9 @@ async function check7Residues(): Promise<void> {
   ok("residues", "no .DS_Store / __MACOSX / index_v1.html in package");
 }
 
-function check8GitignoreHardening(): void {
+function check7GitignoreHardening(): void {
   const samples = [
-    "design-system/foundations/tokens/tokens.json",
+    "design-system/foundations/tokens/components.css",
     "design-system/references/liora-ui-kits/REFERENCE_RULES.md",
     "design-system/foundations/styles/base.css",
   ];
@@ -314,12 +229,11 @@ async function main(): Promise<void> {
 
   check1Structure();
   check2MandatoryFiles();
-  check3TokensJson();
-  check4TailwindExport();
-  check5DarkCoverage();
-  check6ReferenceHeader();
-  await check7Residues();
-  check8GitignoreHardening();
+  check3TailwindExport();
+  check4DarkCoverage();
+  check5ReferenceHeader();
+  await check6Residues();
+  check7GitignoreHardening();
 
   console.log("");
   if (failures.length > 0) {
