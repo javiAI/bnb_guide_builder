@@ -156,7 +156,7 @@ Full per-branch body in `docs/MASTER_PLAN_V2.md` §FASE 16.
 
 ## 4. Permanent decisions (do NOT revisit)
 
-These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora branches:
+These were closed in `chore/plan-update-liora` Fase -1 and apply to all 8 Liora branches (16A–16H):
 
 1. Path canonical: `design-system/` (kebab, tracked in Git).
 2. Foundations is the only source of palette. Kits provide layout/hierarchy only — their cool blue-grey accent is discarded as a wholesale palette adopter.
