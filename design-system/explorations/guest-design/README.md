@@ -43,7 +43,8 @@ guest-design/
 │                                     light + dark
 └── _process/                         trazabilidad — no se usa para implementar
     ├── chat1.md                      transcript completo de la sesión Claude Design
-    ├── batch5-fg-repair-superseded.html
+    ├── batch5-fg-repair.html         repair pass aceptado (cierra audit B1 contraste)
+    ├── batch5-fg-repair-superseded.html  primer intento de repair, superado
     └── baseline/
         ├── baseline-index.html       input original (kit liora-guest)
         └── baseline-tokens.css       input original (paleta arrancada al inicio)
