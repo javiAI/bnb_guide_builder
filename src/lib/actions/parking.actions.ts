@@ -460,6 +460,10 @@ export async function confirmParkingPlaceAction(
 const confirmParkingBulkSchema = z
   .object({
     items: z.array(confirmParkingSchema).min(1).max(20),
+    /** When set, applies to every item — synthesizes / overrides
+     *  `providerMetadata.feeType` so the operator can bulk-add as free or
+     *  paid in one charge from the lightbox map view. */
+    feeType: z.enum(["free", "paid"]).optional(),
   })
   .strict();
 
@@ -515,8 +519,12 @@ export async function confirmParkingPlacesBulkAction(
 
   const created: string[] = [];
   const skipped: string[] = [];
+  const bulkFeeType = parsed.data.feeType;
   for (const item of parsed.data.items) {
     try {
+      const providerMetadata = bulkFeeType
+        ? mergeFeeTypeIntoMetadata(item.providerMetadata, bulkFeeType)
+        : item.providerMetadata;
       const row = await prisma.localPlace.create({
         data: {
           propertyId: item.propertyId,
@@ -529,7 +537,7 @@ export async function confirmParkingPlacesBulkAction(
           distanceMeters: item.distanceMeters,
           provider: item.provider,
           providerPlaceId: item.providerPlaceId,
-          providerMetadata: item.providerMetadata,
+          providerMetadata,
           visibility: "guest",
         },
         select: { id: true },

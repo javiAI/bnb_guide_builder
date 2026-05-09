@@ -196,6 +196,12 @@ export function SubsystemCard({
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const handleLightboxOpen = (idx: number) => setLightboxIdx(idx);
   const handleLightboxClose = () => setLightboxIdx(null);
+  // Mirror lightbox navigation back into the carousel so closing the lightbox
+  // leaves the card showing the slide the operator was viewing in zoom.
+  const handleLightboxIndexChange = (idx: number) => {
+    setLightboxIdx(idx);
+    setCarouselIdx(idx);
+  };
 
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
@@ -263,8 +269,9 @@ export function SubsystemCard({
         <MediaLightbox
           slides={slides ?? []}
           index={lightboxIdx}
-          onIndexChange={setLightboxIdx}
+          onIndexChange={handleLightboxIndexChange}
           onClose={handleLightboxClose}
+          parkingDiscovery={cockpitId === "parking" ? { propertyId } : undefined}
         />
         <button
           type="button"
@@ -358,8 +365,9 @@ export function SubsystemCard({
       <MediaLightbox
         slides={slides ?? []}
         index={lightboxIdx}
-        onIndexChange={setLightboxIdx}
+        onIndexChange={handleLightboxIndexChange}
         onClose={handleLightboxClose}
+        parkingDiscovery={cockpitId === "parking" ? { propertyId } : undefined}
       />
 
       {/* ── Body ───────────────────────────────────────────────── */}
