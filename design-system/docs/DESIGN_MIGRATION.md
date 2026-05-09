@@ -36,7 +36,6 @@ It is a living document. Each Liora branch updates the relevant section as work 
 | Component | `design-system/foundations/tokens/components.css` | foundations |
 | shadcn bridge | `design-system/foundations/tokens/shadcn.css` | foundations |
 | Tailwind theme export | `design-system/foundations/tokens/tailwind.tokens.ts` (`warmAnalyticalTheme`) | foundations |
-| W3C tokens (mirror) | `design-system/foundations/tokens/tokens.json` | foundations |
 | Base reset + composition | `design-system/foundations/styles/base.css` (composes primitives → semantic → components → shadcn) | foundations |
 | Theme infrastructure (`[data-theme="dark"]`, `[data-theme-brand="…"]`) | `design-system/foundations/styles/themes.css` | foundations |
 | Wrapper (single entry point from app) | `src/app/design-system.css` (created in 16A) | app |
@@ -128,7 +127,7 @@ Full per-branch body in `docs/MASTER_PLAN_V2.md` §FASE 16.
   7. cleanup + tests (delete orphan selectors, update E2E + unit selectors, Lighthouse snapshot).
 - **Gate**: `e2e/axe-a11y.spec.ts` + `e2e/guest-leak-invariants.spec.ts` + `e2e/guide-search.spec.ts` + `e2e/hero-quick-actions.spec.ts` + `e2e/guide-pwa-offline.spec.ts` green in light + dark × 4 viewports. `__SW_VERSION__` bumps. Brand themes work in 8 curated palettes × light + dark.
 - **Hard rule**: `src/config/brand-palette.ts` is **permanent** — not touched. The bridge `--guide-brand` ↔ semantic tokens is documented in `LIORA_DESIGN_ADOPTION_PLAN.md` as permanent, not as debt.
-- **Base visual = v2** (`ui_kits/guest/index.html`). v1 was deleted from the package in `chore/plan-update-liora`. Reincorporating v1 elements requires "Excepciones v1" block in PR description.
+- **Base visual (16C, merged)**: `ui_kits/guest/index.html` v2 was the ground truth for this branch. 16C is merged. For 16H and onwards the definitive guest visual system lives in `design-system/explorations/guest-design/` — see `MASTER_PLAN_V2.md` § Rama 16H.
 
 ### 16D `feat/liora-operator-shell-redesign`
 
@@ -157,7 +156,7 @@ Full per-branch body in `docs/MASTER_PLAN_V2.md` §FASE 16.
 
 ## 4. Permanent decisions (do NOT revisit)
 
-These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora branches:
+These were closed in `chore/plan-update-liora` Fase -1 and apply to all 8 Liora branches (16A–16H):
 
 1. Path canonical: `design-system/` (kebab, tracked in Git).
 2. Foundations is the only source of palette. Kits provide layout/hierarchy only — their cool blue-grey accent is discarded as a wholesale palette adopter.
@@ -168,7 +167,7 @@ These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora 
 7. Command palette functional NOT in scope of Fase 16. 16D ships a visual placeholder only.
 8. Hard rules from `ARCHITECTURE_OVERVIEW.md` §14 + CLAUDE.md "Replatform de diseño (Liora)" apply. Forbidden suffixes (`*V2`, `New*`, `Better*`, `*Old`, `legacy-*`). axe-core `serious|critical = 0`. Targets ≥44×44. Components consume semantic/component tokens.
 9. Zero functional changes: composition pipeline (`composeGuide → filterByAudience → normalizeGuideForPresentation`), registries, taxonomies, server actions, routes and APIs remain intact across the 7 branches.
-10. Guest base visual = v2 of `ui_kits/guest/index.html`. v1 (`index_v1.html`) was deleted from the package in this chore.
+10. Guest base visual (16C, merged) = v2 of `ui_kits/guest/index.html` (now removed). Definitively superseded by `design-system/explorations/guest-design/` (bundle Claude Design, mayo 2026). Ground truth for 16H onwards is the bundle — `ui_kits/guest/` no longer contains a guest kit.
 11. Nothing is "deferred" without destination. Every deferred item lands in (a) `docs/FUTURE.md` with a trigger, (b) a named future branch, or (c) an architectural decision in the relevant ADOPTION_PLAN doc.
 
 ---
@@ -178,12 +177,11 @@ These were closed in `chore/plan-update-liora` Fase -1 and apply to all 7 Liora 
 `scripts/validate-design-system.ts` runs as a CI gate on every PR that touches `design-system/**`. It checks:
 
 1. Required structure exists (`foundations/{docs,styles,tokens}/`, `references/liora-ui-kits/`).
-2. Mandatory files present and non-empty (`DESIGN_SYSTEM.md`, `IMPLEMENTATION.md`, `ACCESSIBILITY.md`, `Foundation.html`, `base.css`, `themes.css`, `primitives.css`, `semantic.css`, `components.css`, `shadcn.css`, `tailwind.tokens.ts`, `tokens.json`).
-3. `tokens.json` parses as valid JSON and does not contain legacy `success.300` / `warning.300` keys; every `{dot.path}` reference resolves to a declared token.
-4. `tailwind.tokens.ts` exports `warmAnalyticalTheme`.
-5. Dark coverage: every `--color-*` token declared in `:root` of `foundations/tokens/semantic.css` has a binding in `[data-theme="dark"]`.
-6. `references/liora-ui-kits/colors_and_type.css` starts with the `REFERENCE ONLY` header.
-7. No residues: `.DS_Store`, `__MACOSX`, `index_v1.html` not present anywhere in `design-system/`.
-8. **Gitignore hardening**: for each of 3 sample paths (`design-system/`, `design-system/foundations/tokens/tokens.json`, `design-system/references/liora-ui-kits/REFERENCE_RULES.md`), `git check-ignore <path>` must exit non-zero (path NOT ignored). Detects any glob that would silently re-ignore the package.
+2. Mandatory files present and non-empty (`DESIGN_SYSTEM.md`, `IMPLEMENTATION.md`, `ACCESSIBILITY.md`, `Foundation.html`, `base.css`, `themes.css`, `primitives.css`, `semantic.css`, `components.css`, `shadcn.css`, `tailwind.tokens.ts`).
+3. `tailwind.tokens.ts` exports `warmAnalyticalTheme`.
+4. Dark coverage: every `--color-*` token declared in `:root` of `foundations/tokens/semantic.css` has a binding in `[data-theme="dark"]`.
+5. `references/liora-ui-kits/colors_and_type.css` starts with the `REFERENCE ONLY` header.
+6. No residues: `.DS_Store`, `__MACOSX`, `index_v1.html` not present anywhere in `design-system/`.
+7. **Gitignore hardening**: for each of 3 sample paths (`design-system/foundations/tokens/components.css`, `design-system/references/liora-ui-kits/REFERENCE_RULES.md`, `design-system/foundations/styles/base.css`), `git check-ignore <path>` must exit non-zero (path NOT ignored). Detects any glob that would silently re-ignore the package.
 
 Run locally: `npm run validate:design-system`.
