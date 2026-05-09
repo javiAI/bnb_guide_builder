@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 7 · Component primitives</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+:root { --pg-fg:#2E2B26; --pg-fg2:#5A564D; --pg-fg3:#8A8578; --pg-bd:#E6E1D8; }
+body { background: radial-gradient(ellipse at top,#F2EEE8 0%,#DDD4C2 55%,#C8BDA6 100%); color:var(--pg-fg); padding:56px 32px 96px; }
+.doc { max-width: 1340px; margin: 0 auto; }
+.doc-head { display:grid; grid-template-columns:1fr auto; gap:24px; align-items:end; margin-bottom:36px; }
+.doc-eb { font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--pg-fg3); }
+.doc-h1 { font-size:36px; font-weight:700; letter-spacing:-0.025em; line-height:40px; margin:6px 0 4px; }
+.doc-sub { font-size:14px; color:var(--pg-fg2); line-height:21px; max-width:76ch; }
+.doc-meta { font-family:var(--guest-font-mono); font-size:11px; color:var(--pg-fg2); text-align:right; line-height:17px; }
+.doc-meta b { color:var(--pg-fg); font-weight:700; }
+
+.section { margin-top: 44px; }
+.section-eb { font-family:var(--guest-font-mono); font-size:11px; color:var(--pg-fg3); text-transform:uppercase; letter-spacing:0.14em; font-weight:700; margin:0 0 14px; display:flex; align-items:center; gap:10px; }
+.section-eb::after { content:""; flex:1; height:1px; background:var(--pg-bd); }
+.section-h { font-size:24px; font-weight:700; letter-spacing:-0.015em; line-height:28px; margin:0 0 4px; }
+.section-sub { font-size:13px; color:var(--pg-fg2); line-height:19px; margin:0 0 22px; max-width:78ch; }
+
+/* two-column light/dark */
+.theme-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.theme-pane {
+  background: var(--guest-color-background-page);
+  border: 1px solid var(--guest-color-border-subtle);
+  border-radius: 14px;
+  padding: 22px 22px 24px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.pane-eb {
+  font-family: var(--guest-font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--guest-color-text-muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.pane-eb .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--guest-color-action-primary-base); }
+
+.subgroup { display: flex; flex-direction: column; gap: 10px; }
+.subgroup-h { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--guest-color-text-muted); margin: 0; }
+
+/* labelled item — element + meta */
+.labelled { display: flex; flex-direction: column; gap: 6px; }
+.labelled .label { font-family: var(--guest-font-mono); font-size: 10px; font-weight: 700; color: var(--guest-color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.row-flex { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row-grid { display: grid; gap: 10px; }
+
+/* meta box (annotation) */
+.meta {
+  font-family: var(--guest-font-mono); font-size: 10px; line-height: 14px;
+  color: var(--guest-color-text-secondary);
+  border: 1px dashed var(--guest-color-border-default);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: var(--guest-color-background-subtle);
+}
+.meta b { color: var(--guest-color-text-primary); font-weight: 700; }
+.meta .ok { color: var(--guest-color-status-success-text); font-weight: 700; }
+
+/* ====================== BUTTON ====================== */
+
+.btn {
+  --btn-h: 40px;
+  --btn-px: 14px;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: var(--btn-h); min-width: var(--btn-h); padding: 0 var(--btn-px);
+  font-family: var(--guest-font-sans); font-size: 14px; font-weight: 600; line-height: 1;
+  border-radius: 10px; border: 1px solid transparent;
+  cursor: pointer; transition: background 120ms, border-color 120ms, color 120ms;
+}
+.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.btn.sm { --btn-h: 32px; --btn-px: 12px; font-size: 13px; border-radius: 8px; }
+.btn.lg { --btn-h: 48px; --btn-px: 18px; font-size: 15px; border-radius: 12px; }
+/* slop for sm — extends hit area to 44 even though visual is 32 */
+.btn.sm::before { content: ""; position: absolute; inset: -6px; }
+
+/* primary (slate accent) */
+.btn.primary { background: var(--guest-color-action-primary-base); color: var(--guest-color-action-primary-fg); border-color: var(--guest-color-action-primary-base); }
+.btn.primary.is-hover { background: var(--guest-color-action-primary-hover); border-color: var(--guest-color-action-primary-hover); }
+.btn.primary.is-active { background: var(--guest-color-action-primary-active); border-color: var(--guest-color-action-primary-active); }
+/* secondary */
+.btn.secondary { background: var(--guest-color-action-secondary-base); color: var(--guest-color-action-secondary-fg); border-color: var(--guest-color-border-default); }
+.btn.secondary.is-hover { background: var(--guest-color-action-secondary-hover); }
+.btn.secondary.is-active { background: var(--guest-color-action-secondary-active); }
+/* ghost */
+.btn.ghost { background: transparent; color: var(--guest-color-action-ghost-fg); border-color: transparent; }
+.btn.ghost.is-hover { background: var(--guest-color-action-ghost-hover); }
+.btn.ghost.is-active { background: var(--guest-color-action-ghost-active); }
+/* destructive */
+.btn.destructive { background: var(--guest-color-action-destructive-base); color: var(--guest-color-action-destructive-fg); border-color: var(--guest-color-action-destructive-base); }
+.btn.destructive.is-hover { background: var(--guest-color-action-destructive-hover); border-color: var(--guest-color-action-destructive-hover); }
+
+/* states */
+.btn.is-focus { outline: 2px solid var(--guest-color-border-focus); outline-offset: 2px; }
+.btn.is-disabled { opacity: 0.55; cursor: not-allowed; }
+/* loading */
+.btn .spinner { width: 16px; height: 16px; animation: spin 720ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* brand CTA — uses --guest-brand + --guest-on-solid via [data-brand] */
+.btn.brand { background: var(--guest-brand); color: var(--guest-on-solid); border-color: var(--guest-brand); }
+
+/* ====================== INPUT ====================== */
+.field { display: flex; flex-direction: column; gap: 6px; max-width: 280px; }
+.field label { font-size: 13px; font-weight: 600; color: var(--guest-color-text-primary); }
+.input {
+  height: 44px; padding: 0 12px;
+  font-family: var(--guest-font-sans); font-size: 15px; line-height: 1;
+  color: var(--guest-color-text-primary);
+  background: var(--guest-color-background-surface);
+  border: 1px solid var(--guest-color-border-default);
+  border-radius: 10px;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.input::placeholder { color: var(--guest-color-text-placeholder); }
+.input.is-focus { border-color: var(--guest-color-border-focus); outline: 2px solid var(--guest-color-border-focus); outline-offset: 2px; }
+.input.is-error { border-color: var(--guest-color-status-error-border); }
+.input.is-disabled { background: var(--guest-color-background-muted); color: var(--guest-color-text-disabled); cursor: not-allowed; }
+.helper { font-size: 12px; line-height: 16px; color: var(--guest-color-text-muted); display: flex; align-items: center; gap: 5px; }
+.helper.error { color: var(--guest-color-status-error-text); }
+.helper svg { width: 13px; height: 13px; }
+
+/* ====================== BADGE ====================== */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 22px; padding: 0 8px;
+  font-family: var(--guest-font-sans); font-size: 11px; font-weight: 600; line-height: 1;
+  border-radius: 999px; border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge.md { height: 26px; padding: 0 10px; font-size: 12px; }
+
+/* solid fills */
+.badge.solid.neutral { background: var(--guest-color-text-primary); color: var(--guest-color-background-page); }
+.badge.solid.success { background: var(--guest-color-status-success-solid); color: var(--guest-color-status-success-solid-fg); }
+.badge.solid.warning { background: var(--guest-color-status-warning-solid); color: var(--guest-color-status-warning-solid-fg); }
+.badge.solid.error   { background: var(--guest-color-status-error-solid);   color: var(--guest-color-status-error-solid-fg); }
+.badge.solid.info    { background: var(--guest-color-status-info-solid);    color: var(--guest-color-status-info-solid-fg); }
+
+/* tint fills */
+.badge.tint.neutral { background: var(--guest-color-background-muted); color: var(--guest-color-text-primary); }
+.badge.tint.success { background: var(--guest-color-status-success-bg); color: var(--guest-color-status-success-text); border-color: var(--guest-color-status-success-border); }
+.badge.tint.warning { background: var(--guest-color-status-warning-bg); color: var(--guest-color-status-warning-text); border-color: var(--guest-color-status-warning-border); }
+.badge.tint.error   { background: var(--guest-color-status-error-bg);   color: var(--guest-color-status-error-text);   border-color: var(--guest-color-status-error-border); }
+.badge.tint.info    { background: var(--guest-color-status-info-bg);    color: var(--guest-color-status-info-text);    border-color: var(--guest-color-status-info-border); }
+
+/* badge matrix grid */
+.badge-grid {
+  display: grid;
+  grid-template-columns: 110px repeat(4, max-content);
+  gap: 12px 16px;
+  align-items: center;
+}
+.badge-grid .head { font-family: var(--guest-font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--guest-color-text-muted); }
+.badge-grid .rowlab { font-size: 12px; font-weight: 600; color: var(--guest-color-text-secondary); }
+
+/* ====================== TOAST ====================== */
+.toast {
+  width: 360px; max-width: 100%;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: flex-start;
+  padding: 12px 16px;
+  background: var(--guest-color-background-elevated);
+  border: 1px solid var(--guest-color-border-subtle);
+  border-radius: var(--guest-radius-md);
+  box-shadow: var(--guest-elev-2);
+}
+[data-theme="dark"] .toast { box-shadow: none; border-color: var(--guest-color-border-default); }
+.toast .ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+.toast .ic svg { width: 18px; height: 18px; }
+.toast .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toast .body h5 { font-size: 14px; font-weight: 700; line-height: 18px; margin: 0; color: var(--guest-color-text-primary); }
+.toast .body p  { font-size: 13px; line-height: 17px; margin: 0; color: var(--guest-color-text-secondary); }
+.toast .close {
+  position: relative;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  background: transparent; border: 0; border-radius: 6px;
+  color: var(--guest-color-text-muted); cursor: pointer;
+}
+.toast .close::before { content: ""; position: absolute; inset: -8px; }
+.toast .close svg { width: 16px; height: 16px; }
+.toast .close:focus-visible { outline: 2px solid var(--guest-color-border-focus); outline-offset: 2px; }
+
+.toast.success .ic { background: var(--guest-color-status-success-bg); color: var(--guest-color-status-success-icon); }
+.toast.info    .ic { background: var(--guest-color-status-info-bg);    color: var(--guest-color-status-info-icon); }
+.toast.warning .ic { background: var(--guest-color-status-warning-bg); color: var(--guest-color-status-warning-icon); }
+.toast.error   .ic { background: var(--guest-color-status-error-bg);   color: var(--guest-color-status-error-icon); }
+
+/* sub-row spacing */
+.row-flex > .labelled { flex: 0 0 auto; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <!-- ============ HEADER ============ -->
+  <div class="doc-head">
+    <div>
+      <div class="doc-eb">Batch 7 · primitivos · button · input · badge · toast</div>
+      <h1 class="doc-h1">Component primitives</h1>
+      <p class="doc-sub">Estados completos de los primitivos no formalizados antes. Drawer ya está en B4; pill/chip horneados en B6/B6b — no se repiten. Cada elemento anota los tokens que consume; light + dark lado a lado en cada sección.</p>
+    </div>
+    <div class="doc-meta">
+      <b>Sample · Casa Lavanda</b><br/>
+      Calle Cuba 42, 3B · Ruzafa<br/>
+      Anfitriona: Laura<br/>
+      check-in 16:00 · check-out 11:00 vie
+    </div>
+  </div>
+
+  <!-- ============================================================
+       1 · BUTTON
+       ============================================================ -->
+  <section class="section">
+    <div class="section-eb">1 · Button · primary states · variants × sizes · brand CTA</div>
+    <h2 class="section-h">Button</h2>
+    <p class="section-sub">Primary = sistema (slate). Brand CTA es un botón aparte que consume <code style="font-family:var(--guest-font-mono)">--guest-brand</code> + <code style="font-family:var(--guest-font-mono)">--guest-on-solid</code> vía wrapper <code style="font-family:var(--guest-font-mono)">[data-brand]</code> y nunca pisa el primary del sistema.</p>
+
+    <div class="theme-cols">
+
+      <!-- LIGHT -->
+      <div class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>LIGHT</div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Estados — primary md</h4>
+          <div class="row-flex">
+            <div class="labelled"><span class="label">rest</span><button class="btn primary">Confirmar</button></div>
+            <div class="labelled"><span class="label">hover</span><button class="btn primary is-hover">Confirmar</button></div>
+            <div class="labelled"><span class="label">active</span><button class="btn primary is-active">Confirmar</button></div>
+            <div class="labelled"><span class="label">focus-visible</span><button class="btn primary is-focus">Confirmar</button></div>
+            <div class="labelled"><span class="label">disabled</span><button class="btn primary is-disabled" aria-disabled="true">Confirmar</button></div>
+            <div class="labelled"><span class="label">loading</span><button class="btn primary"><i data-lucide="loader-2" class="spinner"></i>Cargando…</button></div>
+          </div>
+          <div class="meta">
+            bg <b>--guest-color-action-primary-base</b> #1E2A3A · fg <b>--guest-color-action-primary-fg</b> #FAF7F2 = <span class="ok">14.8 : 1 ✓ AAA</span><br/>
+            focus ring 2px <b>--guest-color-border-focus</b> offset 2px · also reads sin color (offset gap visible)<br/>
+            disabled opacity 0.55 → fg vs bg ≈ <span class="ok">8.1 : 1 ✓ AAA</span> (≥ 4.5:1)<br/>
+            loading: spinner <code>spin 720ms linear infinite</code> · label keeps live region
+          </div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Variants × sizes (rest)</h4>
+          <div class="row-grid" style="grid-template-columns: 90px repeat(3, max-content); align-items: center; column-gap: 16px; row-gap: 10px;">
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">primary</span>
+            <button class="btn primary sm">Guardar</button><button class="btn primary">Guardar</button><button class="btn primary lg">Guardar</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">secondary</span>
+            <button class="btn secondary sm">Cancelar</button><button class="btn secondary">Cancelar</button><button class="btn secondary lg">Cancelar</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">ghost</span>
+            <button class="btn ghost sm">Más tarde</button><button class="btn ghost">Más tarde</button><button class="btn ghost lg">Más tarde</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">destructive</span>
+            <button class="btn destructive sm">Eliminar</button><button class="btn destructive">Eliminar</button><button class="btn destructive lg">Eliminar</button>
+          </div>
+          <div class="meta">
+            sm visual 32px → hit area 44 vía <code>::before { inset:-6px }</code> (slop) · md visual 40 + slop = 44 · lg visual 48 directo<br/>
+            primary <b>action-primary-*</b> · secondary <b>action-secondary-*</b> + <b>border-default</b> · ghost <b>action-ghost-*</b> · destructive <b>action-destructive-*</b>
+          </div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Focus-visible · 4 variantes</h4>
+          <div class="row-flex">
+            <button class="btn primary is-focus">Primary</button>
+            <button class="btn secondary is-focus">Secondary</button>
+            <button class="btn ghost is-focus">Ghost</button>
+            <button class="btn destructive is-focus">Destructive</button>
+          </div>
+          <div class="meta">ring 2px <b>--guest-color-border-focus</b> #3A5070 · offset 2px · idéntico tratamiento las 4 variantes</div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Brand CTA · ≠ primary del sistema</h4>
+          <div class="row-flex">
+            <div data-brand="indigo"><button class="btn brand">Reservar</button></div>
+            <div data-brand="coral"><button class="btn brand">Reservar</button></div>
+            <div data-brand="sienna"><button class="btn brand">Reservar</button></div>
+          </div>
+          <div class="meta">bg <b>--guest-brand</b> · fg <b>--guest-on-solid</b> · resuelto vía wrapper <b>[data-brand]</b> · ratios 10.3 – 11.7 : 1 (B6 audit)</div>
+        </div>
+      </div>
+
+      <!-- DARK -->
+      <div data-theme="dark" class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>DARK</div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Estados — primary md</h4>
+          <div class="row-flex">
+            <div class="labelled"><span class="label">rest</span><button class="btn primary">Confirmar</button></div>
+            <div class="labelled"><span class="label">hover</span><button class="btn primary is-hover">Confirmar</button></div>
+            <div class="labelled"><span class="label">active</span><button class="btn primary is-active">Confirmar</button></div>
+            <div class="labelled"><span class="label">focus-visible</span><button class="btn primary is-focus">Confirmar</button></div>
+            <div class="labelled"><span class="label">disabled</span><button class="btn primary is-disabled" aria-disabled="true">Confirmar</button></div>
+            <div class="labelled"><span class="label">loading</span><button class="btn primary"><i data-lucide="loader-2" class="spinner"></i>Cargando…</button></div>
+          </div>
+          <div class="meta">
+            bg <b>--guest-color-action-primary-base</b> #25364E · fg <b>--guest-color-action-primary-fg</b> #F5EFE3 = <span class="ok">9.6 : 1 ✓ AAA</span><br/>
+            disabled opacity 0.55 → fg vs bg ≈ <span class="ok">5.2 : 1 ✓</span> (≥ 4.5:1)
+          </div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Variants × sizes (rest)</h4>
+          <div class="row-grid" style="grid-template-columns: 90px repeat(3, max-content); align-items: center; column-gap: 16px; row-gap: 10px;">
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">primary</span>
+            <button class="btn primary sm">Guardar</button><button class="btn primary">Guardar</button><button class="btn primary lg">Guardar</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">secondary</span>
+            <button class="btn secondary sm">Cancelar</button><button class="btn secondary">Cancelar</button><button class="btn secondary lg">Cancelar</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">ghost</span>
+            <button class="btn ghost sm">Más tarde</button><button class="btn ghost">Más tarde</button><button class="btn ghost lg">Más tarde</button>
+            <span class="label" style="font-family:var(--guest-font-mono);font-size:10px;color:var(--guest-color-text-muted);text-transform:uppercase;letter-spacing:0.08em">destructive</span>
+            <button class="btn destructive sm">Eliminar</button><button class="btn destructive">Eliminar</button><button class="btn destructive lg">Eliminar</button>
+          </div>
+          <div class="meta">slop sm <code>::before { inset:-6px }</code> · borde secondary <b>border-default</b> #3A352D resuelve a stone-32d</div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Focus-visible · 4 variantes</h4>
+          <div class="row-flex">
+            <button class="btn primary is-focus">Primary</button>
+            <button class="btn secondary is-focus">Secondary</button>
+            <button class="btn ghost is-focus">Ghost</button>
+            <button class="btn destructive is-focus">Destructive</button>
+          </div>
+          <div class="meta">ring 2px <b>--guest-color-border-focus</b> #B8C4D8 (slate-500d) · offset 2px</div>
+        </div>
+
+        <div class="subgroup">
+          <h4 class="subgroup-h">Brand CTA · ≠ primary del sistema</h4>
+          <div class="row-flex">
+            <div data-brand="indigo"><button class="btn brand">Reservar</button></div>
+            <div data-brand="coral"><button class="btn brand">Reservar</button></div>
+            <div data-brand="sienna"><button class="btn brand">Reservar</button></div>
+          </div>
+          <div class="meta">bg <b>--guest-brand</b> (-700d) · fg <b>--guest-on-solid</b> (-d) · ratios 7.4 – 8.3 : 1 (B6 dark audit)</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       2 · INPUT
+       ============================================================ -->
+  <section class="section">
+    <div class="section-eb">2 · Input · 4 estados</div>
+    <h2 class="section-h">Input</h2>
+    <p class="section-sub">Campo de texto · default / focus-visible / error / disabled. Helper + error message debajo. Microcopy real del flujo de check-in (código del lockbox).</p>
+
+    <div class="theme-cols">
+
+      <div class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>LIGHT</div>
+        <div class="row-flex" style="align-items: flex-start; gap: 22px;">
+          <div class="labelled">
+            <span class="label">default</span>
+            <div class="field"><label for="i1">Código de acceso</label><input id="i1" class="input" placeholder="1234"><span class="helper">4 dígitos</span></div>
+            <div class="meta">border <b>border-default</b> · placeholder <b>text-placeholder</b> · helper <b>text-muted</b></div>
+          </div>
+          <div class="labelled">
+            <span class="label">focus-visible</span>
+            <div class="field"><label for="i2">Código de acceso</label><input id="i2" class="input is-focus" value="52"><span class="helper">4 dígitos</span></div>
+            <div class="meta">border + ring 2px <b>border-focus</b> #3A5070 · offset 2px</div>
+          </div>
+          <div class="labelled">
+            <span class="label">error</span>
+            <div class="field"><label for="i3">Código de acceso</label><input id="i3" class="input is-error" value="9999"><span class="helper error"><i data-lucide="alert-circle"></i>El código no coincide con el de la cerradura</span></div>
+            <div class="meta">border <b>status-error-border</b> · helper <b>status-error-text</b> · icono alert-circle</div>
+          </div>
+          <div class="labelled">
+            <span class="label">disabled</span>
+            <div class="field"><label for="i4" style="opacity:0.6">Código de acceso</label><input id="i4" class="input is-disabled" placeholder="1234" disabled><span class="helper">Disponible 30 min antes del check-in</span></div>
+            <div class="meta">bg <b>background-muted</b> · fg <b>text-disabled</b> #C8C2B5 → vs bg ≈ <span class="ok">4.7 : 1 ✓</span> (≥4.5)</div>
+          </div>
+        </div>
+      </div>
+
+      <div data-theme="dark" class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>DARK</div>
+        <div class="row-flex" style="align-items: flex-start; gap: 22px;">
+          <div class="labelled">
+            <span class="label">default</span>
+            <div class="field"><label for="i1d">Código de acceso</label><input id="i1d" class="input" placeholder="1234"><span class="helper">4 dígitos</span></div>
+            <div class="meta">border <b>border-default</b> #3A352D · placeholder <b>text-placeholder</b> #8E887E</div>
+          </div>
+          <div class="labelled">
+            <span class="label">focus-visible</span>
+            <div class="field"><label for="i2d">Código de acceso</label><input id="i2d" class="input is-focus" value="52"><span class="helper">4 dígitos</span></div>
+            <div class="meta">border + ring <b>border-focus</b> #B8C4D8 · offset 2px</div>
+          </div>
+          <div class="labelled">
+            <span class="label">error</span>
+            <div class="field"><label for="i3d">Código de acceso</label><input id="i3d" class="input is-error" value="9999"><span class="helper error"><i data-lucide="alert-circle"></i>El código no coincide con el de la cerradura</span></div>
+            <div class="meta">border <b>status-error-border</b> #DD8472 · helper <b>status-error-text</b> #F1B7A9</div>
+          </div>
+          <div class="labelled">
+            <span class="label">disabled</span>
+            <div class="field"><label for="i4d" style="opacity:0.6">Código de acceso</label><input id="i4d" class="input is-disabled" placeholder="1234" disabled><span class="helper">Disponible 30 min antes del check-in</span></div>
+            <div class="meta">bg <b>background-muted</b> · fg <b>text-disabled</b> #4D4740 → <span class="ok">4.6 : 1 ✓</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       3 · BADGE
+       ============================================================ -->
+  <section class="section">
+    <div class="section-eb">3 · Badge · 5 status × 2 fills × 2 sizes</div>
+    <h2 class="section-h">Badge</h2>
+    <p class="section-sub">40 chips: 5 status (neutral · success · warning · error · info) × 2 fills (solid / tint) × 2 sizes (sm 22px / md 26px) × 2 themes. Solid usa <code style="font-family:var(--guest-font-mono)">status-{key}-solid</code>; tint usa <code style="font-family:var(--guest-font-mono)">status-{key}-bg</code> + <code style="font-family:var(--guest-font-mono)">-text</code> + <code style="font-family:var(--guest-font-mono)">-border</code>.</p>
+
+    <div class="theme-cols">
+
+      <div class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>LIGHT</div>
+        <div class="badge-grid">
+          <span></span>
+          <span class="head">solid sm</span><span class="head">solid md</span><span class="head">tint sm</span><span class="head">tint md</span>
+
+          <span class="rowlab">neutral</span>
+          <span class="badge solid neutral">Neutral</span><span class="badge solid neutral md">Neutral</span>
+          <span class="badge tint neutral">Neutral</span><span class="badge tint neutral md">Neutral</span>
+
+          <span class="rowlab">success</span>
+          <span class="badge solid success">Activado</span><span class="badge solid success md">Activado</span>
+          <span class="badge tint success">Activado</span><span class="badge tint success md">Activado</span>
+
+          <span class="rowlab">warning</span>
+          <span class="badge solid warning">Pendiente</span><span class="badge solid warning md">Pendiente</span>
+          <span class="badge tint warning">Pendiente</span><span class="badge tint warning md">Pendiente</span>
+
+          <span class="rowlab">error</span>
+          <span class="badge solid error">Error</span><span class="badge solid error md">Error</span>
+          <span class="badge tint error">Error</span><span class="badge tint error md">Error</span>
+
+          <span class="rowlab">info</span>
+          <span class="badge solid info">Info</span><span class="badge solid info md">Info</span>
+          <span class="badge tint info">Info</span><span class="badge tint info md">Info</span>
+        </div>
+        <div class="meta">solid → status-{key}-solid + solid-fg · tint → status-{key}-bg + text + border. Todos los pares text-vs-bg ≥ 4.5:1.</div>
+      </div>
+
+      <div data-theme="dark" class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>DARK</div>
+        <div class="badge-grid">
+          <span></span>
+          <span class="head">solid sm</span><span class="head">solid md</span><span class="head">tint sm</span><span class="head">tint md</span>
+
+          <span class="rowlab">neutral</span>
+          <span class="badge solid neutral">Neutral</span><span class="badge solid neutral md">Neutral</span>
+          <span class="badge tint neutral">Neutral</span><span class="badge tint neutral md">Neutral</span>
+
+          <span class="rowlab">success</span>
+          <span class="badge solid success">Activado</span><span class="badge solid success md">Activado</span>
+          <span class="badge tint success">Activado</span><span class="badge tint success md">Activado</span>
+
+          <span class="rowlab">warning</span>
+          <span class="badge solid warning">Pendiente</span><span class="badge solid warning md">Pendiente</span>
+          <span class="badge tint warning">Pendiente</span><span class="badge tint warning md">Pendiente</span>
+
+          <span class="rowlab">error</span>
+          <span class="badge solid error">Error</span><span class="badge solid error md">Error</span>
+          <span class="badge tint error">Error</span><span class="badge tint error md">Error</span>
+
+          <span class="rowlab">info</span>
+          <span class="badge solid info">Info</span><span class="badge solid info md">Info</span>
+          <span class="badge tint info">Info</span><span class="badge tint info md">Info</span>
+        </div>
+        <div class="meta">dark solids usan stone-94 fg para contraste cálido; tints usan -text-d sobre -bg-d (CSS canónico).</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============================================================
+       4 · TOAST
+       ============================================================ -->
+  <section class="section">
+    <div class="section-eb">4 · Toast · 4 status</div>
+    <h2 class="section-h">Toast</h2>
+    <p class="section-sub">Notificación efímera · ~360px · radius md · padding 12 16. Light usa elev-2; dark usa border-default (sin shadow fuerte). Botón close 28×28 visual + slop a 44.</p>
+
+    <div class="theme-cols">
+
+      <div class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>LIGHT</div>
+        <div class="row-grid" style="gap: 14px;">
+          <div class="labelled"><span class="label">success</span>
+            <div class="toast success" role="status">
+              <div class="ic"><i data-lucide="check-circle-2"></i></div>
+              <div class="body"><h5>Wi-Fi copiado</h5><p>Wi-Fi copiado al portapapeles</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">info</span>
+            <div class="toast info" role="status">
+              <div class="ic"><i data-lucide="info"></i></div>
+              <div class="body"><h5>Casa Lavanda actualizada</h5><p>Casa Lavanda actualizada hace 5 minutos</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">warning</span>
+            <div class="toast warning" role="status">
+              <div class="ic"><i data-lucide="alert-triangle"></i></div>
+              <div class="body"><h5>Modo offline</h5><p>Modo offline — puede haber datos desactualizados</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">error</span>
+            <div class="toast error" role="alert">
+              <div class="ic"><i data-lucide="alert-circle"></i></div>
+              <div class="body"><h5>No se pudo enviar</h5><p>No se pudo enviar el mensaje. Reintenta en unos segundos.</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="meta">bg <b>background-elevated</b> · border <b>border-subtle</b> · shadow <b>elev-2</b> · ic bg <b>status-{key}-bg</b> · ic color <b>status-{key}-icon</b></div>
+        </div>
+      </div>
+
+      <div data-theme="dark" class="theme-pane">
+        <div class="pane-eb"><span class="dot"></span>DARK</div>
+        <div class="row-grid" style="gap: 14px;">
+          <div class="labelled"><span class="label">success</span>
+            <div class="toast success" role="status">
+              <div class="ic"><i data-lucide="check-circle-2"></i></div>
+              <div class="body"><h5>Wi-Fi copiado</h5><p>Wi-Fi copiado al portapapeles</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">info</span>
+            <div class="toast info" role="status">
+              <div class="ic"><i data-lucide="info"></i></div>
+              <div class="body"><h5>Casa Lavanda actualizada</h5><p>Casa Lavanda actualizada hace 5 minutos</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">warning</span>
+            <div class="toast warning" role="status">
+              <div class="ic"><i data-lucide="alert-triangle"></i></div>
+              <div class="body"><h5>Modo offline</h5><p>Modo offline — puede haber datos desactualizados</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="labelled"><span class="label">error</span>
+            <div class="toast error" role="alert">
+              <div class="ic"><i data-lucide="alert-circle"></i></div>
+              <div class="body"><h5>No se pudo enviar</h5><p>No se pudo enviar el mensaje. Reintenta en unos segundos.</p></div>
+              <button class="close" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            </div>
+          </div>
+          <div class="meta">en dark: shadow off · border <b>border-default</b> sostiene la elevación · close hit area 44 vía <code>::before { inset:-8px }</code></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
