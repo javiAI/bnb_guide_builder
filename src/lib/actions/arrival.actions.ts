@@ -99,6 +99,7 @@ export async function discoverArrivalSuggestionsAction(
     prisma.localPlace.findMany({
       where: {
         propertyId,
+        property: { workspaceId: operator.workspaceId },
         categoryKey,
         providerPlaceId: { not: null },
       },

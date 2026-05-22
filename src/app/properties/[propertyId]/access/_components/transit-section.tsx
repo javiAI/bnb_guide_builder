@@ -8,6 +8,7 @@ import {
   useTransition,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   confirmArrivalOptionsBulkAction,
@@ -109,6 +110,7 @@ export function TransitSection({
   radiusMeters,
   onChangeRadiusMeters,
 }: TransitSectionProps) {
+  const router = useRouter();
   const [suggestions, setSuggestions] =
     useState<ArrivalSuggestion[]>(initialSuggestions);
   const [warningKey, setWarningKey] = useState<
@@ -224,22 +226,41 @@ export function TransitSection({
           next.delete(s.providerPlaceId);
           return next;
         });
+        router.refresh();
       });
     },
-    [meta.key, nameOverrides, propertyId],
+    [meta.key, nameOverrides, propertyId, router],
   );
 
-  const handleDelete = useCallback((placeId: string) => {
-    startUpdate(async () => {
-      await deleteArrivalOptionAction({ placeId });
-    });
-  }, []);
+  const handleDelete = useCallback(
+    (placeId: string) => {
+      setError(null);
+      startUpdate(async () => {
+        const res = await deleteArrivalOptionAction({ placeId });
+        if (!res.success) {
+          setError(res.error ?? "Error al eliminar");
+          return;
+        }
+        router.refresh();
+      });
+    },
+    [router],
+  );
 
-  const handleRenameOption = useCallback((placeId: string, name: string) => {
-    startUpdate(async () => {
-      await updateArrivalOptionAction({ placeId, name });
-    });
-  }, []);
+  const handleRenameOption = useCallback(
+    (placeId: string, name: string) => {
+      setError(null);
+      startUpdate(async () => {
+        const res = await updateArrivalOptionAction({ placeId, name });
+        if (!res.success) {
+          setError(res.error ?? "Error al actualizar");
+          return;
+        }
+        router.refresh();
+      });
+    },
+    [router],
+  );
 
   const summary =
     options.length > 0

@@ -290,7 +290,8 @@ export async function saveAccessAction(
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
       hasParking: d.hasParking,
-      hasAccessibilityConsiderations: d.accessibilityFeatures.length > 0,
+      hasAccessibilityConsiderations:
+        d.accessibilityFeatures.length > 0 ? true : null,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
         building:

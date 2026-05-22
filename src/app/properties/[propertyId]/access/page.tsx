@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { getDownloadUrl } from "@/lib/services/media-storage.service";
@@ -16,7 +15,6 @@ import {
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { ItemTaxonomyFile } from "@/lib/types/taxonomy";
 import {
-  discoverParkingSuggestions,
   PARKING_CATEGORY_KEY,
   type ParkingSuggestion,
 } from "@/lib/services/parking-discovery.service";
@@ -29,10 +27,6 @@ import {
   parseModesMap,
   readArrivalCache,
 } from "@/lib/services/arrival-cache";
-import {
-  PoiProviderConfigError,
-  PoiProviderUnavailableError,
-} from "@/lib/services/places";
 import { AccessForm, type ParkingPlace } from "./access-form";
 import {
   RATE_TIER_PERS,
@@ -443,9 +437,11 @@ export default async function AccessPage({ params }: Props) {
   // query) snapshot, so the cockpit serves the cached payload on first paint
   // instead of a client-triggered search per visit. Cache lives on
   // `Property.parkingSuggestionsCacheJson` and is invalidated (NULLed) when
-  // the property's coords change. On a cold cache we run discovery server-side
-  // and persist before render — keeps the "Sugeridos" column populated without
-  // a button press.
+  // the property's coords change. On a cold cache the column renders empty and
+  // the operator's first refresh click hits `refreshParkingSuggestionsAction`
+  // — which carries the `expensive` per-actor + per-property rate limits.
+  // Provider calls intentionally never happen in this server render path:
+  // a cache-miss does not authorize an unbounded MapTiler hit per page view.
   const confirmedProviderPlaceIds = new Set<string>(
     parkingPlaces
       .map((p) => p.providerPlaceId)
@@ -454,51 +450,6 @@ export default async function AccessPage({ params }: Props) {
   let parkingSuggestions: ParkingSuggestion[] = readCachedSuggestions(
     property.parkingSuggestionsCacheJson,
   );
-  if (
-    parkingSuggestions.length === 0 &&
-    property.parkingSuggestionsCachedAt === null &&
-    propertyCoords !== null
-  ) {
-    try {
-      const result = await discoverParkingSuggestions({
-        anchor: propertyCoords,
-        language: "es",
-        excludeProviderPlaceIds: confirmedProviderPlaceIds,
-      });
-      parkingSuggestions = result.suggestions;
-      // Fire-and-forget cache write — render path doesn't block on persistence.
-      void prisma.property
-        .update({
-          where: { id: propertyId },
-          data: {
-            parkingSuggestionsCacheJson: result.suggestions as unknown as Prisma.InputJsonValue,
-            parkingSuggestionsCachedAt: new Date(),
-          },
-        })
-        .catch((err) => {
-          console.error(
-            `[access] parking-suggestions cache write failed for ${propertyId}:`,
-            err,
-          );
-        });
-    } catch (err) {
-      if (
-        err instanceof PoiProviderConfigError ||
-        err instanceof PoiProviderUnavailableError
-      ) {
-        if (process.env.NODE_ENV !== "production") {
-          console.warn(
-            `[access] parking discovery skipped for ${propertyId}: ${err.message}`,
-          );
-        }
-      } else {
-        console.error(
-          `[access] parking discovery failed for ${propertyId}:`,
-          err,
-        );
-      }
-    }
-  }
   // Filter cached suggestions against the current confirmed pin set so a stale
   // cache (operator confirmed a pin since last write) doesn't surface duplicates.
   if (confirmedProviderPlaceIds.size > 0) {

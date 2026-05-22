@@ -113,6 +113,7 @@ export async function refreshParkingSuggestionsAction(
     prisma.localPlace.findMany({
       where: {
         propertyId,
+        property: { workspaceId: operator.workspaceId },
         categoryKey: PARKING_CATEGORY_KEY,
         providerPlaceId: { not: null },
       },

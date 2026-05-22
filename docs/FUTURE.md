@@ -388,15 +388,14 @@ Tras la auditoría de bundle de 16E-pre (`chore/codebase-simplify-comprehensive`
 
 ### Contexto
 
-Hoy el dev local corre sobre `Node 18.20.5` (referencia en `CLAUDE.md` § "Entorno y comandos": `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx`). El SDK emite un `NodeDeprecationWarning` en cada arranque. Lo silenciamos quirúrgicamente en [src/instrumentation.ts](../src/instrumentation.ts) — solo el warning de `@aws-sdk`, el resto siguen visibles. Es parche, no fix.
+Hoy el dev local corre sobre `Node 18.20.5` (referencia en `CLAUDE.md` § "Entorno y comandos": `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx`). El SDK emite un `NodeDeprecationWarning` ruidoso en cada arranque. **No silenciado** — un filtro global de warnings (vía `process.removeAllListeners("warning")` o monkey-patch de `process.emitWarning`) se consideró y se descartó en revisión de PR #106: oculta otros deprecation warnings del runtime, no solo el de AWS. El warning sigue visible hasta el upgrade.
 
 ### Pasos del upgrade real
 
 1. `nvm install 20 && nvm use 20` (LTS actual: 20.x).
 2. Actualizar la ruta literal `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx` en `CLAUDE.md` § "Entorno y comandos" a la 20.x correspondiente. (También buscar otras referencias a `v18.20.5` en docs/scripts).
 3. `engines.node` en `package.json` si lo añadimos (hoy no está fijado).
-4. Borrar el filtro de warnings en `src/instrumentation.ts` (el archivo entero si no añadimos más hooks). El warning ya no se emitirá con Node 20.
-5. Verificar: `npm run dev`, `npm run build`, `npx vitest run`, suite E2E. Especial atención a `@prisma/client` (suele requerir regenerar) y a cualquier nativo (`sharp`, etc.) que necesite rebuild.
+4. Verificar: `npm run dev`, `npm run build`, `npx vitest run`, suite E2E. Especial atención a `@prisma/client` (suele requerir regenerar) y a cualquier nativo (`sharp`, etc.) que necesite rebuild. El warning de AWS SDK desaparecerá sin acción adicional.
 
 ### Trigger para implementar
 
