@@ -10,7 +10,7 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
@@ -175,21 +175,30 @@ export async function saveAccessAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  const buildingMethods = formData.getAll("buildingMethods") as string[];
-  const unitMethods = formData.getAll("unitMethods") as string[];
-  const parkingTypes = formData.getAll("parkingTypes") as string[];
+  const buildingMethodsRaw = formData.getAll("buildingMethods") as string[];
+  const unitMethodsRaw = formData.getAll("unitMethods") as string[];
+  const parkingTypesRaw = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
-  // Derived from the multi-select: `ba.no_building` / `pk.no_parking` are the
-  // explicit opt-out chips; empty selection counts as unanswered → false.
-  const hasBuildingAccess =
-    !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
-  const hasParking =
-    !parkingTypes.includes("pk.no_parking") && parkingTypes.length > 0;
 
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
   const validBuildingIds = new Set(buildingAccessMethods.items.map((i) => i.id));
   const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
   const validAccessibilityIds = new Set(accessibilityFeatures_taxonomy.items.map((i) => i.id));
+  const validAccessMethodIds = new Set(accessMethods.items.map((i) => i.id));
+
+  // Filter against canonical taxonomies up-front so booleans, methods array
+  // and primary derive from the same sanitized inputs (a tampered FormData
+  // can't leave `hasBuildingAccess=true` with `methods=[]`).
+  const buildingMethods = buildingMethodsRaw.filter((id) => validBuildingIds.has(id));
+  const parkingTypesFiltered = parkingTypesRaw.filter((id) => validParkingIds.has(id));
+  const unitMethods = unitMethodsRaw.filter((id) => validAccessMethodIds.has(id));
+
+  // `ba.no_building` / `pk.no_parking` are explicit opt-out chips; empty (or
+  // entirely invalid) selection counts as unanswered → false.
+  const hasBuildingAccess =
+    !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
+  const hasParking =
+    !parkingTypesFiltered.includes("pk.no_parking") && parkingTypesFiltered.length > 0;
 
   const parkingCustomLabel =
     (formData.get("parkingCustomLabel") as string) || null;
@@ -216,14 +225,14 @@ export async function saveAccessAction(
     checkOutTime: formData.get("checkOutTime") as string,
     isAutonomousCheckin: formData.get("isAutonomousCheckin") === "true",
     hasBuildingAccess,
-    // Filter for valid IDs and enforce `ba.no_building` exclusivity server-side
-    // as defense-in-depth: client UI already prevents mixed selections, but a
-    // tampered FormData could send both `ba.no_building` and a positive method.
+    // Enforce `ba.no_building` / `pk.no_parking` exclusivity server-side as
+    // defense-in-depth: client UI already prevents mixed selections, but a
+    // tampered FormData could send both opt-out and a positive entry. IDs were
+    // already taxonomy-filtered up-front so booleans and arrays stay coherent.
     buildingAccess: {
-      methods: (() => {
-        const valid = buildingMethods.filter((id) => validBuildingIds.has(id));
-        return valid.includes("ba.no_building") ? ["ba.no_building"] : valid;
-      })(),
+      methods: buildingMethods.includes("ba.no_building")
+        ? ["ba.no_building"]
+        : buildingMethods,
       customLabel: hasBuildingAccess
         ? (formData.get("buildingCustomLabel") as string) || null
         : null,
@@ -237,13 +246,9 @@ export async function saveAccessAction(
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
     hasParking,
-    // Filter for valid IDs and enforce `pk.no_parking` exclusivity server-side
-    // as defense-in-depth: client UI already prevents mixed selections, but a
-    // tampered FormData could send both `pk.no_parking` and a positive type.
-    parkingTypes: (() => {
-      const valid = parkingTypes.filter((id) => validParkingIds.has(id));
-      return valid.includes("pk.no_parking") ? ["pk.no_parking"] : valid;
-    })(),
+    parkingTypes: parkingTypesFiltered.includes("pk.no_parking")
+      ? ["pk.no_parking"]
+      : parkingTypesFiltered,
     accessibilityFeatures: accessibilityFeatures.filter((id) =>
       validAccessibilityIds.has(id),
     ),

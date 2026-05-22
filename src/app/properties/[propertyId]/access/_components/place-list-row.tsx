@@ -201,7 +201,7 @@ export function PlaceListRow({
                   disabled={disabled}
                   aria-label={hasRealName ? "Editar nombre" : placeholder}
                   className={cn(
-                    "flex-none rounded-[4px] p-0.5 text-[var(--color-text-muted)] opacity-0",
+                    "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[4px] text-[var(--color-text-muted)] opacity-0",
                     "transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100",
                     "hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-secondary)]",
                     "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-action-primary)]",
@@ -272,7 +272,7 @@ export function PlaceListRow({
             disabled={disabled}
             aria-label={extraAction.label}
             className={cn(
-              "flex h-7 w-7 flex-none items-center justify-center rounded-[6px] transition-colors duration-100",
+              "recipe-icon-btn-32 flex h-8 w-8 flex-none items-center justify-center rounded-[6px] transition-colors duration-100",
               extraAction.tone === "warning"
                 ? "bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)] hover:bg-[var(--color-status-warning-bg)]"
                 : "text-[var(--color-text-muted)] hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-secondary)]",
@@ -293,7 +293,7 @@ export function PlaceListRow({
           }
           aria-label={trailingAction.label}
           className={cn(
-            "flex h-7 w-7 flex-none items-center justify-center rounded-[6px] transition-colors duration-100",
+            "recipe-icon-btn-32 flex h-8 w-8 flex-none items-center justify-center rounded-[6px] transition-colors duration-100",
             trailingAction.tone === "primary"
               ? "text-[var(--color-action-primary)] hover:bg-[var(--color-action-primary-subtle)]"
               : "text-[var(--color-text-muted)] hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)]",
