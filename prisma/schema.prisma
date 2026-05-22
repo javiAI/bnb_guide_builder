@@ -130,6 +130,9 @@ model Property {
   // bus, metro, urban_bus, taxi). The operator refreshes per mode via the
   // icon-only button on the "Sugeridos" column. NULLed by saveProperty
   // alongside the parking cache when coords could have shifted.
+  // Concurrent writes (parallel mode refresh) compose via atomic JSONB merge
+  // — see migration `20260520120000_add_arrival_suggestions_cache` for the
+  // canonical `||` pattern. Read-modify-write is forbidden here.
   arrivalSuggestionsCacheJson Json?    @map("arrival_suggestions_cache_json")
   // Per-mode enable/disable for the unified "Cómo llegar" cockpit card. Shape:
   // `Partial<Record<"parking"|ArrivalMode, boolean>>` — `parking` plus the 6
