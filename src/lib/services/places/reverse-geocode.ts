@@ -21,9 +21,9 @@ export async function reverseGeocodeAddressForPin(params: {
   language?: "es" | "en";
   timeoutMs?: number;
 }): Promise<string | null> {
-  const provider = resolveLocalPoiProvider();
-  if (typeof provider.reverse !== "function") return null;
   try {
+    const provider = resolveLocalPoiProvider();
+    if (typeof provider.reverse !== "function") return null;
     const hit = await provider.reverse({
       latitude: params.latitude,
       longitude: params.longitude,

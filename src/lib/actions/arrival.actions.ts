@@ -21,6 +21,7 @@ import {
   type BulkConfirmResult,
 } from "@/lib/services/places/bulk-confirm-places";
 import { reverseGeocodeAddressForPin } from "@/lib/services/places/reverse-geocode";
+import { applyOperatorRateLimit } from "@/lib/services/operator-rate-limit";
 import { rateJsonSchema } from "@/lib/schemas/rate-tier.schema";
 import {
   ARRIVAL_MODES,
@@ -31,7 +32,6 @@ import {
   type ArrivalDiscoveryResult,
   type ArrivalSuggestion,
 } from "@/lib/services/arrival-discovery.service";
-import { readArrivalCache } from "@/lib/services/arrival-cache";
 import {
   AUDIT_ACTIONS,
   formatActor,
@@ -85,16 +85,14 @@ export async function discoverArrivalSuggestionsAction(
   // Property + already-confirmed pin list are independent reads — fire in
   // parallel. categoryKey is derived from the input mode (no DB dependency).
   // Rate-limit hit lands after validation so an unknown property doesn't burn
-  // the bucket.
+  // the bucket. We no longer read arrivalSuggestionsCacheJson here: the cache
+  // merge runs server-side via JSONB `||` (read-modify-write in JS would let
+  // concurrent refreshes of different modes clobber each other's payload).
   const categoryKey = arrivalModeCategoryKey(parsedMode.data);
   const [property, existing] = await Promise.all([
     prisma.property.findUnique({
       where: { id: propertyId, workspaceId: operator.workspaceId },
-      select: {
-        latitude: true,
-        longitude: true,
-        arrivalSuggestionsCacheJson: true,
-      },
+      select: { latitude: true, longitude: true },
     }),
     prisma.localPlace.findMany({
       where: {
@@ -124,21 +122,20 @@ export async function discoverArrivalSuggestionsAction(
       excludeProviderPlaceIds: collectExcludeProviderPlaceIds(existing),
       radiusMeters: clampedRadius,
     });
-    // Fire-and-forget cache write — the render path doesn't block on
-    // persistence. Merges the new mode's payload into the existing JSON so
-    // refreshing one mode doesn't clobber the others.
-    const merged = {
-      ...readArrivalCache(property.arrivalSuggestionsCacheJson),
-      [parsedMode.data]: result.suggestions,
-    };
-    void prisma.property
-      .update({
-        where: { id: propertyId },
-        data: {
-          arrivalSuggestionsCacheJson: merged as unknown as Prisma.InputJsonValue,
-        },
-      })
-      .catch((err) => {
+    // Fire-and-forget atomic cache merge — the render path doesn't block on
+    // persistence. JSONB `||` operator merges keys at the SQL layer so
+    // concurrent refreshes of different modes can never clobber each other:
+    // each UPDATE only touches its own key. Workspace scope on the WHERE
+    // clause keeps the write tamper-resistant (same as setArrivalModeEnabled).
+    const delta = JSON.stringify({ [parsedMode.data]: result.suggestions });
+    void prisma
+      .$executeRaw`
+        UPDATE "properties"
+        SET "arrival_suggestions_cache_json" =
+          COALESCE("arrival_suggestions_cache_json", '{}'::jsonb) || ${delta}::jsonb
+        WHERE id = ${propertyId}
+          AND workspace_id = ${operator.workspaceId}
+      `.catch((err) => {
         console.error(
           `[arrival-discovery] cache write failed for ${propertyId} mode=${parsedMode.data}:`,
           err,
@@ -238,25 +235,37 @@ export async function addManualArrivalOptionAction(
   if (!auth.ok) return { success: false, error: auth.error };
   const { operator } = auth;
 
-  // Property lookup and reverse-geocode are independent — fire them in
-  // parallel. Caller-supplied address wins; otherwise we ask the provider,
-  // preferring the mode's categoryKey (e.g. `lp.arrival_train` for a train
-  // station drop) so manual pins parity-match suggestion-confirm rows.
+  // Ownership first — never fire a provider RTT for a workspace the caller
+  // doesn't own. Caller-supplied address wins; otherwise we ask the provider
+  // (gated by `expensive` bucket) preferring the mode's categoryKey so manual
+  // pins parity-match suggestion-confirm rows.
   const categoryKey = arrivalModeCategoryKey(parsed.data.mode);
-  const [property, fallbackAddress] = await Promise.all([
-    prisma.property.findUnique({
-      where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
-      select: { id: true, latitude: true, longitude: true },
-    }),
-    parsed.data.address === undefined || parsed.data.address === null
-      ? reverseGeocodeAddressForPin({
-          latitude: parsed.data.latitude,
-          longitude: parsed.data.longitude,
-          preferCategoryKey: categoryKey,
-        })
-      : Promise.resolve(null),
-  ]);
+  const property = await prisma.property.findUnique({
+    where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
+    select: { id: true, latitude: true, longitude: true },
+  });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
+
+  // Reverse-geocode is best-effort: only call when the caller didn't supply
+  // an address, and gate the external call with the `expensive` bucket so a
+  // burst of manual pins can't drain the MapTiler quota. Limiter-denied =
+  // skip the geocode (the mutation still proceeds with a null address).
+  const needsFallbackAddress =
+    parsed.data.address === undefined || parsed.data.address === null;
+  let fallbackAddress: string | null = null;
+  if (needsFallbackAddress) {
+    const gate = applyOperatorRateLimit({
+      userId: operator.userId,
+      bucket: "expensive",
+    });
+    if (gate.ok) {
+      fallbackAddress = await reverseGeocodeAddressForPin({
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
+        preferCategoryKey: categoryKey,
+      });
+    }
+  }
 
   const distanceMeters =
     property.latitude !== null && property.longitude !== null
@@ -383,10 +392,11 @@ export async function updateArrivalOptionAction(
   }
 
   // Relocate: re-geocode the new coords and recompute distance. Address is
-  // best-effort — null if the provider returns nothing rather than carry
-  // stale data from the previous location. Kept serial after the place lookup
-  // because the geocode hint (`place.categoryKey`) is only available post-DB;
-  // dropping the hint to parallelize would regress arrival pin accuracy.
+  // best-effort — null if the provider returns nothing or the `expensive`
+  // bucket is exhausted, rather than carry stale data from the previous
+  // location. Kept serial after the place lookup because the geocode hint
+  // (`place.categoryKey`) is only available post-DB; dropping the hint to
+  // parallelize would regress arrival pin accuracy.
   if (parsed.data.latitude !== undefined && parsed.data.longitude !== undefined) {
     data.latitude = parsed.data.latitude;
     data.longitude = parsed.data.longitude;
@@ -403,11 +413,17 @@ export async function updateArrivalOptionAction(
             },
           )
         : null;
-    data.address = await reverseGeocodeAddressForPin({
-      latitude: parsed.data.latitude,
-      longitude: parsed.data.longitude,
-      preferCategoryKey: place.categoryKey,
+    const gate = applyOperatorRateLimit({
+      userId: operator.userId,
+      bucket: "expensive",
     });
+    data.address = gate.ok
+      ? await reverseGeocodeAddressForPin({
+          latitude: parsed.data.latitude,
+          longitude: parsed.data.longitude,
+          preferCategoryKey: place.categoryKey,
+        })
+      : null;
   }
 
   if (Object.keys(data).length === 0) return { success: true };

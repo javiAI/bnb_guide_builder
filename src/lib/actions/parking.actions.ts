@@ -25,6 +25,7 @@ import {
   type BulkConfirmResult,
 } from "@/lib/services/places/bulk-confirm-places";
 import { reverseGeocodeAddressForPin } from "@/lib/services/places/reverse-geocode";
+import { applyOperatorRateLimit } from "@/lib/services/operator-rate-limit";
 import { rateJsonSchema } from "@/lib/schemas/rate-tier.schema";
 import {
   discoverParkingSuggestions,
@@ -206,17 +207,16 @@ export async function reverseGeocodeForPinAction(
   });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
 
-  const provider = resolveLocalPoiProvider();
-  if (typeof provider.reverse !== "function") {
-    return { success: true, data: { match: null } };
-  }
-
   const preferCategoryKey =
     parsed.data.mode === "parking"
       ? PARKING_CATEGORY_KEY
       : arrivalModeCategoryKey(parsed.data.mode as ArrivalMode);
 
   try {
+    const provider = resolveLocalPoiProvider();
+    if (typeof provider.reverse !== "function") {
+      return { success: true, data: { match: null } };
+    }
     const hit = await provider.reverse({
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
@@ -363,27 +363,35 @@ export async function addManualParkingPlaceAction(
   if (!auth.ok) return { success: false, error: auth.error };
   const { operator } = auth;
 
-  // Property lookup and reverse-geocode are independent — fire them in
-  // parallel. The reverse-geocode runs unconditionally; the result is only
-  // used when the caller didn't supply an address. The race is benign: even
-  // if `property` is null we still pay the provider RTT, but the action
-  // returns immediately and abandons the result. Caller-supplied address
-  // wins (e.g. when a future form prompts the operator); otherwise we ask
-  // the provider so manual pins parity-match suggestion-confirm rows.
-  const [property, fallbackAddress] = await Promise.all([
-    prisma.property.findUnique({
-      where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
-      select: { id: true, latitude: true, longitude: true },
-    }),
-    parsed.data.address === undefined || parsed.data.address === null
-      ? reverseGeocodeAddressForPin({
-          latitude: parsed.data.latitude,
-          longitude: parsed.data.longitude,
-          preferCategoryKey: PARKING_CATEGORY_KEY,
-        })
-      : Promise.resolve(null),
-  ]);
+  // Ownership first — never fire a provider RTT for a workspace the caller
+  // doesn't own. A `Promise.all` with the property lookup would burn the
+  // MapTiler quota on tampered IDs.
+  const property = await prisma.property.findUnique({
+    where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
+    select: { id: true, latitude: true, longitude: true },
+  });
   if (!property) return { success: false, error: "Propiedad no encontrada" };
+
+  // Reverse-geocode is best-effort: only call when the caller didn't supply
+  // an address, and gate the external call with the `expensive` bucket so a
+  // burst of manual pins can't drain the MapTiler quota. Limiter-denied =
+  // skip the geocode (the mutation still proceeds with a null address).
+  const needsFallbackAddress =
+    parsed.data.address === undefined || parsed.data.address === null;
+  let fallbackAddress: string | null = null;
+  if (needsFallbackAddress) {
+    const gate = applyOperatorRateLimit({
+      userId: operator.userId,
+      bucket: "expensive",
+    });
+    if (gate.ok) {
+      fallbackAddress = await reverseGeocodeAddressForPin({
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
+        preferCategoryKey: PARKING_CATEGORY_KEY,
+      });
+    }
+  }
 
   // Leave the JSON column empty when feeType is unspecified — absence of
   // metadata is the canonical "not classified" signal.
@@ -493,36 +501,45 @@ export async function updateParkingPlaceAction(
   if (!auth.ok) return { success: false, error: auth.error };
   const { operator } = auth;
 
-  // Relocate path needs a fresh reverse-geocode — fire it in parallel with the
-  // place lookup. Both reads are independent (the geocoder uses only the new
-  // coords). Saves one provider RTT on the relocate hot-path.
+  // Ownership first — a tampered placeId from another workspace must not
+  // trigger a provider RTT. Only relocate fires the geocoder; non-relocate
+  // edits (rename, fee toggle, recommend) never touch the external API.
   const isRelocating =
     parsed.data.latitude !== undefined && parsed.data.longitude !== undefined;
-  const [place, relocateAddress] = await Promise.all([
-    prisma.localPlace.findFirst({
-      where: {
-        id: parsed.data.placeId,
-        categoryKey: PARKING_CATEGORY_KEY,
-        property: { workspaceId: operator.workspaceId },
-      },
-      select: {
-        id: true,
-        propertyId: true,
-        name: true,
-        visibility: true,
-        providerMetadata: true,
-        property: { select: { latitude: true, longitude: true } },
-      },
-    }),
-    isRelocating
-      ? reverseGeocodeAddressForPin({
-          latitude: parsed.data.latitude!,
-          longitude: parsed.data.longitude!,
-          preferCategoryKey: PARKING_CATEGORY_KEY,
-        })
-      : Promise.resolve(null),
-  ]);
+  const place = await prisma.localPlace.findFirst({
+    where: {
+      id: parsed.data.placeId,
+      categoryKey: PARKING_CATEGORY_KEY,
+      property: { workspaceId: operator.workspaceId },
+    },
+    select: {
+      id: true,
+      propertyId: true,
+      name: true,
+      visibility: true,
+      providerMetadata: true,
+      property: { select: { latitude: true, longitude: true } },
+    },
+  });
   if (!place) return { success: false, error: "Pin no encontrado" };
+
+  // Relocate path: gate the geocode through the `expensive` bucket so a burst
+  // of drag-relocate clicks can't drain the MapTiler quota. Gate-denied =
+  // skip the geocode and let `address` fall back to null (best-effort).
+  let relocateAddress: string | null = null;
+  if (isRelocating) {
+    const gate = applyOperatorRateLimit({
+      userId: operator.userId,
+      bucket: "expensive",
+    });
+    if (gate.ok) {
+      relocateAddress = await reverseGeocodeAddressForPin({
+        latitude: parsed.data.latitude!,
+        longitude: parsed.data.longitude!,
+        preferCategoryKey: PARKING_CATEGORY_KEY,
+      });
+    }
+  }
 
   const data: {
     name?: string;
