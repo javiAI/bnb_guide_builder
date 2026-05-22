@@ -21,24 +21,15 @@ export function isIntercityMode(mode: string): mode is IntercityMode {
   return INTERCITY_MODES.has(mode);
 }
 
-/** Tier shape for paid-parking pricing. A single parking can layer multiple
- * tiers (e.g. `€2/min` for short stays + `€18/day` cap). One canonical
- * definition; mirrored by Zod schemas server-side (parking.actions.ts and
- * arrival.actions.ts) — keep `per` aligned when extending. */
-export type RateTierPer = "minute" | "hour" | "day" | "week" | "month";
-export interface RateTier {
-  amount: number;
-  currency: string;
-  per: RateTierPer;
-  note?: string;
-}
-export const RATE_TIER_PERS: ReadonlySet<RateTierPer> = new Set<RateTierPer>([
-  "minute",
-  "hour",
-  "day",
-  "week",
-  "month",
-]);
+/** Tier shape for paid-parking pricing. Canonical definition lives in the
+ * shared Zod schema (`@/lib/schemas/rate-tier.schema`); re-exported here so
+ * existing imports through `arrival-steps-helpers` keep working without
+ * forcing every consumer to retarget the import. */
+export {
+  RATE_TIER_PERS,
+  type RateTier,
+  type RateTierPer,
+} from "@/lib/schemas/rate-tier.schema";
 
 export interface ArrivalParkingPlaceShape {
   id: string;

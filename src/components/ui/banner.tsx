@@ -49,9 +49,9 @@ export function Banner({ type, message, onDismiss }: BannerProps) {
           type="button"
           onClick={onDismiss}
           aria-label="Cerrar aviso"
-          className="recipe-icon-btn-32 -mr-1 grid shrink-0 self-center place-items-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+          className="recipe-icon-btn-32 -mr-1 grid h-8 w-8 shrink-0 self-center place-items-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
         >
-          <X size={14} aria-hidden="true" />
+          <X size={16} aria-hidden="true" />
         </button>
       )}
     </div>

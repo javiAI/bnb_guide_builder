@@ -38,7 +38,7 @@ export function ParkingMapOverlay() {
           onClick={handleRelocateCancel}
           aria-label="Cancelar mover"
           className={cn(
-            "recipe-icon-btn-32 inline-flex h-7 w-7 items-center justify-center rounded-full",
+            "recipe-icon-btn-32 inline-flex h-8 w-8 items-center justify-center rounded-full",
             "text-[var(--color-text-muted)] hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-secondary)]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]",
           )}
