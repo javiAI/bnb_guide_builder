@@ -150,7 +150,8 @@ function itemsConfigured(
 //             iff items are complete.
 //   parking:  `pk.no_parking` selected → configured (explicit opt-out);
 //             empty → pending; positive types → configured iff items complete.
-//   accessibility: empty → configured (no considerations declared);
+//   accessibility: `ax.no_accessibility` selected → configured (explicit opt-out);
+//             empty → pending (unanswered, persisted as null);
 //             positive features → configured iff items are complete.
 function deriveBuildingStatus(
   methods: string[],
@@ -191,7 +192,10 @@ function deriveAccessibilityStatus(
   features: string[],
   customLabel: string | null,
 ): SubsystemStatus {
-  if (features.length === 0) return "configured";
+  // Tri-state: `ax.no_accessibility` is the explicit opt-out chip (configured),
+  // empty is unanswered (pending), positive features configured iff complete.
+  if (features.includes("ax.no_accessibility")) return "configured";
+  if (features.length === 0) return "pending";
   return itemsConfigured(features, customLabel, "ax.other") ? "configured" : "pending";
 }
 
@@ -1104,7 +1108,6 @@ export function AccessForm({
                     setAxCustomLabel={setAxCustomLabel}
                     axCustomDesc={axCustomDesc}
                     setAxCustomDesc={setAxCustomDesc}
-                    toggleMember={toggleMember}
                     propertyId={propertyId}
                     methodMediaPreview={methodMediaPreview}
                   />
@@ -1396,10 +1399,11 @@ interface AccessibilityPanelProps {
   setAxCustomLabel: (s: string) => void;
   axCustomDesc: string;
   setAxCustomDesc: (s: string) => void;
-  toggleMember: <T>(arr: T[], setArr: (next: T[]) => void, item: T) => void;
   propertyId: string;
   methodMediaPreview: Record<string, { count: number; firstUrl?: string }>;
 }
+
+const NO_ACCESSIBILITY_ID = "ax.no_accessibility";
 
 function AccessibilityPanel({
   axFeatures,
@@ -1408,52 +1412,80 @@ function AccessibilityPanel({
   setAxCustomLabel,
   axCustomDesc,
   setAxCustomDesc,
-  toggleMember,
   propertyId,
   methodMediaPreview,
 }: AccessibilityPanelProps) {
+  const isOptOut = axFeatures.includes(NO_ACCESSIBILITY_ID);
+  const optOutItem = findItem(accessibilityFeatures, NO_ACCESSIBILITY_ID);
+
+  // Tri-state mutex: selecting `ax.no_accessibility` clears every positive
+  // feature; selecting any positive feature clears the sentinel. Mirrors the
+  // building/parking opt-out chips so the data model collapses to a single
+  // boolean (`hasAccessibilityConsiderations`) on save.
+  const toggleAxFeature = useCallback(
+    (id: string) => {
+      withViewTransition(() =>
+        setAxFeatures(toggleMutexList(axFeatures, id, NO_ACCESSIBILITY_ID)),
+      );
+    },
+    [axFeatures, setAxFeatures],
+  );
+
   return (
     <div className="space-y-5">
-      {ACCESSIBILITY_GROUPS.map((group) => {
-        const sortedIds = [
-          ...group.ids.filter((id) => axFeatures.includes(id)),
-          ...group.ids.filter((id) => !axFeatures.includes(id)),
-        ];
-        return (
-          <div key={group.key}>
-            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-              {group.label}
-            </h4>
-            <MethodList>
-              {sortedIds.map((id) => {
-                const item = findItem(accessibilityFeatures, id);
-                if (!item) return null;
-                return (
-                  <MethodRow
-                    key={id}
-                    id={id}
-                    icon={accessibilityIconFor(id)}
-                    name={item.label}
-                    description={item.description}
-                    selected={axFeatures.includes(id)}
-                    onClick={() => toggleMember(axFeatures, setAxFeatures, id)}
-                    isOther={id === "ax.other"}
-                    customLabel={axCustomLabel}
-                    customDesc={axCustomDesc}
-                    onCustomLabelChange={setAxCustomLabel}
-                    onCustomDescChange={setAxCustomDesc}
-                    mediaUpload={{
-                      propertyId,
-                      usageKey: `${ACCESS_USAGE_KEYS.accessibility}.${id}`,
-                    }}
-                    mediaPreview={methodMediaPreview[`${ACCESS_USAGE_KEYS.accessibility}.${id}`]}
-                  />
-                );
-              })}
-            </MethodList>
-          </div>
-        );
-      })}
+      {optOutItem && (
+        <MethodList>
+          <MethodRow
+            id={optOutItem.id}
+            icon={accessibilityIconFor(optOutItem.id)}
+            name={optOutItem.label}
+            description={optOutItem.description}
+            selected={isOptOut}
+            onClick={() => toggleAxFeature(optOutItem.id)}
+          />
+        </MethodList>
+      )}
+      {!isOptOut &&
+        ACCESSIBILITY_GROUPS.map((group) => {
+          const sortedIds = [
+            ...group.ids.filter((id) => axFeatures.includes(id)),
+            ...group.ids.filter((id) => !axFeatures.includes(id)),
+          ];
+          return (
+            <div key={group.key}>
+              <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+                {group.label}
+              </h4>
+              <MethodList>
+                {sortedIds.map((id) => {
+                  const item = findItem(accessibilityFeatures, id);
+                  if (!item) return null;
+                  return (
+                    <MethodRow
+                      key={id}
+                      id={id}
+                      icon={accessibilityIconFor(id)}
+                      name={item.label}
+                      description={item.description}
+                      selected={axFeatures.includes(id)}
+                      onClick={() => toggleAxFeature(id)}
+                      isOther={id === "ax.other"}
+                      customLabel={axCustomLabel}
+                      customDesc={axCustomDesc}
+                      onCustomLabelChange={setAxCustomLabel}
+                      onCustomDescChange={setAxCustomDesc}
+                      mediaUpload={{
+                        propertyId,
+                        usageKey: `${ACCESS_USAGE_KEYS.accessibility}.${id}`,
+                      }}
+                      mediaPreview={methodMediaPreview[`${ACCESS_USAGE_KEYS.accessibility}.${id}`]}
+                    />
+                  );
+                })}
+              </MethodList>
+            </div>
+          );
+        })}
     </div>
   );
 }

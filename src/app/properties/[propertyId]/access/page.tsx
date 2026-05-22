@@ -187,6 +187,7 @@ export default async function AccessPage({ params }: Props) {
         primaryAccessMethod: true,
         isAutonomousCheckin: true,
         hasBuildingAccess: true,
+        hasAccessibilityConsiderations: true,
         parkingSuggestionsCacheJson: true,
         parkingSuggestionsCachedAt: true,
         arrivalSuggestionsCacheJson: true,
@@ -590,7 +591,13 @@ export default async function AccessPage({ params }: Props) {
         parkingCustomLabel: accessJson?.parking?.customLabel ?? null,
         parkingCustomDesc: accessJson?.parking?.customDesc ?? null,
         parkingPrimary: accessJson?.parking?.primary ?? null,
-        accessibilityFeatures: accessJson?.accessibility?.features ?? [],
+        // Tri-state hydration: when the operator opted out (false), the JSON
+        // payload is null, so we synthesize the `ax.no_accessibility` sentinel
+        // here. true + null follow the JSON-or-empty branches naturally.
+        accessibilityFeatures:
+          property.hasAccessibilityConsiderations === false
+            ? ["ax.no_accessibility"]
+            : (accessJson?.accessibility?.features ?? []),
         accessibilityCustomLabel: accessJson?.accessibility?.customLabel ?? null,
         accessibilityCustomDesc: accessJson?.accessibility?.customDesc ?? null,
       }}

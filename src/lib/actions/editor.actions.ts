@@ -249,9 +249,18 @@ export async function saveAccessAction(
     parkingTypes: parkingTypesFiltered.includes("pk.no_parking")
       ? ["pk.no_parking"]
       : parkingTypesFiltered,
-    accessibilityFeatures: accessibilityFeatures.filter((id) =>
-      validAccessibilityIds.has(id),
-    ),
+    // Accessibility mirrors parking: `ax.no_accessibility` is mutually exclusive
+    // with positive features. Filtered first against the taxonomy, then any
+    // positive entry wins over the sentinel if both arrived in a tampered
+    // FormData. The empty case persists as null (unanswered) below.
+    accessibilityFeatures: (() => {
+      const filtered = accessibilityFeatures.filter((id) =>
+        validAccessibilityIds.has(id),
+      );
+      const positives = filtered.filter((id) => id !== "ax.no_accessibility");
+      if (positives.length > 0) return positives;
+      return filtered.includes("ax.no_accessibility") ? ["ax.no_accessibility"] : [];
+    })(),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -266,6 +275,15 @@ export async function saveAccessAction(
   // doesn't resurrect stale text.
   const parkingHasOther = d.parkingTypes.includes("pk.other");
   const accessibilityHasOther = d.accessibilityFeatures.includes("ax.other");
+  // Tri-state opt-out: `ax.no_accessibility` is exclusive (filter above), so the
+  // sentinel-only case is detectable by includes(). Splits into the three legs:
+  //   - sentinel only          -> hasAccessibilityConsiderations = false
+  //   - any positive feature   -> hasAccessibilityConsiderations = true
+  //   - empty                  -> hasAccessibilityConsiderations = null (unanswered)
+  const accessibilityIsOptOut = d.accessibilityFeatures.includes("ax.no_accessibility");
+  const accessibilityPositiveFeatures = d.accessibilityFeatures.filter(
+    (id) => id !== "ax.no_accessibility",
+  );
 
   // Primary must reference a still-selected method. If a tampered FormData
   // sends a primary not in the array, fall back to methods[0] (or null).
@@ -295,8 +313,11 @@ export async function saveAccessAction(
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
       hasParking: d.hasParking,
-      hasAccessibilityConsiderations:
-        d.accessibilityFeatures.length > 0 ? true : null,
+      hasAccessibilityConsiderations: accessibilityIsOptOut
+        ? false
+        : accessibilityPositiveFeatures.length > 0
+          ? true
+          : null,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
         building:
@@ -314,9 +335,9 @@ export async function saveAccessAction(
               }
             : null,
         accessibility:
-          d.accessibilityFeatures.length > 0
+          accessibilityPositiveFeatures.length > 0
             ? {
-                features: d.accessibilityFeatures,
+                features: accessibilityPositiveFeatures,
                 customLabel: accessibilityHasOther
                   ? accessibilityCustomLabel
                   : null,

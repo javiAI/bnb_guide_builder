@@ -87,6 +87,7 @@ export const PARKING_ICONS: Record<string, LucideIcon> = {
 };
 
 export const ACCESSIBILITY_ICONS: Record<string, LucideIcon> = {
+  "ax.no_accessibility": CircleSlash,
   "ax.single_level_home": LayoutGrid,
   "ax.step_free_guest_entrance": DoorOpen,
   "ax.guest_entrance_wide_81cm": MoveHorizontal,

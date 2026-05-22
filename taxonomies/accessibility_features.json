@@ -5,6 +5,12 @@
   "units_system": "metric",
   "items": [
     {
+      "id": "ax.no_accessibility",
+      "label": "Sin consideraciones de accesibilidad",
+      "description": "La propiedad no documenta características específicas de accesibilidad. Selección excluyente con el resto.",
+      "recommended": false
+    },
+    {
       "id": "ax.single_level_home",
       "label": "Vivienda en una sola planta",
       "description": "Toda la vivienda se desarrolla en un único nivel, sin escaleras internas entre estancias.",
