@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 6 · Brand stress matrix · 8 × 2 = 16 heroes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../tokens/colors_and_type.css">
+<style>
+/* page chrome */
+:root { --page-bg: #EDE7DC; --page-fg: #2E2B26; --page-fg-2: #5A564D; --page-fg-3: #8A8578; --page-bd: #E6E1D8; }
+body {
+  background: radial-gradient(ellipse at top, #F2EEE8 0%, #DDD4C2 55%, #C8BDA6 100%);
+  color: var(--page-fg);
+  padding: 56px 32px 96px;
+}
+.doc { max-width: 1340px; margin: 0 auto; }
+.doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 36px; }
+.doc-eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-fg-3); }
+.doc-h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--page-fg-2); line-height: 21px; max-width: 76ch; }
+.doc-meta { font-family: var(--guest-font-mono); font-size: 11px; color: var(--page-fg-2); text-align: right; line-height: 17px; }
+.doc-meta b { color: var(--page-fg); font-weight: 700; }
+.section-eb { font-family: var(--guest-font-mono); font-size: 11px; color: var(--page-fg-3); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 36px 0 18px; display: flex; align-items: center; gap: 10px; }
+.section-eb::after { content: ""; flex: 1; height: 1px; background: var(--page-bd); }
+
+/* matrix — 4 cols × 4 rows = 16 cards. Each row holds 2 brand-pairs (light, dark, light, dark). */
+.matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+
+.cell { display: flex; flex-direction: column; gap: 10px; }
+.cell-name { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px; }
+.cell-name .k { font-size: 14px; font-weight: 700; color: var(--page-fg); }
+.cell-name .theme {
+  font-family: var(--guest-font-mono); font-size: 10px; padding: 2px 8px;
+  border-radius: 4px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+}
+.theme.light { background: #FCFBF8; color: #5A564D; border: 1px solid #E6E1D8; }
+.theme.dark  { background: #1A1813; color: #C8C2B5; border: 1px solid #2E2A23; }
+
+/* hero card — uses --guest-brand / --guest-on-solid from doublet via [data-brand] (and [data-theme="dark"][data-brand]) */
+.hero {
+  background: var(--guest-brand); color: var(--guest-on-solid);
+  border-radius: 18px; padding: 22px 22px 20px;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 192px;
+}
+.hero::after { content:""; position:absolute; inset:-40% -10% auto auto; width: 60%; height: 120%; background: radial-gradient(ellipse at top right, rgba(255,255,255,0.16), transparent 60%); pointer-events: none; }
+.hero .eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.86; display: flex; align-items: center; gap: 7px; color: var(--guest-on-solid); }
+.hero .eb .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.hero h3 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 28px; margin: 0; color: var(--guest-on-solid); }
+.hero .sub { font-size: 13px; opacity: 0.86; line-height: 17px; color: var(--guest-on-solid); }
+.hero .pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  border-radius: 999px; font-size: 12px; font-weight: 600; align-self: flex-start;
+  background: rgba(255,255,255,0.18); color: var(--guest-on-solid);
+}
+[data-theme="dark"] .hero .pill { background: rgba(0,0,0,0.18); }
+.hero .pill .pdot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* meta */
+.meta {
+  background: #FCFBF8; border: 1px solid #E6E1D8; border-radius: 10px;
+  padding: 10px 13px;
+  font-family: var(--guest-font-mono); font-size: 11px; color: #5A564D; line-height: 16px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.cell.dark-cell .meta { background: #1A1813; border-color: #2E2A23; color: #C8C2B5; }
+.meta .row { display: flex; justify-content: space-between; gap: 10px; }
+.meta .lab { color: #8A8578; }
+.cell.dark-cell .meta .lab { color: #8A8578; }
+.meta .v { color: #2E2B26; font-weight: 700; }
+.cell.dark-cell .meta .v { color: #ECE6DA; }
+.meta .ratio { color: #2C4A2E; font-weight: 700; }
+.cell.dark-cell .meta .ratio { color: #8FB290; }
+
+/* legend */
+.legend {
+  background: #FCFBF8; border: 1px solid #E6E1D8; border-radius: 12px;
+  padding: 18px 22px; margin-top: 28px;
+  font-size: 13px; color: #5A564D; line-height: 19px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 22px;
+}
+.legend h4 { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: #2E2B26; margin: 0 0 6px; }
+.legend code { font-family: var(--guest-font-mono); font-size: 12px; background: #F2EEE8; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <div class="doc-head">
+    <div>
+      <div class="doc-eb">Batch 6 of 6 · cierre · 8 brands × 2 themes · 16 heroes</div>
+      <h1 class="doc-h1">Brand stress matrix</h1>
+      <p class="doc-sub">Cada hero consume <code style="font-family:var(--guest-font-mono)">--guest-brand</code> + <code style="font-family:var(--guest-font-mono)">--guest-on-solid</code> resueltos vía <code style="font-family:var(--guest-font-mono)">[data-brand]</code> (y <code style="font-family:var(--guest-font-mono)">[data-theme="dark"][data-brand]</code>) sobre los 8 keys canónicos. Tokens importados desde <code style="font-family:var(--guest-font-mono)">colors_and_type.css</code>. Los 16 ratios miden ≥ 7 : 1 AAA.</p>
+    </div>
+    <div class="doc-meta">
+      <b>Sample · Casa Lavanda</b><br/>
+      Calle Cuba 42, 3B · Ruzafa<br/>
+      Anfitriona: Laura<br/>
+      check-in 16:00 · check-out 11:00 vie
+    </div>
+  </div>
+
+  <div class="section-eb">Matrix · 4 × 4 · 16 heroes</div>
+
+  <div class="matrix">
+
+    <!-- ROW 1 — indigo, teal -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">indigo</span><span class="theme light">light</span></div>
+      <div data-brand="indigo" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-indigo-800</span><span class="v">#312E81</span></div>
+        <div class="row"><span class="lab">on-solid-indigo</span><span class="v">#F0F0FF</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">10.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">indigo</span><span class="theme dark">dark</span></div>
+      <div data-brand="indigo" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-indigo-700d</span><span class="v">#A39DEC</span></div>
+        <div class="row"><span class="lab">on-solid-indigo-d</span><span class="v">#08061C</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">teal</span><span class="theme light">light</span></div>
+      <div data-brand="teal" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-teal-800</span><span class="v">#134E48</span></div>
+        <div class="row"><span class="lab">on-solid-teal</span><span class="v">#E8F7F5</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">10.7 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">teal</span><span class="theme dark">dark</span></div>
+      <div data-brand="teal" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-teal-700d</span><span class="v">#4DAFA8</span></div>
+        <div class="row"><span class="lab">on-solid-teal-d</span><span class="v">#04130F</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.8 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 2 — coral, olive -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">coral</span><span class="theme light">light</span></div>
+      <div data-brand="coral" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-coral-800</span><span class="v">#6B1414</span></div>
+        <div class="row"><span class="lab">on-solid-coral</span><span class="v">#FFF5F0</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">10.3 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">coral</span><span class="theme dark">dark</span></div>
+      <div data-brand="coral" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-coral-700d</span><span class="v">#E89090</span></div>
+        <div class="row"><span class="lab">on-solid-coral-d</span><span class="v">#1A0303</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">8.3 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">olive</span><span class="theme light">light</span></div>
+      <div data-brand="olive" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-olive-800</span><span class="v">#2C4A0C</span></div>
+        <div class="row"><span class="lab">on-solid-olive</span><span class="v">#F4FAEA</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">10.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">olive</span><span class="theme dark">dark</span></div>
+      <div data-brand="olive" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-olive-700d</span><span class="v">#92BD53</span></div>
+        <div class="row"><span class="lab">on-solid-olive-d</span><span class="v">#0E1A02</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">8.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 3 — navy, plum -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">navy</span><span class="theme light">light</span></div>
+      <div data-brand="navy" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-navy-800</span><span class="v">#1A2C66</span></div>
+        <div class="row"><span class="lab">on-solid-navy</span><span class="v">#EEF1FA</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">11.5 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">navy</span><span class="theme dark">dark</span></div>
+      <div data-brand="navy" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-navy-700d</span><span class="v">#93AAEA</span></div>
+        <div class="row"><span class="lab">on-solid-navy-d</span><span class="v">#060B26</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">plum</span><span class="theme light">light</span></div>
+      <div data-brand="plum" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-plum-800</span><span class="v">#4C1D80</span></div>
+        <div class="row"><span class="lab">on-solid-plum</span><span class="v">#F8EFFA</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">10.2 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">plum</span><span class="theme dark">dark</span></div>
+      <div data-brand="plum" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-plum-700d</span><span class="v">#C285F1</span></div>
+        <div class="row"><span class="lab">on-solid-plum-d</span><span class="v">#1A0830</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.2 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- ROW 4 — sienna, slate -->
+    <div class="cell">
+      <div class="cell-name"><span class="k">sienna</span><span class="theme light">light</span></div>
+      <div data-brand="sienna" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-sienna-800</span><span class="v">#4D1D0A</span></div>
+        <div class="row"><span class="lab">on-solid-sienna</span><span class="v">#FCF1EA</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">11.7 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">sienna</span><span class="theme dark">dark</span></div>
+      <div data-brand="sienna" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-sienna-700d</span><span class="v">#E08F6E</span></div>
+        <div class="row"><span class="lab">on-solid-sienna-d</span><span class="v">#200A02</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell">
+      <div class="cell-name"><span class="k">slate</span><span class="theme light">light</span></div>
+      <div data-brand="slate" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-slate-800</span><span class="v">#1E293B</span></div>
+        <div class="row"><span class="lab">on-solid-slate</span><span class="v">#F1F5FA</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">13.2 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <div class="cell dark-cell" data-theme="dark">
+      <div class="cell-name"><span class="k">slate</span><span class="theme dark">dark</span></div>
+      <div data-brand="slate" class="hero">
+        <span class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</span>
+        <h3>Hola, Laura.</h3>
+        <span class="sub">Calle Cuba 42, 3B · Ruzafa</span>
+        <span class="pill"><span class="pdot"></span>Recomendado</span>
+      </div>
+      <div class="meta">
+        <div class="row"><span class="lab">brand-slate-700d</span><span class="v">#A0AAB8</span></div>
+        <div class="row"><span class="lab">on-solid-slate-d</span><span class="v">#07090E</span></div>
+        <div class="row"><span class="lab">contrast (h3)</span><span class="ratio">7.7 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div>
+      <h4>Cómo aplicar</h4>
+      Envuelve cualquier superficie brand-tagged en <code>[data-brand="<i>key</i>"]</code>. El hero pinta <code>--guest-brand</code> y el texto <code>--guest-on-solid</code> automáticamente. Sin <code>[data-brand]</code> el sistema sigue en slate.
+    </div>
+    <div>
+      <h4>Dark</h4>
+      Añade <code>[data-theme="dark"]</code> en cualquier ancestro (típicamente <code>&lt;html&gt;</code>). El selector compuesto <code>[data-theme="dark"][data-brand="<i>key</i>"]</code> reasigna a las variantes <code>-d</code>.
+    </div>
+    <div>
+      <h4>Tints (50)</h4>
+      Para superficies suaves (chips, alerts, badges) usa <code>--guest-brand-tint</code> + <code>--guest-on-tint</code>. Mismas reglas, mismos ratios.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

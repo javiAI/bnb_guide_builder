@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 1 · Token Sheet · Guest Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+/* ============================================================
+   GUEST GUIDE — Batch 1 token sheet
+   This file IS the token sheet. The :root vars below are the
+   canonical light bindings; [data-theme="dark"] holds dark.
+   ============================================================ */
+
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  /* — primitive scale: WARM STONE (12 stops) — */
+  --stone-00: #FCFBF8;   /* paper            */
+  --stone-05: #FAF7F2;   /* cream            */
+  --stone-08: #F6F3EC;
+  --stone-12: #F2EEE8;
+  --stone-24: #E6E1D8;
+  --stone-32: #D8D2C6;
+  --stone-40: #C8C2B5;
+  --stone-56: #8A8578;
+  --stone-72: #5A564D;
+  --stone-88: #2E2B26;
+  --stone-94: #1C1A16;
+  --stone-99: #0E0D0A;
+
+  /* — primitive scale: SLATE (system accent) — */
+  --slate-50:  #F3F6FA;
+  --slate-100: #E8EDF4;
+  --slate-200: #CFD8E6;
+  --slate-400: #6D82A4;
+  --slate-500: #3A5070;
+  --slate-600: #2B3C54;
+  --slate-700: #1E2A3A;
+  --slate-800: #16202E;
+
+  /* — primitive scale: status (earthy, never saturated) — */
+  --amber-50:  #FBF4EA;
+  --amber-100: #F7EADA;
+  --amber-500: #B7793A;
+  --amber-700: #7A4A18;
+  --moss-50:   #F2F6EE;
+  --moss-100:  #E3ECDF;
+  --moss-500:  #4F7A52;
+  --moss-700:  #2C4A2E;
+  --clay-50:   #FBECE8;
+  --clay-100:  #F5DCD6;
+  --clay-500:  #B64A38;
+  --clay-700:  #7A2E22;
+  --info-50:   #EEF3FA;
+  --info-100:  #DCE6F2;
+  --info-500:  #3A5070;  /* info reuses slate */
+  --info-700:  #1E2A3A;
+
+  /* ============================================================
+     SEMANTIC ROLES — LIGHT (default)
+     ============================================================ */
+
+  /* Background */
+  --guest-color-background-page:     var(--stone-05);
+  --guest-color-background-surface:  var(--stone-00);
+  --guest-color-background-subtle:   var(--stone-08);
+  --guest-color-background-muted:    var(--stone-12);
+  --guest-color-background-elevated: var(--stone-00);
+  --guest-color-background-inverse:  var(--slate-700);
+  --guest-color-background-overlay:  rgba(28,26,22,0.48);
+  --guest-color-background-scrim:    rgba(28,26,22,0.72);
+
+  /* Text */
+  --guest-color-text-primary:     var(--stone-88);
+  --guest-color-text-secondary:   var(--stone-72);
+  --guest-color-text-muted:       var(--stone-56);
+  --guest-color-text-subtle:      var(--stone-40);
+  --guest-color-text-inverse:     var(--stone-05);
+  --guest-color-text-link:        var(--slate-500);
+  --guest-color-text-link-hover:  var(--slate-700);
+  --guest-color-text-disabled:    var(--stone-40);
+  --guest-color-text-placeholder: var(--stone-56);
+  --guest-color-text-on-accent:   var(--stone-05);
+  --guest-color-text-on-overlay:  var(--stone-05);
+
+  /* Border */
+  --guest-color-border-subtle:    var(--stone-12);
+  --guest-color-border-default:   var(--stone-24);
+  --guest-color-border-strong:    var(--stone-40);
+  --guest-color-border-emphasis:  var(--stone-56);
+  --guest-color-border-focus:     var(--slate-500);
+  --guest-color-border-error:     var(--clay-500);
+  --guest-color-border-success:   var(--moss-500);
+  --guest-color-border-warning:   var(--amber-500);
+  --guest-color-border-info:      var(--slate-400);
+
+  /* Action — primary (slate) */
+  --guest-color-action-primary-base:        var(--slate-700);
+  --guest-color-action-primary-hover:       var(--slate-600);
+  --guest-color-action-primary-active:      var(--slate-800);
+  --guest-color-action-primary-fg:          var(--stone-05);
+  --guest-color-action-primary-subtle:      var(--slate-100);
+  --guest-color-action-primary-subtle-fg:   var(--slate-700);
+
+  /* Action — secondary (warm stone) */
+  --guest-color-action-secondary-base:      var(--stone-00);
+  --guest-color-action-secondary-hover:     var(--stone-12);
+  --guest-color-action-secondary-active:    var(--stone-24);
+  --guest-color-action-secondary-fg:        var(--stone-88);
+  --guest-color-action-secondary-subtle:    var(--stone-08);
+  --guest-color-action-secondary-subtle-fg: var(--stone-72);
+
+  /* Action — ghost (transparent) */
+  --guest-color-action-ghost-base:          transparent;
+  --guest-color-action-ghost-hover:         var(--stone-12);
+  --guest-color-action-ghost-active:        var(--stone-24);
+  --guest-color-action-ghost-fg:            var(--stone-72);
+  --guest-color-action-ghost-subtle:        transparent;
+  --guest-color-action-ghost-subtle-fg:     var(--stone-56);
+
+  /* Action — destructive (clay) */
+  --guest-color-action-destructive-base:        var(--clay-500);
+  --guest-color-action-destructive-hover:       var(--clay-700);
+  --guest-color-action-destructive-active:      #5E1F15;
+  --guest-color-action-destructive-fg:          #FFFFFF;
+  --guest-color-action-destructive-subtle:      var(--clay-50);
+  --guest-color-action-destructive-subtle-fg:   var(--clay-700);
+
+  /* Status */
+  --guest-color-status-success-bg:        var(--moss-50);
+  --guest-color-status-success-text:      var(--moss-700);
+  --guest-color-status-success-icon:      var(--moss-500);
+  --guest-color-status-success-border:    var(--moss-100);
+  --guest-color-status-success-solid:     var(--moss-500);
+  --guest-color-status-success-solid-fg:  #FFFFFF;
+
+  --guest-color-status-warning-bg:        var(--amber-50);
+  --guest-color-status-warning-text:      var(--amber-700);
+  --guest-color-status-warning-icon:      var(--amber-500);
+  --guest-color-status-warning-border:    var(--amber-100);
+  --guest-color-status-warning-solid:     var(--amber-500);
+  --guest-color-status-warning-solid-fg:  #FFFFFF;
+
+  --guest-color-status-error-bg:          var(--clay-50);
+  --guest-color-status-error-text:        var(--clay-700);
+  --guest-color-status-error-icon:        var(--clay-500);
+  --guest-color-status-error-border:      var(--clay-100);
+  --guest-color-status-error-solid:       var(--clay-500);
+  --guest-color-status-error-solid-fg:    #FFFFFF;
+
+  --guest-color-status-info-bg:           var(--info-50);
+  --guest-color-status-info-text:         var(--info-700);
+  --guest-color-status-info-icon:         var(--info-500);
+  --guest-color-status-info-border:       var(--info-100);
+  --guest-color-status-info-solid:        var(--info-500);
+  --guest-color-status-info-solid-fg:     #FFFFFF;
+
+  /* Brand layer (per-property). System accent = slate by default.
+     Brand swap only on brand-tagged surfaces (hero, action.primary
+     when wrapped in [data-brand]). System accent stays as-is
+     everywhere else. */
+  --guest-brand-light:  var(--slate-700);
+  --guest-brand-dark:   var(--slate-600);
+  --guest-brand:        var(--guest-brand-light);
+  --guest-brand-fg:     var(--stone-05);
+
+  /* Typography */
+  --guest-font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --guest-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --guest-font-feature: "cv11","ss01","ss03","cv02","cv05";
+
+  /* Type ramp */
+  --guest-text-display:        32px;
+  --guest-text-display-mobile: 28px;
+  --guest-text-h1:             24px;
+  --guest-text-h2:             18px;
+  --guest-text-body-guest:     16px;  /* mobile body floor */
+  --guest-text-body:           15px;  /* desktop body / dense */
+  --guest-text-label:          13px;
+  --guest-text-micro:          11px;
+
+  --guest-lh-display:        36px;
+  --guest-lh-display-mobile: 32px;
+  --guest-lh-h1:             30px;
+  --guest-lh-h2:             24px;
+  --guest-lh-body-guest:     24px;
+  --guest-lh-body:           22px;
+  --guest-lh-label:          18px;
+  --guest-lh-micro:          14px;
+
+  --guest-weight-regular:  400;
+  --guest-weight-medium:   500;
+  --guest-weight-semibold: 600;
+  --guest-weight-bold:     700;
+
+  /* Spacing */
+  --guest-space-1:  4px;
+  --guest-space-2:  8px;
+  --guest-space-3:  12px;
+  --guest-space-4:  16px;
+  --guest-space-5:  20px;
+  --guest-space-6:  24px;
+  --guest-space-8:  32px;
+  --guest-space-10: 40px;
+  --guest-space-12: 48px;
+  --guest-space-16: 64px;
+
+  /* Radii */
+  --guest-radius-xs:   6px;
+  --guest-radius-sm:  10px;
+  --guest-radius-md:  14px;
+  --guest-radius-lg:  20px;
+  --guest-radius-full: 9999px;
+
+  /* Elevation (warm, diffuse — never 3D) */
+  --guest-elev-0: none;
+  --guest-elev-1: 0 1px 2px rgba(28,26,22,.04), 0 1px 1px rgba(28,26,22,.03);
+  --guest-elev-2: 0 2px 8px rgba(28,26,22,.06), 0 8px 24px rgba(28,26,22,.04);
+  --guest-elev-3: 0 8px 24px rgba(28,26,22,.10), 0 24px 48px rgba(28,26,22,.08);
+
+  /* Motion */
+  --guest-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --guest-dur-1: 80ms;
+  --guest-dur-2: 180ms;
+  --guest-dur-3: 240ms;
+}
+
+/* ============================================================
+   DARK BINDINGS — propose
+   ============================================================ */
+
+[data-theme="dark"] {
+  /* warm near-black stone (NOT cold grey) */
+  --stone-00d: #1F1C17;
+  --stone-05d: #14120E;   /* page */
+  --stone-08d: #1A1813;
+  --stone-12d: #221F19;
+  --stone-24d: #2E2A23;   /* border subtle */
+  --stone-32d: #3A352D;
+  --stone-40d: #4D4740;
+  --stone-56d: #8E887E;
+  --stone-72d: #C2BCB0;
+  --stone-88d: #ECE6DA;
+  --stone-94d: #F5EFE3;
+  --stone-99d: #FCF8EE;
+
+  /* slate ramp shifts: surface lifts slightly so it reads as
+     "raised" against page; primitives keep hue equivalence */
+  --slate-50d:  #1A2230;
+  --slate-100d: #233044;
+  --slate-200d: #324663;
+  --slate-400d: #8FA3C2;
+  --slate-500d: #B8C4D8;
+  --slate-600d: #2D405B;
+  --slate-700d: #25364E;   /* dark accent surface */
+  --slate-800d: #1B2A3D;
+
+  /* status — lift L, drop chroma; warm hues survive */
+  --amber-50d:  #2A2014;
+  --amber-100d: #3A2C1A;
+  --amber-500d: #D6995F;
+  --amber-700d: #ECC79A;
+
+  --moss-50d:   #182217;
+  --moss-100d:  #223123;
+  --moss-500d:  #8FB290;
+  --moss-700d:  #BDD3BD;
+
+  --clay-50d:   #2A1612;
+  --clay-100d:  #3D1F18;
+  --clay-500d:  #DD8472;
+  --clay-700d:  #F1B7A9;
+
+  --info-50d:   #1A2230;
+  --info-100d:  #233044;
+  --info-500d:  #8FA3C2;
+  --info-700d:  #C9D5E6;
+
+  /* Background */
+  --guest-color-background-page:     var(--stone-05d);
+  --guest-color-background-surface:  var(--stone-08d);
+  --guest-color-background-subtle:   var(--stone-12d);
+  --guest-color-background-muted:    var(--stone-12d);
+  --guest-color-background-elevated: var(--stone-00d);
+  --guest-color-background-inverse:  var(--stone-94d);
+  --guest-color-background-overlay:  rgba(0,0,0,0.60);
+  --guest-color-background-scrim:    rgba(0,0,0,0.80);
+
+  /* Text — invert ink ramp */
+  --guest-color-text-primary:     var(--stone-88d);
+  --guest-color-text-secondary:   var(--stone-72d);
+  --guest-color-text-muted:       var(--stone-56d);
+  --guest-color-text-subtle:      var(--stone-40d);
+  --guest-color-text-inverse:     var(--stone-94);
+  --guest-color-text-link:        var(--slate-500d);
+  --guest-color-text-link-hover:  var(--stone-94d);
+  --guest-color-text-disabled:    var(--stone-40d);
+  --guest-color-text-placeholder: var(--stone-56d);
+  --guest-color-text-on-accent:   var(--stone-94d);
+  --guest-color-text-on-overlay:  var(--stone-94d);
+
+  /* Border — borders carry elevation in dark */
+  --guest-color-border-subtle:    var(--stone-24d);
+  --guest-color-border-default:   var(--stone-32d);
+  --guest-color-border-strong:    var(--stone-40d);
+  --guest-color-border-emphasis:  var(--stone-56d);
+  --guest-color-border-focus:     var(--slate-500d);
+  --guest-color-border-error:     var(--clay-500d);
+  --guest-color-border-success:   var(--moss-500d);
+  --guest-color-border-warning:   var(--amber-500d);
+  --guest-color-border-info:      var(--slate-400d);
+
+  /* Action — primary */
+  --guest-color-action-primary-base:        var(--slate-700d);
+  --guest-color-action-primary-hover:       var(--slate-600d);
+  --guest-color-action-primary-active:      var(--slate-800d);
+  --guest-color-action-primary-fg:          var(--stone-94d);
+  --guest-color-action-primary-subtle:      var(--slate-100d);
+  --guest-color-action-primary-subtle-fg:   var(--slate-500d);
+
+  /* Action — secondary */
+  --guest-color-action-secondary-base:      var(--stone-12d);
+  --guest-color-action-secondary-hover:     var(--stone-24d);
+  --guest-color-action-secondary-active:    var(--stone-32d);
+  --guest-color-action-secondary-fg:        var(--stone-88d);
+  --guest-color-action-secondary-subtle:    var(--stone-08d);
+  --guest-color-action-secondary-subtle-fg: var(--stone-72d);
+
+  /* Action — ghost */
+  --guest-color-action-ghost-base:          transparent;
+  --guest-color-action-ghost-hover:         var(--stone-12d);
+  --guest-color-action-ghost-active:        var(--stone-24d);
+  --guest-color-action-ghost-fg:            var(--stone-72d);
+  --guest-color-action-ghost-subtle:        transparent;
+  --guest-color-action-ghost-subtle-fg:     var(--stone-56d);
+
+  /* Action — destructive */
+  --guest-color-action-destructive-base:        var(--clay-500d);
+  --guest-color-action-destructive-hover:       var(--clay-700d);
+  --guest-color-action-destructive-active:      #F5C5B7;
+  --guest-color-action-destructive-fg:          #1B0B07;
+  --guest-color-action-destructive-subtle:      var(--clay-50d);
+  --guest-color-action-destructive-subtle-fg:   var(--clay-700d);
+
+  /* Status */
+  --guest-color-status-success-bg:        var(--moss-50d);
+  --guest-color-status-success-text:      var(--moss-700d);
+  --guest-color-status-success-icon:      var(--moss-500d);
+  --guest-color-status-success-border:    var(--moss-100d);
+  --guest-color-status-success-solid:     var(--moss-500d);
+  --guest-color-status-success-solid-fg:  var(--stone-94);
+
+  --guest-color-status-warning-bg:        var(--amber-50d);
+  --guest-color-status-warning-text:      var(--amber-700d);
+  --guest-color-status-warning-icon:      var(--amber-500d);
+  --guest-color-status-warning-border:    var(--amber-100d);
+  --guest-color-status-warning-solid:     var(--amber-500d);
+  --guest-color-status-warning-solid-fg:  var(--stone-94);
+
+  --guest-color-status-error-bg:          var(--clay-50d);
+  --guest-color-status-error-text:        var(--clay-700d);
+  --guest-color-status-error-icon:        var(--clay-500d);
+  --guest-color-status-error-border:      var(--clay-100d);
+  --guest-color-status-error-solid:       var(--clay-500d);
+  --guest-color-status-error-solid-fg:    var(--stone-94);
+
+  --guest-color-status-info-bg:           var(--info-50d);
+  --guest-color-status-info-text:         var(--info-700d);
+  --guest-color-status-info-icon:         var(--info-500d);
+  --guest-color-status-info-border:       var(--info-100d);
+  --guest-color-status-info-solid:        var(--info-500d);
+  --guest-color-status-info-solid-fg:     var(--stone-94);
+
+  /* Brand */
+  --guest-brand:    var(--guest-brand-dark);
+  --guest-brand-fg: var(--stone-94d);
+
+  /* Elevation — softer in dark; rely on border instead */
+  --guest-elev-1: 0 1px 0 rgba(0,0,0,0.30);
+  --guest-elev-2: 0 2px 6px rgba(0,0,0,0.38);
+  --guest-elev-3: 0 12px 32px rgba(0,0,0,0.55);
+}
+
+/* ============================================================
+   PAGE CHROME — the artboard itself
+   ============================================================ */
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  font-family: var(--guest-font-sans);
+  font-feature-settings: var(--guest-font-feature);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--guest-color-text-primary);
+}
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, #EDE7DC 0%, #DDD4C2 55%, #C8BDA6 100%);
+  padding: 56px 24px 80px;
+}
+
+.sheet {
+  max-width: 1320px;
+  margin: 0 auto;
+  background: var(--guest-color-background-page);
+  border: 1px solid var(--guest-color-border-default);
+  border-radius: 28px;
+  padding: 56px 56px 64px;
+  box-shadow: 0 40px 80px rgba(28,26,22,.18);
+}
+
+/* documentary header */
+.doc-header { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding-bottom: 28px; border-bottom: 1px solid var(--guest-color-border-default); }
+.doc-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--guest-color-text-muted); }
+.doc-title { font-size: 40px; font-weight: 700; letter-spacing: -0.025em; line-height: 44px; margin: 6px 0 4px; color: var(--guest-color-text-primary); }
+.doc-sub { font-size: 15px; color: var(--guest-color-text-secondary); line-height: 22px; max-width: 60ch; }
+.doc-meta { font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted); text-align: right; line-height: 18px; }
+.doc-meta b { color: var(--guest-color-text-primary); font-weight: 600; }
+
+h2.section {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--guest-color-text-muted);
+  margin: 56px 0 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+h2.section::before { content: ""; display: block; width: 22px; height: 1px; background: var(--guest-color-border-strong); }
+h2.section .num { font-family: var(--guest-font-mono); color: var(--guest-color-text-primary); }
+
+h3.sub {
+  font-size: 18px; font-weight: 600; letter-spacing: -0.005em;
+  color: var(--guest-color-text-primary);
+  margin: 28px 0 12px;
+}
+
+p.note {
+  font-size: 13px; line-height: 19px; color: var(--guest-color-text-secondary);
+  max-width: 80ch; margin: 0 0 20px;
+}
+
+/* token table */
+.tbl {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--guest-font-mono);
+  font-size: 12px;
+  background: var(--guest-color-background-surface);
+  border: 1px solid var(--guest-color-border-default);
+  border-radius: var(--guest-radius-md);
+  overflow: hidden;
+}
+.tbl thead th {
+  text-align: left; padding: 10px 14px;
+  font-family: var(--guest-font-sans); font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--guest-color-text-muted);
+  background: var(--guest-color-background-subtle);
+  border-bottom: 1px solid var(--guest-color-border-default);
+}
+.tbl tbody td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--guest-color-border-subtle);
+  vertical-align: middle;
+}
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover { background: var(--guest-color-background-subtle); }
+.tbl .role {
+  font-family: var(--guest-font-sans); font-weight: 500; font-size: 13px;
+  color: var(--guest-color-text-primary);
+}
+.tbl .role span { display:block; font-family: var(--guest-font-mono); color: var(--guest-color-text-muted); font-size: 11px; font-weight: 400; margin-top: 2px; }
+.tbl .swatch-cell { display: flex; gap: 10px; align-items: center; min-width: 220px; }
+.swatch {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(28,26,22,.10);
+}
+[data-theme="dark"] .swatch { box-shadow: inset 0 0 0 1px rgba(255,255,255,.10); }
+.hex { color: var(--guest-color-text-primary); font-weight: 500; letter-spacing: 0.01em; }
+.note-cell { color: var(--guest-color-text-muted); font-family: var(--guest-font-sans); font-size: 12px; line-height: 17px; }
+
+/* split frame: side-by-side light/dark previews */
+.split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  margin: 0 0 12px;
+}
+.frame {
+  border-radius: var(--guest-radius-lg);
+  border: 1px solid var(--guest-color-border-default);
+  overflow: hidden;
+}
+.frame-head {
+  padding: 10px 16px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--guest-color-text-muted);
+  background: var(--guest-color-background-subtle);
+  border-bottom: 1px solid var(--guest-color-border-subtle);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.frame-head svg { width: 13px; height: 13px; }
+.frame-body { padding: 24px; }
+
+.frame.light { background: var(--stone-05); color: var(--stone-88); }
+.frame.light .swatch { box-shadow: inset 0 0 0 1px rgba(28,26,22,.10); }
+.frame.dark  { background: #14120E; color: #ECE6DA; }
+.frame.dark .frame-head { background: #1A1813; color: #8E887E; border-color: #221F19; }
+.frame.dark .swatch { box-shadow: inset 0 0 0 1px rgba(255,255,255,.10); }
+
+/* hero contrast preview block */
+.hero-preview {
+  border-radius: var(--guest-radius-md);
+  padding: 22px 24px;
+  position: relative; overflow: hidden;
+}
+.frame.light .hero-preview { background: #1E2A3A; color: #FAF7F2; }
+.frame.dark  .hero-preview { background: #25364E; color: #ECE6DA; }
+.hero-preview::before {
+  content:""; position:absolute; inset:-50% -10% auto auto; width:60%; height:120%;
+  background: radial-gradient(ellipse at top right, rgba(242,192,120,0.18), transparent 60%);
+  pointer-events:none;
+}
+.hero-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; opacity: .72; }
+.hero-title { font-size: 28px; font-weight: 700; line-height: 32px; letter-spacing: -0.02em; margin-top: 8px; }
+.hero-sub { font-size: 13px; opacity: .82; margin-top: 4px; }
+.hero-ratio {
+  position: absolute; right: 16px; top: 14px;
+  font-family: var(--guest-font-mono); font-size: 11px;
+  background: rgba(255,255,255,.14); color: inherit;
+  padding: 3px 8px; border-radius: 999px; font-weight: 600;
+}
+
+/* type ramp display */
+.ramp {
+  display: grid; grid-template-columns: 110px 1fr 220px;
+  gap: 0;
+  background: var(--guest-color-background-surface);
+  border: 1px solid var(--guest-color-border-default);
+  border-radius: var(--guest-radius-md);
+  overflow: hidden;
+}
+.ramp-row {
+  display: contents;
+}
+.ramp-row > * {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--guest-color-border-subtle);
+}
+.ramp-row:last-child > * { border-bottom: none; }
+.ramp-tag {
+  font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted);
+  background: var(--guest-color-background-subtle);
+  display: flex; align-items: center;
+}
+.ramp-spec {
+  font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted);
+  line-height: 16px; align-self: center;
+}
+.ramp-spec b { color: var(--guest-color-text-primary); font-weight: 600; }
+.ramp-sample { color: var(--guest-color-text-primary); }
+
+.r-display { font-size: 32px; line-height: 36px; font-weight: 700; letter-spacing: -0.02em; }
+.r-display-m { font-size: 28px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; }
+.r-h1 { font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em; }
+.r-h2 { font-size: 18px; line-height: 24px; font-weight: 600; letter-spacing: -0.005em; }
+.r-bg { font-size: 16px; line-height: 24px; font-weight: 400; }
+.r-b  { font-size: 15px; line-height: 22px; font-weight: 400; }
+.r-l  { font-size: 13px; line-height: 18px; font-weight: 500; }
+.r-m  { font-size: 11px; line-height: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--guest-color-text-muted); }
+
+/* spacing/radius/elev visual */
+.scale-row { display: flex; gap: 18px; align-items: flex-end; flex-wrap: wrap; padding: 8px 2px; }
+.scale-step { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.scale-bar { background: var(--slate-700); border-radius: 4px; }
+.scale-tag { font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted); line-height: 14px; text-align: center; }
+.scale-tag b { color: var(--guest-color-text-primary); font-weight: 600; display: block; }
+
+.radii-row { display: flex; gap: 18px; flex-wrap: wrap; }
+.radii-tile {
+  width: 84px; height: 84px;
+  background: var(--slate-700);
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  color: var(--stone-05);
+  font-family: var(--guest-font-mono); font-size: 10px; padding: 8px;
+  text-align: center;
+}
+.radii-tile b { font-weight: 600; }
+.radii-tile small { opacity: .72; display: block; }
+
+.elev-row { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 2px 4px; }
+.elev-tile {
+  width: 130px; height: 90px;
+  background: var(--guest-color-background-surface);
+  border-radius: 14px;
+  border: 1px solid var(--guest-color-border-subtle);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 10px;
+  font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted);
+}
+.elev-tile.e0 { box-shadow: var(--guest-elev-0); }
+.elev-tile.e1 { box-shadow: var(--guest-elev-1); }
+.elev-tile.e2 { box-shadow: var(--guest-elev-2); }
+.elev-tile.e3 { box-shadow: var(--guest-elev-3); }
+
+/* brand strip */
+.brand-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+}
+.brand-card {
+  border-radius: var(--guest-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--guest-color-border-default);
+  background: var(--guest-color-background-surface);
+}
+.brand-bar {
+  height: 70px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  color: #FFFFFF;
+  font-weight: 700; letter-spacing: -0.005em;
+}
+.brand-bar .b-label { font-size: 14px; }
+.brand-bar .b-ratio { font-family: var(--guest-font-mono); font-size: 11px; opacity: .9; background: rgba(0,0,0,.18); padding: 3px 8px; border-radius: 999px; }
+.brand-meta { padding: 12px 14px; font-family: var(--guest-font-mono); font-size: 11px; color: var(--guest-color-text-muted); line-height: 16px; }
+.brand-meta b { color: var(--guest-color-text-primary); font-weight: 600; }
+.brand-pill {
+  display: inline-block; font-family: var(--guest-font-mono); font-size: 10px;
+  padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+  border: 1px solid currentColor; line-height: 14px;
+}
+.brand-pill.ok { color: var(--moss-700); background: var(--moss-50); border-color: var(--moss-100); }
+.brand-pill.warn { color: var(--amber-700); background: var(--amber-50); border-color: var(--amber-100); }
+.brand-pill.fail { color: var(--clay-700); background: var(--clay-50); border-color: var(--clay-100); }
+
+/* notes block */
+.kv-list {
+  background: var(--guest-color-background-surface);
+  border: 1px solid var(--guest-color-border-default);
+  border-radius: var(--guest-radius-md);
+  padding: 8px 0;
+}
+.kv-row {
+  display: grid; grid-template-columns: 220px 1fr;
+  gap: 0; padding: 10px 18px;
+  border-bottom: 1px solid var(--guest-color-border-subtle);
+  font-size: 13px; line-height: 19px;
+}
+.kv-row:last-child { border: none; }
+.kv-key { font-family: var(--guest-font-mono); font-size: 12px; color: var(--guest-color-text-muted); }
+.kv-val { color: var(--guest-color-text-primary); }
+.kv-val code { font-family: var(--guest-font-mono); font-size: 12px; background: var(--guest-color-background-subtle); padding: 1px 5px; border-radius: 4px; }
+
+/* focus state demo */
+.focus-demo {
+  display: inline-flex; gap: 8px; align-items: center;
+  padding: 10px 16px; border-radius: 10px;
+  background: var(--slate-700); color: var(--stone-05);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none;
+}
+.focus-demo:focus-visible {
+  outline: 2px solid var(--slate-500);
+  outline-offset: 2px;
+}
+.focus-demo svg { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header class="doc-header">
+    <div>
+      <div class="doc-eyebrow">Batch 1 of 5 · Token Sheet</div>
+      <h1 class="doc-title">Guest Guide visual system</h1>
+      <p class="doc-sub">El sistema completo de tokens <code>--guest-*</code> derivado de la línea base. Una columna por tema — claro y oscuro siempre emparejados. Contraste anotado en cada par texto/superficie crítico.</p>
+    </div>
+    <div class="doc-meta">
+      <b>casa-lavanda · ruzafa</b><br/>
+      v1.0 · 8 may 2026<br/>
+      lifted from <b>colors_and_type.css</b>
+    </div>
+  </header>
+
+  <!-- ===== System summary ===== -->
+  <h2 class="section"><span class="num">00</span> Sistema</h2>
+  <div class="kv-list">
+    <div class="kv-row"><div class="kv-key">primitive scale</div><div class="kv-val"><b>stone</b> (warm neutrals, 12 stops) · <b>slate</b> (system accent, 8 stops) · <b>amber / moss / clay</b> (status, 4 stops cada uno) · <b>info</b> reuses slate</div></div>
+    <div class="kv-row"><div class="kv-key">themes</div><div class="kv-val">Light (<code>:root</code>) · Dark (<code>[data-theme="dark"]</code>) — siempre emparejados, nunca solo claro</div></div>
+    <div class="kv-row"><div class="kv-key">brand layer</div><div class="kv-val">Inyectado en runtime desde <code>brand-palette.ts</code>. <code>--guest-brand</code> tematizable; sustituye al slate <em>solo</em> en superficies brand-tagged. El acento del sistema sigue siendo slate en el resto.</div></div>
+    <div class="kv-row"><div class="kv-key">typography</div><div class="kv-val">Inter Variable (one family). Mobile body floor <code>16px</code> (anti-zoom iOS). No serif editorial, no italic display.</div></div>
+    <div class="kv-row"><div class="kv-key">contrast floor</div><div class="kv-val">≥ <b>7:1</b> hero text on accent · ≥ <b>4.5:1</b> body en superficies · WCAG AA en todos los pares semánticos</div></div>
+    <div class="kv-row"><div class="kv-key">touch target</div><div class="kv-val">44 × 44 mínimo (WCAG 2.5.8) — interactivos del baseline cumplen</div></div>
+  </div>
+
+  <!-- ===== Background ===== -->
+  <h2 class="section"><span class="num">01</span> Background</h2>
+  <table class="tbl">
+    <thead><tr><th style="width:30%">Token</th><th style="width:25%">Light</th><th style="width:25%">Dark</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td class="role">background.page<span>--guest-color-background-page</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FAF7F2"></span><span class="hex">#FAF7F2</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#14120E"></span><span class="hex">#14120E</span></div></td>
+        <td class="note-cell">cuerpo · cream → warm near-black stone</td></tr>
+      <tr><td class="role">background.surface<span>--guest-color-background-surface</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FCFBF8"></span><span class="hex">#FCFBF8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1A1813"></span><span class="hex">#1A1813</span></div></td>
+        <td class="note-cell">cards · paper</td></tr>
+      <tr><td class="role">background.subtle<span>--guest-color-background-subtle</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F6F3EC"></span><span class="hex">#F6F3EC</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#221F19"></span><span class="hex">#221F19</span></div></td>
+        <td class="note-cell">filas alternas · sunken</td></tr>
+      <tr><td class="role">background.muted<span>--guest-color-background-muted</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F2EEE8"></span><span class="hex">#F2EEE8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#221F19"></span><span class="hex">#221F19</span></div></td>
+        <td class="note-cell">hover bg · chips inactivos</td></tr>
+      <tr><td class="role">background.elevated<span>--guest-color-background-elevated</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FCFBF8"></span><span class="hex">#FCFBF8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1F1C17"></span><span class="hex">#1F1C17</span></div></td>
+        <td class="note-cell">drawers, sheets, popovers</td></tr>
+      <tr><td class="role">background.inverse<span>--guest-color-background-inverse</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1E2A3A"></span><span class="hex">#1E2A3A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F5EFE3"></span><span class="hex">#F5EFE3</span></div></td>
+        <td class="note-cell">superficie hero · invierte por tema</td></tr>
+      <tr><td class="role">background.overlay<span>--guest-color-background-overlay</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:rgba(28,26,22,0.48)"></span><span class="hex">rgba(28,26,22,.48)</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:rgba(0,0,0,0.60)"></span><span class="hex">rgba(0,0,0,.60)</span></div></td>
+        <td class="note-cell">overlay drawers / lightbox</td></tr>
+      <tr><td class="role">background.scrim<span>--guest-color-background-scrim</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:rgba(28,26,22,0.72)"></span><span class="hex">rgba(28,26,22,.72)</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:rgba(0,0,0,0.80)"></span><span class="hex">rgba(0,0,0,.80)</span></div></td>
+        <td class="note-cell">modal scrim · más opaco</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Text ===== -->
+  <h2 class="section"><span class="num">02</span> Text</h2>
+  <table class="tbl">
+    <thead><tr><th style="width:30%">Token</th><th style="width:25%">Light</th><th style="width:25%">Dark</th><th>Contraste sobre <code>background.page</code></th></tr></thead>
+    <tbody>
+      <tr><td class="role">text.primary<span>--guest-color-text-primary</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2E2B26"></span><span class="hex">#2E2B26</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#ECE6DA"></span><span class="hex">#ECE6DA</span></div></td>
+        <td class="note-cell">L: <b>12.9:1</b> · D: <b>15.4:1</b> &nbsp;<span class="brand-pill ok">AAA</span></td></tr>
+      <tr><td class="role">text.secondary<span>--guest-color-text-secondary</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#5A564D"></span><span class="hex">#5A564D</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#C2BCB0"></span><span class="hex">#C2BCB0</span></div></td>
+        <td class="note-cell">L: <b>6.4:1</b> · D: <b>9.8:1</b> &nbsp;<span class="brand-pill ok">AAA</span></td></tr>
+      <tr><td class="role">text.muted<span>--guest-color-text-muted</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8A8578"></span><span class="hex">#8A8578</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8E887E"></span><span class="hex">#8E887E</span></div></td>
+        <td class="note-cell">L: <b>3.6:1</b> · D: <b>4.6:1</b> &nbsp;<span class="brand-pill warn">UI / metadata only</span></td></tr>
+      <tr><td class="role">text.subtle<span>--guest-color-text-subtle</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#C8C2B5"></span><span class="hex">#C8C2B5</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#4D4740"></span><span class="hex">#4D4740</span></div></td>
+        <td class="note-cell">decoración · no texto legible</td></tr>
+      <tr><td class="role">text.inverse<span>--guest-color-text-inverse</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FAF7F2"></span><span class="hex">#FAF7F2</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F5EFE3"></span><span class="hex">#F5EFE3</span></div></td>
+        <td class="note-cell">sobre <code>background.inverse</code></td></tr>
+      <tr><td class="role">text.link<span>--guest-color-text-link</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#3A5070"></span><span class="hex">#3A5070</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B8C4D8"></span><span class="hex">#B8C4D8</span></div></td>
+        <td class="note-cell">L: <b>7.5:1</b> · D: <b>9.6:1</b> &nbsp;<span class="brand-pill ok">AAA</span></td></tr>
+      <tr><td class="role">text.link-hover<span>--guest-color-text-link-hover</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1E2A3A"></span><span class="hex">#1E2A3A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F5EFE3"></span><span class="hex">#F5EFE3</span></div></td>
+        <td class="note-cell">refuerzo en hover</td></tr>
+      <tr><td class="role">text.disabled<span>--guest-color-text-disabled</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#C8C2B5"></span><span class="hex">#C8C2B5</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#4D4740"></span><span class="hex">#4D4740</span></div></td>
+        <td class="note-cell">solo controles inactivos</td></tr>
+      <tr><td class="role">text.placeholder<span>--guest-color-text-placeholder</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8A8578"></span><span class="hex">#8A8578</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8E887E"></span><span class="hex">#8E887E</span></div></td>
+        <td class="note-cell">inputs vacíos</td></tr>
+      <tr><td class="role">text.on-accent<span>--guest-color-text-on-accent</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FAF7F2"></span><span class="hex">#FAF7F2</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#ECE6DA"></span><span class="hex">#ECE6DA</span></div></td>
+        <td class="note-cell">→ ver <a href="#hero" style="color:var(--guest-color-text-link)">hero contrast</a></td></tr>
+      <tr><td class="role">text.on-overlay<span>--guest-color-text-on-overlay</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FAF7F2"></span><span class="hex">#FAF7F2</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#ECE6DA"></span><span class="hex">#ECE6DA</span></div></td>
+        <td class="note-cell">títulos de lightbox / scrim</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Border ===== -->
+  <h2 class="section"><span class="num">03</span> Border</h2>
+  <p class="note">En modo oscuro los bordes hacen el trabajo de elevación; las sombras se reducen para evitar superficies turbias.</p>
+  <table class="tbl">
+    <thead><tr><th style="width:30%">Token</th><th style="width:25%">Light</th><th style="width:25%">Dark</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td class="role">border.subtle<span>--guest-color-border-subtle</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F2EEE8"></span><span class="hex">#F2EEE8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2E2A23"></span><span class="hex">#2E2A23</span></div></td>
+        <td class="note-cell">divisores entre filas</td></tr>
+      <tr><td class="role">border.default<span>--guest-color-border-default</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#E6E1D8"></span><span class="hex">#E6E1D8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#3A352D"></span><span class="hex">#3A352D</span></div></td>
+        <td class="note-cell">cards estándar</td></tr>
+      <tr><td class="role">border.strong<span>--guest-color-border-strong</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#C8C2B5"></span><span class="hex">#C8C2B5</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#4D4740"></span><span class="hex">#4D4740</span></div></td>
+        <td class="note-cell">jerarquía visible · disabled outline</td></tr>
+      <tr><td class="role">border.emphasis<span>--guest-color-border-emphasis</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8A8578"></span><span class="hex">#8A8578</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8E887E"></span><span class="hex">#8E887E</span></div></td>
+        <td class="note-cell">selected · highlight</td></tr>
+      <tr><td class="role">border.focus<span>--guest-color-border-focus</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#3A5070"></span><span class="hex">#3A5070</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B8C4D8"></span><span class="hex">#B8C4D8</span></div></td>
+        <td class="note-cell"><code>:focus-visible</code> outline</td></tr>
+      <tr><td class="role">border.error<span>--guest-color-border-error</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B64A38"></span><span class="hex">#B64A38</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#DD8472"></span><span class="hex">#DD8472</span></div></td>
+        <td class="note-cell">input error · destructive outline</td></tr>
+      <tr><td class="role">border.success<span>--guest-color-border-success</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#4F7A52"></span><span class="hex">#4F7A52</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8FB290"></span><span class="hex">#8FB290</span></div></td>
+        <td class="note-cell">confirmaciones</td></tr>
+      <tr><td class="role">border.warning<span>--guest-color-border-warning</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B7793A"></span><span class="hex">#B7793A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#D6995F"></span><span class="hex">#D6995F</span></div></td>
+        <td class="note-cell">acentua <code>.warn</code> band</td></tr>
+      <tr><td class="role">border.info<span>--guest-color-border-info</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#6D82A4"></span><span class="hex">#6D82A4</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8FA3C2"></span><span class="hex">#8FA3C2</span></div></td>
+        <td class="note-cell">callouts informativos</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Action ===== -->
+  <h2 class="section"><span class="num">04</span> Action</h2>
+  <p class="note">Cuatro variantes — primary (slate), secondary (warm stone), ghost (transparente) y destructive (clay). Cada una con base / hover / active / fg / subtle / subtle-fg en ambos temas.</p>
+  <table class="tbl">
+    <thead><tr><th style="width:30%">Token</th><th style="width:25%">Light</th><th style="width:25%">Dark</th><th>Notas</th></tr></thead>
+    <tbody>
+      <tr><td class="role">action.primary.base<span>--guest-color-action-primary-base</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1E2A3A"></span><span class="hex">#1E2A3A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#25364E"></span><span class="hex">#25364E</span></div></td>
+        <td class="note-cell">slate-700 → slate-700d (raised)</td></tr>
+      <tr><td class="role">action.primary.hover<span>--guest-color-action-primary-hover</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2B3C54"></span><span class="hex">#2B3C54</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2D405B"></span><span class="hex">#2D405B</span></div></td>
+        <td class="note-cell">+1 step</td></tr>
+      <tr><td class="role">action.primary.active<span>--guest-color-action-primary-active</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#16202E"></span><span class="hex">#16202E</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1B2A3D"></span><span class="hex">#1B2A3D</span></div></td>
+        <td class="note-cell">−1 step</td></tr>
+      <tr><td class="role">action.primary.fg<span>--guest-color-action-primary-fg</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FAF7F2"></span><span class="hex">#FAF7F2</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#ECE6DA"></span><span class="hex">#ECE6DA</span></div></td>
+        <td class="note-cell">cream sobre slate</td></tr>
+      <tr><td class="role">action.primary.subtle<span>--guest-color-action-primary-subtle</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#E8EDF4"></span><span class="hex">#E8EDF4</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#233044"></span><span class="hex">#233044</span></div></td>
+        <td class="note-cell">tonal · pills, badges</td></tr>
+      <tr><td class="role">action.primary.subtle-fg<span>--guest-color-action-primary-subtle-fg</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1E2A3A"></span><span class="hex">#1E2A3A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B8C4D8"></span><span class="hex">#B8C4D8</span></div></td>
+        <td class="note-cell"></td></tr>
+
+      <tr><td colspan="4" style="background:var(--guest-color-background-subtle); padding:6px 14px; font-family:var(--guest-font-sans); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--guest-color-text-muted)">secondary</td></tr>
+      <tr><td class="role">action.secondary.base</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FCFBF8"></span><span class="hex">#FCFBF8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#221F19"></span><span class="hex">#221F19</span></div></td>
+        <td class="note-cell">paper / stone-12d</td></tr>
+      <tr><td class="role">action.secondary.hover</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F2EEE8"></span><span class="hex">#F2EEE8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2E2A23"></span><span class="hex">#2E2A23</span></div></td>
+        <td class="note-cell"></td></tr>
+      <tr><td class="role">action.secondary.fg</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2E2B26"></span><span class="hex">#2E2B26</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#ECE6DA"></span><span class="hex">#ECE6DA</span></div></td>
+        <td class="note-cell">primary text</td></tr>
+
+      <tr><td colspan="4" style="background:var(--guest-color-background-subtle); padding:6px 14px; font-family:var(--guest-font-sans); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--guest-color-text-muted)">ghost · destructive</td></tr>
+      <tr><td class="role">action.ghost.hover</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F2EEE8"></span><span class="hex">#F2EEE8</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#221F19"></span><span class="hex">#221F19</span></div></td>
+        <td class="note-cell">base = transparent</td></tr>
+      <tr><td class="role">action.destructive.base</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B64A38"></span><span class="hex">#B64A38</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#DD8472"></span><span class="hex">#DD8472</span></div></td>
+        <td class="note-cell">clay-500 / clay-500d</td></tr>
+      <tr><td class="role">action.destructive.fg</td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><span class="hex">#FFFFFF</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1B0B07"></span><span class="hex">#1B0B07</span></div></td>
+        <td class="note-cell">flip en dark · contraste &gt; 8:1 con bg lift</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Status ===== -->
+  <h2 class="section"><span class="num">05</span> Status</h2>
+  <p class="note">Cuatro tonos — success (moss), warning (amber), error (clay), info (slate). Cada uno con bg / text / icon / border / solid / solid-fg. Tonos terrosos, nunca saturados.</p>
+  <table class="tbl">
+    <thead><tr><th style="width:18%">Tono</th><th>bg / text · light</th><th>bg / text · dark</th><th>solid · light</th><th>solid · dark</th></tr></thead>
+    <tbody>
+      <tr><td class="role">success<span>moss</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#F2F6EE"></span><span class="swatch" style="background:#2C4A2E"></span><span class="hex">F2F6EE / 2C4A2E</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#182217"></span><span class="swatch" style="background:#BDD3BD"></span><span class="hex">182217 / BDD3BD</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#4F7A52"></span><span class="hex">#4F7A52</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8FB290"></span><span class="hex">#8FB290</span></div></td></tr>
+      <tr><td class="role">warning<span>amber</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FBF4EA"></span><span class="swatch" style="background:#7A4A18"></span><span class="hex">FBF4EA / 7A4A18</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2A2014"></span><span class="swatch" style="background:#ECC79A"></span><span class="hex">2A2014 / ECC79A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B7793A"></span><span class="hex">#B7793A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#D6995F"></span><span class="hex">#D6995F</span></div></td></tr>
+      <tr><td class="role">error<span>clay</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#FBECE8"></span><span class="swatch" style="background:#7A2E22"></span><span class="hex">FBECE8 / 7A2E22</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#2A1612"></span><span class="swatch" style="background:#F1B7A9"></span><span class="hex">2A1612 / F1B7A9</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#B64A38"></span><span class="hex">#B64A38</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#DD8472"></span><span class="hex">#DD8472</span></div></td></tr>
+      <tr><td class="role">info<span>slate (reused)</span></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#EEF3FA"></span><span class="swatch" style="background:#1E2A3A"></span><span class="hex">EEF3FA / 1E2A3A</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#1A2230"></span><span class="swatch" style="background:#C9D5E6"></span><span class="hex">1A2230 / C9D5E6</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#3A5070"></span><span class="hex">#3A5070</span></div></td>
+        <td><div class="swatch-cell"><span class="swatch" style="background:#8FA3C2"></span><span class="hex">#8FA3C2</span></div></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Hero contrast ===== -->
+  <h2 class="section" id="hero"><span class="num">06</span> Contraste hero · texto sobre acento</h2>
+  <p class="note">El hero del baseline rinde el saludo del huésped sobre la superficie slate-700. La regla del sistema: texto hero ≥ 7:1 en claro <em>y</em> oscuro. Ambas combinaciones AAA con holgura.</p>
+  <div class="split">
+    <div class="frame light">
+      <div class="frame-head"><span>Light · slate-700 + cream</span><i data-lucide="sun"></i></div>
+      <div class="frame-body">
+        <div class="hero-preview">
+          <span class="hero-ratio">13.7 : 1 ✓</span>
+          <div class="hero-eyebrow">DÍA 1 · LLEGADA</div>
+          <div class="hero-title">Hola, Laura.</div>
+          <div class="hero-sub">Calle Cuba 42, 3B · Ruzafa</div>
+        </div>
+        <div style="font-family:var(--guest-font-mono); font-size:11px; color:var(--stone-72); margin-top:14px; line-height:16px;">
+          fg <b>#FAF7F2</b> · bg <b>#1E2A3A</b><br/>
+          WCAG: AAA normal &amp; large
+        </div>
+      </div>
+    </div>
+    <div class="frame dark">
+      <div class="frame-head"><span>Dark · slate-700d + ink-94</span><i data-lucide="moon"></i></div>
+      <div class="frame-body">
+        <div class="hero-preview">
+          <span class="hero-ratio">11.8 : 1 ✓</span>
+          <div class="hero-eyebrow">DÍA 1 · LLEGADA</div>
+          <div class="hero-title">Hola, Laura.</div>
+          <div class="hero-sub">Calle Cuba 42, 3B · Ruzafa</div>
+        </div>
+        <div style="font-family:var(--guest-font-mono); font-size:11px; color:#8E887E; margin-top:14px; line-height:16px;">
+          fg <b style="color:#ECE6DA">#ECE6DA</b> · bg <b style="color:#ECE6DA">#25364E</b><br/>
+          WCAG: AAA normal &amp; large
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Brand layer ===== -->
+  <h2 class="section"><span class="num">07</span> Brand layer · 8 paletas</h2>
+  <p class="note">El acento del sistema es <b>slate</b>; las paletas brand sustituyen <code>--guest-brand</code> sólo en superficies brand-tagged (hero, primary action). Anotamos contraste de cada brand-light contra blanco puro <code>#FFFFFF</code> (el <code>--guest-brand-fg</code> por defecto). Dos paletas requieren un mapping de fg para alcanzar 7:1 — propuesto en Batch 5.</p>
+  <div class="brand-grid">
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#4F46E5">
+        <span class="b-label">Índigo</span><span class="b-ratio">7.6 : 1</span>
+      </div>
+      <div class="brand-meta"><b>indigo</b> · #4F46E5 / #818CF8 <span class="brand-pill ok">7:1 ✓</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#0F766E">
+        <span class="b-label">Turquesa</span><span class="b-ratio">5.1 : 1</span>
+      </div>
+      <div class="brand-meta"><b>teal</b> · #0F766E / #5EEAD4 <span class="brand-pill warn">→ fg fix</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#B91C1C">
+        <span class="b-label">Coral</span><span class="b-ratio">6.4 : 1</span>
+      </div>
+      <div class="brand-meta"><b>coral</b> · #B91C1C / #FCA5A5 <span class="brand-pill warn">→ fg fix</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#4D7C0F">
+        <span class="b-label">Oliva</span><span class="b-ratio">5.0 : 1</span>
+      </div>
+      <div class="brand-meta"><b>olive</b> · #4D7C0F / #A3E635 <span class="brand-pill warn">→ fg fix</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#1D4ED8">
+        <span class="b-label">Azul marino</span><span class="b-ratio">8.6 : 1</span>
+      </div>
+      <div class="brand-meta"><b>navy</b> · #1D4ED8 / #93C5FD <span class="brand-pill ok">7:1 ✓</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#9333EA">
+        <span class="b-label">Ciruela</span><span class="b-ratio">5.3 : 1</span>
+      </div>
+      <div class="brand-meta"><b>plum</b> · #9333EA / #D8B4FE <span class="brand-pill warn">→ fg fix</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#9A3412">
+        <span class="b-label">Siena</span><span class="b-ratio">7.9 : 1</span>
+      </div>
+      <div class="brand-meta"><b>sienna</b> · #9A3412 / #FDBA74 <span class="brand-pill ok">7:1 ✓</span></div>
+    </div>
+    <div class="brand-card">
+      <div class="brand-bar" style="background:#475569">
+        <span class="b-label">Pizarra</span><span class="b-ratio">7.4 : 1</span>
+      </div>
+      <div class="brand-meta"><b>slate</b> · #475569 / #94A3B8 <span class="brand-pill ok">7:1 ✓</span></div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:18px">Los cuatro keys con <code>fg fix</code> requieren <code>--guest-color-text-on-brand</code> ≠ blanco. Propuesta del fix completo en Batch 5 (parte B). Los hex de brand <em>nunca</em> se modifican — el ajuste sólo toca el token de texto.</p>
+
+  <!-- ===== Typography ramp ===== -->
+  <h2 class="section"><span class="num">08</span> Typography · Inter</h2>
+  <p class="note">Una sola familia — <b>Inter Variable</b> (100–900). Mismo set de OpenType features que el baseline: <code>cv11, ss01, ss03, cv02, cv05</code>. Mobile body fijado en <b>16px</b> (anti-zoom iOS) — no negociable.</p>
+  <div class="ramp">
+    <div class="ramp-row">
+      <div class="ramp-tag">display</div>
+      <div class="ramp-sample r-display">Bienvenida a Casa Lavanda</div>
+      <div class="ramp-spec"><b>32 / 36</b> · weight 700 · tracking −0.02em<br/>tagline / hero web</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">display-mobile</div>
+      <div class="ramp-sample r-display-m">Hola, Laura.</div>
+      <div class="ramp-spec"><b>28 / 32</b> · weight 700 · tracking −0.02em<br/>hero móvil</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">h1</div>
+      <div class="ramp-sample r-h1">Tu llegada paso a paso</div>
+      <div class="ramp-spec"><b>24 / 30</b> · weight 600 · tracking −0.01em<br/>section title</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">h2</div>
+      <div class="ramp-sample r-h2">Cómo entrar</div>
+      <div class="ramp-spec"><b>18 / 24</b> · weight 600 · tracking −0.005em<br/>card title</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">body-guest</div>
+      <div class="ramp-sample r-bg">Caja de llaves a la derecha del portal. Código 5274. Apartamento 3B, tercera planta.</div>
+      <div class="ramp-spec"><b>16 / 24</b> · weight 400<br/>guest copy · móvil floor</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">body</div>
+      <div class="ramp-sample r-b">Versión densa para listas y desktop secundario. Mismo line-height ratio.</div>
+      <div class="ramp-spec"><b>15 / 22</b> · weight 400<br/>desktop dense / list</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">label</div>
+      <div class="ramp-sample r-l">Check-in · 16:00 · hoy</div>
+      <div class="ramp-spec"><b>13 / 18</b> · weight 500<br/>metadata, key/value</div>
+    </div>
+    <div class="ramp-row">
+      <div class="ramp-tag">micro</div>
+      <div class="ramp-sample r-m">DÍA 1 · LLEGADA</div>
+      <div class="ramp-spec"><b>11 / 14</b> · weight 500 · uppercase 0.06em<br/>eyebrows, badges</div>
+    </div>
+  </div>
+  <div class="kv-list" style="margin-top:18px">
+    <div class="kv-row"><div class="kv-key">capitalización</div><div class="kv-val">Title case en headings · sentence case en body · UPPERCASE solo en micro y badges</div></div>
+    <div class="kv-row"><div class="kv-key">italic</div><div class="kv-val">Permitido únicamente para títulos de obra y término técnico citado. <b>Prohibido</b> en display, hero y eyebrows.</div></div>
+    <div class="kv-row"><div class="kv-key">voz de microcopy</div><div class="kv-val">warm-conversational · es-ES · el huésped es <em>hospedado</em>, nunca operado</div></div>
+    <div class="kv-row"><div class="kv-key">prohibidos</div><div class="kv-val">Cormorant, Spectral, Marcellus, Fraunces, Playfair, italic display, oversize numerals decorativos, serif editorial</div></div>
+  </div>
+
+  <!-- ===== Spacing / Radii / Elevation ===== -->
+  <h2 class="section"><span class="num">09</span> Spacing · Radii · Elevation · Motion</h2>
+
+  <h3 class="sub">Spacing scale</h3>
+  <div class="scale-row">
+    <div class="scale-step"><div class="scale-bar" style="width:4px; height:32px"></div><div class="scale-tag"><b>1</b>4 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:8px; height:32px"></div><div class="scale-tag"><b>2</b>8 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:12px; height:32px"></div><div class="scale-tag"><b>3</b>12 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:16px; height:32px"></div><div class="scale-tag"><b>4</b>16 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:20px; height:32px"></div><div class="scale-tag"><b>5</b>20 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:24px; height:32px"></div><div class="scale-tag"><b>6</b>24 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:32px; height:32px"></div><div class="scale-tag"><b>8</b>32 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:40px; height:32px"></div><div class="scale-tag"><b>10</b>40 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:48px; height:32px"></div><div class="scale-tag"><b>12</b>48 px</div></div>
+    <div class="scale-step"><div class="scale-bar" style="width:64px; height:32px"></div><div class="scale-tag"><b>16</b>64 px</div></div>
+  </div>
+
+  <h3 class="sub">Radii</h3>
+  <div class="radii-row">
+    <div class="radii-tile" style="border-radius:6px"><b>xs</b><small>6 px</small></div>
+    <div class="radii-tile" style="border-radius:10px"><b>sm</b><small>10 px</small></div>
+    <div class="radii-tile" style="border-radius:14px"><b>md</b><small>14 px</small></div>
+    <div class="radii-tile" style="border-radius:20px"><b>lg</b><small>20 px</small></div>
+    <div class="radii-tile" style="border-radius:9999px"><b>full</b><small>pill</small></div>
+  </div>
+
+  <h3 class="sub">Elevation · Light</h3>
+  <div class="elev-row">
+    <div class="elev-tile e0">elev-0</div>
+    <div class="elev-tile e1">elev-1</div>
+    <div class="elev-tile e2">elev-2</div>
+    <div class="elev-tile e3">elev-3</div>
+  </div>
+  <p class="note" style="margin-top:14px">Sombras cálidas y difusas — nunca 3D. En oscuro las sombras se atenúan a casi cero opacidad y la diferencia de superficie se transmite por <code>--guest-color-border-*</code>.</p>
+
+  <h3 class="sub">Motion</h3>
+  <div class="kv-list">
+    <div class="kv-row"><div class="kv-key">--guest-dur-1</div><div class="kv-val">80 ms — hover, press feedback</div></div>
+    <div class="kv-row"><div class="kv-key">--guest-dur-2</div><div class="kv-val">180 ms — micro-interacciones (regla del sistema: ≤180 ms)</div></div>
+    <div class="kv-row"><div class="kv-key">--guest-dur-3</div><div class="kv-val">240 ms — drawers, sheets entry</div></div>
+    <div class="kv-row"><div class="kv-key">--guest-ease-standard</div><div class="kv-val"><code>cubic-bezier(.2, 0, 0, 1)</code></div></div>
+    <div class="kv-row"><div class="kv-key">prefers-reduced-motion</div><div class="kv-val">desactivar transiciones globalmente — respeto obligatorio</div></div>
+  </div>
+
+  <!-- ===== Focus state ===== -->
+  <h3 class="sub">Focus-visible</h3>
+  <p class="note">Anillo de foco siempre visible, nunca eliminado. Token: <code>--guest-color-border-focus</code>. Demo (clic + Tab para enfocar):</p>
+  <p>
+    <button class="focus-demo" type="button"><i data-lucide="key-round"></i>Mostrar mi acceso</button>
+    <span style="margin-left:16px; font-family:var(--guest-font-mono); font-size:11px; color:var(--guest-color-text-muted)">2px solid · offset 2px · radius hereda</span>
+  </p>
+
+  <!-- ===== Footer note ===== -->
+  <h2 class="section"><span class="num">10</span> Próximos pasos</h2>
+  <div class="kv-list">
+    <div class="kv-row"><div class="kv-key">Batch 2</div><div class="kv-val">9 pantallas móviles · 375 × 667 · iPhone shell del baseline · contenido real Casa Lavanda + taxonomías</div></div>
+    <div class="kv-row"><div class="kv-key">Batch 3</div><div class="kv-val">5 overlays móviles · TOC · search · lightbox · PWA install · language switcher</div></div>
+    <div class="kv-row"><div class="kv-key">Batch 4</div><div class="kv-val">9 pantallas desktop · 1280 × 800 · sidebar 260 + content 760–840</div></div>
+    <div class="kv-row"><div class="kv-key">Batch 5</div><div class="kv-val">Tier-1 dark parity (6 frames) + brand stress (4 combos) con propuestas de fg-on-brand</div></div>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

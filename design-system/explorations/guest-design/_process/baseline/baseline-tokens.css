@@ -1,0 +1,187 @@
+/* REFERENCE ONLY — DO NOT IMPORT INTO PRODUCTION CODE.
+   Production tokens live in design-system/foundations/tokens/.
+   See ../REFERENCE_RULES.md for usage rules.
+   This file exists only so the static Liora UI kit HTML files (operator/messaging/guest)
+   render correctly when opened locally. */
+
+/* Inter Variable — single typeface of the system */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("fonts/InterVariable.woff2") format("woff2-variations"),
+       url("https://rsms.me/inter/font-files/InterVariable.woff2") format("woff2-variations");
+}
+
+:root {
+  /* ============================================================
+     COLOR — warm neutrals (no cold grey), one accent, earthy semantics
+     ============================================================ */
+
+  /* Warm neutrals (stone shifted) */
+  --cream:    #FAF7F2;   /* body (guest, operator backdrop) */
+  --paper:    #FCFBF8;   /* surface-elevated (cards) */
+  --ink-08:   #F6F3EC;
+  --ink-12:   #F2EEE8;   /* hover bg */
+  --ink-24:   #E6E1D8;   /* border default */
+  --ink-32:   #D8D2C6;
+  --ink-40:   #C8C2B5;   /* disabled border */
+  --ink-56:   #8A8578;   /* muted text */
+  --ink-72:   #5A564D;   /* secondary text */
+  --ink-88:   #2E2B26;   /* primary text */
+  --ink:      #1C1A16;   /* extreme (rare) */
+
+  /* Accent — Ink Blue (single accent of the system) */
+  --accent-50:  #F3F6FA;
+  --accent-100: #E8EDF4;
+  --accent-200: #CFD8E6;
+  --accent-400: #6D82A4;
+  --accent-500: #3A5070;
+  --accent-600: #2B3C54;
+  --accent-700: #1E2A3A;   /* default for logo, primary buttons */
+  --accent-on:  #FAF7F2;   /* text on accent */
+
+  /* Semantic — earthy, not saturated */
+  --amber-50:  #FBF4EA;
+  --amber-100: #F7EADA;
+  --amber-500: #B7793A;
+  --amber-700: #7A4A18;
+
+  --moss-50:   #F2F6EE;
+  --moss-100:  #E3ECDF;
+  --moss-500:  #4F7A52;
+  --moss-700:  #2C4A2E;
+
+  --clay-50:   #FBECE8;
+  --clay-100:  #F5DCD6;
+  --clay-500:  #B64A38;
+  --clay-700:  #7A2E22;
+
+  /* Semantic aliases */
+  --fg-1:   var(--ink-88);   /* primary text */
+  --fg-2:   var(--ink-72);   /* secondary */
+  --fg-3:   var(--ink-56);   /* muted, metadata */
+  --fg-4:   var(--ink-40);   /* placeholder */
+  --bg-1:   var(--cream);    /* body */
+  --bg-2:   var(--paper);    /* surface elevated */
+  --bg-3:   var(--ink-08);   /* sunken / alt row */
+  --border: var(--ink-24);
+  --border-strong: var(--ink-40);
+  --focus:  var(--accent-500);
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-feature: "cv11", "ss01", "ss03", "cv02", "cv05";
+
+  /* Scale */
+  --text-micro:   11px;
+  --text-label:   13px;
+  --text-body:    15px;
+  --text-body-guest: 16px;
+  --text-h2:      18px;
+  --text-h1:      24px;
+  --text-display: 32px;
+  --text-display-mobile: 28px;
+
+  --lh-micro:   14px;
+  --lh-label:   18px;
+  --lh-body:    22px;
+  --lh-body-guest: 24px;
+  --lh-h2:      24px;
+  --lh-h1:      30px;
+  --lh-display: 36px;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+
+  /* ============================================================
+     SPACING (4·8·12·16·20·24·32·40·48·64)
+     ============================================================ */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ============================================================
+     RADII
+     ============================================================ */
+  --radius-xs:   6px;
+  --radius-sm:  10px;
+  --radius-md:  14px;
+  --radius-lg:  20px;
+  --radius-full: 9999px;
+
+  /* ============================================================
+     SHADOWS — warm, diffuse, never 3D
+     ============================================================ */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(28,26,22,.04), 0 1px 1px rgba(28,26,22,.03);
+  --elev-2: 0 2px 8px rgba(28,26,22,.06), 0 8px 24px rgba(28,26,22,.04);
+  --elev-3: 0 8px 24px rgba(28,26,22,.10), 0 24px 48px rgba(28,26,22,.08);
+
+  /* ============================================================
+     MOTION
+     ============================================================ */
+  --ease-enter:    cubic-bezier(0.0, 0, 0.2, 1);
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --dur-1: 80ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 320ms;
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  --sidebar-width: 256px;
+  --topbar-height: 56px;
+  --drawer-width:  480px;
+  --guest-max:     720px;
+}
+
+/* ==================================================================
+   Semantic helpers (use in components)
+   ================================================================== */
+html, body {
+  background: var(--bg-1);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-feature-settings: var(--font-feature);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.h-display { font-size: var(--text-display); line-height: var(--lh-display); font-weight: 700; letter-spacing: -0.02em; }
+.h-h1      { font-size: var(--text-h1);      line-height: var(--lh-h1);      font-weight: 600; letter-spacing: -0.01em; }
+.h-h2      { font-size: var(--text-h2);      line-height: var(--lh-h2);      font-weight: 600; letter-spacing: -0.005em; }
+.t-body    { font-size: var(--text-body);    line-height: var(--lh-body);    font-weight: 400; }
+.t-body-guest { font-size: var(--text-body-guest); line-height: var(--lh-body-guest); font-weight: 400; }
+.t-label   { font-size: var(--text-label);   line-height: var(--lh-label);   font-weight: 500; color: var(--fg-2); }
+.t-micro   { font-size: var(--text-micro);   line-height: var(--lh-micro);   font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg-3); }
+
+/* Focus ring — always visible, never removed */
+:where(button, a, input, textarea, select, [role="button"]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

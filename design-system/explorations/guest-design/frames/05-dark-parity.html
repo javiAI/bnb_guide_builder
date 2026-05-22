@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 5 · Dark mode parity + brand stress · 6 frames</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-feat: "cv11","ss01","ss03","cv02","cv05";
+
+  /* page chrome (dark stage) */
+  --page-bg: #14120E;
+  --page-fg: #FAF7F2;
+  --page-fg-2: #C8C2B5;
+  --page-fg-3: #8A8578;
+  --page-bd: #2A2620;
+
+  --pass: #4ADE80; --pass-bg: #052e16;
+  --fail: #FCA5A5; --fail-bg: #2C0E0E;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-feature-settings: var(--font-feat);
+  -webkit-font-smoothing: antialiased; color: var(--page-fg);
+  background: radial-gradient(ellipse at top, #1A1814 0%, #0E0D0B 60%, #050505 100%);
+  min-height: 100vh; padding: 56px 40px 96px;
+}
+
+.doc { max-width: 1400px; margin: 0 auto; }
+
+.doc-head { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 36px; }
+.doc-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-fg-3); }
+.doc-title { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--page-fg-2); line-height: 21px; max-width: 76ch; }
+.doc-meta { font-family: var(--font-mono); font-size: 11px; color: var(--page-fg-2); text-align: right; line-height: 18px; }
+.doc-meta b { color: var(--page-fg); font-weight: 600; }
+
+.section-eb { font-family: var(--font-mono); font-size: 11px; color: var(--page-fg-3); text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 36px 0 18px; display: flex; align-items: center; gap: 10px; }
+.section-eb::after { content: ""; flex: 1; height: 1px; background: var(--page-bd); }
+
+/* Phone grid */
+.phone-grid { display: grid; grid-template-columns: repeat(2, max-content); gap: 56px 36px; justify-content: center; }
+.frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.caption { display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center; max-width: 360px; }
+.caption .name { font-size: 13px; font-weight: 600; color: var(--page-fg); }
+.caption .src { font-family: var(--font-mono); font-size: 11px; color: var(--page-fg-3); line-height: 15px; }
+.caption .src b { color: var(--page-fg); font-weight: 600; }
+.caption .tokens { font-family: var(--font-mono); font-size: 10px; color: #F2C078; line-height: 15px; background: #1A1814; border: 1px solid #2A2620; border-radius: 6px; padding: 6px 10px; margin-top: 4px; }
+
+/* ============ DARK THEME tokens applied inside frames ============ */
+.dark-frame {
+  --bg-page: #0E0D0B;
+  --bg-surface: #1A1814;
+  --bg-elevated: #25221C;
+  --bg-overlay: #2E2A23;
+  --bg-subtle: #1F1D17;
+  --bg-muted: #25221C;
+
+  --tx-1: #FAF7F2;
+  --tx-2: #C8C2B5;
+  --tx-3: #8A8578;
+  --tx-4: #5A564D;
+  --tx-on: #FAF7F2;
+
+  --bd-sub: #25221C;
+  --bd: #36322A;
+  --bd-strong: #4A453B;
+
+  --color-border-focus: #9C95EE;
+
+  /* Doublet — coral DARK (active brand for Casa Lavanda) */
+  --guest-brand-coral-700d: #E15A5A;
+  --guest-brand-coral-50d:  #2C1410;
+  --guest-on-solid-coral-d: #190303;
+  --guest-on-tint-coral-d:  #FFE6E0;
+
+  --guest-brand: var(--guest-brand-coral-700d);
+  --guest-brand-tint: var(--guest-brand-coral-50d);
+  --guest-on-solid: var(--guest-on-solid-coral-d);
+  --guest-on-tint: var(--guest-on-tint-coral-d);
+
+  /* danger (emergencias) — also doublet'd */
+  --danger-700d: #F87171;
+  --danger-50d: #2A0E0E;
+  --danger-on-solid: #1A0202;
+  --danger-on-tint: #FECACA;
+}
+
+/* ============ iPhone shell ============ */
+.phone {
+  width: 375px; height: 667px; background: #000;
+  border-radius: 44px; padding: 8px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.screen-host {
+  width: 100%; height: 100%; background: var(--bg-page); border-radius: 36px; overflow: hidden;
+  position: relative; display: flex; flex-direction: column;
+}
+.di { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 108px; height: 30px; border-radius: 16px; background: #000; z-index: 30; }
+.sb { height: 44px; padding: 14px 26px 0; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--tx-1); flex-shrink: 0; position: relative; z-index: 5; }
+.sb-r { display: flex; gap: 5px; align-items: center; }
+.sb-r svg { width: 14px; height: 14px; }
+.batt { width: 22px; height: 11px; border: 1px solid currentColor; border-radius: 3px; padding: 1px; position: relative; }
+.batt::after { content: ""; position: absolute; right: -3px; top: 2px; width: 1px; height: 5px; background: currentColor; border-radius: 0 1px 1px 0; }
+.batt > i { display: block; height: 100%; width: 78%; background: currentColor; border-radius: 1px; }
+
+.screen { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+
+.tabs { height: 76px; background: var(--bg-surface); border-top: 1px solid var(--bd-sub); display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 0 18px; flex-shrink: 0; }
+.tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--tx-3); font-size: 10px; font-weight: 600; min-height: 50px; }
+.tab-btn svg { width: 22px; height: 22px; }
+.tab-btn.on { color: var(--tx-1); }
+
+/* Home content */
+.home { padding: 14px 18px 16px; height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+.home-top { display: flex; align-items: center; justify-content: space-between; }
+.home-prop { font-size: 11px; font-weight: 700; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.10em; }
+.home-actions { display: flex; gap: 6px; }
+.iconbtn { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-surface); border: 1px solid var(--bd-sub); display: grid; place-items: center; color: var(--tx-2); position: relative; }
+.iconbtn svg { width: 18px; height: 18px; }
+.iconbtn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+
+/* HERO using brand doublet */
+.hero {
+  background: var(--guest-brand); color: var(--guest-on-solid);
+  border-radius: 18px; padding: 18px; position: relative; overflow: hidden;
+}
+.hero::after { content:""; position:absolute; inset:-40% -10% auto auto; width: 60%; height: 120%; background: radial-gradient(ellipse at top right, rgba(255,255,255,0.15), transparent 60%); pointer-events: none; }
+.hero-eb { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.85; display: flex; align-items: center; gap: 7px; }
+.hero-eb .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--guest-on-solid); box-shadow: 0 0 0 3px rgba(0,0,0,0.18); }
+.hero-h { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 30px; margin: 8px 0 4px; color: var(--guest-on-solid); }
+.hero-a { font-size: 13px; opacity: 0.86; display: flex; align-items: center; gap: 5px; color: var(--guest-on-solid); }
+.hero-a svg { width: 13px; height: 13px; }
+
+.qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.qa-cell { background: var(--bg-surface); border: 1px solid var(--bd-sub); border-radius: 12px; padding: 10px 6px 9px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 64px; }
+.qa-cell .ic { width: 30px; height: 30px; border-radius: 9px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; }
+.qa-cell .ic svg { width: 15px; height: 15px; }
+.qa-cell .t { font-size: 11px; font-weight: 600; line-height: 13px; text-align: center; color: var(--tx-1); }
+.qa-cell:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+
+.card {
+  background: var(--bg-elevated); border: 1px solid var(--bd-sub); border-radius: 14px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;
+}
+.card-eb { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tx-3); display: flex; align-items: center; gap: 8px; }
+.card-eb .pip { width: 6px; height: 6px; border-radius: 50%; background: var(--guest-brand); }
+.card-row { display: flex; gap: 12px; align-items: center; }
+.card-ic { width: 40px; height: 40px; border-radius: 11px; background: var(--guest-brand-tint); color: var(--guest-on-tint); display: grid; place-items: center; flex-shrink: 0; }
+.card-ic svg { width: 19px; height: 19px; }
+.card-ic.neutral { background: var(--bg-muted); color: var(--tx-2); }
+.card-t { font-size: 16px; font-weight: 600; line-height: 19px; color: var(--tx-1); }
+.card-s { font-size: 13px; color: var(--tx-2); margin-top: 2px; line-height: 17px; }
+.code { font-family: var(--font-mono); background: #000; color: #FAE6B0; font-size: 14px; font-weight: 700; letter-spacing: 0.10em; padding: 3px 10px; border-radius: 5px; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { min-height: 44px; padding: 0 14px; border-radius: 11px; font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; }
+.btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+.btn svg { width: 15px; height: 15px; }
+.btn.solid { background: var(--guest-brand); color: var(--guest-on-solid); border-color: var(--guest-brand); }
+.btn.tint { background: var(--guest-brand-tint); color: var(--guest-on-tint); }
+.btn.ghost { background: transparent; color: var(--tx-1); border-color: var(--bd); }
+
+/* danger flavor */
+.card.danger { border-color: rgba(248,113,113,0.30); background: #1F1212; }
+.card.danger .card-ic { background: var(--danger-50d); color: var(--danger-on-tint); }
+.card.danger .card-eb { color: var(--danger-700d); }
+.card.danger .card-eb .pip { background: var(--danger-700d); box-shadow: 0 0 0 3px rgba(248,113,113,0.20); }
+.btn.danger-solid { background: var(--danger-700d); color: var(--danger-on-solid); border-color: var(--danger-700d); }
+
+.empty {
+  background: var(--bg-subtle); border: 1px dashed var(--bd); border-radius: 12px;
+  padding: 14px 16px; font-size: 14px; color: var(--tx-2); line-height: 18px; text-align: center;
+}
+
+.amount-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--bd-sub); font-size: 13px; color: var(--tx-2); }
+.amount-row:first-child { border-top: 0; padding-top: 0; }
+.amount-row .v { color: var(--tx-1); font-weight: 600; font-family: var(--font-mono); }
+
+/* ============ DESKTOP frame ============ */
+.desk-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.desk {
+  width: 1280px; height: 800px; background: #0a0907; border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.desk-chrome { height: 36px; background: #14120E; display: flex; align-items: center; padding: 0 14px; gap: 10px; border-bottom: 1px solid var(--page-bd); flex-shrink: 0; }
+.desk-dots { display: flex; gap: 6px; }
+.desk-dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+.desk-dots i:nth-child(1) { background: #FF5F57; }
+.desk-dots i:nth-child(2) { background: #FEBC2E; }
+.desk-dots i:nth-child(3) { background: #28C840; }
+.desk-url { flex: 1; max-width: 480px; margin: 0 auto; height: 22px; border-radius: 6px; background: #1F1D17; padding: 0 10px; display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--page-fg-2); }
+.desk-url svg { width: 11px; height: 11px; color: var(--page-fg-3); }
+
+.desk-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 260px 1fr 380px; }
+.desk-rail { background: var(--bg-page); border-right: 1px solid var(--bd-sub); padding: 22px 16px; display: flex; flex-direction: column; gap: 4px; }
+.desk-rail-h { font-size: 11px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--tx-3); padding: 0 10px 8px; }
+.rail-row { display: flex; align-items: center; gap: 10px; padding: 0 10px; min-height: 44px; border-radius: 9px; font-size: 14px; color: var(--tx-2); }
+.rail-row svg { width: 16px; height: 16px; }
+.rail-row.on { background: var(--bg-elevated); color: var(--tx-1); font-weight: 600; box-shadow: inset 2px 0 0 var(--guest-brand); }
+.rail-row .pip { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; }
+.rail-row .pip.full { background: var(--guest-brand); }
+.rail-row .pip.empty { box-shadow: inset 0 0 0 2px var(--bd-strong); }
+
+.desk-main { background: var(--bg-page); padding: 32px 40px; overflow: hidden; }
+.desk-pretitle { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); display: flex; align-items: center; gap: 8px; }
+.desk-pretitle .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--guest-brand); }
+.desk-h1 { font-size: 38px; font-weight: 700; letter-spacing: -0.025em; line-height: 42px; margin: 6px 0 4px; color: var(--tx-1); }
+.desk-sub { font-size: 15px; color: var(--tx-2); line-height: 22px; max-width: 60ch; margin-bottom: 22px; }
+
+.desk-hero {
+  background: var(--guest-brand); color: var(--guest-on-solid);
+  border-radius: 18px; padding: 26px 28px; margin-bottom: 22px;
+  display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  position: relative; overflow: hidden;
+}
+.desk-hero::after { content:""; position:absolute; inset:-40% -10% auto auto; width: 50%; height: 200%; background: radial-gradient(ellipse at top right, rgba(255,255,255,0.18), transparent 60%); pointer-events: none; }
+.desk-hero-eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.85; }
+.desk-hero-h { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 36px; margin: 6px 0 6px; color: var(--guest-on-solid); }
+.desk-hero-a { font-size: 14px; opacity: 0.86; }
+.desk-hero-cta { display: flex; gap: 10px; }
+.desk-hero-cta .btn { background: var(--guest-on-solid); color: var(--guest-brand); border: 0; font-weight: 700; }
+.desk-hero-cta .btn.ghost-on { background: transparent; color: var(--guest-on-solid); border: 1px solid currentColor; }
+
+.desk-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+.desk-qa { background: var(--bg-elevated); border: 1px solid var(--bd-sub); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 110px; }
+.desk-qa .ic { width: 36px; height: 36px; border-radius: 10px; background: var(--guest-brand-tint); color: var(--guest-on-tint); display: grid; place-items: center; }
+.desk-qa .ic svg { width: 18px; height: 18px; }
+.desk-qa .t { font-size: 15px; font-weight: 600; color: var(--tx-1); line-height: 19px; }
+.desk-qa .s { font-size: 12px; color: var(--tx-3); line-height: 16px; }
+
+.desk-list { display: flex; flex-direction: column; gap: 10px; }
+.desk-list .card { padding: 16px 18px; }
+
+.desk-aside { background: var(--bg-page); border-left: 1px solid var(--bd-sub); padding: 32px 26px; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
+.aside-h { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); }
+.aside-card { background: var(--bg-elevated); border: 1px solid var(--bd-sub); border-radius: 14px; padding: 16px; }
+.aside-card .name { font-size: 15px; font-weight: 700; color: var(--tx-1); }
+.aside-card .role { font-size: 12px; color: var(--tx-3); margin-top: 2px; }
+.aside-prog { display: flex; flex-direction: column; gap: 8px; }
+.prog-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--tx-2); }
+.prog-bar { flex: 1; height: 6px; border-radius: 999px; background: var(--bg-elevated); overflow: hidden; }
+.prog-bar i { display: block; height: 100%; background: var(--guest-brand); border-radius: 999px; }
+.prog-row .v { font-family: var(--font-mono); font-weight: 700; color: var(--tx-1); }
+
+/* ============ BRAND STRESS BOARD ============ */
+.stress-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.stress-card { display: flex; flex-direction: column; gap: 10px; }
+.stress-hero {
+  border-radius: 18px; padding: 22px 22px 20px;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.stress-hero::after { content:""; position:absolute; inset:-40% -10% auto auto; width: 60%; height: 120%; background: radial-gradient(ellipse at top right, rgba(255,255,255,0.16), transparent 60%); pointer-events: none; }
+.stress-hero .eb { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.86; display: flex; align-items: center; gap: 7px; }
+.stress-hero .eb .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.stress-hero h3 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 28px; margin: 0; }
+.stress-hero .sub { font-size: 13px; opacity: 0.86; line-height: 17px; }
+.stress-hero .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; align-self: flex-start; }
+.stress-hero .pill .pdot { width: 6px; height: 6px; border-radius: 50%; }
+
+.stress-meta { background: var(--bg-surface, #1A1814); border: 1px solid var(--bd-sub, #25221C); border-radius: 10px; padding: 11px 13px; font-family: var(--font-mono); font-size: 11px; color: var(--page-fg-2); display: flex; flex-direction: column; gap: 3px; line-height: 16px; }
+.stress-meta .row { display: flex; justify-content: space-between; gap: 10px; }
+.stress-meta .lab { color: var(--page-fg-3); }
+.stress-meta .v { color: var(--page-fg); font-weight: 700; }
+.stress-meta .ratio { color: #4ADE80; font-weight: 700; }
+.stress-name { font-size: 14px; font-weight: 700; color: var(--page-fg); padding: 0 2px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stress-name .theme { font-family: var(--font-mono); font-size: 10px; color: var(--page-fg-3); padding: 2px 7px; border-radius: 4px; background: #1A1814; border: 1px solid var(--page-bd); letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* light variant overrides for the stress card containers */
+.stress-card.light .stress-meta { background: #FCFBF8; border-color: #E6E1D8; color: #5A564D; }
+.stress-card.light .stress-meta .lab { color: #8A8578; }
+.stress-card.light .stress-meta .v { color: #2E2B26; }
+.stress-card.light .stress-meta .ratio { color: #166534; }
+.stress-card.light .stress-name { color: var(--page-fg); }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <div class="doc-head">
+    <div>
+      <div class="doc-eyebrow">Batch 5 of 5 (re-emit) · 6 frames · dark parity + brand stress</div>
+      <h1 class="doc-title">Cierre con frames renderizados</h1>
+      <p class="doc-sub">Mismas pantallas que Batch 2 pero con <code style="font-family:var(--font-mono)">[data-theme="dark"]</code> activo y consumiendo el doublet <code style="font-family:var(--font-mono)">--guest-on-solid-{key}</code> / <code style="font-family:var(--font-mono)">--guest-on-tint-{key}</code> sobre los 8 brand keys canónicos. Frame 5 lleva el mismo contenido a desktop 1280×800. Frame 6 hace stress test de 4 superficies hero side-by-side. Sin taxonomy IDs en pantalla.</p>
+    </div>
+    <div class="doc-meta">
+      <b>Casa Lavanda · brand=coral</b><br/>
+      Calle Cuba 42, 3B · Ruzafa<br/>
+      Laura · check-in 16:00<br/>
+      Lockbox <b>5274</b> · Wi-Fi <b>Ruzafa_3B</b>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       FRAMES 1–4 · MOBILE DARK
+       ============================================================ -->
+  <div class="section-eb">Frames 1–4 · Mobile dark · 375 × 667</div>
+
+  <div class="phone-grid">
+
+    <!-- 01 ESENCIALES -->
+    <div class="frame-wrap">
+    <div class="phone dark-frame" data-theme="dark" data-screen-label="01 Esenciales · dark">
+      <div class="screen-host">
+        <div class="di"></div>
+        <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+        <div class="screen">
+          <div class="home">
+            <div class="home-top"><span class="home-prop">Casa Lavanda · Ruzafa</span>
+              <div class="home-actions"><button class="iconbtn" tabindex="0"><i data-lucide="search"></i></button><button class="iconbtn"><i data-lucide="globe"></i></button></div>
+            </div>
+            <div class="hero">
+              <div class="hero-eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+              <div class="hero-h">Hola, Laura.</div>
+              <div class="hero-a"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div>
+            </div>
+            <div class="qa">
+              <div class="qa-cell" tabindex="0"><div class="ic"><i data-lucide="copy"></i></div><div class="t">Copiar Wi-Fi</div></div>
+              <div class="qa-cell"><div class="ic"><i data-lucide="phone"></i></div><div class="t">Llamar</div></div>
+              <div class="qa-cell"><div class="ic"><i data-lucide="message-circle"></i></div><div class="t">WhatsApp</div></div>
+              <div class="qa-cell"><div class="ic"><i data-lucide="map"></i></div><div class="t">Mapa</div></div>
+            </div>
+            <div class="card">
+              <div class="card-eb"><span class="pip"></span>Wi-Fi de la casa</div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="wifi"></i></div>
+                <div style="flex:1"><div class="card-t">Ruzafa_3B</div><div class="card-s">Contraseña <span class="code">naranja24</span></div></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn solid"><i data-lucide="copy"></i>Copiar</button>
+                <button class="btn ghost"><i data-lucide="qr-code"></i>QR</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div>
+          <div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div>
+          <div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div>
+          <div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="name">01 · Esenciales · dark · brand=coral</div>
+      <div class="src"><b>--guest-brand-coral-700d</b> #E15A5A · hero <b>on-solid</b> #190303 · 7.1 : 1 ✓</div>
+      <div class="tokens">--guest-on-solid-coral-d · --guest-on-tint-coral-d · --bg-page #0E0D0B</div>
+    </div>
+    </div>
+
+    <!-- 02 LLEGADA -->
+    <div class="frame-wrap">
+    <div class="phone dark-frame" data-theme="dark" data-screen-label="02 Llegada · dark">
+      <div class="screen-host">
+        <div class="di"></div>
+        <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+        <div class="screen">
+          <div class="home">
+            <div class="home-top"><span class="home-prop">Llegada</span>
+              <div class="home-actions"><button class="iconbtn" tabindex="0"><i data-lucide="search"></i></button></div>
+            </div>
+            <div class="hero" style="padding: 16px 18px">
+              <div class="hero-eb"><span class="dot"></span>HOY · CHECK-IN 16:00</div>
+              <div class="hero-h" style="font-size:22px;line-height:26px">Llaves en caja fuerte</div>
+              <div class="hero-a"><i data-lucide="key-round"></i>A la derecha del portal · planta baja</div>
+            </div>
+            <div class="card">
+              <div class="card-eb"><span class="pip"></span>Código del lockbox</div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="lock"></i></div>
+                <div style="flex:1">
+                  <div class="card-t" style="font-size:13px;color:var(--tx-3);font-weight:700;letter-spacing:0.04em;text-transform:uppercase">PIN 4 dígitos</div>
+                  <div class="card-t" style="font-size:28px;font-family:var(--font-mono);letter-spacing:0.30em;margin-top:2px">5 2 7 4</div>
+                </div>
+              </div>
+              <button class="btn tint" style="align-self:flex-start"><i data-lucide="copy"></i>Copiar código</button>
+            </div>
+            <div class="card">
+              <div class="card-eb">Cómo llegar</div>
+              <div class="card-row">
+                <div class="card-ic neutral"><i data-lucide="map-pin"></i></div>
+                <div style="flex:1"><div class="card-t" style="font-size:15px">Calle Cuba 42, 3B</div><div class="card-s">Ruzafa, Valencia · 7 min andando del metro Xàtiva</div></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn solid"><i data-lucide="map"></i>Abrir mapa</button>
+                <button class="btn ghost"><i data-lucide="navigation"></i>Cómo llegar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab-btn"><i data-lucide="home"></i><span>Inicio</span></div>
+          <div class="tab-btn on"><i data-lucide="house"></i><span>Casa</span></div>
+          <div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div>
+          <div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="name">02 · Llegada · dark · lockbox 5274</div>
+      <div class="src">tint surface <b>--guest-brand-coral-50d</b> #2C1410 · <b>on-tint</b> #FFE6E0 · 11.4 : 1 ✓</div>
+      <div class="tokens">btn.tint = brand-50d + on-tint-coral-d</div>
+    </div>
+    </div>
+
+    <!-- 03 SALIDA -->
+    <div class="frame-wrap">
+    <div class="phone dark-frame" data-theme="dark" data-screen-label="03 Salida · dark">
+      <div class="screen-host">
+        <div class="di"></div>
+        <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+        <div class="screen">
+          <div class="home">
+            <div class="home-top"><span class="home-prop">Salida</span>
+              <div class="home-actions"><button class="iconbtn" tabindex="0"><i data-lucide="search"></i></button></div>
+            </div>
+            <div class="hero" style="padding:16px 18px">
+              <div class="hero-eb"><span class="dot"></span>VIE 14 · CHECK-OUT</div>
+              <div class="hero-h" style="font-size:22px;line-height:26px">11:00 · llaves al lockbox</div>
+              <div class="hero-a"><i data-lucide="clock"></i>Tu salida es en 2 días</div>
+            </div>
+            <div class="card">
+              <div class="card-eb"><span class="pip"></span>Antes de irte</div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="check-circle-2"></i></div>
+                <div style="flex:1"><div class="card-t" style="font-size:15px">Cierra ventanas y baja persianas</div><div class="card-s">Apaga aire y luces · ahorra a Laura ~5 €</div></div>
+              </div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="trash-2"></i></div>
+                <div style="flex:1"><div class="card-t" style="font-size:15px">Bolsa al contenedor amarillo</div><div class="card-s">Esquina con Calle Sevilla · plásticos y latas</div></div>
+              </div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="key-round"></i></div>
+                <div style="flex:1"><div class="card-t" style="font-size:15px">Devuelve las llaves al lockbox</div><div class="card-s">Mismo PIN <span class="code">5274</span></div></div>
+              </div>
+            </div>
+            <div class="card" style="background:transparent;border-color:var(--bd)">
+              <div class="card-eb">Recargos posibles</div>
+              <div class="amount-row"><span>Late check-out (cada hora)</span><span class="v">25 €</span></div>
+              <div class="amount-row"><span>Llaves no devueltas</span><span class="v">80 €</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab-btn"><i data-lucide="home"></i><span>Inicio</span></div>
+          <div class="tab-btn on"><i data-lucide="house"></i><span>Casa</span></div>
+          <div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div>
+          <div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="name">03 · Salida · dark · vie 11:00</div>
+      <div class="src">cards elevadas <b>--bg-elevated</b> #25221C · separación <b>--bd-sub</b> visible 4.3:1</div>
+      <div class="tokens">page #0E0D0B → surface #1A1814 → elevated #25221C → overlay #2E2A23</div>
+    </div>
+    </div>
+
+    <!-- 04 EMERGENCIAS -->
+    <div class="frame-wrap">
+    <div class="phone dark-frame" data-theme="dark" data-screen-label="04 Emergencias · dark">
+      <div class="screen-host">
+        <div class="di"></div>
+        <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+        <div class="screen">
+          <div class="home">
+            <div class="home-top"><span class="home-prop">Ayuda 24 h</span>
+              <div class="home-actions"><button class="iconbtn" tabindex="0"><i data-lucide="search"></i></button></div>
+            </div>
+            <div class="card danger">
+              <div class="card-eb"><span class="pip"></span>Urgencia médica · gas · agua</div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="alert-triangle"></i></div>
+                <div style="flex:1"><div class="card-t" style="font-size:17px">Llama al 112</div><div class="card-s">Emergencias generales · 24 h · gratuito</div></div>
+              </div>
+              <button class="btn danger-solid"><i data-lucide="phone"></i>Llamar al 112</button>
+            </div>
+            <div class="card">
+              <div class="card-eb"><span class="pip"></span>Anfitriona</div>
+              <div class="card-row">
+                <div class="card-ic"><i data-lucide="user-round"></i></div>
+                <div style="flex:1"><div class="card-t">Laura Martín</div><div class="card-s">Vive a 8 min · responde antes de 30 min</div></div>
+              </div>
+              <div class="btn-row">
+                <button class="btn solid"><i data-lucide="phone"></i>Llamar</button>
+                <button class="btn tint"><i data-lucide="message-circle"></i>WhatsApp</button>
+              </div>
+            </div>
+            <div class="empty">Si necesitas ayuda durante la estancia, contacta con tu anfitrión.</div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab-btn"><i data-lucide="home"></i><span>Inicio</span></div>
+          <div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div>
+          <div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div>
+          <div class="tab-btn on"><i data-lucide="life-buoy"></i><span>Ayuda</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="name">04 · Emergencias · dark · cards rojas</div>
+      <div class="src">danger 700d #F87171 + on-solid #1A0202 = 7.4:1 ✓ · empty state neutral</div>
+      <div class="tokens">--danger-700d · --danger-50d · --danger-on-solid · --danger-on-tint</div>
+    </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       FRAME 5 · DESKTOP DARK
+       ============================================================ -->
+  <div class="section-eb">Frame 5 · Desktop dark · 1280 × 800</div>
+
+  <div class="desk-wrap">
+    <div class="desk dark-frame" data-theme="dark" data-screen-label="05 Esenciales · desktop dark">
+      <div class="desk-chrome">
+        <div class="desk-dots"><i></i><i></i><i></i></div>
+        <div class="desk-url"><i data-lucide="lock"></i>casalavanda.guide / esenciales</div>
+        <div style="width:60px"></div>
+      </div>
+      <div class="desk-body">
+        <aside class="desk-rail">
+          <div class="desk-rail-h">Casa Lavanda · Ruzafa</div>
+          <div class="rail-row on"><i data-lucide="sparkles"></i>Esenciales<span class="pip full"></span></div>
+          <div class="rail-row"><i data-lucide="map-pinned"></i>Llegada<span class="pip full"></span></div>
+          <div class="rail-row"><i data-lucide="layout-grid"></i>Espacios<span class="pip empty"></span></div>
+          <div class="rail-row"><i data-lucide="settings-2"></i>Cómo usar<span class="pip empty"></span></div>
+          <div class="rail-row"><i data-lucide="package-check"></i>Equipamiento<span class="pip full"></span></div>
+          <div class="rail-row"><i data-lucide="scroll-text"></i>Normas<span class="pip empty"></span></div>
+          <div class="rail-row"><i data-lucide="log-out"></i>Salida<span class="pip empty"></span></div>
+          <div class="rail-row"><i data-lucide="map"></i>Guía local<span class="pip empty"></span></div>
+          <div class="rail-row"><i data-lucide="life-buoy"></i>Ayuda<span class="pip empty"></span></div>
+        </aside>
+        <main class="desk-main">
+          <div class="desk-pretitle"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+          <h1 class="desk-h1">Hola, Laura.</h1>
+          <p class="desk-sub">Has llegado a Casa Lavanda. Aquí tienes lo que necesitas para los primeros minutos: Wi-Fi, código del lockbox y una vía rápida para hablar con tu anfitriona.</p>
+
+          <div class="desk-hero">
+            <div>
+              <div class="desk-hero-eb">Wi-Fi de la casa</div>
+              <div class="desk-hero-h">Ruzafa_3B · naranja24</div>
+              <div class="desk-hero-a">300 Mbps simétricos · 2,4 GHz + 5 GHz · sin contraseñas adicionales</div>
+            </div>
+            <div class="desk-hero-cta">
+              <button class="btn"><i data-lucide="copy"></i>Copiar contraseña</button>
+              <button class="btn ghost-on" tabindex="0"><i data-lucide="qr-code"></i>Mostrar QR</button>
+            </div>
+          </div>
+
+          <div class="desk-grid">
+            <div class="desk-qa"><div class="ic"><i data-lucide="key-round"></i></div><div class="t">Código del lockbox</div><div class="s">5274 · a la derecha del portal</div></div>
+            <div class="desk-qa"><div class="ic"><i data-lucide="phone"></i></div><div class="t">Llamar a Laura</div><div class="s">Responde antes de 30 min</div></div>
+            <div class="desk-qa"><div class="ic"><i data-lucide="message-circle"></i></div><div class="t">WhatsApp</div><div class="s">+34 612 88 41 02</div></div>
+            <div class="desk-qa"><div class="ic"><i data-lucide="map"></i></div><div class="t">Cómo llegar</div><div class="s">Calle Cuba 42, 3B · Ruzafa</div></div>
+          </div>
+
+          <div class="desk-list">
+            <div class="card"><div class="card-row"><div class="card-ic"><i data-lucide="utensils"></i></div><div style="flex:1"><div class="card-t">Cocina · totalmente equipada</div><div class="card-s">Inducción 4 fuegos · horno · vajilla 6 personas · cápsulas Nespresso de cortesía</div></div></div></div>
+            <div class="card"><div class="card-row"><div class="card-ic"><i data-lucide="washing-machine"></i></div><div style="flex:1"><div class="card-t">Lavadora Bosch · Eco 40</div><div class="card-s">Cápsulas debajo del fregadero · 90 min</div></div></div></div>
+          </div>
+        </main>
+        <aside class="desk-aside">
+          <div class="aside-h">Tu anfitriona</div>
+          <div class="aside-card">
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+              <div style="width:48px;height:48px;border-radius:50%;background:var(--guest-brand-tint);color:var(--guest-on-tint);display:grid;place-items:center;font-weight:800;font-size:18px">LM</div>
+              <div><div class="name">Laura Martín</div><div class="role">Anfitriona · vive a 8 min</div></div>
+            </div>
+            <div class="btn-row"><button class="btn solid" style="flex:1"><i data-lucide="phone"></i>Llamar</button><button class="btn tint" style="flex:1"><i data-lucide="message-circle"></i>Chat</button></div>
+          </div>
+          <div class="aside-h">Tu progreso</div>
+          <div class="aside-card aside-prog">
+            <div class="prog-row"><span style="width:80px">Esenciales</span><span class="prog-bar"><i style="width:100%"></i></span><span class="v">4/4</span></div>
+            <div class="prog-row"><span style="width:80px">Llegada</span><span class="prog-bar"><i style="width:100%"></i></span><span class="v">3/3</span></div>
+            <div class="prog-row"><span style="width:80px">Espacios</span><span class="prog-bar"><i style="width:25%"></i></span><span class="v">1/4</span></div>
+            <div class="prog-row"><span style="width:80px">Salida</span><span class="prog-bar"><i style="width:0%"></i></span><span class="v">0/3</span></div>
+          </div>
+          <div class="aside-h">Próximo</div>
+          <div class="aside-card">
+            <div style="font-size:12px;color:var(--tx-3);font-weight:700;letter-spacing:0.10em;text-transform:uppercase;margin-bottom:6px">Vie 14 · 11:00</div>
+            <div style="font-size:15px;font-weight:600;color:var(--tx-1);line-height:19px">Devuelve las llaves al lockbox</div>
+            <div style="font-size:13px;color:var(--tx-2);line-height:17px;margin-top:4px">Mismo PIN. Cierra puertas y baja persianas antes de salir.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <div class="caption">
+      <div class="name">05 · Esenciales · desktop · 1280 × 800 · dark</div>
+      <div class="src">rail #0E0D0B · main #0E0D0B · aside #0E0D0B · cards elevated #25221C · hero brand-700d</div>
+      <div class="tokens">desk-hero CTA invierte: bg=on-solid, color=brand-700d → 7.1 : 1 ✓</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       FRAME 6 · BRAND STRESS BOARD
+       ============================================================ -->
+  <div class="section-eb">Frame 6 · Brand stress · 4 hero variants</div>
+
+  <div class="stress-board">
+
+    <!-- coral light -->
+    <div class="stress-card light">
+      <div class="stress-name">Coral · Casa Lavanda<span class="theme">light</span></div>
+      <div class="stress-hero" style="background:#7F1414;color:#FFF5F0">
+        <div class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+        <h3>Hola, Laura.</h3>
+        <div class="sub">Calle Cuba 42, 3B · Ruzafa</div>
+        <span class="pill" style="background:rgba(255,245,240,0.18);color:#FFF5F0"><span class="pdot" style="background:#FFF5F0"></span>Recomendado</span>
+      </div>
+      <div class="stress-meta">
+        <div class="row"><span class="lab">brand 800</span><span class="v">#7F1414</span></div>
+        <div class="row"><span class="lab">on-solid-coral</span><span class="v">#FFF5F0</span></div>
+        <div class="row"><span class="lab">contrast (título)</span><span class="ratio">7.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- indigo light -->
+    <div class="stress-card light">
+      <div class="stress-name">Indigo<span class="theme">light</span></div>
+      <div class="stress-hero" style="background:#312E81;color:#F0F0FF">
+        <div class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+        <h3>Hola, Laura.</h3>
+        <div class="sub">Calle Cuba 42, 3B · Ruzafa</div>
+        <span class="pill" style="background:rgba(240,240,255,0.18);color:#F0F0FF"><span class="pdot" style="background:#F0F0FF"></span>Recomendado</span>
+      </div>
+      <div class="stress-meta">
+        <div class="row"><span class="lab">brand 800</span><span class="v">#312E81</span></div>
+        <div class="row"><span class="lab">on-solid-indigo</span><span class="v">#F0F0FF</span></div>
+        <div class="row"><span class="lab">contrast (título)</span><span class="ratio">10.4 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- sienna light -->
+    <div class="stress-card light">
+      <div class="stress-name">Sienna<span class="theme">light</span></div>
+      <div class="stress-hero" style="background:#7C2D12;color:#FFF1E8">
+        <div class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+        <h3>Hola, Laura.</h3>
+        <div class="sub">Calle Cuba 42, 3B · Ruzafa</div>
+        <span class="pill" style="background:rgba(255,241,232,0.20);color:#FFF1E8"><span class="pdot" style="background:#FFF1E8"></span>Recomendado</span>
+      </div>
+      <div class="stress-meta">
+        <div class="row"><span class="lab">brand 800</span><span class="v">#7C2D12</span></div>
+        <div class="row"><span class="lab">on-solid-sienna</span><span class="v">#FFF1E8</span></div>
+        <div class="row"><span class="lab">contrast (título)</span><span class="ratio">8.0 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+    <!-- sienna dark -->
+    <div class="stress-card">
+      <div class="stress-name">Sienna<span class="theme">dark</span></div>
+      <div class="stress-hero" style="background:#DA6E40;color:#1A0904">
+        <div class="eb"><span class="dot"></span>HOY · DÍA 1 · LLEGADA</div>
+        <h3>Hola, Laura.</h3>
+        <div class="sub">Calle Cuba 42, 3B · Ruzafa</div>
+        <span class="pill" style="background:rgba(26,9,4,0.20);color:#1A0904"><span class="pdot" style="background:#1A0904"></span>Recomendado</span>
+      </div>
+      <div class="stress-meta">
+        <div class="row"><span class="lab">brand 700d (lighten +20L)</span><span class="v">#DA6E40</span></div>
+        <div class="row"><span class="lab">on-solid-sienna-d</span><span class="v">#1A0904</span></div>
+        <div class="row"><span class="lab">contrast (título)</span><span class="ratio">7.6 : 1 ✓ AAA</span></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

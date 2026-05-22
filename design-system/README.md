@@ -30,7 +30,6 @@ design-system/
       components.css
       shadcn.css
       tailwind.tokens.ts
-      tokens.json
 
   references/
     liora-ui-kits/
@@ -48,8 +47,6 @@ design-system/
           subpages.html
           operator.css
         messaging/
-          index.html
-        guest/
           index.html
 
   docs/

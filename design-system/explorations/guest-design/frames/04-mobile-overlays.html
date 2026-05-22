@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Batch 4 · Mobile overlays · Guest guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+@import url("https://rsms.me/inter/inter.css");
+
+:root {
+  --stone-00:#FCFBF8; --stone-05:#FAF7F2; --stone-08:#F6F3EC; --stone-12:#F2EEE8;
+  --stone-24:#E6E1D8; --stone-32:#D8D2C6; --stone-40:#C8C2B5; --stone-56:#8A8578;
+  --stone-72:#5A564D; --stone-88:#2E2B26;
+  --slate-100:#E8EDF4; --slate-500:#3A5070; --slate-700:#1E2A3A;
+  --bg-page: var(--stone-05); --bg-surface: var(--stone-00); --bg-subtle: var(--stone-08); --bg-muted: var(--stone-12);
+  --tx-1: var(--stone-88); --tx-2: var(--stone-72); --tx-3: var(--stone-56); --tx-4: var(--stone-40);
+  --tx-on: var(--stone-05);
+  --bd-sub: var(--stone-12); --bd: var(--stone-24); --bd-strong: var(--stone-40);
+  --guest-brand:#B91C1C; --guest-brand-50:#FBECE8; --guest-brand-fg:#2A0808;
+  --guest-color-border-focus: #2B3C54;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-feat: "cv11","ss01","ss03","cv02","cv05";
+  --shadow-md: 0 6px 24px rgba(28,26,22,0.10), 0 2px 6px rgba(28,26,22,0.06);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-feature-settings: var(--font-feat);
+  -webkit-font-smoothing: antialiased; color: var(--tx-1);
+  background: radial-gradient(ellipse at top, #EDE7DC 0%, #DDD4C2 55%, #C8BDA6 100%);
+  min-height: 100vh; padding: 56px 24px 96px;
+}
+.doc-head { max-width: 1280px; margin: 0 auto 36px; display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; color: var(--stone-88); }
+.doc-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stone-72); }
+.doc-title { font-size: 36px; font-weight: 700; letter-spacing: -0.025em; line-height: 40px; margin: 6px 0 4px; }
+.doc-sub { font-size: 14px; color: var(--stone-72); line-height: 21px; max-width: 70ch; }
+.doc-meta { font-family: var(--font-mono); font-size: 11px; color: var(--stone-72); text-align: right; line-height: 18px; }
+.doc-meta b { color: var(--stone-88); font-weight: 600; }
+
+.stage { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, max-content); gap: 56px 32px; justify-content: center; }
+.frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+.phone {
+  width: 375px; height: 667px; background: #000;
+  border-radius: 44px; padding: 8px;
+  box-shadow: 0 24px 60px rgba(28,26,22,0.20), 0 0 0 1px rgba(28,26,22,0.08);
+}
+.screen-host {
+  width: 100%; height: 100%; background: var(--bg-page); border-radius: 36px; overflow: hidden;
+  position: relative; display: flex; flex-direction: column;
+}
+.di { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); width: 108px; height: 30px; border-radius: 16px; background: #000; z-index: 30; }
+.sb { height: 44px; padding: 14px 26px 0; display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--tx-1); flex-shrink: 0; position: relative; z-index: 5; }
+.sb-r { display: flex; gap: 5px; align-items: center; }
+.sb-r svg { width: 14px; height: 14px; }
+.batt { width: 22px; height: 11px; border: 1px solid currentColor; border-radius: 3px; padding: 1px; position: relative; }
+.batt::after { content: ""; position: absolute; right: -3px; top: 2px; width: 1px; height: 5px; background: currentColor; border-radius: 0 1px 1px 0; }
+.batt > i { display: block; height: 100%; width: 78%; background: currentColor; border-radius: 1px; }
+
+.screen { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+
+.tabs { height: 76px; background: var(--bg-surface); border-top: 1px solid var(--bd-sub); display: grid; grid-template-columns: repeat(4, 1fr); padding: 8px 0 18px; flex-shrink: 0; }
+.tab-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--tx-3); font-size: 10px; font-weight: 600; min-height: 50px; }
+.tab-btn svg { width: 22px; height: 22px; }
+.tab-btn.on { color: var(--tx-1); }
+
+/* HOME backdrop */
+.home { padding: 14px 18px 16px; height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: 12px; }
+.home-top { display: flex; align-items: center; justify-content: space-between; }
+.home-prop { font-size: 11px; font-weight: 700; color: var(--tx-3); text-transform: uppercase; letter-spacing: 0.10em; }
+.home-actions { display: flex; gap: 6px; }
+.iconbtn { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-surface); border: 1px solid var(--bd-sub); display: grid; place-items: center; color: var(--tx-2); position: relative; }
+.iconbtn svg { width: 18px; height: 18px; }
+.iconbtn .lang-flag { position: absolute; bottom: 5px; right: 5px; font-size: 10px; line-height: 1; }
+.hero { background: var(--slate-700); color: var(--tx-on); border-radius: 18px; padding: 18px; position: relative; overflow: hidden; }
+.hero::after { content:""; position:absolute; inset:-40% -10% auto auto; width: 60%; height: 120%; background: radial-gradient(ellipse at top right, rgba(242,192,120,0.16), transparent 60%); pointer-events: none; }
+.hero-eb { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.78; display: flex; align-items: center; gap: 7px; }
+.hero-eb .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--guest-brand); box-shadow: 0 0 0 3px rgba(185,28,28,0.30); }
+.hero-h { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 30px; margin: 8px 0 4px; }
+.hero-a { font-size: 12px; opacity: 0.82; display: flex; align-items: center; gap: 5px; }
+.hero-a svg { width: 12px; height: 12px; }
+
+.qa { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.qa-cell { background: var(--bg-surface); border: 1px solid var(--bd-sub); border-radius: 12px; padding: 10px 6px 9px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 64px; }
+.qa-cell .ic { width: 30px; height: 30px; border-radius: 9px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; }
+.qa-cell .ic svg { width: 15px; height: 15px; }
+.qa-cell .t { font-size: 11px; font-weight: 600; line-height: 13px; text-align: center; }
+
+.ess { background: var(--bg-surface); border: 2px solid var(--slate-700); border-radius: 14px; padding: 14px 16px; position: relative; }
+.ess-tag { position: absolute; top: -9px; left: 14px; background: var(--slate-700); color: var(--tx-on); font-size: 10px; padding: 2px 8px; border-radius: 5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.ess-row { display: flex; gap: 12px; align-items: center; }
+.ess-ic { width: 38px; height: 38px; border-radius: 10px; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; flex-shrink: 0; }
+.ess-ic svg { width: 18px; height: 18px; }
+.ess-t { font-size: 16px; font-weight: 700; line-height: 19px; }
+.ess-s { font-size: 13px; color: var(--tx-2); margin-top: 2px; line-height: 16px; }
+.code { font-family: var(--font-mono); background: var(--stone-88); color: var(--stone-05); font-size: 13px; font-weight: 700; letter-spacing: 0.10em; padding: 2px 8px; border-radius: 5px; }
+
+.scrim { position: absolute; inset: 0; background: rgba(20,18,14,0.50); z-index: 40; }
+
+/* 01 TOC */
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 45; background: var(--bg-surface); border-radius: 20px 20px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.18); display: flex; flex-direction: column; min-height: 0; }
+.sheet.toc { height: 80%; }
+.sheet-handle { display: flex; justify-content: center; padding: 10px 0 4px; }
+.sheet-handle i { display: block; width: 36px; height: 4px; background: var(--bd-strong); border-radius: 999px; }
+.sheet-head { padding: 6px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-title { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+.sheet-close { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-subtle); border: 1px solid var(--bd-sub); display: grid; place-items: center; }
+.sheet-close svg { width: 18px; height: 18px; color: var(--tx-2); }
+.toc-list { flex: 1; overflow: auto; padding: 0 8px 14px; }
+.toc-row { display: flex; align-items: center; gap: 12px; padding: 0 12px; min-height: 56px; border-radius: 12px; }
+.toc-ic { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; flex-shrink: 0; }
+.toc-ic svg { width: 17px; height: 17px; }
+.toc-row.viewed .toc-ic { background: var(--slate-100); color: var(--slate-700); }
+.toc-main { flex: 1; min-width: 0; }
+.toc-t { font-size: 16px; font-weight: 600; line-height: 19px; }
+.toc-s { font-size: 13px; color: var(--tx-3); line-height: 16px; margin-top: 1px; }
+.toc-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--bd-strong); background: var(--bg-surface); }
+.toc-row.viewed .toc-dot { background: var(--slate-700); border-color: var(--slate-700); }
+
+/* 02 Search */
+.search-sheet { position: absolute; inset: 0; background: var(--bg-page); z-index: 50; display: flex; flex-direction: column; }
+.search-bar { padding: 14px 16px 10px; display: flex; gap: 10px; align-items: center; background: var(--bg-surface); border-bottom: 1px solid var(--bd-sub); }
+.search-input { flex: 1; min-height: 44px; background: var(--bg-page); border-radius: 12px; display: flex; align-items: center; gap: 9px; padding: 0 12px; font-size: 16px; color: var(--tx-1); border: 2px solid transparent; outline: 3px solid var(--guest-color-border-focus); outline-offset: -1px; }
+.search-input .ic { width: 18px; height: 18px; color: var(--tx-3); flex-shrink: 0; }
+.search-input .v { flex: 1; font-weight: 500; }
+.search-input .v::after { content: "|"; color: var(--guest-color-border-focus); font-weight: 400; margin-left: 1px; animation: blink 1.05s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.search-input .kbd { font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border-radius: 5px; background: var(--bg-subtle); color: var(--tx-2); border: 1px solid var(--bd); font-weight: 600; }
+.search-cancel { min-height: 44px; padding: 0 6px; font: inherit; font-size: 15px; font-weight: 600; color: var(--slate-500); background: none; border: 0; }
+.search-results { flex: 1; overflow: auto; padding: 8px 0 16px; }
+.cluster { padding: 14px 18px 6px; }
+.cluster-eb { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); display: flex; align-items: center; gap: 8px; }
+.cluster-eb .count { font-family: var(--font-mono); padding: 1px 6px; border-radius: 4px; background: var(--bg-muted); color: var(--tx-2); letter-spacing: 0; font-size: 10px; }
+.res-row { display: flex; gap: 12px; align-items: center; padding: 10px 18px; min-height: 60px; }
+.res-ic { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-muted); color: var(--tx-2); display: grid; place-items: center; flex-shrink: 0; }
+.res-ic svg { width: 17px; height: 17px; }
+.res-t { font-size: 16px; font-weight: 600; line-height: 19px; }
+.res-t mark { background: rgba(185,28,28,0.14); color: var(--guest-brand-fg); padding: 0 2px; border-radius: 3px; font-weight: 700; }
+.res-s { font-size: 13px; color: var(--tx-3); line-height: 16px; margin-top: 1px; }
+.res-arrow { color: var(--tx-4); width: 16px; height: 16px; flex-shrink: 0; }
+
+/* 03 Lightbox */
+.lb { position: absolute; inset: 0; background: #0a0907; z-index: 50; display: flex; flex-direction: column; }
+.lb-img { flex: 1; min-height: 0; position: relative;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(255,228,180,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 90%, rgba(120,80,40,0.5) 0%, transparent 60%),
+    linear-gradient(150deg, #D9C8A8 0%, #B89866 38%, #6E5638 80%, #2A1F14 100%);
+}
+.lb-img::after { content: ""; position: absolute; inset: 0; opacity: 0.18; mix-blend-mode: overlay;
+  background: repeating-linear-gradient(135deg, rgba(255,255,255,0.18) 0 2px, transparent 2px 7px), repeating-linear-gradient(45deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 5px);
+}
+.lb-top { position: absolute; top: 0; left: 0; right: 0; padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; z-index: 5; background: linear-gradient(180deg, rgba(0,0,0,0.45), transparent); }
+.lb-btn { width: 44px; height: 44px; border-radius: 22px; background: rgba(0,0,0,0.45); color: white; display: grid; place-items: center; }
+.lb-btn svg { width: 18px; height: 18px; }
+.lb-counter { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: white; padding: 6px 12px; border-radius: 999px; background: rgba(0,0,0,0.45); }
+.lb-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 18px 22px; background: linear-gradient(0deg, rgba(0,0,0,0.65) 30%, transparent); color: white; display: flex; flex-direction: column; gap: 12px; z-index: 5; }
+.lb-cap { font-size: 14px; font-weight: 600; line-height: 18px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.lb-thumbs { display: flex; gap: 8px; justify-content: center; padding: 4px 0; }
+.lb-thumb { width: 44px; height: 44px; padding: 2px; border-radius: 8px; background: transparent; border: 0; display: grid; place-items: center; }
+.lb-thumb-img { width: 40px; height: 40px; border-radius: 7px; background: linear-gradient(135deg, #C8B89A, #8E7B5A); border: 2px solid transparent; }
+.lb-thumb.on .lb-thumb-img { border-color: var(--guest-brand); box-shadow: 0 0 0 2px rgba(255,255,255,0.20); }
+.lb-thumb-img.t-b { background: linear-gradient(135deg, #D9C8A8 0%, #B89866 50%, #6E5638 100%); }
+.lb-thumb-img.t-c { background: linear-gradient(135deg, #B5A28A, #756147); }
+.lb-thumb-img.t-d { background: linear-gradient(135deg, #BFAE8E, #8B7657); }
+.lb-thumb-img.t-e { background: linear-gradient(135deg, #ADA188, #6F5F46); }
+
+/* 04 PWA */
+.sheet.pwa { height: 280px; }
+.pwa-body { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.pwa-row { display: flex; gap: 14px; align-items: center; }
+.pwa-icon { width: 56px; height: 56px; border-radius: 14px; background: var(--slate-700); color: var(--tx-on); display: grid; place-items: center; font-weight: 800; font-size: 19px; letter-spacing: -0.04em; flex-shrink: 0; position: relative; box-shadow: 0 4px 12px rgba(30,42,58,0.20); }
+.pwa-icon::after { content: ""; position: absolute; right: -3px; top: -3px; width: 10px; height: 10px; background: var(--guest-brand); border-radius: 50%; box-shadow: 0 0 0 3px var(--bg-surface); }
+.pwa-h { font-size: 18px; font-weight: 700; letter-spacing: -0.015em; line-height: 22px; }
+.pwa-s { font-size: 14px; color: var(--tx-2); line-height: 18px; margin-top: 4px; }
+.pwa-steps { background: var(--bg-subtle); border: 1px solid var(--bd-sub); border-radius: 12px; padding: 11px 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--tx-1); line-height: 18px; }
+.pwa-steps .pic { width: 28px; height: 28px; border-radius: 8px; background: var(--bg-surface); color: var(--slate-700); display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--bd); }
+.pwa-steps .pic svg { width: 15px; height: 15px; }
+.pwa-steps .arrow svg { width: 14px; height: 14px; color: var(--tx-4); }
+.pwa-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 12px; font: inherit; font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; }
+.btn.primary { background: var(--slate-700); color: var(--tx-on); border-color: var(--slate-700); }
+.btn.ghost { background: transparent; color: var(--tx-2); }
+.btn svg { width: 16px; height: 16px; }
+
+/* 05 Lang */
+.lang-pop { position: absolute; top: 60px; right: 16px; z-index: 50; width: 240px; background: var(--bg-surface); border-radius: 14px; border: 1px solid var(--bd-sub); box-shadow: var(--shadow-md), 0 12px 36px rgba(28,26,22,0.16); overflow: hidden; }
+.lang-tip { position: absolute; top: -7px; right: 18px; width: 14px; height: 14px; background: var(--bg-surface); border-left: 1px solid var(--bd-sub); border-top: 1px solid var(--bd-sub); transform: rotate(45deg); }
+.lang-head { padding: 12px 14px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--tx-3); }
+.lang-list { padding: 0 6px 6px; }
+.lang-row { display: flex; align-items: center; gap: 12px; padding: 0 10px; min-height: 48px; border-radius: 10px; font-size: 16px; }
+.lang-row .flag { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; flex-shrink: 0; background: var(--bg-subtle); border: 1px solid var(--bd-sub); }
+.lang-row .nm { flex: 1; font-weight: 500; }
+.lang-row.on .nm { color: var(--guest-brand-fg); font-weight: 700; }
+.lang-row .check { color: var(--guest-brand); width: 18px; height: 18px; flex-shrink: 0; }
+.lang-foot { padding: 10px 14px 12px; border-top: 1px solid var(--bd-sub); font-size: 12px; color: var(--tx-3); line-height: 16px; }
+
+.caption { display: flex; flex-direction: column; gap: 3px; align-items: center; text-align: center; max-width: 360px; }
+.caption .name { font-size: 13px; font-weight: 600; color: var(--stone-88); }
+.caption .src { font-family: var(--font-mono); font-size: 11px; color: var(--stone-72); line-height: 15px; }
+.caption .src b { color: var(--stone-88); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div>
+    <div class="doc-eyebrow">Batch 4 of 5 · Mobile overlays · 375 × 667 · light</div>
+    <h1 class="doc-title">5 estados modales del huésped</h1>
+    <p class="doc-sub">Capa de overlays sobre el shell de Inicio (Batch 2). Hereda hero slate-700 + flourish coral + stone surfaces + Inter. Targets táctiles ≥ 44 px, body ≥ 16 px, focus-visible una sola vez en el input de búsqueda. Sin IDs taxonómicos en pantalla — solo en captions.</p>
+  </div>
+  <div class="doc-meta">
+    <b>Casa Lavanda · Ruzafa</b><br/>
+    Calle Cuba 42, 3B · Valencia<br/>
+    es-ES · Wi-Fi <b>Ruzafa_3B</b>
+  </div>
+</div>
+
+<div class="stage">
+
+  <!-- 01 TOC -->
+  <div class="frame-wrap">
+  <div class="phone" data-screen-label="01 TOC drawer">
+    <div class="screen-host">
+      <div class="di"></div>
+      <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+      <div class="screen">
+        <div class="home">
+          <div class="home-top"><span class="home-prop">Casa Lavanda · Ruzafa</span>
+            <div class="home-actions"><div class="iconbtn"><i data-lucide="search"></i></div><div class="iconbtn"><i data-lucide="globe"></i><span class="lang-flag">🇪🇸</span></div></div></div>
+          <div class="hero"><div class="hero-eb"><span class="dot"></span>DÍA 1 · LLEGADA</div><div class="hero-h">Hola, Laura.</div><div class="hero-a"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div></div>
+          <div class="qa">
+            <div class="qa-cell"><div class="ic"><i data-lucide="wifi"></i></div><div class="t">Wi-Fi</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="key-round"></i></div><div class="t">Entrar</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="message-circle"></i></div><div class="t">Chat</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="map"></i></div><div class="t">Mapa</div></div>
+          </div>
+          <div class="ess"><span class="ess-tag">Acceso · Día 1</span><div class="ess-row"><div class="ess-ic"><i data-lucide="key-round"></i></div><div><div class="ess-t">Caja a la derecha del portal</div><div class="ess-s">Código <span class="code">5274</span></div></div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <aside class="sheet toc">
+          <div class="sheet-handle"><i></i></div>
+          <div class="sheet-head"><div class="sheet-title">Secciones</div><button class="sheet-close" aria-label="Cerrar"><i data-lucide="x"></i></button></div>
+          <div class="toc-list">
+            <div class="toc-row viewed"><div class="toc-ic"><i data-lucide="sparkles"></i></div><div class="toc-main"><div class="toc-t">Esenciales</div><div class="toc-s">Wi-Fi, acceso y lo del primer día</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row viewed"><div class="toc-ic"><i data-lucide="map-pinned"></i></div><div class="toc-main"><div class="toc-t">Llegada</div><div class="toc-s">Cómo llegar y entrar al apartamento</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row viewed"><div class="toc-ic"><i data-lucide="layout-grid"></i></div><div class="toc-main"><div class="toc-t">Espacios</div><div class="toc-s">2 dormitorios, cocina y baño</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row"><div class="toc-ic"><i data-lucide="settings-2"></i></div><div class="toc-main"><div class="toc-t">Cómo usar</div><div class="toc-s">Aire, lavadora, calefacción</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row viewed"><div class="toc-ic"><i data-lucide="package-check"></i></div><div class="toc-main"><div class="toc-t">Equipamiento</div><div class="toc-s">Lo que ya está en la casa</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row"><div class="toc-ic"><i data-lucide="scroll-text"></i></div><div class="toc-main"><div class="toc-t">Normas</div><div class="toc-s">Silencio, mascotas y eventos</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row"><div class="toc-ic"><i data-lucide="log-out"></i></div><div class="toc-main"><div class="toc-t">Salida</div><div class="toc-s">Cómo dejar la casa el viernes</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row"><div class="toc-ic"><i data-lucide="map"></i></div><div class="toc-main"><div class="toc-t">Guía local</div><div class="toc-s">Cafés, mercado y farmacia</div></div><span class="toc-dot"></span></div>
+            <div class="toc-row"><div class="toc-ic"><i data-lucide="life-buoy"></i></div><div class="toc-main"><div class="toc-t">Ayuda</div><div class="toc-s">Anfitrión y emergencias 24 h</div></div><span class="toc-dot"></span></div>
+          </div>
+        </aside>
+      </div>
+      <div class="tabs"><div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div><div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div><div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div><div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div></div>
+    </div>
+  </div>
+  <div class="caption"><div class="name">01 · TOC drawer · bottom sheet 80vh</div><div class="src">overlay sobre <b>gs.essentials</b> (home) · orden canónico <b>gs.essentials → gs.arrival → gs.spaces → gs.howto → gs.amenities → gs.rules → gs.checkout → gs.local → gs.emergency</b> · 4 visited dots</div></div>
+  </div>
+
+  <!-- 02 Search -->
+  <div class="frame-wrap">
+  <div class="phone" data-screen-label="02 Search overlay">
+    <div class="screen-host">
+      <div class="di"></div>
+      <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+      <div class="screen">
+        <div class="search-sheet">
+          <div class="search-bar">
+            <div class="search-input" tabindex="0"><i data-lucide="search" class="ic"></i><span class="v">cocina</span><span class="kbd">esc</span></div>
+            <button class="search-cancel">Cancelar</button>
+          </div>
+          <div class="search-results">
+            <div class="cluster"><div class="cluster-eb">Espacios <span class="count">2</span></div></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="layout-grid"></i></div><div style="flex:1;min-width:0"><div class="res-t"><mark>Cocina</mark> · totalmente equipada</div><div class="res-s">Inducción 4 fuegos, horno, vajilla 6 personas</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="sofa"></i></div><div style="flex:1;min-width:0"><div class="res-t">Salón con sofá-cama</div><div class="res-s">Abierto a la <mark>cocina</mark> · balcón a Calle Cuba</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+
+            <div class="cluster"><div class="cluster-eb">Equipamiento <span class="count">3</span></div></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="wifi"></i></div><div style="flex:1;min-width:0"><div class="res-t">Wi-Fi <mark>Ruzafa_3B</mark></div><div class="res-s">300 Mbps simétricos · 2,4 GHz + 5 GHz</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="coffee"></i></div><div style="flex:1;min-width:0"><div class="res-t">Cafetera Nespresso</div><div class="res-s">8 cápsulas cortesía · armario de la <mark>cocina</mark></div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="washing-machine"></i></div><div style="flex:1;min-width:0"><div class="res-t">Lavadora Bosch</div><div class="res-s">Programa Eco 40 · cápsulas debajo del fregadero</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+
+            <div class="cluster"><div class="cluster-eb">Normas <span class="count">2</span></div></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="cigarette-off"></i></div><div style="flex:1;min-width:0"><div class="res-t">No fumar</div><div class="res-s">Permitido en el balcón con la puerta cerrada</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+            <div class="res-row"><div class="res-ic"><i data-lucide="paw-print"></i></div><div style="flex:1;min-width:0"><div class="res-t">Mascotas con aviso</div><div class="res-s">Avisa a Javier al reservar</div></div><i data-lucide="chevron-right" class="res-arrow"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="tabs"><div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div><div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div><div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div><div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div></div>
+    </div>
+  </div>
+  <div class="caption"><div class="name">02 · Search overlay · :focus-visible en input</div><div class="src">clusters por <b>gs.spaces</b>, <b>gs.amenities</b>, <b>gs.rules</b> · ring = <b>--guest-color-border-focus</b></div></div>
+  </div>
+
+  <!-- 03 Lightbox -->
+  <div class="frame-wrap">
+  <div class="phone" data-screen-label="03 Lightbox">
+    <div class="screen-host">
+      <div class="di"></div>
+      <div class="sb" style="color: white"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+      <div class="screen">
+        <div class="lb">
+          <div class="lb-img"></div>
+          <div class="lb-top">
+            <button class="lb-btn" aria-label="Cerrar"><i data-lucide="x"></i></button>
+            <div class="lb-counter">2 / 5</div>
+            <button class="lb-btn" aria-label="Compartir"><i data-lucide="share"></i></button>
+          </div>
+          <div class="lb-bottom">
+            <div class="lb-cap">Cocina abierta al salón · electrodomésticos Bosch</div>
+            <div class="lb-thumbs">
+              <button class="lb-thumb" aria-label="Foto 1"><span class="lb-thumb-img"></span></button>
+              <button class="lb-thumb on" aria-label="Foto 2 · seleccionada"><span class="lb-thumb-img t-b"></span></button>
+              <button class="lb-thumb" aria-label="Foto 3"><span class="lb-thumb-img t-c"></span></button>
+              <button class="lb-thumb" aria-label="Foto 4"><span class="lb-thumb-img t-d"></span></button>
+              <button class="lb-thumb" aria-label="Foto 5"><span class="lb-thumb-img t-e"></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabs"><div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div><div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div><div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div><div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div></div>
+    </div>
+  </div>
+  <div class="caption"><div class="name">03 · Lightbox · galería · 2 / 5</div><div class="src">overlay sobre <b>gs.spaces</b> · cocina · thumb hit area 44×44 (img 40×40) · borde activo <b>--guest-brand</b></div></div>
+  </div>
+
+  <!-- 04 PWA -->
+  <div class="frame-wrap">
+  <div class="phone" data-screen-label="04 PWA install">
+    <div class="screen-host">
+      <div class="di"></div>
+      <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+      <div class="screen">
+        <div class="home">
+          <div class="home-top"><span class="home-prop">Casa Lavanda · Ruzafa</span><div class="home-actions"><div class="iconbtn"><i data-lucide="search"></i></div><div class="iconbtn"><i data-lucide="globe"></i><span class="lang-flag">🇪🇸</span></div></div></div>
+          <div class="hero"><div class="hero-eb"><span class="dot"></span>DÍA 1 · LLEGADA</div><div class="hero-h">Hola, Laura.</div><div class="hero-a"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div></div>
+          <div class="qa">
+            <div class="qa-cell"><div class="ic"><i data-lucide="wifi"></i></div><div class="t">Wi-Fi</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="key-round"></i></div><div class="t">Entrar</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="message-circle"></i></div><div class="t">Chat</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="map"></i></div><div class="t">Mapa</div></div>
+          </div>
+          <div class="ess"><span class="ess-tag">Acceso · Día 1</span><div class="ess-row"><div class="ess-ic"><i data-lucide="key-round"></i></div><div><div class="ess-t">Caja a la derecha del portal</div><div class="ess-s">Código <span class="code">5274</span></div></div></div></div>
+        </div>
+        <div class="scrim"></div>
+        <aside class="sheet pwa">
+          <div class="sheet-handle"><i></i></div>
+          <div class="pwa-body">
+            <div class="pwa-row">
+              <div class="pwa-icon">CL</div>
+              <div style="flex:1">
+                <div class="pwa-h">Añade Casa Lavanda a inicio</div>
+                <div class="pwa-s">Acceso rápido sin abrir el navegador. Funciona también sin conexión.</div>
+              </div>
+            </div>
+            <div class="pwa-steps">
+              <div class="pic"><i data-lucide="share"></i></div>
+              <span style="flex:1">Toca <b>compartir</b></span>
+              <span class="arrow"><i data-lucide="arrow-right"></i></span>
+              <div class="pic"><i data-lucide="square-plus"></i></div>
+              <span>Añadir a inicio</span>
+            </div>
+            <div class="pwa-actions">
+              <button class="btn primary"><i data-lucide="smartphone"></i>Cómo hacerlo</button>
+              <button class="btn ghost">Ahora no</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+      <div class="tabs"><div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div><div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div><div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div><div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div></div>
+    </div>
+  </div>
+  <div class="caption"><div class="name">04 · PWA install · iOS-style sheet 280</div><div class="src">overlay sobre <b>gs.essentials</b> (home) · primary 44 alto · ghost "Ahora no" sin borde</div></div>
+  </div>
+
+  <!-- 05 Lang -->
+  <div class="frame-wrap">
+  <div class="phone" data-screen-label="05 Idioma">
+    <div class="screen-host">
+      <div class="di"></div>
+      <div class="sb"><span>9:41</span><div class="sb-r"><i data-lucide="signal"></i><i data-lucide="wifi"></i><span class="batt"><i></i></span></div></div>
+      <div class="screen">
+        <div class="home">
+          <div class="home-top"><span class="home-prop">Casa Lavanda · Ruzafa</span>
+            <div class="home-actions"><div class="iconbtn"><i data-lucide="search"></i></div><div class="iconbtn" style="border-color:var(--bd-strong);background:var(--bg-page)"><i data-lucide="globe"></i><span class="lang-flag">🇪🇸</span></div></div></div>
+          <div class="hero"><div class="hero-eb"><span class="dot"></span>DÍA 1 · LLEGADA</div><div class="hero-h">Hola, Laura.</div><div class="hero-a"><i data-lucide="map-pin"></i>Calle Cuba 42, 3B</div></div>
+          <div class="qa">
+            <div class="qa-cell"><div class="ic"><i data-lucide="wifi"></i></div><div class="t">Wi-Fi</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="key-round"></i></div><div class="t">Entrar</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="message-circle"></i></div><div class="t">Chat</div></div>
+            <div class="qa-cell"><div class="ic"><i data-lucide="map"></i></div><div class="t">Mapa</div></div>
+          </div>
+          <div class="ess"><span class="ess-tag">Acceso · Día 1</span><div class="ess-row"><div class="ess-ic"><i data-lucide="key-round"></i></div><div><div class="ess-t">Caja a la derecha del portal</div><div class="ess-s">Código <span class="code">5274</span></div></div></div></div>
+        </div>
+        <aside class="lang-pop" role="menu">
+          <div class="lang-tip"></div>
+          <div class="lang-head">Idioma · Language</div>
+          <div class="lang-list">
+            <div class="lang-row on"><span class="flag">🇪🇸</span><span class="nm">Español (España)</span><i data-lucide="check" class="check"></i></div>
+            <div class="lang-row"><span class="flag">🇬🇧</span><span class="nm">English</span></div>
+            <div class="lang-row"><span class="flag">🇫🇷</span><span class="nm">Français</span></div>
+            <div class="lang-row"><span class="flag">🇩🇪</span><span class="nm">Deutsch</span></div>
+          </div>
+          <div class="lang-foot">Traducción asistida — el host es responsable del contenido original.</div>
+        </aside>
+      </div>
+      <div class="tabs"><div class="tab-btn on"><i data-lucide="home"></i><span>Inicio</span></div><div class="tab-btn"><i data-lucide="house"></i><span>Casa</span></div><div class="tab-btn"><i data-lucide="map"></i><span>Barrio</span></div><div class="tab-btn"><i data-lucide="life-buoy"></i><span>Ayuda</span></div></div>
+    </div>
+  </div>
+  <div class="caption"><div class="name">05 · Idioma · dropdown anclado al globo</div><div class="src">menú 240 ancho · sombra <b>--shadow-md</b> · check <b>--guest-brand</b> · es-ES seleccionado</div></div>
+  </div>
+
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>

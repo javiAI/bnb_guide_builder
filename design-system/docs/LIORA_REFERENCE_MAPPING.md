@@ -44,13 +44,20 @@ Target:
 
 ## Guest
 
-Reference:
-`references/liora-ui-kits/ui_kits/guest/index.html`
+Reference (bundle definitivo — Claude Design, mayo 2026):
+`explorations/guest-design/`
+
+Ground truth files:
+
+- `explorations/guest-design/DESIGN.md` — spec canónico 9 secciones
+- `explorations/guest-design/tokens/colors_and_type.css` — `--guest-*` tokens
+- `explorations/guest-design/frames/02-mobile.html` — 9 screens mobile 375×667
+- `explorations/guest-design/frames/03-desktop.html` — 9 screens desktop 1280×800
+- `explorations/guest-design/frames/04-mobile-overlays.html` — TOC, search, lightbox, PWA
+- `explorations/guest-design/frames/05-dark-parity.html` — dark mode
+- `explorations/guest-design/frames/07-components.html` — Button/Input/Badge/Toast
 
 Target:
-- public guest guide
-- hero
-- quick actions
-- arrival timeline
-- local utility
-- emergency/help
+
+- public guest guide (`src/app/g/[slug]/`)
+- `src/components/public-guide/` — clean rewrite en 16H
