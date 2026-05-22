@@ -2,6 +2,7 @@ import {
   PoiSuggestionSchema,
   type LocalPoiProvider,
   type PoiSuggestion,
+  type ReverseGeoResult,
   type ReverseParams,
   type SearchParams,
 } from "./provider";
@@ -51,8 +52,7 @@ export class MockPlacesProvider implements LocalPoiProvider {
     return out;
   }
 
-  async reverse(params: ReverseParams): Promise<PoiSuggestion | null> {
-    const retrievedAt = new Date().toISOString();
+  async reverse(params: ReverseParams): Promise<ReverseGeoResult | null> {
     const anchor = { latitude: params.latitude, longitude: params.longitude };
     let nearest: { entry: SeedPlace; distance: number } | null = null;
     for (const entry of this.seed) {
@@ -68,26 +68,14 @@ export class MockPlacesProvider implements LocalPoiProvider {
       }
     }
     if (!nearest) return null;
-    const { entry, distance } = nearest;
-    const suggestion = {
-      provider: this.name,
-      providerPlaceId: entry.id,
+    const { entry } = nearest;
+    return {
       name: entry.name,
-      categoryKey: entry.categoryKey,
+      address: entry.address ?? null,
       latitude: entry.latitude,
       longitude: entry.longitude,
-      address: entry.address,
-      website: entry.website,
-      distanceMeters: Math.round(distance),
-      providerMetadata: {
-        nativeCategory: entry.categoryKey.replace(/^lp\./, ""),
-        placeTypes: ["poi", entry.categoryKey.replace(/^lp\./, "")],
-        confidence: 1,
-        retrievedAt,
-      },
+      categoryKey: entry.categoryKey,
     };
-    const parsed = PoiSuggestionSchema.safeParse(suggestion);
-    return parsed.success ? parsed.data : null;
   }
 }
 

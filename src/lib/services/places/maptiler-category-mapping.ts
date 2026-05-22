@@ -24,12 +24,12 @@ const MAPTILER_CATEGORY_PATTERNS: CategoryMap = [
   // Retail — supermarket before generic shop
   [/^(supermarket|grocery|convenience)$/i, "lp.supermarket"],
 
-  // Transport
+  // Transport — broad bucket; arrival-discovery service re-buckets per mode
   [
-    /^(subway|metro_station|train_station|bus_station|bus_stop|tram_stop|taxi|ferry_terminal|railway_station|transit_station)$/i,
+    /^(subway|subway_station|metro_station|metro|train_station|railway_station|rail_station|railway|rail|bus_station|bus_stop|bus|coach_station|public_transport|trolleybus_stop|tram_stop|tram|tram_station|light_rail|underground|taxi|taxi_stand|taxi_rank|ferry_terminal|transit_station|airport|aerodrome|airfield|international_airport|heliport)$/i,
     "lp.transport",
   ],
-  [/^(parking|parking_lot|parking_garage|car_park)$/i, "lp.parking"],
+  [/^(parking|parking_lot|parking_garage|car_park|parking_space)$/i, "lp.parking"],
 
   // Leisure
   [
@@ -42,6 +42,16 @@ const MAPTILER_CATEGORY_PATTERNS: CategoryMap = [
   [/^(laundry|launderette|dry_cleaning)$/i, "lp.laundry"],
 ];
 
+/** Normalize MapTiler category strings to OSM-style underscored form. The
+ * geocoding endpoint returns `properties.categories` with spaces
+ * (`"railway station"`, `"bus stop"`, `"bus station"`) while the regex map
+ * above is keyed by OSM tags (`railway_station`, `bus_stop`, `bus_station`).
+ * Without normalization, every real-world Spanish transit POI gets dropped
+ * by the provider as unclassified. */
+export function normalizeMapTilerCategory(raw: string): string {
+  return raw.trim().replace(/\s+/g, "_").toLowerCase();
+}
+
 /** Resolve the first `lp.*` key matched by any candidate string, or `null`
  * when none match. Providers must NOT fall back to `lp.other` — the caller
  * decides whether unclassified results are dropped or parked under "other". */
@@ -49,10 +59,11 @@ export function mapMapTilerCategoryToLp(
   candidates: ReadonlyArray<string>,
 ): string | null {
   for (const raw of candidates) {
-    const trimmed = raw?.trim();
-    if (!trimmed) continue;
+    if (!raw) continue;
+    const normalized = normalizeMapTilerCategory(raw);
+    if (!normalized) continue;
     for (const [pattern, key] of MAPTILER_CATEGORY_PATTERNS) {
-      if (pattern.test(trimmed)) return key;
+      if (pattern.test(normalized)) return key;
     }
   }
   return null;

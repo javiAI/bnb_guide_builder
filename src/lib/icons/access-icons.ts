@@ -33,9 +33,9 @@ import {
 } from "lucide-react";
 
 export const ACCESS_COCKPIT_IDS = [
+  "parking",
   "building",
   "unit",
-  "parking",
   "accessibility",
 ] as const;
 export type AccessCockpitId = (typeof ACCESS_COCKPIT_IDS)[number];

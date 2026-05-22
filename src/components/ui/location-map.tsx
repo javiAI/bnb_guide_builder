@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { readCssVar } from "@/lib/css-var";
+import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
 
 interface LocationMapProps {
   lat: number | null;
@@ -11,9 +13,7 @@ interface LocationMapProps {
 }
 
 function createMarker(map: maplibregl.Map, lng: number, lat: number): maplibregl.Marker {
-  const primaryColor = getComputedStyle(document.documentElement)
-    .getPropertyValue("--color-action-primary")
-    .trim();
+  const primaryColor = readCssVar("--color-action-primary");
   const options: maplibregl.MarkerOptions = { draggable: true };
   if (primaryColor) options.color = primaryColor;
   return new maplibregl.Marker(options).setLngLat([lng, lat]).addTo(map);
@@ -25,25 +25,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const onPositionChangeRef = useRef(onPositionChange);
   onPositionChangeRef.current = onPositionChange;
-  const [styleUrl, setStyleUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/geo/tiles-config")
-      .then((res) => {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      })
-      .then((data) => {
-        if (!cancelled) {
-          if (data.styleUrl) setStyleUrl(data.styleUrl);
-          else setError("Mapa no disponible");
-        }
-      })
-      .catch(() => { if (!cancelled) setError("Error al cargar configuración del mapa"); });
-    return () => { cancelled = true; };
-  }, []);
+  const { styleUrl, error } = useTilesStyleUrl();
 
   useEffect(() => {
     if (!styleUrl || !containerRef.current) return;

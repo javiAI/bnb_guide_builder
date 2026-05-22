@@ -3,20 +3,15 @@ import {
   resolveLocalPoiProvider,
   type ProviderMetadata,
 } from "./places";
+import {
+  clampDiscoveryRadius,
+  DEFAULT_DISCOVERY_RADIUS_M,
+  DISCOVERY_HARD_CAP,
+  DISCOVERY_PROVIDER_LIMIT,
+  DISCOVERY_SOFT_WARNING_FLOOR,
+} from "./arrival-discovery.service";
 
-// Hard cap on suggestions surfaced to the UI per branch 16E.6 spec.
-const HARD_CAP = 8;
-// When the post-filter / post-dedupe pool is below this floor we emit
-// `warningKey: "few_results"` so the UI can hint "Pocos resultados — añade un
-// pin manual". 4 is the spec threshold.
-const SOFT_WARNING_FLOOR = 4;
-// Provider limit. MapTiler caps at 10; headroom over HARD_CAP=8 covers the
-// usual filter+dedupe shrinkage (a `parking` query returns mostly `lp.parking`
-// so 2 of slack is normally enough — when it bites, the UI surfaces
-// `warningKey: "few_results"`).
-const PROVIDER_LIMIT = 10;
-
-const PARKING_CATEGORY_KEY = "lp.parking";
+export const PARKING_CATEGORY_KEY = "lp.parking";
 const SEARCH_QUERY = "parking";
 
 /** Slim parking-only projection of `PoiSuggestion`. `categoryKey` is implicit
@@ -34,6 +29,10 @@ export interface ParkingSuggestion {
   address: string | null;
   website: string | null;
   distanceMeters: number;
+  /** Provider-emitted fee hint, when the upstream can determine it. `null`
+   * means "unknown" — operator picks at confirm time. MapTiler always emits
+   * `null`; Google Places / OSM Overpass can populate it. */
+  parkingFee: "free" | "paid" | null;
   providerMetadata: ProviderMetadata;
 }
 
@@ -43,13 +42,17 @@ export interface ParkingDiscoveryParams {
   /** `providerPlaceId`s already persisted as `LocalPlace` rows for this
    * property — caller computes from DB so the service stays pure. */
   excludeProviderPlaceIds: ReadonlySet<string>;
+  /** Search radius from the anchor, in meters. Single shared value across all
+   * cockpit discovery (parking + arrival modes). Clamped to
+   * `[1, MAX_DISCOVERY_RADIUS_M]`. */
+  radiusMeters?: number;
   signal?: AbortSignal;
 }
 
 export interface ParkingDiscoveryResult {
   suggestions: ParkingSuggestion[];
   /** `"few_results"` when the post-filter / post-dedupe pool is below
-   * `SOFT_WARNING_FLOOR`. `null` otherwise. */
+   * `DISCOVERY_SOFT_WARNING_FLOOR`. `null` otherwise. */
   warningKey: "few_results" | null;
   /** Pool size after filter + dedupe but before the hard cap. Lets the UI
    * show "+N más sugerencias ocultas" if the cap bites. */
@@ -60,11 +63,14 @@ export async function discoverParkingSuggestions(
   params: ParkingDiscoveryParams,
 ): Promise<ParkingDiscoveryResult> {
   const provider = resolveLocalPoiProvider();
+  const radiusMeters = clampDiscoveryRadius(
+    params.radiusMeters ?? DEFAULT_DISCOVERY_RADIUS_M,
+  );
   const raw = await provider.search({
     query: SEARCH_QUERY,
     anchor: params.anchor,
     language: params.language,
-    limit: PROVIDER_LIMIT,
+    limit: DISCOVERY_PROVIDER_LIMIT,
     signal: params.signal,
   });
 
@@ -74,6 +80,11 @@ export async function discoverParkingSuggestions(
     if (s.categoryKey !== PARKING_CATEGORY_KEY) continue;
     if (params.excludeProviderPlaceIds.has(s.providerPlaceId)) continue;
     if (seen.has(s.providerPlaceId)) continue;
+    const distanceMeters = haversineMeters(params.anchor, {
+      latitude: s.latitude,
+      longitude: s.longitude,
+    });
+    if (distanceMeters > radiusMeters) continue;
     seen.add(s.providerPlaceId);
     pool.push({
       provider: s.provider,
@@ -83,19 +94,17 @@ export async function discoverParkingSuggestions(
       longitude: s.longitude,
       address: s.address ?? null,
       website: s.website ?? null,
-      distanceMeters: haversineMeters(params.anchor, {
-        latitude: s.latitude,
-        longitude: s.longitude,
-      }),
+      distanceMeters,
+      parkingFee: s.parkingFee ?? null,
       providerMetadata: s.providerMetadata,
     });
   }
 
   pool.sort((a, b) => a.distanceMeters - b.distanceMeters);
   const totalBeforeCap = pool.length;
-  const suggestions = pool.slice(0, HARD_CAP);
+  const suggestions = pool.slice(0, DISCOVERY_HARD_CAP);
   const warningKey: ParkingDiscoveryResult["warningKey"] =
-    totalBeforeCap < SOFT_WARNING_FLOOR ? "few_results" : null;
+    totalBeforeCap < DISCOVERY_SOFT_WARNING_FLOOR ? "few_results" : null;
 
   return { suggestions, warningKey, totalBeforeCap };
 }

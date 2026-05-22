@@ -16,6 +16,11 @@ import { join } from "node:path";
  * shapes near each `requireOperator()` block. It's deliberately structural
  * (not a runtime test) because the behaviour we're guarding is "the code
  * remembers to scope" — easy to forget in review, easy to lock in via a scan.
+ *
+ * Auth delegates: an action may also resolve the operator and scope by
+ * workspace via a known helper (`AUTH_DELEGATES`). Each delegate is pinned
+ * by an assertion below that checks the helper source itself calls
+ * `requireOperator()` and scopes by `operator.workspaceId`.
  */
 
 const ROOT = process.cwd();
@@ -24,34 +29,103 @@ const TARGETS: ReadonlyArray<{ path: string; minOccurrences: number }> = [
   { path: "src/lib/actions/guide.actions.ts", minOccurrences: 3 },
   { path: "src/lib/actions/incident.actions.ts", minOccurrences: 5 },
   { path: "src/lib/actions/parking.actions.ts", minOccurrences: 5 },
+  { path: "src/lib/actions/arrival.actions.ts", minOccurrences: 6 },
 ];
+
+/** Helpers known to resolve the operator. Each entry declares whether the
+ * helper ALSO scopes the property/entity by `operator.workspaceId`. A call
+ * to a `scopesWorkspace: true` delegate substitutes for both a direct
+ * `requireOperator()` and a workspace-scope guard at the call site; a
+ * `scopesWorkspace: false` delegate only counts for the operator resolution
+ * and the caller must add its own scope. Pinned by the assertion below. */
+const AUTH_DELEGATES: ReadonlyArray<{
+  name: string;
+  path: string;
+  scopesWorkspace: boolean;
+}> = [
+  {
+    name: "authorizeDiscoveryActor",
+    path: "src/lib/services/places/discovery-guards.ts",
+    scopesWorkspace: false,
+  },
+  {
+    name: "requireOperatorMutate",
+    path: "src/lib/services/places/discovery-guards.ts",
+    scopesWorkspace: false,
+  },
+  {
+    name: "bulkConfirmPlaces",
+    path: "src/lib/services/places/bulk-confirm-places.ts",
+    scopesWorkspace: true,
+  },
+];
+
+function countMatches(src: string, re: RegExp): number {
+  return (src.match(re) ?? []).length;
+}
 
 describe("cross-workspace invariants", () => {
   for (const target of TARGETS) {
     it(`${target.path} — every server action requires operator + scopes by workspace`, () => {
       const src = readFileSync(join(ROOT, target.path), "utf-8");
 
-      // requireOperator() must appear at least once per action.
-      const requireCalls = src.match(/await\s+requireOperator\(/g) ?? [];
-      expect(requireCalls.length).toBeGreaterThanOrEqual(target.minOccurrences);
+      // Direct requireOperator() calls + each call to a known auth delegate
+      // counts as one operator-resolution site.
+      const directRequire = countMatches(src, /await\s+requireOperator\(/g);
+      let delegateRequire = 0;
+      let delegateScopes = 0;
+      for (const d of AUTH_DELEGATES) {
+        const n = countMatches(src, new RegExp(`\\b${d.name}\\s*\\(`, "g"));
+        delegateRequire += n;
+        if (d.scopesWorkspace) delegateScopes += n;
+      }
+      const totalRequire = directRequire + delegateRequire;
+      expect(totalRequire).toBeGreaterThanOrEqual(target.minOccurrences);
 
       // Every action must enforce workspace scoping in at least one of these
-      // two shapes near the operator resolution. We require the count of
-      // workspaceId checks to be ≥ the count of requireOperator() calls.
-      const inlineScopes = src.match(/workspaceId:\s*operator\.workspaceId/g) ?? [];
-      const indirectScopes =
-        src.match(/property:\s*\{\s*workspaceId:\s*operator\.workspaceId\s*\}/g) ?? [];
-      const guardChecks =
-        src.match(/\.workspaceId\s*!==\s*operator\.workspaceId/g) ?? [];
+      // shapes near the operator resolution. A `scopesWorkspace: true`
+      // delegate also counts because the helper applies the scope internally
+      // (pinned below).
+      const inlineScopes = countMatches(src, /workspaceId:\s*operator\.workspaceId/g);
+      const indirectScopes = countMatches(
+        src,
+        /property:\s*\{\s*workspaceId:\s*operator\.workspaceId\s*\}/g,
+      );
+      const guardChecks = countMatches(src, /\.workspaceId\s*!==\s*operator\.workspaceId/g);
       const totalScopes =
-        inlineScopes.length + indirectScopes.length + guardChecks.length;
+        inlineScopes + indirectScopes + guardChecks + delegateScopes;
 
       expect(
         totalScopes,
-        `Expected ≥ ${requireCalls.length} workspace-scope guards in ${target.path}, found ${totalScopes}`,
-      ).toBeGreaterThanOrEqual(requireCalls.length);
+        `Expected ≥ ${totalRequire} workspace-scope guards in ${target.path}, found ${totalScopes}`,
+      ).toBeGreaterThanOrEqual(totalRequire);
     });
   }
+
+  it("every auth delegate calls requireOperator() (and scopes by workspace if claimed)", () => {
+    const offenders: string[] = [];
+    for (const d of AUTH_DELEGATES) {
+      const src = readFileSync(join(ROOT, d.path), "utf-8");
+      const callsRequireOperator = /await\s+requireOperator\(/.test(src);
+      const callsKnownDelegate = AUTH_DELEGATES.some(
+        (other) =>
+          other.name !== d.name &&
+          new RegExp(`\\b${other.name}\\s*\\(`).test(src),
+      );
+      if (!callsRequireOperator && !callsKnownDelegate) {
+        offenders.push(`${d.path} (delegate missing requireOperator())`);
+        continue;
+      }
+      if (d.scopesWorkspace) {
+        const hasInlineScope = /workspaceId:\s*operator\.workspaceId/.test(src);
+        const hasGuard = /\.workspaceId\s*!==\s*operator\.workspaceId/.test(src);
+        if (!hasInlineScope && !hasGuard) {
+          offenders.push(`${d.path} (delegate claims scopesWorkspace but no scope found)`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 
   it("incident-from-guest.service.ts threads slug for the guest:<slug> actor", () => {
     const src = readFileSync(

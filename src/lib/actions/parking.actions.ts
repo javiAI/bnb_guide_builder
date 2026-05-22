@@ -2,38 +2,49 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireOperator } from "@/lib/auth/require-operator";
-import { applyOperatorRateLimit } from "@/lib/services/operator-rate-limit";
-import {
-  checkPlacesRateLimit,
-  enforcePlacesBucketCap,
-} from "@/lib/services/places/rate-limit";
 import {
   PoiProviderConfigError,
   PoiProviderUnavailableError,
   type ProviderMetadata,
   ProviderMetadataSchema,
+  haversineMeters,
   resolveLocalPoiProvider,
 } from "@/lib/services/places";
 import {
+  authorizeDiscoveryActor,
+  authorizeDiscoveryProperty,
+  clampDiscoveryRadius,
+  collectExcludeProviderPlaceIds,
+  mapDiscoveryError,
+  requireOperatorMutate,
+} from "@/lib/services/places/discovery-guards";
+import {
+  bulkConfirmPlaces,
+  type BulkConfirmResult,
+} from "@/lib/services/places/bulk-confirm-places";
+import { reverseGeocodeAddressForPin } from "@/lib/services/places/reverse-geocode";
+import { rateJsonSchema } from "@/lib/schemas/rate-tier.schema";
+import {
   discoverParkingSuggestions,
+  PARKING_CATEGORY_KEY,
   type ParkingDiscoveryResult,
   type ParkingSuggestion,
 } from "@/lib/services/parking-discovery.service";
+import {
+  ARRIVAL_MODES,
+  type ArrivalMode,
+  arrivalModeCategoryKey,
+  DEFAULT_DISCOVERY_RADIUS_M,
+} from "@/lib/services/arrival-discovery.service";
 import {
   AUDIT_ACTIONS,
   formatActor,
   writeAudit,
 } from "@/lib/services/audit.service";
 import { visibilityLevels } from "@/lib/visibility";
-import { isPrismaUniqueViolation } from "@/lib/utils";
 import type { ActionResult } from "@/lib/types/action-result";
-
-// `lp.parking` is the spec contract for branch 16E.6 — pinning parking pins
-// to a single category key keeps the query, dedupe and guest-leak invariants
-// trivial. Same constant as `parking-discovery.service.ts`.
-const PARKING_CATEGORY_KEY = "lp.parking";
 
 /** Merge a `feeType` change into an existing `providerMetadata` JSON value
  * (or synthesize a fresh metadata blob for manual rows that never had one).
@@ -43,89 +54,27 @@ function mergeFeeTypeIntoMetadata(
   existing: unknown,
   feeType: "free" | "paid" | null,
 ): ProviderMetadata {
-  const base: ProviderMetadata =
-    existing && typeof existing === "object"
-      ? {
-          nativeCategory:
-            (existing as { nativeCategory?: string | null }).nativeCategory ?? null,
-          placeTypes: Array.isArray(
-            (existing as { placeTypes?: unknown }).placeTypes,
-          )
-            ? ((existing as { placeTypes: unknown[] }).placeTypes.filter(
-                (t) => typeof t === "string",
-              ) as string[])
-            : [],
-          confidence:
-            typeof (existing as { confidence?: number | null }).confidence ===
-            "number"
-              ? (existing as { confidence: number }).confidence
-              : null,
-          retrievedAt:
-            typeof (existing as { retrievedAt?: string }).retrievedAt === "string"
-              ? (existing as { retrievedAt: string }).retrievedAt
-              : new Date().toISOString(),
-        }
-      : {
-          nativeCategory: null,
-          placeTypes: [],
-          confidence: null,
-          retrievedAt: new Date().toISOString(),
-        };
+  const parsed = ProviderMetadataSchema.safeParse(existing);
+  const base: ProviderMetadata = parsed.success
+    ? parsed.data
+    : {
+        nativeCategory: null,
+        placeTypes: [],
+        confidence: null,
+        retrievedAt: new Date().toISOString(),
+      };
   return { ...base, feeType };
 }
 
-// First-pin convenience: when the operator confirms / adds the very first
-// parking pin and `parkingMapInCover` is still off, flip it on so the
-// freshly-saved pin is visible in the cockpit cover without a second click.
-// `existingCount === 0` is captured BEFORE the create, so the bulk-action
-// case (N pins in one charge) treats them all as part of the same first save.
-interface AutoEnableCoverHint {
-  property: { id: string; parkingMapInCover: boolean } | null;
-  shouldAutoEnable: boolean;
-}
-
-async function loadPropertyAndAutoEnableHint(
-  propertyId: string,
-  operator: { workspaceId: string },
-): Promise<AutoEnableCoverHint> {
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId, workspaceId: operator.workspaceId },
-    select: { id: true, parkingMapInCover: true },
-  });
-  if (!property) return { property: null, shouldAutoEnable: false };
-  if (property.parkingMapInCover) return { property, shouldAutoEnable: false };
-  const existingCount = await prisma.localPlace.count({
-    where: { propertyId, categoryKey: PARKING_CATEGORY_KEY },
-  });
-  return { property, shouldAutoEnable: existingCount === 0 };
-}
-
-async function autoEnableCoverIfNeeded(
-  shouldAutoEnable: boolean,
-  property: { id: string },
-  propertyId: string,
-  userId: string,
-): Promise<void> {
-  if (!shouldAutoEnable) return;
-  await prisma.property.update({
-    where: { id: property.id },
-    data: { parkingMapInCover: true },
-  });
-  await writeAudit({
-    propertyId,
-    actor: formatActor({ type: "user", userId }),
-    entityType: "Property",
-    entityId: property.id,
-    action: AUDIT_ACTIONS.update,
-    diff: { parkingMapInCover: true, autoEnabled: true },
-  });
-}
-
-// ── 1) Search nearby parkings ──
+// ── 1) Refresh parking suggestions cache ──
 //
 // `expensive` bucket per actor (10/60s) layered on top of a per-property
 // limiter (30/60s, sliding window). The cascade catches both single-actor
 // flooding and coordinated bursts targeting the same property.
+//
+// Re-runs discovery + persists the result on `Property.parkingSuggestionsCacheJson`
+// so the cockpit serves cached suggestions on first paint without a client
+// round-trip. The on-demand path; first-paint hydration lives in `page.tsx`.
 
 export interface ParkingSearchResult {
   suggestions: ParkingSuggestion[];
@@ -141,126 +90,104 @@ export interface ParkingPlaceCreated {
   id: string;
 }
 
-export async function searchNearbyParkingsAction(
+export async function refreshParkingSuggestionsAction(
   propertyId: string,
   language: "es" | "en" = "es",
+  radiusMeters: number = DEFAULT_DISCOVERY_RADIUS_M,
 ): Promise<ActionResult<ParkingSearchResult>> {
   if (!propertyId) return { success: false, error: "Falta propertyId" };
+  const clampedRadius = clampDiscoveryRadius(radiusMeters);
 
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
+  const auth = await authorizeDiscoveryActor();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { operator } = auth;
 
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "expensive",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId, workspaceId: operator.workspaceId },
-    select: { latitude: true, longitude: true },
-  });
+  // Property + already-confirmed pin list are independent reads — fire in
+  // parallel. The rate-limit hit lands after validation so a non-existent
+  // property doesn't burn the property-scoped bucket.
+  const [property, existing] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: propertyId, workspaceId: operator.workspaceId },
+      select: { latitude: true, longitude: true },
+    }),
+    prisma.localPlace.findMany({
+      where: {
+        propertyId,
+        categoryKey: PARKING_CATEGORY_KEY,
+        providerPlaceId: { not: null },
+      },
+      select: { providerPlaceId: true },
+    }),
+  ]);
   if (!property) return { success: false, error: "Propiedad no encontrada" };
   if (property.latitude === null || property.longitude === null) {
     return { success: false, error: "La propiedad no tiene coordenadas" };
   }
 
-  const now = Date.now();
-  const propertyGate = checkPlacesRateLimit(`parking:${propertyId}`, now);
-  enforcePlacesBucketCap(now);
-  if (!propertyGate.allowed) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${propertyGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  // Build exclude set from existing pins so the UI never sees a suggestion
-  // already confirmed for this property.
-  const existing = await prisma.localPlace.findMany({
-    where: {
-      propertyId,
-      categoryKey: PARKING_CATEGORY_KEY,
-      providerPlaceId: { not: null },
-    },
-    select: { providerPlaceId: true },
-  });
-  const excludeProviderPlaceIds: ReadonlySet<string> = new Set(
-    existing
-      .map((r) => r.providerPlaceId)
-      .filter((id): id is string => id !== null),
-  );
+  const propGate = authorizeDiscoveryProperty(`parking:${propertyId}`);
+  if (!propGate.ok) return { success: false, error: propGate.error };
 
   try {
     const result = await discoverParkingSuggestions({
       anchor: { latitude: property.latitude, longitude: property.longitude },
       language,
-      excludeProviderPlaceIds,
+      excludeProviderPlaceIds: collectExcludeProviderPlaceIds(existing),
+      radiusMeters: clampedRadius,
     });
+    await prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        parkingSuggestionsCacheJson: result.suggestions as unknown as Prisma.InputJsonValue,
+        parkingSuggestionsCachedAt: new Date(),
+      },
+    });
+    revalidatePath(`/properties/${propertyId}/access`);
     return { success: true, data: result };
   } catch (err) {
-    if (err instanceof PoiProviderConfigError) {
-      return { success: false, error: "Proveedor de mapas no configurado" };
-    }
-    if (err instanceof PoiProviderUnavailableError) {
-      console.error(
-        `[parking-search] propertyId=${propertyId} provider unavailable:`,
-        err.message,
-      );
-      return { success: false, error: "Proveedor de mapas no disponible" };
-    }
-    console.error(`[parking-search] propertyId=${propertyId} error:`, err);
-    return { success: false, error: "Error inesperado" };
+    return {
+      success: false,
+      error: mapDiscoveryError(err, "[parking-refresh]", { propertyId }),
+    };
   }
 }
 
 // ── 1.b) Reverse-geocode at a coordinate ──
 //
-// Used by the manual-pin form to autofill name/address when the operator
-// drops a pin on the map. Returns `null` (success, no match) when the
-// upstream provider has no POI near the click. `expensive` bucket per
+// Used by the cockpit's click-to-place draft pin flow to autofill name +
+// address whenever the operator drops (or moves) a draft pin on the map.
+// Returns `match: null` on no POI near the click. `expensive` bucket per
 // actor; no per-property limiter — clicks on the map are bounded by the
-// UI debounce, not by burst risk.
+// UI debounce, not by burst risk. The mode parameter selects the provider's
+// category preference (parking glyph vs the matching transit category) so
+// the same coord can yield a different best match depending on which tab
+// is armed.
 
-export interface ReverseGeocodeForParkingResult {
+export interface ReverseGeocodeForPinResult {
   /** `null` when the provider returned zero features near the coordinate. */
   match: {
     name: string;
     address: string | null;
     latitude: number;
     longitude: number;
-    /** True when the closest feature mapped to `lp.parking`; lets the UI
-     * hint "POI cercano: parking" vs a generic POI fallback. */
-    isParking: boolean;
   } | null;
 }
 
-const reverseGeocodeSchema = z
+const reverseGeocodePinSchema = z
   .object({
     propertyId: z.string().min(1),
+    mode: z.enum([...ARRIVAL_MODES, "parking"]),
     latitude: z.number().gte(-90).lte(90),
     longitude: z.number().gte(-180).lte(180),
     language: z.enum(["es", "en"]).optional(),
   })
   .strict();
 
-export type ReverseGeocodeForParkingInput = z.infer<
-  typeof reverseGeocodeSchema
->;
+export type ReverseGeocodeForPinInput = z.infer<typeof reverseGeocodePinSchema>;
 
-export async function reverseGeocodeForParkingAction(
-  input: ReverseGeocodeForParkingInput,
-): Promise<ActionResult<ReverseGeocodeForParkingResult>> {
-  const parsed = reverseGeocodeSchema.safeParse(input);
+export async function reverseGeocodeForPinAction(
+  input: ReverseGeocodeForPinInput,
+): Promise<ActionResult<ReverseGeocodeForPinResult>> {
+  const parsed = reverseGeocodePinSchema.safeParse(input);
   if (!parsed.success) {
     return {
       success: false,
@@ -268,23 +195,9 @@ export async function reverseGeocodeForParkingAction(
     };
   }
 
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
-
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "expensive",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
+  const auth = await authorizeDiscoveryActor();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { operator } = auth;
 
   const property = await prisma.property.findUnique({
     where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
@@ -297,12 +210,18 @@ export async function reverseGeocodeForParkingAction(
     return { success: true, data: { match: null } };
   }
 
+  const preferCategoryKey =
+    parsed.data.mode === "parking"
+      ? PARKING_CATEGORY_KEY
+      : arrivalModeCategoryKey(parsed.data.mode as ArrivalMode);
+
   try {
     const hit = await provider.reverse({
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       language: parsed.data.language ?? "es",
-      preferCategoryKey: PARKING_CATEGORY_KEY,
+      preferCategoryKey,
+      signal: AbortSignal.timeout(2000),
     });
     if (!hit) return { success: true, data: { match: null } };
     return {
@@ -313,7 +232,6 @@ export async function reverseGeocodeForParkingAction(
           address: hit.address ?? null,
           latitude: hit.latitude,
           longitude: hit.longitude,
-          isParking: hit.categoryKey === PARKING_CATEGORY_KEY,
         },
       },
     };
@@ -323,13 +241,17 @@ export async function reverseGeocodeForParkingAction(
     }
     if (err instanceof PoiProviderUnavailableError) {
       console.error(
-        `[parking-reverse] propertyId=${parsed.data.propertyId} provider unavailable:`,
+        `[pin-reverse] propertyId=${parsed.data.propertyId} mode=${parsed.data.mode} provider unavailable:`,
         err.message,
       );
       return { success: false, error: "Proveedor de mapas no disponible" };
     }
+    const name = (err as { name?: string }).name;
+    if (name === "AbortError" || name === "TimeoutError") {
+      return { success: true, data: { match: null } };
+    }
     console.error(
-      `[parking-reverse] propertyId=${parsed.data.propertyId} error:`,
+      `[pin-reverse] propertyId=${parsed.data.propertyId} mode=${parsed.data.mode} error:`,
       err,
     );
     return { success: false, error: "Error inesperado" };
@@ -353,100 +275,15 @@ const confirmParkingSchema = z
     address: z.string().nullable(),
     website: z.string().url().nullable(),
     distanceMeters: z.number().int().min(0),
+    /** Operator-chosen fee classification at confirm time. Optional — `null`
+     * persists "unclassified" and the operator can set it later via
+     * `updateParkingPlaceAction`. Merged into `providerMetadata.feeType`. */
+    feeType: z.enum(["free", "paid"]).nullable().optional(),
     providerMetadata: ProviderMetadataSchema,
   })
   .strict();
 
 export type ConfirmParkingInput = z.infer<typeof confirmParkingSchema>;
-
-export async function confirmParkingPlaceAction(
-  input: ConfirmParkingInput,
-): Promise<ActionResult<ParkingPlaceCreated>> {
-  const parsed = confirmParkingSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
-
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const { property, shouldAutoEnable } = await loadPropertyAndAutoEnableHint(
-    parsed.data.propertyId,
-    operator,
-  );
-  if (!property) return { success: false, error: "Propiedad no encontrada" };
-
-  let createdId: string;
-  try {
-    const created = await prisma.localPlace.create({
-      data: {
-        propertyId: parsed.data.propertyId,
-        categoryKey: PARKING_CATEGORY_KEY,
-        name: parsed.data.name,
-        latitude: parsed.data.latitude,
-        longitude: parsed.data.longitude,
-        address: parsed.data.address,
-        website: parsed.data.website,
-        distanceMeters: parsed.data.distanceMeters,
-        provider: parsed.data.provider,
-        providerPlaceId: parsed.data.providerPlaceId,
-        providerMetadata: parsed.data.providerMetadata,
-        visibility: "guest",
-      },
-      select: { id: true },
-    });
-    createdId = created.id;
-  } catch (err) {
-    if (isPrismaUniqueViolation(err)) {
-      return { success: false, error: "Este parking ya está añadido" };
-    }
-    throw err;
-  }
-
-  await writeAudit({
-    propertyId: parsed.data.propertyId,
-    actor: formatActor({ type: "user", userId: operator.userId }),
-    entityType: "LocalPlace",
-    entityId: createdId,
-    action: AUDIT_ACTIONS.create,
-    diff: {
-      categoryKey: PARKING_CATEGORY_KEY,
-      name: parsed.data.name,
-      provider: parsed.data.provider,
-      providerPlaceId: parsed.data.providerPlaceId,
-      visibility: "guest",
-      source: "provider-suggestion",
-    },
-  });
-
-  await autoEnableCoverIfNeeded(
-    shouldAutoEnable,
-    property,
-    parsed.data.propertyId,
-    operator.userId,
-  );
-
-  revalidatePath(`/properties/${parsed.data.propertyId}/access`);
-  return { success: true, data: { id: createdId } };
-}
 
 // ── 2.b) Bulk confirm provider suggestions ──
 //
@@ -460,21 +297,12 @@ export async function confirmParkingPlaceAction(
 const confirmParkingBulkSchema = z
   .object({
     items: z.array(confirmParkingSchema).min(1).max(20),
-    /** When set, applies to every item — synthesizes / overrides
-     *  `providerMetadata.feeType` so the operator can bulk-add as free or
-     *  paid in one charge from the lightbox map view. */
-    feeType: z.enum(["free", "paid"]).optional(),
   })
   .strict();
 
 export type ConfirmParkingBulkInput = z.infer<typeof confirmParkingBulkSchema>;
 
-export interface ConfirmParkingBulkResult {
-  created: string[];
-  /** providerPlaceIds that were silently skipped because the row already
-   * existed (P2002). Lets the UI prune them from the suggestions list. */
-  skippedProviderPlaceIds: string[];
-}
+export type ConfirmParkingBulkResult = BulkConfirmResult;
 
 export async function confirmParkingPlacesBulkAction(
   input: ConfirmParkingBulkInput,
@@ -487,99 +315,20 @@ export async function confirmParkingPlacesBulkAction(
     };
   }
 
-  const propertyIds = new Set(parsed.data.items.map((i) => i.propertyId));
-  if (propertyIds.size !== 1) {
-    return { success: false, error: "Todos los items deben pertenecer a la misma propiedad" };
-  }
-  const propertyId = parsed.data.items[0].propertyId;
-
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
-
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
+  // Delegates the operator/property scaffolding, parallel creates, P2002
+  // dedupe and per-row writeAudit emission to `bulkConfirmPlaces`. The
+  // parking-specific bits are the constant categoryKey + the optional
+  // `feeType` merge into providerMetadata; everything else is shared with
+  // `confirmArrivalOptionsBulkAction`.
+  return bulkConfirmPlaces({
+    items: parsed.data.items,
+    categoryKeyOf: () => PARKING_CATEGORY_KEY,
+    transformMetadata: (item) =>
+      item.feeType !== undefined
+        ? mergeFeeTypeIntoMetadata(item.providerMetadata, item.feeType)
+        : item.providerMetadata,
+    auditSource: "provider-suggestion-bulk",
   });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const { property, shouldAutoEnable } = await loadPropertyAndAutoEnableHint(
-    propertyId,
-    operator,
-  );
-  if (!property) return { success: false, error: "Propiedad no encontrada" };
-
-  const created: string[] = [];
-  const skipped: string[] = [];
-  const bulkFeeType = parsed.data.feeType;
-  for (const item of parsed.data.items) {
-    try {
-      const providerMetadata = bulkFeeType
-        ? mergeFeeTypeIntoMetadata(item.providerMetadata, bulkFeeType)
-        : item.providerMetadata;
-      const row = await prisma.localPlace.create({
-        data: {
-          propertyId: item.propertyId,
-          categoryKey: PARKING_CATEGORY_KEY,
-          name: item.name,
-          latitude: item.latitude,
-          longitude: item.longitude,
-          address: item.address,
-          website: item.website,
-          distanceMeters: item.distanceMeters,
-          provider: item.provider,
-          providerPlaceId: item.providerPlaceId,
-          providerMetadata,
-          visibility: "guest",
-        },
-        select: { id: true },
-      });
-      created.push(row.id);
-      await writeAudit({
-        propertyId,
-        actor: formatActor({ type: "user", userId: operator.userId }),
-        entityType: "LocalPlace",
-        entityId: row.id,
-        action: AUDIT_ACTIONS.create,
-        diff: {
-          categoryKey: PARKING_CATEGORY_KEY,
-          name: item.name,
-          provider: item.provider,
-          providerPlaceId: item.providerPlaceId,
-          visibility: "guest",
-          source: "provider-suggestion-bulk",
-        },
-      });
-    } catch (err) {
-      if (isPrismaUniqueViolation(err)) {
-        skipped.push(item.providerPlaceId);
-        continue;
-      }
-      throw err;
-    }
-  }
-
-  if (created.length > 0) {
-    await autoEnableCoverIfNeeded(
-      shouldAutoEnable,
-      property,
-      propertyId,
-      operator.userId,
-    );
-    revalidatePath(`/properties/${propertyId}/access`);
-  }
-  return {
-    success: true,
-    data: { created, skippedProviderPlaceIds: skipped },
-  };
 }
 
 // ── 3) Add manual parking pin (no provider) ──
@@ -609,43 +358,48 @@ export async function addManualParkingPlaceAction(
     };
   }
 
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
+  const auth = await requireOperatorMutate();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { operator } = auth;
 
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const { property, shouldAutoEnable } = await loadPropertyAndAutoEnableHint(
-    parsed.data.propertyId,
-    operator,
-  );
+  // Property lookup and reverse-geocode are independent — fire them in
+  // parallel. The reverse-geocode runs unconditionally; the result is only
+  // used when the caller didn't supply an address. The race is benign: even
+  // if `property` is null we still pay the provider RTT, but the action
+  // returns immediately and abandons the result. Caller-supplied address
+  // wins (e.g. when a future form prompts the operator); otherwise we ask
+  // the provider so manual pins parity-match suggestion-confirm rows.
+  const [property, fallbackAddress] = await Promise.all([
+    prisma.property.findUnique({
+      where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
+      select: { id: true, latitude: true, longitude: true },
+    }),
+    parsed.data.address === undefined || parsed.data.address === null
+      ? reverseGeocodeAddressForPin({
+          latitude: parsed.data.latitude,
+          longitude: parsed.data.longitude,
+          preferCategoryKey: PARKING_CATEGORY_KEY,
+        })
+      : Promise.resolve(null),
+  ]);
   if (!property) return { success: false, error: "Propiedad no encontrada" };
 
-  // Only synthesize a metadata blob when the operator picked a concrete fee
-  // type — `null` / `undefined` mean "unspecified" and we keep the JSON column
-  // empty so the absence of metadata is the canonical "not classified" signal.
+  // Leave the JSON column empty when feeType is unspecified — absence of
+  // metadata is the canonical "not classified" signal.
   const providerMetadata =
     parsed.data.feeType === "free" || parsed.data.feeType === "paid"
-      ? {
-          nativeCategory: null,
-          placeTypes: [],
-          confidence: null,
-          retrievedAt: new Date().toISOString(),
-          feeType: parsed.data.feeType,
-        }
+      ? mergeFeeTypeIntoMetadata(null, parsed.data.feeType)
       : null;
+
+  const distanceMeters =
+    property.latitude !== null && property.longitude !== null
+      ? haversineMeters(
+          { latitude: property.latitude, longitude: property.longitude },
+          { latitude: parsed.data.latitude, longitude: parsed.data.longitude },
+        )
+      : null;
+
+  const resolvedAddress = parsed.data.address ?? fallbackAddress;
 
   const created = await prisma.localPlace.create({
     data: {
@@ -654,8 +408,9 @@ export async function addManualParkingPlaceAction(
       name: parsed.data.name,
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
-      address: parsed.data.address ?? null,
+      address: resolvedAddress,
       shortNote: parsed.data.shortNote ?? null,
+      distanceMeters,
       providerMetadata: providerMetadata ?? undefined,
       visibility: "guest",
     },
@@ -677,33 +432,48 @@ export async function addManualParkingPlaceAction(
     },
   });
 
-  await autoEnableCoverIfNeeded(
-    shouldAutoEnable,
-    property,
-    parsed.data.propertyId,
-    operator.userId,
-  );
-
   revalidatePath(`/properties/${parsed.data.propertyId}/access`);
   return { success: true, data: { id: created.id } };
 }
 
 // ── 4) Update an existing parking pin ──
 //
-// Editable surface intentionally narrow: name (label visible al huésped),
-// shortNote (nota corta), visibility (toggle guest/internal). Coordinates,
-// provider, address and website stay immutable — re-confirming or
-// re-creating is the path for those.
+// Editable surface: name, shortNote, visibility, feeType, and coordinates
+// (relocate). When coords are provided, we re-geocode internally to refresh
+// the address and recompute distance from the property anchor — the operator
+// never types coords by hand, they come from a map click. Provider/website
+// stay immutable; re-confirming a provider suggestion is the path for those.
+
+// Operator-edited tariff for paid parking. Multi-tier: real parkings layer
+// pricing (e.g. €2/min but €18/día cap with discount), so the shape is an
+// array of {amount, currency, per, note} entries. Pass `null` to clear
+// (e.g. when toggling a row back to `free`). Empty array = no tiers yet.
 
 const updateParkingSchema = z
   .object({
     placeId: z.string().min(1),
-    name: z.string().min(1).optional(),
+    // Empty string is allowed — the editor renders the row's italic "Añadir
+    // nombre" placeholder when the stored name is blank, so blanking a name
+    // is a legitimate user intent (e.g. clear an old label before renaming).
+    name: z.string().optional(),
     shortNote: z.string().nullable().optional(),
     visibility: z.enum(visibilityLevels).optional(),
     feeType: z.enum(["free", "paid"]).nullable().optional(),
+    // Recommended flag is single-select within the feeType bucket (free|paid).
+    // Toggling true clears `isRecommended` from siblings that share the same
+    // effective feeType — matches the UX agreed in 16E.6 (Coche tab groups
+    // parking_free + parking_paid; recommended marker is meaningful per bucket).
+    isRecommended: z.boolean().optional(),
+    rateJson: rateJsonSchema.nullable().optional(),
+    latitude: z.number().gte(-90).lte(90).optional(),
+    longitude: z.number().gte(-180).lte(180).optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (v) =>
+      (v.latitude === undefined) === (v.longitude === undefined),
+    { message: "latitude y longitude deben enviarse juntos" },
+  );
 
 export type UpdateParkingInput = z.infer<typeof updateParkingSchema>;
 
@@ -718,38 +488,39 @@ export async function updateParkingPlaceAction(
     };
   }
 
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
+  const auth = await requireOperatorMutate();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { operator } = auth;
 
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const place = await prisma.localPlace.findFirst({
-    where: {
-      id: parsed.data.placeId,
-      categoryKey: PARKING_CATEGORY_KEY,
-      property: { workspaceId: operator.workspaceId },
-    },
-    select: {
-      id: true,
-      propertyId: true,
-      name: true,
-      visibility: true,
-      providerMetadata: true,
-    },
-  });
+  // Relocate path needs a fresh reverse-geocode — fire it in parallel with the
+  // place lookup. Both reads are independent (the geocoder uses only the new
+  // coords). Saves one provider RTT on the relocate hot-path.
+  const isRelocating =
+    parsed.data.latitude !== undefined && parsed.data.longitude !== undefined;
+  const [place, relocateAddress] = await Promise.all([
+    prisma.localPlace.findFirst({
+      where: {
+        id: parsed.data.placeId,
+        categoryKey: PARKING_CATEGORY_KEY,
+        property: { workspaceId: operator.workspaceId },
+      },
+      select: {
+        id: true,
+        propertyId: true,
+        name: true,
+        visibility: true,
+        providerMetadata: true,
+        property: { select: { latitude: true, longitude: true } },
+      },
+    }),
+    isRelocating
+      ? reverseGeocodeAddressForPin({
+          latitude: parsed.data.latitude!,
+          longitude: parsed.data.longitude!,
+          preferCategoryKey: PARKING_CATEGORY_KEY,
+        })
+      : Promise.resolve(null),
+  ]);
   if (!place) return { success: false, error: "Pin no encontrado" };
 
   const data: {
@@ -757,6 +528,12 @@ export async function updateParkingPlaceAction(
     shortNote?: string | null;
     visibility?: (typeof visibilityLevels)[number];
     providerMetadata?: ReturnType<typeof mergeFeeTypeIntoMetadata>;
+    isRecommended?: boolean;
+    rateJson?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+    latitude?: number;
+    longitude?: number;
+    address?: string | null;
+    distanceMeters?: number | null;
   } = {};
   if (parsed.data.name !== undefined) data.name = parsed.data.name;
   if (parsed.data.shortNote !== undefined) data.shortNote = parsed.data.shortNote;
@@ -767,12 +544,78 @@ export async function updateParkingPlaceAction(
       parsed.data.feeType,
     );
   }
+  if (parsed.data.isRecommended !== undefined) {
+    data.isRecommended = parsed.data.isRecommended;
+  }
+  if (parsed.data.rateJson !== undefined) {
+    data.rateJson =
+      parsed.data.rateJson === null
+        ? Prisma.JsonNull
+        : (parsed.data.rateJson as Prisma.InputJsonValue);
+  }
+
+  // Relocate: re-geocode the new coords for a fresh address and recompute
+  // distance from the property anchor. The address is best-effort — null if
+  // the provider returns nothing rather than carry stale data from the
+  // previous location.
+  if (parsed.data.latitude !== undefined && parsed.data.longitude !== undefined) {
+    data.latitude = parsed.data.latitude;
+    data.longitude = parsed.data.longitude;
+    data.distanceMeters =
+      place.property.latitude !== null && place.property.longitude !== null
+        ? haversineMeters(
+            {
+              latitude: place.property.latitude,
+              longitude: place.property.longitude,
+            },
+            {
+              latitude: parsed.data.latitude,
+              longitude: parsed.data.longitude,
+            },
+          )
+        : null;
+    data.address = relocateAddress;
+  }
+
   if (Object.keys(data).length === 0) return { success: true };
 
-  await prisma.localPlace.update({
-    where: { id: place.id },
-    data,
-  });
+  // Single-select recommended within (property, feeType bucket): clear siblings
+  // that share the same effective feeType, then promote this row. Wrapped in a
+  // transaction so a crash between the two writes can't leave the bucket with
+  // zero (or two) recommended rows. Free/paid are independent buckets — one
+  // recommended free + one recommended paid can coexist. Rows with no feeType
+  // classification do not participate in the sweep.
+  const effectiveFeeType: "free" | "paid" | null =
+    data.isRecommended === true
+      ? parsed.data.feeType !== undefined
+        ? parsed.data.feeType
+        : (ProviderMetadataSchema.safeParse(place.providerMetadata).data
+            ?.feeType ?? null)
+      : null;
+
+  if (data.isRecommended === true && effectiveFeeType !== null) {
+    await prisma.$transaction([
+      prisma.localPlace.updateMany({
+        where: {
+          propertyId: place.propertyId,
+          categoryKey: PARKING_CATEGORY_KEY,
+          id: { not: place.id },
+          isRecommended: true,
+          providerMetadata: { path: ["feeType"], equals: effectiveFeeType },
+        },
+        data: { isRecommended: false },
+      }),
+      prisma.localPlace.update({
+        where: { id: place.id },
+        data,
+      }),
+    ]);
+  } else {
+    await prisma.localPlace.update({
+      where: { id: place.id },
+      data,
+    });
+  }
 
   await writeAudit({
     propertyId: place.propertyId,
@@ -789,6 +632,18 @@ export async function updateParkingPlaceAction(
         ? { visibility: parsed.data.visibility }
         : {}),
       ...(parsed.data.feeType !== undefined ? { feeType: parsed.data.feeType } : {}),
+      ...(parsed.data.isRecommended !== undefined
+        ? { isRecommended: parsed.data.isRecommended }
+        : {}),
+      ...(parsed.data.rateJson !== undefined ? { rateJson: parsed.data.rateJson } : {}),
+      ...(parsed.data.latitude !== undefined
+        ? {
+            latitude: parsed.data.latitude,
+            longitude: parsed.data.longitude,
+            distanceMeters: data.distanceMeters ?? null,
+            address: data.address ?? null,
+          }
+        : {}),
     },
   });
 
@@ -821,23 +676,9 @@ export async function deleteParkingPlaceAction(
     };
   }
 
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
-
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
+  const auth = await requireOperatorMutate();
+  if (!auth.ok) return { success: false, error: auth.error };
+  const { operator } = auth;
 
   const place = await prisma.localPlace.findFirst({
     where: {
@@ -864,73 +705,3 @@ export async function deleteParkingPlaceAction(
   return { success: true };
 }
 
-// ── 6) Toggle "use parking map as cockpit cover" ──
-//
-// Persists the operator preference on `Property.parkingMapInCover`. When true
-// AND ≥1 confirmed parking pin exists, `page.tsx` injects a synthetic map
-// slide into the parking subsystem carousel that the cockpit card renders as
-// an interactive `<MultiPinMap>` instead of an `<img>`.
-
-const setParkingMapInCoverSchema = z
-  .object({
-    propertyId: z.string().min(1),
-    enabled: z.boolean(),
-  })
-  .strict();
-
-export type SetParkingMapInCoverInput = z.infer<typeof setParkingMapInCoverSchema>;
-
-export async function setParkingMapInCoverAction(
-  input: SetParkingMapInCoverInput,
-): Promise<ActionResult> {
-  const parsed = setParkingMapInCoverSchema.safeParse(input);
-  if (!parsed.success) {
-    return {
-      success: false,
-      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  let operator;
-  try {
-    operator = await requireOperator();
-  } catch {
-    return { success: false, error: "Sesión requerida" };
-  }
-
-  const actorGate = applyOperatorRateLimit({
-    userId: operator.userId,
-    bucket: "mutate",
-  });
-  if (!actorGate.ok) {
-    return {
-      success: false,
-      error: `Demasiadas peticiones. Reintenta en ${actorGate.retryAfterSeconds}s.`,
-    };
-  }
-
-  const property = await prisma.property.findUnique({
-    where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },
-    select: { id: true, parkingMapInCover: true },
-  });
-  if (!property) return { success: false, error: "Propiedad no encontrada" };
-
-  if (property.parkingMapInCover === parsed.data.enabled) return { success: true };
-
-  await prisma.property.update({
-    where: { id: property.id },
-    data: { parkingMapInCover: parsed.data.enabled },
-  });
-
-  await writeAudit({
-    propertyId: property.id,
-    actor: formatActor({ type: "user", userId: operator.userId }),
-    entityType: "Property",
-    entityId: property.id,
-    action: AUDIT_ACTIONS.update,
-    diff: { parkingMapInCover: parsed.data.enabled },
-  });
-
-  revalidatePath(`/properties/${property.id}/access`);
-  return { success: true };
-}

@@ -145,9 +145,18 @@ export async function savePropertyAction(
   const nicknameError = await assertNicknameUnique(propertyId, result.data.propertyNickname);
   if (nicknameError) return nicknameError;
 
+  // Parking + arrival suggestions are cached per-property and keyed by coords.
+  // Any address save could shift the anchor, so invalidate both — operator
+  // refreshes per mode on the next visit. Cheap recompute, avoids a
+  // pre-update findUnique.
   await prisma.property.update({
     where: { id: propertyId },
-    data: result.data,
+    data: {
+      ...result.data,
+      parkingSuggestionsCacheJson: Prisma.JsonNull,
+      parkingSuggestionsCachedAt: null,
+      arrivalSuggestionsCacheJson: Prisma.JsonNull,
+    },
   });
 
   recomputeAllInBackground(propertyId);
@@ -170,22 +179,12 @@ export async function saveAccessAction(
   const unitMethods = formData.getAll("unitMethods") as string[];
   const parkingTypes = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
-  // `hasBuildingAccess` is derived from the buildingMethods selection —
-  // `ba.no_building` is the explicit opt-out chip (replaces the old yes/no
-  // toggle). Empty selection = unanswered → false (legacy default).
+  // Derived from the multi-select: `ba.no_building` / `pk.no_parking` are the
+  // explicit opt-out chips; empty selection counts as unanswered → false.
   const hasBuildingAccess =
     !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
-  // `hasParking` is derived from the parkingTypes selection — `pk.no_parking`
-  // is the explicit opt-out chip (replaces the old yes/no toggle). Empty
-  // selection = unanswered → false (legacy default).
   const hasParking =
     !parkingTypes.includes("pk.no_parking") && parkingTypes.length > 0;
-
-  // Tri-state field: "true"/"false" persisted, anything else (including the
-  // sentinel "null" or absent) → DB NULL = unanswered.
-  const accessibilityRaw = formData.get("hasAccessibilityConsiderations");
-  const hasAccessibilityConsiderations: boolean | null =
-    accessibilityRaw === "true" ? true : accessibilityRaw === "false" ? false : null;
 
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
   const validBuildingIds = new Set(buildingAccessMethods.items.map((i) => i.id));
@@ -245,13 +244,9 @@ export async function saveAccessAction(
       const valid = parkingTypes.filter((id) => validParkingIds.has(id));
       return valid.includes("pk.no_parking") ? ["pk.no_parking"] : valid;
     })(),
-    hasAccessibilityConsiderations,
-    // Drop features when explicitly opted out (false). Keep when true OR null
-    // (null = unanswered, but a half-completed list is still legitimate input).
-    accessibilityFeatures:
-      hasAccessibilityConsiderations === false
-        ? []
-        : accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
+    accessibilityFeatures: accessibilityFeatures.filter((id) =>
+      validAccessibilityIds.has(id),
+    ),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -295,7 +290,7 @@ export async function saveAccessAction(
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
       hasParking: d.hasParking,
-      hasAccessibilityConsiderations: d.hasAccessibilityConsiderations,
+      hasAccessibilityConsiderations: d.accessibilityFeatures.length > 0,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
         building:

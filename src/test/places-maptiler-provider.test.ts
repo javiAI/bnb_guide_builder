@@ -28,6 +28,16 @@ describe("mapMapTilerCategoryToLp", () => {
   it("ignores empty strings in candidate list", () => {
     expect(mapMapTilerCategoryToLp(["", "  ", "bar"])).toBe("lp.bar");
   });
+
+  it("normalizes space-separated MapTiler categories to underscored OSM form", () => {
+    // MapTiler returns "railway station" / "bus station" / "bus stop" with
+    // spaces in `properties.categories`. Without normalization the regex map
+    // (keyed by OSM tags) would drop every real-world transit POI.
+    expect(mapMapTilerCategoryToLp(["railway station"])).toBe("lp.transport");
+    expect(mapMapTilerCategoryToLp(["train station"])).toBe("lp.transport");
+    expect(mapMapTilerCategoryToLp(["bus station"])).toBe("lp.transport");
+    expect(mapMapTilerCategoryToLp(["bus stop"])).toBe("lp.transport");
+  });
 });
 
 describe("MapTilerPlacesProvider", () => {

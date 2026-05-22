@@ -2,30 +2,80 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
-  useTransition,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type SyntheticEvent,
 } from "react";
-import { useRouter } from "next/navigation";
-import Lightbox, { type Slide } from "yet-another-react-lightbox";
+import Lightbox, {
+  useController,
+  useNavigationState,
+  type Slide,
+} from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
-import { Loader2, Search, X } from "lucide-react";
-import { Banner } from "@/components/ui/banner";
-import { Button } from "@/components/ui/button";
 import {
-  confirmParkingPlacesBulkAction,
-  searchNearbyParkingsAction,
-} from "@/lib/actions/parking.actions";
-import type { ParkingSuggestion } from "@/lib/services/parking-discovery.service";
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  MapPin,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { Banner } from "@/components/ui/banner";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { SubsystemSlide } from "./subsystem-card.types";
-import { MultiPinMap, type MultiPinSpec } from "./multi-pin-map";
+import { MultiPinMap, feeTypeToPinKind, type MultiPinSpec } from "./multi-pin-map";
+import { ConfirmedRow, SuggestionRow, cycleFee } from "./parking-row";
+import {
+  CockpitEmptyState,
+  CockpitListColumn,
+} from "./cockpit-list-column";
+import { ParkingMapOverlay } from "./parking-map-overlay";
+import { RefreshIconButton } from "./refresh-icon-button";
+import { pinIdForPlace, pinIdForSuggestion } from "./pin-ids";
+import {
+  useParkingStateContext,
+  type BinaryFee,
+  type UseParkingManagementReturn,
+} from "./use-parking-management";
+import { useMediaUpload } from "@/hooks/use-media-upload";
+import { useLightboxMapHeight } from "@/hooks/use-lightbox-map-height";
+import { useIsDesktop } from "@/hooks/use-is-desktop";
+import type { MediaEntityType } from "@/lib/schemas/editor.schema";
+import { cn } from "@/lib/cn";
 
-// The library's default Slide union covers image + video. We extend it locally
-// with two synthetic types: "video-url" (a plain <video src=> we render via
-// render.slide so we don't depend on the Video plugin), and "live-map" (the
-// parking interactive map). Both are flagged by `type` and resolved in the
-// render.slide callback below — the library treats unknown types as opaque.
+const ACCEPTED_PHOTO_TYPES = ".jpg,.jpeg,.png,.webp,.avif,.gif";
+
+/** Default desktop panel width — wide enough for ConfirmedRow / SuggestionRow
+ * (icon · name · distance · trash) without clipping. Operators can drag the
+ * left edge to resize; the value persists per-device via localStorage. */
+const DEFAULT_PANEL_W = 360;
+const MIN_PANEL_W = 280;
+const MAX_PANEL_W = 480;
+const PANEL_W_STORAGE_KEY = "liora.access.lightbox.panelW";
+
+function clampPanelWidth(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_PANEL_W;
+  return Math.min(MAX_PANEL_W, Math.max(MIN_PANEL_W, Math.round(value)));
+}
+
+function readStoredPanelWidth(): number {
+  if (typeof window === "undefined") return DEFAULT_PANEL_W;
+  try {
+    const raw = window.localStorage.getItem(PANEL_W_STORAGE_KEY);
+    if (raw === null) return DEFAULT_PANEL_W;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? clampPanelWidth(parsed) : DEFAULT_PANEL_W;
+  } catch {
+    return DEFAULT_PANEL_W;
+  }
+}
+
 type LiveMapSlide = {
   type: "live-map";
   id: string;
@@ -47,41 +97,123 @@ type LightboxSlide = Slide | LiveMapSlide | VideoUrlSlide;
 
 interface Props {
   slides: readonly SubsystemSlide[];
-  /** When `null`, the lightbox is closed. When a number, opens at that index. */
   index: number | null;
-  onIndexChange: (idx: number) => void;
+  /** Omit for single-slide read-only mounts (e.g. arrival-step paso 01 live-map
+   * lightbox). When omitted, slide navigation handlers are no-ops. */
+  onIndexChange?: (idx: number) => void;
   onClose: () => void;
-  /** When set, live-map slides render an interactive discovery overlay
-   * (search + bulk-confirm as free/paid) tied to this property. Only the
-   * parking subsystem passes it; other surfaces get the plain MultiPinMap. */
-  parkingDiscovery?: { propertyId: string };
+  onSlideDelete?: (assetId: string) => Promise<void>;
+  uploadConfig?: { propertyId: string; entityType: MediaEntityType; usageKey: string };
+  /** Optional slot for the live-map slide area. When provided alongside a
+   * `live-map` slide, the slide renders this node (typically the unified
+   * arrival-cockpit map) instead of the inline parking-only map. The side
+   * panel switches to a thumbnail-only strip, optionally followed by
+   * `lightboxSidePanel` below. */
+  lightboxMap?: ReactNode;
+  /** Optional slot for the right-side panel, rendered BELOW the thumbnail
+   * strip in the same scroll container. Used today by the arrival cockpit
+   * to host the Vehículo/Tren/Autobús/Avión tabs + lists alongside the
+   * thumbnails. */
+  lightboxSidePanel?: ReactNode;
+}
+
+const noop = () => {};
+
+/** Live-map slide area wrapper. stopPropagation handlers prevent YARL from
+ * swiping the carousel when the user drags the map or interacts with controls
+ * inside. CSS sizing mirrors `useLightboxMapHeight` (`min(82vh, 900px)`). */
+function LiveMapSlideShell({
+  children,
+  elevatedBg = false,
+}: {
+  children: ReactNode;
+  elevatedBg?: boolean;
+}) {
+  const stop = (e: SyntheticEvent) => e.stopPropagation();
+  return (
+    <div
+      style={{ width: "min(95vw, 1400px)", height: "min(82vh, 900px)" }}
+      className={cn(
+        "relative overflow-hidden rounded-[12px]",
+        elevatedBg && "bg-[var(--color-background-elevated)]",
+      )}
+      onPointerDown={stop}
+      onPointerMove={stop}
+      onPointerUp={stop}
+      onTouchStart={stop}
+      onTouchMove={stop}
+      onTouchEnd={stop}
+      onMouseDown={stop}
+      onMouseMove={stop}
+      onMouseUp={stop}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function MediaLightbox({
   slides,
   index,
-  onIndexChange,
+  onIndexChange = noop,
   onClose,
-  parkingDiscovery,
+  onSlideDelete,
+  uploadConfig,
+  lightboxMap,
+  lightboxSidePanel,
 }: Props) {
+  const isDesktop = useIsDesktop();
+
+  // Pixel height for the fallback live-map slide (when no custom `lightboxMap`
+  // node is supplied). Mirrors the CSS `min(82vh, 900px)` slide-area sizing.
+  const fallbackMapHeight = useLightboxMapHeight();
+
+  const [confirmingSlideId, setConfirmingSlideId] = useState<string | null>(null);
+  const [deletingAssetId, setDeletingAssetId] = useState<string | null>(null);
+
+  const handleDeleteRequest = useCallback((slideId: string) => {
+    setConfirmingSlideId(slideId);
+  }, []);
+
+  const handleDeleteCancel = useCallback(() => {
+    setConfirmingSlideId(null);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    async (assetId: string) => {
+      if (!onSlideDelete) return;
+      setDeletingAssetId(assetId);
+      setConfirmingSlideId(null);
+      try {
+        await onSlideDelete(assetId);
+      } finally {
+        setDeletingAssetId(null);
+      }
+    },
+    [onSlideDelete],
+  );
+
+  const {
+    fileInputRef: uploadFileInputRef,
+    uploading,
+    error: uploadError,
+    triggerFilePicker: handleUploadClick,
+    onFileChange: handleFileChange,
+  } = useMediaUpload(uploadConfig);
+
+  // Parking state — supplied by ParkingStateProvider in SubsystemCard for
+  // the parking cockpit only. Non-parking cards never wrap in the provider,
+  // so `parkingState` is null and the live-map branches below stay dormant.
+  const parkingState = useParkingStateContext();
+
   const lightboxSlides = useMemo<LightboxSlide[]>(() => {
     return slides
       .map((s): LightboxSlide | null => {
         if (s.kind === "image" || s.kind === "map") {
-          return {
-            type: "image",
-            src: s.url,
-            alt: s.alt || s.title,
-          };
+          return { type: "image", src: s.url, alt: s.alt || s.title };
         }
         if (s.kind === "video") {
-          return {
-            type: "video-url",
-            id: s.id,
-            title: s.title,
-            alt: s.alt || s.title,
-            src: s.url,
-          };
+          return { type: "video-url", id: s.id, title: s.title, alt: s.alt || s.title, src: s.url };
         }
         if (s.kind === "live-map") {
           if (!s.liveAnchor) return null;
@@ -89,349 +221,911 @@ export function MediaLightbox({
             id: p.id,
             latitude: p.latitude,
             longitude: p.longitude,
-            kind:
-              p.feeType === "free"
-                ? "confirmed-free"
-                : p.feeType === "paid"
-                  ? "confirmed-paid"
-                  : "confirmed-unknown",
+            kind: feeTypeToPinKind(p.feeType),
             label: p.label,
           }));
-          return {
-            type: "live-map",
-            id: s.id,
-            title: s.title,
-            alt: s.alt || s.title,
-            anchor: s.liveAnchor,
-            pins,
-          };
+          return { type: "live-map", id: s.id, title: s.title, alt: s.alt || s.title, anchor: s.liveAnchor, pins };
         }
         return null;
       })
       .filter((s): s is LightboxSlide => s !== null);
   }, [slides]);
 
+  const activeSlideIdx = index !== null ? Math.min(index, lightboxSlides.length - 1) : 0;
+  const activeSubsystemSlide = index !== null ? slides[activeSlideIdx] : null;
+  const isLiveMap = activeSubsystemSlide?.kind === "live-map";
+
+  const mediaCount = useMemo(
+    () => slides.filter((s) => s.kind !== "live-map").length,
+    [slides],
+  );
+
+  // Resizable panel width — desktop only. SSR-safe initial = DEFAULT_PANEL_W;
+  // the effect rehydrates from localStorage on mount to keep server/client HTML
+  // identical and avoid a hydration mismatch.
+  const [panelW, setPanelW] = useState<number>(DEFAULT_PANEL_W);
+  useEffect(() => {
+    setPanelW(readStoredPanelWidth());
+  }, []);
+
+  const [resizing, setResizing] = useState(false);
+  const resizingRef = useRef(false);
+  resizingRef.current = resizing;
+
+  const handleResizeStart = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget;
+    target.setPointerCapture(e.pointerId);
+    setResizing(true);
+
+    // RAF-throttle pointermove → at most one setState per frame, even when
+    // pointer events fire at 120Hz. Without this, every move re-renders the
+    // lightbox + MapLibre's parent layout.
+    let pendingRaf: number | null = null;
+    let pendingX = 0;
+    const flush = () => {
+      pendingRaf = null;
+      setPanelW(clampPanelWidth(window.innerWidth - pendingX));
+    };
+    const onMove = (ev: PointerEvent) => {
+      pendingX = ev.clientX;
+      if (pendingRaf === null) pendingRaf = requestAnimationFrame(flush);
+    };
+    const onUp = (ev: PointerEvent) => {
+      if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
+      target.releasePointerCapture?.(ev.pointerId);
+      setResizing(false);
+      const finalW = clampPanelWidth(window.innerWidth - ev.clientX);
+      setPanelW(finalW);
+      try {
+        window.localStorage.setItem(PANEL_W_STORAGE_KEY, String(finalW));
+      } catch {
+        // localStorage may be disabled — ignore, in-memory width still works.
+      }
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }, []);
+
+  // Suppress text selection + body cursor while dragging so the resize feels
+  // direct and the operator doesn't accidentally select map labels or panel
+  // copy mid-drag.
+  useEffect(() => {
+    if (!resizing) return;
+    const prevUserSelect = document.body.style.userSelect;
+    const prevCursor = document.body.style.cursor;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+    return () => {
+      document.body.style.userSelect = prevUserSelect;
+      document.body.style.cursor = prevCursor;
+    };
+  }, [resizing]);
+
   if (index === null || lightboxSlides.length === 0) return null;
 
   return (
-    <Lightbox
-      open
-      close={onClose}
-      index={Math.min(index, lightboxSlides.length - 1)}
-      slides={lightboxSlides as Slide[]}
-      on={{ view: ({ index: i }) => onIndexChange(i) }}
-      controller={{ closeOnBackdropClick: true, closeOnPullDown: true }}
-      animation={{ fade: 200, swipe: 280 }}
-      carousel={{ finite: false, padding: "16px", spacing: "24px" }}
-      render={{
-        slide: ({ slide }) => {
-          const s = slide as LightboxSlide;
-          if ("type" in s && s.type === "live-map") {
-            // 75vh covers "almost the whole screen" while leaving room for
-            // the toolbar/counter. MapLibre takes its container's height so
-            // we hand it a fixed pixel value via a CSS calc inline.
-            // stopPropagation on pointer/touch events so MapLibre's drag-to-pan
-            // doesn't double as the lightbox's drag-to-next-slide gesture.
-            const stop = (e: SyntheticEvent) => e.stopPropagation();
-            const mapHeight = Math.round(
-              Math.min(window.innerHeight * 0.82, 900),
-            );
-            return (
-              <div
-                style={{ width: "min(95vw, 1400px)", height: "min(82vh, 900px)" }}
-                className="relative overflow-hidden rounded-[12px]"
-                onPointerDown={stop}
-                onPointerMove={stop}
-                onPointerUp={stop}
-                onTouchStart={stop}
-                onTouchMove={stop}
-                onTouchEnd={stop}
-                onMouseDown={stop}
-                onMouseMove={stop}
-                onMouseUp={stop}
-              >
-                {parkingDiscovery ? (
-                  <LiveMapDiscoverySlide
-                    propertyId={parkingDiscovery.propertyId}
-                    anchor={s.anchor}
-                    basePins={s.pins}
-                    height={mapHeight}
-                  />
-                ) : (
+    <>
+      {uploadConfig && (
+        <input
+          ref={uploadFileInputRef}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES}
+          onChange={handleFileChange}
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      )}
+      <Lightbox
+        open
+        close={onClose}
+        index={Math.min(index, lightboxSlides.length - 1)}
+        slides={lightboxSlides as Slide[]}
+        on={{ view: ({ index: i }) => onIndexChange(i) }}
+        controller={{ closeOnBackdropClick: true, closeOnPullDown: true }}
+        animation={{ fade: 200, swipe: 280 }}
+        carousel={{ finite: false, padding: 16, spacing: "24px" }}
+        labels={{
+          Previous: "Anterior",
+          Next: "Siguiente",
+          Close: "Cerrar",
+        }}
+        styles={{
+          container: {
+            backgroundColor: "var(--color-background-scrim)",
+            paddingRight: isDesktop ? `${panelW}px` : undefined,
+          },
+          toolbar: isDesktop ? { right: `${panelW}px` } : undefined,
+        }}
+        render={{
+          // YARL places render-slot returns directly into its toolbar/nav
+          // children arrays without injecting keys, so React warns about
+          // missing keys unless we provide them ourselves on the root node.
+          buttonPrev: () => <NavButton key="prev" variant="prev" />,
+          buttonNext: () => (
+            <NavButton
+              key="next"
+              variant="next"
+              rightOffsetPx={isDesktop ? panelW : 0}
+            />
+          ),
+          buttonClose: () => <CloseButton key="close" onClose={onClose} />,
+          slide: ({ slide }) => {
+            const s = slide as LightboxSlide;
+            if ("type" in s && s.type === "live-map") {
+              // When a custom map slot is supplied, render it inside the
+              // slide area (typically the unified arrival-cockpit map). The
+              // side panel hosts the tabs + lists below the thumbnail strip
+              // — see the `lightboxSidePanel` branch in the controls slot.
+              if (lightboxMap !== undefined) {
+                return (
+                  <LiveMapSlideShell elevatedBg>{lightboxMap}</LiveMapSlideShell>
+                );
+              }
+              return (
+                <LiveMapSlideShell>
                   <MultiPinMap
                     anchor={s.anchor}
-                    pins={s.pins}
-                    height={mapHeight}
+                    pins={parkingState?.mapPins ?? []}
+                    activeId={parkingState?.effectiveActiveId ?? null}
+                    onPinClick={parkingState?.setActiveId}
+                    onMapClick={parkingState?.handleMapClick}
+                    armed={
+                      !!parkingState && parkingState.relocatingId !== null
+                    }
+                    height={fallbackMapHeight}
                     interactive={true}
                   />
+
+                  {parkingState && <ParkingMapOverlay />}
+                </LiveMapSlideShell>
+              );
+            }
+            if ("type" in s && s.type === "video-url") {
+              return (
+                <video
+                  src={s.src}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  aria-label={s.alt}
+                  style={{ maxWidth: "min(95vw, 1400px)", maxHeight: "min(82vh, 900px)" }}
+                  className="rounded-[12px] bg-black"
+                />
+              );
+            }
+            return undefined;
+          },
+          controls: () => (
+            <>
+              <aside
+                aria-label={isLiveMap && parkingState ? "Gestión de parkings" : "Gestión de media"}
+                style={isDesktop ? { width: `${panelW}px` } : undefined}
+                className={cn(
+                  "absolute right-0 top-0 hidden h-full flex-col overflow-y-auto",
+                  "border-l border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
+                  isDesktop && "flex",
                 )}
-              </div>
-            );
-          }
-          if ("type" in s && s.type === "video-url") {
-            return (
-              <video
-                src={s.src}
-                controls
-                playsInline
-                preload="metadata"
-                aria-label={s.alt}
-                style={{
-                  maxWidth: "min(95vw, 1400px)",
-                  maxHeight: "min(82vh, 900px)",
-                }}
-                className="rounded-[12px] bg-black"
-              />
-            );
-          }
-          return undefined;
-        },
-      }}
-      styles={{
-        container: { backgroundColor: "var(--color-background-scrim)" },
-      }}
-    />
+              >
+                {isDesktop && (
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Redimensionar panel"
+                    aria-valuemin={MIN_PANEL_W}
+                    aria-valuemax={MAX_PANEL_W}
+                    aria-valuenow={panelW}
+                    onPointerDown={handleResizeStart}
+                    className={cn(
+                      "absolute left-0 top-0 z-[3] h-full w-1.5 -translate-x-1/2 cursor-col-resize",
+                      "transition-colors duration-100",
+                      resizing
+                        ? "bg-[var(--color-action-primary)]"
+                        : "bg-transparent hover:bg-[var(--color-action-primary-subtle)]",
+                    )}
+                  />
+                )}
+                {isLiveMap && parkingState && lightboxMap === undefined ? (
+                  <ParkingManagementPanel
+                    slides={slides}
+                    activeSubsystemSlide={activeSubsystemSlide}
+                    mediaCount={mediaCount}
+                    onSelect={onIndexChange}
+                    parkingState={parkingState}
+                  />
+                ) : isLiveMap && lightboxMap !== undefined ? (
+                  <>
+                    <ThumbnailListShell
+                      title={`Media (${mediaCount})`}
+                      slides={slides}
+                      activeSubsystemSlide={activeSubsystemSlide}
+                      onSelect={onIndexChange}
+                    />
+                    {lightboxSidePanel && (
+                      <div className="border-t border-[var(--color-border-default)] p-3">
+                        {lightboxSidePanel}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <MediaManagementPanel
+                    slides={slides}
+                    activeSubsystemSlide={activeSubsystemSlide}
+                    mediaCount={mediaCount}
+                    confirmingSlideId={confirmingSlideId}
+                    deletingAssetId={deletingAssetId}
+                    canDelete={!!onSlideDelete}
+                    onSelect={onIndexChange}
+                    onDeleteRequest={handleDeleteRequest}
+                    onDeleteConfirm={handleDeleteConfirm}
+                    onDeleteCancel={handleDeleteCancel}
+                    uploadConfig={uploadConfig}
+                    uploading={uploading}
+                    uploadError={uploadError}
+                    onUploadClick={handleUploadClick}
+                  />
+                )}
+              </aside>
+
+              {!isDesktop && slides.length > 0 && (
+                <div
+                  aria-label="Miniaturas"
+                  className="absolute bottom-0 left-0 right-0 flex h-[88px] items-center gap-2 overflow-x-auto border-t border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2"
+                >
+                  {slides.map((slide, slideIdx) => {
+                    const isActive = slide === activeSubsystemSlide;
+                    return (
+                      <MobileThumbnail
+                        key={slide.id}
+                        slide={slide}
+                        isActive={isActive}
+                        onSelect={() => onIndexChange(slideIdx)}
+                      />
+                    );
+                  })}
+                  {uploadConfig && (
+                    <button
+                      type="button"
+                      onClick={handleUploadClick}
+                      disabled={uploading}
+                      aria-label="Añadir foto de portada"
+                      className={cn(
+                        "relative flex h-16 w-16 flex-none items-center justify-center rounded-[8px]",
+                        "border-2 border-dashed border-[var(--color-border-default)]",
+                        "text-[var(--color-text-muted)] transition-colors duration-150",
+                        "hover:border-[var(--color-action-primary)] hover:text-[var(--color-action-primary)]",
+                        "disabled:cursor-not-allowed disabled:opacity-50",
+                      )}
+                    >
+                      {uploading ? (
+                        <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+                      ) : (
+                        <Upload size={18} aria-hidden="true" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!isDesktop && activeSubsystemSlide && activeSubsystemSlide.kind !== "live-map" && onSlideDelete && (
+                <div className="absolute right-14 top-3">
+                  {confirmingSlideId === activeSubsystemSlide.id ? (
+                    <div className="flex items-center gap-1 rounded-[8px] bg-[var(--color-background-elevated)] px-2 py-1 shadow-[var(--elevation-surface-md)]">
+                      <span className="text-[11px] text-[var(--color-text-primary)]">¿Eliminar?</span>
+                      <button
+                        type="button"
+                        onClick={handleDeleteCancel}
+                        className="min-h-[44px] rounded px-1.5 text-[11px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      >
+                        No
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteConfirm(activeSubsystemSlide.assetId)}
+                        disabled={!!deletingAssetId}
+                        className="min-h-[44px] rounded bg-[var(--color-status-error-bg)] px-1.5 text-[11px] font-medium text-[var(--color-status-error-text)] disabled:opacity-50"
+                      >
+                        {deletingAssetId === activeSubsystemSlide.assetId ? (
+                          <Loader2 size={10} className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          "Sí"
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label="Eliminar foto"
+                      onClick={() => handleDeleteRequest(activeSubsystemSlide.id)}
+                      disabled={!!deletingAssetId}
+                      className={cn(
+                        "grid h-8 w-8 place-items-center rounded-full",
+                        "bg-black/40 text-white backdrop-blur-sm",
+                        "hover:bg-black/60 disabled:opacity-50",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
+                      )}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          ),
+        }}
+      />
+    </>
   );
 }
 
-// ── Live-map discovery overlay ───────────────────────────────────────────
-//
-// Ephemeral parking-discovery surface that lives entirely inside the lightbox.
-// State (suggestions, selection) is local — closing the lightbox throws it
-// away. Confirmed pins persist via `confirmParkingPlacesBulkAction` +
-// `router.refresh()`, so on close the cockpit map slide already shows them.
-//
-// Pin click toggles selection. We use the `activeId` highlight to show the
-// most-recently-clicked one and render a compact selected-chips strip in
-// the panel so the operator sees the full multi-selection without needing
-// a new pin variant.
+// ── ThumbnailListShell — shared header + thumbnail list ──────────────────────
+// Used by both MediaManagementPanel and ParkingManagementPanel. The parking
+// variant disables delete and adds a divider below the list (the parking
+// columns sit underneath in the same scroll).
 
-function LiveMapDiscoverySlide({
-  propertyId,
-  anchor,
-  basePins,
-  height,
+function ThumbnailListShell({
+  title,
+  slides,
+  activeSubsystemSlide,
+  onSelect,
+  canDelete = false,
+  confirmingSlideId = null,
+  deletingAssetId = null,
+  onDeleteRequest,
+  onDeleteConfirm,
+  onDeleteCancel,
+  error,
+  borderBelow = false,
 }: {
-  propertyId: string;
-  anchor: { latitude: number; longitude: number };
-  basePins: readonly MultiPinSpec[];
-  height: number;
+  title: string;
+  slides: readonly SubsystemSlide[];
+  activeSubsystemSlide: SubsystemSlide | null;
+  onSelect: (idx: number) => void;
+  canDelete?: boolean;
+  confirmingSlideId?: string | null;
+  deletingAssetId?: string | null;
+  onDeleteRequest?: (slideId: string) => void;
+  onDeleteConfirm?: (assetId: string) => void;
+  onDeleteCancel?: () => void;
+  error?: string | null;
+  borderBelow?: boolean;
 }) {
-  const router = useRouter();
-  const [searching, startSearchTransition] = useTransition();
-  const [mutating, startMutateTransition] = useTransition();
-  const [suggestions, setSuggestions] = useState<ParkingSuggestion[] | null>(
-    null,
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-[var(--color-border-default)] px-3 py-2.5">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-secondary)]">
+          {title}
+        </span>
+      </div>
+      {error && (
+        <div className="border-b border-[var(--color-status-error-border)] bg-[var(--color-status-error-bg)] px-3 py-2">
+          <p className="text-[11px] text-[var(--color-status-error-text)]">{error}</p>
+        </div>
+      )}
+      <div
+        className={cn(
+          "flex flex-col gap-1 p-2",
+          borderBelow && "border-b border-[var(--color-border-default)]",
+        )}
+      >
+        {slides.map((slide, slideIdx) => {
+          const isActive = slide === activeSubsystemSlide;
+          const isConfirming = confirmingSlideId === slide.id;
+          const isDeleting = deletingAssetId === slide.assetId;
+          const rowCanDelete =
+            canDelete && slide.kind !== "live-map" && !deletingAssetId;
+          return (
+            <ThumbnailRow
+              key={slide.id}
+              slide={slide}
+              isActive={isActive}
+              isConfirming={isConfirming}
+              isDeleting={isDeleting}
+              onSelect={() => onSelect(slideIdx)}
+              onDelete={() => onDeleteRequest?.(slide.id)}
+              onConfirmDelete={() => onDeleteConfirm?.(slide.assetId)}
+              onCancelDelete={onDeleteCancel ?? noop}
+              canDelete={rowCanDelete}
+            />
+          );
+        })}
+      </div>
+    </>
   );
-  const [selectedProviderPlaceIds, setSelectedProviderPlaceIds] = useState<
-    Set<string>
-  >(() => new Set());
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+}
 
-  const handleSearch = useCallback(() => {
-    setError(null);
-    setSelectedProviderPlaceIds(new Set());
-    startSearchTransition(async () => {
-      const res = await searchNearbyParkingsAction(propertyId, "es");
-      if (!res.success || !res.data) {
-        setError(res.error ?? "Error desconocido");
-        return;
-      }
-      setSuggestions(res.data.suggestions);
-    });
-  }, [propertyId]);
+// ── MediaManagementPanel (desktop, non-live-map slide) ───────────────────────
 
-  const handlePinClick = useCallback((id: string) => {
-    setActiveId(id);
-    if (!id.startsWith("sug-")) return;
-    const providerPlaceId = id.slice(4);
-    setSelectedProviderPlaceIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(providerPlaceId)) next.delete(providerPlaceId);
-      else next.add(providerPlaceId);
-      return next;
-    });
-  }, []);
-
-  const handleDeselect = useCallback((providerPlaceId: string) => {
-    setSelectedProviderPlaceIds((prev) => {
-      if (!prev.has(providerPlaceId)) return prev;
-      const next = new Set(prev);
-      next.delete(providerPlaceId);
-      return next;
-    });
-  }, []);
-
-  const handleBulkConfirm = useCallback(
-    (feeType: "free" | "paid") => {
-      if (selectedProviderPlaceIds.size === 0 || !suggestions) return;
-      setError(null);
-      const items = suggestions
-        .filter((s) => selectedProviderPlaceIds.has(s.providerPlaceId))
-        .map((s) => ({
-          propertyId,
-          provider: s.provider,
-          providerPlaceId: s.providerPlaceId,
-          name: s.name,
-          latitude: s.latitude,
-          longitude: s.longitude,
-          address: s.address,
-          website: s.website,
-          distanceMeters: s.distanceMeters,
-          providerMetadata: s.providerMetadata,
-        }));
-      if (items.length === 0) return;
-      startMutateTransition(async () => {
-        const res = await confirmParkingPlacesBulkAction({ items, feeType });
-        if (!res.success || !res.data) {
-          setError(res.error ?? "No se pudieron guardar los pines");
-          return;
-        }
-        const consumed = new Set(selectedProviderPlaceIds);
-        for (const id of res.data.skippedProviderPlaceIds) consumed.add(id);
-        setSuggestions((prev) =>
-          prev ? prev.filter((s) => !consumed.has(s.providerPlaceId)) : null,
-        );
-        setSelectedProviderPlaceIds(new Set());
-        // The cockpit cover map reads from props sourced server-side, so
-        // refresh re-fetches the confirmed pins. The lightbox stays open;
-        // the operator continues searching/adding without re-zooming.
-        router.refresh();
-      });
-    },
-    [propertyId, router, selectedProviderPlaceIds, suggestions],
+function MediaManagementPanel({
+  slides,
+  activeSubsystemSlide,
+  mediaCount,
+  confirmingSlideId,
+  deletingAssetId,
+  canDelete,
+  onSelect,
+  onDeleteRequest,
+  onDeleteConfirm,
+  onDeleteCancel,
+  uploadConfig,
+  uploading,
+  uploadError,
+  onUploadClick,
+}: {
+  slides: readonly SubsystemSlide[];
+  activeSubsystemSlide: SubsystemSlide | null;
+  mediaCount: number;
+  confirmingSlideId: string | null;
+  deletingAssetId: string | null;
+  canDelete: boolean;
+  onSelect: (idx: number) => void;
+  onDeleteRequest: (slideId: string) => void;
+  onDeleteConfirm: (assetId: string) => void;
+  onDeleteCancel: () => void;
+  uploadConfig?: { propertyId: string; entityType: MediaEntityType; usageKey: string };
+  uploading: boolean;
+  uploadError: string | null;
+  onUploadClick: () => void;
+}) {
+  return (
+    <>
+      <ThumbnailListShell
+        title={`Media (${mediaCount})`}
+        slides={slides}
+        activeSubsystemSlide={activeSubsystemSlide}
+        onSelect={onSelect}
+        canDelete={canDelete}
+        confirmingSlideId={confirmingSlideId}
+        deletingAssetId={deletingAssetId}
+        onDeleteRequest={onDeleteRequest}
+        onDeleteConfirm={onDeleteConfirm}
+        onDeleteCancel={onDeleteCancel}
+        error={uploadError}
+      />
+      {uploadConfig && (
+        <div className="border-t border-[var(--color-border-default)] p-2">
+          <button
+            type="button"
+            onClick={onUploadClick}
+            disabled={uploading}
+            className={cn(
+              "flex w-full items-center justify-center gap-2 rounded-[8px] px-3 py-2 text-[12px] font-medium",
+              "border border-dashed border-[var(--color-border-default)]",
+              "text-[var(--color-text-secondary)] transition-colors duration-150",
+              "hover:border-[var(--color-action-primary)] hover:text-[var(--color-action-primary)]",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+            )}
+          >
+            {uploading ? (
+              <Loader2 size={14} aria-hidden="true" className="animate-spin" />
+            ) : (
+              <Upload size={14} aria-hidden="true" />
+            )}
+            Añadir foto de portada
+          </button>
+        </div>
+      )}
+    </>
   );
+}
 
-  const mapPins: MultiPinSpec[] = useMemo(() => {
-    const out: MultiPinSpec[] = [...basePins];
-    if (suggestions) {
-      for (const s of suggestions) {
-        out.push({
-          id: `sug-${s.providerPlaceId}`,
-          latitude: s.latitude,
-          longitude: s.longitude,
-          kind: "suggestion",
-          label: s.name,
-        });
-      }
-    }
-    return out;
-  }, [basePins, suggestions]);
+// ── ThumbnailRow (desktop panel) ─────────────────────────────────────────────
 
-  const selectedSuggestions = useMemo(() => {
-    if (!suggestions) return [];
-    return suggestions.filter((s) =>
-      selectedProviderPlaceIds.has(s.providerPlaceId),
-    );
-  }, [suggestions, selectedProviderPlaceIds]);
+function ThumbnailRow({
+  slide,
+  isActive,
+  isConfirming,
+  isDeleting,
+  onSelect,
+  onDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  canDelete,
+}: {
+  slide: SubsystemSlide;
+  isActive: boolean;
+  isConfirming: boolean;
+  isDeleting: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
+  canDelete: boolean;
+}) {
+  const hasImage = slide.kind === "image" || slide.kind === "map";
+  const isMap = slide.kind === "live-map";
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        className={cn(
+          "group flex items-center gap-2 rounded-[8px] p-1.5 transition-colors duration-100",
+          isActive
+            ? "bg-[var(--color-action-primary-subtle)]"
+            : "hover:bg-[var(--color-background-muted)]",
+        )}
+      >
+        {/* Thumbnail */}
+        <button
+          type="button"
+          onClick={onSelect}
+          aria-label={`Ver ${slide.title}`}
+          className={cn(
+            "relative h-12 w-12 flex-none overflow-hidden rounded-[6px]",
+            "bg-[var(--color-background-muted)]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]",
+            isActive && "ring-2 ring-[var(--color-action-primary)]",
+          )}
+        >
+          {hasImage && slide.url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={slide.url}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 h-full w-full select-none object-cover"
+            />
+          ) : isMap ? (
+            <span className="grid h-full w-full place-items-center text-[var(--color-text-secondary)]">
+              <MapPin size={20} aria-hidden="true" />
+            </span>
+          ) : null}
+        </button>
 
-  const selectedCount = selectedSuggestions.length;
-  const busy = searching || mutating;
+        {/* Title */}
+        <button
+          type="button"
+          onClick={onSelect}
+          className={cn(
+            "min-w-0 flex-1 truncate text-left text-[12px] leading-tight",
+            isActive
+              ? "font-semibold text-[var(--color-action-primary)]"
+              : "text-[var(--color-text-primary)]",
+            "focus-visible:outline-none",
+          )}
+        >
+          {slide.title}
+        </button>
+
+        {/* Delete button — only for real media slides */}
+        {canDelete && (
+          <button
+            type="button"
+            aria-label={`Eliminar ${slide.title}`}
+            onClick={onDelete}
+            disabled={isDeleting}
+            className={cn(
+              "flex-none rounded-[6px] p-1",
+              "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-100",
+              "group-hover:opacity-100",
+              "hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)]",
+              "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]",
+              "disabled:cursor-not-allowed disabled:opacity-30",
+            )}
+          >
+            {isDeleting ? (
+              <Loader2 size={14} aria-hidden="true" className="animate-spin" />
+            ) : (
+              <Trash2 size={14} aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </div>
+
+      {isConfirming && (
+        <div className="mx-1.5 flex items-center justify-between gap-2 rounded-[6px] border border-[var(--color-status-error-border)] bg-[var(--color-status-error-bg)] px-2 py-1.5">
+          <span className="text-[11px] font-medium text-[var(--color-status-error-text)]">
+            ¿Eliminar foto?
+          </span>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={onCancelDelete}
+              className="min-h-[44px] rounded px-2 text-[11px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              No
+            </button>
+            <button
+              type="button"
+              onClick={onConfirmDelete}
+              className="min-h-[44px] rounded bg-[var(--color-status-error-text)]/10 px-2 text-[11px] font-semibold text-[var(--color-status-error-text)] hover:bg-[var(--color-status-error-text)]/20"
+            >
+              Sí, borrar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MobileThumbnail (bottom strip) ──────────────────────────────────────────
+
+function MobileThumbnail({
+  slide,
+  isActive,
+  onSelect,
+}: {
+  slide: SubsystemSlide;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const hasImage = slide.kind === "image" || slide.kind === "map";
+  const isLiveMap = slide.kind === "live-map";
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`Ver ${slide.title}`}
+      className={cn(
+        "relative h-16 w-16 flex-none overflow-hidden rounded-[8px]",
+        "bg-[var(--color-background-muted)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]",
+        isActive
+          ? "ring-2 ring-[var(--color-action-primary)] ring-offset-2 ring-offset-[var(--color-background-elevated)]"
+          : "opacity-60 hover:opacity-100",
+      )}
+    >
+      {hasImage && slide.url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={slide.url}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full select-none object-cover"
+        />
+      ) : isLiveMap ? (
+        <span className="grid h-full w-full place-items-center text-[var(--color-text-secondary)]">
+          <MapPin size={22} aria-hidden="true" />
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+// ── ParkingManagementPanel (desktop, live-map slide) ─────────────────────────
+
+/** Side-panel parity with the in-section editor — same ConfirmedRow +
+ * SuggestionRow primitives, same hook (`useParkingManagement`). Map clicks +
+ * manual-pin overlay + relocate chip are rendered next to the map (in the
+ * live-map slide render); the panel owns the lists, the refresh button, the
+ * error banner and the few-results / hidden-count callouts. Stacking is
+ * vertical with a single scroll so operators see both groups without
+ * tabbing. */
+function ParkingManagementPanel({
+  slides,
+  activeSubsystemSlide,
+  mediaCount,
+  onSelect,
+  parkingState,
+}: {
+  slides: readonly SubsystemSlide[];
+  activeSubsystemSlide: SubsystemSlide | null;
+  mediaCount: number;
+  onSelect: (idx: number) => void;
+  parkingState: UseParkingManagementReturn;
+}) {
+  const {
+    places,
+    suggestions,
+    searchMeta,
+    nameOverrides,
+    feeOverrides,
+    refreshing,
+    refresh,
+    setNameOverride,
+    setFeeOverride,
+    confirmOne,
+    hiddenCount,
+    actionError,
+    setActionError,
+    activeId,
+    setActiveId,
+    relocatingId,
+    anyMutating,
+    handleDelete,
+    handleUpdate,
+    handleRelocateRequest,
+  } = parkingState;
 
   return (
-    <div className="absolute inset-0">
-      <MultiPinMap
-        anchor={anchor}
-        pins={mapPins}
-        height={height}
-        interactive={true}
-        activeId={activeId}
-        onPinClick={handlePinClick}
+    <div className="flex flex-1 flex-col overflow-y-auto">
+      <ThumbnailListShell
+        title={`Media (${mediaCount})`}
+        slides={slides}
+        activeSubsystemSlide={activeSubsystemSlide}
+        onSelect={onSelect}
+        borderBelow
       />
-      <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center">
-        <div className="pointer-events-auto flex max-w-full flex-col gap-2 rounded-[12px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3 shadow-[var(--elevation-surface-md)]">
-          {error && <Banner type="danger" message={error} />}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={handleSearch}
-              disabled={busy}
-            >
-              {searching ? (
-                <Loader2
-                  size={14}
-                  aria-hidden="true"
-                  className="animate-spin"
-                />
-              ) : (
-                <Search size={14} aria-hidden="true" />
-              )}
-              {suggestions === null
-                ? "Buscar parkings cercanos"
-                : "Buscar de nuevo"}
-            </Button>
-            {selectedCount > 0 && (
-              <>
-                <span className="text-[12px] text-[var(--color-text-secondary)]">
-                  {selectedCount} seleccionado{selectedCount === 1 ? "" : "s"}
-                </span>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleBulkConfirm("free")}
-                  disabled={mutating}
-                >
-                  Añadir como gratuitos
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => handleBulkConfirm("paid")}
-                  disabled={mutating}
-                >
-                  Añadir como de pago
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedProviderPlaceIds(new Set())}
-                  disabled={mutating}
-                >
-                  Limpiar
-                </Button>
-              </>
-            )}
-          </div>
-          {suggestions !== null && suggestions.length === 0 && (
-            <p className="text-[12px] text-[var(--color-text-subtle)]">
-              Sin resultados cercanos.
-            </p>
-          )}
-          {selectedSuggestions.length > 0 && (
-            <ul className="flex max-w-[760px] flex-wrap gap-1.5">
-              {selectedSuggestions.map((s) => (
-                <li
-                  key={s.providerPlaceId}
-                  className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] px-2 py-0.5 text-[12px] text-[var(--color-text-primary)]"
-                >
-                  <span className="max-w-[180px] truncate">{s.name}</span>
-                  <button
-                    type="button"
-                    aria-label={`Quitar ${s.name} de la selección`}
-                    onClick={() => handleDeselect(s.providerPlaceId)}
-                    disabled={mutating}
-                    className="grid h-4 w-4 place-items-center rounded-full text-[var(--color-text-subtle)] hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
-                  >
-                    <X size={11} aria-hidden="true" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {suggestions !== null && suggestions.length > 0 && selectedCount === 0 && (
-            <p className="text-[12px] text-[var(--color-text-subtle)]">
-              Toca un pin amarillo para seleccionarlo, luego añádelos como
-              gratuitos o de pago.
-            </p>
-          )}
+      <div className="flex flex-col gap-3 p-3">
+      {actionError && (
+        <Banner
+          type="danger"
+          message={actionError}
+          onDismiss={() => setActionError(null)}
+        />
+      )}
+
+      {searchMeta?.warningKey === "few_results" && (
+        <div className="flex items-start gap-2 rounded-[8px] bg-[var(--color-background-subtle)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
+          <AlertTriangle
+            size={14}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--color-status-warning-icon)]"
+          />
+          <span>
+            Pocos resultados — usa el botón + del mapa si conoces uno que falte.
+          </span>
         </div>
+      )}
+
+      <CockpitListColumn label="Añadidos" count={places.length}>
+        {places.length > 0 ? (
+          <ul className="space-y-1">
+            {places.map((p) => (
+              <ConfirmedRow
+                key={p.id}
+                place={p}
+                onRename={(name) => handleUpdate(p.id, { name })}
+                onSetFee={(feeType) => handleUpdate(p.id, { feeType })}
+                onDelete={() => handleDelete(p.id)}
+                onRelocateRequest={() => handleRelocateRequest(p.id)}
+                relocating={relocatingId === p.id}
+                onActivate={() => setActiveId(pinIdForPlace(p.id))}
+                onDeactivate={() =>
+                  setActiveId((id) =>
+                    id === pinIdForPlace(p.id) ? null : id,
+                  )
+                }
+                isActive={activeId === pinIdForPlace(p.id)}
+                disabled={anyMutating}
+              />
+            ))}
+          </ul>
+        ) : (
+          <CockpitEmptyState>
+            Sin pines confirmados. Usa el botón + del mapa para añadir uno manualmente.
+          </CockpitEmptyState>
+        )}
+      </CockpitListColumn>
+
+      <CockpitListColumn
+        label="Sugeridos"
+        count={suggestions.length}
+        action={
+          <RefreshIconButton
+            onClick={refresh}
+            disabled={refreshing || anyMutating}
+            loading={refreshing}
+            tooltip="Refrescar sugerencias"
+          />
+        }
+      >
+        {suggestions.length > 0 ? (
+          <ul className="space-y-1">
+            {suggestions.map((s) => {
+              const displayName = nameOverrides.get(s.providerPlaceId) ?? s.name;
+              const resolvedFee: BinaryFee | null =
+                feeOverrides.get(s.providerPlaceId) ?? s.parkingFee;
+              return (
+                <SuggestionRow
+                  key={s.providerPlaceId}
+                  name={displayName}
+                  address={s.address}
+                  website={s.website}
+                  distanceMeters={s.distanceMeters}
+                  fee={resolvedFee}
+                  onRename={(name) => setNameOverride(s.providerPlaceId, name)}
+                  onToggleFee={() =>
+                    setFeeOverride(s.providerPlaceId, cycleFee(resolvedFee))
+                  }
+                  onAdd={() => confirmOne(s.providerPlaceId)}
+                  onActivate={() =>
+                    setActiveId(pinIdForSuggestion(s.providerPlaceId))
+                  }
+                  onDeactivate={() =>
+                    setActiveId((id) =>
+                      id === pinIdForSuggestion(s.providerPlaceId)
+                        ? null
+                        : id,
+                    )
+                  }
+                  isActive={
+                    activeId === pinIdForSuggestion(s.providerPlaceId)
+                  }
+                  disabled={anyMutating}
+                />
+              );
+            })}
+          </ul>
+        ) : (
+          <CockpitEmptyState>
+            Sin resultados cercanos. Refresca o usa el botón + del mapa.
+          </CockpitEmptyState>
+        )}
+      </CockpitListColumn>
+
+      {hiddenCount > 0 && (
+        <p className="text-[12px] text-[var(--color-text-subtle)]">
+          +{hiddenCount} sugerencias adicionales ocultas tras el cap.
+        </p>
+      )}
       </div>
     </div>
+  );
+}
+
+// ── NavButton / CloseButton ─────────────────────────────────────────────────
+// Custom Lightbox nav/close buttons so all hover affordances in the app render
+// through the shared <Tooltip> primitive (consistent format + Spanish copy).
+// YARL's defaults rely on the native `title` attribute which can't be styled.
+// Hooks live inside the Lightbox provider tree — these components are only
+// rendered via `render.buttonPrev/Next/Close`, never mounted standalone.
+
+const NAV_BUTTON_CLASS = cn(
+  "grid h-11 w-11 place-items-center rounded-full",
+  "bg-black/35 text-white backdrop-blur-sm",
+  "transition-colors duration-150 hover:bg-black/55",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
+  "disabled:cursor-not-allowed disabled:opacity-30",
+);
+
+function NavButton({
+  variant,
+  rightOffsetPx = 0,
+}: {
+  variant: "prev" | "next";
+  /** Extra right padding on desktop so the next button stays clear of the
+   * side panel. Ignored for prev. */
+  rightOffsetPx?: number;
+}) {
+  const { prev, next } = useController();
+  const { prevDisabled, nextDisabled } = useNavigationState();
+  const isPrev = variant === "prev";
+  const label = isPrev ? "Anterior" : "Siguiente";
+  const onClick = isPrev ? prev : next;
+  const disabled = isPrev ? prevDisabled : nextDisabled;
+  const Icon = isPrev ? ChevronLeft : ChevronRight;
+  return (
+    <div
+      style={
+        isPrev
+          ? { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", zIndex: 1 }
+          : { position: "absolute", right: rightOffsetPx + 16, top: "50%", transform: "translateY(-50%)", zIndex: 1 }
+      }
+    >
+      <Tooltip text={label}>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={() => onClick()}
+          disabled={disabled}
+          className={NAV_BUTTON_CLASS}
+        >
+          <Icon size={20} aria-hidden="true" strokeWidth={2} />
+        </button>
+      </Tooltip>
+    </div>
+  );
+}
+
+function CloseButton({ onClose }: { onClose: () => void }) {
+  return (
+    <Tooltip text="Cerrar">
+      <button
+        type="button"
+        aria-label="Cerrar"
+        onClick={onClose}
+        className={NAV_BUTTON_CLASS}
+      >
+        <X size={20} aria-hidden="true" strokeWidth={2} />
+      </button>
+    </Tooltip>
   );
 }

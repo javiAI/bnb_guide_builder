@@ -378,3 +378,30 @@ Tras la auditoría de bundle de 16E-pre (`chore/codebase-simplify-comprehensive`
 **Scope**: refactor del `AmenitiesEditor` cliente + posiblemente un cambio de UX (tabs vs scroll vertical). No es un swap mecánico — toca decisión de producto.
 
 **Por qué no se hace en 16E-pre**: 16E-pre es cleanup sin cambios visuales (restricción explícita). Ambos splits requieren tocar UX (skeleton del editor / introducir tabs), fuera del alcance de "código muerto + duplicación + perf trivial".
+
+---
+
+## 19. Node.js 18 → 20 LTS upgrade
+
+**Estado**: diferido — **deadline AWS SDK ya cumplido** (enero 2026).
+**Urgencia**: alta. AWS SDK v3 (`@aws-sdk/*`, usado por R2 storage en `src/lib/storage/r2.ts`) ya no se compromete a soportar Node 18 ni a publicar security patches del SDK con esa versión. El runtime sigue funcionando hoy, pero cualquier CVE futuro en el SDK no se parcheará para Node 18.
+
+### Contexto
+
+Hoy el dev local corre sobre `Node 18.20.5` (referencia en `CLAUDE.md` § "Entorno y comandos": `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx`). El SDK emite un `NodeDeprecationWarning` en cada arranque. Lo silenciamos quirúrgicamente en [src/instrumentation.ts](../src/instrumentation.ts) — solo el warning de `@aws-sdk`, el resto siguen visibles. Es parche, no fix.
+
+### Pasos del upgrade real
+
+1. `nvm install 20 && nvm use 20` (LTS actual: 20.x).
+2. Actualizar la ruta literal `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx` en `CLAUDE.md` § "Entorno y comandos" a la 20.x correspondiente. (También buscar otras referencias a `v18.20.5` en docs/scripts).
+3. `engines.node` en `package.json` si lo añadimos (hoy no está fijado).
+4. Borrar el filtro de warnings en `src/instrumentation.ts` (el archivo entero si no añadimos más hooks). El warning ya no se emitirá con Node 20.
+5. Verificar: `npm run dev`, `npm run build`, `npx vitest run`, suite E2E. Especial atención a `@prisma/client` (suele requerir regenerar) y a cualquier nativo (`sharp`, etc.) que necesite rebuild.
+
+### Trigger para implementar
+
+**Hacer ya** — el deadline pasó en enero 2026 (hoy es mayo 2026). Programar una PR aislada `chore/node-20-upgrade` a la mayor brevedad. Cualquier otra dependencia que en el futuro requiera Node 20+ (ej. nuevas mayores de Prisma, Next.js 16, etc.) sólo refuerza la urgencia.
+
+### Por qué no se hace inline en la rama actual
+
+Cambio de runtime = superficie de regresión grande (rebuild de nativos, refresco de cachés, posible incompatibilidad de versiones de dependencias). Mejor PR aislada con su propia validación, no mezclada con trabajo Liora en curso.

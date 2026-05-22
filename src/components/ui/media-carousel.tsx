@@ -1,24 +1,18 @@
 "use client";
 
-import { Expand, Loader2, Plus, Video } from "lucide-react";
+import { Expand, Loader2, Plus, Video, ZoomIn } from "lucide-react";
 import {
   useCallback,
+  useMemo,
   useRef,
   useState,
-  type ChangeEvent,
   type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
-import {
-  assignMediaAction,
-  confirmUploadAction,
-  deleteMediaAction,
-  requestUploadAction,
-} from "@/lib/actions/media.actions";
+import { useMediaUpload } from "@/hooks/use-media-upload";
 import type { MediaEntityType } from "@/lib/schemas/editor.schema";
 
 // ── Slide types ──────────────────────────────────────────────────────────
@@ -70,16 +64,16 @@ export interface MediaCarouselProps {
   placeholderGradient?: string;
   /** Click on the cover (collapsed variant) — typically expands the card. */
   onExpand?: () => void;
-  /** Click on the cover (active variant) — typically collapses the card.
-   *  When set, the active variant gets a full-overlay click target so any
-   *  click on the image area (excluding the lightbox button + dots) collapses
-   *  the card. Mirrors the collapsed variant's expand-overlay pattern. */
-  onCollapse?: () => void;
   /** When set, a hover-revealed Expand icon appears top-right on the media
    *  area; clicking it requests the lightbox to open at the current slide
-   *  index. Stops propagation so it doesn't trigger the cover expand/collapse
-   *  button beneath it. */
+   *  index. In the active variant, clicking the cover overlay also opens
+   *  the lightbox (collapse lives on the title chip in the parent shell). */
   onLightboxOpen?: (idx: number) => void;
+  /** Promote the lightbox button to always-visible (no hover gate) — mirrors
+   *  the always-on ZoomIn affordance on `MultiPinMap`. Use for hero surfaces
+   *  where the operator should never have to discover the expand action.
+   *  Defaults to false (hover-revealed on fine pointers, always-on coarse). */
+  lightboxButtonAlwaysVisible?: boolean;
   /** `aria-controls` target for the cover-expand button (collapsed only). */
   bodyId?: string;
   /** Controlled active-slide index. When provided together with
@@ -88,7 +82,7 @@ export interface MediaCarouselProps {
    *  collapsed and active branches render two `<MediaCarousel>` instances
    *  and the user expects the slide they were viewing to stay put). */
   currentIdx?: number;
-  onCurrentIdxChange?: (idx: number) => void;
+  onCurrentIdxChange?: (next: number | ((prev: number) => number)) => void;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -113,37 +107,44 @@ export function MediaCarousel({
   uploadUsageKey,
   placeholderGradient,
   onExpand,
-  onCollapse,
   onLightboxOpen,
+  lightboxButtonAlwaysVisible = false,
   bodyId,
   currentIdx: controlledIdx,
   onCurrentIdxChange,
 }: MediaCarouselProps) {
-  const router = useRouter();
   const [uncontrolledIdx, setUncontrolledIdx] = useState(0);
   const isControlled = controlledIdx !== undefined && onCurrentIdxChange !== undefined;
   const currentIdx = isControlled ? controlledIdx : uncontrolledIdx;
   const setCurrentIdx = useCallback(
     (next: number | ((prev: number) => number)) => {
       if (isControlled) {
-        const value =
-          typeof next === "function"
-            ? (next as (prev: number) => number)(controlledIdx)
-            : next;
-        onCurrentIdxChange(value);
+        onCurrentIdxChange(next);
       } else {
         setUncontrolledIdx(next);
       }
     },
-    [isControlled, controlledIdx, onCurrentIdxChange],
+    [isControlled, onCurrentIdxChange],
   );
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const uploadConfig = useMemo(
+    () => ({
+      propertyId,
+      entityType: uploadEntityType,
+      usageKey: uploadUsageKey,
+    }),
+    [propertyId, uploadEntityType, uploadUsageKey],
+  );
+  const {
+    fileInputRef,
+    uploading,
+    error: uploadError,
+    triggerFilePicker,
+    onFileChange: handleFileChange,
+  } = useMediaUpload(uploadConfig);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const trackContainerRef = useRef<HTMLDivElement>(null);
   const pointerStartXRef = useRef<number | null>(null);
   const pointerStartYRef = useRef<number>(0);
@@ -158,67 +159,12 @@ export function MediaCarousel({
   const heightPx = variant === "active" ? 240 : 140;
   const placeholderBg = placeholderGradient ?? PLACEHOLDER_DEFAULT_GRADIENT;
 
-  // ── Upload flow (request → PUT to R2 → confirm → assign) ──────────────
   const handleAddCoverClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      if (uploading) return;
-      setUploadError(null);
-      fileInputRef.current?.click();
+      triggerFilePicker();
     },
-    [uploading],
-  );
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError(null);
-      let assetId: string | null = null;
-      try {
-        const req = await requestUploadAction(propertyId, file.name, file.type);
-        if (!req.success || !req.data) {
-          setUploadError(req.error ?? "Error al preparar la subida");
-          return;
-        }
-        assetId = req.data.assetId;
-        const put = await fetch(req.data.uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!put.ok) {
-          setUploadError(`Subida falló (${put.status})`);
-          deleteMediaAction(assetId).catch(() => {});
-          return;
-        }
-        const confirm = await confirmUploadAction(assetId);
-        if (!confirm.success) {
-          setUploadError(confirm.error ?? "Error al verificar");
-          return;
-        }
-        const assign = await assignMediaAction(
-          assetId,
-          uploadEntityType,
-          propertyId,
-          uploadUsageKey,
-        );
-        if (!assign.success) {
-          setUploadError(assign.error ?? "Error al asignar");
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Error desconocido");
-        if (assetId) deleteMediaAction(assetId).catch(() => {});
-      } finally {
-        setUploading(false);
-      }
-    },
-    [propertyId, uploadEntityType, uploadUsageKey, router],
+    [triggerFilePicker],
   );
 
   // ── Dot keyboard navigation ───────────────────────────────────────────
@@ -339,14 +285,6 @@ export function MediaCarousel({
     onExpand?.();
   }, [onExpand]);
 
-  const handleCollapseClick = useCallback(() => {
-    if (swipedRef.current) {
-      swipedRef.current = false;
-      return;
-    }
-    onCollapse?.();
-  }, [onCollapse]);
-
   const handleLightboxClick = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
@@ -358,6 +296,17 @@ export function MediaCarousel({
     },
     [onLightboxOpen, safeIdx],
   );
+
+  // Active variant: clicking anywhere on the cover opens the lightbox (the
+  // title chip in the parent shell collapses the card). Same swipe-suppression
+  // dance as the collapsed-variant expand handler.
+  const handleActiveCoverClick = useCallback(() => {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    onLightboxOpen?.(safeIdx);
+  }, [onLightboxOpen, safeIdx]);
 
   // ── Slide content renderer ────────────────────────────────────────────
   const renderSlideContent = (slide: MediaCarouselSlide, index: number) => {
@@ -407,9 +356,12 @@ export function MediaCarousel({
           aria-hidden="true"
           tabIndex={-1}
         />
-        {/* Cover expand overlay (collapsed only) — clicking the empty gradient
-           expands the card. Sits below the upload button via z-index, so a
-           click on "Añade portada" still uploads (e.stopPropagation on it). */}
+        {/* Cover overlay (collapsed only) — clicking the empty gradient expands
+           the card. Sits below the upload button via z-index, so a click on
+           "Añade portada" still uploads (e.stopPropagation on it). The active
+           variant has no overlay here: with 0 slides there's nothing to open
+           in the lightbox, and the title chip in the parent shell handles
+           collapse. */}
         {variant === "collapsed" && onExpand && (
           <button
             type="button"
@@ -520,15 +472,15 @@ export function MediaCarousel({
         />
       )}
 
-      {/* Active-variant collapse overlay — clicking anywhere on the cover
-         collapses the card. Mirrors the collapsed expand-overlay so the cover
-         remains the primary interaction target across both branches. */}
-      {variant === "active" && onCollapse && (
+      {/* Active-variant cover overlay — clicking anywhere on the cover opens
+         the lightbox at the current slide. Collapse lives on the title chip
+         in the parent shell, so the cover is dedicated to "expand this media
+         to manage it". Mirrors the collapsed expand-overlay topology. */}
+      {variant === "active" && onLightboxOpen && (
         <button
           type="button"
-          aria-label={`Cerrar ${title}`}
-          aria-expanded={true}
-          onClick={handleCollapseClick}
+          aria-label={`Ampliar media de ${title}`}
+          onClick={handleActiveCoverClick}
           className={cn(
             "absolute inset-0 z-[2] block h-full w-full text-left",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
@@ -536,28 +488,36 @@ export function MediaCarousel({
         />
       )}
 
-      {/* Hover-revealed lightbox button — sits above both expand/collapse
-         overlays (z-[3]) and stops click propagation so it doesn't trigger
-         the cover button beneath. Visible on hover (fine pointer) and always
-         visible on coarse pointer where hover is unreliable. */}
-      {onLightboxOpen && (
-        <button
-          type="button"
-          aria-label={`Ampliar media de ${title}`}
-          onClick={handleLightboxClick}
-          className={cn(
-            "absolute right-2 top-2 z-[3] grid h-9 w-9 place-items-center rounded-full",
-            "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]",
-            "opacity-0 transition-opacity duration-150 group-hover/cover:opacity-100 focus-visible:opacity-100",
-            "[@media(pointer:coarse)]:opacity-100",
-            "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
-            "before:absolute before:inset-[-4px] before:content-['']",
-          )}
-        >
-          <Expand size={16} aria-hidden="true" />
-        </button>
-      )}
+      {/* Lightbox button — sits above both expand/collapse overlays (z-[3])
+         and stops click propagation so it doesn't trigger the cover button
+         beneath. Hover-revealed on fine pointer, always visible on coarse
+         pointer where hover is unreliable. The glyph swaps to ZoomIn when
+         the current slide is a custom one (e.g. live map) so the affordance
+         reads as "ampliar mapa" rather than a generic expand. */}
+      {onLightboxOpen && (() => {
+        const Icon = slides[safeIdx]?.kind === "custom" ? ZoomIn : Expand;
+        return (
+          <button
+            type="button"
+            aria-label={`Ampliar media de ${title}`}
+            onClick={handleLightboxClick}
+            className={cn(
+              "absolute right-2 top-2 z-[3] grid h-9 w-9 place-items-center rounded-full",
+              "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]",
+              "transition-opacity duration-150 focus-visible:opacity-100",
+              "[@media(pointer:coarse)]:opacity-100",
+              lightboxButtonAlwaysVisible
+                ? "opacity-100"
+                : "opacity-0 group-hover/cover:opacity-100",
+              "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+              "before:absolute before:inset-[-4px] before:content-['']",
+            )}
+          >
+            <Icon size={16} aria-hidden="true" />
+          </button>
+        );
+      })()}
 
       {slides.length > 1 && (
         <div
@@ -576,7 +536,10 @@ export function MediaCarousel({
                   type="button"
                   aria-current={isActive ? "true" : undefined}
                   aria-label={`Mostrar ${slide.title}`}
-                  onClick={() => setCurrentIdx(i)}
+                  onClick={() => {
+                    if (swipedRef.current) { swipedRef.current = false; return; }
+                    setCurrentIdx(i);
+                  }}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
                     "recipe-dot-pagination grid flex-none place-items-center rounded-full p-0.5",

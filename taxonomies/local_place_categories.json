@@ -69,6 +69,54 @@
       "recommended": false
     },
     {
+      "id": "lp.arrival_train",
+      "label": "Estación de tren",
+      "description": "Estaciones de tren cercanas, opción de llegada para el huésped.",
+      "guestLabel": "Estación de tren",
+      "icon": "TrainFront",
+      "recommended": false
+    },
+    {
+      "id": "lp.arrival_bus",
+      "label": "Parada o estación de autobús",
+      "description": "Paradas y estaciones de autobús cercanas, opción de llegada para el huésped.",
+      "guestLabel": "Autobús",
+      "icon": "Bus",
+      "recommended": false
+    },
+    {
+      "id": "lp.arrival_airport",
+      "label": "Aeropuerto",
+      "description": "Aeropuertos cercanos, opción de llegada para el huésped.",
+      "guestLabel": "Aeropuerto",
+      "icon": "Plane",
+      "recommended": false
+    },
+    {
+      "id": "lp.arrival_metro",
+      "label": "Estación de metro",
+      "description": "Estaciones de metro cercanas a la propiedad, recurso de última milla para el huésped.",
+      "guestLabel": "Metro",
+      "icon": "TramFront",
+      "recommended": false
+    },
+    {
+      "id": "lp.arrival_taxi",
+      "label": "Parada de taxi",
+      "description": "Paradas de taxi cercanas a la propiedad, recurso de última milla para el huésped.",
+      "guestLabel": "Taxi",
+      "icon": "Car",
+      "recommended": false
+    },
+    {
+      "id": "lp.arrival_urban_bus",
+      "label": "Parada de bus urbano",
+      "description": "Paradas de autobús urbano cercanas a la propiedad, recurso de última milla para el huésped.",
+      "guestLabel": "Bus urbano",
+      "icon": "Bus",
+      "recommended": false
+    },
+    {
       "id": "lp.attraction",
       "label": "Atracción",
       "description": "Atracciones turísticas, monumentos y puntos de interés.",

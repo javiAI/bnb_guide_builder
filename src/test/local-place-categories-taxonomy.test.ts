@@ -25,9 +25,24 @@ const LEGACY_CATEGORY_KEYS = [
   "other",
 ] as const;
 
+// Arrival-mode categories added in 16E.6 to back the unified "Cómo llegar"
+// cockpit card. Split into intercity (S02 — how to reach the city) and last
+// mile (S03 — how to reach the property from a hub or city center). Distinct
+// from the generic `lp.transport` (local-guide browse).
+const ARRIVAL_MODE_CATEGORY_KEYS = [
+  "lp.arrival_train",
+  "lp.arrival_bus",
+  "lp.arrival_airport",
+  "lp.arrival_metro",
+  "lp.arrival_taxi",
+  "lp.arrival_urban_bus",
+] as const;
+
 describe("local_place_categories.json", () => {
   it("loads and exposes all canonical categories", () => {
-    expect(localPlaceCategories.items.length).toBe(LEGACY_CATEGORY_KEYS.length);
+    expect(localPlaceCategories.items.length).toBe(
+      LEGACY_CATEGORY_KEYS.length + ARRIVAL_MODE_CATEGORY_KEYS.length,
+    );
   });
 
   it("prefixes every id with `lp.`", () => {
@@ -52,6 +67,13 @@ describe("local_place_categories.json", () => {
     for (const key of LEGACY_CATEGORY_KEYS) {
       const entry = findLocalPlaceCategory(`lp.${key}`);
       expect(entry, `missing lp.${key}`).toBeDefined();
+    }
+  });
+
+  it("registers every arrival-mode category (16E.6)", () => {
+    for (const key of ARRIVAL_MODE_CATEGORY_KEYS) {
+      const entry = findLocalPlaceCategory(key);
+      expect(entry, `missing ${key}`).toBeDefined();
     }
   });
 

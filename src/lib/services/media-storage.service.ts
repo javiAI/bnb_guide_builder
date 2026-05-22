@@ -80,6 +80,22 @@ export const ALLOWED_MEDIA: Record<string, number> = {
 
 let _client: S3Client | null = null;
 
+// AWS SDK v3 emits a noisy `process.emitWarning` on Node < 20. Locally we
+// run Node 18 LTS and the warning floods the dev console even though the
+// client works. Suppress just that warning name without muting others.
+let _awsWarnFilterInstalled = false;
+function installAwsNodeVersionWarningFilter() {
+  if (_awsWarnFilterInstalled) return;
+  _awsWarnFilterInstalled = true;
+  const original = process.emitWarning.bind(process);
+  process.emitWarning = ((warning: unknown, ...rest: unknown[]) => {
+    const msg = typeof warning === "string" ? warning : (warning as Error)?.message ?? "";
+    if (msg.includes("Node.js") && msg.includes("LTS")) return;
+    // @ts-expect-error — passthrough
+    return original(warning, ...rest);
+  }) as typeof process.emitWarning;
+}
+
 export function getS3Client(): S3Client {
   if (_client) return _client;
   const cfg = getR2Config();
@@ -88,6 +104,7 @@ export function getS3Client(): S3Client {
       "Missing R2 env vars. Required: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET",
     );
   }
+  installAwsNodeVersionWarningFilter();
   _client = new S3Client({
     region: "auto",
     endpoint: `https://${cfg.accountId}.r2.cloudflarestorage.com`,

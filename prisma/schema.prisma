@@ -122,6 +122,24 @@ model Property {
   // toggle is operator-controlled and only meaningful once at least one pin
   // exists; the page renders the map slide conditionally on both flag + pins.
   parkingMapInCover       Boolean  @default(false) @map("parking_map_in_cover")
+  // Cached parking discovery results — array of `ParkingSuggestion` JSON
+  // payloads keyed by `(latitude, longitude)`. The cockpit renders these on
+  // first paint so the operator never sees an empty Sugeridos column on a
+  // property with valid coords. Invalidated (NULLed) when lat/lng changes;
+  // refreshed on demand via the cockpit "Refrescar sugerencias" link.
+  parkingSuggestionsCacheJson Json?    @map("parking_suggestions_cache_json")
+  parkingSuggestionsCachedAt  DateTime? @map("parking_suggestions_cached_at")
+  // Cached arrival-mode discovery results — `Partial<Record<ArrivalMode,
+  // ArrivalSuggestion[]>>`. Mirrors the parking cache but keyed by mode so a
+  // single column covers all 5 transit modes. The operator refreshes per mode
+  // via the icon-only button on the "Sugeridos" column. NULLed by saveProperty
+  // alongside the parking cache when coords could have shifted.
+  arrivalSuggestionsCacheJson Json?    @map("arrival_suggestions_cache_json")
+  // Per-mode enable/disable for the unified "Cómo llegar" cockpit card. Shape:
+  // `Partial<Record<"parking"|"train"|"bus"|"airport", boolean>>` — the four
+  // intercity modes. Absent / null = defaults (parking follows hasParking;
+  // others default off).
+  arrivalModesEnabledJson Json?    @map("arrival_modes_enabled_json")
   infrastructureJson      Json?    @map("infrastructure_json")
   publicSlug              String?  @unique @map("public_slug")
   brandLogoUrl            String?  @map("brand_logo_url")
@@ -478,6 +496,14 @@ model LocalPlace {
   provider         String?
   providerPlaceId  String?         @map("provider_place_id")
   providerMetadata Json?           @map("provider_metadata")
+  // Operator-marked recommended option within its arrival mode (lp.arrival_*).
+  // Only surfaced in UI when ≥2 enabled options exist in the same mode.
+  isRecommended    Boolean         @default(false) @map("is_recommended")
+  // Operator-edited tariff for paid arrival options (e.g. paid parking).
+  // Shape: `{ amount: number, currency: "EUR"|"USD"|..., per: "hour"|"day"|"month", note?: string }`.
+  // Separate from `providerMetadata` (provider-emitted data) to keep operator
+  // config and external data cleanly partitioned.
+  rateJson         Json?           @map("rate_json")
   verifiedAt       DateTime?       @map("verified_at")
   visibility       VisibilityLevel @default(guest)
   createdAt        DateTime        @default(now()) @map("created_at")

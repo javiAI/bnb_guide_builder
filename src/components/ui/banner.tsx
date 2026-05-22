@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { Icon, type IconName } from "./icon";
 
 type BannerType = "info" | "warning" | "danger";
@@ -29,9 +30,11 @@ const typeConfig: Record<
 interface BannerProps {
   type: BannerType;
   message: string;
+  /** When provided, renders a dismiss (X) button on the right that calls this. */
+  onDismiss?: () => void;
 }
 
-export function Banner({ type, message }: BannerProps) {
+export function Banner({ type, message, onDismiss }: BannerProps) {
   const { bg, border, icon, iconTone } = typeConfig[type];
   return (
     <div
@@ -40,7 +43,17 @@ export function Banner({ type, message }: BannerProps) {
       role="alert"
     >
       <Icon name={icon} tone={iconTone} size="md" style={{ marginTop: "1px", flexShrink: 0 }} />
-      <span className="text-sm">{message}</span>
+      <span className="flex-1 text-sm">{message}</span>
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Cerrar aviso"
+          className="recipe-icon-btn-32 -mr-1 grid shrink-0 self-center place-items-center text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
+      )}
     </div>
   );
 }

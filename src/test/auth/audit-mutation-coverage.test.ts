@@ -12,6 +12,11 @@ import { join } from "node:path";
  * that's the point. A blanket AST scan over every prisma.*.create / update /
  * delete in the codebase produces too many false positives (cross-row
  * housekeeping, internal denormalizations) to be useful as a gate.
+ *
+ * Audited delegates: a small whitelist of helper names (`AUDITED_DELEGATES`)
+ * is treated as equivalent to a direct `writeAudit()` call. Each entry is a
+ * helper that itself emits `writeAudit()` internally — pinned by a second
+ * assertion below. Adding to the whitelist requires the same proof.
  */
 
 const ROOT = process.cwd();
@@ -44,12 +49,21 @@ const TARGETS: Target[] = [
   {
     path: "src/lib/actions/parking.actions.ts",
     required: [
-      "confirmParkingPlaceAction",
       "confirmParkingPlacesBulkAction",
       "addManualParkingPlaceAction",
       "updateParkingPlaceAction",
       "deleteParkingPlaceAction",
-      "setParkingMapInCoverAction",
+    ],
+  },
+  {
+    path: "src/lib/actions/arrival.actions.ts",
+    required: [
+      "confirmArrivalOptionsBulkAction",
+      "addManualArrivalOptionAction",
+      "updateArrivalOptionAction",
+      "deleteArrivalOptionAction",
+      "setArrivalModeEnabledAction",
+      "setArrivalOptionRateAction",
     ],
   },
   {
@@ -92,12 +106,40 @@ function extractFunctionBody(src: string, name: string): string | null {
   return null;
 }
 
+/** Helpers known to emit `writeAudit()` internally. A function in `TARGETS`
+ * may delegate to one of these in place of a literal `writeAudit()` call,
+ * because the audit still happens on the same logical path — the test below
+ * pins each delegate by checking the helper source contains `writeAudit(`
+ * + the required audit-service imports. */
+const AUDITED_DELEGATES: ReadonlyArray<{ name: string; path: string }> = [
+  {
+    name: "bulkConfirmPlaces",
+    path: "src/lib/services/places/bulk-confirm-places.ts",
+  },
+];
+
+function bodyHasAudit(body: string): boolean {
+  const stripped = stripComments(body);
+  if (/writeAudit\s*\(/.test(stripped)) return true;
+  for (const d of AUDITED_DELEGATES) {
+    if (new RegExp(`\\b${d.name}\\s*\\(`).test(stripped)) return true;
+  }
+  return false;
+}
+
 describe("audit mutation coverage invariants", () => {
   for (const target of TARGETS) {
-    it(`${target.path} — every required function calls writeAudit()`, () => {
+    it(`${target.path} — every required function calls writeAudit() (directly or via an audited delegate)`, () => {
       const full = join(ROOT, target.path);
       const src = readFileSync(full, "utf-8");
-      expect(src).toMatch(/writeAudit\b/);
+      // Either the file directly imports writeAudit OR it imports a known
+      // audited delegate — same contract, different surface.
+      const referencesAuditPath =
+        /writeAudit\b/.test(src) ||
+        AUDITED_DELEGATES.some((d) =>
+          new RegExp(`\\b${d.name}\\b`).test(src),
+        );
+      expect(referencesAuditPath).toBe(true);
 
       const offenders: string[] = [];
       for (const name of target.required) {
@@ -106,22 +148,47 @@ describe("audit mutation coverage invariants", () => {
           offenders.push(`${name} (function not found in ${target.path})`);
           continue;
         }
-        if (!/writeAudit\s*\(/.test(stripComments(body))) {
-          offenders.push(`${name} (no writeAudit() call)`);
+        if (!bodyHasAudit(body)) {
+          offenders.push(
+            `${name} (no writeAudit() call and no audited delegate)`,
+          );
         }
       }
       expect(offenders).toEqual([]);
     });
   }
 
-  it("all targets import writeAudit + formatActor + AUDIT_ACTIONS", () => {
+  it("all targets reference the audit path (writeAudit directly or an audited delegate)", () => {
     const offenders: string[] = [];
     for (const target of TARGETS) {
       const full = join(ROOT, target.path);
       const src = readFileSync(full, "utf-8");
-      const importsAll =
+      const directImports =
         /writeAudit/.test(src) && /formatActor/.test(src) && /AUDIT_ACTIONS/.test(src);
-      if (!importsAll) offenders.push(target.path);
+      const delegateImport = AUDITED_DELEGATES.some((d) =>
+        new RegExp(`\\b${d.name}\\b`).test(src),
+      );
+      if (!directImports && !delegateImport) offenders.push(target.path);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("every audited delegate emits writeAudit() + imports formatActor + AUDIT_ACTIONS", () => {
+    const offenders: string[] = [];
+    for (const d of AUDITED_DELEGATES) {
+      const full = join(ROOT, d.path);
+      const src = readFileSync(full, "utf-8");
+      if (!/writeAudit\s*\(/.test(stripComments(src))) {
+        offenders.push(`${d.path} (delegate missing writeAudit() call)`);
+        continue;
+      }
+      if (
+        !/writeAudit/.test(src) ||
+        !/formatActor/.test(src) ||
+        !/AUDIT_ACTIONS/.test(src)
+      ) {
+        offenders.push(`${d.path} (delegate missing audit-service imports)`);
+      }
     }
     expect(offenders).toEqual([]);
   });

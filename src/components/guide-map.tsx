@@ -9,6 +9,8 @@ import type { GuideMapData, GuideMapPin } from "@/lib/types/guide-map";
 import { escapeHtml } from "@/lib/utils/html-escape";
 import { formatDistance } from "@/lib/services/places";
 import { distanceBucketLabel } from "@/lib/services/places/distance-bucket";
+import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
+import { buildCirclePolygon } from "@/lib/utils/geo";
 
 type FilterMode = "all" | "places" | "events";
 
@@ -16,8 +18,6 @@ interface Props {
   data: GuideMapData;
 }
 
-const METERS_PER_DEG_LAT = 111320;
-const CIRCLE_SEGMENTS = 64;
 const ZONE_SOURCE_ID = "guide-zone";
 const ZONE_FILL_LAYER_ID = "guide-zone-fill";
 const ZONE_LINE_LAYER_ID = "guide-zone-line";
@@ -32,8 +32,7 @@ export function GuideMap({ data }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const [styleUrl, setStyleUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { styleUrl, error } = useTilesStyleUrl();
   const [mode, setMode] = useState<FilterMode>("all");
 
   // Memoed because it gates an imperative `useEffect` below — a new array
@@ -52,26 +51,6 @@ export function GuideMap({ data }: Props) {
 
   const placeCount = places.length;
   const eventCount = events.length;
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/geo/tiles-config")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((body) => {
-        if (cancelled) return;
-        if (typeof body.styleUrl === "string") setStyleUrl(body.styleUrl);
-        else setError("Mapa no disponible");
-      })
-      .catch(() => {
-        if (!cancelled) setError("Mapa no disponible");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Initialize map (once per styleUrl). Reacting to anchor/pins happens in
   // the separate effects below — rebuilding the map on data changes would
@@ -299,9 +278,8 @@ function drawAnchorZone(map: maplibregl.Map, data: GuideMapData) {
         : null;
   if (zoneRadiusMeters == null) return;
 
-  const circle = buildCircleGeoJSON(
-    data.anchor.lat,
-    data.anchor.lng,
+  const circle = buildCirclePolygon(
+    { latitude: data.anchor.lat, longitude: data.anchor.lng },
     zoneRadiusMeters,
   );
   map.addSource(ZONE_SOURCE_ID, { type: "geojson", data: circle });
@@ -317,30 +295,6 @@ function drawAnchorZone(map: maplibregl.Map, data: GuideMapData) {
     source: ZONE_SOURCE_ID,
     paint: { "line-color": "#4f46e5", "line-width": 2, "line-opacity": 0.6 },
   });
-}
-
-function buildCircleGeoJSON(
-  lat: number,
-  lng: number,
-  radiusMeters: number,
-): GeoJSON.Feature<GeoJSON.Polygon> {
-  const metersPerDegLngHere =
-    METERS_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180);
-  const coords: [number, number][] = [];
-  for (let i = 0; i < CIRCLE_SEGMENTS; i++) {
-    const theta = (i / CIRCLE_SEGMENTS) * 2 * Math.PI;
-    const offsetEast = radiusMeters * Math.cos(theta);
-    const offsetNorth = radiusMeters * Math.sin(theta);
-    const dLat = offsetNorth / METERS_PER_DEG_LAT;
-    const dLng = metersPerDegLngHere === 0 ? 0 : offsetEast / metersPerDegLngHere;
-    coords.push([lng + dLng, lat + dLat]);
-  }
-  coords.push(coords[0]);
-  return {
-    type: "Feature",
-    geometry: { type: "Polygon", coordinates: [coords] },
-    properties: {},
-  };
 }
 
 function buildPinElement(pin: GuideMapPin): HTMLButtonElement {

@@ -1,16 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useMemo, type MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Check, Loader2, Star, Upload } from "lucide-react";
-import {
-  assignMediaAction,
-  confirmUploadAction,
-  deleteMediaAction,
-  requestUploadAction,
-} from "@/lib/actions/media.actions";
 import { cn } from "@/lib/cn";
+import { useSubsystemLightbox } from "./subsystem-card";
+import { useMediaUpload } from "@/hooks/use-media-upload";
 
 interface MethodRowProps {
   id: string;
@@ -47,6 +42,7 @@ interface MethodRowProps {
   mediaPreview?: {
     count: number;
     firstUrl?: string;
+    secondUrl?: string;
   };
 }
 
@@ -70,16 +66,33 @@ export function MethodRow({
   mediaUpload,
   mediaPreview,
 }: MethodRowProps) {
-  const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const openLightbox = useSubsystemLightbox();
+  const uploadConfig = useMemo(
+    () =>
+      mediaUpload
+        ? {
+            propertyId: mediaUpload.propertyId,
+            entityType: "access_method" as const,
+            usageKey: mediaUpload.usageKey,
+          }
+        : null,
+    [mediaUpload],
+  );
+  const {
+    fileInputRef,
+    uploading,
+    error: uploadError,
+    setError: setUploadError,
+    triggerFilePicker,
+    onFileChange: handleFileChange,
+  } = useMediaUpload(uploadConfig);
 
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
   const showUpload = mediaUpload !== undefined && selected;
   const mediaCount = mediaPreview?.count ?? 0;
   const previewUrl = mediaPreview?.firstUrl;
+  const secondPreviewUrl = mediaPreview?.secondUrl;
   const hasMedia = mediaCount > 0;
   const hasThumbnail = hasMedia && Boolean(previewUrl);
 
@@ -87,62 +100,13 @@ export function MethodRow({
     (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       if (uploading) return;
-      setUploadError(null);
-      fileInputRef.current?.click();
-    },
-    [uploading],
-  );
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file || !mediaUpload) return;
-
-      setUploading(true);
-      setUploadError(null);
-      let assetId: string | null = null;
-      try {
-        const req = await requestUploadAction(mediaUpload.propertyId, file.name, file.type);
-        if (!req.success || !req.data) {
-          setUploadError(req.error ?? "Error al preparar la subida");
-          return;
-        }
-        assetId = req.data.assetId;
-        const put = await fetch(req.data.uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!put.ok) {
-          setUploadError(`Subida falló (${put.status})`);
-          deleteMediaAction(assetId).catch(() => {});
-          return;
-        }
-        const confirm = await confirmUploadAction(assetId);
-        if (!confirm.success) {
-          setUploadError(confirm.error ?? "Error al verificar");
-          return;
-        }
-        const assign = await assignMediaAction(
-          assetId,
-          "access_method",
-          mediaUpload.propertyId,
-          mediaUpload.usageKey,
-        );
-        if (!assign.success) {
-          setUploadError(assign.error ?? "Error al asignar");
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Error desconocido");
-        if (assetId) deleteMediaAction(assetId).catch(() => {});
-      } finally {
-        setUploading(false);
+      if (mediaCount > 0 && openLightbox && mediaUpload) {
+        openLightbox(mediaUpload.usageKey);
+        return;
       }
+      triggerFilePicker();
     },
-    [mediaUpload, router],
+    [uploading, mediaCount, openLightbox, mediaUpload, triggerFilePicker],
   );
 
   // Per-row view-transition-name lets the browser FLIP-animate primary swap
@@ -251,41 +215,60 @@ export function MethodRow({
             {uploading ? (
               <Loader2 size={18} aria-hidden="true" className="animate-spin" />
             ) : hasThumbnail ? (
-              <span className="relative grid h-8 w-8 place-items-center overflow-hidden rounded-[8px] ring-2 ring-[var(--color-action-primary)] ring-offset-1 ring-offset-[var(--color-action-primary-subtle)]">
-                {/* Always-visible 32×32 thumbnail = unmistakable "media attached"
-                    signal. Hover scrim + Upload icon make the action obvious
-                    on top. presigned R2 URL — plain <img>, same pattern as
-                    MediaThumbnail. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previewUrl}
-                  alt=""
-                  draggable={false}
-                  className="absolute inset-0 h-full w-full select-none object-cover"
-                />
+              <span className="relative h-8 w-8 flex-none">
+                {/* Back card — second image (or swatch fallback) rotated
+                    slightly right so it fans out behind the left-tilted front. */}
+                {mediaCount > 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-[7px] ring-1 ring-[var(--color-action-primary)] [transform:rotate(-15deg)]"
+                  >
+                    {secondPreviewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={secondPreviewUrl}
+                        alt=""
+                        draggable={false}
+                        className="absolute inset-0 h-full w-full select-none object-cover"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 bg-[var(--color-action-primary-subtle)]" />
+                    )}
+                  </span>
+                )}
+                {/* Front image — tilted left ~22° when stacked, flat when single. */}
                 <span
-                  aria-hidden="true"
-                  className="absolute inset-0 grid place-items-center bg-[var(--color-background-overlay)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  className={cn(
+                    "absolute inset-0 z-10 overflow-hidden rounded-[8px] ring-2 ring-[var(--color-action-primary)] ring-offset-1 ring-offset-[var(--color-action-primary-subtle)]",
+                  )}
                 >
-                  <Upload size={14} aria-hidden="true" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    draggable={false}
+                    className="absolute inset-0 h-full w-full select-none object-cover"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 grid place-items-center bg-[var(--color-background-overlay)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    <Upload size={14} aria-hidden="true" />
+                  </span>
                 </span>
+                {/* Count badge — positioned relative to the 32×32 visual, not
+                    the 44×44 hit area, so it lands on the actual corner. */}
+                {mediaCount > 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1.5 -top-1.5 z-20 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[10px] font-bold leading-none text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
+                  >
+                    {mediaCount > 9 ? "9+" : mediaCount}
+                  </span>
+                )}
               </span>
-            ) : hasMedia ? (
-              // Media attached but no preview URL surfaced (rare — slide
-              // collection is image/map/video and only image/map carry url).
-              // Fall back to a solid-tone Upload icon so the operator still
-              // sees that this method has media.
-              <Upload size={18} aria-hidden="true" />
             ) : (
               <Upload size={18} aria-hidden="true" />
-            )}
-            {hasMedia && mediaCount > 1 && !uploading && (
-              <span
-                aria-hidden="true"
-                className="absolute -right-0.5 -top-0.5 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[10px] font-bold leading-none text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
-              >
-                {mediaCount > 9 ? "9+" : mediaCount}
-              </span>
             )}
           </button>
         )}
