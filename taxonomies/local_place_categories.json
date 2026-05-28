@@ -93,30 +93,6 @@
       "recommended": false
     },
     {
-      "id": "lp.arrival_metro",
-      "label": "Estación de metro",
-      "description": "Estaciones de metro cercanas a la propiedad, recurso de última milla para el huésped.",
-      "guestLabel": "Metro",
-      "icon": "TramFront",
-      "recommended": false
-    },
-    {
-      "id": "lp.arrival_taxi",
-      "label": "Parada de taxi",
-      "description": "Paradas de taxi cercanas a la propiedad, recurso de última milla para el huésped.",
-      "guestLabel": "Taxi",
-      "icon": "Car",
-      "recommended": false
-    },
-    {
-      "id": "lp.arrival_urban_bus",
-      "label": "Parada de bus urbano",
-      "description": "Paradas de autobús urbano cercanas a la propiedad, recurso de última milla para el huésped.",
-      "guestLabel": "Bus urbano",
-      "icon": "Bus",
-      "recommended": false
-    },
-    {
       "id": "lp.attraction",
       "label": "Atracción",
       "description": "Atracciones turísticas, monumentos y puntos de interés.",

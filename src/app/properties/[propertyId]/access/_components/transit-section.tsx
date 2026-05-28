@@ -43,12 +43,11 @@ import { RadiusInput } from "./radius-input";
 import { RefreshIconButton } from "./refresh-icon-button";
 import { pinIdForArrival, pinIdForArrivalSuggestion } from "./pin-ids";
 
-// TransitSection — per-mode discovery + confirm + list block. Reused by:
-//   • Intercity tabs (airport / train / bus) in `arrival-modes-editor.tsx`.
-//   • Last-mile toggles (metro / urban_bus / taxi) in `last-mile-block.tsx`.
-// The component knows its mode but not its parent context — pins are shared
-// across intercity tabs because both surfaces read the same `arrivalOptions`
-// list filtered by `mode`.
+// TransitSection — per-mode discovery + confirm + list block. Used by the
+// intercity tabs (airport / train / bus) in `arrival-modes-editor.tsx`.
+// Last-mile (metro/urban_bus/taxi/walk) is delegated to the directional
+// Maps deep link from the arrival point to the property — no per-mode
+// discovery pipeline for those modes.
 
 interface TransitSectionProps {
   /** `label` is the tab/mode-of-travel label ("Tren", "Avión"). `sectionLabel`
@@ -93,9 +92,7 @@ interface TransitSectionProps {
   /** Discovery radius (meters). Single shared value across the cockpit. */
   radiusMeters: number;
   /** Setter for the shared discovery radius. Used by the inline RadiusInput
-   * placed next to the refresh button in the Sugeridos column header. When
-   * absent (e.g. last-mile blocks that don't expose a radius control), the
-   * inline input simply isn't rendered. */
+   * placed next to the refresh button in the Sugeridos column header. */
   onChangeRadiusMeters?: (meters: number) => void;
 }
 

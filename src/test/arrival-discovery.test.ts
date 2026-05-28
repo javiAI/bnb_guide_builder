@@ -99,21 +99,21 @@ describe("discoverArrivalSuggestions", () => {
     __setLocalPoiProviderForTests(
       provider([
         makeSuggestion({
-          providerPlaceId: "m1",
+          providerPlaceId: "t-types",
           nativeCategory: "transport",
-          placeTypes: ["subway", "transit_station"],
+          placeTypes: ["transit_station", "train_station"],
         }),
       ]),
     );
 
-    const metroResult = await discoverArrivalSuggestions({
-      mode: "metro",
+    const trainResult = await discoverArrivalSuggestions({
+      mode: "train",
       anchor: ANCHOR,
       language: "es",
       excludeProviderPlaceIds: new Set(),
     });
-    expect(metroResult.suggestions).toHaveLength(1);
-    expect(metroResult.suggestions[0].providerPlaceId).toBe("m1");
+    expect(trainResult.suggestions).toHaveLength(1);
+    expect(trainResult.suggestions[0].providerPlaceId).toBe("t-types");
   });
 
   it("drops results that match no per-mode pattern", async () => {
@@ -149,25 +149,6 @@ describe("discoverArrivalSuggestions", () => {
     expect(result.totalBeforeCap).toBe(0);
   });
 
-  it("matches taxi mode by native category", async () => {
-    __setLocalPoiProviderForTests(
-      provider([
-        makeSuggestion({ providerPlaceId: "tx1", nativeCategory: "taxi_stand" }),
-        makeSuggestion({ providerPlaceId: "tx2", nativeCategory: "taxi" }),
-      ]),
-    );
-    const result = await discoverArrivalSuggestions({
-      mode: "taxi",
-      anchor: ANCHOR,
-      language: "es",
-      excludeProviderPlaceIds: new Set(),
-    });
-    expect(result.suggestions.map((s) => s.providerPlaceId)).toEqual([
-      "tx1",
-      "tx2",
-    ]);
-  });
-
   it("excludes already-persisted providerPlaceIds", async () => {
     __setLocalPoiProviderForTests(
       provider([
@@ -188,13 +169,13 @@ describe("discoverArrivalSuggestions", () => {
   it("dedupes by providerPlaceId within a single call", async () => {
     __setLocalPoiProviderForTests(
       provider([
-        makeSuggestion({ providerPlaceId: "x", nativeCategory: "subway" }),
-        makeSuggestion({ providerPlaceId: "x", nativeCategory: "subway" }),
+        makeSuggestion({ providerPlaceId: "x", nativeCategory: "train_station" }),
+        makeSuggestion({ providerPlaceId: "x", nativeCategory: "train_station" }),
       ]),
     );
 
     const result = await discoverArrivalSuggestions({
-      mode: "metro",
+      mode: "train",
       anchor: ANCHOR,
       language: "es",
       excludeProviderPlaceIds: new Set(),
@@ -272,18 +253,18 @@ describe("discoverArrivalSuggestions", () => {
       provider([
         makeSuggestion({
           providerPlaceId: "near",
-          nativeCategory: "taxi",
+          nativeCategory: "bus_station",
           latitude: ANCHOR.latitude + 0.01, // ~1.1km
         }),
         makeSuggestion({
           providerPlaceId: "far",
-          nativeCategory: "taxi",
+          nativeCategory: "bus_station",
           latitude: ANCHOR.latitude + 0.1, // ~11km
         }),
       ]),
     );
     const result = await discoverArrivalSuggestions({
-      mode: "taxi",
+      mode: "bus",
       anchor: ANCHOR,
       language: "es",
       excludeProviderPlaceIds: new Set(),
@@ -484,9 +465,6 @@ describe("arrivalModeCategoryKey", () => {
       train: "lp.arrival_train",
       bus: "lp.arrival_bus",
       airport: "lp.arrival_airport",
-      metro: "lp.arrival_metro",
-      urban_bus: "lp.arrival_urban_bus",
-      taxi: "lp.arrival_taxi",
     };
     for (const mode of ARRIVAL_MODES) {
       expect(arrivalModeCategoryKey(mode)).toBe(expected[mode]);

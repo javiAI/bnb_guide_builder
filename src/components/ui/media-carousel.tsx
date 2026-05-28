@@ -373,7 +373,7 @@ export function MediaCarousel({
               "absolute inset-0 z-[1] block h-full w-full text-left",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
             )}
-          />
+          ></button>
         )}
         <button
           type="button"
@@ -469,7 +469,7 @@ export function MediaCarousel({
             "absolute inset-0 z-[2] block h-full w-full text-left",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
           )}
-        />
+        ></button>
       )}
 
       {/* Active-variant cover overlay — clicking anywhere on the cover opens
@@ -485,7 +485,7 @@ export function MediaCarousel({
             "absolute inset-0 z-[2] block h-full w-full text-left",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
           )}
-        />
+        ></button>
       )}
 
       {/* Lightbox button — sits above both expand/collapse overlays (z-[3])
@@ -502,7 +502,7 @@ export function MediaCarousel({
             aria-label={`Ampliar media de ${title}`}
             onClick={handleLightboxClick}
             className={cn(
-              "absolute right-2 top-2 z-[3] grid h-9 w-9 place-items-center rounded-full",
+              "absolute right-2 top-2 z-[3] grid h-11 w-11 place-items-center rounded-full",
               "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]",
               "transition-opacity duration-150 focus-visible:opacity-100",
               "[@media(pointer:coarse)]:opacity-100",
@@ -511,7 +511,6 @@ export function MediaCarousel({
                 : "opacity-0 group-hover/cover:opacity-100",
               "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
-              "before:absolute before:inset-[-4px] before:content-['']",
             )}
           >
             <Icon size={16} aria-hidden="true" />
@@ -542,7 +541,7 @@ export function MediaCarousel({
                   }}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "recipe-dot-pagination grid flex-none place-items-center rounded-full p-0.5",
+                    "recipe-dot-24 grid flex-none place-items-center rounded-full p-0.5",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >

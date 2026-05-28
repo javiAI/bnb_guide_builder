@@ -404,3 +404,43 @@ Hoy el dev local corre sobre `Node 18.20.5` (referencia en `CLAUDE.md` § "Entor
 ### Por qué no se hace inline en la rama actual
 
 Cambio de runtime = superficie de regresión grande (rebuild de nativos, refresco de cachés, posible incompatibilidad de versiones de dependencias). Mejor PR aislada con su propia validación, no mezclada con trabajo Liora en curso.
+
+---
+
+## 20. Taxi as a first-class arrival mode
+
+**Estado**: diferido — explícitamente fuera del scope de 16E.6.
+
+### Contexto
+
+El cockpit "Cómo llegar" (rama 16E.6) cierra con un contrato intercity-only: `parking`, `train`, `bus`, `airport`. Last-mile (metro / urban_bus / taxi / walk) se delega al deep link direccional Google/Apple Maps desde el punto de llegada hacia la propiedad — ese deep link cubre transporte público y andando sin un pipeline de discovery paralelo. Decisión tomada porque:
+
+1. El huésped no necesita una "lista de paradas de taxi" — necesita "cómo llego a la puerta desde donde estoy ahora". Google/Apple Maps lo resuelve nativamente.
+2. Una lista persistida de paradas/estaciones de metro envejece mal (cambios de líneas, paradas temporalmente cerradas) y el operador no tiene incentivo para mantenerla.
+3. El glyph/color/picker de last-mile añade mantenimiento (taxonomía, iconos, colores, search queries, e2e) sin valor proporcional sobre el deep link.
+
+### Qué cubriría cuando se active
+
+Taxi como modo first-class — no metro ni urban_bus, que siguen cubiertos por el deep link sin pérdida funcional. Casos de uso reales:
+
+- Operadores que negocian tarifa fija con una flota local específica (taxi cooperativa del pueblo).
+- Propiedades rurales sin cobertura razonable de transporte público — el operador quiere recomendar UN proveedor concreto con teléfono / WhatsApp directo.
+- Aeropuertos con servicio shuttle del operador → punto de recogida fijo con horario.
+
+### Implementación sugerida
+
+Cuando se active la spec sería:
+
+1. Re-añadir `lp.arrival_taxi` a `taxonomies/local_place_categories.json`.
+2. Re-añadir `taxi` a `DISCOVERABLE_MODES` en `arrival-discovery.service.ts` + entries en `DISCOVERY_PATTERNS`, `NAME_FALLBACK_PATTERNS`, `DISCOVERY_QUERIES`, `DISCOVERY_CATEGORY_KEYS`.
+3. Re-añadir tab "Taxi" en `arrival-modes-editor.tsx` con icono Lucide `Car` + color de pin distinto (`status-success-solid` libre).
+4. **Diferencia clave vs intercity**: el "discovery" de taxi probablemente no surface estaciones (poco útil) sino contactos. Modelar como `ContactReference` con `contact_type.json` mapping (`taxi`), no como `LocalPlace`. Eso reusa la cascada de escalation (rama 11D) y evita pin-on-map para algo que es esencialmente "teléfono + nombre + tarifa estimada".
+5. Renombrar la sección de "Cómo llegar" a algo como "Llegada y movilidad" si taxi se vuelve un tile separado del flujo intercity.
+
+### Trigger para implementar
+
+Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y demuestren que el deep link Maps no es suficiente para su caso de uso (entrevistas, no encuestas). Hasta entonces el deep link cubre 100% de la necesidad observada en pilotos.
+
+### Por qué no se hace inline en la rama actual
+
+16E.6 cerró con un contrato deliberadamente estrecho (intercity + parking) para no acumular debt mientras la spec real de last-mile estaba especulativa. Implementar taxi parcialmente — solo como POI sin telefono ni cascada de contactos — habría sido peor que no hacerlo: el operador rellena tres paradas de taxi inútiles y el huésped sigue abriendo Google Maps.

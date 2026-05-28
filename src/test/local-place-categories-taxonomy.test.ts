@@ -26,16 +26,14 @@ const LEGACY_CATEGORY_KEYS = [
 ] as const;
 
 // Arrival-mode categories added in 16E.6 to back the unified "Cómo llegar"
-// cockpit card. Split into intercity (S02 — how to reach the city) and last
-// mile (S03 — how to reach the property from a hub or city center). Distinct
-// from the generic `lp.transport` (local-guide browse).
+// cockpit card. Intercity-only (S02 — how to reach the city: train/bus/airport).
+// Last-mile (metro/urban_bus/taxi/walk) is delegated to the directional Maps
+// deep link from the arrival point to the property — no taxonomy entries for
+// those modes. Distinct from the generic `lp.transport` (local-guide browse).
 const ARRIVAL_MODE_CATEGORY_KEYS = [
   "lp.arrival_train",
   "lp.arrival_bus",
   "lp.arrival_airport",
-  "lp.arrival_metro",
-  "lp.arrival_taxi",
-  "lp.arrival_urban_bus",
 ] as const;
 
 describe("local_place_categories.json", () => {

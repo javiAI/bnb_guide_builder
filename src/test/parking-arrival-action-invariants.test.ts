@@ -162,6 +162,38 @@ describe("tri-state accessibility save path consumes the canonical helper", () =
   });
 });
 
+describe("arrival reverse-geocode uses bare reverse (no preferCategoryKey)", () => {
+  // The synthetic `lp.arrival_*` namespace is internal-only — MapTiler reverse
+  // classifies every transit POI as the generic `lp.transport`. With the
+  // strict reverse contract (PR #106), passing `preferCategoryKey:
+  // "lp.arrival_<mode>"` would always return null, breaking manual pin
+  // address-fill + arrival relocate. Both arrival call sites must therefore
+  // omit `preferCategoryKey` — the operator already declared the mode by
+  // choosing the tab; the geocoded address is for display only.
+  //
+  // Parking IS allowed to use `preferCategoryKey: "lp.parking"` because
+  // MapTiler returns `lp.parking` directly for parking POIs.
+  it("arrival.actions.ts never passes preferCategoryKey to reverseGeocodeAddressForPin", () => {
+    const src = readSrc("src/lib/actions/arrival.actions.ts");
+    const callRegex = /reverseGeocodeAddressForPin\s*\(\s*\{([^}]*)\}/g;
+    const offenders: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = callRegex.exec(src)) !== null) {
+      const argsBlock = m[1] ?? "";
+      if (/preferCategoryKey/.test(argsBlock)) {
+        const lineNumber = src.slice(0, m.index).split("\n").length;
+        offenders.push(`arrival.actions.ts:${lineNumber}`);
+      }
+    }
+    expect(
+      offenders,
+      `Found reverseGeocodeAddressForPin call(s) in arrival.actions.ts with preferCategoryKey set: ${offenders.join(", ")}. ` +
+        "MapTiler reverse never classifies transit POIs as lp.arrival_<mode> (synthetic namespace) — the strict category contract returns null, breaking address autofill. " +
+        "Use bare reverse; the operator-declared mode is the source of truth.",
+    ).toEqual([]);
+  });
+});
+
 describe("rate-tier schema is the single source of truth", () => {
   // The arrival-steps-helpers UI file re-exports from the canonical Zod
   // schema rather than defining its own RateTier / RateTierPer. Pinning

@@ -250,6 +250,13 @@ export async function addManualArrivalOptionAction(
   // an address, and gate the external call with the `expensive` bucket so a
   // burst of manual pins can't drain the MapTiler quota. Limiter-denied =
   // skip the geocode (the mutation still proceeds with a null address).
+  //
+  // Bare reverse (no `preferCategoryKey`) — the synthetic `lp.arrival_*`
+  // namespace is internal-only; MapTiler classifies every transit POI under
+  // the generic `lp.transport` bucket, so the strict category contract would
+  // always return null here. The operator already declared the mode by
+  // choosing the active tab; the geocoded address is for display only, not
+  // for category validation.
   const needsFallbackAddress =
     parsed.data.address === undefined || parsed.data.address === null;
   let fallbackAddress: string | null = null;
@@ -262,7 +269,6 @@ export async function addManualArrivalOptionAction(
       fallbackAddress = await reverseGeocodeAddressForPin({
         latitude: parsed.data.latitude,
         longitude: parsed.data.longitude,
-        preferCategoryKey: categoryKey,
       });
     }
   }
@@ -394,9 +400,10 @@ export async function updateArrivalOptionAction(
   // Relocate: re-geocode the new coords and recompute distance. Address is
   // best-effort — null if the provider returns nothing or the `expensive`
   // bucket is exhausted, rather than carry stale data from the previous
-  // location. Kept serial after the place lookup because the geocode hint
-  // (`place.categoryKey`) is only available post-DB; dropping the hint to
-  // parallelize would regress arrival pin accuracy.
+  // location. Bare reverse (no `preferCategoryKey`) — see the create action
+  // for the rationale: the synthetic `lp.arrival_*` namespace never matches
+  // MapTiler's `lp.transport` classification, and the operator-declared
+  // mode is already the source of truth.
   if (parsed.data.latitude !== undefined && parsed.data.longitude !== undefined) {
     data.latitude = parsed.data.latitude;
     data.longitude = parsed.data.longitude;
@@ -421,7 +428,6 @@ export async function updateArrivalOptionAction(
       ? await reverseGeocodeAddressForPin({
           latitude: parsed.data.latitude,
           longitude: parsed.data.longitude,
-          preferCategoryKey: place.categoryKey,
         })
       : null;
   }

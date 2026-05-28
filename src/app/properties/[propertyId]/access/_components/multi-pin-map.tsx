@@ -9,23 +9,15 @@ import { readCssVar, resolveCssColor } from "@/lib/css-var";
 import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
 import { buildCirclePolygon } from "@/lib/utils/geo";
 import { Tooltip } from "@/components/ui/tooltip";
-import {
-  LAST_MILE_MODES,
-  type ArrivalMode,
-} from "@/lib/services/arrival-discovery.service";
+import type { ArrivalMode } from "@/lib/services/arrival-discovery.service";
 
 /** Modes the cockpit "+" button can arm. Mirrors the intercity tab strip
- * (`parking` is the UI alias for the parking-cockpit subsystem) plus every
- * last-mile pin-bearing mode. */
+ * (`parking` is the UI alias for the parking-cockpit subsystem). Last-mile
+ * (metro/urban_bus/taxi/walk) is delegated to the directional Maps deep link
+ * from the arrival point to the property — no manual pins for those modes. */
 export type ManualAddMode = "parking" | ArrivalMode;
 
-export type ArrivalPinMode =
-  | "train"
-  | "bus"
-  | "airport"
-  | "metro"
-  | "urban_bus"
-  | "taxi";
+export type ArrivalPinMode = "train" | "bus" | "airport";
 
 export interface MultiPinSpec {
   id: string;
@@ -207,43 +199,21 @@ const PIN_ICON_SVG: Partial<Record<MultiPinSpec["kind"], string>> = {
 };
 
 // Per-mode bg color for transit arrival pins. Picked from semantic status +
-// accent tokens so dark mode + brand themes still hold. Six visually distinct
-// hues — operators can scan the map without depending on the glyph alone.
-// Exported so list rows (arrival-row.tsx) render the same hues as the map pins.
+// accent tokens so dark mode + brand themes still hold. Exported so list
+// rows (arrival-row.tsx) render the same hues as the map pins.
 //
 // Intercity quartet (the four cockpit tabs) — each hue is 50°+ apart on the
 // OKLCH wheel from every other intercity pin and from the property anchor
 // (olive 130°) so the operator can tell modes apart from color alone:
 //   parking → info-solid (blue 235°)   ← lives in PIN_VISUAL["confirmed-*"]
-//   train   → error-solid (red 25°)    — RENFE Cercanías cultural cue + the
-//                                         only remaining solid status token
-//                                         distinct from the olive anchor
+//   train   → error-solid (red 25°)    — RENFE Cercanías cultural cue
 //   bus     → warning-solid (orange 78°)
 //   airport → accent-default (terracotta 40°)
 export const ARRIVAL_MODE_BG: Record<ArrivalPinMode, string> = {
-  // Intercity hubs (S02) — larger map pins
   train: "var(--color-status-error-solid)",
   bus: "var(--color-status-warning-solid)",
   airport: "var(--color-accent-default)",
-  // Last-mile resources (S03 sub-block) — smaller map pins, muted hues. Not
-  // rendered on the intercity cockpit map (only train/bus/airport surface
-  // there), so train sharing error-solid with metro is safe — they never
-  // coexist on the same canvas.
-  metro: "var(--color-status-success-solid)",
-  urban_bus: "var(--color-text-secondary)",
-  taxi: "var(--color-status-success-solid)",
 };
-
-/** Discriminator used by the map and list to render last-mile pins slightly
- * smaller than intercity ones. Derived from the service's canonical
- * `LAST_MILE_MODES` minus `walk` (which has no map pin) so adding a new
- * last-mile pin-bearing mode is a one-line change in
- * arrival-discovery.service.ts and propagates here automatically. */
-export const LAST_MILE_PIN_MODES: ReadonlySet<ArrivalPinMode> = new Set(
-  LAST_MILE_MODES.filter(
-    (m): m is Exclude<(typeof LAST_MILE_MODES)[number], "walk"> => m !== "walk",
-  ),
-);
 
 // Lucide glyphs (stroke-width 1.75, 14×14 box) inline so the marker DOM stays
 // a single <div>. Each fits inside a 26px circle with 4px inset padding.
@@ -255,9 +225,6 @@ const ARRIVAL_MODE_SVG: Record<ArrivalPinMode, string> = {
   train: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22V12a10 10 0 1 1 20 0v10"/><path d="M15 6.8v1.4a3 2.8 0 1 1-6 0V6.8"/><path d="M10 15h.01"/><path d="M14 15h.01"/><path d="M10 19a4 4 0 0 1-4-4v-3a6 6 0 1 1 12 0v3a4 4 0 0 1-4 4Z"/><path d="m9 19-2 3"/><path d="m15 19 2 3"/></svg>`,
   bus: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6 2 7"/><path d="M10 6h4"/><path d="m22 7-2-1"/><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M8 15h.01"/><path d="M16 15h.01"/><path d="M6 19v2"/><path d="M18 21v-2"/></svg>`,
   airport: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`,
-  metro: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="16" x="4" y="3" rx="2"/><path d="M4 11h16"/><path d="M12 3v8"/><path d="m8 19-2 3"/><path d="m18 22-2-3"/><path d="M8 15h.01"/><path d="M16 15h.01"/></svg>`,
-  urban_bus: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>`,
-  taxi: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`,
 };
 
 function createAnchorElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElement {
@@ -297,23 +264,9 @@ const SUGGESTION_PIN_BG = "var(--color-text-muted)";
 function createPinElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElement {
   if (spec.kind === "anchor") return createAnchorElement(spec, clickable);
   const v = PIN_VISUAL[spec.kind];
-  // Last-mile arrival pins render smaller than intercity hubs — they are
-  // supporting resources (metro stop, taxi stand near the property), not
-  // primary arrival points.
   const isArrivalKind =
     spec.kind === "confirmed-arrival" || spec.kind === "suggestion-arrival";
-  const isLastMile =
-    isArrivalKind &&
-    spec.arrivalMode !== undefined &&
-    LAST_MILE_PIN_MODES.has(spec.arrivalMode);
-  const size =
-    spec.kind === "suggestion-arrival"
-      ? isLastMile
-        ? 14
-        : 18
-      : isLastMile
-        ? 20
-        : v.size;
+  const size = v.size;
   const el = document.createElement("div");
   el.style.width = `${size}px`;
   el.style.height = `${size}px`;

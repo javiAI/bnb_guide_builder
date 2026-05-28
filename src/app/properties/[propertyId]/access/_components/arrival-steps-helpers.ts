@@ -40,7 +40,7 @@ export interface ArrivalParkingPlaceShape {
 
 export interface ArrivalTransitOptionShape {
   id: string;
-  mode: "train" | "bus" | "airport" | "metro" | "urban_bus" | "taxi";
+  mode: "train" | "bus" | "airport";
 }
 
 /** Canonical tab order for paso 01: coche → tren → bus → avión. */

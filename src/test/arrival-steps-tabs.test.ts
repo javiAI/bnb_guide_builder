@@ -52,18 +52,6 @@ describe("arrival-steps · paso 01 tabs", () => {
     expect(tabs).toEqual(["coche", "train", "airport"]);
   });
 
-  it("computeVisibleTabs drops metro/taxi/urban_bus (last-mile modes, not top-level)", () => {
-    const tabs = computeVisibleTabs(
-      [],
-      [
-        transit({ id: "t-metro", mode: "metro" }),
-        transit({ id: "t-taxi", mode: "taxi" }),
-        transit({ id: "t-urban_bus", mode: "urban_bus" }),
-      ],
-    );
-    expect(tabs).toEqual([]);
-  });
-
   it("computeVisibleTabs omits coche when no parking even if transit options exist", () => {
     const tabs = computeVisibleTabs(
       [],

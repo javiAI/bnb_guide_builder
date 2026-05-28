@@ -7,18 +7,20 @@ import {
 
 // ── Arrival-mode discovery (16E.6) ──
 //
-// Two journeys, one pipeline. The same POI-discovery pipeline (provider search
-// + native-category re-bucketing + per-mode distance caps) serves both:
+// Intercity-only pipeline. Provider search + native-category re-bucketing +
+// per-mode distance caps serve the S02 "how the guest reaches the city"
+// modes: airport, train, bus. "car" is also intercity but routes through
+// `parking-discovery.service`.
 //
-//   • Intercity (S02 — how the guest reaches the city): airport, train, bus.
-//     "car" is also an intercity mode but uses parking-discovery.service.
+// Last-mile (metro, urban_bus, taxi, walk) is intentionally NOT part of this
+// service. The guest gets a directional Google/Apple Maps deep link from the
+// confirmed arrival point to the property — that covers public transit and
+// walking without a parallel discovery pipeline. See FUTURE.md for the
+// deferred taxi-as-first-class extension.
 //
-//   • Last-mile (S03 sub-block — how the guest reaches the property from a
-//     hub or city center): metro, urban_bus, taxi. "walk" is also a last-mile
-//     mode but has no pin (no discovery).
-//
-// `DISCOVERABLE_MODES` is the union of both journeys minus the non-discovery
-// modes (car + walk). The per-mode tables below are keyed by it.
+// `DISCOVERABLE_MODES` is the union of discoverable intercity modes minus
+// car (parking-discovery handles it). The per-mode tables below are keyed
+// by it.
 
 // Shared discovery limits across parking + arrival pipelines. Both surface
 // at most 8 suggestions and warn when the post-filter pool falls below 4 —
@@ -31,23 +33,17 @@ export const DISCOVERY_PROVIDER_LIMIT = 10;
 export const INTERCITY_MODES = ["airport", "train", "bus", "car"] as const;
 export type IntercityMode = (typeof INTERCITY_MODES)[number];
 
-export const LAST_MILE_MODES = ["metro", "urban_bus", "taxi", "walk"] as const;
-export type LastMileMode = (typeof LAST_MILE_MODES)[number];
-
 /** Modes that have a POI-discovery pipeline (can produce pins via search).
- * Excludes `car` (parking-discovery handles it) and `walk` (no pin). */
-export const DISCOVERABLE_MODES = [
-  "airport",
-  "train",
-  "bus",
-  "metro",
-  "urban_bus",
-  "taxi",
-] as const;
+ * Excludes `car` (parking-discovery handles it). Last-mile modes
+ * (metro/urban_bus/taxi/walk) are out of scope — the directional deep link
+ * from the arrival point to the property covers them without a parallel
+ * pipeline. */
+export const DISCOVERABLE_MODES = ["airport", "train", "bus"] as const;
 export type DiscoverableMode = (typeof DISCOVERABLE_MODES)[number];
 
-/** Back-compat alias retained for cache-key serialization only. New code
- * should use `DiscoverableMode` (broader) or `IntercityMode` (S02 chip set). */
+/** Alias retained so cache-key serialization / call sites keep reading the
+ * same name. `ARRIVAL_MODES` is the operator-facing label; `DiscoverableMode`
+ * is the internal type. */
 export type ArrivalMode = DiscoverableMode;
 export const ARRIVAL_MODES = DISCOVERABLE_MODES;
 
@@ -59,10 +55,6 @@ const DISCOVERY_PATTERNS: Record<DiscoverableMode, RegExp> = {
     /^(train_station|railway_station|railway|transit_station|train|rail|rail_station)$/i,
   bus: /^(bus_station|coach_station)$/i,
   airport: /^(airport|aerodrome|airfield|international_airport|heliport)$/i,
-  metro:
-    /^(subway|subway_station|metro_station|metro|tram_stop|tram|light_rail|tram_station|underground)$/i,
-  urban_bus: /^(bus_stop|trolleybus_stop|public_transport)$/i,
-  taxi: /^(taxi|taxi_stand|taxi_rank|parada_taxi|taxistand)$/i,
 };
 
 // Name-based fallback. MapTiler routinely returns Spanish-region transit POIs
@@ -86,14 +78,6 @@ const NAME_FALLBACK_PATTERNS: Record<DiscoverableMode, RegExp> = {
   // Airport: aeropuerto / airport / aerodrome variants.
   airport:
     /(aeropuerto|airport|aerodrome|airfield|aeroport|aeroport)/i,
-  // Metro / subway / tram (light rail family).
-  metro:
-    /^(?!.*(aeropuerto|airport|taxi|estaci[oó]n.*(tren|autob[uú]s)|bus station))(?=.*(metro|subway|tranv[ií]a|tram|light.?rail|underground|teleferic)).+/i,
-  // Urban bus stop — explicitly the "parada"/"stop" variant, never "estación".
-  urban_bus:
-    /^(?!.*(estaci[oó]n|terminal|tren|train|aeropuerto|airport|metro|taxi))(?=.*(parada|\bstop\b|bus.?stop)).+/i,
-  // Taxi.
-  taxi: /(taxi)/i,
 };
 
 // Discovery queries — MapTiler `/geocoding` is a forward geocoder (text →
@@ -119,9 +103,6 @@ const DISCOVERY_QUERIES: Record<DiscoverableMode, readonly string[]> = {
   train: ["train station", "railway station", "estación de tren"],
   bus: ["bus station", "estación de autobuses", "estación de autobús"],
   airport: ["aeropuerto", "airport"],
-  metro: ["metro station", "subway station", "estación de metro"],
-  urban_bus: ["bus stop", "parada de autobús"],
-  taxi: ["taxi", "taxi stand", "parada de taxi"],
 };
 
 /** Global default search radius (meters) used when the caller doesn't pass an
@@ -150,9 +131,6 @@ const DISCOVERY_CATEGORY_KEYS: Record<DiscoverableMode, string> = {
   train: "lp.arrival_train",
   bus: "lp.arrival_bus",
   airport: "lp.arrival_airport",
-  metro: "lp.arrival_metro",
-  urban_bus: "lp.arrival_urban_bus",
-  taxi: "lp.arrival_taxi",
 };
 
 export function arrivalModeCategoryKey(mode: DiscoverableMode): string {

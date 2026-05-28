@@ -99,6 +99,26 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
+    // 16E.6 shared UI primitives — utility components introduced for the
+    // arrival cockpit ("Cómo llegar") and reused across operator content
+    // modules: `media-carousel` (parking detail panel + arrival options),
+    // `banner` (configuration notices on access page + future surfaces),
+    // `location-map` (manual pin map on parking/arrival sections), and
+    // `tooltip` (Radix-based helper used across operator surfaces).
+    // Tracked as `shared` so the baseline Liora invariants run on them
+    // (tokens, hardcodes, web API guards, target-size, tone quartet)
+    // without forcing operator-specific copy-lint or primitive-adoption.
+    id: "shared-ui-carousel-banner-map-tooltip",
+    routes: ["(rendered inside operator content modules as imported)"],
+    profile: "shared",
+    files: [
+      "src/components/ui/media-carousel.tsx",
+      "src/components/ui/banner.tsx",
+      "src/components/ui/location-map.tsx",
+      "src/components/ui/tooltip.tsx",
+    ],
+  },
+  {
     // 16E wizard / onboarding — operator-facing 4-step property creation
     // flow. NO UI kit reference exists in
     // `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html`
@@ -300,6 +320,10 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
+  "src/components/ui/media-carousel.tsx",
+  "src/components/ui/banner.tsx",
+  "src/components/ui/location-map.tsx",
+  "src/components/ui/tooltip.tsx",
   "src/components/media/**/*.tsx",
   "src/components/local-guide/place-autocomplete.tsx",
 ];
