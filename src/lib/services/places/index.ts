@@ -86,6 +86,7 @@ export type {
   PoiSuggestion,
   SearchParams,
   ReverseParams,
+  ReverseGeoResult,
   ProviderMetadata,
 } from "./provider";
 export {

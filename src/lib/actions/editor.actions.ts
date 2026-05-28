@@ -13,6 +13,10 @@ import {
 import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
+import {
+  deriveAccessibilityPersistence,
+  normalizeAccessibilityFeatures,
+} from "@/lib/services/access-tri-state";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
 import {
@@ -253,14 +257,10 @@ export async function saveAccessAction(
     // with positive features. Filtered first against the taxonomy, then any
     // positive entry wins over the sentinel if both arrived in a tampered
     // FormData. The empty case persists as null (unanswered) below.
-    accessibilityFeatures: (() => {
-      const filtered = accessibilityFeatures.filter((id) =>
-        validAccessibilityIds.has(id),
-      );
-      const positives = filtered.filter((id) => id !== "ax.no_accessibility");
-      if (positives.length > 0) return positives;
-      return filtered.includes("ax.no_accessibility") ? ["ax.no_accessibility"] : [];
-    })(),
+    accessibilityFeatures: normalizeAccessibilityFeatures(
+      accessibilityFeatures,
+      validAccessibilityIds,
+    ),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -274,16 +274,15 @@ export async function saveAccessAction(
   // sentinel is selected. Drop them otherwise so a deselect-then-reselect
   // doesn't resurrect stale text.
   const parkingHasOther = d.parkingTypes.includes("pk.other");
-  const accessibilityHasOther = d.accessibilityFeatures.includes("ax.other");
-  // Tri-state opt-out: `ax.no_accessibility` is exclusive (filter above), so the
-  // sentinel-only case is detectable by includes(). Splits into the three legs:
-  //   - sentinel only          -> hasAccessibilityConsiderations = false
-  //   - any positive feature   -> hasAccessibilityConsiderations = true
-  //   - empty                  -> hasAccessibilityConsiderations = null (unanswered)
-  const accessibilityIsOptOut = d.accessibilityFeatures.includes("ax.no_accessibility");
-  const accessibilityPositiveFeatures = d.accessibilityFeatures.filter(
-    (id) => id !== "ax.no_accessibility",
-  );
+  // Tri-state opt-out persistence — helper splits the column + JSON shape:
+  //   - sentinel only          -> hasConsiderations = false, shape = null
+  //   - any positive feature   -> hasConsiderations = true, shape = {...}
+  //   - empty                  -> hasConsiderations = null, shape = null
+  const accessibility = deriveAccessibilityPersistence({
+    features: d.accessibilityFeatures,
+    customLabel: accessibilityCustomLabel,
+    customDesc: accessibilityCustomDesc,
+  });
 
   // Primary must reference a still-selected method. If a tampered FormData
   // sends a primary not in the array, fall back to methods[0] (or null).
@@ -313,11 +312,7 @@ export async function saveAccessAction(
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
       hasParking: d.hasParking,
-      hasAccessibilityConsiderations: accessibilityIsOptOut
-        ? false
-        : accessibilityPositiveFeatures.length > 0
-          ? true
-          : null,
+      hasAccessibilityConsiderations: accessibility.hasConsiderations,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
         building:
@@ -334,18 +329,7 @@ export async function saveAccessAction(
                 primary: primaryParking,
               }
             : null,
-        accessibility:
-          accessibilityPositiveFeatures.length > 0
-            ? {
-                features: accessibilityPositiveFeatures,
-                customLabel: accessibilityHasOther
-                  ? accessibilityCustomLabel
-                  : null,
-                customDesc: accessibilityHasOther
-                  ? accessibilityCustomDesc
-                  : null,
-              }
-            : null,
+        accessibility: accessibility.accessJsonShape as Prisma.InputJsonValue | null,
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,

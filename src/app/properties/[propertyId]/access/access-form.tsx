@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { saveAccessAction } from "@/lib/actions/editor.actions";
+import { NO_ACCESSIBILITY_ID } from "@/lib/services/access-tri-state";
 import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods } from "@/lib/taxonomies/access-methods";
 import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods";
@@ -1402,8 +1403,6 @@ interface AccessibilityPanelProps {
   propertyId: string;
   methodMediaPreview: Record<string, { count: number; firstUrl?: string }>;
 }
-
-const NO_ACCESSIBILITY_ID = "ax.no_accessibility";
 
 function AccessibilityPanel({
   axFeatures,
