@@ -157,9 +157,16 @@ export async function savePropertyAction(
     where: { id: propertyId },
     data: {
       ...result.data,
-      parkingSuggestionsCacheJson: Prisma.JsonNull,
+      // DbNull (SQL NULL), not JsonNull (JSON literal null). The atomic merge in
+      // discoverArrivalSuggestionsAction relies on
+      //   COALESCE(arrival_suggestions_cache_json, '{}'::jsonb) || $delta::jsonb
+      // — COALESCE only catches SQL NULL. With JSON null, the operand becomes
+      // `'null'::jsonb || $delta::jsonb` which yields `[null, delta]` (an array),
+      // corrupting subsequent reads. Same column shape for parking; both kept
+      // consistent so the invariant is grep-able.
+      parkingSuggestionsCacheJson: Prisma.DbNull,
       parkingSuggestionsCachedAt: null,
-      arrivalSuggestionsCacheJson: Prisma.JsonNull,
+      arrivalSuggestionsCacheJson: Prisma.DbNull,
     },
   });
 

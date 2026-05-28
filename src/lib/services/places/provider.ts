@@ -75,8 +75,12 @@ export interface ReverseParams {
   latitude: number;
   longitude: number;
   language: "es" | "en";
-  /** When set, prefer the closest feature whose `categoryKey` matches.
-   * Falls back to the closest feature regardless of category if no match. */
+  /** When set, returns the nearest feature whose `categoryKey` matches, or
+   * `null` if no candidate matches that category. No cross-category fallback —
+   * a transit/parking pin must resolve to a same-category feature so a drag
+   * onto a residential street can't be "successfully" re-anchored to an
+   * unrelated POI. Manual address reverse (autofill name+address for a free
+   * pin) should call `reverse()` without `preferCategoryKey`. */
   preferCategoryKey?: string;
   signal?: AbortSignal;
 }

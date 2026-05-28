@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { MapTilerPlacesProvider } from "@/lib/services/places/maptiler-provider";
-import { mapMapTilerCategoryToLp } from "@/lib/services/places/maptiler-category-mapping";
+import {
+  mapMapTilerCategoryToLp,
+  normalizeMapTilerCategory,
+} from "@/lib/services/places/maptiler-category-mapping";
 import { PoiProviderUnavailableError } from "@/lib/services/places/provider";
 
 const ANCHOR = { latitude: 41.385, longitude: 2.173 };
@@ -29,14 +32,23 @@ describe("mapMapTilerCategoryToLp", () => {
     expect(mapMapTilerCategoryToLp(["", "  ", "bar"])).toBe("lp.bar");
   });
 
-  it("normalizes space-separated MapTiler categories to underscored OSM form", () => {
+  it("requires pre-normalized input — caller normalizes at the provider boundary", () => {
     // MapTiler returns "railway station" / "bus station" / "bus stop" with
-    // spaces in `properties.categories`. Without normalization the regex map
-    // (keyed by OSM tags) would drop every real-world transit POI.
-    expect(mapMapTilerCategoryToLp(["railway station"])).toBe("lp.transport");
-    expect(mapMapTilerCategoryToLp(["train station"])).toBe("lp.transport");
-    expect(mapMapTilerCategoryToLp(["bus station"])).toBe("lp.transport");
-    expect(mapMapTilerCategoryToLp(["bus stop"])).toBe("lp.transport");
+    // spaces in `properties.categories`. The mapper is keyed by underscored
+    // OSM tags; callers (forward + reverse paths in maptiler-provider) must
+    // apply `normalizeMapTilerCategory` first. Raw space-separated input
+    // does not match.
+    expect(mapMapTilerCategoryToLp(["railway station"])).toBeNull();
+    expect(
+      mapMapTilerCategoryToLp(
+        ["railway station", "train station", "bus station", "bus stop"].map(
+          normalizeMapTilerCategory,
+        ),
+      ),
+    ).toBe("lp.transport");
+    expect(
+      mapMapTilerCategoryToLp([normalizeMapTilerCategory("bus stop")]),
+    ).toBe("lp.transport");
   });
 });
 

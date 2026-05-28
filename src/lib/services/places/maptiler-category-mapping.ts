@@ -54,16 +54,19 @@ export function normalizeMapTilerCategory(raw: string): string {
 
 /** Resolve the first `lp.*` key matched by any candidate string, or `null`
  * when none match. Providers must NOT fall back to `lp.other` — the caller
- * decides whether unclassified results are dropped or parked under "other". */
+ * decides whether unclassified results are dropped or parked under "other".
+ *
+ * Callers must pass `normalizeMapTilerCategory()`-normalized inputs (lowercase,
+ * underscores). The provider boundary normalizes once and reuses the result;
+ * normalizing inside this mapper too would be wasted work and risk drift if
+ * the boundary stops normalizing. */
 export function mapMapTilerCategoryToLp(
   candidates: ReadonlyArray<string>,
 ): string | null {
-  for (const raw of candidates) {
-    if (!raw) continue;
-    const normalized = normalizeMapTilerCategory(raw);
-    if (!normalized) continue;
+  for (const candidate of candidates) {
+    if (!candidate) continue;
     for (const [pattern, key] of MAPTILER_CATEGORY_PATTERNS) {
-      if (pattern.test(normalized)) return key;
+      if (pattern.test(candidate)) return key;
     }
   }
   return null;

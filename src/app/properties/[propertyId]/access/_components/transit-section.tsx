@@ -6,7 +6,9 @@ import {
   useMemo,
   useState,
   useTransition,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -76,9 +78,12 @@ interface TransitSectionProps {
   headerAction?: ReactNode;
   /** Shared activeId for bidirectional hover sync with the unified map.
    * Row IDs come from `pinIdForArrival` / `pinIdForArrivalSuggestion`
-   * (see `pin-ids.ts`). */
+   * (see `pin-ids.ts`). The setter is the `React.Dispatch` form so the
+   * deactivate handler can clear conditionally (only when the departing row
+   * is still the active one) — avoids a hover-race flicker when the pointer
+   * moves quickly between adjacent rows. */
   activeId?: string | null;
-  onSetActiveId?: (id: string | null) => void;
+  onSetActiveId?: Dispatch<SetStateAction<string | null>>;
   /** Emitted whenever the post-filter suggestion pool changes, so the parent
    * cockpit can render the active tab's suggestions as pins on the map. */
   onSuggestionsChange?: (
@@ -144,7 +149,7 @@ export function TransitSection({
         radiusMeters,
       );
       if (!res.success || !res.data) {
-        setError(res.success ? null : (res.error ?? "Error en la búsqueda"));
+        setError(res.error ?? "Error en la búsqueda");
         setSuggestions([]);
         setWarningKey(null);
         return;
@@ -207,7 +212,7 @@ export function TransitSection({
               longitude: s.longitude,
               address: s.address ?? null,
               website: s.website ?? null,
-              distanceMeters: s.distanceMeters ?? 0,
+              distanceMeters: s.distanceMeters,
               providerMetadata: s.providerMetadata,
             },
           ],
@@ -332,7 +337,9 @@ export function TransitSection({
                     onRelocateRequest={() => onRequestRelocate?.(opt.id)}
                     relocating={relocating}
                     onActivate={() => onSetActiveId?.(rowId)}
-                    onDeactivate={() => onSetActiveId?.(null)}
+                    onDeactivate={() =>
+                      onSetActiveId?.((id) => (id === rowId ? null : id))
+                    }
                     isActive={activeId === rowId}
                     disabled={updatePending}
                   />
@@ -389,7 +396,9 @@ export function TransitSection({
                       confirmingId === s.providerPlaceId && confirmPending
                     }
                     onActivate={() => onSetActiveId?.(rowId)}
-                    onDeactivate={() => onSetActiveId?.(null)}
+                    onDeactivate={() =>
+                      onSetActiveId?.((id) => (id === rowId ? null : id))
+                    }
                     isActive={activeId === rowId}
                     disabled={
                       confirmPending && confirmingId !== s.providerPlaceId

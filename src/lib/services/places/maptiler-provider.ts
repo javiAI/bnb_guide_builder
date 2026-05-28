@@ -166,13 +166,32 @@ export class MapTilerPlacesProvider implements LocalPoiProvider {
     if (candidates.length === 0) return null;
 
     if (preferCategoryKey) {
-      const matching = candidates.find(
+      // Strict category contract: nearest same-category feature or null. No
+      // cross-category fallback — a drag onto an unrelated POI must surface
+      // as "no match" so the caller can reject the move instead of silently
+      // re-anchoring the pin.
+      const matching = candidates.filter(
         (c) => c.categoryKey === preferCategoryKey,
       );
-      if (matching) {
-        const { specificity: _s, ...rest } = matching;
-        return rest;
+      if (matching.length === 0) return null;
+      let nearest = matching[0]!;
+      let nearestDistance = haversineMeters(
+        { latitude, longitude },
+        { latitude: nearest.latitude, longitude: nearest.longitude },
+      );
+      for (let i = 1; i < matching.length; i++) {
+        const c = matching[i]!;
+        const d = haversineMeters(
+          { latitude, longitude },
+          { latitude: c.latitude, longitude: c.longitude },
+        );
+        if (d < nearestDistance) {
+          nearest = c;
+          nearestDistance = d;
+        }
       }
+      const { specificity: _s, ...rest } = nearest;
+      return rest;
     }
 
     candidates.sort((a, b) => a.specificity - b.specificity);
@@ -202,7 +221,9 @@ export class MapTilerPlacesProvider implements LocalPoiProvider {
     const categoryCandidates = [
       ...(feature.properties?.categories ?? []),
       ...(feature.place_type ?? []),
-    ];
+    ]
+      .map((c) => normalizeMapTilerCategory(c))
+      .filter((c) => c.length > 0);
     const categoryKey = mapMapTilerCategoryToLp(categoryCandidates);
 
     return {
@@ -234,16 +255,16 @@ export class MapTilerPlacesProvider implements LocalPoiProvider {
     const name = feature.text ?? feature.place_name;
     if (!name) return null;
 
-    const rawCandidates = [
+    // Normalize OSM-style at the provider boundary: MapTiler returns
+    // "railway station" / "bus stop" with spaces, but every downstream regex
+    // matcher (mode buckets in arrival-discovery, the lp.* mapper here) is
+    // keyed by underscored OSM tags. `mapMapTilerCategoryToLp` requires
+    // pre-normalized input — both call sites (forward + reverse) normalize
+    // here so the persisted `providerMetadata.placeTypes` is consistent too.
+    const categoryCandidates = [
       ...(feature.properties?.categories ?? []),
       ...(feature.place_type ?? []),
-    ];
-    // Normalize OSM-style: MapTiler returns "railway station" / "bus stop"
-    // with spaces, but every downstream regex matcher (mode buckets in
-    // arrival-discovery, the lp.* mapper here) is keyed by underscored OSM
-    // tags. Normalize once at the provider boundary so callers see a
-    // consistent shape.
-    const categoryCandidates = rawCandidates
+    ]
       .map((c) => normalizeMapTilerCategory(c))
       .filter((c) => c.length > 0);
     const categoryKey = mapMapTilerCategoryToLp(categoryCandidates);

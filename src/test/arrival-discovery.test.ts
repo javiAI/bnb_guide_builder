@@ -240,8 +240,9 @@ describe("discoverArrivalSuggestions", () => {
     expect(result.totalBeforeCap).toBe(2);
   });
 
-  it("filters results beyond the per-mode distance cap", async () => {
-    // ~0.6° lat ≈ 67km. Airport cap is 60km — far one must drop.
+  it("filters results beyond the shared distance cap", async () => {
+    // ~0.6° lat ≈ 67km. Default radius is 30km (DEFAULT_DISCOVERY_RADIUS_M) —
+    // single shared cap across modes, so the far one must drop.
     __setLocalPoiProviderForTests(
       provider([
         makeSuggestion({

@@ -1,8 +1,9 @@
 -- 16E.6 — persist arrival-mode discovery suggestions per property.
 --
 -- Mirrors the parking suggestions cache (`parking_suggestions_cache_json`) but
--- keyed by arrival mode so a single column covers all 6 transit modes
--- (airport, train, bus, metro, urban_bus, taxi). Shape:
+-- keyed by arrival mode so a single column covers every discoverable transit
+-- mode. See `DISCOVERABLE_MODES` in `arrival-discovery.service.ts` — the
+-- source of truth — for the current key set. Shape:
 --   `Partial<Record<ArrivalMode, ArrivalSuggestion[]>>`
 --
 -- Lets the cockpit serve the "Sugeridos" column on first paint after the
