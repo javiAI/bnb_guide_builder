@@ -377,7 +377,7 @@ First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-sys
 - `kind: "video"` if `mimeType.startsWith("video/")` AND NOT `.map`.
 - `caption` is **never** used for kind classification (caption is editorial text).
 
-**Slide ordering within a subsystem**: image → map → video; within each kind by `[sortOrder asc, createdAt asc]`. The first slide is the carousel default.
+**Slide ordering within a subsystem**: canonical order `image → video → map → live-map` (matches `<MediaCarousel>` and `page.tsx`); within each kind by `[sortOrder asc, createdAt asc]`. The first slide is the carousel default.
 
 **Title overlay resolution**:
 - `usageKey === "access.<sub>"` → `"Principal"`.

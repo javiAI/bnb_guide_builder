@@ -257,10 +257,11 @@ export default async function AccessPage({ params }: Props) {
         rateJson: true,
       },
     }),
-    // Arrival options (train/bus/airport/metro) — same `LocalPlace` table reused
-    // via the `lp.arrival_<mode>` categoryKey prefix. `rateJson` only populated
-    // for paid options (parking + ferries today); `isRecommended` surfaces a
-    // star marker in the per-mode list.
+    // Arrival options (intercity: train/bus/airport) — same `LocalPlace` table
+    // reused via the `lp.arrival_<mode>` categoryKey prefix. Last-mile modes
+    // (metro/urban_bus/taxi/walk) are delegated to the directional Maps deep
+    // link and have no `LocalPlace` rows. `rateJson` only populated for paid
+    // options; `isRecommended` surfaces a star marker in the per-mode list.
     prisma.localPlace.findMany({
       where: {
         propertyId,

@@ -237,8 +237,11 @@ export async function addManualArrivalOptionAction(
 
   // Ownership first — never fire a provider RTT for a workspace the caller
   // doesn't own. Caller-supplied address wins; otherwise we ask the provider
-  // (gated by `expensive` bucket) preferring the mode's categoryKey so manual
-  // pins parity-match suggestion-confirm rows.
+  // (gated by `expensive` bucket) for a display-only address — bare reverse,
+  // no `preferCategoryKey` (the strict category contract would always return
+  // null since MapTiler classifies transit under `lp.transport`, not under
+  // our synthetic `lp.arrival_*` namespace; see comment on the reverse call
+  // below for the full reasoning).
   const categoryKey = arrivalModeCategoryKey(parsed.data.mode);
   const property = await prisma.property.findUnique({
     where: { id: parsed.data.propertyId, workspaceId: operator.workspaceId },

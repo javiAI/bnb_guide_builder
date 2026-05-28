@@ -367,9 +367,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         // Width signals — required when the button-shape is fixed-square
         // (icon-only). `min-h-[44px]` alone is the text-bearing pattern (44
         // floor, content drives width, not a fixed square) and is exempted.
-        // `recipe-icon-btn-32` and `recipe-dot-24` both bake both dimensions
-        // via the pseudo-element + coarse-pointer media query; no width signal
-        // needed.
+        // `recipe-icon-btn-32` bakes both dimensions via the pseudo-element +
+        // coarse-pointer media query; no width signal needed.
         const widthTokens = [
           "min-w-[44px]",
           "min-w-11",
@@ -379,9 +378,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           "w-14",
           "w-16",
         ];
-        const hasSlop =
-          cls.includes("recipe-icon-btn-32") ||
-          cls.includes("recipe-dot-24");
+        const hasSlop = cls.includes("recipe-icon-btn-32");
         const hasHeight = heightTokens.some((t) => cls.includes(t));
         const hasWidth = widthTokens.some((t) => cls.includes(t));
         const isTextBearingFloor =
@@ -419,7 +416,6 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "w-11",
       "w-12",
       "recipe-icon-btn-32",
-      "recipe-dot-24",
     ];
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
@@ -443,6 +439,73 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it("CSS recipes accepted as 44-hit-area compensators bake real ≥44 dimensions", () => {
+    // Pins that the touch-target gate cannot be defeated by inventing a new
+    // recipe name. For every CSS-recipe class accepted as a compensator above
+    // (`hasSlop` ladder + `validCompensators` array), `src/styles/recipes.css`
+    // must declare real ≥44 dimensions or a documented slop strategy that
+    // reaches 44 hit area (`::before { inset: -Xpx }` + a coarse-pointer
+    // fallback that sets `min-height/min-width: 44px`).
+    const cssRecipeCompensators = ["recipe-icon-btn-32"] as const;
+    const recipesCss = readSrc("src/styles/recipes.css");
+    const violations: string[] = [];
+    for (const recipe of cssRecipeCompensators) {
+      const escaped = recipe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const blockRe = new RegExp(`\\.${escaped}\\b[^]*?\\}`, "g");
+      const blocks = recipesCss.match(blockRe) ?? [];
+      const allText = blocks.join("\n");
+      if (blocks.length === 0) {
+        violations.push(
+          `${recipe}: referenced as compensator but not defined in src/styles/recipes.css`,
+        );
+        continue;
+      }
+      const hasReal44 =
+        /(?:min-)?height:\s*44px/.test(allText) &&
+        /(?:min-)?width:\s*44px/.test(allText);
+      const hasDocumentedSlop =
+        /::before/.test(allText) &&
+        /inset:\s*-(?:[6-9]|1[0-2])px/.test(allText) &&
+        /@media\s*\(pointer:\s*coarse\)/.test(recipesCss) &&
+        new RegExp(
+          `@media\\s*\\(pointer:\\s*coarse\\)[^]*?\\.${escaped}[^]*?(?:min-)?height:\\s*44px`,
+        ).test(recipesCss);
+      if (!hasReal44 && !hasDocumentedSlop) {
+        violations.push(
+          `${recipe}: neither real 44px dimensions nor documented slop (::before inset + coarse-pointer 44px fallback) declared in src/styles/recipes.css`,
+        );
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("MediaCarousel eagerFirstSlide opt-in is granted to at most one call site", () => {
+    // Grids of N <MediaCarousel> (e.g. the 1×4 cockpit row) must not fan out
+    // into N eager image fetches on mount. The `eagerFirstSlide` prop is
+    // opt-in (default false) and is expected on at most one carousel — the
+    // single LCP-priority surface in the initial viewport. Scan every .tsx
+    // under src/ for truthy occurrences of the prop on a <MediaCarousel> tag.
+    const offenders: string[] = [];
+    for (const file of ALL_FILES) {
+      if (!file.endsWith(".tsx")) continue;
+      const content = readSrc(file);
+      for (const tag of iterateOpenTags(content, ["MediaCarousel"])) {
+        // Truthy if the attribute is present and NOT `={false}`.
+        // - `eagerFirstSlide`                → truthy (sugar for `={true}`)
+        // - `eagerFirstSlide={true}`         → truthy
+        // - `eagerFirstSlide={anyExpr}`      → truthy (assume truthy unless explicit false)
+        // - `eagerFirstSlide={false}`        → not counted
+        if (!/\beagerFirstSlide\b/.test(tag.attrs)) continue;
+        if (/\beagerFirstSlide\s*=\s*\{\s*false\s*\}/.test(tag.attrs)) continue;
+        offenders.push(`${file}:${lineNumber(content, tag.openIdx)}`);
+      }
+    }
+    expect(
+      offenders.length,
+      `eagerFirstSlide opt-in exceeds 1 call site (fans out N eager loads on a grid): ${offenders.join(", ")}`,
+    ).toBeLessThanOrEqual(1);
   });
 });
 

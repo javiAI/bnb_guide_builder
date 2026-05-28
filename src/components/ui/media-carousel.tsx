@@ -83,6 +83,11 @@ export interface MediaCarouselProps {
    *  and the user expects the slide they were viewing to stay put). */
   currentIdx?: number;
   onCurrentIdxChange?: (next: number | ((prev: number) => number)) => void;
+  /** Opt-in eager-load for the first slide. Off by default so a grid of N
+   *  carousels (e.g. the 1×4 cockpit row) does not fire N eager image fetches
+   *  on mount. Set true only on the single carousel that owns the initial LCP
+   *  in the viewport. */
+  eagerFirstSlide?: boolean;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────
@@ -112,6 +117,7 @@ export function MediaCarousel({
   bodyId,
   currentIdx: controlledIdx,
   onCurrentIdxChange,
+  eagerFirstSlide = false,
 }: MediaCarouselProps) {
   const [uncontrolledIdx, setUncontrolledIdx] = useState(0);
   const isControlled = controlledIdx !== undefined && onCurrentIdxChange !== undefined;
@@ -320,7 +326,7 @@ export function MediaCarousel({
         <img
           src={slide.url}
           alt={slide.alt || slide.title}
-          loading={index === 0 ? "eager" : "lazy"}
+          loading={index === 0 && eagerFirstSlide ? "eager" : "lazy"}
           decoding="async"
           draggable={false}
           className="absolute inset-0 h-full w-full select-none object-cover"
@@ -523,7 +529,7 @@ export function MediaCarousel({
           aria-label={`Medios de ${title}`}
           className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
-          <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1 py-1 backdrop-blur-[2px]">
+          <div className="pointer-events-auto inline-flex items-center rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
             {slides.map((slide, i) => {
               const isActive = i === safeIdx;
               return (
@@ -541,7 +547,7 @@ export function MediaCarousel({
                   }}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
                   className={cn(
-                    "recipe-dot-24 grid flex-none place-items-center rounded-full p-0.5",
+                    "grid h-11 w-11 flex-none place-items-center rounded-full",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >
