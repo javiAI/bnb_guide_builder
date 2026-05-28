@@ -221,10 +221,18 @@ Toda surface bajo `AUDITED_SURFACES` (hoy: overview + layout + theme-toggle; 16E
 
 Todo elemento clickable button-shaped (con `bg-[var(--color-...)]` o outline `border + border-[var(--color-...)] + rounded-[...]`) debe alcanzar **44 hit area**. Patrones aceptados (en orden de preferencia):
 
-1. **Visual 44**: `min-h-[44px]` / `min-h-11` / `h-11` / `h-12+`. Default para botones text-bearing y mobile-only (donde `pointer:coarse` es la regla).
-2. **Slop 32→44**: `recipe-icon-btn-32` (32 visual + `::before { inset: -6px }` = 44 hit en fine pointers; `@media (pointer: coarse)` colapsa a 44 visual). Default para topbar icon-only en desktop. **No** apta para messaging mobile, drawer mobile, ni cualquier surface con táctil primario — usar visual 44 ahí.
+1. **Visual 44**: `min-h-[44px]` / `min-h-11` / `h-11` / `h-12+`. Default para botones text-bearing y para cualquier superficie táctil primaria.
+2. **Slop 32→44 (`recipe-icon-btn-32`)**: 32 visual + `::before { inset: -6px }` = 44 hit en fine pointers; `@media (pointer: coarse)` colapsa a 44 visual. Válido **solo** para icon buttons aislados o suficientemente separados (topbar, controles individuales). **Prohibido** para rows densas de controles adyacentes — la slop de 12 px se solaparía con vecinos a <12 px de distancia. **No** apta para messaging mobile, drawer mobile, ni cualquier surface con táctil primario — usar visual 44 ahí.
+3. **Slop 24→44 (`recipe-carousel-dot-24`)**: 24 visual + `::before { inset: -10px }` = 44 hit en fine pointers; `@media (pointer: coarse)` colapsa a 44 visual (`min-h:44px` + `min-w:44px` + `::before inset:0`). Patrón aprobado para **dots de carousel y indicadores compactos** dentro de superficies media-backed. Contrato vinculante:
+   - **Per-target 44×44** (WCAG 2.5.5): cada dot mantiene `≥44` hit area en fine y coarse pointers. Lo verifica `media-carousel-overflow.spec.ts` con `hitWidth ≥ 44` y `hitHeight ≥ 44` por dot.
+   - **Solape controlado** entre `::before` rectángulos vecinos: aceptado para que la fila no domine visualmente la cover. Bound superior `≤ 20 px` enforced por test; clicks en la zona ambigua resuelven al `::before` posterior en DOM order. La regla anterior "no-overlap obligatorio + `gap-5`" se retira por inviable visualmente en columnas estrechas (cockpit 1×4 a 245 px). El contrato actual: cualquier `gap-N` que dé overlap ≤ 20 px es válido (`gap-1`/`gap-2` típicos; `gap-5` permitido si el ancho del contenedor lo requiere).
+   - **Margen mínimo `10 px`** al borde del contenedor con `overflow-hidden` (vertical) para que la slop no quede clipped — `bottom-3` (12 px) cubre el caso del carousel. Lo enforza el test de clipping en Playwright.
+   - **Coarse pointer**: la collapse a 44 visual es obligatoria — en este modo el visual+gap producen `0 px` de overlap (44+gap-1 = 48 px center-to-center). Lo verifica el test con branching `isCoarsePointer(page)`.
+   - Prohibido reintroducir el antiguo `recipe-dot-24` (contrato distinto, ya retirado: nunca alcanzaba 44 de forma fiable).
 
 Inline text links (sin bg ni outline button-style) están **exentos** por WCAG 2.5.8 (inline target exception). El test los excluye de la regla.
+
+`component-invariants.test.ts` enforza ambos recipes en tres listas (`hasSlop` ladder, `validCompensators`, `cssRecipeCompensators`) y valida sus declaraciones contra `src/styles/recipes.css`. Inventar un recipe nuevo sin registrarlo en las tres listas hace que el gate de touch-target falle.
 
 ### Surface profiles (operator vs guest, 16D.5)
 

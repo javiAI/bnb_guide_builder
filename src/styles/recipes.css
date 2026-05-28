@@ -49,6 +49,36 @@
 }
 
 /*
+ * Carousel dot — 24 visual + 20px ::before slop = 44 hit area on fine pointers.
+ * On coarse pointers the visual itself grows to 44 and the slop collapses.
+ *
+ * Pairing contract for the row that hosts these dots: ≥10px clearance to
+ * the media container edge so the slop is not clipped by an
+ * `overflow-hidden` ancestor. Per-target 44 hit area is preserved at every
+ * gap; gap between adjacent dots is a free parameter (see
+ * CLAUDE.md § Touch-target invariant — Slop 24→44). Carousel surfaces using
+ * a narrow column (e.g. cockpit 1×4 at 245 px) pick a tight gap (`gap-1`)
+ * and accept bounded ::before overlap; wider surfaces can use `gap-5`
+ * (20 px) for no-overlap geometry. The Playwright spec bounds overlap to
+ * ≤ 20 px on fine pointers and asserts 0 on coarse.
+ *
+ * Distinct from the retired `recipe-dot-24` (different contract — that one
+ * was removed because it did not reach 44 on fine pointers).
+ */
+.recipe-carousel-dot-24 {
+  position: relative;
+}
+.recipe-carousel-dot-24::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+@media (pointer: coarse) {
+  .recipe-carousel-dot-24 { min-height: 44px; min-width: 44px; }
+  .recipe-carousel-dot-24::before { inset: 0; }
+}
+
+/*
  * HoverCard primitive (src/components/ui/hover-card.tsx) — open/close animations
  * driven by Radix `data-state="open|closed"` attribute. Reduced-motion is already
  * handled by the existing rule at the bottom of this file (it short-circuits all

@@ -538,9 +538,26 @@ export function MediaCarousel({
         <div
           aria-label={`Medios de ${title}`}
           data-carousel-indicator="dots"
-          className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
+          // bottom-3 (12 px) keeps the ::before slop (-10 px) clear of the
+          // media container's overflow-hidden bottom edge — at bottom-2 the
+          // bottom edge of the hit rectangle would land 2 px below the
+          // container and be clipped.
+          className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex justify-center"
         >
-          <div className="pointer-events-auto inline-flex items-center rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
+          {/*
+            gap-1 (4 px) keeps the strip narrow so it doesn't dominate the
+            245 px chip cover (5×24 + 4×4 + 8 = 144 px ≈ proportional to the
+            ~140 px chip height). Per-target WCAG 2.5.5 (44 hit area) is
+            preserved by recipe-carousel-dot-24's ::before slop on fine
+            pointers and by min-h/min-w on coarse. Adjacent ::before
+            rectangles overlap by ~16 px on fine pointers — the overlap
+            zone sits at the midpoint between two visual dots, where user
+            intent is already ambiguous; clicks resolve to the rightmost
+            dot via DOM order. The previous gap-5 (20 px no-overlap rule)
+            was visually too wide for this cockpit column and is relaxed
+            here; component-invariants.test.ts no longer enforces it.
+          */}
+          <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
             {slides.map((slide, i) => {
               const isActive = i === safeIdx;
               return (
@@ -557,11 +574,8 @@ export function MediaCarousel({
                     setCurrentIdx(i);
                   }}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
-                  // 32 visual / 44 hit via recipe-icon-btn-32 (CLAUDE.md
-                  // § "Touch-target invariant" option 2). Larger visual
-                  // (h-11) was rejected for dominating the cover image.
                   className={cn(
-                    "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full",
+                    "recipe-carousel-dot-24 grid h-6 w-6 flex-none place-items-center rounded-full",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >
@@ -585,9 +599,11 @@ export function MediaCarousel({
       {slides.length > MAX_VISIBLE_DOTS && (() => {
         // Compact mode: a per-slide dot row would clip or wrap inside the
         // narrow card column at 1280 px (cockpit 1×4). Render a prev/next
-        // pair flanking a `N / M` counter announced via aria-live. Both
-        // arrows reuse the dots-mode recipe-icon-btn-32 slop (32 visual /
-        // 44 hit). Keyboard: ArrowLeft/Right cycle, Home/End jump to
+        // pair flanking a `N / M` counter announced via aria-live. Arrows
+        // use recipe-icon-btn-32 (32 visual / 44 hit on fine pointers,
+        // 44 visual on coarse) — safe here because the two controls are
+        // separated by the counter, so the expanded slop rectangles do
+        // not overlap. Keyboard: ArrowLeft/Right cycle, Home/End jump to
         // first/last. Reach to any slide via repeated arrow press or Home/End.
         const last = slides.length - 1;
         const prevIdx = safeIdx === 0 ? last : safeIdx - 1;

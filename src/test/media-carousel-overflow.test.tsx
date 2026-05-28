@@ -112,21 +112,68 @@ describe("<MediaCarousel> indicator overflow", () => {
     expect(counter.textContent).toMatch(/1\s*\/\s*8/);
   });
 
-  it("compact-mode arrow buttons reach 44×44 hit area via the documented slop recipe", () => {
+  it("compact-mode arrow buttons reach 44 hit area via recipe-icon-btn-32", () => {
     renderCarousel(8);
     const prev = screen.getByLabelText("Slide anterior");
     const next = screen.getByLabelText("Slide siguiente");
-    // Slop pattern: 32 visual (h-8 w-8) + recipe-icon-btn-32 (::before
-    // inset -6px on fine pointers; coarse-pointer media query collapses the
-    // recipe to 44 visual). This is the CLAUDE.md "Touch-target invariant"
-    // option 2 — accepted for icon-only desktop buttons. The previously
-    // removed `recipe-dot-24` is forbidden — verify it is NOT present.
+    // Compact mode keeps the recipe-icon-btn-32 slop (32 visual / 44 hit
+    // on fine pointers; 44 visual on coarse). This is safe here because
+    // the two arrows are separated by the counter — their expanded slop
+    // rectangles do not overlap. The retired `recipe-dot-24` (different
+    // contract) is forbidden in either mode.
     for (const btn of [prev, next]) {
       expect(btn.className).toMatch(/\bh-8\b/);
       expect(btn.className).toMatch(/\bw-8\b/);
       expect(btn.className).toMatch(/\brecipe-icon-btn-32\b/);
       expect(btn.className).not.toMatch(/recipe-dot-24/);
     }
+  });
+
+  it("dots mode renders 24×24 visual dots with recipe-carousel-dot-24 (not recipe-icon-btn-32)", () => {
+    const { container } = renderCarousel(5);
+    const dotStrip = container.querySelector('[data-carousel-indicator="dots"]') as HTMLElement;
+    expect(dotStrip).toBeTruthy();
+    const dots = within(dotStrip).getAllByRole("button");
+    expect(dots).toHaveLength(5);
+    for (const dot of dots) {
+      expect(dot.className).toMatch(/\bh-6\b/);
+      expect(dot.className).toMatch(/\bw-6\b/);
+      expect(dot.className).toMatch(/\brecipe-carousel-dot-24\b/);
+      // The retired contract (recipe-dot-24, without the carousel- prefix)
+      // MUST NOT come back. Word boundaries prevent false matches against
+      // recipe-carousel-dot-24.
+      expect(dot.className).not.toMatch(/\brecipe-dot-24\b/);
+      // Dots must not use the icon-button slop — that recipe has a
+      // different contract (32 visual + 6 px slop) and a recipe class
+      // mismatch on the dot row regresses the per-target 44 invariant.
+      expect(dot.className).not.toMatch(/\brecipe-icon-btn-32\b/);
+    }
+  });
+
+  it("dots-mode strip is narrow (gap-1) — controlled overlap permitted, per-target 44 hit area preserved", () => {
+    const { container } = renderCarousel(5);
+    const dotStrip = container.querySelector('[data-carousel-indicator="dots"]') as HTMLElement;
+    // The visible pill container hosts the dots. The tight gap-1 (4 px)
+    // keeps the strip ≈ 144 px wide so it does not dominate the 245 px
+    // chip. The recipe-carousel-dot-24 ::before slop still meets WCAG
+    // 2.5.5 per target; overlap between adjacent ::before rectangles is
+    // intentional and bounded (see Playwright spec for the upper bound).
+    const pill = dotStrip.querySelector(":scope > div") as HTMLElement;
+    expect(pill).toBeTruthy();
+    expect(pill.className).toMatch(/\bgap-1\b/);
+    expect(pill.className).not.toMatch(/\bgap-5\b/);
+  });
+
+  it("dots-mode aria-current moves to the selected dot when clicked", () => {
+    const { container } = renderCarousel(5);
+    const dotStrip = container.querySelector('[data-carousel-indicator="dots"]') as HTMLElement;
+    const dots = within(dotStrip).getAllByRole("button");
+    // Initially the first dot is current.
+    expect(dots[0].getAttribute("aria-current")).toBe("true");
+    expect(dots[2].getAttribute("aria-current")).toBeNull();
+    fireEvent.click(dots[2]);
+    expect(dots[0].getAttribute("aria-current")).toBeNull();
+    expect(dots[2].getAttribute("aria-current")).toBe("true");
   });
 
   it("threshold is strictly > MAX_VISIBLE_DOTS (6 slides → compact, 5 slides → dots)", () => {

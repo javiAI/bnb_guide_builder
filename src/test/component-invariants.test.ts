@@ -367,8 +367,9 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         // Width signals — required when the button-shape is fixed-square
         // (icon-only). `min-h-[44px]` alone is the text-bearing pattern (44
         // floor, content drives width, not a fixed square) and is exempted.
-        // `recipe-icon-btn-32` bakes both dimensions via the pseudo-element +
-        // coarse-pointer media query; no width signal needed.
+        // Slop recipes (`recipe-icon-btn-32`, `recipe-carousel-dot-24`) bake
+        // both dimensions via the pseudo-element + coarse-pointer media
+        // query; no width signal needed.
         const widthTokens = [
           "min-w-[44px]",
           "min-w-11",
@@ -378,7 +379,9 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           "w-14",
           "w-16",
         ];
-        const hasSlop = cls.includes("recipe-icon-btn-32");
+        const hasSlop =
+          cls.includes("recipe-icon-btn-32") ||
+          cls.includes("recipe-carousel-dot-24");
         const hasHeight = heightTokens.some((t) => cls.includes(t));
         const hasWidth = widthTokens.some((t) => cls.includes(t));
         const isTextBearingFloor =
@@ -387,8 +390,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
           hasSlop || (hasHeight && (isTextBearingFloor || hasWidth));
         if (!reaches44) {
           const reason = !hasHeight
-            ? "missing min-h-[44px] / h-11 / recipe-icon-btn-32"
-            : "icon-shaped (fixed height) — also needs w-11 / min-w-[44px] or recipe-icon-btn-32";
+            ? "missing min-h-[44px] / h-11 / recipe-icon-btn-32 / recipe-carousel-dot-24"
+            : "icon-shaped (fixed height) — also needs w-11 / min-w-[44px] or a slop recipe (recipe-icon-btn-32 / recipe-carousel-dot-24)";
           violations.push(
             `${file}:${lineNumber(content, openIdx)}  <${name}> button-shaped but ${reason}`,
           );
@@ -416,6 +419,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "w-11",
       "w-12",
       "recipe-icon-btn-32",
+      "recipe-carousel-dot-24",
     ];
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
@@ -448,7 +452,10 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     // must declare real ≥44 dimensions or a documented slop strategy that
     // reaches 44 hit area (`::before { inset: -Xpx }` + a coarse-pointer
     // fallback that sets `min-height/min-width: 44px`).
-    const cssRecipeCompensators = ["recipe-icon-btn-32"] as const;
+    const cssRecipeCompensators = [
+      "recipe-icon-btn-32",
+      "recipe-carousel-dot-24",
+    ] as const;
     const recipesCss = readSrc("src/styles/recipes.css");
     const violations: string[] = [];
     for (const recipe of cssRecipeCompensators) {
