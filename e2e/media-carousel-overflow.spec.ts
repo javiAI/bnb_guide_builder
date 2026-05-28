@@ -32,13 +32,29 @@ test.describe("MediaCarousel — compact-mode overflow", () => {
     await expect(compact.getByLabel("Slide siguiente")).toBeVisible();
   });
 
-  test("arrow buttons hit 44×44 (no pseudo-slop)", async ({ page }) => {
+  test("arrow buttons reach 44 hit area (32 visual + slop on fine pointers)", async ({ page }) => {
+    // Slop pattern: button visual is 32×32 on fine pointers (h-8 w-8) and the
+    // recipe-icon-btn-32 ::before extends -6px on each side, yielding a 44×44
+    // hit rectangle. Assert: (a) the recipe class is present so slop applies,
+    // (b) visual size ≥32, (c) the ::before pseudo extends inset -6px (the
+    // documented slop). On coarse-pointer projects the recipe collapses to
+    // visual 44 — covered by the webkit-iphone-13 project run.
     for (const label of ["Slide anterior", "Slide siguiente"]) {
       const btn = page.getByLabel(label);
+      await expect(btn).toHaveClass(/recipe-icon-btn-32/);
       const box = await btn.boundingBox();
       expect(box, `${label} bounding box`).not.toBeNull();
-      expect(box!.width, `${label} width`).toBeGreaterThanOrEqual(44);
-      expect(box!.height, `${label} height`).toBeGreaterThanOrEqual(44);
+      expect(box!.width, `${label} visual width`).toBeGreaterThanOrEqual(32);
+      expect(box!.height, `${label} visual height`).toBeGreaterThanOrEqual(32);
+      const slopInset = await btn.evaluate((el) => {
+        const cs = window.getComputedStyle(el, "::before");
+        return { top: cs.top, right: cs.right, bottom: cs.bottom, left: cs.left };
+      });
+      // -6px on each side → 32 + 6 + 6 = 44 hit area.
+      expect(slopInset.top).toBe("-6px");
+      expect(slopInset.right).toBe("-6px");
+      expect(slopInset.bottom).toBe("-6px");
+      expect(slopInset.left).toBe("-6px");
     }
   });
 

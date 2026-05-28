@@ -112,19 +112,21 @@ describe("<MediaCarousel> indicator overflow", () => {
     expect(counter.textContent).toMatch(/1\s*\/\s*8/);
   });
 
-  it("compact-mode arrow buttons are real 44×44 controls (no pseudo-slop)", () => {
+  it("compact-mode arrow buttons reach 44×44 hit area via the documented slop recipe", () => {
     renderCarousel(8);
     const prev = screen.getByLabelText("Slide anterior");
     const next = screen.getByLabelText("Slide siguiente");
-    // Both arrows declare h-11 (44px) + w-11 (44px) directly. No
-    // `recipe-icon-btn-32` / `recipe-dot-24` slop — verify the previously-
-    // removed recipe class is NOT present (would indicate a regression).
-    expect(prev.className).toMatch(/\bh-11\b/);
-    expect(prev.className).toMatch(/\bw-11\b/);
-    expect(next.className).toMatch(/\bh-11\b/);
-    expect(next.className).toMatch(/\bw-11\b/);
-    expect(prev.className).not.toMatch(/recipe-dot-24/);
-    expect(next.className).not.toMatch(/recipe-dot-24/);
+    // Slop pattern: 32 visual (h-8 w-8) + recipe-icon-btn-32 (::before
+    // inset -6px on fine pointers; coarse-pointer media query collapses the
+    // recipe to 44 visual). This is the CLAUDE.md "Touch-target invariant"
+    // option 2 — accepted for icon-only desktop buttons. The previously
+    // removed `recipe-dot-24` is forbidden — verify it is NOT present.
+    for (const btn of [prev, next]) {
+      expect(btn.className).toMatch(/\bh-8\b/);
+      expect(btn.className).toMatch(/\bw-8\b/);
+      expect(btn.className).toMatch(/\brecipe-icon-btn-32\b/);
+      expect(btn.className).not.toMatch(/recipe-dot-24/);
+    }
   });
 
   it("threshold is strictly > MAX_VISIBLE_DOTS (6 slides → compact, 5 slides → dots)", () => {

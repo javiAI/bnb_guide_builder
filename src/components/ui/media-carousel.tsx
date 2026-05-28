@@ -557,8 +557,11 @@ export function MediaCarousel({
                     setCurrentIdx(i);
                   }}
                   onKeyDown={(e) => handleDotKeyDown(e, i)}
+                  // 32 visual / 44 hit via recipe-icon-btn-32 (CLAUDE.md
+                  // § "Touch-target invariant" option 2). Larger visual
+                  // (h-11) was rejected for dominating the cover image.
                   className={cn(
-                    "grid h-11 w-11 flex-none place-items-center rounded-full",
+                    "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                   )}
                 >
@@ -581,11 +584,11 @@ export function MediaCarousel({
 
       {slides.length > MAX_VISIBLE_DOTS && (() => {
         // Compact mode: a per-slide dot row would clip or wrap inside the
-        // narrow card column at 1280 px (cockpit 1×4). Render a real-target
-        // prev/next pair flanking a `N / M` counter announced via aria-live.
-        // Both arrows are h-11 w-11 (no pseudo-slop, no overlap). Keyboard:
-        // ArrowLeft/Right cycle on either arrow; Home/End jump to first/last.
-        // Reach to any slide via repeated arrow press or via Home/End.
+        // narrow card column at 1280 px (cockpit 1×4). Render a prev/next
+        // pair flanking a `N / M` counter announced via aria-live. Both
+        // arrows reuse the dots-mode recipe-icon-btn-32 slop (32 visual /
+        // 44 hit). Keyboard: ArrowLeft/Right cycle, Home/End jump to
+        // first/last. Reach to any slide via repeated arrow press or Home/End.
         const last = slides.length - 1;
         const prevIdx = safeIdx === 0 ? last : safeIdx - 1;
         const nextIdx = safeIdx === last ? 0 : safeIdx + 1;
@@ -610,7 +613,7 @@ export function MediaCarousel({
             data-carousel-indicator="compact"
             className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
           >
-            <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
+            <div className="pointer-events-auto inline-flex items-center gap-0.5 rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
               <button
                 type="button"
                 aria-label="Slide anterior"
@@ -620,17 +623,17 @@ export function MediaCarousel({
                 }}
                 onKeyDown={handleCompactKeyDown}
                 className={cn(
-                  "grid h-11 w-11 flex-none place-items-center rounded-full",
+                  "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                 )}
               >
-                <ChevronLeft className="h-4 w-4 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
+                <ChevronLeft className="h-3 w-3 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
               </button>
               <span
                 aria-live="polite"
                 aria-atomic="true"
                 data-carousel-counter
-                className="min-w-[44px] px-1 text-center text-xs font-medium tabular-nums text-[var(--color-text-on-overlay)]"
+                className="min-w-[28px] px-0.5 text-center text-[11px] font-medium tabular-nums text-[var(--color-text-on-overlay)]"
               >
                 {safeIdx + 1} / {slides.length}
               </span>
@@ -643,11 +646,11 @@ export function MediaCarousel({
                 }}
                 onKeyDown={handleCompactKeyDown}
                 className={cn(
-                  "grid h-11 w-11 flex-none place-items-center rounded-full",
+                  "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
                 )}
               >
-                <ChevronRight className="h-4 w-4 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
+                <ChevronRight className="h-3 w-3 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
               </button>
             </div>
           </div>
