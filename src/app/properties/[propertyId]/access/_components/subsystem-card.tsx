@@ -20,6 +20,11 @@ import { DEFAULT_DISCOVERY_RADIUS_M } from "@/lib/services/arrival-discovery.ser
 import type { AccessCockpitId } from "@/lib/icons/access-icons";
 
 const PARKING_COCKPIT_ID: AccessCockpitId = "parking";
+// `building` is the first card in the cockpit 1×4 row and owns the LCP image
+// in the access surface — its collapsed carousel is the only one allowed to
+// opt into `eagerFirstSlide`. All other cards stay lazy so the row doesn't
+// fire N eager fetches on mount (see <MediaCarousel> prop docstring).
+const BUILDING_COCKPIT_ID: AccessCockpitId = "building";
 import { MultiPinMap, feeTypeToPinKind, type MultiPinSpec } from "./multi-pin-map";
 import { MediaLightbox } from "./media-lightbox";
 import { ParkingStateProvider } from "./use-parking-management";
@@ -654,6 +659,7 @@ export function SubsystemCard({
         onLightboxOpen={handleLightboxOpen}
         currentIdx={carouselIdx}
         onCurrentIdxChange={setCarouselIdx}
+        eagerFirstSlide={cockpitId === BUILDING_COCKPIT_ID}
       />
       {lightboxIdx !== null && (
         <MediaLightbox

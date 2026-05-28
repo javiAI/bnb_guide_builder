@@ -1,6 +1,6 @@
 "use client";
 
-import { Expand, Loader2, Plus, Video, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, Loader2, Plus, Video, ZoomIn } from "lucide-react";
 import {
   useCallback,
   useMemo,
@@ -100,6 +100,16 @@ const SWIPE_EDGE_RESISTANCE = 0.3;
 const TRACK_TRANSITION_MS = 280;
 const PLACEHOLDER_DEFAULT_GRADIENT =
   "linear-gradient(135deg, var(--color-background-muted), var(--color-background-subtle))";
+
+/**
+ * When a carousel hosts more slides than `MAX_VISIBLE_DOTS`, the per-slide
+ * dot row is replaced by a compact "prev arrow · `N / M` counter · next arrow"
+ * strip. Five real 44×44 dots × ~44 px each + gaps ≈ 220 px which fits inside
+ * a narrow card column at 1280 px (cockpit 1×4 layout, ~245 px per card).
+ * Above that the dot row would clip or wrap. Touch targets remain ≥44×44 on
+ * both modes — no pseudo-element slop, no overlapping hit areas.
+ */
+const MAX_VISIBLE_DOTS = 5;
 
 // ── Component ────────────────────────────────────────────────────────────
 
@@ -524,9 +534,10 @@ export function MediaCarousel({
         );
       })()}
 
-      {slides.length > 1 && (
+      {slides.length > 1 && slides.length <= MAX_VISIBLE_DOTS && (
         <div
           aria-label={`Medios de ${title}`}
+          data-carousel-indicator="dots"
           className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
         >
           <div className="pointer-events-auto inline-flex items-center rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
@@ -567,6 +578,81 @@ export function MediaCarousel({
           </div>
         </div>
       )}
+
+      {slides.length > MAX_VISIBLE_DOTS && (() => {
+        // Compact mode: a per-slide dot row would clip or wrap inside the
+        // narrow card column at 1280 px (cockpit 1×4). Render a real-target
+        // prev/next pair flanking a `N / M` counter announced via aria-live.
+        // Both arrows are h-11 w-11 (no pseudo-slop, no overlap). Keyboard:
+        // ArrowLeft/Right cycle on either arrow; Home/End jump to first/last.
+        // Reach to any slide via repeated arrow press or via Home/End.
+        const last = slides.length - 1;
+        const prevIdx = safeIdx === 0 ? last : safeIdx - 1;
+        const nextIdx = safeIdx === last ? 0 : safeIdx + 1;
+        const handleCompactKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            setCurrentIdx(prevIdx);
+          } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            setCurrentIdx(nextIdx);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            setCurrentIdx(0);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            setCurrentIdx(last);
+          }
+        };
+        return (
+          <div
+            aria-label={`Medios de ${title}`}
+            data-carousel-indicator="compact"
+            className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
+          >
+            <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-1 backdrop-blur-[2px]">
+              <button
+                type="button"
+                aria-label="Slide anterior"
+                onClick={() => {
+                  if (swipedRef.current) { swipedRef.current = false; return; }
+                  setCurrentIdx(prevIdx);
+                }}
+                onKeyDown={handleCompactKeyDown}
+                className={cn(
+                  "grid h-11 w-11 flex-none place-items-center rounded-full",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
+                )}
+              >
+                <ChevronLeft className="h-4 w-4 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
+              </button>
+              <span
+                aria-live="polite"
+                aria-atomic="true"
+                data-carousel-counter
+                className="min-w-[44px] px-1 text-center text-xs font-medium tabular-nums text-[var(--color-text-on-overlay)]"
+              >
+                {safeIdx + 1} / {slides.length}
+              </span>
+              <button
+                type="button"
+                aria-label="Slide siguiente"
+                onClick={() => {
+                  if (swipedRef.current) { swipedRef.current = false; return; }
+                  setCurrentIdx(nextIdx);
+                }}
+                onKeyDown={handleCompactKeyDown}
+                className={cn(
+                  "grid h-11 w-11 flex-none place-items-center rounded-full",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text-on-overlay)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--color-background-overlay)]",
+                )}
+              >
+                <ChevronRight className="h-4 w-4 text-[var(--color-text-on-overlay)]" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -481,13 +481,25 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     expect(violations).toEqual([]);
   });
 
-  it("MediaCarousel eagerFirstSlide opt-in is granted to at most one call site", () => {
+  it("MediaCarousel eagerFirstSlide opt-in is granted to at most one call site globally, exactly one on the access surface", () => {
     // Grids of N <MediaCarousel> (e.g. the 1×4 cockpit row) must not fan out
     // into N eager image fetches on mount. The `eagerFirstSlide` prop is
     // opt-in (default false) and is expected on at most one carousel — the
     // single LCP-priority surface in the initial viewport. Scan every .tsx
     // under src/ for truthy occurrences of the prop on a <MediaCarousel> tag.
+    //
+    // Two assertions:
+    //   1. Global ceiling — across the whole codebase, ≤1 call site opts in.
+    //   2. Access-surface floor — the access cockpit owns the LCP carousel
+    //      (building card, collapsed cover). Exactly one opt-in must live
+    //      under `…/access/…`. The expression is `cockpitId === BUILDING_…`
+    //      on the shared card component, so the single opt-in covers all
+    //      cockpits and toggles itself ON only for building. Locking the
+    //      floor stops a future refactor from silently demoting the building
+    //      card off the priority lane (without re-promoting it elsewhere).
     const offenders: string[] = [];
+    let accessSurfaceOptIns = 0;
+    const ACCESS_SURFACE_PATTERN = /\/access(?:\/|$)/;
     for (const file of ALL_FILES) {
       if (!file.endsWith(".tsx")) continue;
       const content = readSrc(file);
@@ -500,12 +512,17 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         if (!/\beagerFirstSlide\b/.test(tag.attrs)) continue;
         if (/\beagerFirstSlide\s*=\s*\{\s*false\s*\}/.test(tag.attrs)) continue;
         offenders.push(`${file}:${lineNumber(content, tag.openIdx)}`);
+        if (ACCESS_SURFACE_PATTERN.test(file)) accessSurfaceOptIns += 1;
       }
     }
     expect(
       offenders.length,
       `eagerFirstSlide opt-in exceeds 1 call site (fans out N eager loads on a grid): ${offenders.join(", ")}`,
     ).toBeLessThanOrEqual(1);
+    expect(
+      accessSurfaceOptIns,
+      `access surface must have exactly one eagerFirstSlide opt-in (building card collapsed cover); found ${accessSurfaceOptIns}`,
+    ).toBe(1);
   });
 });
 
