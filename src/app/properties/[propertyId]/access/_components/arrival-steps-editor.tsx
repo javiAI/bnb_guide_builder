@@ -1402,7 +1402,7 @@ function RateChipList({
             "hover:border-[var(--color-action-primary)] hover:text-[var(--color-action-primary)]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            "[@media(pointer:coarse)]:min-h-[32px]",
+            "[@media(pointer:coarse)]:min-h-[44px]",
           )}
         >
           <Plus size={10} aria-hidden="true" />

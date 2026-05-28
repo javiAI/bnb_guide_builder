@@ -16,7 +16,10 @@ import { PageHeader } from "@/components/ui/page-header";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { saveAccessAction } from "@/lib/actions/editor.actions";
-import { NO_ACCESSIBILITY_ID } from "@/lib/services/access-tri-state";
+import {
+  NO_ACCESSIBILITY_ID,
+  OTHER_ACCESSIBILITY_ID,
+} from "@/lib/services/access-tri-state";
 import type { ActionResult } from "@/lib/types/action-result";
 import { accessMethods } from "@/lib/taxonomies/access-methods";
 import { buildingAccessMethods } from "@/lib/taxonomies/building-access-methods";
@@ -46,7 +49,11 @@ import {
   type ArrivalStep,
   type ArrivalStepKey,
 } from "./_components/arrival-steps-editor";
-import type { RateTier } from "./_components/arrival-steps-helpers";
+import {
+  isIntercityMode,
+  type IntercityMode,
+  type RateTier,
+} from "./_components/arrival-steps-helpers";
 import { ParkingPlacesEditor } from "./_components/parking-places-editor";
 import { HorariosEditor } from "./_components/horarios-editor";
 import {
@@ -112,7 +119,7 @@ const ACCESSIBILITY_GROUPS: readonly AccessibilityGroup[] = [
   {
     key: "other",
     label: "Otra característica",
-    ids: ["ax.other"],
+    ids: [OTHER_ACCESSIBILITY_ID],
   },
 ];
 
@@ -195,9 +202,11 @@ function deriveAccessibilityStatus(
 ): SubsystemStatus {
   // Tri-state: `ax.no_accessibility` is the explicit opt-out chip (configured),
   // empty is unanswered (pending), positive features configured iff complete.
-  if (features.includes("ax.no_accessibility")) return "configured";
+  if (features.includes(NO_ACCESSIBILITY_ID)) return "configured";
   if (features.length === 0) return "pending";
-  return itemsConfigured(features, customLabel, "ax.other") ? "configured" : "pending";
+  return itemsConfigured(features, customLabel, OTHER_ACCESSIBILITY_ID)
+    ? "configured"
+    : "pending";
 }
 
 // Wrap state updates in a View Transition. flushSync forces React to commit
@@ -741,8 +750,8 @@ export function AccessForm({
     () =>
       arrivalOptions
         .filter(
-          (o): o is ArrivalOption & { mode: "train" | "bus" | "airport" } =>
-            o.mode === "train" || o.mode === "bus" || o.mode === "airport",
+          (o): o is ArrivalOption & { mode: IntercityMode } =>
+            isIntercityMode(o.mode),
         )
         .map((o) => ({
           id: o.id,
@@ -916,7 +925,7 @@ export function AccessForm({
             />
           </>
         )}
-        {axFeatures.includes("ax.other") && (
+        {axFeatures.includes(OTHER_ACCESSIBILITY_ID) && (
           <>
             <input
               type="hidden"
@@ -1468,7 +1477,7 @@ function AccessibilityPanel({
                       description={item.description}
                       selected={axFeatures.includes(id)}
                       onClick={() => toggleAxFeature(id)}
-                      isOther={id === "ax.other"}
+                      isOther={id === OTHER_ACCESSIBILITY_ID}
                       customLabel={axCustomLabel}
                       customDesc={axCustomDesc}
                       onCustomLabelChange={setAxCustomLabel}

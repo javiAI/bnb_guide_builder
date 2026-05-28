@@ -27,6 +27,7 @@ import {
   parseModesMap,
   readArrivalCache,
 } from "@/lib/services/arrival-cache";
+import { NO_ACCESSIBILITY_ID } from "@/lib/services/access-tri-state";
 import { AccessForm, type ParkingPlace } from "./access-form";
 import {
   RATE_TIER_PERS,
@@ -596,7 +597,7 @@ export default async function AccessPage({ params }: Props) {
         // here. true + null follow the JSON-or-empty branches naturally.
         accessibilityFeatures:
           property.hasAccessibilityConsiderations === false
-            ? ["ax.no_accessibility"]
+            ? [NO_ACCESSIBILITY_ID]
             : (accessJson?.accessibility?.features ?? []),
         accessibilityCustomLabel: accessJson?.accessibility?.customLabel ?? null,
         accessibilityCustomDesc: accessJson?.accessibility?.customDesc ?? null,

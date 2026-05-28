@@ -252,6 +252,20 @@ export function MediaLightbox({
   const resizingRef = useRef(false);
   resizingRef.current = resizing;
 
+  // Owns mid-drag listeners + RAF so unmount mid-drag doesn't leak window
+  // listeners or leave a pending frame pointing at a stale setState. Each
+  // drag swaps the previous AbortController for a fresh one; component
+  // unmount aborts whichever is current.
+  const dragControllerRef = useRef<AbortController | null>(null);
+  const dragRafRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      dragControllerRef.current?.abort();
+      if (dragRafRef.current !== null) cancelAnimationFrame(dragRafRef.current);
+    },
+    [],
+  );
+
   const handleResizeStart = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -260,21 +274,30 @@ export function MediaLightbox({
     target.setPointerCapture(e.pointerId);
     setResizing(true);
 
+    dragControllerRef.current?.abort();
+    const controller = new AbortController();
+    dragControllerRef.current = controller;
+    const { signal } = controller;
+
     // RAF-throttle pointermove → at most one setState per frame, even when
     // pointer events fire at 120Hz. Without this, every move re-renders the
     // lightbox + MapLibre's parent layout.
-    let pendingRaf: number | null = null;
     let pendingX = 0;
     const flush = () => {
-      pendingRaf = null;
+      dragRafRef.current = null;
       setPanelW(clampPanelWidth(window.innerWidth - pendingX));
     };
     const onMove = (ev: PointerEvent) => {
       pendingX = ev.clientX;
-      if (pendingRaf === null) pendingRaf = requestAnimationFrame(flush);
+      if (dragRafRef.current === null) {
+        dragRafRef.current = requestAnimationFrame(flush);
+      }
     };
     const onUp = (ev: PointerEvent) => {
-      if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
       target.releasePointerCapture?.(ev.pointerId);
       setResizing(false);
       const finalW = clampPanelWidth(window.innerWidth - ev.clientX);
@@ -284,13 +307,14 @@ export function MediaLightbox({
       } catch {
         // localStorage may be disabled — ignore, in-memory width still works.
       }
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      controller.abort();
+      if (dragControllerRef.current === controller) {
+        dragControllerRef.current = null;
+      }
     };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+    window.addEventListener("pointermove", onMove, { signal });
+    window.addEventListener("pointerup", onUp, { signal });
+    window.addEventListener("pointercancel", onUp, { signal });
   }, []);
 
   // Suppress text selection + body cursor while dragging so the resize feels
