@@ -444,3 +444,38 @@ Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y dem
 ### Por qué no se hace inline en la rama actual
 
 16E.6 cerró con un contrato deliberadamente estrecho (intercity + parking) para no acumular debt mientras la spec real de last-mile estaba especulativa. Implementar taxi parcialmente — solo como POI sin telefono ni cascada de contactos — habría sido peor que no hacerlo: el operador rellena tres paradas de taxi inútiles y el huésped sigue abriendo Google Maps.
+
+---
+
+## 21. Estado "sin revisar" tri-estado para equipamiento
+
+**Estado**: diferido — explícitamente fuera del scope de 16E.5 (`amenities/` visual parity).
+
+### Contexto
+
+El kit `page-equipamiento` (`subpages.html`) muestra un modelo tri-estado por amenity: **disponible** / **no tiene** / **sin revisar**, con un chip `pg-chip` "4 sin revisar", un `filter-btn` "Sin revisar" en la toolbar, y un `eq-tag warn` "Sin revisar" en las filas no confirmadas. El modelo de datos real de equipamiento es **binario**: una `PropertyAmenityInstance` existe (disponible) o no existe (no disponible). No hay un tercer estado persistido ni un campo `reviewed`/`status` en el esquema.
+
+16E.5 portó la silueta del kit sobre el modelo binario y **eliminó** las tres superficies tri-estado (chip, filtro, tag-warn). La decisión de Fase -1: fabricar "sin revisar" sobre un modelo binario es engaño visual — un amenity "sin revisar" sería indistinguible de uno "no disponible" en datos, así que el operador vería un estado que el sistema no puede respaldar. La toolbar conserva solo el filtro "Sólo configurados" (`enabled === true`), honesto sobre el modelo binario.
+
+### Qué añadiría el tri-estado
+
+Un tercer estado real "sin revisar" que distinga "el operador confirmó que esta propiedad NO tiene este equipamiento" de "el operador aún no ha mirado este equipamiento". Útil para:
+
+- Onboarding: marcar progreso de revisión sin forzar un sí/no prematuro.
+- Checklists de calidad: "te quedan 4 amenities sin revisar antes de publicar".
+- Señal de completeness más rica que el binario actual.
+
+### Implementación sugerida
+
+1. Migración aditiva: columna `reviewState` (`available | unavailable | unreviewed`, default `unreviewed`) en `PropertyAmenityInstance`, **o** un modelo `PropertyAmenityReview` separado para no crear filas por amenity no disponible (el modelo actual no persiste "no tiene"). Decidir cuál según si "no tiene" debe persistirse explícitamente.
+2. Server action `setAmenityReviewState` (reemplaza/extiende `toggleAmenityAction`).
+3. UI tri-estado en `eq-item-row.tsx` (el control `lc` pasa de checkbox binario a segmented tri-state, cf. `.tri` en el kit) + `eq-tag warn` + chip `pg-chip` "sin revisar" + `filter-btn` "Sin revisar" en `amenities-toolbar.tsx`.
+4. `completeness-scoring` ponderando "sin revisar" distinto de "no disponible".
+
+### Por qué no se hace en 16E.5
+
+16E.5 es **visual parity port, 0 cambios funcionales / 0 cambios de schema** (restricción dura del replatform Liora). El tri-estado requiere migración + server action + ponderación de completeness — todo cambio funcional. Portar el chrome tri-estado sin el modelo de datos detrás sería un placebo: el huésped/operador vería "sin revisar" sin que el dato exista.
+
+### Trigger para implementar
+
+Cuando el onboarding o el gate de publicación necesiten distinguir "revisado y no lo tiene" de "no revisado todavía" como señal de completeness — p.ej. cuando se quiera un checklist "X amenities pendientes de revisar" antes de publicar la guía.
