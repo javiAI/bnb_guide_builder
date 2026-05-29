@@ -116,6 +116,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           <select
             name="bedType"
             required
+            aria-label="Tipo de cama"
             value={selectedType}
             onChange={(e) => { setSelectedType(e.target.value); setCustomBedLabel(""); }}
             className="flex-1 min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none"
