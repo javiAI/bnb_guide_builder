@@ -265,7 +265,7 @@ export default async function SpacesPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
             {spaces.map(renderCard)}
           </div>
         )}
@@ -282,7 +282,7 @@ export default async function SpacesPage({
           <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
             Los espacios archivados no cuentan en capacidad ni aparecen en la guía del huésped. Puedes restaurarlos en cualquier momento.
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
             {archivedSpaces.map(renderCard)}
           </div>
         </NumberedSection>

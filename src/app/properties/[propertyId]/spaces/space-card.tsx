@@ -241,10 +241,10 @@ export function SpaceCard({
       aria-labelledby={titleId}
       className={cn(
         "overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-200",
-        expanded && "sm:col-span-2",
+        expanded && "col-span-full",
         isArchived
           ? "border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] opacity-80"
-          : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)]",
+          : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-strong)]",
       )}
     >
       {/* ── Cover ── */}
@@ -267,7 +267,7 @@ export function SpaceCard({
           </div>
         )}
         {photoCount > 0 && (
-          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)]">
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)]">
             <Camera size={11} aria-hidden="true" />
             {photoCount}
           </span>
@@ -376,7 +376,7 @@ export function SpaceCard({
         {/* ── Foot: progress + status pill ── */}
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="flex min-w-0 flex-1 items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
-            <span className="h-1.5 max-w-[140px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
+            <span className="h-[3px] max-w-[110px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
               <span
                 className={cn("block h-full rounded-full", progress.bar)}
                 style={{ width: `${percent}%` }}
