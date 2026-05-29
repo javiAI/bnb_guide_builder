@@ -14,7 +14,7 @@ Migration order and status for each product surface adopting the Liora foundatio
 | **Guest guide** | `/g/:slug` | **16C** | **✅ migrated** |
 | Operator shell (sidebar, topbar) | `/properties/**` | 16D | ✅ migrated |
 | Operator modules (wizard, editor) — **baseline** | `/properties/**` | 16E | 🟡 in progress |
-| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting}` | 16E.5 | ⬜ pending (required follow-up) |
+| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting,policies}` | 16E.5 | 🟡 in progress (access ✅, policies ✅; rest pending) |
 | Messaging + assistant | `/properties/*/messaging`, `/g/:slug` chat | 16F | ⬜ pending |
 | Legacy alias removal | global | 16G | ⬜ pending |
 
@@ -94,6 +94,7 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 - `src/app/properties/[propertyId]/amenities/` — kit reference `page-equipamiento` exists; visual silhouette deferred to 16E.5.
 - `src/app/properties/[propertyId]/systems/` — kit reference `page-sistemas` exists; visual silhouette deferred to 16E.5.
 - `src/app/properties/[propertyId]/troubleshooting/` — kit reference `page-averias` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/policies/` — kit reference `page-normas` exists; **no 16E E1 baseline** (was absent from AUDITED_SURFACES + EXPECTED_OPERATOR_SCOPE_PATTERNS), so the dedicated branch `feat/liora-policies-visual-parity` ships E2-baseline + silhouette together. ✅ ported.
 
 #### Deferred visual parity — required follow-up
 
@@ -129,7 +130,29 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 | `systems/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `troubleshooting/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
+| `policies/` | ⬜ no E1 baseline (shipped here) | ✅ parity ported (global 8.6, PASS) | `feat/liora-policies-visual-parity` (dedicated branch) |
 | wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
+
+##### Parity audit verdict — `policies/` (`feat/liora-policies-visual-parity`)
+
+**Kit reference**: `ui_kits/operator/subpages.html` § `page-normas`. **Verdict: PASS** — global **8.6**, every criterion ≥ 7.5, zero blockers. Audited light + dark at 1440/1024/375; screenshots in `design-system/tmp/policies/` (gitignored — local review artifacts: `before-{light,dark}`, `after-{light,dark,light-1024,light-375,light-expanded}`, `kit-normas`).
+
+| Criterion | Score | Note |
+|-----------|-------|------|
+| Layout silhouette | 9.0 | Shell + single-column numbered sections match the kit archetype. |
+| Visual hierarchy | 8.5 | eyebrow → title → sub → rule → 01–04 sections match; chip-strip omitted (see divergence). |
+| Density / spacing | 8.5 | Section gutters (mb-8) + field rhythm (space-y-6) align with the kit. |
+| Component fidelity | 7.5 | Per-rule Lucide icon anatomy matches; controls diverge (radio/checkbox/toggle editors vs the kit's tri-state display cards — see divergence). |
+| Token fidelity | 9.5 | 100% semantic tokens; 0 hex/rgb/oklch; 0 primitive leaks. Switch knob uses `bg-white` (accepted switch convention, not a token leak). |
+| Interaction / state | 8.5 | hover/active/selected (olive-subtle)/disabled/loading/empty/error all present with correct tokens. |
+| Dark mode | 9.0 | Coherent in dark, no FOUC, axe-clean; every semantic token has a `[data-theme="dark"]` binding. |
+
+**Documented divergences from the kit** (approved Fase -1 decisions — not drift):
+
+1. **Chip-strip omitted** (kit shows "N definidas / N sin decidir"). The binary policy data model has no honest mapping to a decided/undecided count. Header = eyebrow + title + description + rule, no chips.
+2. **Tri-state rule cards not adopted.** The kit's `page-normas` is a read-mostly *display* mock with yes/no/maybe per rule; the real model is an *editor* with multi-option radios, toggles, sub-forms (fees, time ranges, instructions). Per zero-functional-change, the existing controls (`RadioCardGroup`, `CheckboxCardGroup`, `NumberStepper`, switch) are preserved inside always-expanded `NumberedSection`s (Option B). This is the source of the component-fidelity score (7.5) — the divergence is data-model-driven and documented, not unaddressed drift.
+
+**Shared-primitive note** (not a blocker): `InfoTooltip` triggers render at 16×16 (`<span role="button">` inside the primitive). Pre-existing shared component, already shipped on audited `property/` + `spaces/` surfaces through the same gate; a target-size bump belongs in a shared-primitive PR, not this module branch.
 
 #### Wizard E2E smoke gate — opt-out documented
 

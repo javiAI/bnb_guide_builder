@@ -147,6 +147,13 @@ Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + va
 
 Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 16A junto con el paquete de diseño.
 
+### Follow-up: `InfoTooltip` trigger target-size (hallazgo audit 16E.5)
+
+**Estado**: diferido — cleanup de primitivo compartido, transversal.
+**Origen**: auditoría de paridad de `policies/` (`feat/liora-policies-visual-parity`, 16E.5).
+
+`src/components/ui/info-tooltip.tsx` renderiza su trigger `(i)` como `<span role="button">` a 16×16 (`h-4 w-4`), por debajo del floor de 44 hit-area a coarse pointer. No es blocker de paridad por módulo: es afordancia de ayuda suplementaria, ya embarcada en superficies auditadas (`property/`, `spaces/`) por el mismo gate. El fix (slop `recipe-icon-btn-32` o hit-area ampliado preservando el visual 16×16) pertenece a un **PR de primitivo compartido**, no a una rama de módulo — toca a todos los consumidores a la vez. **Destino**: PR `chore/liora-shared-primitive-target-size` o el barrido 16G.
+
 ---
 
 ## 12. Image resize/optimization on upload
