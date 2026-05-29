@@ -444,3 +444,33 @@ Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y dem
 ### Por qué no se hace inline en la rama actual
 
 16E.6 cerró con un contrato deliberadamente estrecho (intercity + parking) para no acumular debt mientras la spec real de last-mile estaba especulativa. Implementar taxi parcialmente — solo como POI sin telefono ni cascada de contactos — habría sido peor que no hacerlo: el operador rellena tres paradas de taxi inútiles y el huésped sigue abriendo Google Maps.
+
+---
+
+## 21. Messaging inbox + AI-assist console (16F kit aspirational)
+
+**Estado**: diferido — explícitamente fuera del scope de la rama `feat/liora-messaging-visual-parity` (16F messaging).
+
+### Contexto
+
+El mock `design-system/references/liora-ui-kits/ui_kits/messaging/index.html` dibuja una **bandeja de conversación en vivo** de 4 columnas (sidebar · lista de conversaciones · hilo · panel de contexto): mensajes entrantes del huésped, respuestas de la IA, escalado manual, panel de fuentes + cronología. Ese dominio **no existe** en el producto: la superficie real de messaging es **autoría de plantillas + cableado de automatizaciones + revisión de borradores**, no un chat inbox. La rama 16F portó la *gramática visual* del kit (eyebrows en mayúsculas, chips de estado, composer, acento terracota para IA/automatización, cronología) sobre las superficies reales que existen, y clasificó honestamente el resto como aspiracional. Cada grupo de abajo necesita modelo de datos / API / pipeline que hoy no existe — son features nuevas, no re-skins.
+
+Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, gana aspirational. Los 5 `derivable` cableados (counter chips, automation summary, status tones, last-activity, composer visual) consumen datos ya existentes sin nueva ruta ni migración; todo lo de abajo queda fuera.
+
+### Grupos aspiracionales (destino: este doc o rama futura nombrada)
+
+1. **inbox** — bandeja de conversaciones en vivo (lista con avatar, preview, unread dot, active-state con acento izquierdo de 3px, tabs Activas/Esperando/IA/Resueltas). Requiere un modelo de hilo de mensajería bidireccional (entrada del huésped) que no existe: hoy el huésped no envía mensajes al operador por esta superficie. **Trigger**: cuando exista ingest de mensajes huésped→operador (canal Airbnb/WhatsApp/email) con su propio modelo `Conversation`/`Message`. Rama futura nombrada: `feat/messaging-inbox`.
+
+2. **thread** — hilo de burbujas (huésped / IA / host) con separadores de día, footer con timestamp + fuentes citadas + rating 👍/👎, acción "Resolver". Depende de (1) + de persistir conversación + estado `resolved` (campo nuevo). **Trigger**: junto con `feat/messaging-inbox`. Las burbujas de IA, cuando se cableen, usan `--color-action-primary-*` (terracota), nunca el azul-gris frío del kit.
+
+3. **ai-assist** — callout "La IA propone esta respuesta" con confianza + fuentes + acciones Enviar/Editar/Descartar, y toggle de auto-respuesta en el composer. El pipeline del assistant (Fase 11) puede *sintetizar* respuestas, pero no hay superficie de "sugerencia pendiente sobre un mensaje entrante" ni envío automático. **Trigger**: tras (1)+(2), una rama `feat/messaging-ai-suggestions` que conecte `synthesize()` a un mensaje entrante real. No tocar `src/lib/services/assistant/*` ni la API en una rama visual.
+
+4. **context-panel** — panel derecho: ficha del huésped (avatar 44px + KV reserva/check-in/canal/idioma), source cards con relevance badge, "hueco detectado" (gap alert), cronología vertical. Las source cards + gap alert son derivables de `citationsJson`/`escalated` (Fase 11) **pero solo en el contexto de una conversación con un mensaje del assistant** — que no existe sin (1)-(3). La cronología necesita el log de eventos de la conversación + audit (Fase 15D) con actor switches. **Trigger**: junto con `feat/messaging-inbox`.
+
+5. **composer-tools** — botones de herramienta del composer (adjuntar archivo, imagen, nota de voz) + botón de envío. El pipeline de media + audio para mensajería saliente no existe; el composer de 16F re-skinea la caja + tool-row pero **solo** expone "Insertar variable" (que sí existe). **Trigger**: cuando exista un canal de envío real con soporte de adjuntos. Rama futura: `feat/messaging-composer-tooling`.
+
+6. **search** — búsqueda dentro de conversaciones ("Buscar en conversaciones") + filtros por tab. Requiere el corpus de conversaciones de (1). **Trigger**: junto con `feat/messaging-inbox` (índice sobre `Message`).
+
+### Por qué no se hace inline en la rama actual
+
+16F es una rama de **paridad visual** (0 cambios funcionales, 0 schema, 0 API). Cada grupo de arriba implica modelo de datos nuevo (`Conversation`/`Message`/`resolved`), ingest de canal externo, o pipeline de envío — superficie de regresión y producto nuevo que no cabe en un re-skin. Implementarlos parcialmente sería peor que diferirlos: un inbox sin ingest real es una pantalla vacía que miente sobre lo que el producto hace hoy.
