@@ -444,3 +444,65 @@ Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y dem
 ### Por qué no se hace inline en la rama actual
 
 16E.6 cerró con un contrato deliberadamente estrecho (intercity + parking) para no acumular debt mientras la spec real de last-mile estaba especulativa. Implementar taxi parcialmente — solo como POI sin telefono ni cascada de contactos — habría sido peor que no hacerlo: el operador rellena tres paradas de taxi inútiles y el huésped sigue abriendo Google Maps.
+
+---
+
+## 21. Spaces — "Ver plano" (vista de plano de la propiedad)
+
+**Estado**: aspirational — el kit `page-espacios` muestra una CTA secundaria "Ver plano" en el header; omitida en 16E.5 (no existe backend de plano).
+
+### Contexto
+
+El header del kit (`subpages.html` `#page-espacios`) tiene dos acciones: `Ver plano` (secundaria) + `Añadir espacio` (primaria). En el port 16E.5 "Añadir espacio" se cablea como ancla a la sección numerada `02 Añadir espacio`; "Ver plano" implicaría una vista esquemática 2D de la distribución de la propiedad (un floor plan con los espacios posicionados), que hoy no tiene ningún soporte de datos.
+
+### Qué cubriría cuando se active
+
+Una vista de plano (esquema 2D) que posicione cada `Space` sobre la silueta de la propiedad: superficie relativa, adyacencias, y un acceso rápido a la ficha de cada espacio desde el plano. Útil para operadores con propiedades grandes donde la lista vertical pierde la noción espacial.
+
+### Implementación sugerida
+
+1. Modelo de geometría por espacio (posición/tamaño relativos, o un editor SVG con coordenadas) — requiere migración de schema (campos nuevos en `Space` o una tabla `SpaceLayout`).
+2. Un editor de plano (drag/resize) o import desde un SVG/imagen de plano subido.
+3. Toggle "Ver plano / Ver lista" en el header de la página de espacios.
+
+### Trigger para implementar
+
+Cuando producto priorice una feature de floor-plan (geometría por espacio) en el roadmap, con modelo de datos propio. Hasta entonces la lista 2-col cubre el caso de uso de edición.
+
+### Por qué no se hace inline en la rama actual
+
+16E.5 es un **visual-parity port** con contrato duro de 0 cambios funcionales y 0 cambios de schema. "Ver plano" requiere un modelo de datos nuevo + un editor — fuera de scope por definición. Registrarlo aquí (en vez de implementar un botón muerto) respeta la regla "nada se difiere sin destino".
+
+---
+
+## 22. EntityMediaCard — extracción del card "media-backed summary" (2 adopters alcanzados)
+
+**Estado**: trigger de extracción **alcanzado** (2 adopters) — extracción diferida a rama dedicada post-16F (decisión Fase -1 de 16E.5-spaces).
+
+### Contexto
+
+El patrón **"Operator Entity Card — media-backed summary"** (`LIORA_SURFACE_ROLLOUT_PLAN.md` § "Approved pattern: Operator Entity Card — media-backed summary") declara: *"Not yet extracted to `src/components/ui/`. Extraction candidate after a second surface (spaces) adopts it."*
+
+- **1er adopter**: access cockpit `subsystem-card.tsx` (16E.6) — shell `<article>` + media-top + body + foot/expand.
+- **2º adopter**: spaces `sp-card` (`space-card.tsx`, 16E.5) — misma silueta (cover-top + body con facts + foot con progress/pill + expand del editor).
+
+Con spaces el trigger "segundo adopter" queda cumplido.
+
+### Diferencia clave entre los dos adopters (por qué no se extrae aún)
+
+- **access** usa `<MediaCarousel>` en el cover (carousel + lightbox + upload + dots/strip, `MAX_VISIBLE_DOTS`).
+- **spaces** usa un **cover estático** (1 thumbnail batched vía `loadSpaceCovers`, sin carousel/lightbox/upload).
+
+Los dos shapes de cover divergen lo suficiente como para que abstraer ahora arriesgue la abstracción equivocada (¿el cover es un slot `ReactNode`? ¿el expand vive dentro o fuera? ¿el foot es genérico o per-surface?). Extraer con 2 adopters de cover divergente es prematuro.
+
+### Qué cubriría cuando se active
+
+Un primitivo `<EntityMediaCard>` en `src/components/ui/` que abstraiga el **shell común** (article + `aria-labelledby` + cover-top con `overflow-hidden` + body + foot + región expandible), dejando el contenido del cover como slot (`cover: ReactNode` → `<MediaCarousel>` en access, `<img>`/placeholder en spaces) y el body/foot como composición. NO bakear el modo de cover.
+
+### Trigger para implementar
+
+Rama dedicada **post-16F**, cuando un **3er adopter** (amenities con media destacada, o systems) valide el shape común y desambigüe los slots. Tres adopters dan la señal de qué es realmente compartido vs per-surface. Hasta entonces, los dos cards conviven inline (sin duplicación problemática: comparten silueta visual + tokens, no código).
+
+### Por qué no se hace inline en la rama actual
+
+Fase -1 de 16E.5-spaces lo decidió explícitamente: *"NO extraigas `<EntityMediaCard>`; registra en FUTURE.md el trigger (2 adopters: subsystem-card + sp-card) para rama dedicada post-16F."* Extraer dentro de un visual-parity port mezclaría dos preocupaciones (port + diseño de primitivo nuevo) y arriesgaría regresiones en dos surfaces a la vez.
