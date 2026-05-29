@@ -46,7 +46,6 @@ const FIELD_LABEL_CLS = "text-sm font-medium text-[var(--color-text-primary)]";
 const FIELD_LABEL_MUTED_CLS = "text-sm font-medium text-[var(--color-text-secondary)]";
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
 
-
 interface PropertyFormProps {
   propertyId: string;
   property: {
@@ -255,8 +254,6 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
     : hasElevator
       ? `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""} · Ascensor`
       : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
-
-
 
   return (
     <div className="mx-auto max-w-3xl">
