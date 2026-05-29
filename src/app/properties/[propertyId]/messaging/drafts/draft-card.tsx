@@ -142,7 +142,7 @@ export function DraftCard({ propertyId, draft }: DraftCardProps) {
 
   return (
     <li className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 gap-3">
           {draft.reservation && (
             <span
@@ -184,7 +184,7 @@ export function DraftCard({ propertyId, draft }: DraftCardProps) {
         </div>
 
         {canMutate && !editing && (
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-2 sm:shrink-0 sm:justify-end">
             <LifecycleButton
               action={approveAction}
               pending={approving}

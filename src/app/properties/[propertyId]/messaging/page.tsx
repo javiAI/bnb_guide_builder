@@ -143,9 +143,9 @@ export default async function MessagingPage({
                 size="md"
               />
               <div className="min-w-0 flex-1">
-                <h3 className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+                <span className="block truncate text-sm font-semibold text-[var(--color-text-primary)]">
                   {tp.label}
-                </h3>
+                </span>
                 <p className="mt-0.5 truncate text-xs text-[var(--color-text-secondary)]">
                   {tp.description}
                 </p>
