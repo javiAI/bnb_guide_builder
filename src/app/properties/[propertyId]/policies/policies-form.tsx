@@ -168,28 +168,36 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
   const summaryLabels = buildSummaryLabel(buildPoliciesJson());
 
-  // ── Shared styles ──
-  const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
-  const labelCls = "block text-sm font-medium text-[var(--foreground)]";
-  const subLabelCls = "block text-xs text-[var(--color-neutral-500)] mt-0.5 mb-2";
-  const toggleCls = "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer";
-  const toggleDotCls = "inline-block h-4 w-4 rounded-full bg-white transition-transform";
+  // ── Shared styles (Liora semantic tokens) ──
+  const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
+  const labelCls = "block text-sm font-medium text-[var(--color-text-primary)]";
+  const subLabelCls = "block text-xs text-[var(--color-text-secondary)] mt-0.5 mb-2";
 
+  // Switch: the visual track (h-6) sits inside a 44-tall button so the hit
+  // area meets the touch-target floor without inflating the control. The
+  // background lives on the inner span, so the touch-target gate reads the
+  // button as a min-h floor, not a fixed-square icon button. Tapping either
+  // the track or the label toggles.
   function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
     return (
-      <label className="flex items-center gap-3 cursor-pointer">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={label}
-          onClick={() => onChange(!checked)}
-          className={`${toggleCls} ${checked ? "bg-[var(--color-primary-500)]" : "bg-[var(--color-neutral-300)]"}`}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className="inline-flex min-h-[44px] cursor-pointer items-center gap-3 text-left"
+      >
+        <span
+          aria-hidden="true"
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-[var(--color-action-primary)]" : "bg-[var(--color-border-strong)]"}`}
         >
-          <span className={`${toggleDotCls} ${checked ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-        <span className="text-sm text-[var(--foreground)]">{label}</span>
-      </label>
+          <span
+            className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`}
+          />
+        </span>
+        <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+      </button>
     );
   }
 
@@ -209,7 +217,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
       </div>
 
       {state?.error && (
-        <p className="rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+        <p className="rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
@@ -232,13 +240,13 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             {quietEnabled && (
               <div className="mt-3 flex items-center gap-3">
                 <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Desde</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">Desde</span>
                   <select value={quietFrom} onChange={(e) => setQuietFrom(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Hasta</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">Hasta</span>
                   <select value={quietTo} onChange={(e) => setQuietTo(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -254,7 +262,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <RadioCardGroup name="_smoking" options={SMOKING_OPTIONS} value={smoking} onChange={(v) => setSmoking(v as PoliciesData["smoking"])} showRecommended={false} />
             {smoking === "designated_area" && (
               <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">¿Dónde se puede fumar?</span>
+                <span className="text-xs text-[var(--color-text-muted)]">¿Dónde se puede fumar?</span>
                 <input type="text" value={smokingArea} onChange={(e) => setSmokingArea(e.target.value)} placeholder="Ej: terraza trasera" className={inputCls} />
               </div>
             )}
@@ -272,7 +280,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             )}
             {eventsPolicy === "with_approval" && (
               <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">Instrucciones para solicitar aprobación</span>
+                <span className="text-xs text-[var(--color-text-muted)]">Instrucciones para solicitar aprobación</span>
                 <textarea value={eventsApproval} onChange={(e) => setEventsApproval(e.target.value)} rows={2} placeholder="Ej: contactar al anfitrión con 48h de antelación" className={inputCls} />
               </div>
             )}
@@ -330,7 +338,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <RadioCardGroup name="_petFee" options={PET_FEE_OPTIONS} value={petFeeMode} onChange={(v) => setPetFeeMode(v as NonNullable<PoliciesData["pets"]["feeMode"]>)} showRecommended={false} />
                 {petFeeMode !== "none" && (
                   <div className="mt-3">
-                    <span className="text-xs text-[var(--color-neutral-500)]">Importe (EUR)</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                     <input
                       type="number"
                       min={0}
@@ -350,8 +358,8 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
 
               {/* Service animals info */}
-              <div className="rounded-[var(--radius-md)] bg-[var(--color-primary-50)] p-3">
-                <p className="text-xs text-[var(--color-primary-700)]">
+              <div className="rounded-[var(--radius-md)] bg-[var(--color-action-primary-subtle)] p-3">
+                <p className="text-xs text-[var(--color-action-primary-subtle-fg)]">
                   Los animales de servicio / asistencia están siempre permitidos sin cargo adicional, según la legislación vigente.
                 </p>
               </div>
@@ -384,7 +392,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <Toggle checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
             {cleaningEnabled && (
               <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">Importe (EUR)</span>
+                <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                 <input
                   type="number"
                   min={0}
@@ -407,7 +415,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             {extraGuestEnabled && (
               <div className="mt-3 space-y-3">
                 <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Importe por huésped extra (EUR / noche)</span>
+                  <span className="text-xs text-[var(--color-text-muted)]">Importe por huésped extra (EUR / noche)</span>
                   <input
                     type="number"
                     min={0}
@@ -419,9 +427,9 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 </div>
                 <div>
                   <NumberStepper label="A partir de cuántos huéspedes" value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
-                  <p className="mt-1.5 text-xs text-[var(--color-neutral-400)]">
+                  <p className="mt-1.5 text-xs text-[var(--color-text-subtle)]">
                     Máximo de huéspedes: {propertyDefaults.maxGuests ?? "—"} ·{" "}
-                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-primary-500)] hover:underline">
+                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-text-link)] hover:underline">
                       Editar en Propiedad
                     </Link>
                   </p>
@@ -432,15 +440,15 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Pet fee reference */}
           {petsAllowed && petFeeMode !== "none" && (
-            <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border)] p-3">
-              <span className="text-xs text-[var(--color-neutral-500)]">Suplemento por mascota</span>
-              <p className="text-sm">
+            <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-default)] p-3">
+              <span className="text-xs text-[var(--color-text-muted)]">Suplemento por mascota</span>
+              <p className="text-sm text-[var(--color-text-primary)]">
                 {petFeeAmount} EUR / {PET_FEE_OPTIONS.find((o) => o.id === petFeeMode)?.label?.toLowerCase()}
               </p>
               <button
                 type="button"
                 onClick={() => { setMascotasOpen(true); setSuplementosOpen(false); }}
-                className="mt-1 text-xs text-[var(--color-primary-500)] hover:underline"
+                className="mt-1 text-xs text-[var(--color-text-link)] hover:underline"
               >
                 Configurado en Mascotas
               </button>
@@ -472,7 +480,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
             </>
           ) : (
-            <p className="text-xs text-[var(--color-neutral-500)]">
+            <p className="text-xs text-[var(--color-text-muted)]">
               No se permiten servicios externos en la propiedad.
             </p>
           )}
@@ -483,7 +491,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
       >
         {pending ? "Guardando…" : "Guardar normas"}
       </button>

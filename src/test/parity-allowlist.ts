@@ -283,6 +283,30 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
     ],
   },
+  {
+    // 16E.5 content module — policies (normas de la casa). Kit reference
+    // exists (`page-normas` in subpages.html): eyebrow row (Propiedad ·
+    // Normas) → title → sub (firme/cálido voice) → rule, then numbered
+    // sections (01 Horarios y silencio, 02 Qué se permite). **Policies had
+    // NO 16E E1 baseline** (it was not in AUDITED_SURFACES nor
+    // EXPECTED_OPERATOR_SCOPE_PATTERNS before this branch), so this PR ships
+    // E2-baseline (semantic tokens + a11y + 44 hit-targets) AND the Liora
+    // silhouette (PageHeader, NumberedSection always-expanded with sub-form
+    // toggles preserved, editorial empty states) in one PR. Acceptance gate
+    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies.
+    // Divergence from the kit, documented in the PR description: the kit
+    // chip-strip ("N definidas / N sin decidir") is OMITTED — the binary
+    // policy data model has no honest mapping to a "decided/undecided" count.
+    // The kit's tri-state rule-card grid is not adopted either — the real
+    // model uses radio/checkbox cards + sub-form toggles (RadioCardGroup,
+    // CheckboxCardGroup, NumberStepper), preserved per zero-functional-change.
+    id: "operator-policies",
+    routes: ["/properties/[propertyId]/policies"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/policies/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -317,6 +341,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/app/properties/[propertyId]/systems/**/*.tsx",
   "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
+  "src/app/properties/[propertyId]/policies/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
