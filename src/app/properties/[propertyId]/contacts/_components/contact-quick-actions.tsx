@@ -1,11 +1,13 @@
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
+import { buildMailtoHref, buildTelHref, buildWhatsAppHref } from "@/lib/contact-actions";
 
 /**
  * Read-only quick actions for a contact card (kit `cn-actions`). Each action is
  * a <ButtonLink size="md"> (44 visual) — "Llamar" primary, the rest secondary.
- * Anchors are derived from the contact's own fields and omitted when the field
- * is absent (or, for WhatsApp, when the number is not international).
+ * Anchors are derived from the contact's own fields (via the shared
+ * `contact-actions` helpers) and omitted when the field is absent (or, for
+ * WhatsApp, when the number is not international).
  */
 export interface ContactQuickActionsProps {
   phone: string | null;
@@ -15,19 +17,13 @@ export interface ContactQuickActionsProps {
 }
 
 function telHref(raw: string | null): string | null {
-  if (!raw) return null;
-  const cleaned = raw.replace(/[^\d+]/g, "");
-  return cleaned.length >= 3 ? `tel:${cleaned}` : null;
+  return raw?.trim() ? buildTelHref(raw) : null;
 }
 
-/** WhatsApp only works with an international number; require a leading "+". */
+/** WhatsApp only works with an international number; require a leading "+",
+ *  then let the shared helper normalize/validate the digits. */
 function waHref(raw: string | null): string | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith("+")) return null;
-  const digits = trimmed.replace(/\D/g, "");
-  if (digits.length < 8 || digits.length > 15) return null;
-  return `https://wa.me/${digits}`;
+  return raw?.trim().startsWith("+") ? buildWhatsAppHref(raw) : null;
 }
 
 function mapsHref(address: string | null): string | null {
@@ -45,7 +41,7 @@ export function ContactQuickActions({
 }: ContactQuickActionsProps) {
   const tel = telHref(phone);
   const wa = waHref(whatsapp) ?? waHref(phone);
-  const mail = email ? `mailto:${email.trim()}` : null;
+  const mail = email ? buildMailtoHref(email) : null;
   const maps = mapsHref(address);
 
   if (!tel && !wa && !mail && !maps) return null;

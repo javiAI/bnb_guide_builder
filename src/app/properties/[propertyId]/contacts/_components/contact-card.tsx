@@ -10,6 +10,7 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactIconFor, type ContactGroupTone } from "@/lib/icons/contact-icons";
 import { ContactQuickActions } from "./contact-quick-actions";
+import { ContactTypeSelect, FormErrors } from "./contact-form-bits";
 import { FIELD, FIELD_PH, PRIMARY_BTN } from "./styles";
 
 export interface Contact {
@@ -32,7 +33,6 @@ export interface Contact {
   isPrimary: boolean;
 }
 
-const groups = contactTypes.groups;
 const typeItems = contactTypes.items;
 
 const AVATAR_TONE: Record<ContactGroupTone, string> = {
@@ -150,15 +150,7 @@ export function ContactCard({
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium">Tipo</span>
-              <select name="roleKey" defaultValue={contact.roleKey} className={FIELD}>
-                {groups.map((g) => (
-                  <optgroup key={g.id} label={g.label}>
-                    {typeItems.filter((t) => t.group === g.id).map((t) => (
-                      <option key={t.id} value={t.id}>{t.label}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <ContactTypeSelect defaultValue={contact.roleKey} />
             </label>
             <label className="block">
               <span className="text-sm font-medium">Persona / Empresa</span>
@@ -237,10 +229,7 @@ export function ContactCard({
             </select>
           </label>
 
-          {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
-          {state?.fieldErrors && Object.entries(state.fieldErrors).map(([field, errors]) => (
-            <p key={field} className="text-sm text-[var(--color-status-error-text)]">{errors?.[0]}</p>
-          ))}
+          <FormErrors state={state} />
 
           <div className="flex items-center justify-between">
             <button type="submit" disabled={pending} className={PRIMARY_BTN}>

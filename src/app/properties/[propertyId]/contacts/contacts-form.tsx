@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactGroupTone } from "@/lib/icons/contact-icons";
 import { ContactCard, type Contact } from "./_components/contact-card";
+import { ContactTypeSelect, FormErrors } from "./_components/contact-form-bits";
 import { FIELD, FIELD_PH, PRIMARY_BTN } from "./_components/styles";
 
 interface ContactsFormProps {
@@ -24,6 +25,20 @@ const typeItems = contactTypes.items;
 
 function groupIdFor(roleKey: string): string {
   return typeItems.find((t) => t.id === roleKey)?.group ?? "ctg.other";
+}
+
+// Presentation-only section order: operations first, emergency second, then
+// every other group in its taxonomy order. Matches the kit hierarchy (the
+// ported subtitle frames emergency as "lo primero que mira el huésped si algo
+// va mal"). The taxonomy itself is untouched — this is purely how sections are
+// surfaced on this page.
+const PINNED_SECTIONS = ["ctg.operations", "ctg.emergency"];
+
+function sectionRank(groupId: string): number {
+  const pinned = PINNED_SECTIONS.indexOf(groupId);
+  return pinned !== -1
+    ? pinned
+    : PINNED_SECTIONS.length + groups.findIndex((g) => g.id === groupId);
 }
 
 function CreateContactForm({
@@ -47,17 +62,7 @@ function CreateContactForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="text-sm font-medium">Tipo *</span>
-            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: CTA opens this form, focus the first field (B1) */}
-            <select name="roleKey" required autoFocus className={FIELD}>
-              <option value="">Seleccionar tipo</option>
-              {groups.map((g) => (
-                <optgroup key={g.id} label={g.label}>
-                  {typeItems.filter((t) => t.group === g.id).map((t) => (
-                    <option key={t.id} value={t.id}>{t.label}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <ContactTypeSelect required autoFocus />
           </label>
           <label className="block">
             <span className="text-sm font-medium">Nombre *</span>
@@ -83,10 +88,7 @@ function CreateContactForm({
         <input type="hidden" name="entityType" value="person" />
         <input type="hidden" name="visibility" value="internal" />
 
-        {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
-        {state?.fieldErrors && Object.entries(state.fieldErrors).map(([field, errors]) => (
-          <p key={field} className="text-sm text-[var(--color-status-error-text)]">{errors?.[0]}</p>
-        ))}
+        <FormErrors state={state} />
 
         <div className="flex items-center gap-3">
           <button type="submit" disabled={pending} className={PRIMARY_BTN}>
@@ -119,8 +121,10 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
     contactsByGroup.set(groupId, arr);
   }
 
-  // D1: numbered sections over non-empty groups, in taxonomy file order.
-  const nonEmptyGroups = groups.filter((g) => (contactsByGroup.get(g.id)?.length ?? 0) > 0);
+  // D1: numbered sections over non-empty groups, ordered per sectionRank.
+  const nonEmptyGroups = groups
+    .filter((g) => (contactsByGroup.get(g.id)?.length ?? 0) > 0)
+    .sort((a, b) => sectionRank(a.id) - sectionRank(b.id));
 
   const emergencyCount = contactsByGroup.get("ctg.emergency")?.length ?? 0;
   const guestVisibleCount = contacts.filter((c) => c.visibility === "guest").length;
