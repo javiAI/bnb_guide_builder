@@ -306,11 +306,11 @@ export function SpaceCard({
             </button>
           </form>
         ) : (
-          <div className="flex items-start gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="-mx-1 min-w-0 flex-1 rounded-[var(--radius-md)] px-1 py-0.5 text-left transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+              className="-mx-1 flex min-h-[44px] min-w-0 flex-1 items-center rounded-[var(--radius-md)] px-1 text-left transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
               aria-expanded={expanded}
             >
               <span
@@ -514,7 +514,7 @@ export function SpaceCard({
                     <li key={sys.id}>
                       <Link
                         href={`/properties/${propertyId}/systems/${sys.id}`}
-                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] px-3 py-0.5 text-xs text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:no-underline"
+                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] px-3 py-0.5 text-xs text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-action-primary-subtle-fg)] hover:no-underline"
                       >
                         {sys.label}
                       </Link>
