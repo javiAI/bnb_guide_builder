@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
-import { toggleAmenityAction } from "@/lib/actions/editor.actions";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { Tooltip } from "@/components/ui/tooltip";
-import { AmenityDetailPanel } from "./amenity-detail-panel";
-import { AmenityDerivedBadge } from "@/components/amenity-derived-badge";
+import { useState } from "react";
+import { AmenitiesToolbar } from "./_components/amenities-toolbar";
+import { EqGroupBand } from "./_components/eq-group-band";
+import { DerivedBand } from "./_components/derived-band";
+import { TIER_ORDER } from "./_components/eq-tier";
 import type { EnrichedAmenityItem, SpaceSection, DerivedAmenityItem } from "./page";
-import type { ImportanceLevel } from "@/lib/types/taxonomy";
 
-const TIER_CONFIG: { level: ImportanceLevel; label: string; hint: string }[] = [
-  { level: "highlight", label: "Esenciales", hint: "Lo que los huéspedes esperan encontrar" },
-  { level: "standard", label: "Recomendados", hint: "Mejoran la experiencia" },
-  { level: "bonus", label: "Destacados", hint: "Te diferencian de la competencia" },
-];
+const GENERAL_ADD_ID = "eq-add-general";
+
+/** Accent-insensitive, lowercase fold for client-side search (both sides). */
+function fold(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 interface AmenitySelectorProps {
   propertyId: string;
@@ -22,234 +24,11 @@ interface AmenitySelectorProps {
   spaceSections: SpaceSection[];
 }
 
-function DerivedSection({ items }: { items: DerivedAmenityItem[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div className="mb-4">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-neutral-600)] mb-2 flex items-center gap-2">
-        <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary-200)] flex-shrink-0" />
-        Derivados de otros módulos
-        <span className="font-normal normal-case tracking-normal text-[var(--color-neutral-500)]">
-          — Configuración gestionada en Sistemas / Espacios / Acceso
-        </span>
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <AmenityDerivedBadge
-            key={item.id}
-            label={item.label}
-            description={item.description}
-            status={item.status}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AmenityChip({
-  propertyId,
-  item,
-  spaceId,
-  isExpanded,
-  onExpand,
-}: {
-  propertyId: string;
-  item: EnrichedAmenityItem;
+interface Group {
+  key: string;
+  title: string;
   spaceId: string | null;
-  isExpanded: boolean;
-  onExpand: (key: string | null) => void;
-}) {
-  const [isPending, startTransition] = useTransition();
-  const hasDetails = item.hasSubtype && item.subtypeFields.length > 0;
-  const expandKey = `${item.id}|${spaceId ?? ""}`;
-
-  function handleToggle() {
-    const formData = new FormData();
-    formData.set("propertyId", propertyId);
-    formData.set("amenityKey", item.id);
-    formData.set("enabled", String(!item.enabled));
-    if (spaceId) formData.set("spaceId", spaceId);
-
-    startTransition(async () => {
-      await toggleAmenityAction(null, formData);
-    });
-
-    if (item.enabled) onExpand(null);
-  }
-
-  if (item.enabled) {
-    return (
-      <Tooltip text={item.description}>
-        <span
-          className={`inline-flex items-center gap-1 rounded-full border border-[var(--color-primary-500)] bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white ${isPending ? "opacity-50" : ""}`}
-        >
-          {hasDetails ? (
-            <button
-              type="button"
-              onClick={() => onExpand(isExpanded ? null : expandKey)}
-              className="inline-flex items-center gap-1"
-            >
-              {item.label}
-              <span className="text-[10px]">{isExpanded ? "▲" : "▼"}</span>
-            </button>
-          ) : (
-            <span>{item.label}</span>
-          )}
-          {item.isCustomInstance && (
-            <span
-              className="ml-1 rounded-full bg-white/25 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
-              title="Instancia personalizada (clave no canónica)"
-            >
-              Personalizado
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={handleToggle}
-            disabled={isPending}
-            className="ml-0.5 rounded-full recipe-icon-btn-32 hover:bg-white/20 transition-colors"
-            aria-label="Quitar"
-          >
-            <svg viewBox="0 0 12 12" className="h-3 w-3">
-              <path d="M3 3l6 6M9 3l-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-        </span>
-      </Tooltip>
-    );
-  }
-
-  return (
-    <Tooltip text={item.description}>
-      <button
-        type="button"
-        onClick={handleToggle}
-        disabled={isPending}
-        className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors border-[var(--color-neutral-200)] bg-white text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-300)] ${isPending ? "opacity-50" : ""}`}
-      >
-        {item.label}
-      </button>
-    </Tooltip>
-  );
-}
-
-/** Renders items grouped by importance tier with labels */
-function TieredChipGrid({
-  propertyId,
-  items,
-  spaceId,
-  expandedDetail,
-  onExpand,
-}: {
-  propertyId: string;
   items: EnrichedAmenityItem[];
-  spaceId: string | null;
-  expandedDetail: string | null;
-  onExpand: (key: string | null) => void;
-}) {
-  const activeDetailItem = items.find(
-    (i) => i.enabled && i.subtypeFields.length > 0 && expandedDetail === `${i.id}|${spaceId ?? ""}`,
-  );
-
-  return (
-    <>
-      {TIER_CONFIG.map(({ level, label, hint }) => {
-        const tierItems = items.filter((i) => i.importanceLevel === level);
-        if (tierItems.length === 0) return null;
-        return (
-          <div key={level} className="mb-4">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-neutral-600)] mb-2 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary-400)] flex-shrink-0" />
-              {label}
-              <span className="font-normal normal-case tracking-normal text-[var(--color-neutral-500)]">
-                — {hint}
-              </span>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {tierItems.map((item) => (
-                <AmenityChip
-                  key={item.id}
-                  propertyId={propertyId}
-                  item={item}
-                  spaceId={spaceId}
-                  isExpanded={expandedDetail === `${item.id}|${spaceId ?? ""}`}
-                  onExpand={onExpand}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-      {activeDetailItem && (
-        <AmenityDetailPanel
-          propertyId={propertyId}
-          item={activeDetailItem}
-          spaceId={spaceId}
-        />
-      )}
-    </>
-  );
-}
-
-/** Input to add a custom amenity chip */
-function CustomChipInput({
-  propertyId,
-  spaceId,
-}: {
-  propertyId: string;
-  spaceId: string | null;
-}) {
-  const [value, setValue] = useState("");
-  const [isPending, startTransition] = useTransition();
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    // Custom amenities use "custom." prefix + slugified label
-    const slug = trimmed.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-    if (!slug) return;
-    const amenityKey = `custom.${slug}`;
-
-    const formData = new FormData();
-    formData.set("propertyId", propertyId);
-    formData.set("amenityKey", amenityKey);
-    formData.set("enabled", "true");
-    if (spaceId) formData.set("spaceId", spaceId);
-
-    startTransition(async () => {
-      await toggleAmenityAction(null, formData);
-    });
-    setValue("");
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-3 flex items-center gap-2">
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="Añadir otro…"
-        className="w-40 rounded-full border border-dashed border-[var(--color-neutral-300)] bg-white px-3 py-1.5 text-xs text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
-      />
-      {value.trim() && (
-        <button
-          type="submit"
-          disabled={isPending}
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-          aria-label="Añadir amenidad personalizada"
-        >
-          +
-        </button>
-      )}
-    </form>
-  );
-}
-
-function countLabel(enabled: number, total: number): string {
-  return `${enabled} de ${total}`;
 }
 
 export function AmenitySelector({
@@ -258,70 +37,86 @@ export function AmenitySelector({
   generalDerived,
   spaceSections,
 }: AmenitySelectorProps) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    () => new Set(["general"]),
-  );
+  const [query, setQuery] = useState("");
+  const [onlyConfigured, setOnlyConfigured] = useState(false);
   const [expandedDetail, setExpandedDetail] = useState<string | null>(null);
 
-  const totalEnabled =
-    generalItems.filter((i) => i.enabled).length +
-    spaceSections.reduce((sum, s) => sum + s.items.filter((i) => i.enabled).length, 0);
+  const groups: Group[] = [
+    { key: "general", title: "General", spaceId: null, items: generalItems },
+    ...spaceSections.map((s) => ({
+      key: s.spaceId,
+      title: s.spaceName,
+      spaceId: s.spaceId,
+      items: s.items,
+    })),
+  ].filter((g) => g.items.length > 0);
 
-  function toggleSection(id: string) {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const q = fold(query.trim());
+
+  function visibleItems(items: EnrichedAmenityItem[]): EnrichedAmenityItem[] {
+    return [...items]
+      .filter((i) => !onlyConfigured || i.enabled)
+      .filter(
+        (i) =>
+          q === "" ||
+          fold(i.label).includes(q) ||
+          (i.description ? fold(i.description).includes(q) : false),
+      )
+      .sort((a, b) => TIER_ORDER[a.importanceLevel] - TIER_ORDER[b.importanceLevel]);
+  }
+
+  const renderedGroups = groups
+    .map((g) => ({ ...g, visible: visibleItems(g.items) }))
+    .filter((g) => g.visible.length > 0);
+
+  function handleAdd() {
+    // Reset filters so the destination group is visible, then focus the
+    // general custom-add input (simple scroll anchor — no scroll-spy).
+    setQuery("");
+    setOnlyConfigured(false);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(GENERAL_ADD_ID);
+      if (el instanceof HTMLInputElement) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus();
+      }
     });
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-[var(--color-neutral-500)]">
-        {totalEnabled} amenities configurados en total
-      </p>
+    <div>
+      <AmenitiesToolbar
+        query={query}
+        onQueryChange={setQuery}
+        onlyConfigured={onlyConfigured}
+        onToggleOnlyConfigured={() => setOnlyConfigured((v) => !v)}
+        onAdd={handleAdd}
+      />
 
-      {/* General / property-wide */}
-      <CollapsibleSection
-        title="General"
-        selectedLabel={countLabel(generalItems.filter((i) => i.enabled).length, generalItems.length)}
-        expanded={expandedSections.has("general")}
-        onToggle={() => toggleSection("general")}
-      >
-        <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
-          Equipamiento que aplica a toda la propiedad.
-        </p>
-        <TieredChipGrid
+      {renderedGroups.map((g) => (
+        <EqGroupBand
+          key={g.key}
           propertyId={propertyId}
-          items={generalItems}
-          spaceId={null}
+          title={g.title}
+          spaceId={g.spaceId}
+          items={g.visible}
+          enabledCount={g.items.filter((i) => i.enabled).length}
+          totalCount={g.items.length}
           expandedDetail={expandedDetail}
           onExpand={setExpandedDetail}
+          addInputId={g.spaceId === null ? GENERAL_ADD_ID : undefined}
         />
-        <DerivedSection items={generalDerived} />
-        <CustomChipInput propertyId={propertyId} spaceId={null} />
-      </CollapsibleSection>
-
-      {/* Per-space sections */}
-      {spaceSections.map((section) => (
-        <CollapsibleSection
-          key={section.spaceId}
-          title={section.spaceName}
-          selectedLabel={countLabel(section.items.filter((i) => i.enabled).length, section.items.length)}
-          expanded={expandedSections.has(section.spaceId)}
-          onToggle={() => toggleSection(section.spaceId)}
-        >
-          <TieredChipGrid
-            propertyId={propertyId}
-            items={section.items}
-            spaceId={section.spaceId}
-            expandedDetail={expandedDetail}
-            onExpand={setExpandedDetail}
-          />
-          <CustomChipInput propertyId={propertyId} spaceId={section.spaceId} />
-        </CollapsibleSection>
       ))}
+
+      {renderedGroups.length === 0 && (
+        <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
+          {onlyConfigured && query.trim() === ""
+            ? "Aún no hay equipamiento configurado."
+            : "No hay equipamiento que coincida con la búsqueda."}
+        </p>
+      )}
+
+      <DerivedBand items={generalDerived} />
     </div>
   );
 }

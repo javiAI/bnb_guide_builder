@@ -81,9 +81,9 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
   const visibleFields = item.subtypeFields.filter((f) => isFieldVisible(f, details));
 
   return (
-    <div className="mt-3 rounded-[var(--radius-lg)] border border-[var(--color-neutral-200)] bg-[var(--color-neutral-50)] p-4">
+    <div className="mt-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] p-4">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-semibold text-[var(--foreground)]">
+        <h4 className="text-xs font-semibold text-[var(--color-text-primary)]">
           {item.label}
         </h4>
         {saveStatus && <InlineSaveStatus status={saveStatus} />}
@@ -112,11 +112,11 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
           return (
             <div key={field.id}>
               <label className="block">
-                <span className="text-xs font-medium text-[var(--foreground)]">
+                <span className="text-xs font-medium text-[var(--color-text-primary)]">
                   {field.label}
                 </span>
                 {field.description && (
-                  <span className="ml-1 text-[10px] text-[var(--color-neutral-400)]">
+                  <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
                     {field.description}
                   </span>
                 )}
@@ -136,7 +136,7 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
           type="button"
           onClick={handleSave}
           disabled={isPending}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-2 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-60"
         >
           {isPending ? "Guardando…" : "Guardar"}
         </button>
@@ -144,7 +144,7 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
 
       {/* Photos for this amenity instance */}
       {item.dbId && (
-        <div className="mt-4 border-t border-[var(--color-neutral-200)] pt-3">
+        <div className="mt-4 border-t border-[var(--color-border-default)] pt-3">
           <EntityGallery
             propertyId={propertyId}
             entityType="amenity_instance"
