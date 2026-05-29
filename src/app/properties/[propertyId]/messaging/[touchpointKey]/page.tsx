@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
+import { FileText, Inbox, Zap } from "lucide-react";
+
 import { prisma } from "@/lib/db";
 import { messagingTouchpoints, findItem, automationChannels, getItems } from "@/lib/taxonomy-loader";
+import { PageHeader } from "@/components/ui/page-header";
+import { NumberedSection } from "@/components/ui/numbered-section";
+import { TextLink } from "@/components/ui/text-link";
 import { CreateTemplateForm } from "./create-template-form";
 import { TemplateCard } from "./template-card";
 import { AutomationSection } from "./automation-section";
@@ -39,24 +44,43 @@ export default async function TouchpointDetailPage({
   ]);
   if (!property) notFound();
 
+  const activeAutomationCount = automations.filter((a) => a.active).length;
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        {touchpoint.label}
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        {touchpoint.description}
-      </p>
+      <TextLink
+        href={`/properties/${propertyId}/messaging`}
+        size="sm"
+        className="mb-3 inline-flex items-center gap-1"
+      >
+        ← Mensajería
+      </TextLink>
 
-      {/* Templates */}
-      <div className="mt-8">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
-          Plantillas
-        </h2>
+      <PageHeader
+        eyebrow="Touchpoint"
+        title={touchpoint.label}
+        description={touchpoint.description}
+        chips={
+          <>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-[9px] py-1 text-[12px] text-[var(--color-text-secondary)]">
+              <FileText size={12} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+              {templates.length} plantilla{templates.length !== 1 ? "s" : ""}
+            </span>
+            {activeAutomationCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-action-primary-subtle)] px-[9px] py-1 text-[12px] font-medium text-[var(--color-action-primary-subtle-fg)]">
+                <Zap size={12} aria-hidden="true" />
+                {activeAutomationCount} automatización{activeAutomationCount !== 1 ? "es" : ""} activa{activeAutomationCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </>
+        }
+      />
 
+      <NumberedSection number="01" title="Plantillas">
         {templates.length === 0 ? (
-          <div className="rounded-[var(--radius-xl)] border-2 border-dashed border-[var(--color-neutral-300)] px-8 py-8 text-center">
-            <p className="text-sm text-[var(--color-neutral-500)]">
+          <div className="flex flex-col items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-strong)] px-8 py-10 text-center">
+            <Inbox size={20} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Sin plantillas para este touchpoint.
             </p>
           </div>
@@ -87,7 +111,7 @@ export default async function TouchpointDetailPage({
         )}
 
         <div className="mt-6">
-          <h3 className="mb-3 text-xs font-semibold text-[var(--color-neutral-500)]">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
             Añadir plantilla
           </h3>
           <CreateTemplateForm
@@ -95,13 +119,9 @@ export default async function TouchpointDetailPage({
             touchpointKey={touchpointKey}
           />
         </div>
-      </div>
+      </NumberedSection>
 
-      {/* Automations */}
-      <div className="mt-10">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">
-          Automatizaciones
-        </h2>
+      <NumberedSection number="02" title="Automatizaciones">
         <AutomationSection
           automations={automations.map((a) => ({
             id: a.id,
@@ -115,7 +135,7 @@ export default async function TouchpointDetailPage({
           propertyId={propertyId}
           touchpointKey={touchpointKey}
         />
-      </div>
+      </NumberedSection>
     </div>
   );
 }
