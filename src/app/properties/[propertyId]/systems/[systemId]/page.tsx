@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, LayoutGrid, LifeBuoy } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getSystemGroups, findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
@@ -11,6 +11,7 @@ import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { TextLink } from "@/components/ui/text-link";
 import { IconBadge } from "@/components/ui/icon-badge";
 import { systemIconFor } from "@/lib/icons/system-icons";
+import { groupLabelFor } from "../_components/system-taxonomy";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { SystemDetailForm } from "./system-detail-form";
 import { SystemCoverageTable } from "./system-coverage-table";
@@ -44,11 +45,10 @@ export default async function SystemDetailPage({
   });
 
   const item = findSystemItem(system.systemKey);
-  const subtype = (system.systemKey ? findSystemSubtype(system.systemKey) : null) ?? null;
+  const subtype = findSystemSubtype(system.systemKey) ?? null;
   const SystemIcon = systemIconFor(system.systemKey);
 
-  const groupLabel =
-    getSystemGroups().find((g) => g.items.some((i) => i.id === system.systemKey))?.label ?? null;
+  const groupLabel = groupLabelFor(system.systemKey) || null;
 
   const detailsJson = (system.detailsJson ?? {}) as Record<string, unknown>;
   const opsJson = (system.opsJson ?? {}) as Record<string, unknown>;

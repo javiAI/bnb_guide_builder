@@ -19,6 +19,7 @@ import { CreateSystemForm } from "./create-system-form";
 import { SystemRow, type SystemRowData } from "./_components/system-row";
 import { RecommendedRow } from "./_components/recommended-row";
 import { computeCompleteness } from "./_components/system-status";
+import { groupLabelFor } from "./_components/system-taxonomy";
 
 export default async function SystemsPage({
   params,
@@ -39,15 +40,32 @@ export default async function SystemsPage({
   });
   const systemIds = systems.map((s) => s.id);
 
-  // One batched media query for the whole page (Q3): photos + videos per system.
-  // MediaAssignment is scoped by entityId (not propertyId); mimeType lives on the
-  // related MediaAsset, so it joins in the same query.
-  const mediaRows = systemIds.length
-    ? await prisma.mediaAssignment.findMany({
-        where: { entityType: "system", entityId: { in: systemIds } },
-        select: { entityId: true, mediaAsset: { select: { mimeType: true } } },
-      })
-    : [];
+  // Two batched, independent queries that both depend only on systemIds, run in
+  // parallel (Q3 media + Q8 incidents):
+  //  - media: photos + videos per system. MediaAssignment is scoped by entityId
+  //    (not propertyId); mimeType lives on the related MediaAsset (same query).
+  //  - incidents: open incidents per system via one groupBy over Incident.
+  const [mediaRows, incidentRows] = await Promise.all([
+    systemIds.length
+      ? prisma.mediaAssignment.findMany({
+          where: { entityType: "system", entityId: { in: systemIds } },
+          select: { entityId: true, mediaAsset: { select: { mimeType: true } } },
+        })
+      : Promise.resolve([]),
+    systemIds.length
+      ? prisma.incident.groupBy({
+          by: ["targetId"],
+          where: {
+            propertyId,
+            targetType: "system",
+            status: { in: ["open", "in_progress"] },
+            targetId: { in: systemIds },
+          },
+          _count: { _all: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
   const mediaByEntity = new Map<string, { photos: number; videos: number }>();
   for (const m of mediaRows) {
     const acc = mediaByEntity.get(m.entityId) ?? { photos: 0, videos: 0 };
@@ -57,19 +75,6 @@ export default async function SystemsPage({
     mediaByEntity.set(m.entityId, acc);
   }
 
-  // Open incidents per system (Q8): one groupBy over Incident (targetType=system).
-  const incidentRows = systemIds.length
-    ? await prisma.incident.groupBy({
-        by: ["targetId"],
-        where: {
-          propertyId,
-          targetType: "system",
-          status: { in: ["open", "in_progress"] },
-          targetId: { in: systemIds },
-        },
-        _count: { _all: true },
-      })
-    : [];
   const incidentsByEntity = new Map<string, number>();
   for (const r of incidentRows) {
     if (r.targetId) incidentsByEntity.set(r.targetId, r._count._all);
@@ -77,8 +82,6 @@ export default async function SystemsPage({
 
   const groups = getSystemGroups();
   const existingKeys = new Set(systems.map((s) => s.systemKey));
-  const groupLabelByKey = new Map<string, string>();
-  for (const g of groups) for (const item of g.items) groupLabelByKey.set(item.id, g.label);
 
   // Derive a row descriptor per installed system, bucketed by completeness.
   const configured: SystemRowData[] = [];
@@ -95,7 +98,7 @@ export default async function SystemsPage({
       icon: systemIconFor(sys.systemKey),
       title: item?.label ?? sys.systemKey,
       description: item?.description ?? null,
-      groupLabel: groupLabelByKey.get(sys.systemKey) ?? "",
+      groupLabel: groupLabelFor(sys.systemKey),
       status: c.status,
       pct: c.pct,
       fieldsFilled: c.filled,
@@ -118,15 +121,11 @@ export default async function SystemsPage({
   const allConfigured = installedCount > 0 && configured.length === installedCount;
   const showTip = incomplete.length > 0 || recommended.length > 0;
 
-  // Sections visible only when non-empty, EXCEPT "Por configurar" which is the
+  // Sections render only when non-empty, EXCEPT "Por configurar" which is the
   // discovery affordance shown while any recommended system is uninstalled (Q7).
-  const sections = [
-    configured.length > 0 && { key: "configured" as const },
-    incomplete.length > 0 && { key: "incomplete" as const },
-    recommended.length > 0 && { key: "recommended" as const },
-  ].filter(Boolean) as { key: "configured" | "incomplete" | "recommended" }[];
-  const numFor = (key: string) =>
-    String(sections.findIndex((s) => s.key === key) + 1).padStart(2, "0");
+  // Numbering runs over the visible sections in source order (01, 02, …).
+  let sectionNum = 0;
+  const nextNum = () => String(++sectionNum).padStart(2, "0");
 
   return (
     <div>
@@ -173,7 +172,7 @@ export default async function SystemsPage({
       )}
 
       {configured.length > 0 && (
-        <NumberedSection number={numFor("configured")} title="Configurados">
+        <NumberedSection number={nextNum()} title="Configurados">
           <div className="flex flex-col gap-2.5">
             {configured.map((row) => (
               <SystemRow key={row.href} {...row} />
@@ -183,7 +182,7 @@ export default async function SystemsPage({
       )}
 
       {incomplete.length > 0 && (
-        <NumberedSection number={numFor("incomplete")} title="Incompletos">
+        <NumberedSection number={nextNum()} title="Incompletos">
           <div className="flex flex-col gap-2.5">
             {incomplete.map((row) => (
               <SystemRow key={row.href} {...row} />
@@ -193,7 +192,7 @@ export default async function SystemsPage({
       )}
 
       {recommended.length > 0 && (
-        <NumberedSection number={numFor("recommended")} title="Por configurar">
+        <NumberedSection number={nextNum()} title="Por configurar">
           <div className="flex flex-col gap-2.5">
             {recommended.map(({ item, groupLabel }) => (
               <RecommendedRow
