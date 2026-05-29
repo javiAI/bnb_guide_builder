@@ -49,7 +49,7 @@ const STATUS_PILL: Record<
   empty: {
     label: "Vacío",
     icon: CircleDashed,
-    cls: "bg-[var(--color-background-muted)] text-[var(--color-text-muted)]",
+    cls: "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
   },
 };
 
@@ -108,7 +108,7 @@ export function SystemRow({
             {groupLabel}
           </span>
           {internal && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-background-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-muted)]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-background-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
               <EyeOff size={11} aria-hidden="true" />
               Solo interno
             </span>
