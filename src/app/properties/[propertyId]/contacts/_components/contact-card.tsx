@@ -9,6 +9,7 @@ import { updateContactAction, deleteContactAction } from "@/lib/actions/editor.a
 import type { ActionResult } from "@/lib/types/action-result";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactIconFor, type ContactGroupTone } from "@/lib/icons/contact-icons";
+import { ContactQuickActions } from "./contact-quick-actions";
 
 export interface Contact {
   id: string;
@@ -136,6 +137,13 @@ export function ContactCard({
           {contact.phone}
         </div>
       )}
+
+      <ContactQuickActions
+        phone={contact.phone}
+        email={contact.email}
+        whatsapp={contact.whatsapp}
+        address={contact.address}
+      />
 
       {editing && (
         <form action={formAction} className="space-y-4 border-t border-[var(--color-border-subtle)] pt-4">

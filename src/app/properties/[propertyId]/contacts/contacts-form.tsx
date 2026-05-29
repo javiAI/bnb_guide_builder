@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Eye, Plus, Siren, Users } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -53,7 +53,8 @@ function CreateContactForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="text-sm font-medium">Tipo *</span>
-            <select name="roleKey" required className={FIELD}>
+            {/* eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: CTA opens this form, focus the first field (B1) */}
+            <select name="roleKey" required autoFocus className={FIELD}>
               <option value="">Seleccionar tipo</option>
               {groups.map((g) => (
                 <optgroup key={g.id} label={g.label}>
@@ -108,6 +109,13 @@ function CreateContactForm({
 
 export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
   const [creating, setCreating] = useState(false);
+  const createRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (creating) {
+      createRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [creating]);
 
   const contactsByGroup = new Map<string, Contact[]>();
   for (const contact of contacts) {
@@ -199,7 +207,7 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
       )}
 
       {creating && (
-        <div className="mt-6">
+        <div ref={createRef} className="scroll-mt-6 mt-6">
           <CreateContactForm
             propertyId={propertyId}
             open={creating}
