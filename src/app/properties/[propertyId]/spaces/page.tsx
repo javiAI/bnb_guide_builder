@@ -14,6 +14,16 @@ import { resolveSpaceAvailability } from "@/lib/services/space-availability.serv
 import { loadSpaceCovers } from "@/lib/services/space-cover.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
+/** Header chip label: bold count + pluralized noun (e.g. "5 espacios"). */
+function countChipLabel(n: number, singular: string, plural: string) {
+  return (
+    <>
+      <span className="font-semibold text-[var(--color-text-primary)]">{n}</span>{" "}
+      {n === 1 ? singular : plural}
+    </>
+  );
+}
+
 export default async function SpacesPage({
   params,
 }: {
@@ -188,24 +198,8 @@ export default async function SpacesPage({
         }
         chips={
           <>
-            <PageHeaderChip
-              icon={DoorOpen}
-              label={
-                <>
-                  <span className="font-semibold text-[var(--color-text-primary)]">{spaces.length}</span>{" "}
-                  {spaces.length === 1 ? "espacio" : "espacios"}
-                </>
-              }
-            />
-            <PageHeaderChip
-              icon={Camera}
-              label={
-                <>
-                  <span className="font-semibold text-[var(--color-text-primary)]">{totalPhotos}</span>{" "}
-                  {totalPhotos === 1 ? "foto" : "fotos"}
-                </>
-              }
-            />
+            <PageHeaderChip icon={DoorOpen} label={countChipLabel(spaces.length, "espacio", "espacios")} />
+            <PageHeaderChip icon={Camera} label={countChipLabel(totalPhotos, "foto", "fotos")} />
             {spaces.length > 0 && (
               <PageHeaderChip icon={CheckCheck} label="Completado" value={`${completionPct}%`} />
             )}

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, Move, Pencil, UsersRound, X } from "lucide-react";
+import { Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -62,7 +62,7 @@ const inputCls =
 
 const PROGRESS_META: Record<
   SpaceProgressLevel,
-  { label: string; bar: string; pill: string; icon: typeof Check }
+  { label: string; bar: string; pill: string; icon: LucideIcon | null }
 > = {
   complete: {
     label: "Ficha completa",
@@ -80,7 +80,7 @@ const PROGRESS_META: Record<
     label: "Sin datos",
     bar: "bg-[var(--color-border-strong)]",
     pill: "bg-[var(--color-status-neutral-bg)] text-[var(--color-status-neutral-text)]",
-    icon: ChevronDown, // unused visually for "none"; kept for type completeness
+    icon: null,
   },
 };
 
@@ -381,7 +381,7 @@ export function SpaceCard({
               progress.pill,
             )}
           >
-            {progressLevel !== "none" && <StatusIcon size={11} aria-hidden="true" />}
+            {StatusIcon && <StatusIcon size={11} aria-hidden="true" />}
             {progress.label}
           </span>
         </div>
