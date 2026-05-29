@@ -424,6 +424,39 @@ First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-sys
 
 **Extraction status**: APPROVED pattern, **not yet extracted** to `src/components/ui/`. Lives inline in `src/app/properties/[propertyId]/access/_components/subsystem-card.tsx` as the only implementation today. Extraction trigger: when a second surface (probable: `spaces/`) adopts this anatomy. Extraction spec lives in plan v6.2 § Sub-step H — do **not** extract speculatively before a second adopter exists.
 
+##### Contacts — 16E.5 parity port (`contacts/`)
+
+**Kit ref**: `subpages.html #page-contactos`. **Profile**: operator. **Branch**: `feat/liora-contacts-visual-parity`. **Status**: ✅ parity ported.
+
+**Files touched**:
+- `src/app/properties/[propertyId]/contacts/contacts-form.tsx` — rewritten: `PageHeader` (eyebrow / title / verbatim subtitle / count chips / "Añadir contacto" CTA), `NumberedSection` per non-empty contact group (01/02/… in taxonomy file order — empty groups omitted), responsive `cn-grid`, controlled create form with scroll-to-form + autofocus (B1).
+- `src/app/properties/[propertyId]/contacts/_components/contact-card.tsx` — NEW: read card (toned avatar, name, role line, mono phone) + inline full-width edit form (same fields/server action as before), `Pencil` `IconButton` toggle, emergency card variant.
+- `src/app/properties/[propertyId]/contacts/_components/contact-quick-actions.tsx` — NEW: `cn-actions` row of `ButtonLink size="md"` (Llamar primary; WhatsApp/Email/Ir secondary), anchors derived per-field and omitted when absent (A1).
+- `src/app/properties/[propertyId]/contacts/_components/styles.ts` — NEW: shared `FIELD`/`FIELD_PH`/`PRIMARY_BTN` className contracts.
+- `src/lib/icons/contact-icons.ts` + `src/test/contact-icon-coverage.test.ts` — NEW: `ct.*` → Lucide avatar icon registry + per-group tone (C1), coverage-pinned to `contact_types.json`.
+- `src/components/ui/delete-confirmation-button.tsx` — shared primitive fix piggybacked: trigger adopts the canonical 32px icon-button shell (`recipe-icon-btn-32 grid h-8 w-8`) so its slop reaches a true 44 hit area.
+- `src/test/parity-allowlist.ts` — `operator-contacts` added to `AUDITED_SURFACES` + `EXPECTED_OPERATOR_SCOPE_PATTERNS`. No new exceptions.
+
+**Primitives adopted**: `PageHeader`, `PageHeaderChip`, `NumberedSection`, `ButtonLink`, `IconButton`, foundations semantic tokens throughout.
+
+**Decisions honored**: A1 (quick actions), B1 (header CTA opens + scrolls + focuses the create form; dashed inline trigger removed), C1 (avatar icon registry), D1 (dynamic numbering by non-empty groups in file order), verbatim editorial subtitle.
+
+**Deviation (flagged)**: `CollapsibleSection` is **not** used in `contacts/` — the kit's always-visible bottom quick-actions row cannot be hosted by its header-only API without nested card chrome, so each contact is a purpose-built read-card with an inline edit form. Consequently the pre-approved *CollapsibleSection chevron* micro-fix was **deferred** (editing a shared primitive this branch no longer consumes would be out-of-scope contamination). The *DeleteConfirmationButton* micro-fix was applied (still used in the edit form).
+
+**UI Kit Parity (7 criteria, 1–10, verdict = worst-of)**:
+
+| Criterion | Score | Notes |
+|-----------|-------|-------|
+| Layout silhouette | 9.0 | pg header + numbered sections + cn-grid of cn-cards reproduced; edit affordances additive |
+| Visual hierarchy | 9.0 | eyebrow→title→subtitle→chips→CTA; name→role→phone→actions |
+| Density / spacing | 8.5 | card p-4 / gap-3 faithful; 44-hit action buttons taller than kit (~30px), occasional action wrap on narrow cards |
+| Component fidelity | 8.5 | avatar (initials/icon, toned), bold role, mono phone, action buttons; buttons enlarged for touch-target |
+| Token fidelity | 9.5 | foundations semantic tokens only; accent→action-primary, clay→status-error, moss→status-success |
+| Interaction / state | 9.0 | hover border-strong, edit toggle, derived quick-action links, create scroll+focus, emergency variant |
+| Dark mode | 9.0 | full parity incl. emergency gradient; axe 0 serious/critical light + dark |
+
+**Verdict: 8.5 (PASS)** — global ≥8.5, every criterion ≥7.5, 0 blockers (no silhouette mismatch, no token violations, no a11y degradation). axe-core `serious|critical = 0` in light + dark. Screenshots (before/after/preview × light/dark): `design-system/tmp/contacts/` (gitignored — local evidence).
+
 ### 16F — Messaging + assistant
 
 Surfaces: messaging thread UI, AI assistant chat widget (operator + guest).
