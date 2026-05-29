@@ -1,8 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ArrowLeft, LayoutGrid, LifeBuoy } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
+import { getSystemGroups, findSystemItem, findSystemSubtype } from "@/lib/taxonomy-loader";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
+import { TextLink } from "@/components/ui/text-link";
+import { IconBadge } from "@/components/ui/icon-badge";
+import { systemIconFor } from "@/lib/icons/system-icons";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { SystemDetailForm } from "./system-detail-form";
 import { SystemCoverageTable } from "./system-coverage-table";
@@ -36,7 +44,11 @@ export default async function SystemDetailPage({
   });
 
   const item = findSystemItem(system.systemKey);
-  const subtype = system.systemKey ? findSystemSubtype(system.systemKey) : null;
+  const subtype = (system.systemKey ? findSystemSubtype(system.systemKey) : null) ?? null;
+  const SystemIcon = systemIconFor(system.systemKey);
+
+  const groupLabel =
+    getSystemGroups().find((g) => g.items.some((i) => i.id === system.systemKey))?.label ?? null;
 
   const detailsJson = (system.detailsJson ?? {}) as Record<string, unknown>;
   const opsJson = (system.opsJson ?? {}) as Record<string, unknown>;
@@ -46,73 +58,72 @@ export default async function SystemDetailPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href={`/properties/${propertyId}/systems`}
-            className="text-xs text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)]"
-          >
-            ← Sistemas
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold text-[var(--foreground)]">
-            {item?.label ?? system.systemKey}
-          </h1>
-          {item?.description && (
-            <p className="mt-1 text-sm text-[var(--color-neutral-500)]">{item.description}</p>
-          )}
-        </div>
-        <DeleteSystemButton systemId={systemId} propertyId={propertyId} />
-      </div>
+      <TextLink
+        href={`/properties/${propertyId}/systems`}
+        size="sm"
+        className="mb-3 inline-flex items-center gap-1"
+      >
+        <ArrowLeft size={14} aria-hidden="true" />
+        Sistemas
+      </TextLink>
 
-      <div className="space-y-6">
-        {/* Config-driven detail form */}
-        {subtype && (subtype.detailsFields.length > 0 || subtype.opsFields.length > 0) ? (
-          <SystemDetailForm
-            systemId={systemId}
-            propertyId={propertyId}
-            subtype={subtype}
-            detailsJson={detailsJson}
-            opsJson={opsJson}
-            internalNotes={system.internalNotes}
-            visibility={system.visibility}
-          />
-        ) : (
-          <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-            <SystemDetailForm
-              systemId={systemId}
-              propertyId={propertyId}
-              subtype={null}
-              detailsJson={detailsJson}
-              opsJson={opsJson}
-              internalNotes={system.internalNotes}
-              visibility={system.visibility}
+      <PageHeader
+        title={
+          <span className="inline-flex items-center gap-3">
+            <IconBadge icon={SystemIcon} tone="neutral" size="md" iconSize={18} />
+            {item?.label ?? system.systemKey}
+          </span>
+        }
+        description={item?.description ?? undefined}
+        actions={<DeleteSystemButton systemId={systemId} propertyId={propertyId} />}
+        chips={
+          <>
+            {groupLabel && <PageHeaderChip label={groupLabel} />}
+            <PageHeaderChip
+              label="Visibilidad"
+              value={system.visibility === "internal" ? "Solo interno" : "Huésped"}
             />
-          </div>
-        )}
+          </>
+        }
+      />
+
+      <div className="flex flex-col gap-5">
+        {/* Config-driven detail form (renders its own section cards) */}
+        <SystemDetailForm
+          systemId={systemId}
+          propertyId={propertyId}
+          subtype={subtype}
+          detailsJson={detailsJson}
+          opsJson={opsJson}
+          internalNotes={system.internalNotes}
+          visibility={system.visibility}
+        />
 
         {/* Troubleshooting relacionado */}
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-          <h2 className="mb-1 text-sm font-semibold text-[var(--foreground)]">
+        <Card variant="overview">
+          <SectionEyebrow icon={LifeBuoy} className="mb-1">
             Troubleshooting relacionado
-          </h2>
-          <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
+          </SectionEyebrow>
+          <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
             Playbooks vinculados a este sistema.
           </p>
           {relatedPlaybooks.length === 0 ? (
-            <p className="text-xs text-[var(--color-neutral-400)]">
+            <p className="text-[12px] text-[var(--color-text-muted)]">
               No hay playbooks vinculados a este sistema.
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="flex flex-col gap-2">
               {relatedPlaybooks.map((pb) => {
                 const sev = SEVERITY_BADGE[pb.severity] ?? SEVERITY_BADGE.medium;
                 return (
                   <li key={pb.id}>
                     <Link
                       href={`/properties/${propertyId}/troubleshooting/${pb.id}`}
-                      className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--color-neutral-50)]"
+                      className="flex min-h-[44px] items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
                     >
-                      <span className="font-medium text-[var(--foreground)]">{pb.title}</span>
+                      <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                        {pb.title}
+                      </span>
                       <Badge tone={sev.tone} label={sev.label} />
                     </Link>
                   </li>
@@ -120,14 +131,17 @@ export default async function SystemDetailPage({
               })}
             </ul>
           )}
-        </div>
+        </Card>
 
         {/* Coverage table */}
         {spaces.length > 0 && (
-          <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-            <h2 className="mb-1 text-sm font-semibold text-[var(--foreground)]">Cobertura por espacio</h2>
-            <p className="mb-4 text-xs text-[var(--color-neutral-500)]">
-              Indica si este sistema está disponible en cada espacio. Por defecto se hereda la configuración global.
+          <Card variant="overview">
+            <SectionEyebrow icon={LayoutGrid} className="mb-1">
+              Cobertura por espacio
+            </SectionEyebrow>
+            <p className="mb-4 text-[12px] text-[var(--color-text-secondary)]">
+              Indica si este sistema está disponible en cada espacio. Por defecto se hereda la
+              configuración global.
             </p>
             <SystemCoverageTable
               systemId={systemId}
@@ -135,7 +149,7 @@ export default async function SystemDetailPage({
               spaces={spaces}
               coverageMap={Object.fromEntries(coverageMap)}
             />
-          </div>
+          </Card>
         )}
       </div>
     </div>
