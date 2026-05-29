@@ -118,7 +118,7 @@ export function ContactCard({
             {contact.displayName}
           </div>
           <div className="mt-0.5 text-[11.5px] text-[var(--color-text-muted)]">
-            <span className="font-medium text-[var(--color-text-secondary)]">{typeLabel}</span>
+            <span className="font-medium text-[var(--color-text-primary)]">{typeLabel}</span>
             {details.length > 0 && ` · ${details.join(" · ")}`}
           </div>
         </div>
