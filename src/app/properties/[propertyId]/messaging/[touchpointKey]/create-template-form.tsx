@@ -7,6 +7,7 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { automationChannels } from "@/lib/taxonomies/automation-channels";
 import { getItems } from "@/lib/taxonomies/_helpers";
 import { MessageBodyEditor } from "./message-body-editor";
+import { INPUT_CLASS, PRIMARY_BTN } from "./_styles";
 
 const channels = getItems(automationChannels);
 
@@ -14,9 +15,6 @@ interface CreateTemplateFormProps {
   propertyId: string;
   touchpointKey: string;
 }
-
-const INPUT_CLASS =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-focus)]";
 
 export function CreateTemplateForm({ propertyId, touchpointKey }: CreateTemplateFormProps) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
@@ -71,11 +69,7 @@ export function CreateTemplateForm({ propertyId, touchpointKey }: CreateTemplate
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className={`mt-4 ${PRIMARY_BTN}`}>
         <Plus size={15} aria-hidden="true" />
         {pending ? "Añadiendo…" : "Añadir plantilla"}
       </button>

@@ -15,6 +15,7 @@ import {
   messagingTriggers,
 } from "@/lib/taxonomies/messaging-triggers";
 import { getItems } from "@/lib/taxonomies/_helpers";
+import { INPUT_CLASS, PRIMARY_BTN } from "./_styles";
 
 const channels = getItems(automationChannels);
 const triggers = messagingTriggers.items;
@@ -40,9 +41,6 @@ interface AutomationSectionProps {
   propertyId: string;
   touchpointKey: string;
 }
-
-const INPUT_CLASS =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-focus)]";
 
 function formatOffset(minutes: number): string {
   if (minutes === 0) return "Al momento";
@@ -142,11 +140,7 @@ export function AutomationSection({
             <TriggerAndOffsetFields inputClass={INPUT_CLASS} />
           </div>
 
-          <button
-            type="submit"
-            disabled={createPending}
-            className="mt-4 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
-          >
+          <button type="submit" disabled={createPending} className={`mt-4 ${PRIMARY_BTN}`}>
             <Zap size={15} aria-hidden="true" />
             {createPending ? "Creando…" : "Crear automatización"}
           </button>

@@ -12,6 +12,7 @@ import { automationChannels } from "@/lib/taxonomies/automation-channels";
 import { getItems } from "@/lib/taxonomies/_helpers";
 import type { BadgeTone } from "@/lib/types";
 import { MessageBodyEditor } from "./message-body-editor";
+import { INPUT_CLASS, PRIMARY_BTN, SECONDARY_BTN } from "./_styles";
 
 const channels = getItems(automationChannels);
 
@@ -31,15 +32,6 @@ interface TemplateCardProps {
   statusTone: BadgeTone;
   channelLabel: string | null;
 }
-
-const INPUT_CLASS =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-focus)]";
-
-const PRIMARY_BTN =
-  "inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50";
-
-const SECONDARY_BTN =
-  "inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-5 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]";
 
 export function TemplateCard({
   template,
