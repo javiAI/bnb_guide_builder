@@ -50,7 +50,7 @@ function ParkingFeeBadge({
         disabled={disabled}
         aria-label={`Cambiar tipo de aparcamiento (actual: ${stateLabel.toLowerCase()})`}
         className={cn(
-          "recipe-dot-24 flex h-6 w-6 flex-none items-center justify-center rounded-full border-2 transition-shadow duration-100",
+          "recipe-icon-btn-32 flex h-8 w-8 flex-none items-center justify-center rounded-full border-2 transition-shadow duration-100",
           "border-[var(--color-background-elevated)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]",
           fee !== null
             ? "bg-[var(--color-status-info-solid)] text-[var(--color-background-elevated)]"

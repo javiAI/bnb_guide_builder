@@ -126,21 +126,25 @@ model Property {
   parkingSuggestionsCachedAt  DateTime? @map("parking_suggestions_cached_at")
   // Cached arrival-mode discovery results — `Partial<Record<ArrivalMode,
   // ArrivalSuggestion[]>>`. Mirrors the parking cache but keyed by mode so a
-  // single column covers all 6 discoverable transit modes (airport, train,
-  // bus, metro, urban_bus, taxi). The operator refreshes per mode via the
-  // icon-only button on the "Sugeridos" column. NULLed by saveProperty
-  // alongside the parking cache when coords could have shifted.
-  // Concurrent writes (parallel mode refresh) compose via atomic JSONB merge
-  // — see migration `20260520120000_add_arrival_suggestions_cache` for the
-  // canonical `||` pattern. Read-modify-write is forbidden here.
+  // single column covers every discoverable intercity arrival mode (canonical
+  // set: `DISCOVERABLE_MODES` / `ARRIVAL_MODES` in
+  // `src/lib/services/arrival-discovery.service.ts` — today `airport | train
+  // | bus`; last-mile retired in third-pass review, see docs/FUTURE.md § 20).
+  // The operator refreshes per mode via the icon-only button on the
+  // "Sugeridos" column. NULLed by saveProperty alongside the parking cache
+  // when coords could have shifted. Concurrent writes (parallel mode refresh)
+  // compose via atomic JSONB merge — see migration
+  // `20260520120000_add_arrival_suggestions_cache` for the canonical `||`
+  // pattern. Read-modify-write is forbidden here.
   arrivalSuggestionsCacheJson Json?    @map("arrival_suggestions_cache_json")
   // Per-mode enable/disable for the unified "Cómo llegar" cockpit card. Shape:
-  // `Partial<Record<"parking"|ArrivalMode, boolean>>` — `parking` plus the 6
-  // discoverable transit modes (see arrivalSuggestionsCacheJson above; full
-  // key set is enforced by `arrivalModeEnabledSchema` in arrival.actions.ts).
-  // Absent / null = defaults (parking follows hasParking; transit modes
-  // default off). Scope: per-property — only read/written behind an
-  // `authorizeDiscoveryActor` / `requireOperatorMutate` workspace check.
+  // `Partial<Record<"parking"|ArrivalMode, boolean>>` — `parking` plus the
+  // discoverable intercity arrival modes (`DISCOVERABLE_MODES` / `ARRIVAL_MODES`
+  // in `src/lib/services/arrival-discovery.service.ts`; full key set enforced
+  // by `arrivalModeEnabledSchema` in arrival.actions.ts). Absent / null =
+  // defaults (parking follows hasParking; transit modes default off). Scope:
+  // per-property — only read/written behind an `authorizeDiscoveryActor` /
+  // `requireOperatorMutate` workspace check.
   arrivalModesEnabledJson Json?    @map("arrival_modes_enabled_json")
   infrastructureJson      Json?    @map("infrastructure_json")
   publicSlug              String?  @unique @map("public_slug")
