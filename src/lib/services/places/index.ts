@@ -81,7 +81,14 @@ export function __resetLocalPoiProviderCache(): void {
   cachedFingerprint = null;
 }
 
-export type { LocalPoiProvider, PoiSuggestion, SearchParams, ProviderMetadata } from "./provider";
+export type {
+  LocalPoiProvider,
+  PoiSuggestion,
+  SearchParams,
+  ReverseParams,
+  ReverseGeoResult,
+  ProviderMetadata,
+} from "./provider";
 export {
   PoiProviderConfigError,
   PoiProviderUnavailableError,

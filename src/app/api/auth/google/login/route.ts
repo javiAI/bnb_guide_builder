@@ -32,8 +32,28 @@ function getCallbackUrl(request: NextRequest): string {
   return `${protocol}://${host}/api/auth/google/callback`
 }
 
+// Google's OAuth server rejects private-network IPv4 (RFC 1918) as redirect_uri
+// without device-flow params. In dev, force the whole flow onto localhost so
+// cookies and redirect_uri stay consistent and approved by Google.
+function isPrivateIPv4Host(host: string): boolean {
+  const hostname = host.split(':')[0]
+  return (
+    /^10\./.test(hostname) ||
+    /^192\.168\./.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+    /^169\.254\./.test(hostname)
+  )
+}
+
 export async function GET(request: NextRequest) {
   try {
+    const host = request.headers.get('host') ?? ''
+    if (process.env.NODE_ENV !== 'production' && isPrivateIPv4Host(host)) {
+      const port = host.includes(':') ? host.split(':').pop() : '3000'
+      const target = `http://localhost:${port}/api/auth/google/login`
+      return NextResponse.redirect(target)
+    }
+
     // Generate state and nonce (32 bytes each = 256 bits entropy)
     const state = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32)))
     const nonce = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32)))

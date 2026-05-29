@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { MapTilerPlacesProvider } from "@/lib/services/places/maptiler-provider";
-import { mapMapTilerCategoryToLp } from "@/lib/services/places/maptiler-category-mapping";
+import {
+  mapMapTilerCategoryToLp,
+  normalizeMapTilerCategory,
+} from "@/lib/services/places/maptiler-category-mapping";
 import { PoiProviderUnavailableError } from "@/lib/services/places/provider";
 
 const ANCHOR = { latitude: 41.385, longitude: 2.173 };
@@ -27,6 +30,25 @@ describe("mapMapTilerCategoryToLp", () => {
 
   it("ignores empty strings in candidate list", () => {
     expect(mapMapTilerCategoryToLp(["", "  ", "bar"])).toBe("lp.bar");
+  });
+
+  it("requires pre-normalized input — caller normalizes at the provider boundary", () => {
+    // MapTiler returns "railway station" / "bus station" / "bus stop" with
+    // spaces in `properties.categories`. The mapper is keyed by underscored
+    // OSM tags; callers (forward + reverse paths in maptiler-provider) must
+    // apply `normalizeMapTilerCategory` first. Raw space-separated input
+    // does not match.
+    expect(mapMapTilerCategoryToLp(["railway station"])).toBeNull();
+    expect(
+      mapMapTilerCategoryToLp(
+        ["railway station", "train station", "bus station", "bus stop"].map(
+          normalizeMapTilerCategory,
+        ),
+      ),
+    ).toBe("lp.transport");
+    expect(
+      mapMapTilerCategoryToLp([normalizeMapTilerCategory("bus stop")]),
+    ).toBe("lp.transport");
   });
 });
 

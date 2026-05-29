@@ -15,6 +15,7 @@ import {
   Footprints,
   GripHorizontal,
   Handshake,
+  Home,
   Key,
   KeyRound,
   KeySquare,
@@ -32,9 +33,9 @@ import {
 } from "lucide-react";
 
 export const ACCESS_COCKPIT_IDS = [
+  "parking",
   "building",
   "unit",
-  "parking",
   "accessibility",
 ] as const;
 export type AccessCockpitId = (typeof ACCESS_COCKPIT_IDS)[number];
@@ -64,6 +65,7 @@ export const BUILDING_ACCESS_ICONS: Record<string, LucideIcon> = {
   "ba.key_pickup": MapPin,
   "ba.in_person": Handshake,
   "ba.other": Ellipsis,
+  "ba.no_building": Home,
 };
 
 export const UNIT_ACCESS_ICONS: Record<string, LucideIcon> = {
@@ -85,6 +87,7 @@ export const PARKING_ICONS: Record<string, LucideIcon> = {
 };
 
 export const ACCESSIBILITY_ICONS: Record<string, LucideIcon> = {
+  "ax.no_accessibility": CircleSlash,
   "ax.single_level_home": LayoutGrid,
   "ax.step_free_guest_entrance": DoorOpen,
   "ax.guest_entrance_wide_81cm": MoveHorizontal,

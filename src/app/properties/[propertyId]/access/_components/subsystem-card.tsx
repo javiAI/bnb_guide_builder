@@ -1,42 +1,89 @@
 "use client";
 
-import {
-  AlertTriangle,
-  Camera,
-  Check,
-  Loader2,
-  Plus,
-  Star,
-  Video,
-} from "lucide-react";
+import { AlertTriangle, Check, Loader2, Plus, Star, Upload, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  useCallback,
-  useId,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
-import {
-  assignMediaAction,
-  confirmUploadAction,
-  deleteMediaAction,
-  requestUploadAction,
-} from "@/lib/actions/media.actions";
+import { deleteMediaAction } from "@/lib/actions/media.actions";
 import type { CardRole } from "./cockpit-grid";
 import { HoverCard } from "@/components/ui/hover-card";
+import {
+  MediaCarousel,
+  type MediaCarouselSlide,
+} from "@/components/ui/media-carousel";
 import type { SubsystemSlide } from "./subsystem-card.types";
+import { methodIdFromUsageKey } from "./arrival-steps-helpers";
+import type { ParkingPlace, PropertyCoords } from "../access-form";
+import type { ParkingSuggestion } from "@/lib/services/parking-discovery.service";
+import { DEFAULT_DISCOVERY_RADIUS_M } from "@/lib/services/arrival-discovery.service";
+import type { AccessCockpitId } from "@/lib/icons/access-icons";
 
-// Every subsystem resolves to one of these two — "empty" was removed in 7b
-// when explicit scope toggles (hasBuildingAccess / hasParking /
-// hasAccessibilityConsiderations) made it possible for every card to declare
-// configured-or-pending deterministically.
+const PARKING_COCKPIT_ID: AccessCockpitId = "parking";
+// `building` is the first card in the cockpit 1×4 row and owns the LCP image
+// in the access surface — its collapsed carousel is the only one allowed to
+// opt into `eagerFirstSlide`. All other cards stay lazy so the row doesn't
+// fire N eager fetches on mount (see <MediaCarousel> prop docstring).
+const BUILDING_COCKPIT_ID: AccessCockpitId = "building";
+import { MultiPinMap, feeTypeToPinKind, type MultiPinSpec } from "./multi-pin-map";
+import { MediaLightbox } from "./media-lightbox";
+import { ParkingStateProvider } from "./use-parking-management";
+import { useMediaUpload } from "@/hooks/use-media-upload";
+
+// Provides `openLightboxForUsageKey` to any descendant (MethodRow,
+// CoverUploadIconButton) so they can open the lightbox at the first slide
+// matching their usageKey. null = not inside a SubsystemCard (context absent).
+const SubsystemLightboxContext = createContext<((usageKey: string) => void) | null>(null);
+export function useSubsystemLightbox() {
+  return useContext(SubsystemLightboxContext);
+}
+
+// Explicit opt-outs (`ba.no_building` / `pk.no_parking` chips) make every
+// card deterministically configured-or-pending.
 export type SubsystemStatus = "configured" | "pending";
+
+// Stable empty-array refs — `slides ?? []` would synthesize a fresh array
+// every render and invalidate downstream memos in MediaLightbox.
+const EMPTY_SLIDES: readonly SubsystemSlide[] = [];
+const EMPTY_PARKING_PLACES: ParkingPlace[] = [];
+const EMPTY_PARKING_SUGGESTIONS: ParkingSuggestion[] = [];
+
+// Conditional ParkingStateProvider wrapper — only the parking cockpit mounts
+// the provider, so non-parking cards never run `useParkingManagement`. Inside
+// the provider the hook runs ONCE for the whole card subtree, so the inline
+// `ParkingPlacesEditor` (rendered in `children`) and the `MediaLightbox`
+// (mounted next to the carousel) share the same state instance — operator
+// edits in either surface show up immediately in the other.
+function MaybeParkingProvider({
+  enabled,
+  propertyId,
+  places,
+  propertyCoords,
+  initialSuggestions,
+  radiusMeters,
+  children,
+}: {
+  enabled: boolean;
+  propertyId: string;
+  places: ParkingPlace[];
+  propertyCoords: PropertyCoords | null;
+  initialSuggestions: ParkingSuggestion[];
+  radiusMeters: number;
+  children: ReactNode;
+}) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <ParkingStateProvider
+      propertyId={propertyId}
+      places={places}
+      propertyCoords={propertyCoords}
+      initialSuggestions={initialSuggestions}
+      radiusMeters={radiusMeters}
+    >
+      {children}
+    </ParkingStateProvider>
+  );
+}
 
 export interface SubsystemSelectedItem {
   id: string;
@@ -46,7 +93,7 @@ export interface SubsystemSelectedItem {
 
 interface SubsystemCardProps {
   role: CardRole;
-  cockpitId: string;
+  cockpitId: AccessCockpitId;
   propertyId: string;
   icon: LucideIcon;
   title: string;
@@ -56,9 +103,25 @@ interface SubsystemCardProps {
   videoCount?: number;
   status: SubsystemStatus;
   slides?: readonly SubsystemSlide[];
+  parkingSuggestions?: ParkingSuggestion[];
+  parkingPlaces?: ParkingPlace[];
+  propertyCoords?: PropertyCoords | null;
+  /** Discovery radius (meters) for parking suggestion fetching. Defaults
+   * applied at the leaf hook; only the parking cockpit consumes this. */
+  parkingRadiusMeters?: number;
   onExpand: () => void;
   onCollapse: () => void;
   expandedSubtitle?: string;
+  /** Optional slot for the lightbox live-map slide area. When passed, the
+   * MediaLightbox renders this node inside the slide region (replacing the
+   * inline parking-only map). Used today by the parking subsystem to show
+   * the unified arrival map at lightbox scale. */
+  lightboxMap?: ReactNode;
+  /** Optional slot for the lightbox right-side panel, rendered BELOW the
+   * thumbnail strip (in the same scroll container). Used today by the
+   * parking subsystem to host the Vehículo/Tren/Autobús/Avión tabs + the
+   * per-mode Añadidos/Sugeridos lists alongside the thumbnails. */
+  lightboxSidePanel?: ReactNode;
   children: ReactNode;
 }
 
@@ -76,6 +139,207 @@ function resolveVisibleCap(totalCount: number): number {
   return totalCount <= STRIP_VISIBLE_MAX ? totalCount : 4;
 }
 
+// Per-subsystem identity gradient — terra (building) / olive (unit) /
+// info (parking) / warning (accessibility). Tokens live in semantic.css
+// and resolve per theme. Listed statically so the token-coverage gate
+// sees each token literal — template-literal interpolation hid the
+// suffix from its regex.
+const SUBSYSTEM_GRADIENTS: Record<string, string> = {
+  building:
+    "linear-gradient(135deg, var(--color-subsystem-building-from), var(--color-subsystem-building-to))",
+  unit:
+    "linear-gradient(135deg, var(--color-subsystem-unit-from), var(--color-subsystem-unit-to))",
+  parking:
+    "linear-gradient(135deg, var(--color-subsystem-parking-from), var(--color-subsystem-parking-to))",
+  accessibility:
+    "linear-gradient(135deg, var(--color-subsystem-accessibility-from), var(--color-subsystem-accessibility-to))",
+};
+
+// Map domain `SubsystemSlide` (which carries access-feature kinds incl.
+// `live-map`) to the feature-agnostic `MediaCarouselSlide` consumed by the
+// shared primitive. live-map slides become `kind: "custom"` and inject the
+// MultiPinMap via the render fn — keeps the carousel decoupled from
+// access-specific UI so it can be reused (next adopter: spaces).
+function toCarouselSlides(
+  slides: readonly SubsystemSlide[],
+): MediaCarouselSlide[] {
+  return slides
+    .map((s): MediaCarouselSlide | null => {
+      if (s.kind === "live-map") {
+        if (!s.liveAnchor) return null;
+        const pins: MultiPinSpec[] = (s.livePins ?? []).map((p) => ({
+          id: p.id,
+          latitude: p.latitude,
+          longitude: p.longitude,
+          kind: feeTypeToPinKind(p.feeType),
+          label: p.label,
+        }));
+        const anchor = s.liveAnchor;
+        return {
+          id: s.id,
+          title: s.title,
+          kind: "custom",
+          render: (height: number) => (
+            // pointer-events-none: display-only; swipe + tap-to-expand reach
+            // the carousel's own handlers. Expanded editor uses
+            // ParkingPlacesEditor with its own interactive map.
+            <div className="pointer-events-none absolute inset-0">
+              <MultiPinMap anchor={anchor} pins={pins} height={height} interactive={false} />
+            </div>
+          ),
+        };
+      }
+      if (s.kind === "image" || s.kind === "map") {
+        return {
+          id: s.id,
+          title: s.title,
+          kind: s.kind,
+          url: s.url,
+          alt: s.alt || s.title,
+        };
+      }
+      if (s.kind === "video") {
+        return {
+          id: s.id,
+          title: s.title,
+          kind: "video",
+          alt: s.alt || s.title,
+        };
+      }
+      return null;
+    })
+    .filter((s): s is MediaCarouselSlide => s !== null);
+}
+
+// ── Cover upload icon button ─────────────────────────────────────────────
+// Compact camera-icon trigger for the subsystem cover slot (usageKey =
+// "access.<cockpitId>"). Same upload pipeline as MediaCarousel — request →
+// PUT to R2 → confirm → assign → refresh. Used in both the active card
+// header and the collapsed card hover overlay.
+function CoverUploadIconButton({
+  propertyId,
+  uploadUsageKey,
+  coverCount = 0,
+  firstUrl,
+  secondUrl,
+  className,
+  style,
+}: {
+  propertyId: string;
+  uploadUsageKey: string;
+  coverCount?: number;
+  firstUrl?: string;
+  secondUrl?: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const openLightbox = useSubsystemLightbox();
+  const uploadConfig = useMemo(
+    () => ({
+      propertyId,
+      entityType: "access_method" as const,
+      usageKey: uploadUsageKey,
+    }),
+    [propertyId, uploadUsageKey],
+  );
+  const {
+    fileInputRef,
+    uploading,
+    error: uploadError,
+    triggerFilePicker,
+    onFileChange: handleFileChange,
+  } = useMediaUpload(uploadConfig);
+
+  const handleClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (uploading) return;
+      if (coverCount > 0 && openLightbox) {
+        openLightbox(uploadUsageKey);
+        return;
+      }
+      triggerFilePicker();
+    },
+    [uploading, coverCount, openLightbox, uploadUsageKey, triggerFilePicker],
+  );
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+      <button
+        type="button"
+        aria-label={
+          uploading
+            ? "Subiendo foto de portada…"
+            : uploadError
+              ? "Error al subir portada"
+              : "Añadir foto de portada"
+        }
+        onClick={handleClick}
+        disabled={uploading}
+        style={style}
+        className={cn(
+          "relative grid h-9 w-9 flex-none place-items-center rounded-full",
+          "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+          "hover:bg-[var(--color-background-subtle)] hover:text-[var(--color-action-primary)]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "before:absolute before:-inset-[4px] before:content-['']",
+          "[@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]",
+          className,
+        )}
+      >
+        {uploading ? (
+          <Loader2 size={16} aria-hidden="true" className="animate-spin" />
+        ) : coverCount > 0 && firstUrl ? (
+          /* Stacked thumbnail — same pattern as MethodRow */
+          <span className="relative h-8 w-8">
+            {coverCount > 1 && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-[7px] ring-1 ring-[var(--color-action-primary)] [transform:rotate(-15deg)]"
+              >
+                {secondUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={secondUrl} alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-cover" />
+                ) : (
+                  <span className="absolute inset-0 bg-[var(--color-action-primary-subtle)]" />
+                )}
+              </span>
+            )}
+            <span
+              className={cn(
+                "absolute inset-0 z-10 overflow-hidden rounded-[8px] ring-2 ring-[var(--color-action-primary)] ring-offset-1 ring-offset-[var(--color-action-primary-subtle)]",
+              )}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={firstUrl} alt="" draggable={false} className="absolute inset-0 h-full w-full select-none object-cover" />
+              <span aria-hidden="true" className="absolute inset-0 grid place-items-center bg-[var(--color-background-overlay)] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                <Upload size={14} aria-hidden="true" />
+              </span>
+            </span>
+            {coverCount > 1 && (
+              <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 z-20 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[10px] font-bold leading-none text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]">
+                {coverCount > 9 ? "9+" : coverCount}
+              </span>
+            )}
+          </span>
+        ) : (
+          <Upload size={16} aria-hidden="true" />
+        )}
+      </button>
+    </>
+  );
+}
+
 export function SubsystemCard({
   role,
   cockpitId,
@@ -88,9 +352,15 @@ export function SubsystemCard({
   videoCount = 0,
   status,
   slides,
+  parkingSuggestions,
+  parkingPlaces,
+  propertyCoords,
+  parkingRadiusMeters,
   onExpand,
   onCollapse,
   expandedSubtitle,
+  lightboxMap,
+  lightboxSidePanel,
   children,
 }: SubsystemCardProps) {
   const titleId = useId();
@@ -101,15 +371,108 @@ export function SubsystemCard({
 
   // Order: primary first, then the rest in given order. Visible cap then
   // overflow into the "+N" reveal.
-  const ordered = (() => {
-    if (!primaryId) return [...selectedItems];
-    const p = selectedItems.find((it) => it.id === primaryId);
-    if (!p) return [...selectedItems];
-    return [p, ...selectedItems.filter((it) => it.id !== primaryId)];
-  })();
-  const visibleCap = resolveVisibleCap(ordered.length);
-  const visible = ordered.slice(0, visibleCap);
-  const hidden = ordered.slice(visibleCap);
+  const { ordered, visible, hidden } = useMemo(() => {
+    let ord: readonly SubsystemSelectedItem[];
+    if (!primaryId) {
+      ord = selectedItems;
+    } else {
+      const p = selectedItems.find((it) => it.id === primaryId);
+      ord = p ? [p, ...selectedItems.filter((it) => it.id !== primaryId)] : selectedItems;
+    }
+    const cap = resolveVisibleCap(ord.length);
+    return { ordered: ord, visible: ord.slice(0, cap), hidden: ord.slice(cap) };
+  }, [selectedItems, primaryId]);
+
+  const uploadUsageKey = `access.${cockpitId}`;
+  // Method-scoped slides (usageKey `access.<cockpit>.<methodId>`) only surface
+  // when the method is still selected — operators who deselect a method
+  // shouldn't see its lingering photos. Cover slides (exact `uploadUsageKey`)
+  // and the synthetic live-map slide are always kept.
+  const validMethodIds = useMemo(
+    () => new Set(selectedItems.map((s) => s.id)),
+    [selectedItems],
+  );
+  const stableSlides = useMemo(() => {
+    const all = slides ?? EMPTY_SLIDES;
+    return all.filter((s) => {
+      if (s.kind === "live-map") return true;
+      if (s.usageKey === uploadUsageKey) return true;
+      if (!s.usageKey.startsWith(`${uploadUsageKey}.`)) return true;
+      const methodId = methodIdFromUsageKey(s.usageKey);
+      return methodId !== null && validMethodIds.has(methodId);
+    });
+  }, [slides, uploadUsageKey, validMethodIds]);
+  // Collapsed cover carousel includes the live-map slide so parking's hero
+  // shows the embedded map by default (same expand affordance as other
+  // cards). The expanded variant hides the whole carousel for parking — its
+  // body renders `<ArrivalCockpitMap />` directly — so live-map presence is
+  // irrelevant there. `live-map` is appended last in KIND_ORDER (page.tsx),
+  // so the controlled `carouselIdx` stays valid across the collapsed/active
+  // flip without translation.
+  const carouselSlides = useMemo(
+    () => toCarouselSlides(stableSlides),
+    [stableSlides],
+  );
+  const placeholderGradient =
+    SUBSYSTEM_GRADIENTS[cockpitId] ?? SUBSYSTEM_GRADIENTS.building;
+
+  // Cover slides — exact usageKey match (not nested method slides).
+  const coverSlides = useMemo(
+    () => stableSlides.filter(
+      (s) => s.usageKey === uploadUsageKey && (s.kind === "image" || s.kind === "map"),
+    ),
+    [stableSlides, uploadUsageKey],
+  );
+  const coverCount = coverSlides.length;
+  const coverFirstUrl = coverSlides[0]?.url;
+  const coverSecondUrl = coverSlides[1]?.url;
+
+  // Active slide index — owned here so it survives the `role` flip (the
+  // collapsed and active branches render two MediaCarousel instances; the
+  // user expects the slide they were viewing to stay put). Clamp when the
+  // slides set shrinks so we never point past the last slide.
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  const visibleSlideCount = carouselSlides.length;
+  useEffect(() => {
+    const max = Math.max(0, visibleSlideCount - 1);
+    setCarouselIdx((prev) => Math.min(prev, max));
+  }, [visibleSlideCount]);
+
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const handleLightboxOpen = (idx: number) => setLightboxIdx(idx);
+  const handleLightboxClose = () => setLightboxIdx(null);
+  const handleLightboxIndexChange = (idx: number) => {
+    setLightboxIdx(idx);
+    setCarouselIdx(idx);
+  };
+  const router = useRouter();
+  const handleSlideDelete = useCallback(
+    async (assetId: string) => {
+      await deleteMediaAction(assetId);
+      router.refresh();
+    },
+    [router],
+  );
+
+  const openLightboxForUsageKey = useCallback(
+    (usageKey: string) => {
+      const idx = stableSlides.findIndex((s) => s.usageKey === usageKey);
+      if (idx >= 0) setLightboxIdx(idx);
+    },
+    [stableSlides],
+  );
+
+  // Memoize so MediaLightbox's useMediaUpload hook (deps on config identity)
+  // doesn't rebuild its callbacks every render — that would defeat any
+  // downstream React.memo and re-arm child effects.
+  const lightboxUploadConfig = useMemo(
+    () => ({
+      propertyId,
+      entityType: "access_method" as const,
+      usageKey: uploadUsageKey,
+    }),
+    [propertyId, uploadUsageKey],
+  );
 
   // Tile renderer — invoked from the HoverCard trigger for every selected
   // item. The primary tile carries a 14×14 corner star with a 2px outline
@@ -151,54 +514,96 @@ export function SubsystemCard({
     );
   };
 
+  const isParkingCockpit = cockpitId === PARKING_COCKPIT_ID;
+
+  let body: ReactNode;
   if (role === "active") {
-    return (
+    body = (
       <div
+        id={`access-cockpit-${cockpitId}`}
         style={cardStyle}
         className="overflow-hidden rounded-[20px] border border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-surface-sm)]"
       >
         {/* Media-first layout: cover area on top, title button below.
-           The carousel is display-only here (no click-through) — the title
-           button is the sole collapse trigger. */}
-        <MediaCarousel
-          slides={slides ?? []}
-          cockpitId={cockpitId}
-          propertyId={propertyId}
-          title={title}
-          variant="active"
-        />
-        <button
-          type="button"
-          aria-expanded={true}
-          aria-controls={bodyId}
-          aria-labelledby={titleId}
-          onClick={onCollapse}
-          className={cn(
-            "group flex w-full items-center gap-3 p-5 text-left",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
-            "hover:bg-[var(--color-background-muted)]/40",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
-          >
-            <Icon size={20} aria-hidden="true" />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-1">
-            <span
-              id={titleId}
-              className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
-            >
-              {title}
-            </span>
-            {expandedSubtitle && (
-              <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
-                {expandedSubtitle}
-              </span>
+           The cover doubles as a collapse trigger via `onCollapse` — clicking
+           anywhere on the image (except the lightbox button) collapses the
+           card, mirroring the collapsed expand-overlay pattern.
+
+           Parking cockpit opts out: its hero is the embedded map rendered in
+           the body (`<ArrivalCockpitMap />`), not a photo carousel — parking
+           is fundamentally about geography, not aesthetics. */}
+        {!isParkingCockpit && (
+          <MediaCarousel
+            slides={carouselSlides}
+            propertyId={propertyId}
+            title={title}
+            variant="active"
+            uploadEntityType="access_method"
+            uploadUsageKey={uploadUsageKey}
+            placeholderGradient={placeholderGradient}
+            currentIdx={carouselIdx}
+            onCurrentIdxChange={setCarouselIdx}
+            onLightboxOpen={handleLightboxOpen}
+          />
+        )}
+        {lightboxIdx !== null && (
+          <MediaLightbox
+            slides={stableSlides}
+            index={lightboxIdx}
+            onIndexChange={handleLightboxIndexChange}
+            onClose={handleLightboxClose}
+            onSlideDelete={handleSlideDelete}
+            uploadConfig={lightboxUploadConfig}
+            lightboxMap={lightboxMap}
+            lightboxSidePanel={lightboxSidePanel}
+          />
+        )}
+        {/* Header: collapse trigger (flex-1) + cover-upload camera (sibling,
+           never nested). Splitting avoids a button-inside-button. */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-expanded={true}
+            aria-controls={bodyId}
+            aria-labelledby={titleId}
+            onClick={onCollapse}
+            className={cn(
+              "group flex min-w-0 flex-1 items-center gap-3 p-5 text-left",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
+              "hover:bg-[var(--color-background-muted)]/40",
             )}
-          </span>
-        </button>
+          >
+            <span
+              aria-hidden="true"
+              className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
+            >
+              <Icon size={20} aria-hidden="true" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-1">
+              <span
+                id={titleId}
+                className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
+              >
+                {title}
+              </span>
+              {expandedSubtitle && (
+                <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
+                  {expandedSubtitle}
+                </span>
+              )}
+            </span>
+          </button>
+          {!isParkingCockpit && (
+            <CoverUploadIconButton
+              propertyId={propertyId}
+              uploadUsageKey={uploadUsageKey}
+              coverCount={coverCount}
+              firstUrl={coverFirstUrl}
+              secondUrl={coverSecondUrl}
+              className="mr-4 flex-none"
+            />
+          )}
+        </div>
         <section
           id={bodyId}
           role="region"
@@ -210,87 +615,22 @@ export function SubsystemCard({
         </section>
       </div>
     );
-  }
-
-  // ────────────────────────────────────────────────────────────────────
-  // Collapsed branch — Liora "spaces-card" silhouette:
-  //   <article>
-  //     <div media-area>      ← media expand <button> + dots (siblings)
-  //     <button body-expand>  ← header + strip + foot pill
-  //   </article>
-  //
-  // Two sibling expand buttons (media + body) → no nested interactive HTML;
-  // dots are siblings of both, never inside them. Tab-stops per card =
-  // 1 (media-expand) + N dots + 1 (body-expand). View-transition-name
-  // sits on the <article> so the morph animates the whole shell.
-  // ────────────────────────────────────────────────────────────────────
-
-  return (
-    <CollapsedCard
-      cardStyle={cardStyle}
-      titleId={titleId}
-      bodyId={bodyId}
-      cockpitId={cockpitId}
-      propertyId={propertyId}
-      Icon={Icon}
-      title={title}
-      status={status}
-      slides={slides ?? []}
-      ordered={ordered}
-      visible={visible}
-      hidden={hidden}
-      primaryId={primaryId}
-      photoCount={photoCount}
-      videoCount={videoCount}
-      renderTile={renderTile}
-      onExpand={onExpand}
-    />
-  );
-}
-
-// ── Collapsed card body ─────────────────────────────────────────────────
-
-interface CollapsedCardProps {
-  cardStyle: React.CSSProperties;
-  titleId: string;
-  bodyId: string;
-  cockpitId: string;
-  propertyId: string;
-  Icon: LucideIcon;
-  title: string;
-  status: SubsystemStatus;
-  slides: readonly SubsystemSlide[];
-  ordered: readonly SubsystemSelectedItem[];
-  visible: readonly SubsystemSelectedItem[];
-  hidden: readonly SubsystemSelectedItem[];
-  primaryId: string | null;
-  photoCount: number;
-  videoCount: number;
-  renderTile: (item: SubsystemSelectedItem, isPrimary: boolean) => ReactNode;
-  onExpand: () => void;
-}
-
-function CollapsedCard({
-  cardStyle,
-  titleId,
-  bodyId,
-  cockpitId,
-  propertyId,
-  Icon,
-  title,
-  status,
-  slides,
-  ordered,
-  visible,
-  hidden,
-  primaryId,
-  photoCount,
-  videoCount,
-  renderTile,
-  onExpand,
-}: CollapsedCardProps) {
-  return (
+  } else {
+    // ────────────────────────────────────────────────────────────────────
+    // Collapsed branch — Liora "spaces-card" silhouette:
+    //   <article>
+    //     <div media-area>      ← media expand <button> + dots (siblings)
+    //     <button body-expand>  ← header + strip + foot pill
+    //   </article>
+    //
+    // Two sibling expand buttons (media + body) → no nested interactive HTML;
+    // dots are siblings of both, never inside them. Tab-stops per card =
+    // 1 (media-expand) + N dots + 1 (body-expand). View-transition-name
+    // sits on the <article> so the morph animates the whole shell.
+    // ────────────────────────────────────────────────────────────────────
+    body = (
     <article
+      id={`access-cockpit-${cockpitId}`}
       data-component="subsystem-card-collapsed"
       aria-labelledby={titleId}
       style={cardStyle}
@@ -307,14 +647,32 @@ function CollapsedCard({
       )}
     >
       <MediaCarousel
-        slides={slides}
-        cockpitId={cockpitId}
+        slides={carouselSlides}
         propertyId={propertyId}
         title={title}
         variant="collapsed"
+        uploadEntityType="access_method"
+        uploadUsageKey={uploadUsageKey}
+        placeholderGradient={placeholderGradient}
         bodyId={bodyId}
         onExpand={onExpand}
+        onLightboxOpen={handleLightboxOpen}
+        currentIdx={carouselIdx}
+        onCurrentIdxChange={setCarouselIdx}
+        eagerFirstSlide={cockpitId === BUILDING_COCKPIT_ID}
       />
+      {lightboxIdx !== null && (
+        <MediaLightbox
+          slides={stableSlides}
+          index={lightboxIdx}
+          onIndexChange={handleLightboxIndexChange}
+          onClose={handleLightboxClose}
+          onSlideDelete={handleSlideDelete}
+          uploadConfig={lightboxUploadConfig}
+          lightboxMap={lightboxMap}
+          lightboxSidePanel={lightboxSidePanel}
+        />
+      )}
 
       {/* ── Body ───────────────────────────────────────────────── */}
       <button
@@ -434,344 +792,48 @@ function CollapsedCard({
            that previously asserted the photo/video counts. The visible carousel
            + dot count already conveys the same information sighted users. */}
         <span className="sr-only">
-          <Camera size={12} aria-hidden="true" />
+          <Upload size={12} aria-hidden="true" />
           {photoCount} {photoCount === 1 ? "foto" : "fotos"},{" "}
           <Video size={12} aria-hidden="true" />
           {videoCount} {videoCount === 1 ? "vídeo" : "vídeos"}
         </span>
       </button>
+
+      {/* Hover-revealed cover upload — sibling of body-expand button (not nested
+         inside it). Appears in the body header area on card hover. Click stops
+         propagation so it doesn't trigger the body-expand. Parking opts out
+         (no cover photos — the embedded map is the hero on expand). */}
+      {!isParkingCockpit && (
+        <CoverUploadIconButton
+          propertyId={propertyId}
+          uploadUsageKey={uploadUsageKey}
+          coverCount={coverCount}
+          firstUrl={coverFirstUrl}
+          secondUrl={coverSecondUrl}
+          className="absolute bottom-3 right-3 z-[20] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+        />
+      )}
     </article>
-  );
-}
-
-// ── Shared media carousel ───────────────────────────────────────────────
-//
-// Used by both the collapsed card (with a click-through to expand) and the
-// active card (display-only — the title button below handles collapse).
-// Encapsulates: slide rendering, dot navigation (click + keyboard), title
-// overlay, and the "Añade portada" upload affordance shown when the
-// subsystem has no media.
-//
-// `variant` controls:
-//   - height: 140px collapsed / 240px active
-//   - whether the slide surface itself is a button (collapsed: yes — the
-//     wrapper carries the click-through to expand) or a non-interactive
-//     div (active: no — the title button is the sole collapse trigger)
-
-interface MediaCarouselProps {
-  slides: readonly SubsystemSlide[];
-  cockpitId: string;
-  propertyId: string;
-  title: string;
-  variant: "collapsed" | "active";
-  bodyId?: string; // collapsed only: aria-controls target on the expand button
-  onExpand?: () => void; // collapsed only: invoked on media click
-}
-
-function MediaCarousel({
-  slides,
-  cockpitId,
-  propertyId,
-  title,
-  variant,
-  bodyId,
-  onExpand,
-}: MediaCarouselProps) {
-  const router = useRouter();
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const dotRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const safeIdx = slides.length === 0 ? 0 : Math.min(currentIdx, slides.length - 1);
-  const activeSlide = slides[safeIdx];
-
-  const handleAddCoverClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      if (uploading) return;
-      setUploadError(null);
-      fileInputRef.current?.click();
-    },
-    [uploading],
-  );
-
-  const handleFileChange = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      e.target.value = "";
-      if (!file) return;
-
-      setUploading(true);
-      setUploadError(null);
-      let assetId: string | null = null;
-      try {
-        const req = await requestUploadAction(propertyId, file.name, file.type);
-        if (!req.success || !req.data) {
-          setUploadError(req.error ?? "Error al preparar la subida");
-          return;
-        }
-        assetId = req.data.assetId;
-        const put = await fetch(req.data.uploadUrl, {
-          method: "PUT",
-          body: file,
-          headers: { "Content-Type": file.type },
-        });
-        if (!put.ok) {
-          setUploadError(`Subida falló (${put.status})`);
-          deleteMediaAction(assetId).catch(() => {});
-          return;
-        }
-        const confirm = await confirmUploadAction(assetId);
-        if (!confirm.success) {
-          setUploadError(confirm.error ?? "Error al verificar");
-          return;
-        }
-        const assign = await assignMediaAction(
-          assetId,
-          "access_method",
-          propertyId,
-          `access.${cockpitId}`,
-        );
-        if (!assign.success) {
-          setUploadError(assign.error ?? "Error al asignar");
-          return;
-        }
-        router.refresh();
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : "Error desconocido");
-        if (assetId) deleteMediaAction(assetId).catch(() => {});
-      } finally {
-        setUploading(false);
-      }
-    },
-    [propertyId, cockpitId, router],
-  );
-
-  const focusDot = useCallback((i: number) => {
-    dotRefs.current[i]?.focus();
-  }, []);
-
-  const handleDotKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
-      if (slides.length <= 1) return;
-      const last = slides.length - 1;
-      let next = i;
-      if (e.key === "ArrowRight") next = i === last ? 0 : i + 1;
-      else if (e.key === "ArrowLeft") next = i === 0 ? last : i - 1;
-      else if (e.key === "Home") next = 0;
-      else if (e.key === "End") next = last;
-      else return;
-      e.preventDefault();
-      setCurrentIdx(next);
-      focusDot(next);
-    },
-    [slides.length, focusDot],
-  );
-
-  const heightClass = variant === "active" ? "h-[240px]" : "h-[140px]";
-
-  const slideContent = activeSlide ? (
-    <Slide slide={activeSlide} eager={safeIdx === 0} />
-  ) : (
-    <Placeholder subsystemId={cockpitId} />
-  );
-
-  const titleOverlay = activeSlide ? (
-    <span
-      aria-hidden="true"
-      className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-on-overlay)] backdrop-blur-[2px]"
-    >
-      <span className="truncate">{activeSlide.title}</span>
-    </span>
-  ) : null;
-
-  return (
-    <div className={cn("relative w-full flex-none", heightClass)}>
-      {variant === "collapsed" && onExpand ? (
-        <button
-          type="button"
-          aria-label={`Abrir ${title}`}
-          aria-controls={bodyId}
-          aria-expanded={false}
-          onClick={onExpand}
-          className={cn(
-            "block h-full w-full text-left",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
-          )}
-        >
-          {slideContent}
-          {titleOverlay}
-        </button>
-      ) : (
-        <div className="block h-full w-full">
-          {slideContent}
-          {titleOverlay}
-        </div>
-      )}
-
-      {slides.length === 0 && (
-        <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.avif,.gif"
-            onChange={handleFileChange}
-            className="hidden"
-            aria-hidden="true"
-            tabIndex={-1}
-          />
-          <button
-            type="button"
-            aria-label={`Añade portada de ${title}`}
-            onClick={handleAddCoverClick}
-            disabled={uploading}
-            className={cn(
-              "absolute bottom-3 left-1/2 inline-flex min-h-[36px] -translate-x-1/2 items-center gap-1.5",
-              "rounded-full bg-[var(--color-background-overlay)] px-3 text-[12px] font-medium text-[var(--color-text-on-overlay)]",
-              "backdrop-blur-[2px] transition-colors duration-150",
-              "hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
-              "disabled:cursor-not-allowed disabled:opacity-80",
-              // 44 hit area via slop pseudo-element (visual 36 stays discreet).
-              "before:absolute before:inset-[-4px] before:content-['']",
-              "[@media(pointer:coarse)]:min-h-[44px]",
-            )}
-          >
-            {uploading ? (
-              <>
-                <Loader2 size={13} aria-hidden="true" className="animate-spin" />
-                Subiendo…
-              </>
-            ) : (
-              <>
-                <Plus size={13} aria-hidden="true" />
-                Añade portada
-              </>
-            )}
-          </button>
-          {uploadError && (
-            <span
-              role="alert"
-              className="absolute bottom-12 left-1/2 inline-flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1.5 rounded-full bg-[var(--color-status-error-bg)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-status-error-text)]"
-            >
-              <span className="truncate">{uploadError}</span>
-            </span>
-          )}
-        </>
-      )}
-
-      {slides.length > 1 && (
-        <div
-          aria-label={`Medios de ${title}`}
-          className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5"
-        >
-          {slides.map((slide, i) => {
-            const isActive = i === safeIdx;
-            return (
-              <button
-                key={slide.id}
-                ref={(el) => {
-                  dotRefs.current[i] = el;
-                }}
-                type="button"
-                aria-current={isActive ? "true" : undefined}
-                aria-label={`Mostrar ${slide.title}`}
-                onClick={() => setCurrentIdx(i)}
-                onKeyDown={(e) => handleDotKeyDown(e, i)}
-                className={cn(
-                  "recipe-dot-24 pointer-events-auto grid h-6 w-6 flex-none place-items-center rounded-full",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-overlay)]",
-                )}
-              >
-                <span
-                  aria-hidden="true"
-                  data-active={isActive ? "true" : undefined}
-                  className={cn(
-                    "h-2 w-2 rounded-full transition-[background-color,box-shadow] duration-150",
-                    isActive
-                      ? "bg-[var(--color-action-primary)] [box-shadow:0_0_0_2px_var(--color-background-elevated)]"
-                      : "bg-[color-mix(in_oklch,var(--color-text-subtle)_60%,transparent)]",
-                  )}
-                />
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Slide / placeholder / pill helpers ──────────────────────────────────
-
-function Slide({
-  slide,
-  eager,
-}: {
-  slide: SubsystemSlide;
-  eager: boolean;
-}) {
-  if (slide.kind === "image" || slide.kind === "map") {
-    return (
-      // R2 returns presigned URLs that rotate every 10 min — incompatible with
-      // next/image's static remotePatterns. Plain <img> matches the pattern in
-      // MediaThumbnail and avoids adding a brittle host allowlist for this PR.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={slide.url}
-        alt={slide.alt || slide.title}
-        loading={eager ? "eager" : "lazy"}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
     );
   }
-  // Video kind — `MediaAsset` has no posterUrl/thumbnail in schema, so the
-  // collapsed view always renders a placeholder icon. Real video element
-  // lives in the expanded gallery (out of 7a scope).
+
   return (
-    <span
-      role="img"
-      aria-label={slide.alt || slide.title}
-      className="grid h-full w-full place-items-center bg-[var(--color-background-muted)] text-[var(--color-text-subtle)]"
-    >
-      <Video size={28} aria-hidden="true" />
-    </span>
+    <SubsystemLightboxContext.Provider value={openLightboxForUsageKey}>
+      <MaybeParkingProvider
+        enabled={isParkingCockpit}
+        propertyId={propertyId}
+        places={parkingPlaces ?? EMPTY_PARKING_PLACES}
+        propertyCoords={propertyCoords ?? null}
+        initialSuggestions={parkingSuggestions ?? EMPTY_PARKING_SUGGESTIONS}
+        radiusMeters={parkingRadiusMeters ?? DEFAULT_DISCOVERY_RADIUS_M}
+      >
+        {body}
+      </MaybeParkingProvider>
+    </SubsystemLightboxContext.Provider>
   );
 }
 
-// Per-subsystem identity gradient — terra (building) / olive (unit) /
-// info (parking) / warning (accessibility). Tokens live in semantic.css
-// and resolve per theme. Listed statically so the token-coverage gate
-// sees each token literal — template-literal interpolation hid the
-// suffix from its regex.
-const SUBSYSTEM_GRADIENTS: Record<string, string> = {
-  building:
-    "linear-gradient(135deg, var(--color-subsystem-building-from), var(--color-subsystem-building-to))",
-  unit:
-    "linear-gradient(135deg, var(--color-subsystem-unit-from), var(--color-subsystem-unit-to))",
-  parking:
-    "linear-gradient(135deg, var(--color-subsystem-parking-from), var(--color-subsystem-parking-to))",
-  accessibility:
-    "linear-gradient(135deg, var(--color-subsystem-accessibility-from), var(--color-subsystem-accessibility-to))",
-};
-
-function Placeholder({
-  subsystemId,
-}: {
-  subsystemId: string;
-}) {
-  const gradient = SUBSYSTEM_GRADIENTS[subsystemId] ?? SUBSYSTEM_GRADIENTS.building;
-  return (
-    <span
-      aria-hidden="true"
-      className="block h-full w-full"
-      style={{ background: gradient }}
-    />
-  );
-}
-
+// ── Status pill ─────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: SubsystemStatus }) {
   if (status === "configured") {

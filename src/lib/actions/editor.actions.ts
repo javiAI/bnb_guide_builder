@@ -10,9 +10,13 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
+import {
+  deriveAccessibilityPersistence,
+  normalizeAccessibilityFeatures,
+} from "@/lib/services/access-tri-state";
 import { instanceKeyFor } from "@/lib/amenity-instance-keys";
 import { redirect } from "next/navigation";
 import {
@@ -145,9 +149,25 @@ export async function savePropertyAction(
   const nicknameError = await assertNicknameUnique(propertyId, result.data.propertyNickname);
   if (nicknameError) return nicknameError;
 
+  // Parking + arrival suggestions are cached per-property and keyed by coords.
+  // Any address save could shift the anchor, so invalidate both — operator
+  // refreshes per mode on the next visit. Cheap recompute, avoids a
+  // pre-update findUnique.
   await prisma.property.update({
     where: { id: propertyId },
-    data: result.data,
+    data: {
+      ...result.data,
+      // DbNull (SQL NULL), not JsonNull (JSON literal null). The atomic merge in
+      // discoverArrivalSuggestionsAction relies on
+      //   COALESCE(arrival_suggestions_cache_json, '{}'::jsonb) || $delta::jsonb
+      // — COALESCE only catches SQL NULL. With JSON null, the operand becomes
+      // `'null'::jsonb || $delta::jsonb` which yields `[null, delta]` (an array),
+      // corrupting subsequent reads. Same column shape for parking; both kept
+      // consistent so the invariant is grep-able.
+      parkingSuggestionsCacheJson: Prisma.DbNull,
+      parkingSuggestionsCachedAt: null,
+      arrivalSuggestionsCacheJson: Prisma.DbNull,
+    },
   });
 
   recomputeAllInBackground(propertyId);
@@ -166,22 +186,30 @@ export async function saveAccessAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  const hasBuildingAccess = formData.get("hasBuildingAccess") === "true";
-  const hasParking = formData.get("hasParking") === "true";
-  const buildingMethods = formData.getAll("buildingMethods") as string[];
-  const unitMethods = formData.getAll("unitMethods") as string[];
-  const parkingTypes = formData.getAll("parkingTypes") as string[];
+  const buildingMethodsRaw = formData.getAll("buildingMethods") as string[];
+  const unitMethodsRaw = formData.getAll("unitMethods") as string[];
+  const parkingTypesRaw = formData.getAll("parkingTypes") as string[];
   const accessibilityFeatures = formData.getAll("accessibilityFeatures") as string[];
 
-  // Tri-state field: "true"/"false" persisted, anything else (including the
-  // sentinel "null" or absent) → DB NULL = unanswered.
-  const accessibilityRaw = formData.get("hasAccessibilityConsiderations");
-  const hasAccessibilityConsiderations: boolean | null =
-    accessibilityRaw === "true" ? true : accessibilityRaw === "false" ? false : null;
-
   // Validate IDs belong to their taxonomies (prevent arbitrary writes via tampered FormData)
+  const validBuildingIds = new Set(buildingAccessMethods.items.map((i) => i.id));
   const validParkingIds = new Set(parkingOptions.items.map((i) => i.id));
   const validAccessibilityIds = new Set(accessibilityFeatures_taxonomy.items.map((i) => i.id));
+  const validAccessMethodIds = new Set(accessMethods.items.map((i) => i.id));
+
+  // Filter against canonical taxonomies up-front so booleans, methods array
+  // and primary derive from the same sanitized inputs (a tampered FormData
+  // can't leave `hasBuildingAccess=true` with `methods=[]`).
+  const buildingMethods = buildingMethodsRaw.filter((id) => validBuildingIds.has(id));
+  const parkingTypesFiltered = parkingTypesRaw.filter((id) => validParkingIds.has(id));
+  const unitMethods = unitMethodsRaw.filter((id) => validAccessMethodIds.has(id));
+
+  // `ba.no_building` / `pk.no_parking` are explicit opt-out chips; empty (or
+  // entirely invalid) selection counts as unanswered → false.
+  const hasBuildingAccess =
+    !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
+  const hasParking =
+    !parkingTypesFiltered.includes("pk.no_parking") && parkingTypesFiltered.length > 0;
 
   const parkingCustomLabel =
     (formData.get("parkingCustomLabel") as string) || null;
@@ -208,27 +236,38 @@ export async function saveAccessAction(
     checkOutTime: formData.get("checkOutTime") as string,
     isAutonomousCheckin: formData.get("isAutonomousCheckin") === "true",
     hasBuildingAccess,
-    buildingAccess: hasBuildingAccess ? {
-      methods: buildingMethods,
-      customLabel: (formData.get("buildingCustomLabel") as string) || null,
-      customDesc: (formData.get("buildingCustomDesc") as string) || null,
-    } : undefined,
+    // Enforce `ba.no_building` / `pk.no_parking` exclusivity server-side as
+    // defense-in-depth: client UI already prevents mixed selections, but a
+    // tampered FormData could send both opt-out and a positive entry. IDs were
+    // already taxonomy-filtered up-front so booleans and arrays stay coherent.
+    buildingAccess: {
+      methods: buildingMethods.includes("ba.no_building")
+        ? ["ba.no_building"]
+        : buildingMethods,
+      customLabel: hasBuildingAccess
+        ? (formData.get("buildingCustomLabel") as string) || null
+        : null,
+      customDesc: hasBuildingAccess
+        ? (formData.get("buildingCustomDesc") as string) || null
+        : null,
+    },
     unitAccess: {
       methods: unitMethods,
       customLabel: (formData.get("unitCustomLabel") as string) || null,
       customDesc: (formData.get("unitCustomDesc") as string) || null,
     },
     hasParking,
-    // Drop parkingTypes if hasParking=false — opt-out should not persist stale
-    // selections. Same shape as hasBuildingAccess gate above.
-    parkingTypes: hasParking ? parkingTypes.filter((id) => validParkingIds.has(id)) : [],
-    hasAccessibilityConsiderations,
-    // Drop features when explicitly opted out (false). Keep when true OR null
-    // (null = unanswered, but a half-completed list is still legitimate input).
-    accessibilityFeatures:
-      hasAccessibilityConsiderations === false
-        ? []
-        : accessibilityFeatures.filter((id) => validAccessibilityIds.has(id)),
+    parkingTypes: parkingTypesFiltered.includes("pk.no_parking")
+      ? ["pk.no_parking"]
+      : parkingTypesFiltered,
+    // Accessibility mirrors parking: `ax.no_accessibility` is mutually exclusive
+    // with positive features. Filtered first against the taxonomy, then any
+    // positive entry wins over the sentinel if both arrived in a tampered
+    // FormData. The empty case persists as null (unanswered) below.
+    accessibilityFeatures: normalizeAccessibilityFeatures(
+      accessibilityFeatures,
+      validAccessibilityIds,
+    ),
   };
 
   const result = accessSchema.safeParse(raw);
@@ -242,21 +281,32 @@ export async function saveAccessAction(
   // sentinel is selected. Drop them otherwise so a deselect-then-reselect
   // doesn't resurrect stale text.
   const parkingHasOther = d.parkingTypes.includes("pk.other");
-  const accessibilityHasOther = d.accessibilityFeatures.includes("ax.other");
+  // Tri-state opt-out persistence — helper splits the column + JSON shape:
+  //   - sentinel only          -> hasConsiderations = false, shape = null
+  //   - any positive feature   -> hasConsiderations = true, shape = {...}
+  //   - empty                  -> hasConsiderations = null, shape = null
+  const accessibility = deriveAccessibilityPersistence({
+    features: d.accessibilityFeatures,
+    customLabel: accessibilityCustomLabel,
+    customDesc: accessibilityCustomDesc,
+  });
 
   // Primary must reference a still-selected method. If a tampered FormData
   // sends a primary not in the array, fall back to methods[0] (or null).
+  // `ba.no_building` is opt-out — primary is always null in that case.
   const buildingMethodsValid = d.buildingAccess?.methods ?? [];
-  const primaryBuilding =
-    primaryBuildingRaw && buildingMethodsValid.includes(primaryBuildingRaw)
+  const primaryBuilding = buildingMethodsValid.includes("ba.no_building")
+    ? null
+    : primaryBuildingRaw && buildingMethodsValid.includes(primaryBuildingRaw)
       ? primaryBuildingRaw
       : (buildingMethodsValid[0] ?? null);
   const primaryUnit =
     primaryUnitRaw && d.unitAccess.methods.includes(primaryUnitRaw)
       ? primaryUnitRaw
       : (d.unitAccess.methods[0] ?? null);
-  const primaryParking =
-    primaryParkingRaw && d.parkingTypes.includes(primaryParkingRaw)
+  const primaryParking = d.parkingTypes.includes("pk.no_parking")
+    ? null
+    : primaryParkingRaw && d.parkingTypes.includes(primaryParkingRaw)
       ? primaryParkingRaw
       : (d.parkingTypes[0] ?? null);
 
@@ -269,12 +319,13 @@ export async function saveAccessAction(
       isAutonomousCheckin: d.isAutonomousCheckin,
       hasBuildingAccess: d.hasBuildingAccess,
       hasParking: d.hasParking,
-      hasAccessibilityConsiderations: d.hasAccessibilityConsiderations,
+      hasAccessibilityConsiderations: accessibility.hasConsiderations,
       primaryAccessMethod: primaryUnit,
       accessMethodsJson: {
-        building: d.buildingAccess
-          ? { ...d.buildingAccess, primary: primaryBuilding }
-          : null,
+        building:
+          d.buildingAccess && d.buildingAccess.methods.length > 0
+            ? { ...d.buildingAccess, primary: primaryBuilding }
+            : null,
         unit: d.unitAccess,
         parking:
           d.parkingTypes.length > 0
@@ -285,18 +336,7 @@ export async function saveAccessAction(
                 primary: primaryParking,
               }
             : null,
-        accessibility:
-          d.accessibilityFeatures.length > 0
-            ? {
-                features: d.accessibilityFeatures,
-                customLabel: accessibilityHasOther
-                  ? accessibilityCustomLabel
-                  : null,
-                customDesc: accessibilityHasOther
-                  ? accessibilityCustomDesc
-                  : null,
-              }
-            : null,
+        accessibility: accessibility.accessJsonShape as Prisma.InputJsonValue | null,
       },
       customAccessMethodLabel: d.unitAccess.customLabel,
       customAccessMethodDesc: d.unitAccess.customDesc,

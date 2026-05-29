@@ -378,3 +378,69 @@ Tras la auditoría de bundle de 16E-pre (`chore/codebase-simplify-comprehensive`
 **Scope**: refactor del `AmenitiesEditor` cliente + posiblemente un cambio de UX (tabs vs scroll vertical). No es un swap mecánico — toca decisión de producto.
 
 **Por qué no se hace en 16E-pre**: 16E-pre es cleanup sin cambios visuales (restricción explícita). Ambos splits requieren tocar UX (skeleton del editor / introducir tabs), fuera del alcance de "código muerto + duplicación + perf trivial".
+
+---
+
+## 19. Node.js 18 → 20 LTS upgrade
+
+**Estado**: diferido — **deadline AWS SDK ya cumplido** (enero 2026).
+**Urgencia**: alta. AWS SDK v3 (`@aws-sdk/*`, usado por R2 storage en `src/lib/storage/r2.ts`) ya no se compromete a soportar Node 18 ni a publicar security patches del SDK con esa versión. El runtime sigue funcionando hoy, pero cualquier CVE futuro en el SDK no se parcheará para Node 18.
+
+### Contexto
+
+Hoy el dev local corre sobre `Node 18.20.5` (referencia en `CLAUDE.md` § "Entorno y comandos": `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx`). El SDK emite un `NodeDeprecationWarning` ruidoso en cada arranque. **No silenciado** — un filtro global de warnings (vía `process.removeAllListeners("warning")` o monkey-patch de `process.emitWarning`) se consideró y se descartó en revisión de PR #106: oculta otros deprecation warnings del runtime, no solo el de AWS. El warning sigue visible hasta el upgrade.
+
+### Pasos del upgrade real
+
+1. `nvm install 20 && nvm use 20` (LTS actual: 20.x).
+2. Actualizar la ruta literal `/Users/javierabrilibanez/.nvm/versions/node/v18.20.5/bin/npx` en `CLAUDE.md` § "Entorno y comandos" a la 20.x correspondiente. (También buscar otras referencias a `v18.20.5` en docs/scripts).
+3. `engines.node` en `package.json` si lo añadimos (hoy no está fijado).
+4. Verificar: `npm run dev`, `npm run build`, `npx vitest run`, suite E2E. Especial atención a `@prisma/client` (suele requerir regenerar) y a cualquier nativo (`sharp`, etc.) que necesite rebuild. El warning de AWS SDK desaparecerá sin acción adicional.
+
+### Trigger para implementar
+
+**Hacer ya** — el deadline pasó en enero 2026 (hoy es mayo 2026). Programar una PR aislada `chore/node-20-upgrade` a la mayor brevedad. Cualquier otra dependencia que en el futuro requiera Node 20+ (ej. nuevas mayores de Prisma, Next.js 16, etc.) sólo refuerza la urgencia.
+
+### Por qué no se hace inline en la rama actual
+
+Cambio de runtime = superficie de regresión grande (rebuild de nativos, refresco de cachés, posible incompatibilidad de versiones de dependencias). Mejor PR aislada con su propia validación, no mezclada con trabajo Liora en curso.
+
+---
+
+## 20. Taxi as a first-class arrival mode
+
+**Estado**: diferido — explícitamente fuera del scope de 16E.6.
+
+### Contexto
+
+El cockpit "Cómo llegar" (rama 16E.6) cierra con un contrato intercity-only: `parking`, `train`, `bus`, `airport`. Last-mile (metro / urban_bus / taxi / walk) se delega al deep link direccional Google/Apple Maps desde el punto de llegada hacia la propiedad — ese deep link cubre transporte público y andando sin un pipeline de discovery paralelo. Decisión tomada porque:
+
+1. El huésped no necesita una "lista de paradas de taxi" — necesita "cómo llego a la puerta desde donde estoy ahora". Google/Apple Maps lo resuelve nativamente.
+2. Una lista persistida de paradas/estaciones de metro envejece mal (cambios de líneas, paradas temporalmente cerradas) y el operador no tiene incentivo para mantenerla.
+3. El glyph/color/picker de last-mile añade mantenimiento (taxonomía, iconos, colores, search queries, e2e) sin valor proporcional sobre el deep link.
+
+### Qué cubriría cuando se active
+
+Taxi como modo first-class — no metro ni urban_bus, que siguen cubiertos por el deep link sin pérdida funcional. Casos de uso reales:
+
+- Operadores que negocian tarifa fija con una flota local específica (taxi cooperativa del pueblo).
+- Propiedades rurales sin cobertura razonable de transporte público — el operador quiere recomendar UN proveedor concreto con teléfono / WhatsApp directo.
+- Aeropuertos con servicio shuttle del operador → punto de recogida fijo con horario.
+
+### Implementación sugerida
+
+Cuando se active la spec sería:
+
+1. Re-añadir `lp.arrival_taxi` a `taxonomies/local_place_categories.json`.
+2. Re-añadir `taxi` a `DISCOVERABLE_MODES` en `arrival-discovery.service.ts` + entries en `DISCOVERY_PATTERNS`, `NAME_FALLBACK_PATTERNS`, `DISCOVERY_QUERIES`, `DISCOVERY_CATEGORY_KEYS`.
+3. Re-añadir tab "Taxi" en `arrival-modes-editor.tsx` con icono Lucide `Car` + color de pin distinto (`status-success-solid` libre).
+4. **Diferencia clave vs intercity**: el "discovery" de taxi probablemente no surface estaciones (poco útil) sino contactos. Modelar como `ContactReference` con `contact_type.json` mapping (`taxi`), no como `LocalPlace`. Eso reusa la cascada de escalation (rama 11D) y evita pin-on-map para algo que es esencialmente "teléfono + nombre + tarifa estimada".
+5. Renombrar la sección de "Cómo llegar" a algo como "Llegada y movilidad" si taxi se vuelve un tile separado del flujo intercity.
+
+### Trigger para implementar
+
+Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y demuestren que el deep link Maps no es suficiente para su caso de uso (entrevistas, no encuestas). Hasta entonces el deep link cubre 100% de la necesidad observada en pilotos.
+
+### Por qué no se hace inline en la rama actual
+
+16E.6 cerró con un contrato deliberadamente estrecho (intercity + parking) para no acumular debt mientras la spec real de last-mile estaba especulativa. Implementar taxi parcialmente — solo como POI sin telefono ni cascada de contactos — habría sido peor que no hacerlo: el operador rellena tres paradas de taxi inútiles y el huésped sigue abriendo Google Maps.

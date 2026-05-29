@@ -1,8 +1,11 @@
 "use client";
 
+import { useCallback, useMemo, type MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Check, Star } from "lucide-react";
+import { Check, Loader2, Star, Upload } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useSubsystemLightbox } from "./subsystem-card";
+import { useMediaUpload } from "@/hooks/use-media-upload";
 
 interface MethodRowProps {
   id: string;
@@ -23,7 +26,27 @@ interface MethodRowProps {
   // (building / unit / parking). Accessibility omits this entirely.
   isPrimary?: boolean;
   onMakePrimary?: () => void;
+  // When set AND `selected` is true, an "add photo" affordance appears on
+  // hover/focus-within. The uploaded asset is tagged with `usageKey` so the
+  // collapsed-card carousel labels it with the method's chip overlay (the
+  // taxonomy lookup happens server-side in `page.tsx`).
+  mediaUpload?: {
+    propertyId: string;
+    usageKey: string;
+  };
+  // Preview of media currently attached to this method's `usageKey`.
+  // When `count > 0`, the upload affordance switches to an always-visible
+  // 32×32 thumbnail (using `firstUrl`) with a hover-revealed Upload overlay
+  // and a numeric badge when `count > 1`. This makes attached-media state
+  // unmistakable at a glance without expanding the card.
+  mediaPreview?: {
+    count: number;
+    firstUrl?: string;
+    secondUrl?: string;
+  };
 }
+
+const ACCEPTED_PHOTO_TYPES = ".jpg,.jpeg,.png,.webp,.avif,.gif";
 
 export function MethodRow({
   id,
@@ -40,9 +63,51 @@ export function MethodRow({
   onCustomDescChange,
   isPrimary,
   onMakePrimary,
+  mediaUpload,
+  mediaPreview,
 }: MethodRowProps) {
+  const openLightbox = useSubsystemLightbox();
+  const uploadConfig = useMemo(
+    () =>
+      mediaUpload
+        ? {
+            propertyId: mediaUpload.propertyId,
+            entityType: "access_method" as const,
+            usageKey: mediaUpload.usageKey,
+          }
+        : null,
+    [mediaUpload],
+  );
+  const {
+    fileInputRef,
+    uploading,
+    error: uploadError,
+    setError: setUploadError,
+    triggerFilePicker,
+    onFileChange: handleFileChange,
+  } = useMediaUpload(uploadConfig);
+
   const showInline = isOther === true && selected;
   const showStar = onMakePrimary !== undefined && selected;
+  const showUpload = mediaUpload !== undefined && selected;
+  const mediaCount = mediaPreview?.count ?? 0;
+  const previewUrl = mediaPreview?.firstUrl;
+  const secondPreviewUrl = mediaPreview?.secondUrl;
+  const hasMedia = mediaCount > 0;
+  const hasThumbnail = hasMedia && Boolean(previewUrl);
+
+  const handleUploadClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (uploading) return;
+      if (mediaCount > 0 && openLightbox && mediaUpload) {
+        openLightbox(mediaUpload.usageKey);
+        return;
+      }
+      triggerFilePicker();
+    },
+    [uploading, mediaCount, openLightbox, mediaUpload, triggerFilePicker],
+  );
 
   // Per-row view-transition-name lets the browser FLIP-animate primary swap
   // reorders. id may contain non-ident chars (e.g. "rm.smart_lock"); CSS
@@ -124,6 +189,89 @@ export function MethodRow({
             />
           )}
         </button>
+        {showUpload && (
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={uploading}
+            aria-label={
+              uploading
+                ? `Subiendo foto a ${name}`
+                : hasMedia
+                  ? `Añadir otra foto a ${name} (${mediaCount} ${mediaCount === 1 ? "adjunta" : "adjuntas"})`
+                  : `Añadir foto a ${name}`
+            }
+            className={cn(
+              "relative flex min-h-[44px] min-w-[44px] flex-none items-center justify-center rounded-[12px]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
+              "disabled:cursor-not-allowed",
+              hasThumbnail
+                ? "text-[var(--color-text-on-overlay)]"
+                : hasMedia || uploading
+                  ? "text-[var(--color-action-primary)]"
+                  : "text-[var(--color-text-muted)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-[var(--color-action-primary)]",
+            )}
+          >
+            {uploading ? (
+              <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+            ) : hasThumbnail ? (
+              <span className="relative h-8 w-8 flex-none">
+                {/* Back card — second image (or swatch fallback) rotated
+                    slightly right so it fans out behind the left-tilted front. */}
+                {mediaCount > 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 z-0 origin-bottom-left overflow-hidden rounded-[7px] ring-1 ring-[var(--color-action-primary)] [transform:rotate(-15deg)]"
+                  >
+                    {secondPreviewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={secondPreviewUrl}
+                        alt=""
+                        draggable={false}
+                        className="absolute inset-0 h-full w-full select-none object-cover"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 bg-[var(--color-action-primary-subtle)]" />
+                    )}
+                  </span>
+                )}
+                {/* Front image — tilted left ~22° when stacked, flat when single. */}
+                <span
+                  className={cn(
+                    "absolute inset-0 z-10 overflow-hidden rounded-[8px] ring-2 ring-[var(--color-action-primary)] ring-offset-1 ring-offset-[var(--color-action-primary-subtle)]",
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    draggable={false}
+                    className="absolute inset-0 h-full w-full select-none object-cover"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-0 grid place-items-center bg-[var(--color-background-overlay)] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    <Upload size={14} aria-hidden="true" />
+                  </span>
+                </span>
+                {/* Count badge — positioned relative to the 32×32 visual, not
+                    the 44×44 hit area, so it lands on the actual corner. */}
+                {mediaCount > 1 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1.5 -top-1.5 z-20 grid h-[16px] min-w-[16px] place-items-center rounded-full bg-[var(--color-action-primary)] px-1 text-[10px] font-bold leading-none text-[var(--color-action-primary-fg)] ring-2 ring-[var(--color-background-elevated)]"
+                  >
+                    {mediaCount > 9 ? "9+" : mediaCount}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <Upload size={18} aria-hidden="true" />
+            )}
+          </button>
+        )}
         {showStar && (
           <button
             type="button"
@@ -146,6 +294,33 @@ export function MethodRow({
           </button>
         )}
       </div>
+      {showUpload && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_PHOTO_TYPES}
+          onChange={handleFileChange}
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      )}
+      {uploadError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-2 border-t border-[var(--color-status-error-border)] bg-[var(--color-status-error-bg)] px-3 py-2 text-[12px] text-[var(--color-status-error-text)]"
+        >
+          <span className="min-w-0 flex-1 truncate">{uploadError}</span>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="flex-none text-[11px] font-semibold uppercase tracking-[0.04em] underline-offset-2 hover:underline"
+            aria-label="Cerrar error"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
       {showInline && (
         <div className="space-y-3 border-t border-[var(--color-action-primary)]/30 px-3 py-3">
           <label className="block">

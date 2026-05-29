@@ -2,6 +2,8 @@ import {
   PoiSuggestionSchema,
   type LocalPoiProvider,
   type PoiSuggestion,
+  type ReverseGeoResult,
+  type ReverseParams,
   type SearchParams,
 } from "./provider";
 import { haversineMeters } from "./distance";
@@ -48,6 +50,32 @@ export class MockPlacesProvider implements LocalPoiProvider {
       if (out.length >= limit) break;
     }
     return out;
+  }
+
+  async reverse(params: ReverseParams): Promise<ReverseGeoResult | null> {
+    const anchor = { latitude: params.latitude, longitude: params.longitude };
+    let nearest: { entry: SeedPlace; distance: number } | null = null;
+    for (const entry of this.seed) {
+      if (params.preferCategoryKey && entry.categoryKey !== params.preferCategoryKey) {
+        continue;
+      }
+      const distance = haversineMeters(anchor, {
+        latitude: entry.latitude,
+        longitude: entry.longitude,
+      });
+      if (!nearest || distance < nearest.distance) {
+        nearest = { entry, distance };
+      }
+    }
+    if (!nearest) return null;
+    const { entry } = nearest;
+    return {
+      name: entry.name,
+      address: entry.address ?? null,
+      latitude: entry.latitude,
+      longitude: entry.longitude,
+      categoryKey: entry.categoryKey,
+    };
   }
 }
 

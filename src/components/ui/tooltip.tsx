@@ -51,9 +51,13 @@ export function TooltipBubble({
 interface TooltipProps {
   text: string;
   children: ReactNode;
+  /** Extra classes for the wrapper span. Use to opt the trigger into flex
+   * layout when needed (e.g. `min-w-0 flex-1` so an inner truncated label
+   * keeps shrinking inside a flex row). */
+  className?: string;
 }
 
-export function Tooltip({ text, children }: TooltipProps) {
+export function Tooltip({ text, children, className }: TooltipProps) {
   const tooltipId = useId();
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -106,7 +110,7 @@ export function Tooltip({ text, children }: TooltipProps) {
       onFocus={show}
       onBlur={hide}
       aria-describedby={visible ? tooltipId : undefined}
-      className="inline-flex"
+      className={className ? `inline-flex ${className}` : "inline-flex"}
     >
       {children}
       {visible && mounted && createPortal(<TooltipBubble id={tooltipId} pos={pos} text={text} />, document.body)}

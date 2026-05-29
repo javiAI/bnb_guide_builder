@@ -9,10 +9,15 @@ import { LocalEventsRadiusForm } from "./local-events-radius-form";
 import { SyncEventsButton } from "./sync-events-button";
 import { LocalEventsList } from "./local-events-list";
 
-const CATEGORY_OPTIONS = localPlaceCategories.items.map((c) => ({
-  value: c.id,
-  label: c.label,
-}));
+// Arrival-mode categories (lp.arrival_*) are managed from the access cockpit
+// "Cómo llegar" card, not from the local-guide create form. Excluding them
+// here keeps the dropdown focused on guest-browse POI categories.
+const CATEGORY_OPTIONS = localPlaceCategories.items
+  .filter((c) => !c.id.startsWith("lp.arrival_"))
+  .map((c) => ({
+    value: c.id,
+    label: c.label,
+  }));
 
 export default async function LocalGuidePage({
   params,

@@ -3535,6 +3535,142 @@ Otros límites del 7a–7c: el upload affordance inline en `<MediaCarousel>` es 
 
 ---
 
+### Rama 16E.6 — `feat/liora-access-parking-map-autodiscovery`
+
+**Estado**: activa. Sucesora directa de 16E.5 (PR #102 mergeada en `18b8eba`). Resuelve parcialmente el deferral "Map UPLOAD UI" registrado en `LIORA_SURFACE_ROLLOUT_PLAN.md` § Scope locks 7a–7c — pero NO vía upload de imágenes con `usageKey="access.parking.map"`. En su lugar: descubrimiento operator-driven de parkings cercanos como `LocalPlace` con `categoryKey="lp.parking"` y un mapa multi-pin embebido en el `ParkingPanel` del access cockpit. El static map slide (`access.parking.map`) queda como **stretch goal opcional** con gate duro de ≤80 LOC netas, sin schema, sin server action nueva compleja, sin reabrir el media flow global — si excede, se difiere a 16E.7.
+
+**Propósito**: convertir la sección de aparcamiento del access cockpit en una herramienta accionable. Hoy el operator marca opciones de `parkingOptions` (`pk.free_on_premises`, `pk.paid_off_premises`, etc.) como booleanas pero no comunica DÓNDE están los aparcamientos cercanos. La rama añade: (1) botón "Buscar parkings cercanos" que llama a MapTiler vía el `LocalPoiProvider` ya existente, (2) panel de sugerencias con confirm/discard per pin, (3) pin manual fallback (drop-on-map o address geocode) cuando MapTiler retorna <3 resultados o ninguno relevante, (4) lista lateral de pins confirmados con edit-name/note/visibility + delete, (5) `<MultiPinMap>` embebido (variante de `LocationMap` existente). Persistencia: `LocalPlace` con `categoryKey="lp.parking"` + `visibility="guest"` por defecto (operador puede marcar `"internal"` si la UI lo permite — si no, follow-up). Reuso completo del modelo `LocalPlace` de 13A (sin migración).
+
+**Naturaleza**: feature visible operator + dato útil para huésped (los pins confirmados con `visibility="guest"` aparecen en la guía pública vía el pipeline `composeGuide` + `guide-map.service` ya existente, audience-aware obfuscation incluida).
+
+**Scope (archivos)**:
+
+*Modify*:
+- `src/app/properties/[propertyId]/access/page.tsx` — añadir `select: { latitude, longitude }` al `findUnique` de `Property` + `prisma.localPlace.findMany` con `where: { propertyId, categoryKey: "lp.parking" }` + `orderBy: { sortOrder: "asc" }`. Pasar `parkingPlaces` + `propertyCoords` por props a `<AccessForm>`.
+- `src/app/properties/[propertyId]/access/access-form.tsx` — extender `AccessFormProps` con `parkingPlaces: ParkingPlace[]` + `propertyCoords: { lat: number; lng: number } | null`. Threadear a `<ParkingPanel>` y de ahí a `<ParkingPlacesEditor>`.
+- `src/lib/services/places/index.ts` — exportar `resolveLocalPoiProvider()` si no está exportado para consumo desde `parking-discovery.service`. (verificar: ya está exportado, no tocar si no hace falta).
+- `src/test/parity-allowlist.ts` — añadir `"16E.6"` a `LioraPhase` union + `LIORA_PHASE_ORDER`; bump `CURRENT_LIORA_PHASE = "16E.6"`.
+- `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` — marcar el deferral "Map UPLOAD UI" como **redefinido** (no es upload de imagen sino multi-pin via LocalPlace + MapTiler); el static map slide queda como sub-deferral si no entra en el stretch goal.
+- `docs/ROADMAP.md` — fila 16E.6 ⏳ → ✅ al cierre.
+- `docs/MASTER_PLAN_V2.md` — esta sección (commit 1).
+- `docs/FUTURE.md` — entry "Parking pin clustering / routing API / static-map slide regenerate-on-edit" si quedan follow-ups.
+
+*Create (8 archivos núcleo + 0–2 stretch)*:
+- `src/lib/services/parking-discovery.service.ts` — wrapper sobre `MapTilerLocalPoiProvider`: query `"parking"`, `proximity={lat,lng}`, post-fetch filter por `lp.parking` (via `mapMaptilerCategory`), haversine ranking con cap 8 hard / soft warning ≥4. Dedupe por `providerPlaceId`. Excluye pins ya confirmados en DB (mismo `providerPlaceId`). Output: `ParkingSuggestion[]` con `{ provider, providerPlaceId, name, lat, lng, address, distanceMeters, providerMetadata }`.
+- `src/lib/actions/parking.actions.ts` — 5 server actions con `requireOperator()` + ownership guard (cross-workspace) + `applyOperatorRateLimit("expensive")` + per-property limiter 30/60s + `writeAudit` post-write:
+  - `searchNearbyParkingsAction(propertyId)` → ParkingSuggestion[].
+  - `confirmParkingPlaceAction(propertyId, suggestion)` → crea `LocalPlace` con `visibility="guest"` por defecto.
+  - `addManualParkingPlaceAction(propertyId, { name, lat, lng, address?, note? })` → crea `LocalPlace` con `provider="manual"`.
+  - `updateParkingPlaceAction(localPlaceId, { name?, internalNote?, visibility? })` → patch.
+  - `deleteParkingPlaceAction(localPlaceId)` → `deleteMany` (idempotente).
+- `src/app/properties/[propertyId]/access/_components/parking-places-editor.tsx` — orquestador client component. Estado local de `suggestions` (no persistidas hasta confirm), cooldown 5s post-search, layout: header con CTA "Buscar parkings cercanos" + contador `N/8` + warning ≥4 + lista lateral confirmados + `<MultiPinMap>` + `<ParkingSuggestionsPanel>` modal/drawer.
+- `src/app/properties/[propertyId]/access/_components/parking-pin-list.tsx` — lista de pins confirmados; cada item con name, distance, visibility chip, edit/delete buttons.
+- `src/app/properties/[propertyId]/access/_components/parking-suggestions-panel.tsx` — modal/drawer con lista de sugerencias MapTiler; cada item con name, distance, address, confirm/discard buttons + "Añadir pin manual" CTA al final.
+- `src/app/properties/[propertyId]/access/_components/multi-pin-map.tsx` — variante de `LocationMap` aceptando array de pins (property anchor + parkings + suggestions con icono distinto). MapLibre GL + MapTiler tiles via `/api/geo/tiles-config`.
+- `src/test/parking-discovery.service.test.ts` — happy path, dedupe por `providerPlaceId`, haversine sort, cap 8, soft warning ≥4, fallback manual <3.
+- `src/test/parking-actions.test.ts` — auth guards, ownership cross-workspace, audit emission, rate limit.
+- `src/test/parking-leak-invariants.test.ts` — `providerMetadata` NUNCA en payload guest; `internalNote` filtrado por audience; `visibility="internal"` no aparece en `composeGuide(audience="guest")`.
+- *Stretch (gated)*: `src/lib/services/static-map.service.ts` (≤80 LOC, sin schema, sin server action nueva compleja). Si excede el gate → defer a 16E.7.
+
+**Modelo de datos**:
+- **Reuse `LocalPlace`** (modelo 13A `feat/local-pois-autosuggest`): `id, propertyId, categoryKey, provider, providerPlaceId, name, lat, lng, address?, internalNote?, website?, visibility, sortOrder, providerMetadata, createdAt, updatedAt`. Todos los campos necesarios ya existen.
+- **NO crear `ParkingPlace`**. NO Prisma migration. NO taxonomy change (`lp.parking` ya está en `taxonomies/local_place_categories.json`).
+- **Co-uso aprobado**: pins confirmados con `visibility="guest"` (default) aparecen en la guía pública del huésped vía `composeGuide` ya existente. `visibility="internal"` disponible si la UI lo permite (toggle en edit panel); si la UI hace inviable distinguir, default queda `"guest"` y el follow-up se documenta.
+
+**Decisiones vinculantes (Fase -1, aprobadas 2026-05-08)**:
+
+1. **A2 — Reuse `LocalPlace`**. NO `ParkingPlace`. NO migración Prisma.
+2. **Visibility default** `"guest"`. `"internal"` disponible si la UI lo permite; follow-up documentado si no entra.
+3. **Static map slide** (`usageKey="access.parking.map"`) es **stretch goal opcional**. Gate duro: ≤80 LOC netas, sin schema, sin server action nueva compleja, sin reabrir el media flow global. Si excede → defer a 16E.7.
+4. **Cap 8 hard**, soft warning a partir de 4. Sin routing API. Solo haversine.
+5. **Provider**: MapTiler vía `LocalPoiProvider`/`MapTilerLocalPoiProvider`. Query `"parking"`, post-fetch filter por `lp.parking`. Fallback manual cuando <3 resultados.
+6. **Rate limit**: bucket `"expensive"` (10/60s) + per-property limiter 30/60s + UI cooldown 5s post-search.
+7. **Security**: `withOperatorGuards` (en API route si se crea) o `requireOperator()` + cross-workspace guard inline (en server actions) + `writeAudit` post-write + sin leak de `providerMetadata` a guest.
+8. **API route**: evitar a menos que sea imprescindible. Server actions cubren todo el flujo. Si surge necesidad de `/api/properties/[propertyId]/parking/search`: debe pasar `operator-route-coverage` + `withOperatorGuards` + bucket `expensive`.
+9. **Tests obligatorios**: `parking-discovery.service.test`, `parking-actions.test`, `parking-leak-invariants.test`, extensiones a `cross-workspace-invariants.test.ts` + `audit-mutation-coverage.test.ts` + `component-invariants.test.ts` + `parity-static.test.ts`. Playwright smoke: search → confirm → reload → edit → delete + screenshots 1440 light/dark, 1024 light, 375 light.
+10. **UX flow**: "Buscar parkings cercanos" → MapTiler suggestions → confirm/discard per pin → manual pin fallback (drop on map o address geocode) → edit name/note/visibility (si el pattern existe) → delete. `<MultiPinMap>` local a `access/_components`. Lista lateral de pins confirmados. NO persistencia hasta confirmación explícita del operator.
+11. **Branch name**: `feat/liora-access-parking-map-autodiscovery`.
+12. **Procedure**: NO branch sin Fase 0. Primer commit: docs/plan + phase bump. Implementación en commits pequeños con `/pre-commit-review` por commit. `/simplify` sobre toda la rama antes de PR. PR con tabla scope/tests/follow-ups.
+13. **Governance**: bump `CURRENT_LIORA_PHASE = "16E.6"` en commit 1. Extender `LioraPhase` union + `LIORA_PHASE_ORDER`. Excepciones con `removeBy` ≤ "16E.5" venciendo en esta rama: cerrar o subir con commit explícito que documente motivo.
+14. **Scope locks**: NO schema (salvo imprescindible + aprobación), NO guest guide layout, NO local-guide UX broader, NO routing/walk-time, NO clustering, NO CSV/GeoJSON, NO otros visuales del access cockpit.
+
+**Tests**:
+- `parking-discovery.service.test.ts` — happy path + dedupe + sort + cap + soft warning + fallback manual.
+- `parking-actions.test.ts` — auth + cross-workspace + audit + rate limit.
+- `parking-leak-invariants.test.ts` — `providerMetadata` no en guest payload; `internalNote` filtrado por audience; visibility="internal" no en `composeGuide("guest")`.
+- Extensiones a `cross-workspace-invariants.test.ts` (nuevas server actions parking.*).
+- Extensiones a `audit-mutation-coverage.test.ts` (TARGETS para `confirm/manual/update/delete`).
+- `component-invariants.test.ts` verde — los componentes nuevos cumplen invariantes 16D.5 (touch ≥44 hit, no nested button/anchor, primitives adopted).
+- `parity-static.test.ts` verde — surfaces nuevas en `AUDITED_SURFACES` con `profile: "operator"`.
+- Playwright smoke: `search → confirm → reload → edit → delete` + screenshots 1440 light/dark, 1024 light, 375 light, archivados en `eval-artifacts/16E.6/`.
+- `tsc --noEmit` verde tras `prisma generate`.
+
+**Criterio de done**:
+- ✅ MapTiler search devuelve sugerencias rankeadas por haversine, capped a 8, con dedupe contra DB.
+- ✅ Confirm crea `LocalPlace` con `categoryKey="lp.parking"` y `visibility="guest"` (default).
+- ✅ Manual pin (drop-on-map + name) crea `LocalPlace` con `provider="manual"`.
+- ✅ Edit (name/note/visibility) y delete funcionan idempotentemente.
+- ✅ `<MultiPinMap>` renderiza property anchor + confirmed pins + suggestion pins con iconos diferentes.
+- ✅ Audit log para confirm/manual/update/delete (ver `audit-mutation-coverage.test.ts`).
+- ✅ `providerMetadata` NUNCA llega a guest payload (`parking-leak-invariants.test.ts` verde).
+- ✅ `composeGuide("guest")` muestra parkings con `visibility="guest"`, oculta `"internal"`.
+- ✅ Static map slide funciona si entra en stretch (≤80 LOC neto); si no, deferral documentado en `LIORA_SURFACE_ROLLOUT_PLAN.md`.
+- ✅ All gates verdes: `tsc --noEmit`, vitest suite completa, axe-core serious|critical=0 en surface.
+- ✅ Branch closure template (5 hard rules) cumplido — ver § "Liora branch closure template — 16E onwards".
+
+**Restricciones / Riesgos**:
+- ⚠️ Mobile (375px): map + side list + suggestions panel es denso. Mitigación: drawer en mobile, side list collapsible, map full-width con suggestions over.
+- ⚠️ MapTiler categoría `parking` puede devolver garages residenciales privados. Mitigación: post-fetch filter estricto (`mapMaptilerCategory(...) === "lp.parking"`) + UI label clara "Sugerencias — confirma cuáles son útiles".
+- ⚠️ Static map slide stretch puede explotar de scope (server-side fetch + R2 upload + race conditions on regenerate). Gate duro de ≤80 LOC netas evita el creep.
+- ⚠️ `providerMetadata` JSON puede contener PII de MapTiler (phone, opening_hours). Tests de leak invariantes son blockers.
+- ⚠️ Cross-workspace guard: `LocalPlace.propertyId` se debe verificar contra `operator.workspaceId` antes de cada mutation (replicar patrón de 15D).
+
+**No-alcance**:
+- ❌ Schema changes (salvo imprescindible + aprobación explícita en thread).
+- ❌ Guest guide layout (sólo se consume el pipeline existente).
+- ❌ Local-guide UX broader (la sección `local-guide/` no se toca).
+- ❌ Routing API / walk-time / drive-time.
+- ❌ Pin clustering / heatmap / GeoJSON export.
+- ❌ Otros visuales del access cockpit (building, unit, accessibility queda intacto).
+- ❌ Per-method UPLOAD UI (sigue diferido como en 16E.5).
+- ❌ Auto-cycle, video poster server-side (siguen diferidos).
+
+**Dependencias**: 16E.5 mergeada (PR #102, commit `18b8eba`). 13A mergeada (modelo `LocalPlace` + `MapTilerLocalPoiProvider`). 15D mergeada (`withOperatorGuards`, `writeAudit`).
+
+**Preparación**:
+- **Contexto a leer**: `src/app/properties/[propertyId]/access/access-form.tsx` (ParkingPanel), `src/app/properties/[propertyId]/access/_components/subsystem-card.tsx` (MediaCarousel + Slide rendering ya soporta `kind:"map"`), `src/lib/services/places/index.ts` + `maptiler-provider.ts` + `maptiler-category-mapping.ts`, `src/lib/services/guide-map.service.ts` (audience obfuscation), `src/components/ui/location-map.tsx` (single-pin reference), `prisma/schema.prisma` § `LocalPlace`, `src/lib/auth/operator-guards.ts`, `src/test/cross-workspace-invariants.test.ts`, `src/test/audit-mutation-coverage.test.ts`.
+- **Skills mandatorias**:
+  - `frontend-design` — 3 mockup variants HTML del editor parking (1440 + 1024 + 375 light/dark) en `/tmp/access-parking-editor/explore/` antes de tocar código. User picks.
+  - `pre-commit-review` — antes de cada commit.
+  - `webapp-testing` — Playwright smoke + screenshots al cierre.
+- **Skills auxiliares**: `liora-ui-kit-parity` opcional al cierre si la silueta del editor merece audit; `simplify` obligatorio antes de PR.
+- **Docs a actualizar al terminar**: `LIORA_SURFACE_ROLLOUT_PLAN.md` (deferral parking-map redefinido), `ROADMAP.md` (16E.6 ✅), `CLAUDE.md` § "Patrones de UI — Operator shell" si los componentes nuevos introducen patrones reutilizables, `FUTURE.md` si quedan follow-ups (clustering, routing, static map regenerate-on-edit).
+
+**Cierre de scope (post-implementación, PR #106 review)**:
+
+El scope final excedió la planificación Fase -1 — el orquestador aceptó el crecimiento (no penalizable) porque cada extensión resolvió un follow-up directo del flujo de descubrimiento. Resumen de lo que terminó en la rama vs lo planificado:
+
+- **Discovery cockpit unificado** (planificado: solo parking). Real: `parking` + 3 modos de transit intercity (`airport`, `train`, `bus`). El cockpit S02 ("Cómo llegar") toggea cada modo y dispara `searchNearbyArrivalOptionsAction(mode)` con la misma cadencia (bucket `expensive` + per-property limiter + cooldown UI). Persistencia: `LocalPlace` con `categoryKey` mapeado del modo (`lp.arrival_airport`, `lp.arrival_train`, `lp.arrival_bus`) — mismo modelo que parking. Cache de sugerencias por modo en columna `Property.arrivalSuggestionsCacheJson` (`Partial<Record<ArrivalMode, ArrivalSuggestion[]>>`) + `Property.arrivalModesEnabledJson` (per-mode enable/disable persistente). Last-mile (`metro`, `urban_bus`, `taxi`, `walk`) **intencionalmente fuera de discovery** — se delega al deep link direccional Google/Apple Maps desde el punto de llegada hasta la propiedad, sin per-mode toggles ni pipeline de descubrimiento. Re-introducción de `taxi` como modo de primera clase: tracked en `docs/FUTURE.md` § 20.
+- **Atomic JSONB merge** (no planificado). Read-modify-write fire-and-forget sobre `arrivalSuggestionsCacheJson` causa race conditions cuando dos modos se refrescan concurrentemente. Patrón canónico: `UPDATE ... SET cache = COALESCE(cache, '{}'::jsonb) || ${delta}::jsonb WHERE id = ? AND workspace_id = ?` via `$executeRaw` — replica el patrón ya usado en `setArrivalModeEnabledAction` para `arrivalModesEnabledJson`. Aplica a cualquier columna JSONB sharded per-key escribida desde >1 origen.
+- **Reverse-geocode con ownership-first + bucket expensive** (no planificado, surgido del review de seguridad). El reverse-geocode para fallback de address en pin manual debe (a) validar ownership antes de tocar el provider externo, (b) consumir bucket `expensive` (la llamada al provider es la operación costosa, no el write), (c) resolver el provider DENTRO del try/catch porque `resolveLocalPoiProvider()` lanza `PoiProviderConfigError`/`PoiProviderUnavailableError` síncronamente. El mismo patrón se aplica a cualquier server action que combine validación + provider externo.
+- **Tri-state accessibility opt-out** (no planificado, surgido del review de schema). El schema declara `hasAccessibilityConsiderations Boolean?` (null=unanswered, false=opt-out, true=features) pero el path de save sólo emitía `true | null`. Añadido `ax.no_accessibility` sentinel chip (mirroring `ba.no_building` / `pk.no_parking`) + UI con `toggleMutexList` + hydration desde la columna en `page.tsx`. No requiere migración (existing nulls quedan correctos).
+- **Lightbox + MediaCarousel** (parcialmente planificado como soporte visual; real: slide-sync entre thumbnail strip y lightbox + click-to-collapse + Upload icon + has-media indicator). Cambios localizados en `_components/media-lightbox.tsx`, `_components/media-carousel.tsx`, `_components/method-row.tsx`, `_components/subsystem-card.tsx`. Orden canónico de slides: `image → video → map → live-map`. Copy del overlay root: "Principal" (no "Portada").
+
+**Patrones reutilizables introducidos (candidatos para `CLAUDE.md`):**
+
+1. **Discovery cockpit (`useParkingDiscovery` / `use-parking-management` hooks + service)**: orquesta search → suggest → confirm/discard → manual fallback → persist. Cadencia: bucket `expensive` + per-property limiter 30/60s + cooldown UI. Estado local de `suggestions` (no persistidas hasta confirm explícito). Aplicable a cualquier flujo "descubrir entidades cercanas a través de un provider externo y dejar al operator confirmar".
+2. **MapLibre marker adapter (`<MultiPinMap>` + `parking-map-overlay`)**: variante de `LocationMap` que acepta array de pins tipados (`property anchor`, `confirmed`, `suggested`) con iconos distintos. Cancel overlay durante relocate sigue el touch-target invariant (recipe-icon-btn-32 + h-8 w-8). MapLibre paint expressions no parsean `oklch()` — usar `resolveCssColor()` (con SSR guard) para flatten antes de pasar al renderer GL.
+3. **Operator entity-media carousel (`<MediaCarousel>` extendido)**: slide order canónico `image → video → map → live-map`, click-to-collapse en thumbnail strip, has-media indicator (ImageUp icon) en method rows, sincronización de índice entre carousel y lightbox. Aplicable a cualquier surface operator que muestre media + slides sintéticos (mapas, live-feeds).
+
+Estos tres patrones están documentados aquí en lugar de `CLAUDE.md` § "Patrones de UI — Operator shell" porque su consolidación definitiva depende de que 16F (messaging) reutilice el discovery cockpit, 16E.7 (si existe) reutilice el marker adapter, y la cockpit de spaces/amenities (16E.x futuro) reutilice el carousel. Promote a `CLAUDE.md` cuando el segundo consumer aparezca.
+
+**Patrones canónicos clarificados (no introducidos pero pinneados aquí porque la rama los ejerció):**
+
+- **`LocalPlace.rateJson` es array de tiers** (`{ amount: number, currency: string, per: "minute"|"hour"|"day"|"week"|"month", note?: string }[]`), no objeto único. Zod schema canónico en `src/lib/schemas/rate-tier.schema.ts` (single source of truth: `RATE_TIER_PERS`/`RateTier`/`RateTierPer` derivado vía `z.infer`). Helpers de UI re-exportan; no redefinir local.
+- **4 modos intercity + parking** en el cockpit "Cómo llegar". El set canónico está en `arrivalModeEnabledSchema` (`parking | airport | train | bus`). Cualquier nueva surface que itere sobre modos debe consumir ese schema, no hardcodear el array. Last-mile (metro/urban_bus/taxi/walk) delegado al deep link direccional desde el arrival point — no hay discovery, no hay toggles.
+
+---
+
 ### Rama 16F — `feat/liora-messaging-assistant-redesign`
 
 **Propósito**: superficies messaging + assistant console. Asume Fase 11 + 12 mergeadas (verde en MEMORY).
