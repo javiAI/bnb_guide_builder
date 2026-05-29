@@ -2,7 +2,8 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { PageHeader } from "@/components/ui/page-header";
+import { NumberedSection } from "@/components/ui/numbered-section";
 import { RadioCardGroup } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
@@ -31,33 +32,6 @@ const PET_SIZE_OPTIONS = getPolicyFieldOptions("pol.pets", "size_restriction");
 const PET_FEE_OPTIONS = getPolicyFieldOptions("pol.pets", "fee_mode");
 const PET_RESTRICTION_OPTIONS = getPolicyFieldOptions("pol.pets", "restrictions");
 const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
-
-// ── Helpers ──
-
-function buildSummaryLabel(policies: PoliciesData): Record<string, string | null> {
-  const labels: Record<string, string | null> = {};
-
-  // Convivencia
-  const parts: string[] = [];
-  if (policies.quietHours.enabled) parts.push(`Silencio ${policies.quietHours.from ?? "22:00"}–${policies.quietHours.to ?? "08:00"}`);
-  const smokingLabel = SMOKING_OPTIONS.find((o) => o.id === policies.smoking)?.label;
-  if (smokingLabel && policies.smoking !== "not_allowed") parts.push(`Fumar: ${smokingLabel}`);
-  labels.convivencia = parts.length ? parts.join(", ") : null;
-
-  // Mascotas
-  labels.mascotas = policies.pets.allowed ? "Se admiten mascotas" : "No se admiten mascotas";
-
-  // Suplementos
-  const supParts: string[] = [];
-  if (policies.supplements.cleaning.enabled) supParts.push(`Limpieza: ${policies.supplements.cleaning.amount ?? 0} EUR`);
-  if (policies.supplements.extraGuest.enabled) supParts.push(`Huésped extra: ${policies.supplements.extraGuest.amount ?? 0} EUR`);
-  labels.suplementos = supParts.length ? supParts.join(", ") : "Sin suplementos";
-
-  // Servicios
-  labels.servicios = policies.services.allowed ? "Servicios permitidos" : "No permitidos";
-
-  return labels;
-}
 
 // ── Component ──
 
@@ -107,12 +81,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
   const [servicesAllowed, setServicesAllowed] = useState(initial.services.allowed);
   const [serviceTypes, setServiceTypes] = useState<string[]>((initial.services.types ?? []).filter((id) => validServiceTypeIds.has(id)));
   const [serviceNotes, setServiceNotes] = useState(initial.services.notes ?? "");
-
-  // ── Section expand state ──
-  const [convivenciaOpen, setConvivenciaOpen] = useState(true);
-  const [mascotasOpen, setMascotasOpen] = useState(false);
-  const [suplementosOpen, setSuplementosOpen] = useState(false);
-  const [serviciosOpen, setServiciosOpen] = useState(false);
 
   // ── Form action ──
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePoliciesAction, null);
@@ -166,8 +134,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
     };
   }
 
-  const summaryLabels = buildSummaryLabel(buildPoliciesJson());
-
   // ── Shared styles (Liora semantic tokens) ──
   const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
   const labelCls = "block text-sm font-medium text-[var(--color-text-primary)]";
@@ -207,28 +173,24 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         formData.set("policiesJson", JSON.stringify(buildPoliciesJson()));
         formAction(formData);
       }}
-      className="space-y-4"
+      className="mx-auto max-w-3xl px-6 py-8"
     >
+      <PageHeader
+        eyebrow="Propiedad · Normas"
+        title="Normas de la casa"
+        description="Lo que puede y no puede hacer el huésped. Escribe con el mismo tono con el que hablarías en persona — firme y cálido, no burocrático."
+      />
+
       <input type="hidden" name="propertyId" value={propertyId} />
 
-      <div className="flex items-center justify-between">
-        <span />
-        {saveStatus && <InlineSaveStatus status={saveStatus} />}
-      </div>
-
       {state?.error && (
-        <p className="rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
+        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
 
       {/* ── Block 1: Convivencia ── */}
-      <CollapsibleSection
-        title="Convivencia"
-        selectedLabel={summaryLabels.convivencia}
-        expanded={convivenciaOpen}
-        onToggle={() => setConvivenciaOpen(!convivenciaOpen)}
-      >
+      <NumberedSection number="01" title="Convivencia">
         <div className="space-y-6">
           {/* Quiet hours */}
           <div>
@@ -293,19 +255,14 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <RadioCardGroup name="_photo" options={PHOTOGRAPHY_OPTIONS} value={commercialPhoto} onChange={(v) => setCommercialPhoto(v as PoliciesData["commercialPhotography"])} showRecommended={false} />
           </div>
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 2: Mascotas ── */}
-      <CollapsibleSection
-        title="Mascotas"
-        selectedLabel={summaryLabels.mascotas}
-        expanded={mascotasOpen}
-        onToggle={() => setMascotasOpen(!mascotasOpen)}
-      >
+      <NumberedSection number="02" title="Mascotas">
         <div className="space-y-6">
           <Toggle checked={petsAllowed} onChange={setPetsAllowed} label="¿Se admiten mascotas?" />
 
-          {petsAllowed && (
+          {petsAllowed ? (
             <>
               {/* Pet types */}
               <div>
@@ -371,17 +328,16 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <textarea value={petNotes} onChange={(e) => setPetNotes(e.target.value)} rows={2} placeholder="Ej: se requiere documentación veterinaria al día" className={inputCls} />
               </div>
             </>
+          ) : (
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              No se admiten mascotas en la propiedad. Si más adelante quieres recibirlas, aquí defines tipos, tamaño y suplementos.
+            </p>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 3: Suplementos ── */}
-      <CollapsibleSection
-        title="Suplementos y cargos"
-        selectedLabel={summaryLabels.suplementos}
-        expanded={suplementosOpen}
-        onToggle={() => setSuplementosOpen(!suplementosOpen)}
-      >
+      <NumberedSection number="03" title="Suplementos y cargos">
         <div className="space-y-6">
           {/* Cleaning fee */}
           <div>
@@ -445,25 +401,16 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               <p className="text-sm text-[var(--color-text-primary)]">
                 {petFeeAmount} EUR / {PET_FEE_OPTIONS.find((o) => o.id === petFeeMode)?.label?.toLowerCase()}
               </p>
-              <button
-                type="button"
-                onClick={() => { setMascotasOpen(true); setSuplementosOpen(false); }}
-                className="mt-1 text-xs text-[var(--color-text-link)] hover:underline"
-              >
-                Configurado en Mascotas
-              </button>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                Se configura en la sección Mascotas.
+              </p>
             </div>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 4: Servicios ── */}
-      <CollapsibleSection
-        title="Servicios permitidos"
-        selectedLabel={summaryLabels.servicios}
-        expanded={serviciosOpen}
-        onToggle={() => setServiciosOpen(!serviciosOpen)}
-      >
+      <NumberedSection number="04" title="Servicios permitidos">
         <div className="space-y-6">
           <Toggle checked={servicesAllowed} onChange={setServicesAllowed} label="¿Se permite contratar servicios externos?" />
 
@@ -480,21 +427,24 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
             </>
           ) : (
-            <p className="text-xs text-[var(--color-text-muted)]">
-              No se permiten servicios externos en la propiedad.
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              Los huéspedes no pueden contratar servicios externos durante la estancia. Si en el futuro quieres ofrecerlos, configúralos aquí.
             </p>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Submit ── */}
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Guardar normas"}
-      </button>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
+        >
+          {pending ? "Guardando…" : "Guardar normas"}
+        </button>
+        {saveStatus && <InlineSaveStatus status={saveStatus} />}
+      </div>
     </form>
   );
 }
