@@ -6,6 +6,7 @@ import { Moon, Cigarette, PartyPopper, Camera, SprayCan, UserPlus } from "lucide
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { NumberedSection } from "@/components/ui/numbered-section";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { RadioCardGroup } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
@@ -36,10 +37,13 @@ const PET_RESTRICTION_OPTIONS = getPolicyFieldOptions("pol.pets", "restrictions"
 const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
 
 // ── Field heading (icon-led — mirrors the per-rule icon anatomy of the
-// page-normas kit, where every rule leads with a circular Lucide glyph) ──
+// page-normas kit, where every rule leads with a circular Lucide glyph in a
+// tinted badge: `.rn-ic` 32×32 accent for narrative rows). We use the
+// canonical <IconBadge tone="primary" size="md"> so the accent circle reads
+// as the kit's leading affordance, not a flat inline glyph. ──
 
 function FieldHeading({
-  icon: Icon,
+  icon,
   label,
   hint,
   tooltip,
@@ -50,13 +54,15 @@ function FieldHeading({
   tooltip?: string;
 }) {
   return (
-    <div className="mb-2">
-      <div className="flex items-center gap-2">
-        <Icon size={15} aria-hidden="true" className="shrink-0 text-[var(--color-text-muted)]" />
-        <span className="text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
-        {tooltip && <InfoTooltip text={tooltip} />}
+    <div className="mb-3 flex items-start gap-3">
+      <IconBadge icon={icon} tone="primary" size="md" iconSize={16} />
+      <div className="min-w-0 pt-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</span>
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </div>
+        {hint && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{hint}</p>}
       </div>
-      {hint && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{hint}</p>}
     </div>
   );
 }
@@ -230,18 +236,18 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <Toggle checked={quietEnabled} onChange={setQuietEnabled} label="¿Hay restricción de ruido?" />
             {quietEnabled && (
               <div className="mt-3 flex items-center gap-3">
-                <div>
+                <label className="block">
                   <span className="text-xs text-[var(--color-text-muted)]">Desde</span>
                   <select value={quietFrom} onChange={(e) => setQuietFrom(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                </div>
-                <div>
+                </label>
+                <label className="block">
                   <span className="text-xs text-[var(--color-text-muted)]">Hasta</span>
                   <select value={quietTo} onChange={(e) => setQuietTo(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                </div>
+                </label>
               </div>
             )}
           </div>
@@ -251,10 +257,10 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <FieldHeading icon={Cigarette} label="Fumar" hint="Política de tabaco en la propiedad" />
             <RadioCardGroup name="_smoking" options={SMOKING_OPTIONS} value={smoking} onChange={(v) => setSmoking(v as PoliciesData["smoking"])} showRecommended={false} />
             {smoking === "designated_area" && (
-              <div className="mt-3">
+              <label className="mt-3 block">
                 <span className="text-xs text-[var(--color-text-muted)]">¿Dónde se puede fumar?</span>
                 <input type="text" value={smokingArea} onChange={(e) => setSmokingArea(e.target.value)} placeholder="Ej: terraza trasera" className={inputCls} />
-              </div>
+              </label>
             )}
           </div>
 
@@ -268,10 +274,10 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
             )}
             {eventsPolicy === "with_approval" && (
-              <div className="mt-3">
+              <label className="mt-3 block">
                 <span className="text-xs text-[var(--color-text-muted)]">Instrucciones para solicitar aprobación</span>
                 <textarea value={eventsApproval} onChange={(e) => setEventsApproval(e.target.value)} rows={2} placeholder="Ej: contactar al anfitrión con 48h de antelación" className={inputCls} />
-              </div>
+              </label>
             )}
           </div>
 
@@ -320,7 +326,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <span className={subLabelCls}>¿Se cobra suplemento por traer mascotas?</span>
                 <RadioCardGroup name="_petFee" options={PET_FEE_OPTIONS} value={petFeeMode} onChange={(v) => setPetFeeMode(v as NonNullable<PoliciesData["pets"]["feeMode"]>)} showRecommended={false} />
                 {petFeeMode !== "none" && (
-                  <div className="mt-3">
+                  <label className="mt-3 block">
                     <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                     <input
                       type="number"
@@ -330,7 +336,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                       onChange={(e) => setPetFeeAmount(Number(e.target.value))}
                       className={`${inputCls} max-w-[10rem]`}
                     />
-                  </div>
+                  </label>
                 )}
               </div>
 
@@ -348,11 +354,11 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
 
               {/* Notes */}
-              <div>
+              <label className="block">
                 <span className={labelCls}>Notas adicionales</span>
                 <span className={subLabelCls}>Información extra sobre la política de mascotas (opcional)</span>
                 <textarea value={petNotes} onChange={(e) => setPetNotes(e.target.value)} rows={2} placeholder="Ej: se requiere documentación veterinaria al día" className={inputCls} />
-              </div>
+              </label>
             </>
           ) : (
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
@@ -374,7 +380,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             />
             <Toggle checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
             {cleaningEnabled && (
-              <div className="mt-3">
+              <label className="mt-3 block">
                 <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                 <input
                   type="number"
@@ -384,7 +390,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                   onChange={(e) => setCleaningAmount(Number(e.target.value))}
                   className={`${inputCls} max-w-[10rem]`}
                 />
-              </div>
+              </label>
             )}
           </div>
 
@@ -398,7 +404,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
             <Toggle checked={extraGuestEnabled} onChange={setExtraGuestEnabled} label="¿Se cobra suplemento por huésped extra?" />
             {extraGuestEnabled && (
               <div className="mt-3 space-y-3">
-                <div>
+                <label className="block">
                   <span className="text-xs text-[var(--color-text-muted)]">Importe por huésped extra (EUR / noche)</span>
                   <input
                     type="number"
@@ -408,12 +414,12 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                     onChange={(e) => setExtraGuestAmount(Number(e.target.value))}
                     className={`${inputCls} max-w-[10rem]`}
                   />
-                </div>
+                </label>
                 <div>
                   <NumberStepper label="A partir de cuántos huéspedes" value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
-                  <p className="mt-1.5 text-xs text-[var(--color-text-subtle)]">
+                  <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
                     Máximo de huéspedes: {propertyDefaults.maxGuests ?? "—"} ·{" "}
-                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-text-link)] hover:underline">
+                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-text-link)] underline">
                       Editar en Propiedad
                     </Link>
                   </p>
@@ -449,10 +455,10 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <span className={subLabelCls}>Selecciona los servicios que los huéspedes pueden contratar</span>
                 <CheckboxCardGroup name="_serviceTypes" options={SERVICE_TYPE_OPTIONS} value={serviceTypes} onChange={setServiceTypes} showRecommended={false} />
               </div>
-              <div>
+              <label className="block">
                 <span className={labelCls}>Notas sobre servicios</span>
                 <textarea value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)} rows={2} placeholder="Ej: coordinar con el anfitrión con 24h de antelación" className={inputCls} />
-              </div>
+              </label>
             </>
           ) : (
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
