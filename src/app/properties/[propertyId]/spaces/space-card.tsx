@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
+import { Camera, Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -55,6 +55,8 @@ interface SpaceCardProps {
   spaceSystems?: SpaceSystem[];
   /** Signed URL of the first space image; null → gradient placeholder. */
   coverThumbUrl?: string | null;
+  /** Total images assigned to the space (cover badge); 0 → no badge. */
+  photoCount?: number;
 }
 
 const inputCls =
@@ -91,6 +93,7 @@ export function SpaceCard({
   beds,
   spaceSystems = [],
   coverThumbUrl = null,
+  photoCount = 0,
 }: SpaceCardProps) {
   const titleId = useId();
 
@@ -262,6 +265,12 @@ export function SpaceCard({
               className="text-[var(--color-action-primary)] opacity-70"
             />
           </div>
+        )}
+        {photoCount > 0 && (
+          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)]">
+            <Camera size={11} aria-hidden="true" />
+            {photoCount}
+          </span>
         )}
       </div>
 

@@ -164,6 +164,7 @@ export default async function SpacesPage({
         propertyId={propertyId}
         maxGuests={property!.maxGuests}
         coverThumbUrl={covers.get(space.id)?.coverUrl ?? null}
+        photoCount={covers.get(space.id)?.photoCount ?? 0}
         space={{
           id: space.id,
           spaceType: space.spaceType,
