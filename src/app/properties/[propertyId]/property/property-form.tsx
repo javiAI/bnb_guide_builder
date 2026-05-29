@@ -414,7 +414,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
               <input type="hidden" name="latitude" value={latitude ?? ""} />
               <input type="hidden" name="longitude" value={longitude ?? ""} />
 
-              <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-link)] hover:text-[var(--color-text-link-hover)] disabled:opacity-40 transition-colors">
+              <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40 transition-colors">
                 <Search size={14} aria-hidden="true" />
                 {geocoding ? "Buscando..." : "Encontrar ubicación"}
               </button>
