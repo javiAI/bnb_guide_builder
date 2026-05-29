@@ -10,6 +10,7 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactIconFor, type ContactGroupTone } from "@/lib/icons/contact-icons";
 import { ContactQuickActions } from "./contact-quick-actions";
+import { FIELD, FIELD_PH, PRIMARY_BTN } from "./styles";
 
 export interface Contact {
   id: string;
@@ -33,10 +34,6 @@ export interface Contact {
 
 const groups = contactTypes.groups;
 const typeItems = contactTypes.items;
-
-const FIELD =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm";
-const FIELD_PH = `${FIELD} placeholder:text-[var(--color-text-placeholder)]`;
 
 const AVATAR_TONE: Record<ContactGroupTone, string> = {
   primary: "bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]",
@@ -246,7 +243,7 @@ export function ContactCard({
           ))}
 
           <div className="flex items-center justify-between">
-            <button type="submit" disabled={pending} className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-40">
+            <button type="submit" disabled={pending} className={PRIMARY_BTN}>
               {pending ? "Guardando..." : "Guardar"}
             </button>
             <DeleteConfirmationButton

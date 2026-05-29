@@ -8,9 +8,11 @@ import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { createContactAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
+import { cn } from "@/lib/cn";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactGroupTone } from "@/lib/icons/contact-icons";
 import { ContactCard, type Contact } from "./_components/contact-card";
+import { FIELD, FIELD_PH, PRIMARY_BTN } from "./_components/styles";
 
 interface ContactsFormProps {
   propertyId: string;
@@ -20,29 +22,21 @@ interface ContactsFormProps {
 const groups = contactTypes.groups;
 const typeItems = contactTypes.items;
 
-const FIELD =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm";
-const FIELD_PH = `${FIELD} placeholder:text-[var(--color-text-placeholder)]`;
-
 function groupIdFor(roleKey: string): string {
   return typeItems.find((t) => t.id === roleKey)?.group ?? "ctg.other";
 }
 
 function CreateContactForm({
   propertyId,
-  open,
   onClose,
 }: {
   propertyId: string;
-  open: boolean;
   onClose: () => void;
 }) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     createContactAction,
     null,
   );
-
-  if (!open) return null;
 
   return (
     <div className="rounded-[var(--radius-lg)] border-2 border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] p-4">
@@ -95,7 +89,7 @@ function CreateContactForm({
         ))}
 
         <div className="flex items-center gap-3">
-          <button type="submit" disabled={pending} className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-40">
+          <button type="submit" disabled={pending} className={PRIMARY_BTN}>
             {pending ? "Creando..." : "Crear contacto"}
           </button>
           <button type="button" onClick={onClose} className="inline-flex min-h-[44px] items-center px-1 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]">
@@ -149,7 +143,7 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)]"
+            className={cn(PRIMARY_BTN, "gap-1.5")}
           >
             <Plus size={15} aria-hidden="true" />
             Añadir contacto
@@ -208,11 +202,7 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
 
       {creating && (
         <div ref={createRef} className="scroll-mt-6 mt-6">
-          <CreateContactForm
-            propertyId={propertyId}
-            open={creating}
-            onClose={() => setCreating(false)}
-          />
+          <CreateContactForm propertyId={propertyId} onClose={() => setCreating(false)} />
         </div>
       )}
     </div>
