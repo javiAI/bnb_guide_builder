@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
+import { Moon, Cigarette, PartyPopper, Camera, SprayCan, UserPlus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { RadioCardGroup } from "@/components/ui/radio-card-group";
@@ -32,6 +34,32 @@ const PET_SIZE_OPTIONS = getPolicyFieldOptions("pol.pets", "size_restriction");
 const PET_FEE_OPTIONS = getPolicyFieldOptions("pol.pets", "fee_mode");
 const PET_RESTRICTION_OPTIONS = getPolicyFieldOptions("pol.pets", "restrictions");
 const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
+
+// ── Field heading (icon-led — mirrors the per-rule icon anatomy of the
+// page-normas kit, where every rule leads with a circular Lucide glyph) ──
+
+function FieldHeading({
+  icon: Icon,
+  label,
+  hint,
+  tooltip,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  tooltip?: string;
+}) {
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2">
+        <Icon size={15} aria-hidden="true" className="shrink-0 text-[var(--color-text-muted)]" />
+        <span className="text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </div>
+      {hint && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{hint}</p>}
+    </div>
+  );
+}
 
 // ── Component ──
 
@@ -194,10 +222,11 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         <div className="space-y-6">
           {/* Quiet hours */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Horario de silencio</span>
-              <InfoTooltip text="El horario de silencio se comunicará a los huéspedes en la guía. Establece las horas en las que se debe evitar ruido excesivo." />
-            </div>
+            <FieldHeading
+              icon={Moon}
+              label="Horario de silencio"
+              tooltip="El horario de silencio se comunicará a los huéspedes en la guía. Establece las horas en las que se debe evitar ruido excesivo."
+            />
             <Toggle checked={quietEnabled} onChange={setQuietEnabled} label="¿Hay restricción de ruido?" />
             {quietEnabled && (
               <div className="mt-3 flex items-center gap-3">
@@ -219,8 +248,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Smoking */}
           <div>
-            <span className={labelCls}>Fumar</span>
-            <span className={subLabelCls}>Política de tabaco en la propiedad</span>
+            <FieldHeading icon={Cigarette} label="Fumar" hint="Política de tabaco en la propiedad" />
             <RadioCardGroup name="_smoking" options={SMOKING_OPTIONS} value={smoking} onChange={(v) => setSmoking(v as PoliciesData["smoking"])} showRecommended={false} />
             {smoking === "designated_area" && (
               <div className="mt-3">
@@ -232,8 +260,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Events */}
           <div>
-            <span className={labelCls}>Eventos y reuniones</span>
-            <span className={subLabelCls}>Política sobre reuniones y eventos en la propiedad</span>
+            <FieldHeading icon={PartyPopper} label="Eventos y reuniones" hint="Política sobre reuniones y eventos en la propiedad" />
             <RadioCardGroup name="_events" options={EVENTS_OPTIONS} value={eventsPolicy} onChange={(v) => setEventsPolicy(v as PoliciesData["events"]["policy"])} showRecommended={false} />
             {eventsPolicy === "small_gatherings" && (
               <div className="mt-3">
@@ -250,8 +277,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Commercial photography */}
           <div>
-            <span className={labelCls}>Fotografía / filmación comercial</span>
-            <span className={subLabelCls}>Uso comercial de la propiedad para sesiones de foto o vídeo</span>
+            <FieldHeading icon={Camera} label="Fotografía / filmación comercial" hint="Uso comercial de la propiedad para sesiones de foto o vídeo" />
             <RadioCardGroup name="_photo" options={PHOTOGRAPHY_OPTIONS} value={commercialPhoto} onChange={(v) => setCommercialPhoto(v as PoliciesData["commercialPhotography"])} showRecommended={false} />
           </div>
         </div>
@@ -341,10 +367,11 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         <div className="space-y-6">
           {/* Cleaning fee */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Suplemento de limpieza</span>
-              <InfoTooltip text="Cargo único que se aplica una vez por reserva, independientemente de la duración de la estancia." />
-            </div>
+            <FieldHeading
+              icon={SprayCan}
+              label="Suplemento de limpieza"
+              tooltip="Cargo único que se aplica una vez por reserva, independientemente de la duración de la estancia."
+            />
             <Toggle checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
             {cleaningEnabled && (
               <div className="mt-3">
@@ -363,10 +390,11 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Extra guest fee */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Suplemento por huésped extra</span>
-              <InfoTooltip text="Cargo adicional por noche para cada huésped que exceda el límite base. Se aplica por noche y por persona." />
-            </div>
+            <FieldHeading
+              icon={UserPlus}
+              label="Suplemento por huésped extra"
+              tooltip="Cargo adicional por noche para cada huésped que exceda el límite base. Se aplica por noche y por persona."
+            />
             <Toggle checked={extraGuestEnabled} onChange={setExtraGuestEnabled} label="¿Se cobra suplemento por huésped extra?" />
             {extraGuestEnabled && (
               <div className="mt-3 space-y-3">
