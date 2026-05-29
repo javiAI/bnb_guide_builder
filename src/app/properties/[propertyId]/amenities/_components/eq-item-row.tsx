@@ -39,6 +39,8 @@ interface EqItemRowProps {
   spaceId: string | null;
   isExpanded: boolean;
   onExpand: (key: string | null) => void;
+  /** Stable expand key for this (item, space) — owned by the parent band. */
+  expandKey: string;
   /** id of the inline detail panel this row controls (when expandable). */
   panelId: string;
 }
@@ -49,11 +51,11 @@ export function EqItemRow({
   spaceId,
   isExpanded,
   onExpand,
+  expandKey,
   panelId,
 }: EqItemRowProps) {
   const [isPending, startTransition] = useTransition();
   const hasDetails = item.hasSubtype && item.subtypeFields.length > 0;
-  const expandKey = `${item.id}|${spaceId ?? ""}`;
   const tier = TIER_META[item.importanceLevel];
 
   function handleToggle() {

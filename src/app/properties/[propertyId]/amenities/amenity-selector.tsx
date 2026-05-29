@@ -69,6 +69,17 @@ export function AmenitySelector({
     .map((g) => ({ ...g, visible: visibleItems(g.items) }))
     .filter((g) => g.visible.length > 0);
 
+  // The derived band follows the same search (label or source summary). It is
+  // not affected by "Sólo configurados" — derived state is reference, not an
+  // operator-configured value.
+  const visibleDerived = generalDerived.filter(
+    (d) =>
+      q === "" ||
+      fold(d.label).includes(q) ||
+      (d.status.sourceSummary ? fold(d.status.sourceSummary).includes(q) : false),
+  );
+  const showEmpty = renderedGroups.length === 0 && visibleDerived.length === 0;
+
   function handleAdd() {
     // Reset filters so the destination group is visible, then focus the
     // general custom-add input (simple scroll anchor — no scroll-spy).
@@ -108,7 +119,7 @@ export function AmenitySelector({
         />
       ))}
 
-      {renderedGroups.length === 0 && (
+      {showEmpty && (
         <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
           {onlyConfigured && query.trim() === ""
             ? "Aún no hay equipamiento configurado."
@@ -116,7 +127,7 @@ export function AmenitySelector({
         </p>
       )}
 
-      <DerivedBand items={generalDerived} />
+      <DerivedBand items={visibleDerived} />
     </div>
   );
 }

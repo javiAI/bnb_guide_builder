@@ -1,5 +1,6 @@
 "use client";
 
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { AmenityDetailPanel } from "../amenity-detail-panel";
 import type { EnrichedAmenityItem } from "../page";
 import { EqItemRow } from "./eq-item-row";
@@ -40,9 +41,7 @@ export function EqGroupBand({
   return (
     <section className="mb-6">
       <div className="flex items-center gap-3 border-b border-[var(--color-border-default)] py-2.5 pl-3">
-        <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
-          {title}
-        </h3>
+        <SectionEyebrow>{title}</SectionEyebrow>
         <span className="text-[11.5px] tabular-nums text-[var(--color-text-muted)]">
           {enabledCount} de {totalCount}
         </span>
@@ -75,6 +74,7 @@ export function EqGroupBand({
                 spaceId={spaceId}
                 isExpanded={isExpanded}
                 onExpand={onExpand}
+                expandKey={expandKey}
                 panelId={panelId}
               />
               {showPanel && (

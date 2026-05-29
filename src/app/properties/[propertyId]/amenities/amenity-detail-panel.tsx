@@ -95,7 +95,6 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
         </p>
       )}
 
-
       <div className="space-y-3">
         {visibleFields.map((field) => {
           // Boolean fields render their own label inline
