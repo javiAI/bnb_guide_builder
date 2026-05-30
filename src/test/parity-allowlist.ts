@@ -180,23 +180,19 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
-    // 16E content modules — spaces (espacios y camas). Kit reference exists
-    // (`page-espacios` in subpages.html) with rich visual silhouette: section
-    // numbering (01/02/03), per-space hero rows with meta chips, capacity
-    // readouts as dedicated cards, bed config as collapsible structured
-    // panels. **E1 ships baseline-only** (semantic warning/error/success
-    // tokens, a11y, 44 hit-targets on submits, replace Tailwind named-palette
-    // amber/red with semantic status tokens). Inline quantity steppers
-    // (h-6/h-7) are kept since they pass the gate and a redesign to either
-    // visual 44 or `recipe-icon-btn-32` slop requires layout rework that maps
-    // 1:1 to the kit. Inline SVG glyphs (pencil, chevron, gear, trash, alert,
-    // arrow) are kept as-is — Lucide migration on these dialogs is structural
-    // and ships in 16E.5 alongside the silhouette port. Full UI Kit visual
-    // silhouette port is **deferred to required follow-up rama 16E.5**
-    // (`feat/liora-operator-content-visual-parity`) per
-    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
-    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
-    // screenshots) applies to 16E.5, not E1.
+    // 16E content modules — spaces (espacios y camas). Kit reference
+    // `page-espacios` in subpages.html: header (eyebrow → title → desc →
+    // actions → chips → rule), numbered sections (01 principales / 02 añadir /
+    // 03 archivados, conditional), and an auto-fill card grid of per-space
+    // tiles (cover + photo-count badge, name, meta facts, progress + status
+    // pill). **Visual parity port landed on this branch**
+    // (`feat/liora-spaces-visual-parity`): the real `/liora-ui-kit-parity`
+    // audit passes — global 9.0, every criterion ≥ 7.5, 0 blockers (3-col
+    // auto-fill grid matching the kit's minmax(260px); axe 0 serious|critical
+    // in light/dark/expanded-editor). This closes the "deferred visual parity
+    // — required follow-up" item in LIORA_SURFACE_ROLLOUT_PLAN.md for spaces;
+    // the E1 baseline-only framing no longer applies (the ≥8.5 global / ≥7.5
+    // per criterion + screenshots gate is met here).
     id: "operator-spaces",
     routes: ["/properties/[propertyId]/spaces"],
     profile: "operator",
