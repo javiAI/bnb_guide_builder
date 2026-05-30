@@ -230,21 +230,19 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
   },
   {
     // 16E content modules — systems (sistemas: clima, agua, electricidad,
-    // conectividad). Kit reference exists (`page-sistemas` in subpages.html)
-    // with rich visual silhouette: per-group banded sections, system rows
-    // as detailed cards with status pills + meta chips, coverage matrix as
-    // a structured table with tonal cells. **E1 ships baseline-only**
-    // (semantic error/success tokens replacing `--color-error-*` and
-    // `--color-success-*` legacy aliases, 44 hit-targets on submits and
-    // delete button, primitives where they fit). The structural list +
-    // detail-form layout is preserved. Glyphs (← back arrow, → call-to-
-    // action arrow, ★ recommended marker) are kept as-is — Lucide migration
-    // is structural and ships in 16E.5 alongside the silhouette port. Full
-    // UI Kit visual silhouette port is **deferred to required follow-up
-    // rama 16E.5** (`feat/liora-operator-content-visual-parity`) per
-    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
-    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
-    // screenshots) applies to 16E.5, not E1.
+    // conectividad). Kit reference: `page-sistemas` in subpages.html.
+    // **16E.5 visual-parity port complete** (`feat/liora-systems-visual-parity`):
+    // list page rebuilt to the sys-card silhouette — PageHeader (eyebrow/title/
+    // chips/status pill) + NON-AI tip card + three completeness NumberedSections
+    // (Configurados / Incompletos / Por configurar) with sys-card rows (IconBadge
+    // + group chip + meta + status pill + ring-pct) and per-row quick-add for
+    // recommended systems; detail page on the generic operator card grammar
+    // (<Card variant="overview"> + <SectionEyebrow>). Lucide icons replace the
+    // ← / → / ★ glyphs (canonical mapping in src/lib/icons/system-icons.ts,
+    // pinned by system-icon-coverage.test.ts). All clickables ≥44 hit area,
+    // selects carry aria-label (select-name baseline violation cleared), axe
+    // serious|critical = 0 light + dark. No schema/functional change. Audit +
+    // 7-criterion scores in LIORA_SURFACE_ROLLOUT_PLAN.md § systems.
     id: "operator-systems",
     routes: [
       "/properties/[propertyId]/systems",
