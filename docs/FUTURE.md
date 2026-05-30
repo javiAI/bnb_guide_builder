@@ -447,7 +447,27 @@ Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y dem
 
 ---
 
-## 21. Spaces — "Ver plano" (vista de plano de la propiedad)
+## 21. Systems — meta diferida del kit `page-sistemas` (16E.5)
+
+**Estado**: diferido — fuera del scope del visual-parity port de 16E.5 (`feat/liora-systems-visual-parity`).
+
+### Contexto
+
+El kit `page-sistemas` muestra en cada `sys-card` tres metadatos por los que el modelo de datos actual **no** tiene fuente derivable: `N palabras`, `Usado en N respuestas`, y la `ai-card` de redacción asistida. El port portó la silueta (icono + título + chip de grupo + estado + ring + fotos/vídeos/incidencia) y sustituyó la `ai-card` por una tip-card NON-AI (Q5). Los tres elementos sin fuente quedan registrados aquí en lugar de inventar datos o stubs.
+
+### Qué cubriría cuando se active
+
+1. **`N palabras` por sistema** — hoy un `PropertySystem` no tiene cuerpo en prosa: la config son campos estructurados (`detailsJson`/`opsJson`) sobre el subtype, no markdown. Un contador de palabras requeriría (a) un campo `bodyMd` por sistema, o (b) derivar de los chunks de conocimiento auto-extraídos (`knowledge_items`) del sistema. Trigger: cuando systems gane un cuerpo editorial libre o se exponga el conteo de chunks por entidad.
+2. **`Usado en N respuestas`** — requiere agregar citaciones del asistente (`AssistantMessage.citationsJson`) por `knowledgeItemId` y mapearlas a la entidad sistema. Es un pipeline de analítica de uso, no derivable barato en el render del listado. Trigger: cuando exista un job/materialized view de "citation counts por entidad" (candidato conjunto con la analítica del asistente).
+3. **AI-draft de descripciones de sistema** (la `ai-card` original) — generar un borrador de "Cómo funciona la caldera/wifi/…" a partir del subtype + specs. Aspiracional por la regla Liora de no fingir IA en superficies sin pipeline. Trigger: rama dedicada de asistencia de redacción operator (alineada con 16F+), nunca inline en un port visual.
+
+### Por qué no se hace inline en la rama actual
+
+16E.5 es paridad **visual + estructura, 0 cambios de schema/funcionales**. `N palabras` y `Usado en N respuestas` necesitarían un campo nuevo o un pipeline de analítica (cambio de modelo); la `ai-card` necesitaría un generador real. Portar la silueta con metadatos inventados habría violado el contrato del replatform (datos reales, no mock). La open-incidents (`Incidencia abierta`) sí se implementó porque es derivable con un `groupBy` sobre `Incident` (`targetType="system"`), sin schema nuevo.
+
+---
+
+## 22. Spaces — "Ver plano" (vista de plano de la propiedad)
 
 **Estado**: aspirational — el kit `page-espacios` muestra una CTA secundaria "Ver plano" en el header; omitida en 16E.5 (no existe backend de plano).
 
@@ -475,7 +495,7 @@ Cuando producto priorice una feature de floor-plan (geometría por espacio) en e
 
 ---
 
-## 22. EntityMediaCard — extracción del card "media-backed summary" (2 adopters alcanzados)
+## 23. EntityMediaCard — extracción del card "media-backed summary" (2 adopters alcanzados)
 
 **Estado**: trigger de extracción **alcanzado** (2 adopters) — extracción diferida a rama dedicada post-16F (decisión Fase -1 de 16E.5-spaces).
 

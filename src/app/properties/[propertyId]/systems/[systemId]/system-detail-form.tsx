@@ -1,10 +1,13 @@
 "use client";
 
 import { useActionState, useState, useTransition, type FormEvent } from "react";
+import { Settings2, Users, Wrench } from "lucide-react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
 import { stripNulls } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import {
   renderFieldInput,
   fieldTypeWrapsOwnLabel,
@@ -39,7 +42,7 @@ function FieldInput({
       return (
         <div className="flex items-center gap-2">
           {primitive}
-          <span className="text-xs text-[var(--color-neutral-400)]">(sensible)</span>
+          <span className="text-[12px] text-[var(--color-text-muted)]">(sensible)</span>
         </div>
       );
     }
@@ -48,11 +51,11 @@ function FieldInput({
 
   return (
     <label className="block">
-      <span className="text-sm font-medium text-[var(--foreground)]">
+      <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
         {field.label}
         {field.required && <span className="ml-0.5 text-[var(--color-status-error-text)]">*</span>}
         {field.visibility === "sensitive" && (
-          <span className="ml-1 text-xs font-normal text-[var(--color-neutral-400)]">(sensible)</span>
+          <span className="ml-1 text-[12px] font-normal text-[var(--color-text-muted)]">(sensible)</span>
         )}
       </span>
       {primitive}
@@ -95,10 +98,12 @@ export function SystemDetailForm({
   const hasFields = subtype && (subtype.detailsFields.length > 0 || subtype.opsFields.length > 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {hasFields && subtype.detailsFields.length > 0 && (
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-          <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">Información para huéspedes</h2>
+        <Card variant="overview">
+          <SectionEyebrow icon={Users} className="mb-4">
+            Información para huéspedes
+          </SectionEyebrow>
           <div className="grid gap-4 sm:grid-cols-2">
             {subtype.detailsFields.map((field) => (
               <FieldInput
@@ -109,12 +114,14 @@ export function SystemDetailForm({
               />
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {hasFields && subtype.opsFields.length > 0 && (
-        <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-          <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">Operaciones e incidencias</h2>
+        <Card variant="overview">
+          <SectionEyebrow icon={Wrench} className="mb-4">
+            Operaciones e incidencias
+          </SectionEyebrow>
           <div className="grid gap-4 sm:grid-cols-2">
             {subtype.opsFields.map((field) => (
               <FieldInput
@@ -125,47 +132,54 @@ export function SystemDetailForm({
               />
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-        <h2 className="mb-4 text-sm font-semibold text-[var(--foreground)]">Ajustes</h2>
-        <div className="space-y-4">
+      <Card variant="overview">
+        <SectionEyebrow icon={Settings2} className="mb-4">
+          Ajustes
+        </SectionEyebrow>
+        <div className="flex flex-col gap-4">
           <label className="block">
-            <span className="text-sm font-medium text-[var(--foreground)]">Notas internas</span>
+            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+              Notas internas
+            </span>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="Notas para el equipo, no visibles para huéspedes…"
-              className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none resize-none"
+              className="mt-1 block w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-[14px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-[var(--foreground)]">Visibilidad</span>
+            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+              Visibilidad
+            </span>
             <select
               value={vis}
               onChange={(e) => setVis(e.target.value)}
-              className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+              aria-label="Visibilidad del sistema"
+              className="mt-1 block min-h-[44px] w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[14px] text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
             >
               <option value="guest">Huésped</option>
               <option value="internal">Solo interno</option>
             </select>
           </label>
         </div>
-      </div>
+      </Card>
 
       {result && !result.success && result.error && (
-        <p className="text-xs text-[var(--color-status-error-text)]">{result.error}</p>
+        <p className="text-[12px] text-[var(--color-status-error-text)]">{result.error}</p>
       )}
       {result?.success && (
-        <p className="text-xs text-[var(--color-status-success-text)]">Guardado correctamente</p>
+        <p className="text-[12px] text-[var(--color-status-success-text)]">Guardado correctamente</p>
       )}
 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2.5 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50 transition-colors"
+        className="inline-flex min-h-[44px] items-center self-start rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-[14px] font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
       >
         {isPending ? "Guardando…" : "Guardar cambios"}
       </button>

@@ -126,7 +126,7 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 | `access/` | ✅ baseline migrated | ✅ parity ported (global 8.7, PASS) | `feat/liora-operator-content-visual-parity` |
 | `spaces/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `amenities/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
-| `systems/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
+| `systems/` | ✅ baseline migrated | ✅ parity ported (global 9.0, PASS) | `feat/liora-systems-visual-parity` |
 | `troubleshooting/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
 | wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
@@ -166,6 +166,32 @@ Per § Rama 16E.5 Fase -1 contract decisions 1 and 3, this section captures (a) 
 | `troubleshooting/` | Tabs (TroubleshootingTabs) + list + detail editor with CollapsibleSection. No single-page kit. | Adjacent silhouette: `incidents` list with `inc` rows (critical/high/normal/resolved variants). Adapt for playbooks list + per-playbook editor. | **Keep** (playbook editor is form-heavy; CollapsibleSection survives) + numbered section grammar at the top. |
 | `spaces/` | 2 numbered sections already (Configurados / Sin configurar) with `<SpaceCard>` rows. Bed manager + space form as CollapsibleSection inside cards. | `pg` header + `01 Espacios principales` numbered section + `sp-grid` 2-col cards with photo placeholder + facts row + progress bar + status pill. | **Complement.** Top-level numbered sections + per-card content. CollapsibleSection inside `<SpaceCard>` (bed manager, features) survives. |
 | `property/` | Read-only summary + property-form (CollapsibleSection per group). Kit shows listing+detail summary, not editor. | `pg` header + property facts as `pg-chips` + numbered sections per editor group. | **Decide at module start** — kit doesn't ship an editor reference, so the bar is "consume Liora primitives + grammar without inventing novel visual language". CollapsibleSection survives unless the visual gap is large. |
+
+##### `systems/` — 16E.5 visual parity port (`feat/liora-systems-visual-parity`)
+
+Kit reference: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` § `page-sistemas`.
+
+**Silhouette ported** (list `page.tsx` + `_components/`): `<PageHeader>` (eyebrow `Propiedad · Sistemas` / title `Sistemas de la casa` / editorial subtitle / status pill in `actions` / 3 `<PageHeaderChip>`) → NON-AI tip card (replaces the kit `ai-card`, Q5) → three completeness `<NumberedSection>`s (`01 Configurados` / `02 Incompletos` / `03 Por configurar`, numbered over the visible set, hidden when empty except Por configurar per Q7) → `sys-card` rows (`<SystemRow>`: IconBadge + title + group chip + description + meta + status pill + ring-pct) and dashed `<RecommendedRow>` with per-row quick-add (Q6). Detail `[systemId]` ported to the generic operator card grammar (back `<TextLink>` + `<PageHeader>` with IconBadge title + `<Card variant="overview">` sections with `<SectionEyebrow>`, semantic coverage table).
+
+**Decisions applied** (Fase -1 Q1–Q8): completeness status `Configurado/Incompleto/Vacío` → success/warning/muted (Q1); top-level grouping by completeness, taxonomy group kept as a muted chip per row (Q2); ONE batched `mediaAssignment` query joined to `mediaAsset.mimeType` for photos+videos, header "con vídeo" chip dropped, per-row video count kept (Q3); subtypeless systems render "✓ Activo" instead of a ring (Q4); tip card is NON-AI and does not duplicate chip counts (Q5); recommended quick-add + `<details>` fallback selector (Q6); sections hidden at count 0 except Por configurar (Q7); **open-incidents counter implemented** via one `Incident` groupBy on `targetType="system"` + active status (Q8 — `Incident.targetId = PropertySystem.id`, derivable, no schema change). Lucide icon registry `src/lib/icons/system-icons.ts` (pinned by `system-icon-coverage.test.ts`).
+
+| Criterion | Score | Notes |
+|-----------|------:|-------|
+| 1. Layout silhouette | 9.0 | Header → tip → 3 numbered sections → sys-card rows matches `page-sistemas`. Adapted publish-state (Publicados/Borrador/Sin empezar) to completeness (Configurados/Incompletos/Por configurar) — domain-correct, no per-system publish state exists. Group chip added per Q2; the kit `section-action` "Usa plantillas" omitted (templates aspirational). |
+| 2. Visual hierarchy | 9.0 | IconBadge → title + group/internal chips → description → meta row; state column (status pill over ring/Activo). PageHeader chips + status pill summarise state, consistent with operator shell tones. |
+| 3. Density / spacing | 8.5 | `p-4` cards, `gap-2.5` between rows, `gap-3.5` intra-row, `gap-5` detail card stack. Within the kit's comfortable card density. |
+| 4. Component fidelity | 8.5 | Canonical primitives (`PageHeader`/`PageHeaderChip`/`NumberedSection`/`IconBadge`/`Card variant="overview"`/`SectionEyebrow`/`TextLink`). `SystemRing` is a faithful semantic-token port of the kit `ring-pct`. Status pills + recommended quick-add (kit "Empezar" idiom) faithful. Trailing ArrowRight follows the operator overview row idiom. |
+| 5. Token fidelity | 10 | Zero hex/rgb/oklch (parity-static green), zero primitive leaks, zero Tailwind named colors. All semantic `--color-*` / `--radius-*`. SVG ring strokes use `var(--color-progress-track)` + status solids. |
+| 6. Interaction / state fidelity | 9.0 | Hover (border-strong + interactive-hover), focus-visible rings, disabled, pending (`Añadiendo…`/`Guardando…`), error (status-error-text). `<details>` fallback collapsible + per-row quick-add verified in-browser. |
+| 7. Dark mode | 9.0 | All tokens semantic → `html[data-theme]` auto-applies. `dark-parity.test.ts` green; list + detail dark screenshots axe-0, verified visually. |
+
+**Global**: (9.0 + 9.0 + 8.5 + 8.5 + 10 + 9.0 + 9.0) / 7 = **9.0**.
+
+**Verdict**: **PASS** — global 9.0 ≥ 8.5, every criterion ≥ 7.5, zero blockers.
+
+**Blocker check** (all clear): no hex/rgb/oklch in audited JSX; no primitive token leaks; no forbidden suffixes; all clickables ≥44 hit area (rows `min-h-[44px]`, add/submit/delete `min-h-[44px]`, selects `min-h-[44px]`, IconBadge md 44); selects carry `aria-label` (baseline `select-name` critical cleared); axe `serious|critical = 0` in light + dark on list and detail; HTML validity (rows are leaf `<Link>`s, no nested interactive); operator surface (no guest leak). Zero schema/functional change.
+
+**Test coverage**: `system-icon-coverage.test.ts` (5 — icon keys === taxonomy ids + page grammar `<PageHeader>`/`<NumberedSection>`); `component-invariants.test.ts`, `parity-static.test.ts`, `liora-page-grammar.test.ts`, `dark-parity.test.ts`, `liora-no-hex-in-jsx.test.ts`, `liora-no-tailwind-named-color.test.ts`, `liora-no-primitive-leak.test.ts` — all green. Full suite: 207 files / 2111 tests pass, `tsc --noEmit` clean.
 
 ##### Frontend-design upfront — `access/`
 
