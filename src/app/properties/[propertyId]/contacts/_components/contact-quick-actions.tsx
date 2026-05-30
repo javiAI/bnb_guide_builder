@@ -1,6 +1,6 @@
 import { Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button-link";
-import { buildMailtoHref, buildTelHref, buildWhatsAppHref } from "@/lib/contact-actions";
+import { buildMailtoHref, buildMapsHref, buildTelHref, buildWhatsAppHref } from "@/lib/contact-actions";
 
 /**
  * Read-only quick actions for a contact card (kit `cn-actions`). Each action is
@@ -26,11 +26,6 @@ function waHref(raw: string | null): string | null {
   return raw?.trim().startsWith("+") ? buildWhatsAppHref(raw) : null;
 }
 
-function mapsHref(address: string | null): string | null {
-  if (!address || !address.trim()) return null;
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.trim())}`;
-}
-
 const ACTION_CLASS = "grow justify-center";
 
 export function ContactQuickActions({
@@ -42,7 +37,7 @@ export function ContactQuickActions({
   const tel = telHref(phone);
   const wa = waHref(whatsapp) ?? waHref(phone);
   const mail = email ? buildMailtoHref(email) : null;
-  const maps = mapsHref(address);
+  const maps = address ? buildMapsHref(address) : null;
 
   if (!tel && !wa && !mail && !maps) return null;
 
