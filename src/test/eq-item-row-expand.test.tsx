@@ -19,7 +19,9 @@ function makeItem(overrides: Partial<EnrichedAmenityItem> = {}): EnrichedAmenity
     recommended: false,
     importanceLevel: "standard",
     hasSubtype: true,
-    subtypeFields: [{ id: "brand", type: "text", label: "Marca" }],
+    subtypeFields: [
+      { id: "brand", type: "text", label: "Marca", description: "Marca del aparato" },
+    ],
     enabled: true,
     dbId: "inst-1",
     detailsJson: null,
