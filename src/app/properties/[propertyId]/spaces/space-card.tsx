@@ -166,6 +166,10 @@ export function SpaceCard({
   const featureGroups = useMemo(() => getSpaceFeatureGroups(space.spaceType), [space.spaceType]);
 
   // ── Progress ──
+  // Recomputed live from the editable `features` state (not threaded from the
+  // server) so the foot bar/pill update as the operator toggles fields in the
+  // inline editor. The server computes the same signal from persisted data only
+  // for the page-level completion aggregate — the two sources are intentional.
   const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
   const progressLevel = useMemo(
     () => computeProgressDot(features, featureGroups, hasBeds, beds.length),

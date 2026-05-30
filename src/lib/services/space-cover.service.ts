@@ -29,7 +29,7 @@ export async function loadSpaceCovers(
     where: {
       entityType: "space",
       entityId: { in: spaceIds },
-      mediaAsset: { mimeType: { startsWith: "image/" } },
+      mediaAsset: { status: "ready", mimeType: { startsWith: "image/" } },
     },
     select: {
       entityId: true,
@@ -38,28 +38,30 @@ export async function loadSpaceCovers(
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
-  // Group: first row per space is the cover; tally the count.
-  const firstKeyBySpace = new Map<string, string>();
+  // One pass: DB order (sortOrder asc, createdAt asc) puts the cover first per
+  // space, so the first row seen is the cover key; later rows just bump count.
+  const grouped = new Map<string, { storageKey: string; photoCount: number }>();
   for (const row of rows) {
-    const prev = result.get(row.entityId);
-    if (!prev) {
-      result.set(row.entityId, { coverUrl: null, photoCount: 1 });
-      firstKeyBySpace.set(row.entityId, row.mediaAsset.storageKey);
+    const entry = grouped.get(row.entityId);
+    if (entry) {
+      entry.photoCount += 1;
     } else {
-      prev.photoCount += 1;
+      grouped.set(row.entityId, { storageKey: row.mediaAsset.storageKey, photoCount: 1 });
     }
   }
 
-  // Sign the cover URLs in parallel (bounded by spaceIds.length).
+  // Sign cover URLs in parallel (bounded by spaceIds.length) and write each
+  // result once. A signing failure (e.g. missing R2 env in dev) degrades that
+  // space to a null cover → the card falls back to the gradient placeholder.
   await Promise.all(
-    [...firstKeyBySpace.entries()].map(async ([spaceId, storageKey]) => {
+    [...grouped.entries()].map(async ([spaceId, { storageKey, photoCount }]) => {
+      let coverUrl: string | null = null;
       try {
-        const url = await getDownloadUrl(storageKey);
-        const entry = result.get(spaceId);
-        if (entry) entry.coverUrl = url;
+        coverUrl = await getDownloadUrl(storageKey);
       } catch {
         // Leave coverUrl null → card renders the placeholder.
       }
+      result.set(spaceId, { coverUrl, photoCount });
     }),
   );
 
