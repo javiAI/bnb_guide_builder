@@ -46,6 +46,27 @@ const FIELD_LABEL_CLS = "text-sm font-medium text-[var(--color-text-primary)]";
 const FIELD_LABEL_MUTED_CLS = "text-sm font-medium text-[var(--color-text-secondary)]";
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
 
+// Custom "Otro" name/description fields, shared by the property-type and
+// room-type pickers (identical shape, different bound state).
+function CustomTypeFields({
+  label,
+  onLabelChange,
+  desc,
+  onDescChange,
+}: {
+  label: string;
+  onLabelChange: (value: string) => void;
+  desc: string;
+  onDescChange: (value: string) => void;
+}) {
+  return (
+    <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
+      <label className="block"><span className={FIELD_LABEL_CLS}>Nombre *</span><input type="text" value={label} onChange={(e) => onLabelChange(e.target.value)} className={FIELD_CLS} /></label>
+      <label className="block"><span className={FIELD_LABEL_CLS}>Descripción</span><textarea value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} className={FIELD_CLS} /></label>
+    </div>
+  );
+}
+
 interface PropertyFormProps {
   propertyId: string;
   property: {
@@ -331,10 +352,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={ptOpen} onToggle={() => setPtOpen(!ptOpen)}>
               <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} />
               {propertyType === "pt.other" && (
-                <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-                  <label className="block"><span className={FIELD_LABEL_CLS}>Nombre *</span><input type="text" value={customPtLabel} onChange={(e) => setCustomPtLabel(e.target.value)} className={FIELD_CLS} /></label>
-                  <label className="block"><span className={FIELD_LABEL_CLS}>Descripción</span><textarea value={customPtDesc} onChange={(e) => setCustomPtDesc(e.target.value)} rows={2} className={FIELD_CLS} /></label>
-                </div>
+                <CustomTypeFields label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} />
               )}
             </CollapsibleSection>
 
@@ -342,10 +360,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             <CollapsibleSection title="Tipo de espacio" selectedLabel={rtLabel} expanded={rtOpen} onToggle={() => setRtOpen(!rtOpen)}>
               <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} />
               {roomType === "rt.other" && (
-                <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-                  <label className="block"><span className={FIELD_LABEL_CLS}>Nombre *</span><input type="text" value={customRtLabel} onChange={(e) => setCustomRtLabel(e.target.value)} className={FIELD_CLS} /></label>
-                  <label className="block"><span className={FIELD_LABEL_CLS}>Descripción</span><textarea value={customRtDesc} onChange={(e) => setCustomRtDesc(e.target.value)} rows={2} className={FIELD_CLS} /></label>
-                </div>
+                <CustomTypeFields label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} />
               )}
             </CollapsibleSection>
 
