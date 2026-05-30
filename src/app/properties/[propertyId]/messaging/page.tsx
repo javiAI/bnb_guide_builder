@@ -105,12 +105,12 @@ export default async function MessagingPage({
             <PageHeaderChip
               icon={FileText}
               label="Plantillas"
-              value={templates.length}
+              value={String(templates.length)}
             />
             <PageHeaderChip
               icon={Zap}
               label="Automatizaciones activas"
-              value={activeAutomationCount}
+              value={String(activeAutomationCount)}
               className="border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]"
             />
           </>

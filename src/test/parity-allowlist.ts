@@ -290,7 +290,7 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     // exist in this product: messaging here is template AUTHORING +
     // automation wiring + draft review, not a chat inbox. So the kit is a
     // reference for VISUAL GRAMMAR ONLY (uppercase eyebrows, status chips,
-    // composer styling, terracota AI/automation accent, source/timeline
+    // composer styling, olive AI/automation accent, source/timeline
     // patterns). The inbox/thread/composer-send/AI-suggestion are
     // `aspirational` (no backend) and documented in `docs/FUTURE.md`; the
     // index ports the existing touchpoint list + counters + a small set of
@@ -312,7 +312,7 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     // the message body editor re-skinned as a composer (tool-row, NO
     // send/AI-toggle — those are aspirational). The variable picker +
     // template preview keep their existing behavior; the AI/automation
-    // accent uses `--color-action-primary-*` (terracota), never the kit's
+    // accent uses `--color-action-primary-*` (olive), never the kit's
     // cool blue-grey. The template preview is a NEUTRAL render of the
     // template, not an AI conversation bubble.
     id: "operator-messaging-touchpoint",

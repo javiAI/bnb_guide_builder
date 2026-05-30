@@ -96,7 +96,7 @@ export default async function DraftsPage({
           <>
             <PageHeaderChip
               label="Pendientes"
-              value={pendingCount}
+              value={String(pendingCount)}
               className={
                 pendingCount > 0
                   ? "border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)]"
@@ -105,7 +105,7 @@ export default async function DraftsPage({
             />
             <PageHeaderChip
               label="Aprobados"
-              value={approvedCount}
+              value={String(approvedCount)}
               className={
                 approvedCount > 0
                   ? "border-[var(--color-status-success-border)] bg-[var(--color-status-success-bg)] text-[var(--color-status-success-text)]"
