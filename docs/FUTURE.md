@@ -447,6 +447,7 @@ Cuando ≥5 operadores reales pidan poder fijar un taxi/proveedor concreto y dem
 
 ---
 
+<<<<<<< HEAD
 ## 21. Estado "sin revisar" tri-estado para equipamiento
 
 **Estado**: diferido — explícitamente fuera del scope de 16E.5 (`amenities/` visual parity).
@@ -479,3 +480,84 @@ Un tercer estado real "sin revisar" que distinga "el operador confirmó que esta
 ### Trigger para implementar
 
 Cuando el onboarding o el gate de publicación necesiten distinguir "revisado y no lo tiene" de "no revisado todavía" como señal de completeness — p.ej. cuando se quiera un checklist "X amenities pendientes de revisar" antes de publicar la guía.
+=======
+## 21. Systems — meta diferida del kit `page-sistemas` (16E.5)
+
+**Estado**: diferido — fuera del scope del visual-parity port de 16E.5 (`feat/liora-systems-visual-parity`).
+
+### Contexto
+
+El kit `page-sistemas` muestra en cada `sys-card` tres metadatos por los que el modelo de datos actual **no** tiene fuente derivable: `N palabras`, `Usado en N respuestas`, y la `ai-card` de redacción asistida. El port portó la silueta (icono + título + chip de grupo + estado + ring + fotos/vídeos/incidencia) y sustituyó la `ai-card` por una tip-card NON-AI (Q5). Los tres elementos sin fuente quedan registrados aquí en lugar de inventar datos o stubs.
+
+### Qué cubriría cuando se active
+
+1. **`N palabras` por sistema** — hoy un `PropertySystem` no tiene cuerpo en prosa: la config son campos estructurados (`detailsJson`/`opsJson`) sobre el subtype, no markdown. Un contador de palabras requeriría (a) un campo `bodyMd` por sistema, o (b) derivar de los chunks de conocimiento auto-extraídos (`knowledge_items`) del sistema. Trigger: cuando systems gane un cuerpo editorial libre o se exponga el conteo de chunks por entidad.
+2. **`Usado en N respuestas`** — requiere agregar citaciones del asistente (`AssistantMessage.citationsJson`) por `knowledgeItemId` y mapearlas a la entidad sistema. Es un pipeline de analítica de uso, no derivable barato en el render del listado. Trigger: cuando exista un job/materialized view de "citation counts por entidad" (candidato conjunto con la analítica del asistente).
+3. **AI-draft de descripciones de sistema** (la `ai-card` original) — generar un borrador de "Cómo funciona la caldera/wifi/…" a partir del subtype + specs. Aspiracional por la regla Liora de no fingir IA en superficies sin pipeline. Trigger: rama dedicada de asistencia de redacción operator (alineada con 16F+), nunca inline en un port visual.
+
+### Por qué no se hace inline en la rama actual
+
+16E.5 es paridad **visual + estructura, 0 cambios de schema/funcionales**. `N palabras` y `Usado en N respuestas` necesitarían un campo nuevo o un pipeline de analítica (cambio de modelo); la `ai-card` necesitaría un generador real. Portar la silueta con metadatos inventados habría violado el contrato del replatform (datos reales, no mock). La open-incidents (`Incidencia abierta`) sí se implementó porque es derivable con un `groupBy` sobre `Incident` (`targetType="system"`), sin schema nuevo.
+
+---
+
+## 22. Spaces — "Ver plano" (vista de plano de la propiedad)
+
+**Estado**: aspirational — el kit `page-espacios` muestra una CTA secundaria "Ver plano" en el header; omitida en 16E.5 (no existe backend de plano).
+
+### Contexto
+
+El header del kit (`subpages.html` `#page-espacios`) tiene dos acciones: `Ver plano` (secundaria) + `Añadir espacio` (primaria). En el port 16E.5 "Añadir espacio" se cablea como ancla a la sección numerada `02 Añadir espacio`; "Ver plano" implicaría una vista esquemática 2D de la distribución de la propiedad (un floor plan con los espacios posicionados), que hoy no tiene ningún soporte de datos.
+
+### Qué cubriría cuando se active
+
+Una vista de plano (esquema 2D) que posicione cada `Space` sobre la silueta de la propiedad: superficie relativa, adyacencias, y un acceso rápido a la ficha de cada espacio desde el plano. Útil para operadores con propiedades grandes donde la lista vertical pierde la noción espacial.
+
+### Implementación sugerida
+
+1. Modelo de geometría por espacio (posición/tamaño relativos, o un editor SVG con coordenadas) — requiere migración de schema (campos nuevos en `Space` o una tabla `SpaceLayout`).
+2. Un editor de plano (drag/resize) o import desde un SVG/imagen de plano subido.
+3. Toggle "Ver plano / Ver lista" en el header de la página de espacios.
+
+### Trigger para implementar
+
+Cuando producto priorice una feature de floor-plan (geometría por espacio) en el roadmap, con modelo de datos propio. Hasta entonces la cuadrícula de tarjetas (auto-fill `minmax(260px)`, hasta 3 columnas al ancho auditado) cubre el caso de uso de edición.
+
+### Por qué no se hace inline en la rama actual
+
+16E.5 es un **visual-parity port** con contrato duro de 0 cambios funcionales y 0 cambios de schema. "Ver plano" requiere un modelo de datos nuevo + un editor — fuera de scope por definición. Registrarlo aquí (en vez de implementar un botón muerto) respeta la regla "nada se difiere sin destino".
+
+---
+
+## 23. EntityMediaCard — extracción del card "media-backed summary" (2 adopters alcanzados)
+
+**Estado**: trigger de extracción **alcanzado** (2 adopters) — extracción diferida a rama dedicada post-16F (decisión Fase -1 de 16E.5-spaces).
+
+### Contexto
+
+El patrón **"Operator Entity Card — media-backed summary"** (`LIORA_SURFACE_ROLLOUT_PLAN.md` § "Approved pattern: Operator Entity Card — media-backed summary") declara: *"Not yet extracted to `src/components/ui/`. Extraction candidate after a second surface (spaces) adopts it."*
+
+- **1er adopter**: access cockpit `subsystem-card.tsx` (16E.6) — shell `<article>` + media-top + body + foot/expand.
+- **2º adopter**: spaces `sp-card` (`space-card.tsx`, 16E.5) — misma silueta (cover-top + body con facts + foot con progress/pill + expand del editor).
+
+Con spaces el trigger "segundo adopter" queda cumplido.
+
+### Diferencia clave entre los dos adopters (por qué no se extrae aún)
+
+- **access** usa `<MediaCarousel>` en el cover (carousel + lightbox + upload + dots/strip, `MAX_VISIBLE_DOTS`).
+- **spaces** usa un **cover estático** (1 thumbnail batched vía `loadSpaceCovers`, sin carousel/lightbox/upload).
+
+Los dos shapes de cover divergen lo suficiente como para que abstraer ahora arriesgue la abstracción equivocada (¿el cover es un slot `ReactNode`? ¿el expand vive dentro o fuera? ¿el foot es genérico o per-surface?). Extraer con 2 adopters de cover divergente es prematuro.
+
+### Qué cubriría cuando se active
+
+Un primitivo `<EntityMediaCard>` en `src/components/ui/` que abstraiga el **shell común** (article + `aria-labelledby` + cover-top con `overflow-hidden` + body + foot + región expandible), dejando el contenido del cover como slot (`cover: ReactNode` → `<MediaCarousel>` en access, `<img>`/placeholder en spaces) y el body/foot como composición. NO bakear el modo de cover.
+
+### Trigger para implementar
+
+Rama dedicada **post-16F**, cuando un **3er adopter** (amenities con media destacada, o systems) valide el shape común y desambigüe los slots. Tres adopters dan la señal de qué es realmente compartido vs per-surface. Hasta entonces, los dos cards conviven inline (sin duplicación problemática: comparten silueta visual + tokens, no código).
+
+### Por qué no se hace inline en la rama actual
+
+Fase -1 de 16E.5-spaces lo decidió explícitamente: *"NO extraigas `<EntityMediaCard>`; registra en FUTURE.md el trigger (2 adopters: subsystem-card + sp-card) para rama dedicada post-16F."* Extraer dentro de un visual-parity port mezclaría dos preocupaciones (port + diseño de primitivo nuevo) y arriesgaría regresiones en dos surfaces a la vez.
+>>>>>>> origin/main
