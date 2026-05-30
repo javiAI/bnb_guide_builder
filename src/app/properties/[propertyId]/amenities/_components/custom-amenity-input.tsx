@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 import { toggleAmenityAction } from "@/lib/actions/editor.actions";
 import { cn } from "@/lib/cn";
+import { slugifyLabel } from "./text";
 
 interface CustomAmenityInputProps {
   propertyId: string;
@@ -27,12 +28,7 @@ export function CustomAmenityInput({
     if (!trimmed) return;
 
     // Custom amenities use "custom." prefix + slugified label.
-    const slug = trimmed
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_|_$/g, "");
+    const slug = slugifyLabel(trimmed);
     if (!slug) return;
 
     const formData = new FormData();

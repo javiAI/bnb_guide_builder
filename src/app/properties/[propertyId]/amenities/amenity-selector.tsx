@@ -4,18 +4,11 @@ import { useState } from "react";
 import { AmenitiesToolbar } from "./_components/amenities-toolbar";
 import { EqGroupBand } from "./_components/eq-group-band";
 import { DerivedBand } from "./_components/derived-band";
-import { TIER_ORDER } from "./_components/eq-tier";
+import { TIER_META } from "./_components/eq-tier";
+import { fold } from "./_components/text";
 import type { EnrichedAmenityItem, SpaceSection, DerivedAmenityItem } from "./page";
 
 const GENERAL_ADD_ID = "eq-add-general";
-
-/** Accent-insensitive, lowercase fold for client-side search (both sides). */
-function fold(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
 
 interface AmenitySelectorProps {
   propertyId: string;
@@ -54,7 +47,9 @@ export function AmenitySelector({
   const q = fold(query.trim());
 
   function visibleItems(items: EnrichedAmenityItem[]): EnrichedAmenityItem[] {
-    return [...items]
+    // `.filter()` already returns a fresh array, so the later `.sort()` never
+    // mutates the caller's `items` — no defensive copy needed up front.
+    return items
       .filter((i) => !onlyConfigured || i.enabled)
       .filter(
         (i) =>
@@ -62,7 +57,10 @@ export function AmenitySelector({
           fold(i.label).includes(q) ||
           (i.description ? fold(i.description).includes(q) : false),
       )
-      .sort((a, b) => TIER_ORDER[a.importanceLevel] - TIER_ORDER[b.importanceLevel]);
+      .sort(
+        (a, b) =>
+          TIER_META[a.importanceLevel].order - TIER_META[b.importanceLevel].order,
+      );
   }
 
   const renderedGroups = groups

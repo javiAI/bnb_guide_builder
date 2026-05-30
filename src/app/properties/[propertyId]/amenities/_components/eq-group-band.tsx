@@ -3,7 +3,7 @@
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { AmenityDetailPanel } from "../amenity-detail-panel";
 import type { EnrichedAmenityItem } from "../page";
-import { EqItemRow } from "./eq-item-row";
+import { EqItemRow, canExpandItem } from "./eq-item-row";
 import { CustomAmenityInput } from "./custom-amenity-input";
 
 function panelIdFor(itemId: string, spaceId: string | null): string {
@@ -61,11 +61,7 @@ export function EqGroupBand({
           const expandKey = `${item.id}|${spaceId ?? ""}`;
           const panelId = panelIdFor(item.id, spaceId);
           const isExpanded = expandedDetail === expandKey;
-          const showPanel =
-            isExpanded &&
-            item.enabled &&
-            item.hasSubtype &&
-            item.subtypeFields.length > 0;
+          const showPanel = isExpanded && canExpandItem(item);
           return (
             <div key={item.id}>
               <EqItemRow

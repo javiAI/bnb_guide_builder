@@ -33,6 +33,16 @@ function EqAttach({
   );
 }
 
+/**
+ * Single source of truth for "does this row expose an inline detail panel".
+ * Consumed by the row (to render the expander affordance) and by `EqGroupBand`
+ * (to mount the panel) — keeping the predicate here prevents the two from
+ * drifting out of sync, which would surface a chevron with no panel behind it.
+ */
+export function canExpandItem(item: EnrichedAmenityItem): boolean {
+  return item.enabled && item.hasSubtype && item.subtypeFields.length > 0;
+}
+
 interface EqItemRowProps {
   propertyId: string;
   item: EnrichedAmenityItem;
@@ -55,12 +65,7 @@ export function EqItemRow({
   panelId,
 }: EqItemRowProps) {
   const [isPending, startTransition] = useTransition();
-  // Only enabled items with subtype fields can expand — `EqGroupBand` gates the
-  // detail panel on the same condition, so an expander on a disabled row would
-  // rotate the chevron with no panel ever appearing. Keep this in lockstep with
-  // `EqGroupBand`'s `showPanel` check.
-  const canExpand =
-    item.enabled && item.hasSubtype && item.subtypeFields.length > 0;
+  const canExpand = canExpandItem(item);
   const tier = TIER_META[item.importanceLevel];
 
   function handleToggle() {
@@ -92,6 +97,22 @@ export function EqItemRow({
     </span>
   ) : null;
 
+  // Label + optional description — identical in the expandable and static
+  // layouts, so it lives here once and is slotted into both branches below.
+  const nameBlock = (
+    <>
+      <span className={nameClass}>
+        {item.label}
+        {customBadge}
+      </span>
+      {item.description && (
+        <span className="mt-0.5 block text-[11.5px] leading-snug text-[var(--color-text-muted)]">
+          {item.description}
+        </span>
+      )}
+    </>
+  );
+
   return (
     <div
       className={cn(
@@ -117,17 +138,7 @@ export function EqItemRow({
           aria-controls={panelId}
           className="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] rounded-[6px]"
         >
-          <span className="min-w-0 flex-1">
-            <span className={nameClass}>
-              {item.label}
-              {customBadge}
-            </span>
-            {item.description && (
-              <span className="mt-0.5 block text-[11.5px] leading-snug text-[var(--color-text-muted)]">
-                {item.description}
-              </span>
-            )}
-          </span>
+          <span className="min-w-0 flex-1">{nameBlock}</span>
           <ChevronDown
             size={16}
             aria-hidden="true"
@@ -139,15 +150,7 @@ export function EqItemRow({
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col justify-center py-2.5">
-          <span className={nameClass}>
-            {item.label}
-            {customBadge}
-          </span>
-          {item.description && (
-            <span className="mt-0.5 text-[11.5px] leading-snug text-[var(--color-text-muted)]">
-              {item.description}
-            </span>
-          )}
+          {nameBlock}
         </div>
       )}
 

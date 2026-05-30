@@ -14,20 +14,16 @@ import type { ImportanceLevel } from "@/lib/types/taxonomy";
  *   3. `label` — surfaced as sr-only text on each row so the tier is not a
  *      color-only signal (WCAG 1.4.1).
  */
-export const TIER_ORDER: Record<ImportanceLevel, number> = {
-  highlight: 0,
-  standard: 1,
-  bonus: 2,
-};
-
 export interface TierMeta {
+  /** Sort key — essential (0) → recommended (1) → bonus (2). */
+  order: number;
   label: string;
   /** Left-border color — categorical chart tokens for distinct, theme-safe hues. */
   borderClass: string;
 }
 
 export const TIER_META: Record<ImportanceLevel, TierMeta> = {
-  highlight: { label: "Esencial", borderClass: "border-l-[var(--color-chart-1)]" },
-  standard: { label: "Recomendado", borderClass: "border-l-[var(--color-chart-2)]" },
-  bonus: { label: "Destacado", borderClass: "border-l-[var(--color-chart-3)]" },
+  highlight: { order: 0, label: "Esencial", borderClass: "border-l-[var(--color-chart-1)]" },
+  standard: { order: 1, label: "Recomendado", borderClass: "border-l-[var(--color-chart-2)]" },
+  bonus: { order: 2, label: "Destacado", borderClass: "border-l-[var(--color-chart-3)]" },
 };
