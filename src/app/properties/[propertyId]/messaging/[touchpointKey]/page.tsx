@@ -4,6 +4,7 @@ import { FileText, Inbox, Zap } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { messagingTouchpoints, findItem, automationChannels, getItems } from "@/lib/taxonomy-loader";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { TextLink } from "@/components/ui/text-link";
 import { CreateTemplateForm } from "./create-template-form";
@@ -62,15 +63,16 @@ export default async function TouchpointDetailPage({
         description={touchpoint.description}
         chips={
           <>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-[9px] py-1 text-[12px] text-[var(--color-text-secondary)]">
-              <FileText size={12} aria-hidden="true" className="text-[var(--color-text-muted)]" />
-              {templates.length} plantilla{templates.length !== 1 ? "s" : ""}
-            </span>
+            <PageHeaderChip
+              icon={FileText}
+              label={`${templates.length} plantilla${templates.length !== 1 ? "s" : ""}`}
+            />
             {activeAutomationCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-action-primary-subtle)] px-[9px] py-1 text-[12px] font-medium text-[var(--color-action-primary-subtle-fg)]">
-                <Zap size={12} aria-hidden="true" />
-                {activeAutomationCount} automatización{activeAutomationCount !== 1 ? "es" : ""} activa{activeAutomationCount !== 1 ? "s" : ""}
-              </span>
+              <PageHeaderChip
+                icon={Zap}
+                label={`${activeAutomationCount} automatización${activeAutomationCount !== 1 ? "es" : ""} activa${activeAutomationCount !== 1 ? "s" : ""}`}
+                className="border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]"
+              />
             )}
           </>
         }
