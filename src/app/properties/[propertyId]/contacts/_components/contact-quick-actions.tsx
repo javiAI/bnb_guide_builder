@@ -9,7 +9,7 @@ import { buildMailtoHref, buildTelHref, buildWhatsAppHref } from "@/lib/contact-
  * `contact-actions` helpers) and omitted when the field is absent (or, for
  * WhatsApp, when the number is not international).
  */
-export interface ContactQuickActionsProps {
+interface ContactQuickActionsProps {
   phone: string | null;
   email: string | null;
   whatsapp: string | null;
