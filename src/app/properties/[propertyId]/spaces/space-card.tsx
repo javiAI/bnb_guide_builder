@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
 import {
@@ -95,8 +95,6 @@ export function SpaceCard({
   coverThumbUrl = null,
   photoCount = 0,
 }: SpaceCardProps) {
-  const titleId = useId();
-
   // ── Expand / collapse (editor body) ──
   const bodyRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">(0);
@@ -242,7 +240,7 @@ export function SpaceCard({
 
   return (
     <article
-      aria-labelledby={titleId}
+      aria-label={nameValue}
       className={cn(
         "overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-200",
         expanded && "col-span-full",
@@ -287,6 +285,7 @@ export function SpaceCard({
               ref={nameInputRef}
               type="text"
               name="name"
+              aria-label="Nombre del espacio"
               value={nameValue}
               onChange={(e) => setNameValue(e.target.value)}
               onKeyDown={(e) => {
@@ -327,7 +326,6 @@ export function SpaceCard({
               aria-expanded={expanded}
             >
               <span
-                id={titleId}
                 className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]"
               >
                 {nameValue}

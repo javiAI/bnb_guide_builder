@@ -467,7 +467,7 @@ Una vista de plano (esquema 2D) que posicione cada `Space` sobre la silueta de l
 
 ### Trigger para implementar
 
-Cuando producto priorice una feature de floor-plan (geometría por espacio) en el roadmap, con modelo de datos propio. Hasta entonces la lista 2-col cubre el caso de uso de edición.
+Cuando producto priorice una feature de floor-plan (geometría por espacio) en el roadmap, con modelo de datos propio. Hasta entonces la cuadrícula de tarjetas (auto-fill `minmax(260px)`, hasta 3 columnas al ancho auditado) cubre el caso de uso de edición.
 
 ### Por qué no se hace inline en la rama actual
 
