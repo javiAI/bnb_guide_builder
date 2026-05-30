@@ -381,7 +381,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         ];
         const hasSlop =
           cls.includes("recipe-icon-btn-32") ||
-          cls.includes("recipe-carousel-dot-24");
+          cls.includes("recipe-carousel-dot-24") ||
+          cls.includes("recipe-icon-btn-16");
         const hasHeight = heightTokens.some((t) => cls.includes(t));
         const hasWidth = widthTokens.some((t) => cls.includes(t));
         const isTextBearingFloor =
@@ -420,6 +421,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "w-12",
       "recipe-icon-btn-32",
       "recipe-carousel-dot-24",
+      "recipe-icon-btn-16",
     ];
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
@@ -455,6 +457,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
     const cssRecipeCompensators = [
       "recipe-icon-btn-32",
       "recipe-carousel-dot-24",
+      "recipe-icon-btn-16",
     ] as const;
     const recipesCss = readSrc("src/styles/recipes.css");
     const violations: string[] = [];
@@ -474,7 +477,11 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         /(?:min-)?width:\s*44px/.test(allText);
       const hasDocumentedSlop =
         /::before/.test(allText) &&
-        /inset:\s*-(?:[6-9]|1[0-2])px/.test(allText) &&
+        // 6–14px inset: covers the 32→44 (-6), 24→44 (-10) and 16→44 (-14)
+        // slop recipes. 16px is the smallest icon visual we support, so -14
+        // is the upper bound — a smaller visual would need a larger slop and
+        // should grow on coarse pointers instead.
+        /inset:\s*-(?:[6-9]|1[0-4])px/.test(allText) &&
         /@media\s*\(pointer:\s*coarse\)/.test(recipesCss) &&
         new RegExp(
           `@media\\s*\\(pointer:\\s*coarse\\)[^]*?\\.${escaped}[^]*?(?:min-)?height:\\s*44px`,
