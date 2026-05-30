@@ -55,7 +55,12 @@ export function EqItemRow({
   panelId,
 }: EqItemRowProps) {
   const [isPending, startTransition] = useTransition();
-  const hasDetails = item.hasSubtype && item.subtypeFields.length > 0;
+  // Only enabled items with subtype fields can expand — `EqGroupBand` gates the
+  // detail panel on the same condition, so an expander on a disabled row would
+  // rotate the chevron with no panel ever appearing. Keep this in lockstep with
+  // `EqGroupBand`'s `showPanel` check.
+  const canExpand =
+    item.enabled && item.hasSubtype && item.subtypeFields.length > 0;
   const tier = TIER_META[item.importanceLevel];
 
   function handleToggle() {
@@ -104,7 +109,7 @@ export function EqItemRow({
         label={item.label}
       />
 
-      {hasDetails ? (
+      {canExpand ? (
         <button
           type="button"
           onClick={() => onExpand(isExpanded ? null : expandKey)}
