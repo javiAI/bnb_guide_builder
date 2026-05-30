@@ -15,6 +15,9 @@ interface CreateSpaceFormProps {
   availableTypeOptions: SpaceTypeOption[];
 }
 
+const fieldCls =
+  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none";
+
 export function CreateSpaceForm({ propertyId, availableTypeOptions }: CreateSpaceFormProps) {
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     createSpaceAction,
@@ -27,23 +30,23 @@ export function CreateSpaceForm({ propertyId, availableTypeOptions }: CreateSpac
   return (
     <form
       action={formAction}
-      className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5"
+      className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5"
     >
       <input type="hidden" name="propertyId" value={propertyId} />
 
       {state?.error && (
-        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs text-[var(--color-neutral-500)]">Tipo de espacio *</span>
+          <span className="text-xs text-[var(--color-text-secondary)]">Tipo de espacio *</span>
           <select
             name="spaceType"
             required
-            className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+            className={fieldCls}
           >
             <option value="">— Seleccionar —</option>
             {availableTypeOptions.map((st) => (
@@ -54,39 +57,39 @@ export function CreateSpaceForm({ propertyId, availableTypeOptions }: CreateSpac
             ))}
           </select>
           {fieldError("spaceType") && (
-            <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("spaceType")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("spaceType")}</p>
           )}
         </label>
 
         <label className="block">
-          <span className="text-xs text-[var(--color-neutral-500)]">Nombre *</span>
+          <span className="text-xs text-[var(--color-text-secondary)]">Nombre *</span>
           <input
             name="name"
             type="text"
             required
             placeholder="Ej: Dormitorio principal"
-            className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
+            className={fieldCls}
           />
           {fieldError("name") && (
-            <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("name")}</p>
+            <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("name")}</p>
           )}
         </label>
       </div>
 
       <label className="mt-4 block">
-        <span className="text-xs text-[var(--color-neutral-500)]">Notas para el huésped</span>
+        <span className="text-xs text-[var(--color-text-secondary)]">Notas para el huésped</span>
         <textarea
           name="guestNotes"
           rows={2}
           placeholder="Información útil para el huésped sobre este espacio…"
-          className="mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
+          className={fieldCls}
         />
       </label>
 
       <button
         type="submit"
         disabled={pending}
-        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
       >
         {pending ? "Añadiendo…" : "Añadir espacio"}
       </button>

@@ -34,8 +34,8 @@ const PILLOW_TYPES = [
   { id: "adjustable", label: "Ajustable" },
 ];
 
-const STEPPER_BTN_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40";
-const STEPPER_BTN_SM_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--border)] text-xs text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)] disabled:opacity-40";
+const STEPPER_BTN_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
+const STEPPER_BTN_SM_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
 
 export interface BedData {
   id: string;
@@ -74,7 +74,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
     <div className="space-y-3">
       {/* Existing beds */}
       {beds.length > 0 && (
-        <div className="divide-y divide-[var(--border)]">
+        <div className="divide-y divide-[var(--color-border-default)]">
           {beds.map((bed) => (
             <BedRow key={bed.id} bed={bed} propertyId={propertyId} spaceId={spaceId} />
           ))}
@@ -83,7 +83,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
 
       {totalCapacity > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs text-[var(--color-neutral-500)] font-medium">
+          <p className="text-xs text-[var(--color-text-secondary)] font-medium">
             Capacidad total: {totalCapacity} {totalCapacity === 1 ? "persona" : "personas"}
           </p>
           {maxGuests != null && totalCapacity > maxGuests && (
@@ -109,16 +109,17 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
         )}
 
         {addState?.error && (
-          <p className="mb-2 text-xs text-[var(--color-danger-500)]">{addState.error}</p>
+          <p className="mb-2 text-xs text-[var(--color-status-error-text)]">{addState.error}</p>
         )}
 
         <div className="flex items-center gap-2 flex-wrap">
           <select
             name="bedType"
             required
+            aria-label="Tipo de cama"
             value={selectedType}
             onChange={(e) => { setSelectedType(e.target.value); setCustomBedLabel(""); }}
-            className="flex-1 min-w-0 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+            className="flex-1 min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none"
           >
             <option value="">— Tipo de cama —</option>
             {bedTypeOptions.map((bt) => (
@@ -133,7 +134,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
               value={customBedLabel}
               onChange={(e) => setCustomBedLabel(e.target.value)}
               placeholder="Nombre (ej. Hammock, Tatami…)"
-              className="flex-1 min-w-[140px] rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none placeholder:text-[var(--color-neutral-400)]"
+              className="flex-1 min-w-[140px] rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
             />
           )}
 
@@ -148,7 +149,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
             >
               &minus;
             </button>
-            <span className="w-5 text-center text-sm font-medium text-[var(--foreground)]">
+            <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
               {addQty}
             </span>
             <button
@@ -165,14 +166,14 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           <button
             type="submit"
             disabled={addPending || !selectedType || (selectedType === "bt.other" && !customBedLabel.trim())}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-1.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
           >
             {addPending ? "…" : "Añadir"}
           </button>
         </div>
 
         {addState?.fieldErrors?.bedType && (
-          <p className="mt-1 text-xs text-[var(--color-danger-500)]">
+          <p className="mt-1 text-xs text-[var(--color-status-error-text)]">
             {addState.fieldErrors.bedType[0]}
           </p>
         )}
@@ -274,13 +275,13 @@ function BedRow({
       <div className="flex items-center gap-3">
         {/* Bed label */}
         <div className="flex-1 min-w-0">
-          <span className="text-sm text-[var(--foreground)]">
+          <span className="text-sm text-[var(--color-text-primary)]">
             {isCustom
               ? ((cfg.customLabel as string) || "Cama personalizada")
               : (typeInfo?.label ?? bed.bedType)}
           </span>
           {cap > 0 && (
-            <span className="ml-1.5 text-xs text-[var(--color-neutral-400)]">
+            <span className="ml-1.5 text-xs text-[var(--color-text-muted)]">
               · {cap * quantity} {cap * quantity === 1 ? "pers." : "pers."}
             </span>
           )}
@@ -293,8 +294,8 @@ function BedRow({
           title="Configurar colchón, almohada y ropa de cama"
           className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
             hasConfig
-              ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
-              : "border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--color-neutral-600)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
+              ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
+              : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
@@ -314,7 +315,7 @@ function BedRow({
           >
             &minus;
           </button>
-          <span className="w-5 text-center text-sm font-medium text-[var(--foreground)]">
+          <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
             {quantity}
           </span>
           <button
@@ -339,7 +340,7 @@ function BedRow({
             <button
               type="submit"
               disabled={updatePending}
-              className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-2.5 py-1 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+              className="rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-2.5 py-1 text-xs font-medium text-[var(--color-action-primary-fg)] hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
             >
               {updatePending ? "…" : "Guardar"}
             </button>
@@ -354,7 +355,7 @@ function BedRow({
           <button
             type="submit"
             disabled={deletePending}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-neutral-400)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
             title="Eliminar cama"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
@@ -366,7 +367,7 @@ function BedRow({
 
       {/* Expandable config panel */}
       {expanded && (
-        <form action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--color-neutral-50)] px-4 py-3 space-y-4">
+        <form action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3 space-y-4">
           <input type="hidden" name="bedId" value={bed.id} />
           <input type="hidden" name="spaceId" value={spaceId} />
           <input type="hidden" name="configJson" value={configSerialized} />
@@ -374,24 +375,24 @@ function BedRow({
           {/* Custom bed: name + capacity */}
           {isCustom && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]">Identificación</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Identificación</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="text-xs font-semibold text-[var(--foreground)] mb-1 block">Nombre</span>
+                  <span className="text-xs font-semibold text-[var(--color-text-primary)] mb-1 block">Nombre</span>
                   <input
                     type="text"
                     value={customLabelEdit}
                     onChange={(e) => setCustomLabelEdit(e.target.value)}
                     placeholder="Ej. Futón, Hammock, Tatami…"
-                    className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm focus:border-[var(--color-primary-400)] focus:outline-none placeholder:text-[var(--color-neutral-400)]"
+                    className="block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-semibold text-[var(--foreground)] mb-1 block">Capacidad (personas)</span>
+                  <span className="text-xs font-semibold text-[var(--color-text-primary)] mb-1 block">Capacidad (personas)</span>
                   <div className="flex items-center gap-1 mt-1">
-                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)] disabled:opacity-40" disabled={customCapacity <= 1} aria-label="Reducir capacidad">−</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)] disabled:opacity-40" disabled={customCapacity <= 1} aria-label="Reducir capacidad">−</button>
                     <span className="w-6 text-center text-sm font-medium">{customCapacity}</span>
-                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-sm hover:bg-[var(--color-neutral-100)]" aria-label="Aumentar capacidad">+</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)]" aria-label="Aumentar capacidad">+</button>
                   </div>
                 </label>
               </div>
@@ -400,14 +401,14 @@ function BedRow({
 
           {/* Mattress type */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]">Colchón</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Colchón</p>
             <div className="flex flex-wrap gap-2">
               {MATTRESS_TYPES.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => setMattressType(mattressType === opt.id ? "" : opt.id)}
-                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressType === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressType === opt.id ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
                 >
                   {opt.label}
                 </button>
@@ -420,7 +421,7 @@ function BedRow({
                     key={opt.id}
                     type="button"
                     onClick={() => setMattressFirmness(mattressFirmness === opt.id ? "" : opt.id)}
-                    className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressFirmness === opt.id ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                    className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressFirmness === opt.id ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
                   >
                     {opt.label}
                   </button>
@@ -431,14 +432,14 @@ function BedRow({
 
           {/* Pillows */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]">Almohadas</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Almohadas</p>
             <div className="flex flex-wrap gap-2">
               {PILLOW_TYPES.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => togglePillow(opt.id)}
-                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillowTypes.includes(opt.id) ? "border-[var(--color-primary-400)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--border)] text-[var(--color-neutral-600)] hover:bg-[var(--color-neutral-100)]"}`}
+                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillowTypes.includes(opt.id) ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
                 >
                   {opt.label}
                 </button>
@@ -448,7 +449,7 @@ function BedRow({
 
           {/* Linen */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]">Ropa de cama</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Ropa de cama</p>
             <div className="space-y-1.5">
               {[
                 { key: "linenIncluded", label: "Ropa de cama incluida", val: linenIncluded, set: setLinenIncluded },
@@ -456,8 +457,8 @@ function BedRow({
                 { key: "mattressProtector", label: "Protector de colchón", val: mattressProtector, set: setMattressProtector },
               ].map(({ key, label, val, set }) => (
                 <label key={key} className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary-500)]" checked={val} onChange={(e) => set(e.target.checked)} />
-                  <span className="text-sm text-[var(--foreground)]">{label}</span>
+                  <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={val} onChange={(e) => set(e.target.checked)} />
+                  <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
                 </label>
               ))}
             </div>
@@ -467,15 +468,15 @@ function BedRow({
             <button
               type="submit"
               disabled={configPending || !configDirty}
-              className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+              className="rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-1.5 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
             >
               {configPending ? "Guardando…" : "Guardar configuración"}
             </button>
             {configState?.success && !configDirty && (
-              <span className="text-xs text-[var(--color-success-600)]">Guardado</span>
+              <span className="text-xs text-[var(--color-status-success-text)]">Guardado</span>
             )}
             {configState?.error && (
-              <span className="text-xs text-[var(--color-danger-600)]">{configState.error}</span>
+              <span className="text-xs text-[var(--color-status-error-text)]">{configState.error}</span>
             )}
           </div>
         </form>
