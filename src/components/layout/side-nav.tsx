@@ -14,11 +14,9 @@ import {
   Wrench,
   MapPin,
   BookOpen,
-  Bot,
   MessageSquare,
   Image,
   ClipboardCheck,
-  Send,
   CalendarDays,
   Flag,
   BarChart2,
@@ -43,20 +41,18 @@ const NAV_ICONS: Partial<Record<string, LucideIcon>> = {
   overview:      LayoutDashboard,
   property:      Home,
   access:        KeyRound,
-  contacts:      Phone,
   spaces:        BedDouble,
   systems:       Zap,
   amenities:     Sparkles,
-  policies:      ScrollText,
   "local-guide": MapPin,
   troubleshooting: Wrench,
-  ai:            Bot,
-  knowledge:     BookOpen,
-  publishing:    Send,
-  messaging:     MessageSquare,
-  ops:           ClipboardCheck,
+  policies:      ScrollText,
+  contacts:      Phone,
+  publishing:    BookOpen,
   reservations:  CalendarDays,
+  messaging:     MessageSquare,
   incidents:     Flag,
+  ops:           ClipboardCheck,
   media:         Image,
   analytics:     BarChart2,
   settings:      Settings,
@@ -81,11 +77,15 @@ export function SideNav({
 
   const groups = (
     ["content", "assistant", "publishing", "operations"] as const satisfies readonly NavGroup[]
-  ).map((group) => ({
-    key: group,
-    label: NAV_GROUP_LABELS[group],
-    items: WORKSPACE_NAV.filter((item) => item.group === group),
-  }));
+  )
+    .map((group) => ({
+      key: group,
+      label: NAV_GROUP_LABELS[group],
+      items: WORKSPACE_NAV.filter((item) => item.group === group),
+    }))
+    // The "assistant" group is empty (ai + knowledge live in the right-side
+    // drawer, hideFromNav) — don't render an empty group header.
+    .filter((group) => group.items.length > 0);
 
   function isActive(item: NavItem): boolean {
     return isNavItemActive(item, pathname, propertyId);

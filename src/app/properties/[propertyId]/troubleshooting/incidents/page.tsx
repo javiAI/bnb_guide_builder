@@ -11,7 +11,7 @@ import {
 } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { formatInPropertyTZ } from "@/lib/property-timezone";
-import { TroubleshootingTabs } from "../troubleshooting-tabs";
+import Link from "next/link";
 import { CreateIncidentForm } from "./create-incident-form";
 import { IncidentRowActions } from "./incident-row-actions";
 
@@ -118,11 +118,16 @@ export default async function IncidentsPage({
 
   return (
     <ModuleContainer
-      eyebrow="Propiedad · Averías"
-      title="Ocurrencias"
-      description="Registro de ocurrencias reales. Filtrable por objetivo y estado."
+      eyebrow="Operaciones · Incidencias"
+      title="Ocurrencias vinculadas"
+      description="Ocurrencias registradas contra soluciones, sistemas, espacios o accesos. Filtrables por objetivo y estado."
     >
-      <TroubleshootingTabs propertyId={propertyId} active="incidents" />
+      <Link
+        href={`/properties/${propertyId}/incidents`}
+        className="mb-4 inline-flex items-center text-[13px] font-medium text-[var(--color-text-link)] hover:underline"
+      >
+        ← Todas las incidencias
+      </Link>
 
       <div className="mt-6 flex flex-wrap gap-2 text-xs">
         <form className="flex gap-2">

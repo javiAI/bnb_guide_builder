@@ -16,7 +16,7 @@ export interface NavItem {
  */
 const EXTRA_ITEMS: Record<string, { label: string; group: NavGroup; path: string }> = {
   overview: { label: "Resumen", group: "content", path: "" },
-  publishing: { label: "Publicación", group: "publishing", path: "publishing" },
+  publishing: { label: "Guía del huésped", group: "publishing", path: "publishing" },
   reservations: { label: "Reservas", group: "operations", path: "reservations" },
   incidents: { label: "Incidencias", group: "operations", path: "incidents" },
   analytics: { label: "Analítica", group: "operations", path: "analytics" },
@@ -36,27 +36,28 @@ const EXTRA_ITEMS: Record<string, { label: string; group: NavGroup; path: string
  * `activity` are intentionally absent (they are `hideFromNav`).
  */
 const NAV_ORDER: readonly string[] = [
-  // CONTENIDO
+  // CONTENIDO — describe la estancia (identidad → llegada → features → entorno),
+  // luego la capa de referencia (soluciones, normas, contactos). Espacios va
+  // antes que Sistemas/Equipamiento por dependencia de datos (cobertura por
+  // espacio + amenities por espacio).
   "overview",
   "property",
   "access",
-  "contacts",
   "spaces",
   "systems",
   "amenities",
-  "policies",
   "local-guide",
   "troubleshooting",
-  // ASISTENTE
-  "ai",
-  "knowledge",
-  // PUBLICACIÓN
+  "policies",
+  "contacts",
+  // SALIDAS — lo que llega al huésped
   "publishing",
-  "messaging",
-  // OPERACIONES
-  "ops",
+  // OPERACIONES — día a día (Asistente IA + Conocimiento viven en el panel
+  // derecho, no en el nav; ver section-editors hideFromNav)
   "reservations",
+  "messaging",
   "incidents",
+  "ops",
   "media",
   "analytics",
   "settings",
@@ -124,7 +125,10 @@ export function isNavItemActive(item: NavItem, pathname: string, propertyId: str
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
   content: "Contenido",
+  // "assistant" has no visible nav items (ai + knowledge are hideFromNav — the
+  // assistant lives in the right-side drawer); the group is filtered out when
+  // empty by SideNav. The label is kept for the type + any future use.
   assistant: "Asistente",
-  publishing: "Publicación",
+  publishing: "Salidas",
   operations: "Operaciones",
 };

@@ -119,21 +119,24 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
   },
   {
     key: "troubleshooting",
-    label: "Averías",
-    description: "Guías de resolución para problemas comunes",
+    label: "Soluciones",
+    description: "Guías para resolver problemas comunes (alimentan la guía + IA)",
     group: "content",
     phase: 4,
     taxonomySource: "troubleshootingTaxonomy",
     hasList: true,
     hasDetail: true,
   },
-  // ── Asistente ── (el cerebro IA construido desde el contenido)
+  // ── Asistente ── (companion tool, no en el nav: vive en el panel derecho
+  //    persistente vía AssistantLauncher; Base de conocimiento se pliega ahí)
   {
     key: "ai",
     label: "Asistente IA",
     description: "Conversaciones y retrieval pipeline",
     group: "assistant",
     phase: 5,
+    // Reached from the persistent right-side assistant drawer (⌘J), not the nav.
+    hideFromNav: true,
   },
   {
     key: "knowledge",
@@ -141,6 +144,8 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     description: "Datos estructurados para IA y guía",
     group: "assistant",
     phase: 5,
+    // Folded into the assistant drawer (mostly auto-extracted); route kept.
+    hideFromNav: true,
   },
   // ── Publicación ── (lo que llega al huésped)
   {
@@ -157,7 +162,7 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     key: "messaging",
     label: "Mensajería",
     description: "Templates y automatizaciones",
-    group: "publishing",
+    group: "operations",
     phase: 6,
     taxonomySource: "messagingTouchpoints",
     hasList: true,

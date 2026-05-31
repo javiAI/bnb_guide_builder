@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Eye } from "lucide-react";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPopover } from "./notifications-popover";
+import { AssistantLauncher } from "./assistant-launcher";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { WORKSPACE_NAV, isNavItemActive } from "@/lib/navigation";
 import type { OperatorNotification } from "@/lib/services/operator-notifications.service";
@@ -66,6 +67,7 @@ export function Topbar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          <AssistantLauncher propertyId={propertyId} />
           <NotificationsPopover notifications={notifications} />
           {/* "Vista huésped" lives in the rail; surfaced here only when the rail
               is collapsed (xl+) or absent (below xl) — see src/styles/shell.css. */}

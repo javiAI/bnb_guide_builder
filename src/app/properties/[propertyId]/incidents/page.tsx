@@ -103,6 +103,14 @@ export default async function IncidentsPage({ params, searchParams }: Props) {
       eyebrow="Propiedad · Incidencias"
       title="Incidencias"
       description="Avisos del huésped y registro interno de operaciones."
+      actions={
+        <Link
+          href={`/properties/${propertyId}/troubleshooting/incidents`}
+          className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
+        >
+          Ocurrencias vinculadas →
+        </Link>
+      }
     >
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

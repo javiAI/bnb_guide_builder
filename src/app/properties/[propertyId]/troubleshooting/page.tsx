@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { troubleshootingTaxonomy, findItem } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { CreatePlaybookForm } from "./create-playbook-form";
-import { TroubleshootingTabs } from "./troubleshooting-tabs";
 import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function TroubleshootingPage({
@@ -29,11 +28,10 @@ export default async function TroubleshootingPage({
 
   return (
     <ModuleContainer
-      eyebrow="Propiedad · Averías"
-      title="Averías"
-      description="Guías de resolución para problemas comunes de la propiedad."
+      eyebrow="Propiedad · Soluciones"
+      title="Soluciones"
+      description="Guías para resolver problemas comunes — alimentan la guía del huésped y el asistente IA. Las ocurrencias reales viven en Incidencias (Operaciones)."
     >
-      <TroubleshootingTabs propertyId={propertyId} active="playbooks" />
 
       <div className="mt-8">
         {playbooks.length === 0 ? (

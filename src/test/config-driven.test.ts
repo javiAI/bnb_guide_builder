@@ -146,7 +146,7 @@ describe("Navigation is config-derived", () => {
   it("group labels are in Spanish (value-chain groups)", () => {
     expect(NAV_GROUP_LABELS.content).toBe("Contenido");
     expect(NAV_GROUP_LABELS.assistant).toBe("Asistente");
-    expect(NAV_GROUP_LABELS.publishing).toBe("Publicación");
+    expect(NAV_GROUP_LABELS.publishing).toBe("Salidas");
     expect(NAV_GROUP_LABELS.operations).toBe("Operaciones");
   });
 });

@@ -14,8 +14,6 @@ describe("Navigation", () => {
     expect(keys).toContain("amenities");
     expect(keys).toContain("troubleshooting");
     expect(keys).toContain("local-guide");
-    expect(keys).toContain("knowledge");
-    expect(keys).toContain("ai");
     expect(keys).toContain("messaging");
     expect(keys).toContain("publishing");
     expect(keys).toContain("ops");
@@ -28,13 +26,18 @@ describe("Navigation", () => {
 
   it("excludes hideFromNav sections from the sidebar (route kept, nav hidden)", () => {
     const keys = WORKSPACE_NAV.map((item) => item.key);
-    // guest-guide is reached via "Vista huésped"; activity is folded under Configuración.
+    // guest-guide is reached via "Vista huésped"; activity is folded under
+    // Configuración; ai + knowledge live in the right-side assistant drawer.
     expect(keys).not.toContain("guest-guide");
     expect(keys).not.toContain("activity");
+    expect(keys).not.toContain("ai");
+    expect(keys).not.toContain("knowledge");
     // …but they remain valid section editors with routes.
     const editorKeys = SECTION_EDITORS.map((s) => s.key);
     expect(editorKeys).toContain("guest-guide");
     expect(editorKeys).toContain("activity");
+    expect(editorKeys).toContain("ai");
+    expect(editorKeys).toContain("knowledge");
   });
 
   it("generates correct href for each nav item", () => {
@@ -48,7 +51,7 @@ describe("Navigation", () => {
   it("has all group labels in Spanish (value-chain groups)", () => {
     expect(NAV_GROUP_LABELS.content).toBe("Contenido");
     expect(NAV_GROUP_LABELS.assistant).toBe("Asistente");
-    expect(NAV_GROUP_LABELS.publishing).toBe("Publicación");
+    expect(NAV_GROUP_LABELS.publishing).toBe("Salidas");
     expect(NAV_GROUP_LABELS.operations).toBe("Operaciones");
   });
 
@@ -59,13 +62,14 @@ describe("Navigation", () => {
     });
   });
 
-  it("renders groups in value-chain order: Contenido → Asistente → Publicación → Operaciones", () => {
+  it("renders visible groups in value-chain order: Contenido → Salidas → Operaciones", () => {
     const groupsInOrder: string[] = [];
     for (const item of WORKSPACE_NAV) {
       if (groupsInOrder[groupsInOrder.length - 1] !== item.group) {
         groupsInOrder.push(item.group);
       }
     }
-    expect(groupsInOrder).toEqual(["content", "assistant", "publishing", "operations"]);
+    // "assistant" has no visible nav items (ai + knowledge are in the drawer).
+    expect(groupsInOrder).toEqual(["content", "publishing", "operations"]);
   });
 });
