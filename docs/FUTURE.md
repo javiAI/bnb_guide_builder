@@ -345,9 +345,14 @@ Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets
 
 ### 8.2 Command palette funcional
 
-**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`). El ⌘K es un Radix Dialog + `fuse.js` (sin dependencia nueva; `cmdk` descartado por disciplina de deps) en `src/components/layout/command-palette.tsx`: atajo `⌘K`/`Ctrl+K` global + trigger en el topbar, búsqueda fuzzy sobre `WORKSPACE_NAV`, navegación con flechas/Enter.
+**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`), incluida la **búsqueda integral de contenido**. El ⌘K es Radix Dialog + `fuse.js` (sin dep nueva; `cmdk` descartado) en `src/components/layout/command-palette.tsx`, alimentado por un índice por-propiedad (`src/lib/services/operator-search.service.ts`, lazy vía `getOperatorSearchAction`): secciones + contactos + espacios + sistemas + equipamiento + guía local + soluciones + conceptos de normas; cada resultado deep-linka a su sección.
 
-**Follow-ups** (diferidos): scope v2 — búsqueda de **contenido** (no solo navegación de secciones), **acciones** server-side (publicar, crear espacio), búsqueda cross-property. Trigger: feedback de uso real o ≥3 propiedades activas.
+**Follow-ups** (diferidos):
+
+- **Anclas por-fila**: hoy los resultados aterrizan en la **sección** (`/contacts`), no en la fila concreta. El `id` del entry ya codifica la entidad (`contact:<id>`…) — falta threading `#<id>` en el `href` + que cada página honre el hash (scroll+highlight).
+- **Acciones** server-side en el palette (publicar, crear espacio) + búsqueda **cross-property**.
+- **Asimetría de normas**: el índice toma normas del **catálogo de taxonomía** (discoverability de conceptos no configurados) mientras el resto son entidades **configuradas**. Unificar (indexar normas configuradas, o extender el catálogo a sistemas/amenities) si la asimetría confunde.
+- Lazy-import de `fuse.js` (≈30 KB) como hace el buscador huésped, si el bundle del shell lo justifica.
 
 ### 8.4 Notificaciones operator — fuentes adicionales
 
@@ -360,7 +365,12 @@ Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets
 **Estado**: diferidos de 16F.5.
 
 - **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
-- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio.
+- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio. Igual para los bounds del pre-paint (`208/360/240`, `264/440/300`) vs `shell-prefs.ts` — un test que asegure que el script literal contiene los mismos números.
+
+### 8.6 Asistente IA + Soluciones — profundización (diferidos de 16F.5)
+
+- **Gestión de conocimiento dentro del drawer**: hoy el drawer del Asistente (`assistant-launcher.tsx`) monta `AssistantChat` + un **link** a `/knowledge`. Profundización: plegar la gestión del conocimiento (añadir tips, regenerar, ver huecos) como pestaña dentro del propio drawer en vez de navegar fuera.
+- **Merge completo de ocurrencias en Incidencias**: 16F.5 reubicó el **acceso** a las ocurrencias (fuera de Soluciones, hacia Operaciones·Incidencias enlazado desde `/incidents`), pero quedan dos superficies (`/incidents` triage + `/troubleshooting/incidents` registro con creación vinculada a playbook/target). Merge real = mover el `CreateIncidentForm` vinculado a `/incidents` y retirar la segunda ruta, sin perder el linking a playbook.
 
 ### 8.3 Brand themes para el operator shell
 

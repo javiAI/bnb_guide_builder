@@ -3845,6 +3845,18 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 - **Docs a actualizar al terminar**: `ROADMAP.md` (16F.5 ✅), `LIORA_SURFACE_ROLLOUT_PLAN.md` (shell común completo), `FUTURE.md` (⌘K out + follow-ups notifs), `CLAUDE.md` § "Patrones de UI — Operator shell" (ModuleContainer, colapso, ⌘K, notifs).
 - **Skills**: `/frontend-design`, `/webapp-testing`, `/playwright-cli`, `/liora-ui-kit-parity` (gate), `/simplify` (obligatorio), `/pre-commit-review` (por commit).
 
+**Cierre de scope (post-implementación, rounds 1–5 de iteración con el usuario)**:
+
+La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedback iterativo. Estado final entregado:
+
+- **Decisión 3 (unificación) afinada**: "Publicación" se renombró a **"Guía del huésped"** (modelo mental del host); el grupo de salida se etiqueta "Salidas". Hub `/publishing` pliega la preview; `/guest-guide` conservada.
+- **Decisión 5 (orden Contenido) reordenada (rounds 4)**: Resumen · Propiedad · Acceso · **Espacios · Sistemas · Equipamiento** · Guía local · Soluciones · Normas · Contactos. Espacios **antes** que Sistemas/Equipamiento (dependencia dura per-espacio) — se rechazó críticamente la propuesta inversa. `troubleshooting`→**"Soluciones"**; ocurrencias reubicadas a Operaciones·Incidencias (enlazadas desde `/incidents`).
+- **Decisión 6 (grupos) → 3 visibles**: CONTENIDO · SALIDAS · OPERACIONES. `messaging` movido a Operaciones. El grupo "Asistente" se eliminó del nav: **Asistente IA + Base de conocimiento pasan a un drawer derecho persistente** (`AssistantLauncher`, Radix Dialog, ⌘J) — decisión nueva de round 4 (el asistente es herramienta-compañera, no destino).
+- **Decisión 8 (rail) + colapso afinado (rounds 2–3, 5)**: ambos paneles colapsan/expanden vía un **tirador centrado** (`DrawerTab`, mismo sistema izquierda/derecha) y son **redimensionables** (`PanelResizeHandle`: drag + teclado + doble-clic; ancho en CSS vars inline + pre-paint). Rail colapsado = oculto (0), nav colapsado = icon-rail (56).
+- **⌘K (decisión 4) ampliado a búsqueda integral (round 5)**: índice por-propiedad (`operator-search.service` + `getOperatorSearchAction`) sobre secciones + entidades configuradas + conceptos de normas, con deep-link a cada sección — no solo `WORKSPACE_NAV`.
+- **`/simplify` aplicado** (4 agentes): `useDismiss` hook compartido, drawer del Asistente sobre Radix Dialog (focus trap), resize sin render por-pointermove, dedup de clases muertas, `distinct` en amenities.
+- **Gates**: tsc + vitest (2130) + build + invariants/parity/dark verdes; axe 0 serious|critical (overview/policies, light+dark); `/liora-ui-kit-parity` PASS 8.9 (overview shell). **Pendientes** (follow-ups en `FUTURE.md §8.2/§8.5/§8.6`): anclas de búsqueda por-fila, gestión de conocimiento dentro del drawer, merge completo de ocurrencias en `/incidents`, test de contrato de clases `shell-*`, audit de parity sobre drawer/search.
+
 ---
 
 ### Rama 16G — `chore/remove-legacy-ui`
