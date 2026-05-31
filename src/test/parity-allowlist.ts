@@ -180,23 +180,19 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
-    // 16E content modules — spaces (espacios y camas). Kit reference exists
-    // (`page-espacios` in subpages.html) with rich visual silhouette: section
-    // numbering (01/02/03), per-space hero rows with meta chips, capacity
-    // readouts as dedicated cards, bed config as collapsible structured
-    // panels. **E1 ships baseline-only** (semantic warning/error/success
-    // tokens, a11y, 44 hit-targets on submits, replace Tailwind named-palette
-    // amber/red with semantic status tokens). Inline quantity steppers
-    // (h-6/h-7) are kept since they pass the gate and a redesign to either
-    // visual 44 or `recipe-icon-btn-32` slop requires layout rework that maps
-    // 1:1 to the kit. Inline SVG glyphs (pencil, chevron, gear, trash, alert,
-    // arrow) are kept as-is — Lucide migration on these dialogs is structural
-    // and ships in 16E.5 alongside the silhouette port. Full UI Kit visual
-    // silhouette port is **deferred to required follow-up rama 16E.5**
-    // (`feat/liora-operator-content-visual-parity`) per
-    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
-    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
-    // screenshots) applies to 16E.5, not E1.
+    // 16E content modules — spaces (espacios y camas). Kit reference
+    // `page-espacios` in subpages.html: header (eyebrow → title → desc →
+    // actions → chips → rule), numbered sections (01 principales / 02 añadir /
+    // 03 archivados, conditional), and an auto-fill card grid of per-space
+    // tiles (cover + photo-count badge, name, meta facts, progress + status
+    // pill). **Visual parity port landed on this branch**
+    // (`feat/liora-spaces-visual-parity`): the real `/liora-ui-kit-parity`
+    // audit passes — global 9.0, every criterion ≥ 7.5, 0 blockers (3-col
+    // auto-fill grid matching the kit's minmax(260px); axe 0 serious|critical
+    // in light/dark/expanded-editor). This closes the "deferred visual parity
+    // — required follow-up" item in LIORA_SURFACE_ROLLOUT_PLAN.md for spaces;
+    // the E1 baseline-only framing no longer applies (the ≥8.5 global / ≥7.5
+    // per criterion + screenshots gate is met here).
     id: "operator-spaces",
     routes: ["/properties/[propertyId]/spaces"],
     profile: "operator",
@@ -230,21 +226,19 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
   },
   {
     // 16E content modules — systems (sistemas: clima, agua, electricidad,
-    // conectividad). Kit reference exists (`page-sistemas` in subpages.html)
-    // with rich visual silhouette: per-group banded sections, system rows
-    // as detailed cards with status pills + meta chips, coverage matrix as
-    // a structured table with tonal cells. **E1 ships baseline-only**
-    // (semantic error/success tokens replacing `--color-error-*` and
-    // `--color-success-*` legacy aliases, 44 hit-targets on submits and
-    // delete button, primitives where they fit). The structural list +
-    // detail-form layout is preserved. Glyphs (← back arrow, → call-to-
-    // action arrow, ★ recommended marker) are kept as-is — Lucide migration
-    // is structural and ships in 16E.5 alongside the silhouette port. Full
-    // UI Kit visual silhouette port is **deferred to required follow-up
-    // rama 16E.5** (`feat/liora-operator-content-visual-parity`) per
-    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
-    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
-    // screenshots) applies to 16E.5, not E1.
+    // conectividad). Kit reference: `page-sistemas` in subpages.html.
+    // **16E.5 visual-parity port complete** (`feat/liora-systems-visual-parity`):
+    // list page rebuilt to the sys-card silhouette — PageHeader (eyebrow/title/
+    // chips/status pill) + NON-AI tip card + three completeness NumberedSections
+    // (Configurados / Incompletos / Por configurar) with sys-card rows (IconBadge
+    // + group chip + meta + status pill + ring-pct) and per-row quick-add for
+    // recommended systems; detail page on the generic operator card grammar
+    // (<Card variant="overview"> + <SectionEyebrow>). Lucide icons replace the
+    // ← / → / ★ glyphs (canonical mapping in src/lib/icons/system-icons.ts,
+    // pinned by system-icon-coverage.test.ts). All clickables ≥44 hit area,
+    // selects carry aria-label (select-name baseline violation cleared), axe
+    // serious|critical = 0 light + dark. No schema/functional change. Audit +
+    // 7-criterion scores in LIORA_SURFACE_ROLLOUT_PLAN.md § systems.
     id: "operator-systems",
     routes: [
       "/properties/[propertyId]/systems",
@@ -335,6 +329,52 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/messaging/drafts/**/*.tsx",
     ],
   },
+  {
+    // 16E.5 content module — policies (normas de la casa). Kit reference
+    // exists (`page-normas` in subpages.html): eyebrow row (Propiedad ·
+    // Normas) → title → sub (firme/cálido voice) → rule, then numbered
+    // sections (01 Horarios y silencio, 02 Qué se permite). **Policies had
+    // NO 16E E1 baseline** (it was not in AUDITED_SURFACES nor
+    // EXPECTED_OPERATOR_SCOPE_PATTERNS before this branch), so this PR ships
+    // E2-baseline (semantic tokens + a11y + 44 hit-targets) AND the Liora
+    // silhouette (PageHeader, NumberedSection always-expanded with sub-form
+    // toggles preserved, editorial empty states) in one PR. Acceptance gate
+    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies.
+    // Divergence from the kit, documented in the PR description: the kit
+    // chip-strip ("N definidas / N sin decidir") is OMITTED — the binary
+    // policy data model has no honest mapping to a "decided/undecided" count.
+    // The kit's tri-state rule-card grid is not adopted either — the real
+    // model uses radio/checkbox cards + sub-form toggles (RadioCardGroup,
+    // CheckboxCardGroup, NumberStepper), preserved per zero-functional-change.
+    id: "operator-policies",
+    routes: ["/properties/[propertyId]/policies"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/policies/**/*.tsx",
+    ],
+  },
+  {
+    // 16E.5 content modules — contacts (contactos). Kit reference exists
+    // (`page-contactos` in subpages.html) with a rich visual silhouette:
+    // `pg` page header (eyebrow / title / editorial subtitle / count chips /
+    // "Añadir contacto" CTA), numbered sections per non-empty contact group
+    // (01 Anfitrión / 02 Emergencia / …), and `cn-grid` of `cn-card` rows
+    // (avatar + name + role + phone + action buttons), with an emergency card
+    // variant. This branch ships the **full UI Kit visual silhouette port**
+    // (not a baseline E1): semantic tokens, PageHeader/NumberedSection/
+    // PageHeaderChip/ButtonLink primitives, avatar icon registry
+    // (`src/lib/icons/contact-icons.ts`), quick-action links, and 44 hit-area
+    // targets. Zero functional/server-action/schema changes. Acceptance gate
+    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies. Emergency
+    // contacts are wired inside this module (no dedicated `emergency/` route —
+    // MASTER_PLAN_V2 § rama 16E.5 Decisión F).
+    id: "operator-contacts",
+    routes: ["/properties/[propertyId]/contacts"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/contacts/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -371,6 +411,8 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
   "src/app/properties/[propertyId]/messaging/**/*.tsx",
   "src/components/messaging/**/*.tsx",
+  "src/app/properties/[propertyId]/policies/**/*.tsx",
+  "src/app/properties/[propertyId]/contacts/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
