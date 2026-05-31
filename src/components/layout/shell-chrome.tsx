@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   NAV_COLLAPSED_KEY,
   RAIL_COLLAPSED_KEY,
@@ -76,48 +70,51 @@ function useCollapse(
   return { collapsed, toggle };
 }
 
-export function NavCollapseToggle() {
-  const { collapsed, toggle } = useCollapse(
-    NAV_COLLAPSED_KEY,
-    NAV_COLLAPSED_ATTR,
-    NAV_WIDTH_VAR,
-    NAV_WIDTH_KEY,
-    NAV_WIDTH,
-  );
-  const label = collapsed ? "Expandir menú" : "Colapsar menú";
-  return (
-    <IconButton
-      icon={collapsed ? PanelLeftOpen : PanelLeftClose}
-      iconSize={16}
-      size="sm"
-      tone="neutral"
-      onClick={toggle}
-      aria-label={label}
-      aria-pressed={collapsed}
-      title={label}
-    />
-  );
+interface DrawerTabConfig {
+  /** Which panel edge the tab hugs (and the open/close direction). */
+  side: "left" | "right";
+  collapseKey: string;
+  attr: string;
+  widthVar: string;
+  widthKey: string;
+  bounds: Bounds;
+  labelExpanded: string;
+  labelCollapsed: string;
+  /** Min breakpoint at which the panel (and tab) exist. */
+  breakpoint: "lg" | "xl";
 }
 
 /**
- * Right-rail drawer pull-tab. A small handle pinned to the right edge, centred
- * vertically — the canonical drawer-handle pattern. Lives OUTSIDE the rail (in
- * AppShell) so it survives the rail being fully hidden when collapsed. It slides
- * to the rail's left border when open (`right: var(--rail-width)`) and to the
- * screen edge when collapsed (`--rail-width` is 0). The 44×56 button keeps a
- * full touch target while the visible pill stays small.
+ * Drawer pull-tab — a small handle pinned to a panel's inner edge, centred
+ * vertically (the canonical drawer-handle pattern). Lives OUTSIDE the panel
+ * (rendered in AppShell, `fixed`) so it survives the panel collapsing, and
+ * slides with the panel's width var. The 44×56 button keeps a full touch
+ * target while the visible pill stays small. Shared by both the left nav and
+ * the right rail — same system, mirrored.
  */
-export function RailDrawerTab() {
-  const { collapsed, toggle } = useCollapse(
-    RAIL_COLLAPSED_KEY,
-    RAIL_COLLAPSED_ATTR,
-    RAIL_WIDTH_VAR,
-    RAIL_WIDTH_KEY,
-    RAIL_WIDTH,
-  );
-  const label = collapsed
-    ? "Mostrar panel de publicación"
-    : "Ocultar panel de publicación";
+function DrawerTab({
+  side,
+  collapseKey,
+  attr,
+  widthVar,
+  widthKey,
+  bounds,
+  labelExpanded,
+  labelCollapsed,
+  breakpoint,
+}: DrawerTabConfig) {
+  const { collapsed, toggle } = useCollapse(collapseKey, attr, widthVar, widthKey, bounds);
+  const isRight = side === "right";
+  const label = collapsed ? labelCollapsed : labelExpanded;
+  // Collapsed chevron points the way the panel will open: the right rail opens
+  // leftward (←), the left nav opens rightward (→).
+  const Icon = collapsed
+    ? isRight
+      ? ChevronLeft
+      : ChevronRight
+    : isRight
+      ? ChevronRight
+      : ChevronLeft;
   return (
     <button
       type="button"
@@ -125,17 +122,51 @@ export function RailDrawerTab() {
       aria-label={label}
       aria-expanded={!collapsed}
       title={label}
-      style={{ right: "var(--rail-width)" }}
-      className="group fixed top-1/2 z-40 hidden h-14 w-11 -translate-y-1/2 items-center justify-end transition-[right] duration-200 ease-out focus-visible:outline-none xl:flex"
+      style={isRight ? { right: `var(${widthVar})` } : { left: `var(${widthVar})` }}
+      className={`group fixed top-1/2 z-40 hidden h-14 w-11 -translate-y-1/2 items-center duration-200 ease-out focus-visible:outline-none ${
+        breakpoint === "xl" ? "xl:flex" : "lg:flex"
+      } ${isRight ? "justify-end transition-[right]" : "justify-start transition-[left]"}`}
     >
-      <span className="flex h-12 w-5 items-center justify-center rounded-l-[8px] border border-r-0 border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-muted)] shadow-[var(--elevation-popover)] transition-colors group-hover:bg-[var(--color-interactive-hover)] group-hover:text-[var(--color-text-primary)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-border-focus)]">
-        {collapsed ? (
-          <ChevronLeft size={16} aria-hidden="true" />
-        ) : (
-          <ChevronRight size={16} aria-hidden="true" />
-        )}
+      <span
+        className={`flex h-12 w-5 items-center justify-center border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-muted)] shadow-[var(--elevation-popover)] transition-colors group-hover:bg-[var(--color-interactive-hover)] group-hover:text-[var(--color-text-primary)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-border-focus)] ${
+          isRight ? "rounded-l-[8px] border-r-0" : "rounded-r-[8px] border-l-0"
+        }`}
+      >
+        <Icon size={16} aria-hidden="true" />
       </span>
     </button>
+  );
+}
+
+export function NavDrawerTab() {
+  return (
+    <DrawerTab
+      side="left"
+      collapseKey={NAV_COLLAPSED_KEY}
+      attr={NAV_COLLAPSED_ATTR}
+      widthVar={NAV_WIDTH_VAR}
+      widthKey={NAV_WIDTH_KEY}
+      bounds={NAV_WIDTH}
+      labelExpanded="Colapsar menú"
+      labelCollapsed="Expandir menú"
+      breakpoint="lg"
+    />
+  );
+}
+
+export function RailDrawerTab() {
+  return (
+    <DrawerTab
+      side="right"
+      collapseKey={RAIL_COLLAPSED_KEY}
+      attr={RAIL_COLLAPSED_ATTR}
+      widthVar={RAIL_WIDTH_VAR}
+      widthKey={RAIL_WIDTH_KEY}
+      bounds={RAIL_WIDTH}
+      labelExpanded="Ocultar panel de publicación"
+      labelCollapsed="Mostrar panel de publicación"
+      breakpoint="xl"
+    />
   );
 }
 

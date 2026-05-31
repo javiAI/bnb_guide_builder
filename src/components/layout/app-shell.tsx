@@ -2,7 +2,7 @@ import { SideNav } from "./side-nav";
 import { Topbar } from "./topbar";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
 import { PublishingRail } from "./publishing-rail";
-import { RailDrawerTab } from "./shell-chrome";
+import { NavDrawerTab, RailDrawerTab } from "./shell-chrome";
 import { getDerived } from "@/lib/services/property-derived.service";
 import {
   getOperatorNotifications,
@@ -89,6 +89,7 @@ export async function AppShell({
           />
         </div>
       </div>
+      <NavDrawerTab />
       <RailDrawerTab />
     </div>
   );
