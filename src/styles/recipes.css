@@ -79,6 +79,30 @@
 }
 
 /*
+ * Info-tooltip help trigger — 16 visual + 28px ::before slop (-14px per side)
+ * = 44 hit area on fine pointers; the visual circle stays 16×16 with no layout
+ * shift. On coarse pointers (touch primary) the trigger grows to 44 visual and
+ * the slop collapses to 0 — the same coarse-grow pattern as recipe-icon-btn-32,
+ * so the fine-pointer slop never applies on touch where it could collide with a
+ * neighbour. 16px is the smallest icon visual we support, so -14px is the
+ * largest per-side slop the touch-target gate validates. Consumed by the shared
+ * primitive src/components/ui/info-tooltip.tsx (isolated help icon — never in a
+ * dense row of adjacent controls, so the fine-pointer slop cannot collide).
+ */
+.recipe-icon-btn-16 {
+  position: relative;
+}
+.recipe-icon-btn-16::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+@media (pointer: coarse) {
+  .recipe-icon-btn-16 { min-height: 44px; min-width: 44px; }
+  .recipe-icon-btn-16::before { inset: 0; }
+}
+
+/*
  * HoverCard primitive (src/components/ui/hover-card.tsx) — open/close animations
  * driven by Radix `data-state="open|closed"` attribute. Reduced-motion is already
  * handled by the existing rule at the bottom of this file (it short-circuits all

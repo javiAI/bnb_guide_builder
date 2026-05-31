@@ -14,7 +14,7 @@ Migration order and status for each product surface adopting the Liora foundatio
 | **Guest guide** | `/g/:slug` | **16C** | **✅ migrated** |
 | Operator shell (sidebar, topbar) | `/properties/**` | 16D | ✅ migrated |
 | Operator modules (wizard, editor) — **baseline** | `/properties/**` | 16E | 🟡 in progress |
-| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting}` | 16E.5 | ⬜ pending (required follow-up) |
+| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting,policies}` | 16E.5 | 🟡 in progress (access ✅, policies ✅; rest pending) |
 | Messaging + assistant | `/properties/*/messaging`, `/g/:slug` chat | 16F | ⬜ pending |
 | Legacy alias removal | global | 16G | ⬜ pending |
 
@@ -94,6 +94,7 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 - `src/app/properties/[propertyId]/amenities/` — kit reference `page-equipamiento` exists; visual silhouette deferred to 16E.5.
 - `src/app/properties/[propertyId]/systems/` — kit reference `page-sistemas` exists; visual silhouette deferred to 16E.5.
 - `src/app/properties/[propertyId]/troubleshooting/` — kit reference `page-averias` exists; visual silhouette deferred to 16E.5.
+- `src/app/properties/[propertyId]/policies/` — kit reference `page-normas` exists; **no 16E E1 baseline** (was absent from AUDITED_SURFACES + EXPECTED_OPERATOR_SCOPE_PATTERNS), so the dedicated branch `feat/liora-policies-visual-parity` ships E2-baseline + silhouette together. ✅ ported.
 
 #### Deferred visual parity — required follow-up
 
@@ -129,7 +130,31 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 | `systems/` | ✅ baseline migrated | ✅ parity ported (global 9.0, PASS) | `feat/liora-systems-visual-parity` |
 | `troubleshooting/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
 | `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
+| `policies/` | ⬜ no E1 baseline (shipped here) | ✅ parity ported (global 8.7, PASS) | `feat/liora-policies-visual-parity` (dedicated branch) |
 | wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
+
+##### Parity audit verdict — `policies/` (`feat/liora-policies-visual-parity`)
+
+**Kit reference**: `ui_kits/operator/subpages.html` § `page-normas`. **Verdict: PASS** — global **8.7**, every criterion ≥ 7.5, zero blockers. Audited with the real `/liora-ui-kit-parity` skill against rendered screenshots (authenticated session), light + dark at 1440/1024/375 + expanded sub-form state; axe-core run across all conditional branches in both themes = **0 serious/critical**. Screenshots captured to `/tmp/liora-policies-parity/` for the session (kit-normas + real-{1440,1024,375}-{light,dark} + real-1440-light-expanded; not committed).
+
+| Criterion | Score | Note |
+|-----------|-------|------|
+| Layout silhouette | 9.0 | Shell + single-column numbered sections match the kit archetype at all three viewports. |
+| Visual hierarchy | 8.5 | eyebrow → title → sub → rule → 01–04 sections match; each rule now led by an accent icon badge like the kit's `.rn-ic`; chip-strip omitted (see divergence). |
+| Density / spacing | 8.5 | Section gutters (mb-8) + field rhythm (space-y-6) + icon-badge gap align with the kit. |
+| Component fidelity | 8.0 | Per-rule **icon-led circular badge** now matches the kit's `.rn-ic`/`.rule-ic` anatomy via the canonical `<IconBadge tone="primary" size="md">` (was a flat 15px inline glyph). Controls diverge (radio/checkbox/toggle editors vs the kit's tri-state display cards — see divergence). |
+| Token fidelity | 9.5 | 100% semantic tokens; 0 hex/rgb/oklch; 0 primitive leaks. Switch knob uses `bg-white` (accepted switch convention, not a token leak). |
+| Interaction / state | 8.5 | hover/active/selected (olive-subtle)/disabled/loading/empty/error all present with correct tokens; inline link permanently underlined (a11y + affordance). |
+| Dark mode | 9.0 | Coherent in dark, no FOUC, axe-clean; IconBadge accent-subtle renders cleanly; every semantic token has a `[data-theme="dark"]` binding. |
+
+**Documented divergences from the kit** (approved Fase -1 decisions — not drift):
+
+1. **Chip-strip omitted** (kit shows "N definidas / N sin decidir"). The binary policy data model has no honest mapping to a decided/undecided count. Header = eyebrow + title + description + rule, no chips.
+2. **Tri-state rule cards not adopted.** The kit's `page-normas` is a read-mostly *display* mock with yes/no/maybe per rule; the real model is an *editor* with multi-option radios, toggles, sub-forms (fees, time ranges, instructions). Per zero-functional-change, the existing controls (`RadioCardGroup`, `CheckboxCardGroup`, `NumberStepper`, switch) are preserved inside always-expanded `NumberedSection`s (Option B). This is the residual ceiling on the component-fidelity score (8.0) — the divergence is data-model-driven and documented, not unaddressed drift. The icon-led anatomy that the kit *does* share with an editor (a tinted Lucide badge per rule) is now matched via `<IconBadge>`.
+
+**Accessibility hardening shipped on this branch** (surfaced by the expanded-state axe run, not present in the prior self-audit): native `<select>`/`<input>`/`<textarea>` controls (quiet-hours times, smoking area, event approval, pet fee, pet/service notes, cleaning + extra-guest amounts) were wrapped in `<label>` to give each an accessible name (fixed `label` + `select-name` criticals); the "Máximo de huéspedes" hint moved `--color-text-subtle` (2.81:1, fails AA) → `--color-text-muted` (passes); the "Editar en Propiedad" inline link is now permanently underlined (fixes `link-in-text-block`). Result: axe-core 0 serious/critical in light **and** dark across every conditional branch.
+
+**Shared-primitive fix** (✅ resolved here, post-review): `InfoTooltip` triggers rendered at 16×16 (`<span role="button">`). Raised by Copilot on PR #110; fixed in the shared primitive (covers `property/` + `spaces/` + wizard + `policies/` atomically) via the new `recipe-icon-btn-16` slop recipe → 44 hit area with the 16×16 visual preserved, registered in the touch-target governance lists (`hasDocumentedSlop` inset cap widened −12→−14). The prior deferral note in `docs/FUTURE.md` is now marked resolved. Separate, still-deferred concern: the static walker only inspects `<button>/<a>/<Link>`, not `role="button"` spans (CLAUDE.md § static-analysis gate honestidad).
 
 #### Wizard E2E smoke gate — opt-out documented
 

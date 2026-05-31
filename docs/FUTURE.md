@@ -147,6 +147,12 @@ Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + va
 
 Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 16A junto con el paquete de diseño.
 
+### Follow-up: `InfoTooltip` trigger target-size — ✅ RESUELTO en `feat/liora-policies-visual-parity` (16E.5)
+
+**Estado**: resuelto (no diferido). Originalmente registrado como cleanup de primitivo compartido transversal; cerrado en la misma rama tras review de PR #110 (Copilot).
+
+`src/components/ui/info-tooltip.tsx` renderizaba su trigger `(i)` como `<span role="button">` a 16×16 (`h-4 w-4`), por debajo del floor de 44 hit-area. **Fix aplicado en el primitivo compartido** (cubre `property/`, `spaces/`, wizard `step-3/4`, `policies/` atómicamente): nuevo `recipe-icon-btn-16` en `src/styles/recipes.css` (16 visual + 28px slop `::before`, −14px/lado = 44 hit en fine pointers, visual 16×16 intacto; coarse-grow a 44), registrado en las 3 listas de governance de `component-invariants.test.ts` con el cap del regex `hasDocumentedSlop` ampliado de −12 a −14. Pendiente aparte (no en esta rama): ampliar el walker estático para inspeccionar spans `role="button"` (hoy solo cubre `<button>/<a>/<Link>` — limitación documentada en CLAUDE.md § static-analysis gate honestidad).
+
 ---
 
 ## 12. Image resize/optimization on upload
