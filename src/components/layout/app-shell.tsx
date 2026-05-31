@@ -3,6 +3,10 @@ import { Topbar } from "./topbar";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
 import { PublishingRail } from "./publishing-rail";
 import { getDerived } from "@/lib/services/property-derived.service";
+import {
+  getOperatorNotifications,
+  type OperatorNotification,
+} from "@/lib/services/operator-notifications.service";
 import type { SwitchableProperty } from "./property-switcher";
 
 interface AppShellProps {
@@ -44,11 +48,19 @@ export async function AppShell({
     sectionScores = undefined;
   }
 
+  let notifications: OperatorNotification[] = [];
+  try {
+    notifications = await getOperatorNotifications(propertyId);
+  } catch {
+    notifications = [];
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-background-page)]">
       <Topbar
         propertyId={propertyId}
         propertyNickname={propertyNickname}
+        notifications={notifications}
         mobileNavSlot={
           <MobileNavDrawer
             propertyId={propertyId}

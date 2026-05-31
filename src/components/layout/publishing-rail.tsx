@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ExternalLink } from "lucide-react";
+import { Check, ExternalLink, Eye } from "lucide-react";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import { CopyLinkButton } from "./copy-link-button";
 import { QrModalButton } from "./qr-modal-button";
@@ -130,6 +130,14 @@ export async function PublishingRail({
           );
         })}
       </ul>
+
+      <Link
+        href={`/properties/${propertyId}/guest-guide`}
+        className="mb-2 flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-2 text-[13px] font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
+      >
+        <Eye size={15} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+        Vista huésped
+      </Link>
 
       <div className="my-5 h-px bg-[var(--color-border-subtle)]" />
 

@@ -814,21 +814,23 @@ describe("Component invariants · effect cleanup", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. Command-bar slot is non-interactive (placeholder until 16E)
+// 9. Command palette is interactive (16F.5 activated the ⌘K — was a slot in 16D)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Component invariants · command-bar slot non-interactive (operator)", () => {
-  // Scope: operator only — guest surfaces don't have a command-bar slot.
-  it("command-bar-slot.tsx is aria-hidden + has no interactive handlers", () => {
-    const file = "src/components/layout/command-bar-slot.tsx";
+describe("Component invariants · command palette interactive (operator, 16F.5)", () => {
+  // Scope: operator only — guest surfaces don't have a command palette. 16F.5
+  // replaced the non-interactive command-bar slot with a real Radix Dialog +
+  // fuse.js palette opened with ⌘K (FUTURE §8.2 item retired).
+  it("command-palette.tsx is the interactive ⌘K palette (Radix Dialog + ⌘K)", () => {
+    const file = "src/components/layout/command-palette.tsx";
     if (!operatorAuditedFiles.includes(file)) {
       // Defensive: only run when the file is in scope under operator/shared
       // profile. Today it is via `src/components/layout/**/*.tsx`.
       return;
     }
     const content = readSrc(file);
-    expect(content).toMatch(/aria-hidden=("true"|\{true\})/);
-    expect(content).not.toMatch(/\bon(Click|Change|Input|KeyDown|KeyUp|Submit)=/);
+    expect(content).toMatch(/@radix-ui\/react-dialog/);
+    expect(content).toMatch(/metaKey/);
   });
 });
 

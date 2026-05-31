@@ -40,4 +40,11 @@ html[data-rail-collapsed="true"] .shell-rail {
   html[data-rail-collapsed="true"] .shell-content-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* "Vista huésped" lives in the rail; surface it in the topbar only when the
+     rail is collapsed at xl+. Below xl the rail is absent and the topbar button
+     shows via its own responsive utilities. */
+  html:not([data-rail-collapsed="true"]) .shell-guest-view-btn {
+    display: none;
+  }
 }
