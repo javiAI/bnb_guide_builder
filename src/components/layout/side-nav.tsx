@@ -11,15 +11,13 @@ import {
   BedDouble,
   Zap,
   Sparkles,
-  AlertCircle,
+  Wrench,
   MapPin,
   BookOpen,
-  BookMarked,
   Bot,
   MessageSquare,
   Image,
-  Settings2,
-  Activity,
+  ClipboardCheck,
   Send,
   CalendarDays,
   Flag,
@@ -27,7 +25,13 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import { WORKSPACE_NAV, NAV_GROUP_LABELS, isNavItemActive, type NavItem } from "@/lib/navigation";
+import {
+  WORKSPACE_NAV,
+  NAV_GROUP_LABELS,
+  isNavItemActive,
+  type NavItem,
+  type NavGroup,
+} from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
 import {
   PropertySwitcher,
@@ -39,22 +43,20 @@ const NAV_ICONS: Partial<Record<string, LucideIcon>> = {
   property:      Home,
   access:        KeyRound,
   contacts:      Phone,
-  policies:      ScrollText,
   spaces:        BedDouble,
   systems:       Zap,
   amenities:     Sparkles,
-  troubleshooting: AlertCircle,
+  policies:      ScrollText,
   "local-guide": MapPin,
-  knowledge:     BookOpen,
-  "guest-guide": BookMarked,
+  troubleshooting: Wrench,
   ai:            Bot,
-  messaging:     MessageSquare,
-  media:         Image,
-  ops:           Settings2,
-  activity:      Activity,
+  knowledge:     BookOpen,
   publishing:    Send,
+  messaging:     MessageSquare,
+  ops:           ClipboardCheck,
   reservations:  CalendarDays,
   incidents:     Flag,
+  media:         Image,
   analytics:     BarChart2,
   settings:      Settings,
 };
@@ -76,7 +78,9 @@ export function SideNav({
 }: SideNavProps) {
   const pathname = usePathname();
 
-  const groups = (["content", "outputs", "operations"] as const).map((group) => ({
+  const groups = (
+    ["content", "assistant", "publishing", "operations"] as const satisfies readonly NavGroup[]
+  ).map((group) => ({
     key: group,
     label: NAV_GROUP_LABELS[group],
     items: WORKSPACE_NAV.filter((item) => item.group === group),

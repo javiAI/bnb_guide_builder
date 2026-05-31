@@ -98,7 +98,7 @@ describe("Section editor registry", () => {
   });
 
   it("each section belongs to a valid group", () => {
-    const validGroups = ["content", "outputs", "operations"];
+    const validGroups = ["content", "assistant", "publishing", "operations"];
     for (const section of SECTION_EDITORS) {
       expect(validGroups).toContain(section.group);
     }
@@ -123,24 +123,30 @@ describe("Section editor registry", () => {
 // ── Navigation derived from section registry ──
 
 describe("Navigation is config-derived", () => {
-  it("all section editors appear in WORKSPACE_NAV", () => {
+  it("all non-hidden section editors appear in WORKSPACE_NAV", () => {
     for (const section of SECTION_EDITORS) {
       const navItem = WORKSPACE_NAV.find((n) => n.key === section.key);
-      expect(navItem).toBeDefined();
-      expect(navItem!.label).toBe(section.label);
+      if (section.hideFromNav) {
+        expect(navItem).toBeUndefined();
+      } else {
+        expect(navItem).toBeDefined();
+        expect(navItem!.label).toBe(section.label);
+      }
     }
   });
 
-  it("nav groups match section groups", () => {
+  it("nav groups match section groups for visible sections", () => {
     for (const section of SECTION_EDITORS) {
+      if (section.hideFromNav) continue;
       const navItem = WORKSPACE_NAV.find((n) => n.key === section.key);
       expect(navItem!.group).toBe(section.group);
     }
   });
 
-  it("group labels are in Spanish", () => {
+  it("group labels are in Spanish (value-chain groups)", () => {
     expect(NAV_GROUP_LABELS.content).toBe("Contenido");
-    expect(NAV_GROUP_LABELS.outputs).toBe("Salidas");
+    expect(NAV_GROUP_LABELS.assistant).toBe("Asistente");
+    expect(NAV_GROUP_LABELS.publishing).toBe("Publicación");
     expect(NAV_GROUP_LABELS.operations).toBe("Operaciones");
   });
 });
@@ -267,11 +273,11 @@ describe("Media requirements registry", () => {
 // ── Extensibility contract ──
 
 describe("Config-driven extensibility", () => {
-  it("adding a section to SECTION_EDITORS auto-creates nav item", () => {
-    // Verify the contract: every SECTION_EDITORS entry maps to a nav item
+  it("adding a section to SECTION_EDITORS auto-creates nav item (unless hideFromNav)", () => {
+    // Contract: every non-hidden SECTION_EDITORS entry maps to a nav item.
     const navKeys = new Set(WORKSPACE_NAV.map((n) => n.key));
     for (const section of SECTION_EDITORS) {
-      expect(navKeys.has(section.key)).toBe(true);
+      expect(navKeys.has(section.key)).toBe(!section.hideFromNav);
     }
   });
 
