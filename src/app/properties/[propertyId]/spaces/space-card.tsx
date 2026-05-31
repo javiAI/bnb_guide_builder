@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { Camera, Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -13,12 +14,20 @@ import { bedTypes } from "@/lib/taxonomies/bed-types";
 import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
+import { getSpaceIcon } from "@/lib/icons/space-icons";
 import { InlineSaveStatus } from "@/components/ui/inline-save-status";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
+import { cn } from "@/lib/cn";
 import { BedManager, type BedData } from "./bed-manager";
 import { EntityGallery } from "@/components/media/entity-gallery";
-
+import {
+  computeProgressDot,
+  PROGRESS_PERCENT,
+  type FeatureState,
+  type FeatureValue,
+  type SpaceProgressLevel,
+} from "./space-progress";
 
 export type SpaceStatus = "active" | "archived";
 
@@ -44,43 +53,49 @@ interface SpaceCardProps {
   space: SpaceData;
   beds: BedData[];
   spaceSystems?: SpaceSystem[];
+  /** Signed URL of the first space image; null → gradient placeholder. */
+  coverThumbUrl?: string | null;
+  /** Total images assigned to the space (cover badge); 0 → no badge. */
+  photoCount?: number;
 }
-
-type FeatureValue = string | number | boolean | string[] | null;
-type FeatureState = Record<string, FeatureValue>;
 
 const inputCls =
-  "block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
+  "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none";
 
-function computeProgressDot(
-  features: FeatureState,
-  featureGroups: import("@/lib/types/taxonomy").SpaceFeatureGroup[],
-  hasBeds: boolean,
-  bedCount: number,
-): "none" | "partial" | "complete" {
-  const filledFeatures = Object.values(features).filter(
-    (v) => v !== null && v !== false && v !== "" && !(Array.isArray(v) && v.length === 0),
-  ).length;
+const PROGRESS_META: Record<
+  SpaceProgressLevel,
+  { label: string; bar: string; pill: string; icon: LucideIcon | null }
+> = {
+  complete: {
+    label: "Ficha completa",
+    bar: "bg-[var(--color-status-success-solid)]",
+    pill: "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-text)]",
+    icon: Check,
+  },
+  partial: {
+    label: "En progreso",
+    bar: "bg-[var(--color-status-warning-solid)]",
+    pill: "bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)]",
+    icon: Pencil,
+  },
+  none: {
+    label: "Sin datos",
+    bar: "bg-[var(--color-border-strong)]",
+    pill: "bg-[var(--color-status-neutral-bg)] text-[var(--color-status-neutral-text)]",
+    icon: null,
+  },
+};
 
-  const hasAny = filledFeatures > 0 || (hasBeds && bedCount > 0);
-  if (!hasAny) return "none";
-
-  // "complete" = at least one field filled per non-dimensions group
-  const contentGroups = featureGroups.filter((g) => g.id !== "sfg.dimensions");
-  if (contentGroups.length === 0) return hasBeds && bedCount > 0 ? "complete" : "partial";
-
-  const groupsWithData = contentGroups.filter((g) =>
-    g.fields.some((f) => {
-      const v = features[f.id];
-      return v !== null && v !== undefined && v !== false && v !== "" && !(Array.isArray(v) && v.length === 0);
-    })
-  );
-  if (groupsWithData.length >= contentGroups.length) return "complete";
-  return "partial";
-}
-
-export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [] }: SpaceCardProps) {
-  // ── Expand / collapse ──
+export function SpaceCard({
+  propertyId,
+  maxGuests,
+  space,
+  beds,
+  spaceSystems = [],
+  coverThumbUrl = null,
+  photoCount = 0,
+}: SpaceCardProps) {
+  // ── Expand / collapse (editor body) ──
   const bodyRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | "auto">(0);
   const [bodyVisible, setBodyVisible] = useState(false);
@@ -149,8 +164,12 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
   const featureGroups = useMemo(() => getSpaceFeatureGroups(space.spaceType), [space.spaceType]);
 
   // ── Progress ──
+  // Recomputed live from the editable `features` state (not threaded from the
+  // server) so the foot bar/pill update as the operator toggles fields in the
+  // inline editor. The server computes the same signal from persisted data only
+  // for the page-level completion aggregate — the two sources are intentional.
   const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
-  const progressDot = useMemo(
+  const progressLevel = useMemo(
     () => computeProgressDot(features, featureGroups, hasBeds, beds.length),
     [features, featureGroups, hasBeds, beds.length],
   );
@@ -191,6 +210,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
   // ── Derived ──
   const typeInfo = findItem(spaceTypes, space.spaceType);
+  const TypeIcon = getSpaceIcon(space.spaceType);
   const adultCapacity = beds.reduce((sum, bed) => {
     if (bed.bedType === "bt.other") {
       const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
@@ -211,17 +231,61 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
     capacityLabel = parts.join(" ");
   }
 
+  const areaSqm = features["sf.area_sqm"];
+  const areaLabel = typeof areaSqm === "number" && areaSqm > 0 ? `${areaSqm} m²` : null;
+
+  const progress = PROGRESS_META[progressLevel];
+  const StatusIcon = progress.icon;
+  const percent = PROGRESS_PERCENT[progressLevel];
+
   return (
-    <div className={`rounded-[var(--radius-lg)] border-2 transition-colors duration-200 ${isArchived ? "border-dashed border-[var(--border)] bg-[var(--color-neutral-50)] opacity-70" : "border-[var(--border)] bg-[var(--surface-elevated)]"}`}>
-      {/* ── Card header (expand/collapse via clicking label or chevron button, or keyboard) ── */}
-      {editingName ? (
-        <div className="flex items-center gap-3 px-4 py-3">
-          <form action={renameAction} className="flex-1 flex items-center gap-2">
+    <article
+      aria-label={nameValue}
+      className={cn(
+        "overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-200",
+        expanded && "col-span-full",
+        isArchived
+          ? "border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] opacity-80"
+          : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-strong)]",
+      )}
+    >
+      {/* ── Cover ── */}
+      <div className="relative h-32 w-full overflow-hidden bg-[var(--color-background-muted)]">
+        {coverThumbUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverThumbUrl}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center bg-[linear-gradient(135deg,var(--color-action-primary-subtle),var(--color-background-muted))]">
+            <TypeIcon
+              size={30}
+              aria-hidden="true"
+              className="text-[var(--color-action-primary)] opacity-70"
+            />
+          </div>
+        )}
+        {photoCount > 0 && (
+          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)]">
+            <Camera size={11} aria-hidden="true" />
+            {photoCount}
+          </span>
+        )}
+      </div>
+
+      {/* ── Body ── */}
+      <div className="p-4">
+        {editingName ? (
+          <form action={renameAction} className="flex items-center gap-2">
             <input type="hidden" name="spaceId" value={space.id} />
             <input
               ref={nameInputRef}
               type="text"
               name="name"
+              aria-label="Nombre del espacio"
               value={nameValue}
               onChange={(e) => setNameValue(e.target.value)}
               onKeyDown={(e) => {
@@ -230,102 +294,118 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   setEditingName(false);
                 }
               }}
-              className="rounded-[var(--radius-md)] border border-[var(--color-primary-400)] bg-[var(--surface)] px-2 py-1 text-sm font-semibold text-[var(--foreground)] focus:outline-none w-full max-w-xs"
+              className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border-focus)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none"
               autoComplete="off"
             />
             <button
               type="submit"
               disabled={renamePending || !nameValue.trim()}
-              className="min-h-[44px] rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50 inline-flex items-center justify-center"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-3 text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
               aria-label="Guardar nuevo nombre del espacio"
             >
-              {renamePending ? "…" : "✓"}
+              <Check size={16} aria-hidden="true" />
             </button>
             <button
               type="button"
-              onClick={() => { setNameValue(space.name); setEditingName(false); }}
-              className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-2 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
-              aria-label="Cancelar renombración"
+              onClick={() => {
+                setNameValue(space.name);
+                setEditingName(false);
+              }}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)]"
+              aria-label="Cancelar renombrado"
             >
-              ✕
+              <X size={16} aria-hidden="true" />
             </button>
           </form>
-        </div>
-      ) : (
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setExpanded((prev) => !prev)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setExpanded((prev) => !prev);
-              }
-            }}
-            className="flex-1 min-w-0 min-h-[44px] text-left hover:bg-[var(--color-neutral-50)] rounded-[var(--radius-md)] transition-colors px-1 py-1 flex items-center"
-            aria-expanded={expanded}
-          >
-            <span className="text-sm font-semibold text-[var(--foreground)] truncate block">
-              {nameValue}
-            </span>
-            <span className="mt-0.5 text-xs text-[var(--color-neutral-500)] block">
-              {typeInfo?.label ?? space.spaceType}
-              {capacityLabel && ` · ${capacityLabel}`}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditingName(true)}
-            className="flex-shrink-0 rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
-            aria-label="Renombrar espacio"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-              <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
-            </svg>
-          </button>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {progressDot !== "none" && (
-              <Tooltip text={progressDot === "complete" ? "Espacio completo" : "Información parcial"}>
-                <span
-                  role="img"
-                  aria-label={progressDot === "complete" ? "Espacio completo" : "Información parcial"}
-                  className={`h-2 w-2 rounded-full ${
-                    progressDot === "complete"
-                      ? "bg-[var(--color-status-success-icon)]"
-                      : "bg-[var(--color-status-warning-icon)]"
-                  }`}
-                />
-              </Tooltip>
-            )}
+        ) : (
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="rounded-[var(--radius-md)] recipe-icon-btn-32 text-[var(--color-neutral-400)] hover:text-[var(--color-neutral-600)] transition-colors"
+              className="-mx-1 flex min-h-[44px] min-w-0 flex-1 items-center rounded-[var(--radius-md)] px-1 text-left transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+              aria-expanded={expanded}
+            >
+              <span
+                className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]"
+              >
+                {nameValue}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingName(true)}
+              className="recipe-icon-btn-32 grid h-8 w-8 flex-shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-secondary)]"
+              aria-label="Renombrar espacio"
+            >
+              <Pencil size={15} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setExpanded((prev) => !prev)}
+              className="recipe-icon-btn-32 grid h-8 w-8 flex-shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-secondary)]"
               aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
               aria-expanded={expanded}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-              >
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-              </svg>
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className={cn("transition-transform duration-200", expanded && "rotate-180")}
+              />
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── Collapsible body ── */}
+        {/* ── Facts ── */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
+          <span className="inline-flex items-center gap-1">
+            <TypeIcon size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+            {typeInfo?.label ?? space.spaceType}
+          </span>
+          {areaLabel && (
+            <span className="inline-flex items-center gap-1">
+              <Move size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+              {areaLabel}
+            </span>
+          )}
+          {capacityLabel && (
+            <span className="inline-flex items-center gap-1">
+              <UsersRound size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+              {capacityLabel}
+            </span>
+          )}
+        </div>
+
+        {/* ── Foot: progress + status pill ── */}
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="flex min-w-0 flex-1 items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
+            <span className="h-[3px] max-w-[110px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
+              <span
+                className={cn("block h-full rounded-full", progress.bar)}
+                style={{ width: `${percent}%` }}
+              />
+            </span>
+            {percent}%
+          </span>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+              progress.pill,
+            )}
+          >
+            {StatusIcon && <StatusIcon size={11} aria-hidden="true" />}
+            {progress.label}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Collapsible editor body ── */}
       <div
         ref={bodyRef}
         style={{ maxHeight: height === "auto" ? "none" : `${height}px` }}
         className="overflow-hidden transition-all duration-300 ease-in-out"
       >
         {bodyVisible && (
-          <div className="border-t border-[var(--border)] px-4 pb-6 pt-4 space-y-1">
-
+          <div className="space-y-1 border-t border-[var(--color-border-default)] px-4 pb-6 pt-4">
             {/* Dimensions */}
             <SpaceSection label="Dimensiones">
               {(() => {
@@ -398,19 +478,16 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                 <button
                   type="button"
                   onClick={() => setShowInternalNotes((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-neutral-500)] hover:text-[var(--foreground)] transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className={`h-3.5 w-3.5 transition-transform duration-150 ${showInternalNotes ? "rotate-90" : ""}`}
-                  >
-                    <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                  </svg>
+                  <ChevronDown
+                    size={14}
+                    aria-hidden="true"
+                    className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
+                  />
                   Notas internas
                   {space.internalNotes && (
-                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-neutral-400)]" />
+                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
                   )}
                 </button>
                 {showInternalNotes && (
@@ -429,17 +506,16 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   <input type="hidden" name="internalNotes" value={space.internalNotes ?? ""} />
                 )}
               </div>
-
             </form>
 
             {/* Systems in this space — read-only */}
             {spaceSystems.length > 0 && (
-              <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--color-neutral-50)] px-4 py-3">
+              <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-[var(--color-neutral-600)]">Sistemas en este espacio</p>
+                  <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Sistemas en este espacio</p>
                   <Link
                     href={`/properties/${propertyId}/systems`}
-                    className="text-xs text-[var(--color-primary-500)] hover:text-[var(--color-primary-700)]"
+                    className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
                   >
                     Gestionar →
                   </Link>
@@ -449,7 +525,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                     <li key={sys.id}>
                       <Link
                         href={`/properties/${propertyId}/systems/${sys.id}`}
-                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-2.5 py-0.5 text-xs text-[var(--color-primary-700)] transition-colors hover:bg-[var(--color-primary-100)] hover:text-[var(--color-primary-700)] hover:no-underline"
+                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] px-3 py-0.5 text-xs text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-action-primary-subtle-fg)] hover:no-underline"
                       >
                         {sys.label}
                       </Link>
@@ -474,19 +550,19 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
             )}
 
             {/* Footer — outside form to avoid nested <form> */}
-            <div className="flex items-center justify-between border-t border-[var(--border)] pt-4 mt-2">
+            <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
               <div className="flex items-center gap-3">
                 <button
                   type="submit"
                   form={`details-${space.id}`}
                   disabled={detailsPending || !formDirty}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
                 >
                   {detailsPending ? "Guardando…" : "Guardar cambios"}
                 </button>
                 {saveStatus && <InlineSaveStatus status={saveStatus} />}
                 {detailsState?.error && (
-                  <span className="text-xs text-[var(--color-danger-500)]">{detailsState.error}</span>
+                  <span className="text-xs text-[var(--color-status-error-text)]">{detailsState.error}</span>
                 )}
               </div>
 
@@ -497,12 +573,12 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   <button
                     type="submit"
                     disabled={archivePending}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-1.5 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-50"
                   >
                     {archivePending ? "Restaurando…" : "Restaurar espacio"}
                   </button>
                   {archiveState?.error && (
-                    <span className="ml-2 text-xs text-[var(--color-danger-500)]">{archiveState.error}</span>
+                    <span className="ml-2 text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
                   )}
                 </form>
               ) : confirmArchive ? (
@@ -514,7 +590,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                     <button
                       type="submit"
                       disabled={archivePending}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] hover:opacity-90 disabled:opacity-50"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
                       {archivePending ? "Archivando…" : "Sí, archivar"}
                     </button>
@@ -522,19 +598,19 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
                   <button
                     type="button"
                     onClick={() => setConfirmArchive(false)}
-                    className="text-xs text-[var(--color-neutral-500)] hover:text-[var(--foreground)]"
+                    className="text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                   >
                     Cancelar
                   </button>
                   {archiveState?.error && (
-                    <span className="text-xs text-[var(--color-danger-500)]">{archiveState.error}</span>
+                    <span className="text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
                   )}
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => setConfirmArchive(true)}
-                  className="text-xs font-medium text-[var(--color-neutral-600)] hover:text-[var(--foreground)] transition-colors"
+                  className="text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
                 >
                   Archivar espacio
                 </button>
@@ -543,7 +619,7 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -551,9 +627,9 @@ export function SpaceCard({ propertyId, maxGuests, space, beds, spaceSystems = [
 
 function SpaceSection({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-4 my-2 first:mt-0">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--color-neutral-600)] mb-3 flex items-center gap-2">
-        <span className="inline-block w-2 h-2 rounded-full bg-[var(--color-primary-400)] flex-shrink-0" />
+    <div className="my-2 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 py-4 first:mt-0">
+      <p className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">
+        <span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-[var(--color-action-primary)]" />
         {label}
       </p>
       {children}
@@ -597,7 +673,7 @@ function FlatFeatureSection({
   const content = (
     <>
       {boolFields.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-3">
+        <div className="mb-3 flex flex-wrap gap-2">
           {boolFields.map((field) => {
             const active = Boolean(features[field.id]);
             return (
@@ -606,13 +682,14 @@ function FlatFeatureSection({
                   type="button"
                   aria-pressed={active}
                   onClick={() => onChangeFeature(field.id, !active)}
-                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                  className={cn(
+                    "inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all",
                     active
-                      ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
-                      : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
-                  }`}
+                      ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] shadow-sm"
+                      : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-interactive-hover)]",
+                  )}
                 >
-                  {active && <span className="mr-1">✓</span>}
+                  {active && <Check size={13} aria-hidden="true" className="mr-1" />}
                   {field.label}
                 </button>
               </Tooltip>
@@ -652,7 +729,9 @@ function StructuredField({
   onChange: (v: FeatureValue) => void;
 }) {
   const tooltipText = field.tooltip ?? null;
-  const labelCls = "mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--foreground)]";
+  const labelCls = "mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]";
+  const selectCls =
+    "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
 
   if (field.type === "enum" && field.options) {
     return (
@@ -664,7 +743,7 @@ function StructuredField({
         <select
           value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+          className={selectCls}
         >
           <option value="">—</option>
           {field.options.map((opt) => (
@@ -683,7 +762,7 @@ function StructuredField({
           {field.label}
           {tooltipText && <InfoTooltip text={tooltipText} />}
         </p>
-        <div className="flex flex-wrap gap-2 mt-1">
+        <div className="mt-1 flex flex-wrap gap-2">
           {field.options.map((opt) => {
             const checked = selected.includes(opt.id);
             return (
@@ -697,13 +776,14 @@ function StructuredField({
                     : [...selected, opt.id];
                   onChange(next.length > 0 ? next : null);
                 }}
-                className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={cn(
+                  "inline-flex min-h-[44px] items-center rounded-full border px-3 py-1.5 text-xs font-semibold transition-all",
                   checked
-                    ? "border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white shadow-sm"
-                    : "border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] text-[var(--color-neutral-700)] hover:border-[var(--color-neutral-400)] hover:bg-[var(--color-neutral-100)]"
-                }`}
+                    ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)] shadow-sm"
+                    : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-interactive-hover)]",
+                )}
               >
-                {checked && <span className="mr-1">✓</span>}
+                {checked && <Check size={13} aria-hidden="true" className="mr-1" />}
                 {opt.label}
               </button>
             );
@@ -731,7 +811,7 @@ function StructuredField({
             onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
           }}
           placeholder="—"
-          className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+          className={selectCls}
         />
       </label>
     );
@@ -750,7 +830,7 @@ function StructuredField({
             value={(value as string) ?? ""}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder="Describe brevemente…"
-            className="block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none placeholder:text-[var(--color-neutral-400)]"
+            className={cn(selectCls, "placeholder:text-[var(--color-text-placeholder)]")}
           />
         </label>
       </div>
@@ -810,7 +890,7 @@ function TextChipsField({
         {chips.map((chip) => (
           <span
             key={chip}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-primary-500)] bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-semibold text-white"
+            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-action-primary)] bg-[var(--color-action-primary)] px-3 py-1.5 text-xs font-semibold text-[var(--color-action-primary-fg)]"
           >
             {chip}
             <button
@@ -819,7 +899,7 @@ function TextChipsField({
               className="ml-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full opacity-70 hover:opacity-100"
               aria-label={`Eliminar ${chip}`}
             >
-              ✕
+              <X size={11} aria-hidden="true" />
             </button>
           </span>
         ))}
@@ -831,7 +911,7 @@ function TextChipsField({
             if (e.key === "Enter") { e.preventDefault(); addChip(); }
           }}
           placeholder="Escribe y pulsa Enter…"
-          className="h-8 flex-1 min-w-[160px] rounded-full border border-[var(--color-neutral-300)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--foreground)] placeholder:text-[var(--color-neutral-400)] focus:border-[var(--color-primary-400)] focus:outline-none"
+          className="h-8 min-w-[160px] flex-1 rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none"
         />
       </div>
     </div>
