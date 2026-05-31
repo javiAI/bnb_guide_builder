@@ -9,7 +9,6 @@ import {
   Bed,
   Bath,
   History,
-  type LucideIcon,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import {
@@ -36,6 +35,7 @@ import {
 } from "@/components/overview/spaces-table-card";
 import { ChipRow } from "@/components/overview/chip-row";
 import { ModuleContainer } from "@/components/layout/module-container";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -59,24 +59,6 @@ function formatActivityMessage(
   const info = ACTION_LABELS[action as keyof typeof ACTION_LABELS];
   if (!info) return { message: `${entity} · ${action}` };
   return { message: `${entity} ${info.verbPast}`, tone: info.tone };
-}
-
-interface ChipProps {
-  icon: LucideIcon;
-  label?: string;
-  emphasis?: string;
-}
-
-function Chip({ icon: Icon, label, emphasis }: ChipProps) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-2.5 py-1 text-[12px] text-[var(--color-text-secondary)]">
-      <Icon size={12} aria-hidden="true" className="shrink-0 text-[var(--color-text-muted)]" />
-      {label && <span>{label}</span>}
-      {emphasis && (
-        <span className="font-semibold text-[var(--color-text-primary)]">{emphasis}</span>
-      )}
-    </span>
-  );
 }
 
 interface SectionHeadingProps {
@@ -236,37 +218,37 @@ export default async function OverviewPage({
       chips={
         <ChipRow>
           {[
-            location && <Chip key="location" icon={MapPin} label={location} />,
+            location && <PageHeaderChip key="location" icon={MapPin} label={location} />,
             property.maxGuests != null && (
-              <Chip
+              <PageHeaderChip
                 key="guests"
                 icon={UsersRound}
-                label="Hasta "
-                emphasis={pluralize(property.maxGuests, "huésped", "huéspedes")}
+                label="Hasta"
+                value={pluralize(property.maxGuests, "huésped", "huéspedes")}
               />
             ),
             property.bedroomsCount != null && (
-              <Chip
+              <PageHeaderChip
                 key="bedrooms"
                 icon={BedDouble}
-                emphasis={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
+                value={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
               />
             ),
             property.bathroomsCount != null && (
-              <Chip
+              <PageHeaderChip
                 key="bathrooms"
                 icon={Bath}
-                emphasis={pluralize(property.bathroomsCount, "baño", "baños")}
+                value={pluralize(property.bathroomsCount, "baño", "baños")}
               />
             ),
             property.bedsCount != null && property.bedsCount > 0 && (
-              <Chip
+              <PageHeaderChip
                 key="beds"
                 icon={Bed}
-                emphasis={pluralize(property.bedsCount, "cama", "camas")}
+                value={pluralize(property.bedsCount, "cama", "camas")}
               />
             ),
-            <Chip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
+            <PageHeaderChip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
           ].filter(Boolean) as React.ReactElement[]}
         </ChipRow>
       }

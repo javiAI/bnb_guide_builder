@@ -207,7 +207,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         formData.set("policiesJson", JSON.stringify(buildPoliciesJson()));
         formAction(formData);
       }}
-      className="mx-auto max-w-3xl px-6 py-8"
     >
       <PageHeader
         eyebrow="Propiedad · Normas"

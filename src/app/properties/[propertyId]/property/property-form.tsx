@@ -277,7 +277,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
       : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <Link
         href={`/properties/${propertyId}`}
         className="mb-4 inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 interface PageHeaderChipProps {
   icon?: LucideIcon;
   iconSize?: number;
-  label: ReactNode;
+  label?: ReactNode;
   value?: ReactNode;
   className?: string;
 }
@@ -34,7 +34,7 @@ export function PageHeaderChip({
           className="text-[var(--color-text-muted)]"
         />
       )}
-      <span>{label}</span>
+      {label && <span>{label}</span>}
       {value && (
         <span className="font-semibold text-[var(--color-text-primary)]">
           {value}

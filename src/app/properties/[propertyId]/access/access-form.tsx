@@ -835,7 +835,7 @@ export function AccessForm({
   );
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div>
       <PageHeader
         eyebrow="Propiedad · Llegada"
         title="Llegada y acceso"

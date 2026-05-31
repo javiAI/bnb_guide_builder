@@ -130,7 +130,7 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
   const guestVisibleCount = contacts.filter((c) => c.visibility === "guest").length;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div>
       <Link
         href={`/properties/${propertyId}`}
         className="mb-4 inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
