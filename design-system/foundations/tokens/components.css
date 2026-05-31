@@ -204,6 +204,11 @@
      frees additional width when hidden. */
   --content-max:       var(--size-content-max);
 
+  /* ════════ PUBLISHING RAIL ════════ */
+  /* Default rail width. The shell-chrome resize handle + pre-paint script
+     override this inline on <html> (collapsed = 48px; resized = clamped). */
+  --rail-width:        var(--size-rail);
+
   /* ════════ MODAL / DIALOG ════════ */
   --modal-bg:        var(--color-background-elevated);
   --modal-fg:        var(--color-text-primary);

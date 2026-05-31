@@ -44,7 +44,7 @@ export default function RootLayout({
         {/* Pre-paint: resolve stored theme preference before CSS loads to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var e=document.documentElement;var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);e.setAttribute("data-theme",d?"dark":"light");if(localStorage.getItem("shell:nav-collapsed")==="true")e.setAttribute("data-nav-collapsed","true");if(localStorage.getItem("shell:rail-collapsed")==="true")e.setAttribute("data-rail-collapsed","true")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();`,
+            __html: `(function(){try{var e=document.documentElement;var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);e.setAttribute("data-theme",d?"dark":"light");var nc=localStorage.getItem("shell:nav-collapsed")==="true";var rc=localStorage.getItem("shell:rail-collapsed")==="true";if(nc)e.setAttribute("data-nav-collapsed","true");if(rc)e.setAttribute("data-rail-collapsed","true");function cw(v,mn,mx,df){v=parseInt(v,10);if(isNaN(v))return df;return Math.min(mx,Math.max(mn,v));}e.style.setProperty("--sidebar-width",(nc?56:cw(localStorage.getItem("shell:nav-width"),208,360,240))+"px");e.style.setProperty("--rail-width",(rc?48:cw(localStorage.getItem("shell:rail-width"),264,440,300))+"px")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();`,
           }}
         />
       </head>

@@ -244,6 +244,7 @@
   --size-sidebar-collapsed: 56px;
   --size-topbar:        56px;
   --size-content-max:   1200px;
+  --size-rail:          300px;
 
   --container-sm:       640px;
   --container-md:       768px;

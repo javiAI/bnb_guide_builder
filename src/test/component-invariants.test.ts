@@ -889,7 +889,7 @@ describe("Component invariants · primitive adoption (operator)", () => {
 
 describe("Component invariants · interactive elements use button/Link", () => {
   it("no <div>/<span> with onClick/onKeyDown handlers on audited surfaces", () => {
-    // Two documented exceptions:
+    // Three documented exceptions:
     //
     //   1. `aria-hidden` decorations (backdrop scrims, mouse-only dismiss
     //      gestures): not in focus order or AT tree, "use a button" rule
@@ -902,6 +902,11 @@ describe("Component invariants · interactive elements use button/Link", () => {
     //      handlers). Requiring all three signals (role, tabIndex, keydown)
     //      ensures keyboard parity with a native button — a div with onClick
     //      alone still fails.
+    //
+    //   3. WAI-ARIA window splitter: `role="separator"` + `tabIndex={0}` +
+    //      `onKeyDown` (+ `aria-valuenow/min/max`). A resizable-panel handle is
+    //      a separator, NOT a button — this is the canonical pattern for a
+    //      draggable/keyboard-resizable splitter (shell-chrome PanelResizeHandle).
     const violations: string[] = [];
     for (const file of auditedFiles) {
       if (!file.endsWith(".tsx")) continue;
@@ -909,10 +914,10 @@ describe("Component invariants · interactive elements use button/Link", () => {
       for (const tag of iterateOpenTags(content, ["div", "span"])) {
         const { name, attrs, openIdx } = tag;
         if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
-        const hasRoleButton = /\brole=("button"|\{"button"\})/.test(attrs);
+        const hasA11yRole = /\brole=("button"|\{"button"\}|"separator"|\{"separator"\})/.test(attrs);
         const hasTabIndex = /\btabIndex=\{?\s*0\s*\}?/.test(attrs);
         const hasKeyDown = /\bonKeyDown=\{/.test(attrs);
-        if (hasRoleButton && hasTabIndex && hasKeyDown) continue;
+        if (hasA11yRole && hasTabIndex && hasKeyDown) continue;
         if (/\bon(Click|KeyDown|KeyUp|Submit)=\{/.test(attrs)) {
           violations.push(
             `${file}:${lineNumber(content, openIdx)}  <${name}> with handler — use <button> or <Link>`,

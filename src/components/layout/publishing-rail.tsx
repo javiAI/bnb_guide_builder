@@ -3,7 +3,7 @@ import { Check, ExternalLink, Eye } from "lucide-react";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import { CopyLinkButton } from "./copy-link-button";
 import { QrModalButton } from "./qr-modal-button";
-import { RailCollapseToggle } from "./shell-chrome";
+import { RailCollapseToggle, RailResizeHandle } from "./shell-chrome";
 
 interface PublishingRailProps {
   propertyId: string;
@@ -53,25 +53,25 @@ export async function PublishingRail({
   return (
     <aside
       aria-label="Ruta de publicación"
-      className="shell-rail hidden border-l border-[var(--color-border-default)] bg-[var(--color-background-page)] xl:block"
+      className="shell-rail hidden flex-col overflow-hidden border-l border-[var(--color-border-default)] bg-[var(--color-background-page)] xl:flex"
       style={{
         position: "sticky",
         top: "calc(var(--topbar-height) + 1px)",
         height: "calc(100vh - var(--topbar-height) - 1px)",
-        overflowY: "auto",
-        padding: "20px 24px",
       }}
     >
+      <RailResizeHandle />
+      <div className="shell-rail-top flex shrink-0 items-center justify-end px-2 pt-3 pb-1">
+        <RailCollapseToggle />
+      </div>
+      <div className="shell-rail-body flex-1 overflow-y-auto px-6 pb-6">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
           Ruta de publicación
         </span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-semibold tabular-nums text-[var(--color-text-primary)]">
-            {overall}%
-          </span>
-          <RailCollapseToggle />
-        </div>
+        <span className="text-[13px] font-semibold tabular-nums text-[var(--color-text-primary)]">
+          {overall}%
+        </span>
       </div>
       <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-background-muted)]">
         <span
@@ -198,6 +198,7 @@ export async function PublishingRail({
             </Link>
           </div>
         )}
+      </div>
       </div>
     </aside>
   );

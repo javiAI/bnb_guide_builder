@@ -33,7 +33,7 @@ import {
   type NavGroup,
 } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
-import { NavCollapseToggle } from "./shell-chrome";
+import { NavCollapseToggle, NavResizeHandle } from "./shell-chrome";
 import {
   PropertySwitcher,
   type SwitchableProperty,
@@ -103,6 +103,9 @@ export function SideNav({
         width: "var(--sidebar-width)",
       }}
     >
+      <div className="shell-nav-top flex items-center justify-end border-b border-[var(--color-border-default)] px-2 py-2">
+        <NavCollapseToggle />
+      </div>
       <div className="shell-prop-switcher">
         <PropertySwitcher
           currentPropertyId={propertyId}
@@ -163,10 +166,8 @@ export function SideNav({
           <Home size={16} className="shrink-0" aria-hidden="true" />
           <span className="shell-nav-label">Nueva propiedad</span>
         </Link>
-        <div className="shell-nav-footer mt-1 flex items-center justify-end">
-          <NavCollapseToggle />
-        </div>
       </div>
+      <NavResizeHandle />
     </aside>
   );
 }
