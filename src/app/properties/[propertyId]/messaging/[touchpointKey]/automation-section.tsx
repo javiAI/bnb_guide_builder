@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { Trash2, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   createMessageAutomationAction,
@@ -14,6 +15,7 @@ import {
   messagingTriggers,
 } from "@/lib/taxonomies/messaging-triggers";
 import { getItems } from "@/lib/taxonomies/_helpers";
+import { INPUT_CLASS, PRIMARY_BTN } from "./_styles";
 
 const channels = getItems(automationChannels);
 const triggers = messagingTriggers.items;
@@ -67,16 +69,13 @@ export function AutomationSection({
     null,
   );
 
-  const inputClass =
-    "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
-
   const fieldError = (field: string) =>
     createState?.fieldErrors?.[field]?.[0];
 
   return (
     <div>
       {automations.length === 0 ? (
-        <p className="text-xs text-[var(--color-neutral-400)]">
+        <p className="text-xs text-[var(--color-text-muted)]">
           Sin automatizaciones configuradas.
         </p>
       ) : (
@@ -99,20 +98,20 @@ export function AutomationSection({
       )}
 
       {templates.length > 0 && (
-        <form action={createAction} className="mt-4 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+        <form action={createAction} className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="touchpointKey" value={touchpointKey} />
 
           {createState?.error && (
-            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
               {createState.error}
             </p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Plantilla *</span>
-              <select name="templateId" required className={inputClass}>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Plantilla *</span>
+              <select name="templateId" required className={INPUT_CLASS}>
                 <option value="">— Seleccionar —</option>
                 {templates.map((t) => (
                   <option key={t.id} value={t.id}>
@@ -121,38 +120,35 @@ export function AutomationSection({
                 ))}
               </select>
               {fieldError("templateId") && (
-                <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("templateId")}</p>
+                <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("templateId")}</p>
               )}
             </label>
 
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Canal *</span>
-              <select name="channelKey" required className={inputClass}>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Canal *</span>
+              <select name="channelKey" required className={INPUT_CLASS}>
                 <option value="">— Seleccionar —</option>
                 {channels.map((ch) => (
                   <option key={ch.id} value={ch.id}>{ch.label}</option>
                 ))}
               </select>
               {fieldError("channelKey") && (
-                <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("channelKey")}</p>
+                <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("channelKey")}</p>
               )}
             </label>
 
-            <TriggerAndOffsetFields inputClass={inputClass} />
+            <TriggerAndOffsetFields inputClass={INPUT_CLASS} />
           </div>
 
-          <button
-            type="submit"
-            disabled={createPending}
-            className="mt-4 inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-          >
+          <button type="submit" disabled={createPending} className={`mt-4 ${PRIMARY_BTN}`}>
+            <Zap size={15} aria-hidden="true" />
             {createPending ? "Creando…" : "Crear automatización"}
           </button>
         </form>
       )}
 
       {templates.length === 0 && (
-        <p className="mt-4 text-xs text-[var(--color-neutral-400)]">
+        <p className="mt-4 text-xs text-[var(--color-text-muted)]">
           Crea una plantilla primero para poder añadir automatizaciones.
         </p>
       )}
@@ -175,7 +171,7 @@ function TriggerAndOffsetFields({ inputClass }: { inputClass: string }) {
   return (
     <>
       <label className="block">
-        <span className="text-xs text-[var(--color-neutral-500)]">Tipo de trigger</span>
+        <span className="text-xs font-medium text-[var(--color-text-secondary)]">Tipo de trigger</span>
         <select
           name="triggerType"
           value={triggerId}
@@ -192,13 +188,13 @@ function TriggerAndOffsetFields({ inputClass }: { inputClass: string }) {
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-[var(--color-neutral-400)]">
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
           {current.description}
         </p>
       </label>
 
       <label className="block">
-        <span className="text-xs text-[var(--color-neutral-500)]">Offset</span>
+        <span className="text-xs font-medium text-[var(--color-text-secondary)]">Offset</span>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <input
             name="sendOffsetMinutes"
@@ -207,23 +203,27 @@ function TriggerAndOffsetFields({ inputClass }: { inputClass: string }) {
             onChange={(e) => setOffset(Number(e.target.value))}
             className={`${inputClass} w-32`}
           />
-          <span className="text-xs text-[var(--color-neutral-400)]">minutos</span>
+          <span className="text-xs text-[var(--color-text-muted)]">minutos</span>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {current.presets.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => setOffset(preset.offsetMinutes)}
-              className={`rounded-full px-2 py-0.5 text-[11px] ${
-                offset === preset.offsetMinutes
-                  ? "bg-[var(--color-primary-500)] text-white"
-                  : "bg-[var(--color-neutral-100)] text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-200)]"
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
+          {current.presets.map((preset) => {
+            const active = offset === preset.offsetMinutes;
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => setOffset(preset.offsetMinutes)}
+                aria-pressed={active}
+                className={`inline-flex min-h-[44px] items-center rounded-full px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] ${
+                  active
+                    ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
+                    : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"
+                }`}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
         </div>
       </label>
     </>
@@ -247,10 +247,10 @@ function AutomationRow({
   );
 
   return (
-    <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+    <div className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-[var(--foreground)]">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
             {templateLabel}
           </span>
           <Badge label={channelLabel} tone="neutral" />
@@ -259,20 +259,21 @@ function AutomationRow({
             tone={automation.active ? "success" : "neutral"}
           />
         </div>
-        <p className="mt-0.5 text-xs text-[var(--color-neutral-400)]">
+        <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
           {findMessagingTrigger(normaliseTriggerType(automation.triggerType) ?? automation.triggerType)?.label ?? automation.triggerType} ·{" "}
           {formatOffset(automation.sendOffsetMinutes)}
         </p>
       </div>
-      <form action={deleteAction} className="ml-3 shrink-0">
+      <form action={deleteAction} className="shrink-0">
         <input type="hidden" name="automationId" value={automation.id} />
         <input type="hidden" name="propertyId" value={propertyId} />
         <button
           type="submit"
           disabled={deletePending}
-          className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-2 py-1 text-xs text-[var(--color-danger-600)] transition-colors hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+          aria-label="Eliminar automatización"
+          className="recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-[10px] text-[var(--color-status-error-text)] transition-colors hover:bg-[var(--color-status-error-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
         >
-          {deletePending ? "…" : "×"}
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </form>
     </div>

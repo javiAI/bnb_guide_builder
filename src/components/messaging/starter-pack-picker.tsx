@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { Package, X } from "lucide-react";
 import {
   applyStarterPackAction,
   previewStarterPackAction,
@@ -10,6 +11,7 @@ import type {
   StarterPackSummary,
 } from "@/lib/services/messaging-seed.service";
 import { Badge } from "@/components/ui/badge";
+import { IconButton } from "@/components/ui/icon-button";
 
 const TONE_LABEL: Record<string, string> = {
   friendly: "Cercano",
@@ -29,6 +31,12 @@ interface StarterPackPickerProps {
   templateCount: number;
   touchpointLabels: Record<string, string>;
 }
+
+const PRIMARY_BTN =
+  "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:cursor-not-allowed disabled:opacity-50";
+
+const SECONDARY_BTN =
+  "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]";
 
 export function StarterPackPicker({
   propertyId,
@@ -109,7 +117,7 @@ export function StarterPackPicker({
     <>
       {successMsg && (
         <div
-          className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-success-500)] bg-[var(--color-success-50)] p-3 text-sm text-[var(--color-neutral-700)]"
+          className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-status-success-border)] bg-[var(--color-status-success-bg)] p-3 text-sm text-[var(--color-status-success-text)]"
           role="status"
         >
           {successMsg}
@@ -117,29 +125,23 @@ export function StarterPackPicker({
       )}
 
       {isEmpty ? (
-        <div className="mt-4 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-primary-400)] bg-[var(--color-primary-50)] p-5">
-          <h2 className="text-base font-semibold text-[var(--foreground)]">
+        <div className="mt-4 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] p-5">
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
             Empieza con un pack
           </h2>
-          <p className="mt-1 text-sm text-[var(--color-neutral-600)]">
+          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             Plantillas pre-escritas por tono e idioma, con automatizaciones
             pre-cableadas (inactivas). Las revisas, editas y activas cuando
             quieras — no se envía nada sin tu OK.
           </p>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="mt-3 inline-flex items-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)]"
-          >
+          <button type="button" onClick={() => setOpen(true)} className={`${PRIMARY_BTN} mt-3`}>
+            <Package size={15} aria-hidden="true" />
             Cargar pack
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-4 inline-flex items-center rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1.5 text-sm text-[var(--foreground)] transition-colors hover:border-[var(--color-primary-400)]"
-        >
+        <button type="button" onClick={() => setOpen(true)} className={`${SECONDARY_BTN} mt-4`}>
+          <Package size={15} aria-hidden="true" />
           Cargar pack
         </button>
       )}
@@ -152,33 +154,31 @@ export function StarterPackPicker({
           aria-label="Seleccionar pack de mensajería"
         >
           <div
-            className="absolute inset-0 bg-[var(--color-neutral-900)]/50"
+            className="absolute inset-0 bg-[var(--color-background-scrim)]"
             onClick={closeDrawer}
             aria-hidden="true"
           />
-          <div className="relative m-4 max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-[var(--radius-lg)] bg-[var(--surface-elevated)] shadow-xl">
-            <header className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+          <div className="relative m-4 flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-[var(--card-shadow-hover)]">
+            <header className="flex items-start justify-between gap-3 border-b border-[var(--color-border-default)] px-5 py-4">
               <div>
-                <h2 className="text-lg font-semibold text-[var(--foreground)]">
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                   Packs de mensajería
                 </h2>
-                <p className="mt-0.5 text-xs text-[var(--color-neutral-500)]">
+                <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                   Elige tono e idioma. El pack genera plantillas +
                   automatizaciones inactivas; luego las activas desde cada
                   touchpoint.
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                icon={X}
+                size="sm"
                 onClick={closeDrawer}
-                className="rounded-[var(--radius-md)] px-2 py-1 text-sm text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
                 aria-label="Cerrar"
-              >
-                ✕
-              </button>
+              />
             </header>
 
-            <div className="max-h-[calc(90vh-5rem)] overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="px-5 py-4">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {packs.map((pack) => {
@@ -188,26 +188,24 @@ export function StarterPackPicker({
                         key={pack.id}
                         type="button"
                         onClick={() => setSelectedPackId(pack.id)}
-                        className={`rounded-[var(--radius-md)] border p-3 text-left transition-colors ${
+                        aria-pressed={active}
+                        className={`min-h-[44px] rounded-[var(--radius-md)] border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] ${
                           active
-                            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]"
-                            : "border-[var(--border)] bg-[var(--surface-elevated)] hover:border-[var(--color-primary-400)]"
+                            ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)]"
+                            : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-interactive-hover)]"
                         }`}
                       >
-                        <div className="text-sm font-semibold text-[var(--foreground)]">
+                        <span className="block text-sm font-semibold text-[var(--color-text-primary)]">
                           {pack.name}
-                        </div>
-                        <div className="mt-1 flex gap-1.5">
+                        </span>
+                        <span className="mt-1 flex flex-wrap gap-1.5">
                           <Badge label={TONE_LABEL[pack.tone] ?? pack.tone} tone="neutral" />
-                          <Badge
-                            label={LOCALE_LABEL[pack.locale] ?? pack.locale}
-                            tone="neutral"
-                          />
+                          <Badge label={LOCALE_LABEL[pack.locale] ?? pack.locale} tone="neutral" />
                           <Badge label={`${pack.templateCount} plantillas`} tone="neutral" />
-                        </div>
-                        <p className="mt-2 text-xs text-[var(--color-neutral-500)]">
+                        </span>
+                        <span className="mt-2 block text-xs text-[var(--color-text-secondary)]">
                           {pack.description}
-                        </p>
+                        </span>
                       </button>
                     );
                   })}
@@ -215,24 +213,24 @@ export function StarterPackPicker({
               </div>
 
               {selectedPackId && (
-                <section className="border-t border-[var(--border)] px-5 py-4">
-                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                <section className="border-t border-[var(--color-border-default)] px-5 py-4">
+                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
                     Preview
                   </h3>
                   {loadingPreview && (
-                    <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
+                    <p className="mt-2 text-sm text-[var(--color-text-muted)]">
                       Cargando preview…
                     </p>
                   )}
                   {error && (
-                    <p className="mt-2 text-sm text-[var(--color-danger-500)]">
+                    <p className="mt-2 text-sm text-[var(--color-status-error-text)]">
                       {error}
                     </p>
                   )}
                   {preview && !loadingPreview && (
                     <div className="mt-3 space-y-3">
                       {preview.propertyType === null && (
-                        <p className="text-xs text-[var(--color-neutral-500)]">
+                        <p className="text-xs text-[var(--color-text-muted)]">
                           Sin propertyType configurado en la propiedad — se aplicarán
                           los templates base (sin overrides).
                         </p>
@@ -242,10 +240,10 @@ export function StarterPackPicker({
                         return (
                           <article
                             key={tpl.touchpointKey}
-                            className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3"
+                            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] p-3"
                           >
-                            <header className="flex items-center justify-between">
-                              <div className="text-sm font-medium text-[var(--foreground)]">
+                            <header className="flex items-center justify-between gap-2">
+                              <div className="text-sm font-medium text-[var(--color-text-primary)]">
                                 {label}
                               </div>
                               <div className="flex gap-1.5">
@@ -259,11 +257,11 @@ export function StarterPackPicker({
                               </div>
                             </header>
                             {tpl.subjectLine && (
-                              <div className="mt-2 text-xs text-[var(--color-neutral-500)]">
+                              <div className="mt-2 text-xs text-[var(--color-text-secondary)]">
                                 <strong>Asunto:</strong> {tpl.subjectLine}
                               </div>
                             )}
-                            <pre className="mt-2 whitespace-pre-wrap rounded-[var(--radius-sm)] bg-[var(--color-neutral-50)] p-2 text-xs text-[var(--foreground)]">
+                            <pre className="mt-2 whitespace-pre-wrap rounded-[var(--radius-sm)] bg-[var(--color-background-subtle)] p-2 text-xs text-[var(--color-text-primary)]">
                               {tpl.bodyResolved}
                             </pre>
                             {tpl.resolution.missing +
@@ -272,22 +270,13 @@ export function StarterPackPicker({
                               0 && (
                               <div className="mt-2 flex gap-2 text-xs">
                                 {tpl.resolution.missing > 0 && (
-                                  <Badge
-                                    label={`${tpl.resolution.missing} sin dato`}
-                                    tone="warning"
-                                  />
+                                  <Badge label={`${tpl.resolution.missing} sin dato`} tone="warning" />
                                 )}
                                 {tpl.resolution.unresolvedContext > 0 && (
-                                  <Badge
-                                    label={`${tpl.resolution.unresolvedContext} reserva`}
-                                    tone="neutral"
-                                  />
+                                  <Badge label={`${tpl.resolution.unresolvedContext} reserva`} tone="neutral" />
                                 )}
                                 {tpl.resolution.unknown > 0 && (
-                                  <Badge
-                                    label={`${tpl.resolution.unknown} desconocida`}
-                                    tone="danger"
-                                  />
+                                  <Badge label={`${tpl.resolution.unknown} desconocida`} tone="danger" />
                                 )}
                               </div>
                             )}
@@ -300,19 +289,15 @@ export function StarterPackPicker({
               )}
             </div>
 
-            <footer className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
-              <button
-                type="button"
-                onClick={closeDrawer}
-                className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--color-neutral-100)]"
-              >
+            <footer className="flex items-center justify-end gap-2 border-t border-[var(--color-border-default)] px-5 py-3">
+              <button type="button" onClick={closeDrawer} className={SECONDARY_BTN}>
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={onApply}
                 disabled={!selectedPackId || applying || !!error}
-                className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:cursor-not-allowed disabled:bg-[var(--color-neutral-300)]"
+                className={PRIMARY_BTN}
               >
                 {applying
                   ? "Aplicando…"

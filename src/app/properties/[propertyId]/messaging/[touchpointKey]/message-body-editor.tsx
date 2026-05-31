@@ -10,7 +10,9 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
 } from "react";
+import { Braces, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   messagingVariables,
   type MessagingVariableItem,
@@ -29,7 +31,7 @@ interface MessageBodyEditorProps {
 }
 
 const TEXTAREA_CLASS =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
+  "block w-full resize-y bg-transparent text-sm leading-relaxed text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:outline-none";
 
 const GROUPED_ITEMS: Array<{
   id: string;
@@ -138,7 +140,7 @@ export function MessageBodyEditor({
     }
   };
 
-  const handlePickerKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handlePickerKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
       e.preventDefault();
       closePicker();
@@ -164,34 +166,44 @@ export function MessageBodyEditor({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--color-neutral-500)]">
-          Contenido {required ? "*" : ""}
-        </span>
-        <button
-          type="button"
-          onClick={openPicker}
-          className="rounded-[var(--radius-md)] border border-[var(--border)] px-2 py-1 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
-          aria-haspopup="listbox"
-          aria-expanded={pickerOpen}
-        >
-          Insertar variable
-        </button>
+      <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+        Contenido {required ? "*" : ""}
+      </span>
+
+      {/* Composer: rounded box, borderless textarea + tool-row (no send / no
+          AI toggle — the autonomous-send composer is aspirational, see
+          docs/FUTURE.md § messaging-composer-tools). */}
+      <div className="rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3.5 py-3 transition-colors focus-within:border-[var(--color-border-focus)] focus-within:ring-2 focus-within:ring-[var(--color-border-focus)]">
+        <textarea
+          ref={textareaRef}
+          name={name}
+          required={required}
+          rows={rows}
+          placeholder={placeholder}
+          value={value}
+          onChange={handleChange}
+          onKeyDown={handleTextareaKeyDown}
+          className={TEXTAREA_CLASS}
+        />
+        <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border-subtle)] pt-2">
+          <span className="text-[11px] text-[var(--color-text-muted)]">
+            Usa <code className="rounded bg-[var(--color-background-muted)] px-1 py-0.5 text-[var(--color-text-primary)]">{`{{variable}}`}</code> para datos dinámicos
+          </span>
+          <button
+            type="button"
+            onClick={openPicker}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+            aria-haspopup="listbox"
+            aria-expanded={pickerOpen}
+          >
+            <Braces size={14} aria-hidden="true" />
+            Insertar variable
+          </button>
+        </div>
       </div>
 
-      <textarea
-        ref={textareaRef}
-        name={name}
-        required={required}
-        rows={rows}
-        placeholder={placeholder}
-        value={value}
-        onChange={handleChange}
-        onKeyDown={handleTextareaKeyDown}
-        className={TEXTAREA_CLASS}
-      />
       {fieldError && (
-        <p className="text-xs text-[var(--color-danger-500)]">{fieldError}</p>
+        <p className="text-xs text-[var(--color-status-error-text)]">{fieldError}</p>
       )}
 
       {pickerOpen && (
@@ -224,7 +236,7 @@ interface VariablePickerProps {
   activeIndex: number;
   flat: MessagingVariableItem[];
   onSelect: (variable: string) => void;
-  onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
+  onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
   onClose: () => void;
 }
 
@@ -259,8 +271,7 @@ function VariablePicker({
     <div
       role="dialog"
       aria-label="Insertar variable"
-      className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3 shadow-sm"
-      onKeyDown={onKeyDown}
+      className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3 shadow-[var(--card-shadow)]"
     >
       <div className="flex items-center justify-between gap-2">
         <input
@@ -269,75 +280,81 @@ function VariablePicker({
           value={query}
           placeholder="Filtrar variables…"
           onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={onKeyDown}
           role="combobox"
           aria-expanded
           aria-controls={listId}
           aria-autocomplete="list"
-          className="flex-1 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none"
+          className="flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-border-focus)]"
         />
-        <button
-          type="button"
+        <IconButton
+          icon={X}
+          size="sm"
           onClick={onClose}
-          className="rounded-[var(--radius-md)] px-2 py-1 text-xs text-[var(--color-neutral-500)] hover:bg-[var(--color-neutral-100)]"
-        >
-          Cerrar
-        </button>
+          aria-label="Cerrar selector de variables"
+        />
       </div>
 
-      <div
-        id={listId}
-        role="listbox"
-        aria-label="Variables disponibles"
-        className="mt-2 max-h-64 overflow-y-auto"
-      >
-        {grouped.length === 0 && (
-          <p className="px-1 py-2 text-xs text-[var(--color-neutral-400)]">
-            Sin coincidencias.
-          </p>
-        )}
-        {grouped.map((group) => (
-          <div key={group.id} className="mb-2 last:mb-0">
-            <p className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-400)]">
-              {group.label}
-              {group.id === "reservation" && (
-                <span className="ml-1 font-normal normal-case text-[var(--color-neutral-400)]">
-                  · {RESERVATION_HINT_ES}
-                </span>
-              )}
-            </p>
-            <ul>
+      {grouped.length === 0 ? (
+        <p className="mt-2 px-1 py-2 text-xs text-[var(--color-text-muted)]">
+          Sin coincidencias.
+        </p>
+      ) : (
+        <div
+          id={listId}
+          role="listbox"
+          aria-label="Variables disponibles"
+          className="mt-2 max-h-64 overflow-y-auto"
+        >
+          {grouped.map((group) => (
+            <div
+              key={group.id}
+              role="group"
+              aria-label={group.label}
+              className="mb-2 last:mb-0"
+            >
+              <p
+                aria-hidden="true"
+                className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
+              >
+                {group.label}
+                {group.id === "reservation" && (
+                  <span className="ml-1 font-normal normal-case text-[var(--color-text-muted)]">
+                    · {RESERVATION_HINT_ES}
+                  </span>
+                )}
+              </p>
               {group.items.map((item) => {
                 const isActive = item.variable === activeVariable;
                 return (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={isActive}
-                      onClick={() => onSelect(item.variable)}
-                      className={`flex w-full items-start gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs hover:bg-[var(--color-neutral-100)] ${
-                        isActive ? "bg-[var(--color-neutral-100)]" : ""
-                      }`}
-                    >
-                      <code className="mt-0.5 rounded bg-[var(--color-neutral-100)] px-1 py-0.5 text-[11px]">
-                        {`{{${item.variable}}}`}
-                      </code>
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-medium text-[var(--foreground)]">
-                          {item.label}
-                        </span>
-                        <span className="block truncate text-[var(--color-neutral-400)]">
-                          {item.description}
-                        </span>
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => onSelect(item.variable)}
+                    className={`flex min-h-[44px] w-full items-start gap-2 rounded-[var(--radius-sm)] px-2 py-1.5 text-left text-xs transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] ${
+                      isActive ? "bg-[var(--color-interactive-selected)]" : ""
+                    }`}
+                  >
+                    <code className="mt-0.5 rounded bg-[var(--color-background-muted)] px-1 py-0.5 text-[11px] text-[var(--color-text-primary)]">
+                      {`{{${item.variable}}}`}
+                    </code>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-[var(--color-text-primary)]">
+                        {item.label}
                       </span>
-                    </button>
-                  </li>
+                      <span className="block truncate text-[var(--color-text-muted)]">
+                        {item.description}
+                      </span>
+                    </span>
+                  </button>
                 );
               })}
-            </ul>
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -405,25 +422,25 @@ export function TemplatePreview({ propertyId, body }: TemplatePreviewProps) {
   if (state.status === "idle") return null;
 
   return (
-    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border)] bg-[var(--surface)] p-3">
+    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-background-subtle)] p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Preview con datos reales
         </span>
         {state.counts && <CountsBadges counts={state.counts} />}
       </div>
 
       {state.status === "loading" && (
-        <p className="text-xs text-[var(--color-neutral-400)]">Calculando…</p>
+        <p className="text-xs text-[var(--color-text-muted)]">Calculando…</p>
       )}
       {state.status === "error" && (
-        <p className="text-xs text-[var(--color-danger-500)]">
+        <p className="text-xs text-[var(--color-status-error-text)]">
           Error: {state.error}
         </p>
       )}
       {state.status === "ready" && (
         <>
-          <pre className="whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">
+          <pre className="whitespace-pre-wrap break-words text-sm text-[var(--color-text-primary)]">
             {state.output}
           </pre>
           {state.states && <PreviewStateList states={state.states} />}
@@ -447,10 +464,7 @@ function CountsBadges({
         <Badge label={`${counts.missing} falta datos`} tone="warning" />
       )}
       {counts.unresolvedContext > 0 && (
-        <Badge
-          label={`${counts.unresolvedContext} al enviar`}
-          tone="neutral"
-        />
+        <Badge label={`${counts.unresolvedContext} al enviar`} tone="neutral" />
       )}
       {counts.unknown > 0 && (
         <Badge label={`${counts.unknown} desconocidas`} tone="danger" />
@@ -469,24 +483,24 @@ function PreviewStateList({
   );
   if (entries.length === 0) return null;
   return (
-    <ul className="mt-3 space-y-1 border-t border-[var(--border)] pt-2">
+    <ul className="mt-3 space-y-1 border-t border-[var(--color-border-subtle)] pt-2">
       {entries.map(([token, st]) => (
         <li key={token} className="text-xs">
-          <code className="mr-1 rounded bg-[var(--color-neutral-100)] px-1 py-0.5 text-[11px]">
+          <code className="mr-1 rounded bg-[var(--color-background-muted)] px-1 py-0.5 text-[11px] text-[var(--color-text-primary)]">
             {`{{${token}}}`}
           </code>
           {st.status === "missing" && (
-            <span className="text-[var(--color-warning-600)]">
+            <span className="text-[var(--color-status-warning-text)]">
               Falta en la propiedad ({st.label})
             </span>
           )}
           {st.status === "unresolved_context" && (
-            <span className="text-[var(--color-neutral-500)]">
+            <span className="text-[var(--color-text-muted)]">
               Se resuelve al enviar ({st.label})
             </span>
           )}
           {st.status === "unknown" && (
-            <span className="text-[var(--color-danger-500)]">
+            <span className="text-[var(--color-status-error-text)]">
               Variable desconocida
               {st.suggestion ? ` — ¿quisiste decir {{${st.suggestion}}}?` : ""}
             </span>

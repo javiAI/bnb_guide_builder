@@ -12,6 +12,7 @@ import { automationChannels } from "@/lib/taxonomies/automation-channels";
 import { getItems } from "@/lib/taxonomies/_helpers";
 import type { BadgeTone } from "@/lib/types";
 import { MessageBodyEditor } from "./message-body-editor";
+import { INPUT_CLASS, PRIMARY_BTN, SECONDARY_BTN } from "./_styles";
 
 const channels = getItems(automationChannels);
 
@@ -51,29 +52,26 @@ export function TemplateCard({
     null,
   );
 
-  const inputClass =
-    "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
-
   const fieldError = (field: string) =>
     updateState?.fieldErrors?.[field]?.[0];
 
   if (editing) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
+      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
         <form action={updateAction}>
           <input type="hidden" name="templateId" value={template.id} />
           <input type="hidden" name="propertyId" value={propertyId} />
 
           {updateState?.error && (
-            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
               {updateState.error}
             </p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Canal</span>
-              <select name="channelKey" defaultValue={template.channelKey ?? ""} className={inputClass}>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Canal</span>
+              <select name="channelKey" defaultValue={template.channelKey ?? ""} className={INPUT_CLASS}>
                 <option value="">— Por defecto —</option>
                 {channels.map((ch) => (
                   <option key={ch.id} value={ch.id}>{ch.label}</option>
@@ -82,8 +80,8 @@ export function TemplateCard({
             </label>
 
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Estado</span>
-              <select name="status" defaultValue={template.status} className={inputClass}>
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Estado</span>
+              <select name="status" defaultValue={template.status} className={INPUT_CLASS}>
                 <option value="draft">Borrador</option>
                 <option value="active">Activa</option>
                 <option value="archived">Archivada</option>
@@ -91,8 +89,8 @@ export function TemplateCard({
             </label>
 
             <label className="block sm:col-span-2">
-              <span className="text-xs text-[var(--color-neutral-500)]">Asunto</span>
-              <input name="subjectLine" type="text" defaultValue={template.subjectLine ?? ""} className={inputClass} />
+              <span className="text-xs font-medium text-[var(--color-text-secondary)]">Asunto</span>
+              <input name="subjectLine" type="text" defaultValue={template.subjectLine ?? ""} className={INPUT_CLASS} />
             </label>
 
             <div className="sm:col-span-2">
@@ -106,19 +104,11 @@ export function TemplateCard({
             </div>
           </div>
 
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={updatePending}
-              className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-            >
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="submit" disabled={updatePending} className={PRIMARY_BTN}>
               {updatePending ? "Guardando…" : "Guardar"}
             </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] px-5 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
-            >
+            <button type="button" onClick={() => setEditing(false)} className={SECONDARY_BTN}>
               Cancelar
             </button>
           </div>
@@ -128,30 +118,28 @@ export function TemplateCard({
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
-      <div className="flex items-start justify-between">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {template.subjectLine && (
-              <span className="text-sm font-medium text-[var(--foreground)]">
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">
                 {template.subjectLine}
               </span>
             )}
             <Badge label={statusLabel} tone={statusTone} />
-            {channelLabel && (
-              <Badge label={channelLabel} tone="neutral" />
-            )}
+            {channelLabel && <Badge label={channelLabel} tone="neutral" />}
           </div>
-          <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--color-text-secondary)]">
             {template.bodyMd}
           </p>
         </div>
 
-        <div className="ml-4 flex shrink-0 gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 text-xs font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
           >
             Editar
           </button>
@@ -161,7 +149,7 @@ export function TemplateCard({
             <button
               type="submit"
               disabled={deletePending}
-              className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-600)] transition-colors hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-status-error-border)] px-3 text-xs font-medium text-[var(--color-status-error-text)] transition-colors hover:bg-[var(--color-status-error-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
             >
               {deletePending ? "…" : "Eliminar"}
             </button>

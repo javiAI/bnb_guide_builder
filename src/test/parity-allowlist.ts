@@ -278,6 +278,58 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
+    // 16F messaging — touchpoint plantillas + automations index. The
+    // `ui_kits/messaging/index.html` kit renders a LIVE INBOX (sidebar +
+    // conversation list + thread + context panel) — a domain that does NOT
+    // exist in this product: messaging here is template AUTHORING +
+    // automation wiring + draft review, not a chat inbox. So the kit is a
+    // reference for VISUAL GRAMMAR ONLY (uppercase eyebrows, status chips,
+    // composer styling, olive AI/automation accent, source/timeline
+    // patterns). The inbox/thread/composer-send/AI-suggestion are
+    // `aspirational` (no backend) and documented in `docs/FUTURE.md`; the
+    // index ports the existing touchpoint list + counters + a small set of
+    // `derivable` reads (per-touchpoint template/automation counts,
+    // last-activity timestamp). `src/components/messaging/**` (the starter
+    // pack picker modal) renders on this page, so it is folded in here.
+    id: "operator-messaging-index",
+    routes: ["/properties/[propertyId]/messaging"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/messaging/page.tsx",
+      "src/components/messaging/**/*.tsx",
+    ],
+  },
+  {
+    // 16F messaging — touchpoint detail (plantillas + automatizaciones).
+    // NumberedSection 01 Plantillas / 02 Automatizaciones. Includes the
+    // template card, create-template form, automation section + rows, and
+    // the message body editor re-skinned as a composer (tool-row, NO
+    // send/AI-toggle — those are aspirational). The variable picker +
+    // template preview keep their existing behavior; the AI/automation
+    // accent uses `--color-action-primary-*` (olive), never the kit's
+    // cool blue-grey. The template preview is a NEUTRAL render of the
+    // template, not an AI conversation bubble.
+    id: "operator-messaging-touchpoint",
+    routes: ["/properties/[propertyId]/messaging/[touchpointKey]"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/messaging/[touchpointKey]/**/*.tsx",
+    ],
+  },
+  {
+    // 16F messaging — drafts review queue. NumberedSection per draft status
+    // (01 Pendientes / 02 Aprobados / 03 Enviados / …). Draft cards carry
+    // semantic status tones, last-activity (scheduled send timestamp), and
+    // four horizontal lifecycle text-buttons (Aprobar / Editar / Omitir /
+    // Descartar) — text-bearing controls reach 44 visual height, no slop.
+    id: "operator-messaging-drafts",
+    routes: ["/properties/[propertyId]/messaging/drafts"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/messaging/drafts/**/*.tsx",
+    ],
+  },
+  {
     // 16E.5 content module — policies (normas de la casa). Kit reference
     // exists (`page-normas` in subpages.html): eyebrow row (Propiedad ·
     // Normas) → title → sub (firme/cálido voice) → rule, then numbered
@@ -357,6 +409,8 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/app/properties/[propertyId]/systems/**/*.tsx",
   "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
+  "src/app/properties/[propertyId]/messaging/**/*.tsx",
+  "src/components/messaging/**/*.tsx",
   "src/app/properties/[propertyId]/policies/**/*.tsx",
   "src/app/properties/[propertyId]/contacts/**/*.tsx",
   "src/components/overview/**/*.tsx",
