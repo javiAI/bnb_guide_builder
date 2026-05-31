@@ -1,16 +1,9 @@
 import Link from "next/link";
-import {
-  Check,
-  Eye,
-  Brain,
-  Wand2,
-  History,
-  ExternalLink,
-  type LucideIcon,
-} from "lucide-react";
+import { Check, ExternalLink } from "lucide-react";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import { CopyLinkButton } from "./copy-link-button";
 import { QrModalButton } from "./qr-modal-button";
+import { RailCollapseToggle } from "./shell-chrome";
 
 interface PublishingRailProps {
   propertyId: string;
@@ -31,13 +24,6 @@ const RAIL_STEP_DEFS: ReadonlyArray<{ key: string; label: string; pathSegment: s
   { key: "spaces", label: "Espacios", pathSegment: "spaces" },
   { key: "amenities", label: "Equipamiento", pathSegment: "amenities" },
   { key: "systems", label: "Sistemas", pathSegment: "systems" },
-];
-
-const SHORTCUTS: ReadonlyArray<{ icon: LucideIcon; label: string; pathSegment: string }> = [
-  { icon: Eye, label: "Vista huésped", pathSegment: "guest-guide" },
-  { icon: Brain, label: "Probar asistente", pathSegment: "ai" },
-  { icon: Wand2, label: "Sugerencias IA", pathSegment: "knowledge" },
-  { icon: History, label: "Historial", pathSegment: "activity" },
 ];
 
 function buildSteps(propertyId: string, scores?: Record<string, number>): RailStep[] {
@@ -67,7 +53,7 @@ export async function PublishingRail({
   return (
     <aside
       aria-label="Ruta de publicación"
-      className="hidden border-l border-[var(--color-border-default)] bg-[var(--color-background-page)] xl:block"
+      className="shell-rail hidden border-l border-[var(--color-border-default)] bg-[var(--color-background-page)] xl:block"
       style={{
         position: "sticky",
         top: "calc(var(--topbar-height) + 1px)",
@@ -76,13 +62,16 @@ export async function PublishingRail({
         padding: "20px 24px",
       }}
     >
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
           Ruta de publicación
         </span>
-        <span className="text-[13px] font-semibold tabular-nums text-[var(--color-text-primary)]">
-          {overall}%
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[13px] font-semibold tabular-nums text-[var(--color-text-primary)]">
+            {overall}%
+          </span>
+          <RailCollapseToggle />
+        </div>
       </div>
       <div className="mb-5 h-[3px] w-full overflow-hidden rounded-full bg-[var(--color-background-muted)]">
         <span
@@ -143,25 +132,6 @@ export async function PublishingRail({
       </ul>
 
       <div className="my-5 h-px bg-[var(--color-border-subtle)]" />
-
-      <div className="mb-6">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-          Atajos
-        </p>
-        <ul className="flex flex-col">
-          {SHORTCUTS.map(({ icon: Icon, label, pathSegment }) => (
-            <li key={pathSegment}>
-              <Link
-                href={`/properties/${propertyId}/${pathSegment}`}
-                className="flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-2 py-2 text-[13px] text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
-              >
-                <Icon size={14} aria-hidden="true" className="text-[var(--color-text-muted)]" />
-                <span className="flex-1">{label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
 
       <div>
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">

@@ -33,6 +33,7 @@ import {
   type NavGroup,
 } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
+import { NavCollapseToggle } from "./shell-chrome";
 import {
   PropertySwitcher,
   type SwitchableProperty,
@@ -102,16 +103,18 @@ export function SideNav({
         width: "var(--sidebar-width)",
       }}
     >
-      <PropertySwitcher
-        currentPropertyId={propertyId}
-        currentPropertyNickname={propertyNickname}
-        properties={workspaceProperties}
-      />
+      <div className="shell-prop-switcher">
+        <PropertySwitcher
+          currentPropertyId={propertyId}
+          currentPropertyNickname={propertyNickname}
+          properties={workspaceProperties}
+        />
+      </div>
 
       <nav className="flex-1 overflow-y-auto px-2 pb-4" aria-label="Navegación de propiedad">
         {groups.map((group) => (
           <div key={group.key} className="mt-3.5">
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+            <p className="shell-nav-group-label mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
               {group.label}
             </p>
             <ul className="space-y-0.5">
@@ -122,7 +125,8 @@ export function SideNav({
                   <li key={item.key}>
                     <Link
                       href={item.href(propertyId)}
-                      className={`flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium no-underline transition-colors hover:no-underline ${
+                      title={item.label}
+                      className={`shell-nav-item flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium no-underline transition-colors hover:no-underline ${
                         active
                           ? "bg-[var(--color-interactive-selected)] text-[var(--color-interactive-selected-fg)] hover:text-[var(--color-interactive-selected-fg)]"
                           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
@@ -135,9 +139,11 @@ export function SideNav({
                           aria-hidden="true"
                         />
                       )}
-                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="shell-nav-label flex-1 truncate">{item.label}</span>
                       {sectionScores?.[item.key] !== undefined && (
-                        <SectionProgress score={sectionScores[item.key]} />
+                        <span className="shell-nav-progress">
+                          <SectionProgress score={sectionScores[item.key]} />
+                        </span>
                       )}
                     </Link>
                   </li>
@@ -148,14 +154,18 @@ export function SideNav({
         ))}
       </nav>
 
-      <div className="border-t border-[var(--color-border-default)] px-3 py-3">
+      <div className="border-t border-[var(--color-border-default)] px-2 py-2">
         <Link
           href="/properties/new/welcome"
-          className="flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
+          title="Nueva propiedad"
+          className="shell-nav-footer-link flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
         >
           <Home size={16} className="shrink-0" aria-hidden="true" />
-          <span>Nueva propiedad</span>
+          <span className="shell-nav-label">Nueva propiedad</span>
         </Link>
+        <div className="shell-nav-footer mt-1 flex items-center justify-end">
+          <NavCollapseToggle />
+        </div>
       </div>
     </aside>
   );

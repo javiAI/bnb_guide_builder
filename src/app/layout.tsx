@@ -44,7 +44,7 @@ export default function RootLayout({
         {/* Pre-paint: resolve stored theme preference before CSS loads to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();`,
+            __html: `(function(){try{var e=document.documentElement;var t=localStorage.getItem("theme");var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme:dark)").matches);e.setAttribute("data-theme",d?"dark":"light");if(localStorage.getItem("shell:nav-collapsed")==="true")e.setAttribute("data-nav-collapsed","true");if(localStorage.getItem("shell:rail-collapsed")==="true")e.setAttribute("data-rail-collapsed","true")}catch(e){document.documentElement.setAttribute("data-theme","light")}})();`,
           }}
         />
       </head>

@@ -1,5 +1,6 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 @import "../styles/recipes.css";
+@import "../styles/shell.css";
 
 @tailwind base;
 @tailwind components;

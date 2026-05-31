@@ -1,0 +1,43 @@
+/* ============================================================
+   Operator shell collapse (Liora 16F.5)
+   ------------------------------------------------------------
+   Attribute-driven so the pre-paint script in layout.tsx can set the collapsed
+   state before first paint (no FOUC). The toggles in shell-chrome.tsx flip the
+   `html[data-nav-collapsed]` / `html[data-rail-collapsed]` attributes and
+   persist to localStorage. Layout follows purely from CSS — no JS reflow.
+   ============================================================ */
+
+/* Nav collapsed → the sidebar column shrinks to the icon-rail width. The width
+   token drives the SideNav width, the topbar spacer and the content margin, so
+   the whole shell tracks it. Only meaningful at lg+ (below lg the sidebar is
+   hidden and the mobile drawer is used). */
+@media (min-width: 1024px) {
+  html[data-nav-collapsed="true"] {
+    --sidebar-width: var(--size-sidebar-collapsed);
+  }
+
+  html[data-nav-collapsed="true"] .shell-nav-label,
+  html[data-nav-collapsed="true"] .shell-nav-group-label,
+  html[data-nav-collapsed="true"] .shell-nav-progress,
+  html[data-nav-collapsed="true"] .shell-prop-switcher {
+    display: none;
+  }
+
+  html[data-nav-collapsed="true"] .shell-nav-item,
+  html[data-nav-collapsed="true"] .shell-nav-footer-link,
+  html[data-nav-collapsed="true"] .shell-nav-footer {
+    justify-content: center;
+  }
+}
+
+/* Rail collapsed → hide the rail and drop its grid track so the content column
+   reclaims the width. Only meaningful at xl+ (below xl the rail is hidden). */
+html[data-rail-collapsed="true"] .shell-rail {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  html[data-rail-collapsed="true"] .shell-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
