@@ -3535,7 +3535,9 @@ Otros límites del 7a–7c: el upload affordance inline en `<MediaCarousel>` es 
 
 ---
 
-### Rama 16E.6 — `feat/liora-access-parking-map-autodiscovery`
+### Rama 16E.6 — `feat/liora-access-parking-map-autodiscovery` ✅ (PR #106 merged, `530b0db`)
+
+> **Consolidación 16E.5/16F (Option C, 2026-05-31)**: la paridad visual del resto de módulos operator se ejecutó en 7 ramas paralelas (PRs #107–#113) tras 16E.5 (access, #102) y 16E.6 (parking, #106): spaces #113, amenities #107, systems #109, policies #110, contacts #111, property #112 (parcial — waiver: kit `page-propiedades` = listing+detail, no editor), messaging/16F #108 (accent terracota). Todas con audit real `/liora-ui-kit-parity` (≥8.5 salvo property/waiver), 0 excepciones nuevas, 0 hardcodes. `CURRENT_LIORA_PHASE` → "16F". El shell común (contenedor único + nav/rail colapsables + ⌘K + notificaciones + unificación guía/publicación) va en `feat/liora-operator-shell-foundation`. Detalle por rama en `docs/ROADMAP.md` § Progreso Fase 16.
 
 **Estado**: activa. Sucesora directa de 16E.5 (PR #102 mergeada en `18b8eba`). Resuelve parcialmente el deferral "Map UPLOAD UI" registrado en `LIORA_SURFACE_ROLLOUT_PLAN.md` § Scope locks 7a–7c — pero NO vía upload de imágenes con `usageKey="access.parking.map"`. En su lugar: descubrimiento operator-driven de parkings cercanos como `LocalPlace` con `categoryKey="lp.parking"` y un mapa multi-pin embebido en el `ParkingPanel` del access cockpit. El static map slide (`access.parking.map`) queda como **stretch goal opcional** con gate duro de ≤80 LOC netas, sin schema, sin server action nueva compleja, sin reabrir el media flow global — si excede, se difiere a 16E.7.
 
