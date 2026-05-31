@@ -3,7 +3,7 @@ import { Check, ExternalLink, Eye } from "lucide-react";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import { CopyLinkButton } from "./copy-link-button";
 import { QrModalButton } from "./qr-modal-button";
-import { RailCollapseToggle, RailResizeHandle } from "./shell-chrome";
+import { RailResizeHandle } from "./shell-chrome";
 
 interface PublishingRailProps {
   propertyId: string;
@@ -61,10 +61,7 @@ export async function PublishingRail({
       }}
     >
       <RailResizeHandle />
-      <div className="shell-rail-top flex shrink-0 items-center justify-end px-2 pt-3 pb-1">
-        <RailCollapseToggle />
-      </div>
-      <div className="shell-rail-body flex-1 overflow-y-auto px-6 pb-6">
+      <div className="flex-1 overflow-y-auto px-6 py-5">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
           Ruta de publicación

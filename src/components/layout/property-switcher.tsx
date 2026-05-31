@@ -57,7 +57,7 @@ export function PropertySwitcher({
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative mx-3 my-3.5">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         aria-haspopup="menu"

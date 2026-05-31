@@ -14,10 +14,12 @@ export const RAIL_COLLAPSED_ATTR = "data-rail-collapsed";
 export const NAV_WIDTH_VAR = "--sidebar-width";
 export const RAIL_WIDTH_VAR = "--rail-width";
 
-// Expanded width bounds + defaults. Collapsed widths are thin strips that keep
-// the expand affordance reachable (the reopen "tab").
+// Expanded width bounds + defaults. The nav collapses to an icon-rail (56px);
+// the rail collapses to 0 (fully hidden) — it is re-opened from a small floating
+// pull-tab pinned to the screen's right edge (RailDrawerTab), not an in-place
+// strip, so it never occupies layout space while collapsed.
 export const NAV_WIDTH = { min: 208, max: 360, default: 240, collapsed: 56 } as const;
-export const RAIL_WIDTH = { min: 264, max: 440, default: 300, collapsed: 48 } as const;
+export const RAIL_WIDTH = { min: 264, max: 440, default: 300, collapsed: 0 } as const;
 
 export function clampWidth(value: number, bounds: { min: number; max: number }): number {
   if (Number.isNaN(value)) return bounds.min;

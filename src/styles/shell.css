@@ -4,12 +4,12 @@
    Panel WIDTH lives in inline CSS vars on <html> (--sidebar-width /
    --rail-width), set by the pre-paint script in layout.tsx and by the
    shell-chrome toggles + resize handle. These attribute rules govern only
-   CONTENT VISIBILITY (labels, rail body, resizer) — never width — so the two
-   concerns never fight over the cascade.
+   CONTENT VISIBILITY — never width — so the two concerns never fight over the
+   cascade.
    ============================================================ */
 
 /* Nav collapsed → icon-rail. The width var already shrank to the collapsed
-   value; here we hide the labels and the resizer and center the icons. Only
+   value; here we hide labels + the resizer and center the icons. Only
    meaningful at lg+ (below lg the sidebar is hidden, mobile drawer is used). */
 @media (min-width: 1024px) {
   html[data-nav-collapsed="true"] .shell-nav-label,
@@ -20,18 +20,17 @@
     display: none;
   }
 
-  html[data-nav-collapsed="true"] .shell-nav-top,
+  html[data-nav-collapsed="true"] .shell-nav-head,
   html[data-nav-collapsed="true"] .shell-nav-item,
   html[data-nav-collapsed="true"] .shell-nav-footer-link {
     justify-content: center;
   }
 }
 
-/* Rail collapsed → a thin strip (the reopen "tab"). The top toggle stays
-   reachable so the rail can always be re-opened; the body + resizer hide. The
-   width var (48px collapsed) shrinks the content-grid track with it. */
-html[data-rail-collapsed="true"] .shell-rail-body,
-html[data-rail-collapsed="true"] .shell-rail-resizer {
+/* Rail collapsed → fully hidden (no layout space). It is re-opened from the
+   floating pull-tab (RailDrawerTab) pinned to the right edge; --rail-width is 0
+   so the content-grid track collapses too. */
+html[data-rail-collapsed="true"] .shell-rail {
   display: none;
 }
 

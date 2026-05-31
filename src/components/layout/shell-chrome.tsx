@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  ChevronLeft,
+  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
 } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import {
@@ -99,7 +99,15 @@ export function NavCollapseToggle() {
   );
 }
 
-export function RailCollapseToggle() {
+/**
+ * Right-rail drawer pull-tab. A small handle pinned to the right edge, centred
+ * vertically — the canonical drawer-handle pattern. Lives OUTSIDE the rail (in
+ * AppShell) so it survives the rail being fully hidden when collapsed. It slides
+ * to the rail's left border when open (`right: var(--rail-width)`) and to the
+ * screen edge when collapsed (`--rail-width` is 0). The 44×56 button keeps a
+ * full touch target while the visible pill stays small.
+ */
+export function RailDrawerTab() {
   const { collapsed, toggle } = useCollapse(
     RAIL_COLLAPSED_KEY,
     RAIL_COLLAPSED_ATTR,
@@ -111,16 +119,23 @@ export function RailCollapseToggle() {
     ? "Mostrar panel de publicación"
     : "Ocultar panel de publicación";
   return (
-    <IconButton
-      icon={collapsed ? PanelRightOpen : PanelRightClose}
-      iconSize={15}
-      size="sm"
-      tone="neutral"
+    <button
+      type="button"
       onClick={toggle}
       aria-label={label}
-      aria-pressed={collapsed}
+      aria-expanded={!collapsed}
       title={label}
-    />
+      style={{ right: "var(--rail-width)" }}
+      className="group fixed top-1/2 z-40 hidden h-14 w-11 -translate-y-1/2 items-center justify-end transition-[right] duration-200 ease-out focus-visible:outline-none xl:flex"
+    >
+      <span className="flex h-12 w-5 items-center justify-center rounded-l-[8px] border border-r-0 border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-muted)] shadow-[var(--elevation-popover)] transition-colors group-hover:bg-[var(--color-interactive-hover)] group-hover:text-[var(--color-text-primary)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-border-focus)]">
+        {collapsed ? (
+          <ChevronLeft size={16} aria-hidden="true" />
+        ) : (
+          <ChevronRight size={16} aria-hidden="true" />
+        )}
+      </span>
+    </button>
   );
 }
 

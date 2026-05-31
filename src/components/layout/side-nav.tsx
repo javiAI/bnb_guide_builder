@@ -103,15 +103,15 @@ export function SideNav({
         width: "var(--sidebar-width)",
       }}
     >
-      <div className="shell-nav-top flex items-center justify-end border-b border-[var(--color-border-default)] px-2 py-2">
-        <NavCollapseToggle />
-      </div>
-      <div className="shell-prop-switcher">
-        <PropertySwitcher
-          currentPropertyId={propertyId}
-          currentPropertyNickname={propertyNickname}
-          properties={workspaceProperties}
-        />
+      <div className="shell-nav-head flex items-center gap-1.5 px-3 py-3">
+        <div className="shell-prop-switcher min-w-0 flex-1">
+          <PropertySwitcher
+            currentPropertyId={propertyId}
+            currentPropertyNickname={propertyNickname}
+            properties={workspaceProperties}
+          />
+        </div>
+        {variant === "desktop" && <NavCollapseToggle />}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 pb-4" aria-label="Navegación de propiedad">
@@ -167,7 +167,7 @@ export function SideNav({
           <span className="shell-nav-label">Nueva propiedad</span>
         </Link>
       </div>
-      <NavResizeHandle />
+      {variant === "desktop" && <NavResizeHandle />}
     </aside>
   );
 }
