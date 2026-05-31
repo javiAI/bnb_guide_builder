@@ -198,6 +198,12 @@
   --topbar-padding-x:  var(--space-4);
   --topbar-fg:         var(--color-text-primary);
 
+  /* ════════ CONTENT CONTAINER ════════ */
+  /* Fluid max-width for the operator module container (<ModuleContainer>).
+     Legible on small screens, exploits large displays; the collapsible rail
+     frees additional width when hidden. */
+  --content-max:       var(--size-content-max);
+
   /* ════════ MODAL / DIALOG ════════ */
   --modal-bg:        var(--color-background-elevated);
   --modal-fg:        var(--color-text-primary);
