@@ -59,6 +59,7 @@ export async function getOperatorSearchIndex(
     prisma.propertyAmenityInstance.findMany({
       where: { propertyId },
       select: { amenityKey: true },
+      distinct: ["amenityKey"],
     }),
     prisma.localPlace.findMany({
       where: { propertyId },
@@ -118,11 +119,9 @@ export async function getOperatorSearchIndex(
     });
   }
 
-  // Amenities — dedupe by key (an amenity can be placed in many spaces).
-  const seenAmenity = new Set<string>();
+  // Amenities — deduped by key at the DB (`distinct`), since an amenity can be
+  // placed in many spaces.
   for (const amenity of amenities) {
-    if (seenAmenity.has(amenity.amenityKey)) continue;
-    seenAmenity.add(amenity.amenityKey);
     const item = findAmenityItem(amenity.amenityKey);
     entries.push({
       id: `amenity:${amenity.amenityKey}`,

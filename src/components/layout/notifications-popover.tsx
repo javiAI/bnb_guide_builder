@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Flag, TriangleAlert, type LucideIcon } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
+import { useDismiss } from "@/lib/use-dismiss";
 import type {
   OperatorNotification,
   OperatorNotificationKind,
@@ -33,23 +34,7 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
   const count = notifications.length;
   const label = count > 0 ? `Notificaciones (${count})` : "Notificaciones";
 
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: MouseEvent) {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  useDismiss(open, ref, () => setOpen(false));
 
   return (
     <div ref={ref} className="relative">

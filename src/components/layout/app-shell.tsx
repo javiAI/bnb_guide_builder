@@ -75,7 +75,7 @@ export async function AppShell({
           sectionScores={sectionScores}
           workspaceProperties={workspaceProperties}
         />
-        <div className="shell-content-grid flex-1 min-w-0 lg:ml-[var(--sidebar-width)] xl:grid xl:grid-cols-[minmax(0,1fr)_var(--rail-width,300px)]">
+        <div className="flex-1 min-w-0 lg:ml-[var(--sidebar-width)] xl:grid xl:grid-cols-[minmax(0,1fr)_var(--rail-width,300px)]">
           <main className="min-w-0">
             <div className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-16 sm:px-6 lg:px-8">
               {children}

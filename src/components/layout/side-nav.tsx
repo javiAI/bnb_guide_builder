@@ -103,7 +103,7 @@ export function SideNav({
         width: "var(--sidebar-width)",
       }}
     >
-      <div className="shell-nav-head px-3 py-3">
+      <div className="px-3 py-3">
         <div className="shell-prop-switcher">
           <PropertySwitcher
             currentPropertyId={propertyId}

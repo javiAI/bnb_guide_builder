@@ -205,8 +205,10 @@ export function PanelResizeHandle({
     (px: number, persist: boolean) => {
       const w = clampWidth(px, bounds);
       setWidthVar(widthVar, w);
-      setWidth(w);
       if (persist) {
+        // Sync React state + persist only on commit (release / keyboard) — the
+        // live drag writes the CSS var alone, avoiding a render per pointermove.
+        setWidth(w);
         try {
           window.localStorage.setItem(widthKey, String(w));
         } catch {
