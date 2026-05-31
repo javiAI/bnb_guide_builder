@@ -345,11 +345,22 @@ Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets
 
 ### 8.2 Command palette funcional
 
-**Estado**: diferido. El `CommandBarSlot` de 16D es un placeholder visual (`aria-hidden`, sin interactividad).
+**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`). El ⌘K es un Radix Dialog + `fuse.js` (sin dependencia nueva; `cmdk` descartado por disciplina de deps) en `src/components/layout/command-palette.tsx`: atajo `⌘K`/`Ctrl+K` global + trigger en el topbar, búsqueda fuzzy sobre `WORKSPACE_NAV`, navegación con flechas/Enter.
 
-Implementar paleta real con `cmdk` o similar: búsqueda de propiedades, navegación a secciones, acciones rápidas (crear propiedad, ir a publicación). Requiere decidir el scope de comandos y gestión de estado global para el listener `⌘K`.
+**Follow-ups** (diferidos): scope v2 — búsqueda de **contenido** (no solo navegación de secciones), **acciones** server-side (publicar, crear espacio), búsqueda cross-property. Trigger: feedback de uso real o ≥3 propiedades activas.
 
-**Trigger**: cuando haya ≥3 propiedades en uso real o cuando el feedback de usuarios identifique la navegación como fricción.
+### 8.4 Notificaciones operator — fuentes adicionales
+
+**Estado**: 16F.5 implementó el feed v1 (`src/lib/services/operator-notifications.service.ts`): bloqueos de publicación + incidencias abiertas, popover read-only en el topbar.
+
+**Follow-ups**: drafts de mensajería pendientes + conocimiento stale como fuentes adicionales (la decisión Fase -1 de 16F.5 las dejó fuera de v1). Lazy-load del feed en `onOpen` si el coste por-página de `getValidationsForProperty` se vuelve relevante (hoy cache()'d por render). Marcar-como-leído / dismiss.
+
+### 8.5 Rail auto-hide por grupo + contrato de clases del shell
+
+**Estado**: diferidos de 16F.5.
+
+- **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
+- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio.
 
 ### 8.3 Brand themes para el operator shell
 

@@ -78,6 +78,22 @@ Migration order and status for each product surface adopting the Liora foundatio
 - No brand color usage in operator shell (neutral warm-analytical theme).
 - `var(--sidebar-width)` kept as-is (defined in `design-system/foundations/tokens/components.css`).
 
+### 16F.5 — Operator shell foundation 🚧 (`feat/liora-operator-shell-foundation`, PR-ready)
+
+**Scope**: the *common shell* anticipated in the 16E.5/16F consolidation note — closes the deferred shell work from 16D (command palette, right rail, header heterogeneity). **Adds functionality** (not "0 functional"): persistent collapse, real ⌘K, real notifications, nav-level route unification.
+
+**Key pieces**:
+
+- `src/components/layout/module-container.tsx` — NEW: single operator page container (shared sticky `<PageHeader>` + body); width/gutters owned by AppShell `<main>` via `--content-max` (1200px, new token in primitives + components).
+- `src/components/ui/page-header.tsx` — `sticky` (default true): column-aligned bg + border under the topbar, robust when nested in a form.
+- `src/lib/navigation.ts` + `src/config/schemas/section-editors.ts` — IA reorg into 4 value-chain groups (`content | assistant | publishing | operations`), curated `NAV_ORDER` + auto-append fallback, `hideFromNav` flag, `troubleshooting` → "Averías".
+- `src/styles/shell.css` + `src/lib/shell-prefs.ts` + `src/components/layout/shell-chrome.tsx` — attribute-driven collapse (`html[data-nav-collapsed]`/`[data-rail-collapsed]`) + pre-paint (layout.tsx) + toggles.
+- `src/components/layout/command-palette.tsx` — NEW: ⌘K (Radix Dialog + fuse.js, no new dep); replaces the 16D `command-bar-slot.tsx` (deleted).
+- `src/components/layout/notifications-popover.tsx` + `src/lib/services/operator-notifications.service.ts` — NEW: real feed (publish blockers + open incidents), read-only.
+- `topbar.tsx` — removed global "Publicar"; "Vista huésped" conditional (rail/topbar). `publishing-rail.tsx` — collapse toggle, "Vista huésped" link, "Atajos" removed. `publishing/page.tsx` — folds `<GuidePreview>`; `guest-guide/page.tsx` migrated to ModuleContainer + tokens (conserved as the preview surface, removed from nav).
+
+**Audit scope**: layout components (`src/components/layout/**`) + overview + troubleshooting are auto-audited (`operator-overview`) and pass `component-invariants` + `parity-static`. Legacy ad-hoc pages (knowledge/ai/ops/media/analytics/reservations/incidents/local-guide/settings) got header/shell consistency only — full per-module body parity deferred (not in `AUDITED_SURFACES`). `CURRENT_LIORA_PHASE` → `"16F.5"`.
+
 ### 16E — Operator modules
 
 Surfaces: property wizard (all steps), property editor, space editor.
