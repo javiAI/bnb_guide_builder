@@ -3755,6 +3755,98 @@ Regla de oro: si en duda entre `derivable` y `aspirational`, lo aspirational gan
 
 ---
 
+### Rama 16F.5 — `feat/liora-operator-shell-foundation`
+
+**Propósito**: cierra el shell común del operador anticipado en la nota de consolidación 16E.5/16F (§ rama 16E.6, 2026-05-31). Reconfigura el shell desde el flujo real del operador: (1) **contenedor único `<ModuleContainer>`** que elimina la heterogeneidad de cabeceros, (2) **IA del nav** en 4 grupos siguiendo la cadena de valor (Contenido → Asistente → Publicación → Operaciones), (3) **colapso persistente** de nav + rail, (4) **unificación** guía-huésped/publicación a un solo ítem de nav, (5) **topbar por propósito** (⌘K real, sin "Publicar" global, notificaciones reales, toggle de tema arreglado). Recoge trabajo que 16D difirió a propósito (command palette, right rail, heterogeneidad de cabeceros). Prerequisito conceptual de 16G (deja el shell operator completo y auditado antes del barrido legacy). Plan dossier: `~/.claude/plans/ok-ahora-quiero-crear-sequential-wren.md`.
+
+**Naturaleza**: replatform de shell operator **que SÍ añade funcionalidad** (colapso persistente, ⌘K real, notificaciones reales, unificación de rutas en nav) — NO es "0 cambios funcionales", se documenta explícitamente en la PR. Sin cambios de schema, sin migración Prisma, sin server actions de mutación nuevas. Las notificaciones derivan de lecturas ya existentes (`runAllValidations` + conteo de `incident`).
+
+**Decisiones Fase -1 (aprobadas 2026-05-31)**:
+
+1. **Phase-id `16F.5`**. Extiende `LioraPhase` union + `LIORA_PHASE_ORDER` (entre `"16F"` y `"16G"`); bump `CURRENT_LIORA_PHASE = "16F.5"` en commit 1. Las 8 listas de excepciones están vacías hoy → el bump no dispara cleanup heredado.
+2. **Una sola rama** (no partición 16F.5a/b). PR grande con sección "AÑADE funcionalidad" explícita en la descripción. Si el diff descontrolado supera ~70 archivos / ~3k LOC netas, se reevalúa partición con el usuario, no unilateralmente.
+3. **Unificación de rutas — Opción B**: nav muestra UN ítem "Publicación" (`/publishing`); el hub pliega la preview (`GuidePreview`) como sección/pestaña + el gate/validaciones/diff/versiones/QR existentes. **`/guest-guide` se conserva** como ruta de preview dedicada (migrada a tokens + `<ModuleContainer>`), destino de "Vista huésped". Sin redirects (no rompe deep-links/tests existentes). Se retira `guest-guide` del nav, no del routing.
+4. **⌘K sobre Radix Dialog + `fuse.js`** (ambos ya en stack) — **cero dependencias nuevas**. NO se añade `cmdk`. Saca el item de `FUTURE.md §8.2`.
+5. **Orden Contenido**: Resumen → Propiedad → Acceso → Contactos → Espacios → Sistemas → Equipamiento → Normas → Guía local → **Averías**. `troubleshooting` se renombra label "Incidencias" → **"Averías"** (la ruta sigue `/troubleshooting`); el ítem de Operaciones `incidents` mantiene "Incidencias" (colisión resuelta).
+6. **Grupos**: `content | assistant | publishing | operations`. Asistente = Asistente IA + **Base de conocimiento**. Publicación = hub unificado + Mensajería. Operaciones = Operativa · Reservas · Incidencias · Media · Analítica · Configuración. **Actividad** se retira del nav y se pliega como pestaña/enlace dentro de Configuración (la ruta `/activity` se conserva).
+7. **Notificaciones v1** = popover read-only en topbar: blockers de publicación + incidencias abiertas. Cada item enlaza a su origen. Drafts/knowledge-stale = follow-up `FUTURE.md`.
+8. **Rail derecho**: se quita "Atajos" (redundante con nav); se conserva "Ruta de publicación" (4 secciones gating) + "Guía pública/QR". Colapsable + persistente; condicional (visible en Contenido, oculto en Operaciones/Analítica). Colapsado → "Vista huésped" sube al topbar.
+9. **Toggle de tema**: arreglar para que el icono refleje el modo elegido (auto ≠ claro distinguibles), conservando los 3 estados.
+10. **`--content-max` = 1200px** (ancho fluido legible; el colapso del rail libera más).
+
+**Desviaciones intencionales del kit** `ui_kits/operator/index.html` (documentadas en el bloque de paridad como decisiones de producto, no como gaps): 4 grupos vs 3 del kit; "Publicar" fuera del topbar; unificación guía+publicación; knowledge bajo Asistente. La rúbrica gatea silueta/jerarquía/densidad/tokens, no IA exacta.
+
+**Archivos a crear**:
+
+- `src/components/layout/module-container.tsx` — primitivo único: ancho fluido (`--content-max`), `<PageHeader>` sticky, API `eyebrow/title/description/chips/actions`.
+- `src/components/layout/shell-chrome.tsx` — isla cliente: estado + persistencia de colapso nav/rail (patrón `theme.ts`).
+- `src/components/layout/command-palette.tsx` — ⌘K (Radix Dialog + fuse.js): navegar a `WORKSPACE_NAV` + acciones.
+- `src/components/layout/notifications-popover.tsx` — feed agregado read-only (blockers + incidencias abiertas).
+- `src/lib/shell-prefs.ts` — keys de colapso (sibling de `theme.ts`; copia literal en pre-paint de `layout.tsx`).
+- `src/lib/services/operator-notifications.service.ts` — derivación read-only del feed.
+
+**Archivos a modificar**:
+
+- `src/lib/navigation.ts` — 4 grupos (`content|assistant|publishing|operations`), reorden, regroup, retirar `guest-guide` + `activity` del nav.
+- `src/config/schemas/section-editors.ts` — label "Averías"; grupos `assistant`/`publishing`; group union extendida.
+- `src/components/layout/side-nav.tsx` — `NAV_ICONS` (íconos kit: Averías=`Wrench`, etc.), render colapsado icon-rail.
+- `src/components/layout/app-shell.tsx` — montar `shell-chrome`, `--content-max`, rail condicional + colapsable.
+- `src/components/layout/topbar.tsx` — ⌘K real, quitar "Publicar", "Vista huésped" condicional, notificaciones reales.
+- `src/components/layout/command-bar-slot.tsx` — cablear al palette.
+- `src/components/layout/publishing-rail.tsx` — quitar "Atajos", colapsable, condicional por grupo.
+- `src/components/ui/theme-toggle.tsx` — distinguir auto/claro.
+- `src/components/ui/page-header.tsx` — variante sticky (consumida por `ModuleContainer`).
+- `src/app/layout.tsx` — pre-paint de estado de colapso.
+- `src/app/properties/[propertyId]/**/page.tsx` (~20) — migrar a `<ModuleContainer>`.
+- `src/app/properties/[propertyId]/publishing/page.tsx` — fold de la preview.
+- `src/app/properties/[propertyId]/guest-guide/page.tsx` — migrar a tokens + `<ModuleContainer>` (preview dedicada).
+- `design-system/foundations/tokens/components.css` (+ `primitives.css`) — token `--content-max`.
+- `src/test/parity-allowlist.ts` — `"16F.5"` en `LioraPhase` + `LIORA_PHASE_ORDER`; bump `CURRENT_LIORA_PHASE`; `AUDITED_SURFACES` para todas las páginas migradas; `EXPECTED_OPERATOR_SCOPE_PATTERNS`.
+- Docs: `ROADMAP.md`, `LIORA_SURFACE_ROLLOUT_PLAN.md`, `FUTURE.md` (⌘K out, follow-ups), `CLAUDE.md` § "Patrones de UI — Operator shell".
+
+**Tests**:
+- `component-invariants.test.ts` verde con todas las páginas migradas en `AUDITED_SURFACES` (`profile: "operator"`); orphan check verde.
+- `parity-static.test.ts` + `dark-parity.test.ts` verdes (dark sin cambios estructurales).
+- Test de `ModuleContainer` (cabecero sticky, ancho fluido) + colapso persistente (smoke).
+- axe-core `serious|critical = 0` en shell + páginas representativas, light + dark.
+- `/playwright-cli`: colapso persiste (nav+rail); ⌘K navega/ejecuta; notificaciones llevan a blockers/incidencias; cabecero sticky en scroll en TODAS las páginas; "Publicar" no aparece fuera del hub; toggle 3 estados distinguibles.
+
+**Criterio de done**:
+- ✅ `<ModuleContainer>` consumido por las ~20 páginas operator (consistencia de cabecero/ancho/sticky verificada).
+- ✅ Nav en 4 grupos con orden aprobado; "Averías" renombrado; knowledge bajo Asistente; Actividad plegada en Configuración.
+- ✅ Colapso nav + rail persistente + sin FOUC (pre-paint).
+- ✅ ⌘K real (navegación + acciones) sin nueva dependencia.
+- ✅ Notificaciones reales (blockers + incidencias) en popover read-only.
+- ✅ Hub `/publishing` con preview plegada; `/guest-guide` conservada y migrada; un solo ítem de nav.
+- ✅ "Publicar" fuera del topbar; toggle de tema con 3 estados distinguibles.
+- ✅ Todas las gates verdes (`prisma generate → tsc → vitest → build`); axe 0 serious|critical light+dark.
+- ✅ `/liora-ui-kit-parity` ≥8.5 global / ≥7.5 por criterio vs `operator/index.html` + `subpages.html` (con desviaciones de producto documentadas).
+- ✅ Branch closure template (5 reglas duras) cumplido en la PR description.
+
+**Restricciones**:
+- ❌ Cambios de schema / migración Prisma / server actions de mutación nuevas.
+- ❌ Romper URLs existentes (todas las rutas siguen vivas; `/guest-guide` se conserva).
+- ❌ Introducir `*V2`/`New*`/`legacy-*` ni convivencias sin plan de retirada.
+- ❌ Tocar el sistema visual guest (`src/components/public-guide/**`) — profile operator/shared only.
+- ❌ Añadir dependencias runtime nuevas (⌘K sobre Radix + fuse.js).
+- ❌ Degradar axe serious|critical=0 ni targets ≥44.
+
+**Dependencias / Riesgos**:
+- ⚠️ Rama grande (>30 archivos). Mitigación: commits pequeños por fase del §8 del dossier; `/pre-commit-review` por commit; `/simplify` sobre toda la rama antes de PR.
+- ⚠️ `getDerived(propertyId).readiness.scores` se consume en `app-shell.tsx` (badges) — el render no debe regresar (try/catch fail-soft existente).
+- ⚠️ Colapso persistente vía `localStorage` + pre-paint: replicar disciplina de `theme.ts` (copia literal del key en `layout.tsx`, SSR guards).
+- ⚠️ Migración masiva a `<ModuleContainer>`: riesgo de regresión visual por página. Mitigación: screenshots before/after por surface.
+- ⚠️ Desviaciones del kit pueden bajar el score de paridad — documentarlas como decisiones de producto, no ocultarlas.
+
+**No-alcance**: command palette con acciones server-side complejas (solo navegación + acciones triviales existentes), brand themes operator, notificaciones de drafts/knowledge-stale (follow-up), barrido legacy (16G), guest visual (16H), right rail en surfaces no-Contenido, búsqueda full-text del ⌘K sobre contenido (solo nav + acciones).
+
+**Preparación**:
+- **Contexto a leer**: dossier `~/.claude/plans/ok-ahora-quiero-crear-sequential-wren.md`, kits `ui_kits/operator/{index,subpages}.html` + `operator.css`, `design-system/docs/DESIGN_MIGRATION.md`, `CLAUDE.md` § "Patrones de UI — Operator shell", critical files §7 del dossier.
+- **Docs a actualizar al terminar**: `ROADMAP.md` (16F.5 ✅), `LIORA_SURFACE_ROLLOUT_PLAN.md` (shell común completo), `FUTURE.md` (⌘K out + follow-ups notifs), `CLAUDE.md` § "Patrones de UI — Operator shell" (ModuleContainer, colapso, ⌘K, notifs).
+- **Skills**: `/frontend-design`, `/webapp-testing`, `/playwright-cli`, `/liora-ui-kit-parity` (gate), `/simplify` (obligatorio), `/pre-commit-review` (por commit).
+
+---
+
 ### Rama 16G — `chore/remove-legacy-ui`
 
 **Propósito**: barrido final. Elimina:
