@@ -2,7 +2,11 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { Moon, Cigarette, PartyPopper, Camera, SprayCan, UserPlus } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { NumberedSection } from "@/components/ui/numbered-section";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { RadioCardGroup } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
@@ -32,31 +36,35 @@ const PET_FEE_OPTIONS = getPolicyFieldOptions("pol.pets", "fee_mode");
 const PET_RESTRICTION_OPTIONS = getPolicyFieldOptions("pol.pets", "restrictions");
 const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
 
-// ── Helpers ──
+// ── Field heading (icon-led — mirrors the per-rule icon anatomy of the
+// page-normas kit, where every rule leads with a circular Lucide glyph in a
+// tinted badge: `.rn-ic` 32×32 accent for narrative rows). We use the
+// canonical <IconBadge tone="primary" size="md"> so the accent circle reads
+// as the kit's leading affordance, not a flat inline glyph. ──
 
-function buildSummaryLabel(policies: PoliciesData): Record<string, string | null> {
-  const labels: Record<string, string | null> = {};
-
-  // Convivencia
-  const parts: string[] = [];
-  if (policies.quietHours.enabled) parts.push(`Silencio ${policies.quietHours.from ?? "22:00"}–${policies.quietHours.to ?? "08:00"}`);
-  const smokingLabel = SMOKING_OPTIONS.find((o) => o.id === policies.smoking)?.label;
-  if (smokingLabel && policies.smoking !== "not_allowed") parts.push(`Fumar: ${smokingLabel}`);
-  labels.convivencia = parts.length ? parts.join(", ") : null;
-
-  // Mascotas
-  labels.mascotas = policies.pets.allowed ? "Se admiten mascotas" : "No se admiten mascotas";
-
-  // Suplementos
-  const supParts: string[] = [];
-  if (policies.supplements.cleaning.enabled) supParts.push(`Limpieza: ${policies.supplements.cleaning.amount ?? 0} EUR`);
-  if (policies.supplements.extraGuest.enabled) supParts.push(`Huésped extra: ${policies.supplements.extraGuest.amount ?? 0} EUR`);
-  labels.suplementos = supParts.length ? supParts.join(", ") : "Sin suplementos";
-
-  // Servicios
-  labels.servicios = policies.services.allowed ? "Servicios permitidos" : "No permitidos";
-
-  return labels;
+function FieldHeading({
+  icon,
+  label,
+  hint,
+  tooltip,
+}: {
+  icon: LucideIcon;
+  label: string;
+  hint?: string;
+  tooltip?: string;
+}) {
+  return (
+    <div className="mb-3 flex items-start gap-3">
+      <IconBadge icon={icon} tone="primary" size="md" iconSize={16} />
+      <div className="min-w-0 pt-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</span>
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </div>
+        {hint && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{hint}</p>}
+      </div>
+    </div>
+  );
 }
 
 // ── Component ──
@@ -107,12 +115,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
   const [servicesAllowed, setServicesAllowed] = useState(initial.services.allowed);
   const [serviceTypes, setServiceTypes] = useState<string[]>((initial.services.types ?? []).filter((id) => validServiceTypeIds.has(id)));
   const [serviceNotes, setServiceNotes] = useState(initial.services.notes ?? "");
-
-  // ── Section expand state ──
-  const [convivenciaOpen, setConvivenciaOpen] = useState(true);
-  const [mascotasOpen, setMascotasOpen] = useState(false);
-  const [suplementosOpen, setSuplementosOpen] = useState(false);
-  const [serviciosOpen, setServiciosOpen] = useState(false);
 
   // ── Form action ──
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePoliciesAction, null);
@@ -166,30 +168,36 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
     };
   }
 
-  const summaryLabels = buildSummaryLabel(buildPoliciesJson());
+  // ── Shared styles (Liora semantic tokens) ──
+  const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
+  const labelCls = "block text-sm font-medium text-[var(--color-text-primary)]";
+  const subLabelCls = "block text-xs text-[var(--color-text-secondary)] mt-0.5 mb-2";
 
-  // ── Shared styles ──
-  const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
-  const labelCls = "block text-sm font-medium text-[var(--foreground)]";
-  const subLabelCls = "block text-xs text-[var(--color-neutral-500)] mt-0.5 mb-2";
-  const toggleCls = "relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer";
-  const toggleDotCls = "inline-block h-4 w-4 rounded-full bg-white transition-transform";
-
+  // Switch: the visual track (h-6) sits inside a 44-tall button so the hit
+  // area meets the touch-target floor without inflating the control. The
+  // background lives on the inner span, so the touch-target gate reads the
+  // button as a min-h floor, not a fixed-square icon button. Tapping either
+  // the track or the label toggles.
   function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
     return (
-      <label className="flex items-center gap-3 cursor-pointer">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label={label}
-          onClick={() => onChange(!checked)}
-          className={`${toggleCls} ${checked ? "bg-[var(--color-primary-500)]" : "bg-[var(--color-neutral-300)]"}`}
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={label}
+        onClick={() => onChange(!checked)}
+        className="inline-flex min-h-[44px] cursor-pointer items-center gap-3 text-left"
+      >
+        <span
+          aria-hidden="true"
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-[var(--color-action-primary)]" : "bg-[var(--color-border-strong)]"}`}
         >
-          <span className={`${toggleDotCls} ${checked ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-        <span className="text-sm text-[var(--foreground)]">{label}</span>
-      </label>
+          <span
+            className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`}
+          />
+        </span>
+        <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+      </button>
     );
   }
 
@@ -199,71 +207,66 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         formData.set("policiesJson", JSON.stringify(buildPoliciesJson()));
         formAction(formData);
       }}
-      className="space-y-4"
+      className="mx-auto max-w-3xl px-6 py-8"
     >
+      <PageHeader
+        eyebrow="Propiedad · Normas"
+        title="Normas de la casa"
+        description="Lo que puede y no puede hacer el huésped. Escribe con el mismo tono con el que hablarías en persona — firme y cálido, no burocrático."
+      />
+
       <input type="hidden" name="propertyId" value={propertyId} />
 
-      <div className="flex items-center justify-between">
-        <span />
-        {saveStatus && <InlineSaveStatus status={saveStatus} />}
-      </div>
-
       {state?.error && (
-        <p className="rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
           {state.error}
         </p>
       )}
 
       {/* ── Block 1: Convivencia ── */}
-      <CollapsibleSection
-        title="Convivencia"
-        selectedLabel={summaryLabels.convivencia}
-        expanded={convivenciaOpen}
-        onToggle={() => setConvivenciaOpen(!convivenciaOpen)}
-      >
+      <NumberedSection number="01" title="Convivencia">
         <div className="space-y-6">
           {/* Quiet hours */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Horario de silencio</span>
-              <InfoTooltip text="El horario de silencio se comunicará a los huéspedes en la guía. Establece las horas en las que se debe evitar ruido excesivo." />
-            </div>
+            <FieldHeading
+              icon={Moon}
+              label="Horario de silencio"
+              tooltip="El horario de silencio se comunicará a los huéspedes en la guía. Establece las horas en las que se debe evitar ruido excesivo."
+            />
             <Toggle checked={quietEnabled} onChange={setQuietEnabled} label="¿Hay restricción de ruido?" />
             {quietEnabled && (
               <div className="mt-3 flex items-center gap-3">
-                <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Desde</span>
+                <label className="block">
+                  <span className="text-xs text-[var(--color-text-muted)]">Desde</span>
                   <select value={quietFrom} onChange={(e) => setQuietFrom(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                </div>
-                <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Hasta</span>
+                </label>
+                <label className="block">
+                  <span className="text-xs text-[var(--color-text-muted)]">Hasta</span>
                   <select value={quietTo} onChange={(e) => setQuietTo(e.target.value)} className={inputCls}>
                     {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
-                </div>
+                </label>
               </div>
             )}
           </div>
 
           {/* Smoking */}
           <div>
-            <span className={labelCls}>Fumar</span>
-            <span className={subLabelCls}>Política de tabaco en la propiedad</span>
+            <FieldHeading icon={Cigarette} label="Fumar" hint="Política de tabaco en la propiedad" />
             <RadioCardGroup name="_smoking" options={SMOKING_OPTIONS} value={smoking} onChange={(v) => setSmoking(v as PoliciesData["smoking"])} showRecommended={false} />
             {smoking === "designated_area" && (
-              <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">¿Dónde se puede fumar?</span>
+              <label className="mt-3 block">
+                <span className="text-xs text-[var(--color-text-muted)]">¿Dónde se puede fumar?</span>
                 <input type="text" value={smokingArea} onChange={(e) => setSmokingArea(e.target.value)} placeholder="Ej: terraza trasera" className={inputCls} />
-              </div>
+              </label>
             )}
           </div>
 
           {/* Events */}
           <div>
-            <span className={labelCls}>Eventos y reuniones</span>
-            <span className={subLabelCls}>Política sobre reuniones y eventos en la propiedad</span>
+            <FieldHeading icon={PartyPopper} label="Eventos y reuniones" hint="Política sobre reuniones y eventos en la propiedad" />
             <RadioCardGroup name="_events" options={EVENTS_OPTIONS} value={eventsPolicy} onChange={(v) => setEventsPolicy(v as PoliciesData["events"]["policy"])} showRecommended={false} />
             {eventsPolicy === "small_gatherings" && (
               <div className="mt-3">
@@ -271,33 +274,27 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
             )}
             {eventsPolicy === "with_approval" && (
-              <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">Instrucciones para solicitar aprobación</span>
+              <label className="mt-3 block">
+                <span className="text-xs text-[var(--color-text-muted)]">Instrucciones para solicitar aprobación</span>
                 <textarea value={eventsApproval} onChange={(e) => setEventsApproval(e.target.value)} rows={2} placeholder="Ej: contactar al anfitrión con 48h de antelación" className={inputCls} />
-              </div>
+              </label>
             )}
           </div>
 
           {/* Commercial photography */}
           <div>
-            <span className={labelCls}>Fotografía / filmación comercial</span>
-            <span className={subLabelCls}>Uso comercial de la propiedad para sesiones de foto o vídeo</span>
+            <FieldHeading icon={Camera} label="Fotografía / filmación comercial" hint="Uso comercial de la propiedad para sesiones de foto o vídeo" />
             <RadioCardGroup name="_photo" options={PHOTOGRAPHY_OPTIONS} value={commercialPhoto} onChange={(v) => setCommercialPhoto(v as PoliciesData["commercialPhotography"])} showRecommended={false} />
           </div>
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 2: Mascotas ── */}
-      <CollapsibleSection
-        title="Mascotas"
-        selectedLabel={summaryLabels.mascotas}
-        expanded={mascotasOpen}
-        onToggle={() => setMascotasOpen(!mascotasOpen)}
-      >
+      <NumberedSection number="02" title="Mascotas">
         <div className="space-y-6">
           <Toggle checked={petsAllowed} onChange={setPetsAllowed} label="¿Se admiten mascotas?" />
 
-          {petsAllowed && (
+          {petsAllowed ? (
             <>
               {/* Pet types */}
               <div>
@@ -329,8 +326,8 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <span className={subLabelCls}>¿Se cobra suplemento por traer mascotas?</span>
                 <RadioCardGroup name="_petFee" options={PET_FEE_OPTIONS} value={petFeeMode} onChange={(v) => setPetFeeMode(v as NonNullable<PoliciesData["pets"]["feeMode"]>)} showRecommended={false} />
                 {petFeeMode !== "none" && (
-                  <div className="mt-3">
-                    <span className="text-xs text-[var(--color-neutral-500)]">Importe (EUR)</span>
+                  <label className="mt-3 block">
+                    <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                     <input
                       type="number"
                       min={0}
@@ -339,7 +336,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                       onChange={(e) => setPetFeeAmount(Number(e.target.value))}
                       className={`${inputCls} max-w-[10rem]`}
                     />
-                  </div>
+                  </label>
                 )}
               </div>
 
@@ -350,41 +347,41 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               </div>
 
               {/* Service animals info */}
-              <div className="rounded-[var(--radius-md)] bg-[var(--color-primary-50)] p-3">
-                <p className="text-xs text-[var(--color-primary-700)]">
+              <div className="rounded-[var(--radius-md)] bg-[var(--color-action-primary-subtle)] p-3">
+                <p className="text-xs text-[var(--color-action-primary-subtle-fg)]">
                   Los animales de servicio / asistencia están siempre permitidos sin cargo adicional, según la legislación vigente.
                 </p>
               </div>
 
               {/* Notes */}
-              <div>
+              <label className="block">
                 <span className={labelCls}>Notas adicionales</span>
                 <span className={subLabelCls}>Información extra sobre la política de mascotas (opcional)</span>
                 <textarea value={petNotes} onChange={(e) => setPetNotes(e.target.value)} rows={2} placeholder="Ej: se requiere documentación veterinaria al día" className={inputCls} />
-              </div>
+              </label>
             </>
+          ) : (
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              No se admiten mascotas en la propiedad. Si más adelante quieres recibirlas, aquí defines tipos, tamaño y suplementos.
+            </p>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 3: Suplementos ── */}
-      <CollapsibleSection
-        title="Suplementos y cargos"
-        selectedLabel={summaryLabels.suplementos}
-        expanded={suplementosOpen}
-        onToggle={() => setSuplementosOpen(!suplementosOpen)}
-      >
+      <NumberedSection number="03" title="Suplementos y cargos">
         <div className="space-y-6">
           {/* Cleaning fee */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Suplemento de limpieza</span>
-              <InfoTooltip text="Cargo único que se aplica una vez por reserva, independientemente de la duración de la estancia." />
-            </div>
+            <FieldHeading
+              icon={SprayCan}
+              label="Suplemento de limpieza"
+              tooltip="Cargo único que se aplica una vez por reserva, independientemente de la duración de la estancia."
+            />
             <Toggle checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
             {cleaningEnabled && (
-              <div className="mt-3">
-                <span className="text-xs text-[var(--color-neutral-500)]">Importe (EUR)</span>
+              <label className="mt-3 block">
+                <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
                 <input
                   type="number"
                   min={0}
@@ -393,21 +390,22 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                   onChange={(e) => setCleaningAmount(Number(e.target.value))}
                   className={`${inputCls} max-w-[10rem]`}
                 />
-              </div>
+              </label>
             )}
           </div>
 
           {/* Extra guest fee */}
           <div>
-            <div className="flex items-center gap-1 mb-3">
-              <span className={labelCls}>Suplemento por huésped extra</span>
-              <InfoTooltip text="Cargo adicional por noche para cada huésped que exceda el límite base. Se aplica por noche y por persona." />
-            </div>
+            <FieldHeading
+              icon={UserPlus}
+              label="Suplemento por huésped extra"
+              tooltip="Cargo adicional por noche para cada huésped que exceda el límite base. Se aplica por noche y por persona."
+            />
             <Toggle checked={extraGuestEnabled} onChange={setExtraGuestEnabled} label="¿Se cobra suplemento por huésped extra?" />
             {extraGuestEnabled && (
               <div className="mt-3 space-y-3">
-                <div>
-                  <span className="text-xs text-[var(--color-neutral-500)]">Importe por huésped extra (EUR / noche)</span>
+                <label className="block">
+                  <span className="text-xs text-[var(--color-text-muted)]">Importe por huésped extra (EUR / noche)</span>
                   <input
                     type="number"
                     min={0}
@@ -416,12 +414,12 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                     onChange={(e) => setExtraGuestAmount(Number(e.target.value))}
                     className={`${inputCls} max-w-[10rem]`}
                   />
-                </div>
+                </label>
                 <div>
                   <NumberStepper label="A partir de cuántos huéspedes" value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
-                  <p className="mt-1.5 text-xs text-[var(--color-neutral-400)]">
+                  <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
                     Máximo de huéspedes: {propertyDefaults.maxGuests ?? "—"} ·{" "}
-                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-primary-500)] hover:underline">
+                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-text-link)] underline">
                       Editar en Propiedad
                     </Link>
                   </p>
@@ -432,30 +430,21 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
           {/* Pet fee reference */}
           {petsAllowed && petFeeMode !== "none" && (
-            <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--border)] p-3">
-              <span className="text-xs text-[var(--color-neutral-500)]">Suplemento por mascota</span>
-              <p className="text-sm">
+            <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-default)] p-3">
+              <span className="text-xs text-[var(--color-text-muted)]">Suplemento por mascota</span>
+              <p className="text-sm text-[var(--color-text-primary)]">
                 {petFeeAmount} EUR / {PET_FEE_OPTIONS.find((o) => o.id === petFeeMode)?.label?.toLowerCase()}
               </p>
-              <button
-                type="button"
-                onClick={() => { setMascotasOpen(true); setSuplementosOpen(false); }}
-                className="mt-1 text-xs text-[var(--color-primary-500)] hover:underline"
-              >
-                Configurado en Mascotas
-              </button>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                Se configura en la sección Mascotas.
+              </p>
             </div>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Block 4: Servicios ── */}
-      <CollapsibleSection
-        title="Servicios permitidos"
-        selectedLabel={summaryLabels.servicios}
-        expanded={serviciosOpen}
-        onToggle={() => setServiciosOpen(!serviciosOpen)}
-      >
+      <NumberedSection number="04" title="Servicios permitidos">
         <div className="space-y-6">
           <Toggle checked={servicesAllowed} onChange={setServicesAllowed} label="¿Se permite contratar servicios externos?" />
 
@@ -466,27 +455,30 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
                 <span className={subLabelCls}>Selecciona los servicios que los huéspedes pueden contratar</span>
                 <CheckboxCardGroup name="_serviceTypes" options={SERVICE_TYPE_OPTIONS} value={serviceTypes} onChange={setServiceTypes} showRecommended={false} />
               </div>
-              <div>
+              <label className="block">
                 <span className={labelCls}>Notas sobre servicios</span>
                 <textarea value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)} rows={2} placeholder="Ej: coordinar con el anfitrión con 24h de antelación" className={inputCls} />
-              </div>
+              </label>
             </>
           ) : (
-            <p className="text-xs text-[var(--color-neutral-500)]">
-              No se permiten servicios externos en la propiedad.
+            <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              Los huéspedes no pueden contratar servicios externos durante la estancia. Si en el futuro quieres ofrecerlos, configúralos aquí.
             </p>
           )}
         </div>
-      </CollapsibleSection>
+      </NumberedSection>
 
       {/* ── Submit ── */}
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Guardar normas"}
-      </button>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
+        >
+          {pending ? "Guardando…" : "Guardar normas"}
+        </button>
+        {saveStatus && <InlineSaveStatus status={saveStatus} />}
+      </div>
     </form>
   );
 }

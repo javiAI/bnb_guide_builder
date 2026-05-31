@@ -19,6 +19,9 @@ import {
   type DerivationStatus,
   type AccessMethodsShape,
 } from "@/lib/amenity-derivation-resolver";
+import { CheckCheck, Camera, Sparkles } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { AmenitySelector } from "./amenity-selector";
 
 // ── Serialisable types for client ──
@@ -42,6 +45,10 @@ export interface EnrichedAmenityItem {
    * creation surface lands.
    */
   isCustomInstance: boolean;
+  /** ≥1 image media assignment on this instance (eq-attach photo indicator). */
+  hasPhoto: boolean;
+  /** Instance has at least one meaningful detail value (eq-attach note indicator). */
+  hasNote: boolean;
 }
 
 export interface DerivedAmenityItem {
@@ -57,6 +64,20 @@ export interface SpaceSection {
   spaceType: string;
   spaceName: string;
   items: EnrichedAmenityItem[];
+}
+
+/** True when an instance's detailsJson holds at least one set value. */
+function hasMeaningfulDetails(
+  details: Record<string, unknown> | null,
+): boolean {
+  if (!details) return false;
+  return Object.values(details).some((v) => {
+    if (v === null || v === undefined) return false;
+    if (typeof v === "string") return v.trim() !== "";
+    if (typeof v === "boolean") return v;
+    if (Array.isArray(v)) return v.length > 0;
+    return true;
+  });
 }
 
 export default async function AmenitiesPage({
@@ -99,6 +120,25 @@ export default async function AmenitiesPage({
       select: { systemKey: true, detailsJson: true },
     }),
   ]);
+
+  // Photo presence per instance — one grouped query (D1). Counts image
+  // assignments so the eq-attach camera indicator + "con foto" chip reflect
+  // real photos. Notes are derived from `detailsJson` (no extra query).
+  const instanceIds = existingInstances.map((i) => i.id);
+  const photoGroups = instanceIds.length
+    ? await prisma.mediaAssignment.groupBy({
+        by: ["entityId"],
+        where: {
+          entityType: "amenity_instance",
+          entityId: { in: instanceIds },
+          mediaAsset: { mimeType: { startsWith: "image/" } },
+        },
+        _count: { _all: true },
+      })
+    : [];
+  const photoCountByDbId = new Map<string, number>(
+    photoGroups.map((g) => [g.entityId, g._count._all]),
+  );
 
   // ── Build derivation context (shared by all derived items) ──
 
@@ -204,6 +244,7 @@ export default async function AmenitiesPage({
     const key = `${item.id}|${spaceId ?? ""}`;
     const existing = instanceIndex.get(key);
     const subtype = findSubtype(item.id);
+    const detailsJson = (existing?.detailsJson as Record<string, unknown>) ?? null;
     return {
       id: item.id,
       label: item.label,
@@ -214,8 +255,10 @@ export default async function AmenitiesPage({
       subtypeFields: subtype?.fields ?? [],
       enabled: !!existing,
       dbId: existing?.id ?? null,
-      detailsJson: (existing?.detailsJson as Record<string, unknown>) ?? null,
+      detailsJson,
       isCustomInstance: existing?.isCustomInstance ?? false,
+      hasPhoto: existing ? (photoCountByDbId.get(existing.id) ?? 0) > 0 : false,
+      hasNote: hasMeaningfulDetails(detailsJson),
     };
   }
 
@@ -254,23 +297,62 @@ export default async function AmenitiesPage({
     })
     .filter((x): x is DerivedAmenityItem => x !== null);
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Equipamiento
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Configura qué equipamiento tiene tu propiedad y cada espacio.
-      </p>
+  // Header counts (server-derived; reflect the real state after each toggle's
+  // revalidation). "con foto" counts enabled instances with ≥1 image.
+  const allConfigurable = [
+    ...generalItems,
+    ...spaceSections.flatMap((s) => s.items),
+  ];
+  const totalShown = allConfigurable.length;
+  const totalEnabled = allConfigurable.filter((i) => i.enabled).length;
+  const totalWithPhoto = allConfigurable.filter((i) => i.hasPhoto).length;
 
-      <div className="mt-8">
-        <AmenitySelector
-          propertyId={propertyId}
-          generalItems={generalItems}
-          generalDerived={generalDerived}
-          spaceSections={spaceSections}
-        />
-      </div>
-    </div>
+  return (
+    <>
+      <PageHeader
+        eyebrow="Propiedad · Equipamiento"
+        title="Equipamiento"
+        description="Lo que el huésped encontrará al llegar. Marca lo que está disponible y añade una nota o una foto cuando el uso no sea evidente."
+        actions={
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent-subtle)] px-2.5 py-1 text-[12px] font-medium text-[var(--color-accent-fg)]">
+            <Sparkles size={13} aria-hidden="true" />
+            {totalEnabled} de {totalShown}
+          </span>
+        }
+        chips={
+          <>
+            <PageHeaderChip
+              icon={CheckCheck}
+              label={
+                <>
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    {totalEnabled}
+                  </span>{" "}
+                  disponibles
+                </>
+              }
+            />
+            <PageHeaderChip
+              icon={Camera}
+              label={
+                <>
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    {totalWithPhoto}
+                  </span>{" "}
+                  con foto
+                </>
+              }
+            />
+          </>
+        }
+      />
+
+      <AmenitySelector
+        propertyId={propertyId}
+        generalItems={generalItems}
+        generalDerived={generalDerived}
+        spaceSections={spaceSections}
+      />
+    </>
   );
 }

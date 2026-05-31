@@ -54,7 +54,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         tabIndex={0}
         onClick={toggle}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(e); } }}
-        className="ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-background-subtle)] text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-border-default)] hover:text-[var(--color-text-secondary)] transition-colors"
+        className="recipe-icon-btn-16 ml-1 inline-flex h-4 w-4 cursor-pointer select-none items-center justify-center rounded-full bg-[var(--color-background-subtle)] text-[10px] font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-border-default)] hover:text-[var(--color-text-secondary)] transition-colors"
         aria-label="Más información"
         aria-describedby={open ? tooltipId : undefined}
       >

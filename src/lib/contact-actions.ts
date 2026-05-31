@@ -38,3 +38,12 @@ export function buildMailtoHref(email: string): string | null {
   const trimmed = email.trim();
   return trimmed ? `mailto:${trimmed}` : null;
 }
+
+/** Google Maps "search by address" URL. Returns null for empty input so the
+ *  caller can hide the link. The address is free text, so it's URL-encoded. */
+export function buildMapsHref(address: string): string | null {
+  const trimmed = address.trim();
+  return trimmed
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`
+    : null;
+}
