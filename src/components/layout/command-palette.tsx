@@ -5,55 +5,29 @@ import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import Fuse from "fuse.js";
 import { Search } from "lucide-react";
-import { WORKSPACE_NAV, NAV_GROUP_LABELS } from "@/lib/navigation";
+import { getOperatorSearchAction } from "@/lib/actions/operator-search.actions";
+import type { OperatorSearchEntry } from "@/lib/services/operator-search.service";
 
 interface CommandPaletteProps {
   propertyId: string;
-}
-
-interface Command {
-  key: string;
-  label: string;
-  group: string;
-  href: string;
 }
 
 const KBD_CLASS =
   "rounded-[4px] border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] px-1.5 py-0.5 font-mono text-[10px] font-medium leading-none text-[var(--color-text-secondary)]";
 
 /**
- * Operator command palette (Liora 16F.5). Activates the topbar ⌘K — was a
- * non-interactive slot in 16D. Built on Radix Dialog + fuse.js (no new
- * dependency). v1 scope: navigate to any workspace section; content-level search
- * and server actions are a documented follow-up (docs/FUTURE.md).
+ * Operator command palette (Liora 16F.5). Radix Dialog + fuse.js (no new dep),
+ * opened with ⌘K. Searches a per-property index (sections + contacts + spaces +
+ * systems + equipamiento + guía local + soluciones + policy concepts) lazily
+ * loaded on first open, and deep-links to the section each result lives in.
  */
 export function CommandPalette({ propertyId }: CommandPaletteProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-
-  const commands = useMemo<Command[]>(
-    () =>
-      WORKSPACE_NAV.map((item) => ({
-        key: item.key,
-        label: item.label,
-        group: NAV_GROUP_LABELS[item.group],
-        href: item.href(propertyId),
-      })),
-    [propertyId],
-  );
-
-  const fuse = useMemo(
-    () => new Fuse(commands, { keys: ["label", "group"], threshold: 0.4 }),
-    [commands],
-  );
-
-  const results = useMemo<Command[]>(() => {
-    const q = query.trim();
-    if (!q) return commands;
-    return fuse.search(q).map((r) => r.item);
-  }, [query, commands, fuse]);
+  const [entries, setEntries] = useState<OperatorSearchEntry[] | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // ⌘K / Ctrl+K toggles the palette anywhere in the operator shell.
   useEffect(() => {
@@ -67,8 +41,16 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Clearing the query on close cascades into the query effect below, which
-  // owns all selection resets — so the first match is always pre-highlighted.
+  // Lazy-load the search index the first time the palette opens.
+  useEffect(() => {
+    if (!open || entries !== null || loading) return;
+    setLoading(true);
+    getOperatorSearchAction(propertyId)
+      .then((result) => setEntries(result))
+      .catch(() => setEntries([]))
+      .finally(() => setLoading(false));
+  }, [open, entries, loading, propertyId]);
+
   useEffect(() => {
     if (!open) setQuery("");
   }, [open]);
@@ -77,11 +59,34 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
     setActive(0);
   }, [query]);
 
+  const all = useMemo(() => entries ?? [], [entries]);
+
+  const fuse = useMemo(
+    () =>
+      new Fuse(all, {
+        keys: [
+          { name: "label", weight: 2 },
+          { name: "sublabel", weight: 0.5 },
+          { name: "keywords", weight: 1 },
+        ],
+        threshold: 0.4,
+        ignoreLocation: true,
+      }),
+    [all],
+  );
+
+  // Empty query → the sections (quick nav). Non-empty → fuzzy over everything.
+  const results = useMemo<OperatorSearchEntry[]>(() => {
+    const q = query.trim();
+    if (!q) return all.filter((entry) => entry.group === "Secciones");
+    return fuse.search(q).slice(0, 30).map((r) => r.item);
+  }, [query, all, fuse]);
+
   function run(index: number) {
-    const command = results[index];
-    if (!command) return;
+    const entry = results[index];
+    if (!entry) return;
     setOpen(false);
-    router.push(command.href);
+    router.push(entry.href);
   }
 
   function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -102,13 +107,13 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
       <Dialog.Trigger asChild>
         <button
           type="button"
-          aria-label="Buscar sección o acción"
+          aria-label="Buscar en la propiedad"
           title="Buscar (⌘K)"
           className="recipe-icon-btn-32 flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] xl:w-full xl:justify-start xl:gap-2.5 xl:px-3"
         >
           <Search size={14} aria-hidden="true" className="shrink-0" />
           <span className="hidden min-w-0 flex-1 truncate text-left text-[13px] xl:inline">
-            Buscar sección o acción…
+            Buscar en la propiedad…
           </span>
           <span className="ml-auto hidden shrink-0 items-center gap-1 xl:flex">
             <kbd className={KBD_CLASS}>⌘</kbd>
@@ -120,10 +125,10 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--color-background-overlay)]" />
         <Dialog.Content
-          aria-label="Buscar sección o acción"
+          aria-label="Buscar en la propiedad"
           className="fixed left-1/2 top-[12vh] z-50 w-[min(620px,92vw)] -translate-x-1/2 overflow-hidden rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-modal)]"
         >
-          <Dialog.Title className="sr-only">Buscar sección o acción</Dialog.Title>
+          <Dialog.Title className="sr-only">Buscar en la propiedad</Dialog.Title>
           <div className="flex items-center gap-2.5 border-b border-[var(--color-border-default)] px-4 py-3">
             <Search size={18} aria-hidden="true" className="shrink-0 text-[var(--color-text-muted)]" />
             {/* eslint-disable-next-line jsx-a11y/no-autofocus -- expected for a command palette */}
@@ -132,21 +137,25 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onInputKeyDown}
-              placeholder="Buscar o ir a…"
-              aria-label="Buscar sección o acción"
+              placeholder="Buscar contactos, normas, equipamiento, espacios…"
+              aria-label="Buscar en la propiedad"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
             />
             <kbd className={KBD_CLASS}>esc</kbd>
           </div>
 
-          <ul className="max-h-[360px] overflow-y-auto p-2">
-            {results.length === 0 ? (
+          <ul className="max-h-[380px] overflow-y-auto p-2">
+            {loading ? (
+              <li className="px-3 py-6 text-center text-[13px] text-[var(--color-text-muted)]">
+                Cargando…
+              </li>
+            ) : results.length === 0 ? (
               <li className="px-3 py-6 text-center text-[13px] text-[var(--color-text-muted)]">
                 Sin resultados.
               </li>
             ) : (
-              results.map((command, index) => (
-                <li key={command.key}>
+              results.map((entry, index) => (
+                <li key={entry.id}>
                   <button
                     type="button"
                     onClick={() => run(index)}
@@ -157,9 +166,9 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
                         : "text-[var(--color-text-secondary)]"
                     }`}
                   >
-                    <span className="flex-1 truncate">{command.label}</span>
+                    <span className="flex-1 truncate">{entry.label}</span>
                     <span className="shrink-0 text-[11px] text-[var(--color-text-muted)]">
-                      {command.group}
+                      {entry.sublabel}
                     </span>
                   </button>
                 </li>
