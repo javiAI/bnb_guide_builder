@@ -24,35 +24,32 @@ export async function AppShell({
   workspaceProperties,
   children,
 }: AppShellProps) {
+  // Independent fail-soft reads run concurrently — a cache miss or failure in
+  // one must not block (or break) the navigation chrome.
+  const [derived, notifications] = await Promise.all([
+    getDerived(propertyId).catch(() => null),
+    getOperatorNotifications(propertyId).catch(
+      () => [] as OperatorNotification[],
+    ),
+  ]);
+
   let sectionScores: Record<string, number> | undefined;
   let overallScore: number | undefined;
-  try {
-    const derived = await getDerived(propertyId);
-    const scores = derived?.readiness?.scores;
-    if (
-      scores &&
-      typeof scores.spaces === "number" &&
-      typeof scores.amenities === "number" &&
-      typeof scores.systems === "number" &&
-      typeof scores.arrival === "number"
-    ) {
-      sectionScores = {
-        spaces: scores.spaces,
-        amenities: scores.amenities,
-        systems: scores.systems,
-        access: scores.arrival,
-      };
-      overallScore = derived?.readiness?.overall;
-    }
-  } catch {
-    sectionScores = undefined;
-  }
-
-  let notifications: OperatorNotification[] = [];
-  try {
-    notifications = await getOperatorNotifications(propertyId);
-  } catch {
-    notifications = [];
+  const scores = derived?.readiness?.scores;
+  if (
+    scores &&
+    typeof scores.spaces === "number" &&
+    typeof scores.amenities === "number" &&
+    typeof scores.systems === "number" &&
+    typeof scores.arrival === "number"
+  ) {
+    sectionScores = {
+      spaces: scores.spaces,
+      amenities: scores.amenities,
+      systems: scores.systems,
+      access: scores.arrival,
+    };
+    overallScore = derived.readiness.overall;
   }
 
   return (

@@ -49,7 +49,9 @@ export function ModuleContainer({
         chips={chips}
         actions={actions}
       />
-      <div className={cn(className)}>{children}</div>
+      {/* The sticky PageHeader owns the header→body gap (mb-6); neutralize the
+          first body child's own top margin so it doesn't double up. */}
+      <div className={cn("[&>*:first-child]:mt-0", className)}>{children}</div>
     </>
   );
 }

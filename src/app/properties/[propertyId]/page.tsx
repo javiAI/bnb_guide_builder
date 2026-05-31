@@ -19,7 +19,7 @@ import {
   type BadgeTone,
 } from "@/lib/types";
 import { getDerived } from "@/lib/services/property-derived.service";
-import { runAllValidations } from "@/lib/validations/run-all";
+import { getValidationsForProperty } from "@/lib/validations/run-all";
 import { getSpaceTypeLabel } from "@/lib/taxonomy-loader";
 import { ACTION_LABELS, getEntityLabel } from "@/lib/audit-labels";
 import { formatRelativeEs } from "@/lib/format-relative-es";
@@ -128,8 +128,6 @@ export default async function OverviewPage({
       bedroomsCount: true,
       bathroomsCount: true,
       bedsCount: true,
-      infantsAllowed: true,
-      accessMethodsJson: true,
       updatedAt: true,
     },
   });
@@ -139,11 +137,7 @@ export default async function OverviewPage({
   const [derived, validations, spacesRaw, amenityCount, contactsCount, auditEntries] =
     await Promise.all([
       getDerived(propertyId),
-      runAllValidations(propertyId, {
-        maxGuests: property.maxGuests,
-        infantsAllowed: property.infantsAllowed,
-        accessMethodsJson: property.accessMethodsJson,
-      }),
+      getValidationsForProperty(propertyId),
       prisma.space.findMany({
         where: { propertyId, status: "active" },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],

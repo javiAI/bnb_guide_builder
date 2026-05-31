@@ -3,19 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Flag, TriangleAlert, type LucideIcon } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
 import type {
   OperatorNotification,
   OperatorNotificationKind,
 } from "@/lib/services/operator-notifications.service";
 
-const KIND_ICON: Record<OperatorNotificationKind, LucideIcon> = {
-  blocker: TriangleAlert,
-  incident: Flag,
-};
-
-const KIND_ICON_CLASS: Record<OperatorNotificationKind, string> = {
-  blocker: "text-[var(--color-status-error-text)]",
-  incident: "text-[var(--color-status-warning-text)]",
+const KIND_CONFIG: Record<
+  OperatorNotificationKind,
+  { icon: LucideIcon; iconClass: string }
+> = {
+  blocker: { icon: TriangleAlert, iconClass: "text-[var(--color-status-error-text)]" },
+  incident: { icon: Flag, iconClass: "text-[var(--color-status-warning-text)]" },
 };
 
 interface NotificationsPopoverProps {
@@ -54,21 +53,21 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
+      <IconButton
+        icon={Bell}
+        iconSize={15}
+        size="sm"
+        tone="neutral"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={label}
         aria-expanded={open}
         title={label}
-        className="recipe-icon-btn-32 relative grid h-8 w-8 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
-      >
-        <Bell size={15} aria-hidden="true" />
-        {count > 0 && (
-          <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--color-status-error-solid)] px-1 text-[10px] font-semibold leading-none text-[var(--color-status-error-solid-fg)]">
-            {count > 9 ? "9+" : count}
-          </span>
-        )}
-      </button>
+      />
+      {count > 0 && (
+        <span className="pointer-events-none absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--color-status-error-solid)] px-1 text-[10px] font-semibold leading-none text-[var(--color-status-error-solid-fg)]">
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
 
       {open && (
         <div
@@ -92,7 +91,7 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
           ) : (
             <ul className="max-h-[360px] overflow-y-auto py-1">
               {notifications.map((notification) => {
-                const Icon = KIND_ICON[notification.kind];
+                const { icon: Icon, iconClass } = KIND_CONFIG[notification.kind];
                 return (
                   <li key={notification.id}>
                     <Link
@@ -103,7 +102,7 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
                       <Icon
                         size={15}
                         aria-hidden="true"
-                        className={`mt-0.5 shrink-0 ${KIND_ICON_CLASS[notification.kind]}`}
+                        className={`mt-0.5 shrink-0 ${iconClass}`}
                       />
                       <span className="flex-1 text-[13px] leading-[1.4] text-[var(--color-text-secondary)]">
                         {notification.title}

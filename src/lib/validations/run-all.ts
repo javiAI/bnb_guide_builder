@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/db";
 import {
   validateWifiComplete,
@@ -103,3 +104,15 @@ export async function runAllValidations(
     all,
   };
 }
+
+/**
+ * Per-render-pass cached validations, keyed by propertyId. Use this from
+ * surfaces that may co-render in the same request (e.g. the overview page +
+ * AppShell's notification feed, or the publishing page + AppShell): React
+ * `cache()` collapses the duplicate validation passes into one. Callers that
+ * already hold the Property row and want to skip its lookup should call
+ * `runAllValidations(id, preloaded)` directly instead.
+ */
+export const getValidationsForProperty = cache(
+  (propertyId: string): Promise<ValidationReport> => runAllValidations(propertyId),
+);

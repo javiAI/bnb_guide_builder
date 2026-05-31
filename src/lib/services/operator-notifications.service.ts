@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { runAllValidations } from "@/lib/validations/run-all";
+import { getValidationsForProperty } from "@/lib/validations/run-all";
 
 /**
  * Operator notification feed (Liora 16F.5). v1 aggregates the two highest-signal
@@ -22,18 +22,11 @@ export interface OperatorNotification {
 export async function getOperatorNotifications(
   propertyId: string,
 ): Promise<OperatorNotification[]> {
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    select: { maxGuests: true, infantsAllowed: true, accessMethodsJson: true },
-  });
-  if (!property) return [];
-
+  // `getValidationsForProperty` is React-cache()'d, so when the overview page
+  // (or the publishing page) co-renders in the same request, the validation
+  // pass is shared rather than run twice.
   const [validations, openIncidents] = await Promise.all([
-    runAllValidations(propertyId, {
-      maxGuests: property.maxGuests,
-      infantsAllowed: property.infantsAllowed,
-      accessMethodsJson: property.accessMethodsJson,
-    }),
+    getValidationsForProperty(propertyId),
     prisma.incident.findMany({
       where: { propertyId, status: { in: ["open", "in_progress"] } },
       orderBy: { createdAt: "desc" },

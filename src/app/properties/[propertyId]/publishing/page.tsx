@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
-import { runAllValidations } from "@/lib/validations/run-all";
+import { getValidationsForProperty } from "@/lib/validations/run-all";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
@@ -124,9 +124,6 @@ export default async function PublishingPage({
       country: true,
       checkInStart: true,
       primaryAccessMethod: true,
-      maxGuests: true,
-      infantsAllowed: true,
-      accessMethodsJson: true,
       publicSlug: true,
     },
   });
@@ -180,11 +177,7 @@ export default async function PublishingPage({
       orderBy: { version: "desc" },
       select: { treeJson: true },
     }),
-    runAllValidations(propertyId, {
-      maxGuests: property.maxGuests,
-      infantsAllowed: property.infantsAllowed,
-      accessMethodsJson: property.accessMethodsJson,
-    }),
+    getValidationsForProperty(propertyId),
   ]);
 
   const publishedTree =

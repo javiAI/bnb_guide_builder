@@ -67,13 +67,10 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Reset the query/selection each time the palette closes; reset selection as
-  // the query changes so the first match is always pre-highlighted.
+  // Clearing the query on close cascades into the query effect below, which
+  // owns all selection resets — so the first match is always pre-highlighted.
   useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setActive(0);
-    }
+    if (!open) setQuery("");
   }, [open]);
 
   useEffect(() => {
