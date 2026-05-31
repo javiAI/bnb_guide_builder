@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMailtoHref,
+  buildMapsHref,
   buildTelHref,
   buildWhatsAppHref,
   normalizePhoneForWhatsApp,
@@ -61,5 +62,18 @@ describe("buildMailtoHref", () => {
   it("returns null for empty / whitespace-only input", () => {
     expect(buildMailtoHref("")).toBeNull();
     expect(buildMailtoHref("   ")).toBeNull();
+  });
+});
+
+describe("buildMapsHref", () => {
+  it("builds a Maps search URL with the address URL-encoded", () => {
+    expect(buildMapsHref("Carrer de Cuenca 12, Valencia")).toBe(
+      "https://www.google.com/maps/search/?api=1&query=Carrer%20de%20Cuenca%2012%2C%20Valencia",
+    );
+  });
+
+  it("returns null for empty / whitespace-only input", () => {
+    expect(buildMapsHref("")).toBeNull();
+    expect(buildMapsHref("   ")).toBeNull();
   });
 });

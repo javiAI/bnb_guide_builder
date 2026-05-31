@@ -277,6 +277,28 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
     ],
   },
+  {
+    // 16E.5 content modules — contacts (contactos). Kit reference exists
+    // (`page-contactos` in subpages.html) with a rich visual silhouette:
+    // `pg` page header (eyebrow / title / editorial subtitle / count chips /
+    // "Añadir contacto" CTA), numbered sections per non-empty contact group
+    // (01 Anfitrión / 02 Emergencia / …), and `cn-grid` of `cn-card` rows
+    // (avatar + name + role + phone + action buttons), with an emergency card
+    // variant. This branch ships the **full UI Kit visual silhouette port**
+    // (not a baseline E1): semantic tokens, PageHeader/NumberedSection/
+    // PageHeaderChip/ButtonLink primitives, avatar icon registry
+    // (`src/lib/icons/contact-icons.ts`), quick-action links, and 44 hit-area
+    // targets. Zero functional/server-action/schema changes. Acceptance gate
+    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies. Emergency
+    // contacts are wired inside this module (no dedicated `emergency/` route —
+    // MASTER_PLAN_V2 § rama 16E.5 Decisión F).
+    id: "operator-contacts",
+    routes: ["/properties/[propertyId]/contacts"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/contacts/**/*.tsx",
+    ],
+  },
 ];
 
 /**
@@ -311,6 +333,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/app/properties/[propertyId]/systems/**/*.tsx",
   "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
+  "src/app/properties/[propertyId]/contacts/**/*.tsx",
   "src/components/overview/**/*.tsx",
   "src/components/layout/**/*.tsx",
   "src/components/ui/theme-toggle.tsx",
