@@ -6,6 +6,7 @@ import { mediaAssetRoles, getItems } from "@/lib/taxonomy-loader";
 import { getMediaRequirementsForSection } from "@/config/registries/media-registry";
 import { ENTITY_TYPE_LABELS, type MediaEntityType } from "@/lib/schemas/editor.schema";
 import { MediaPageClient } from "./media-page-client";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 const ASSET_STATUS_BADGE: Record<string, { label: string; tone: "neutral" | "success" | "warning" }> = {
   pending: { label: "Pendiente", tone: "warning" },
@@ -86,13 +87,11 @@ export default async function MediaPage({
   const totalUnassigned = assets.filter((a) => a.assignments.length === 0).length;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Mediateca
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Fotos y vídeos de tu propiedad. Sube archivos aquí o directamente desde cada sección.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Media"
+      title="Mediateca"
+      description="Fotos y vídeos de tu propiedad. Sube archivos aquí o directamente desde cada sección."
+    >
 
       {securityWarnings.length > 0 && (
         <div className="mt-4">
@@ -232,6 +231,6 @@ export default async function MediaPage({
           </div>
         )}
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

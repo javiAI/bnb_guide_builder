@@ -67,7 +67,7 @@ export async function AppShell({
         />
         <div className="flex-1 min-w-0 lg:ml-[var(--sidebar-width)] xl:grid xl:grid-cols-[minmax(0,1fr)_300px]">
           <main className="min-w-0">
-            <div className="mx-auto max-w-4xl px-7 py-7">
+            <div className="mx-auto w-full max-w-[var(--content-max)] px-4 pb-16 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>

@@ -6,6 +6,7 @@ import { troubleshootingTaxonomy, findItem } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { CreatePlaybookForm } from "./create-playbook-form";
 import { TroubleshootingTabs } from "./troubleshooting-tabs";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function TroubleshootingPage({
   params,
@@ -27,14 +28,11 @@ export default async function TroubleshootingPage({
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Incidencias
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Playbooks de resolución de incidencias frecuentes.
-      </p>
-
+    <ModuleContainer
+      eyebrow="Propiedad · Averías"
+      title="Averías"
+      description="Guías de resolución para problemas comunes de la propiedad."
+    >
       <TroubleshootingTabs propertyId={propertyId} active="playbooks" />
 
       <div className="mt-8">
@@ -80,6 +78,6 @@ export default async function TroubleshootingPage({
           <CreatePlaybookForm propertyId={propertyId} />
         </div>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

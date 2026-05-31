@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { findIncidentCategory } from "@/lib/taxonomy-loader";
 import type { BadgeTone } from "@/lib/types";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 interface Props {
   params: Promise<{ propertyId: string }>;
@@ -98,13 +99,11 @@ export default async function IncidentsPage({ params, searchParams }: Props) {
   if (!property) notFound();
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Incidencias
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Avisos del huésped y registro interno de operaciones.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Incidencias"
+      title="Incidencias"
+      description="Avisos del huésped y registro interno de operaciones."
+    >
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Badge
@@ -200,7 +199,7 @@ export default async function IncidentsPage({ params, searchParams }: Props) {
           </ul>
         )}
       </div>
-    </div>
+    </ModuleContainer>
   );
 }
 

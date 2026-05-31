@@ -8,7 +8,16 @@ interface PageHeaderProps {
   actions?: ReactNode;
   chips?: ReactNode;
   className?: string;
+  /** Bottom hairline. Ignored when `sticky` (the sticky border serves as rule). */
   showRule?: boolean;
+  /**
+   * Stick the header directly under the topbar on scroll — the operator-shell
+   * default. A solid page background + bottom border mask content scrolling
+   * underneath. No negative-margin bleed is used: the header masks the content
+   * column it shares, so it is robust regardless of how deeply it is nested
+   * inside the page (e.g. embedded in a client form component).
+   */
+  sticky?: boolean;
 }
 
 export function PageHeader({
@@ -19,9 +28,17 @@ export function PageHeader({
   chips,
   className,
   showRule = true,
+  sticky = true,
 }: PageHeaderProps) {
   return (
-    <section className={cn("mb-6", className)}>
+    <section
+      className={cn(
+        "mb-6",
+        sticky &&
+          "sticky top-[var(--topbar-height)] z-20 border-b border-[var(--color-border-default)] bg-[var(--color-background-page)] pb-4 pt-6",
+        className,
+      )}
+    >
       {eyebrow && (
         <div
           className={cn(
@@ -53,7 +70,7 @@ export function PageHeader({
       {chips && (
         <div className="mt-3 flex flex-wrap gap-1.5">{chips}</div>
       )}
-      {showRule && (
+      {!sticky && showRule && (
         <div className="mb-6 mt-5 h-px bg-[var(--color-border-default)]" aria-hidden="true" />
       )}
     </section>

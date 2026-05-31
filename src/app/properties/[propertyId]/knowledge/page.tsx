@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { ModuleContainer } from "@/components/layout/module-container";
 import { CreateKnowledgeItemForm } from "./create-knowledge-form";
 import { KnowledgeItemCard } from "./knowledge-item-card";
 import { RegenerateKnowledgeButton } from "./regenerate-knowledge-button";
@@ -69,22 +70,16 @@ export default async function KnowledgePage({
   const nonDefaultMissing = missingTranslations;
 
   return (
-    <div>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">
-            Base de conocimiento
-          </h1>
-          <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-            Verdad estructurada reutilizable por guías, AI y mensajería.
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          {activeLocale === defaultLocale && (
-            <RegenerateKnowledgeButton propertyId={propertyId} />
-          )}
-        </div>
-      </div>
+    <ModuleContainer
+      eyebrow="Propiedad · Conocimiento"
+      title="Base de conocimiento"
+      description="Verdad estructurada reutilizable por guías, IA y mensajería."
+      actions={
+        activeLocale === defaultLocale ? (
+          <RegenerateKnowledgeButton propertyId={propertyId} />
+        ) : undefined
+      }
+    >
 
       <div className="mt-6 flex items-center gap-3">
         <span className="text-sm font-medium text-[var(--color-neutral-600)]">Idioma:</span>
@@ -164,6 +159,6 @@ export default async function KnowledgePage({
           </div>
         )}
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

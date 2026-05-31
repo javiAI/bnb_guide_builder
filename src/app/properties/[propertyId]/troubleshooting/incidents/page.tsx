@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { ModuleContainer } from "@/components/layout/module-container";
 import { Badge } from "@/components/ui/badge";
 import {
   findSystemItem,
@@ -116,12 +117,11 @@ export default async function IncidentsPage({
   const playbookOptions = playbooks.map((p) => ({ value: p.id, label: p.title }));
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">Incidencias</h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Registro de ocurrencias reales. Filtrable por objetivo y estado.
-      </p>
-
+    <ModuleContainer
+      eyebrow="Propiedad · Averías"
+      title="Ocurrencias"
+      description="Registro de ocurrencias reales. Filtrable por objetivo y estado."
+    >
       <TroubleshootingTabs propertyId={propertyId} active="incidents" />
 
       <div className="mt-6 flex flex-wrap gap-2 text-xs">
@@ -231,6 +231,6 @@ export default async function IncidentsPage({
           playbookOptions={playbookOptions}
         />
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

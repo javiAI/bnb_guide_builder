@@ -35,6 +35,7 @@ import {
   type SpacesTableRow,
 } from "@/components/overview/spaces-table-card";
 import { ChipRow } from "@/components/overview/chip-row";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -219,79 +220,63 @@ export default async function OverviewPage({
     };
   });
 
+  const statusPill = (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium ${STATUS_PILL_BG[statusTone]}`}
+    >
+      {status === "active" ? (
+        <CheckCircle2 size={12} aria-hidden="true" />
+      ) : (
+        <Clock size={12} aria-hidden="true" />
+      )}
+      {statusLabel}
+    </span>
+  );
+
   return (
-    <div>
-      <header className="mb-7">
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-          <span
-            className="inline-block h-px w-3 bg-[var(--color-text-subtle)]"
-            aria-hidden="true"
-          />
-          Propiedad · Resumen
-        </p>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-[var(--color-text-primary)]">
-              {property.propertyNickname}
-            </h1>
-            {location && (
-              <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                {location}
-              </p>
-            )}
-          </div>
-          <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium ${STATUS_PILL_BG[statusTone]}`}
-          >
-            {status === "active" ? (
-              <CheckCircle2 size={12} aria-hidden="true" />
-            ) : (
-              <Clock size={12} aria-hidden="true" />
-            )}
-            {statusLabel}
-          </span>
-        </div>
-
-        <div className="mt-3">
-          <ChipRow>
-            {[
-              location && <Chip key="location" icon={MapPin} label={location} />,
-              property.maxGuests != null && (
-                <Chip
-                  key="guests"
-                  icon={UsersRound}
-                  label="Hasta "
-                  emphasis={pluralize(property.maxGuests, "huésped", "huéspedes")}
-                />
-              ),
-              property.bedroomsCount != null && (
-                <Chip
-                  key="bedrooms"
-                  icon={BedDouble}
-                  emphasis={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
-                />
-              ),
-              property.bathroomsCount != null && (
-                <Chip
-                  key="bathrooms"
-                  icon={Bath}
-                  emphasis={pluralize(property.bathroomsCount, "baño", "baños")}
-                />
-              ),
-              property.bedsCount != null && property.bedsCount > 0 && (
-                <Chip
-                  key="beds"
-                  icon={Bed}
-                  emphasis={pluralize(property.bedsCount, "cama", "camas")}
-                />
-              ),
-              <Chip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
-            ].filter(Boolean) as React.ReactElement[]}
-          </ChipRow>
-        </div>
-        <hr className="mt-5 border-[var(--color-border-subtle)]" />
-      </header>
-
+    <ModuleContainer
+      eyebrow="Propiedad · Resumen"
+      title={property.propertyNickname}
+      description={location || undefined}
+      actions={statusPill}
+      chips={
+        <ChipRow>
+          {[
+            location && <Chip key="location" icon={MapPin} label={location} />,
+            property.maxGuests != null && (
+              <Chip
+                key="guests"
+                icon={UsersRound}
+                label="Hasta "
+                emphasis={pluralize(property.maxGuests, "huésped", "huéspedes")}
+              />
+            ),
+            property.bedroomsCount != null && (
+              <Chip
+                key="bedrooms"
+                icon={BedDouble}
+                emphasis={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
+              />
+            ),
+            property.bathroomsCount != null && (
+              <Chip
+                key="bathrooms"
+                icon={Bath}
+                emphasis={pluralize(property.bathroomsCount, "baño", "baños")}
+              />
+            ),
+            property.bedsCount != null && property.bedsCount > 0 && (
+              <Chip
+                key="beds"
+                icon={Bed}
+                emphasis={pluralize(property.bedsCount, "cama", "camas")}
+              />
+            ),
+            <Chip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
+          ].filter(Boolean) as React.ReactElement[]}
+        </ChipRow>
+      }
+    >
       <section className="mb-7">
         <SectionHeading num="01" title="Estado de la guía" />
         <ReadinessHeroCard
@@ -344,6 +329,6 @@ export default async function OverviewPage({
           totalCount={spaceRows.length}
         />
       </section>
-    </div>
+    </ModuleContainer>
   );
 }

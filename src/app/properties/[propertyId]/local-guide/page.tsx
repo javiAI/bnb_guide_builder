@@ -8,6 +8,7 @@ import { LocalPlaceCard } from "./local-place-card";
 import { LocalEventsRadiusForm } from "./local-events-radius-form";
 import { SyncEventsButton } from "./sync-events-button";
 import { LocalEventsList } from "./local-events-list";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 // Arrival-mode categories (lp.arrival_*) are managed from the access cockpit
 // "Cómo llegar" card, not from the local-guide create form. Excluding them
@@ -50,13 +51,11 @@ export default async function LocalGuidePage({
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Guía local
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Recomendaciones cercanas para huéspedes.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Guía local"
+      title="Guía local"
+      description="Recomendaciones cercanas para huéspedes."
+    >
 
       <div className="mt-6">
         <h2 className="mb-2 text-sm font-semibold text-[var(--foreground)]">
@@ -122,6 +121,6 @@ export default async function LocalGuidePage({
           />
         </div>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

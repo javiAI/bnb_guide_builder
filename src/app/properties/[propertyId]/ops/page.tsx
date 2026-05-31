@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { OpsChecklistSection } from "./ops-checklist-section";
 import { OpsStockSection } from "./ops-stock-section";
 import { OpsMaintenanceSection } from "./ops-maintenance-section";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function OpsPage({
   params,
@@ -35,13 +36,11 @@ export default async function OpsPage({
   ]);
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Limpieza y operaciones
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Checklists, stock y mantenimiento.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Operativa"
+      title="Operativa"
+      description="Checklists, stock y mantenimiento."
+    >
 
       <div className="mt-6 flex items-center gap-3">
         <Badge label={`${checklistItems.length} tareas`} tone="neutral" />
@@ -102,6 +101,6 @@ export default async function OpsPage({
           propertyId={propertyId}
         />
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

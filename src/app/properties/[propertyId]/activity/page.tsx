@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { ACTION_LABELS, getEntityLabel } from "@/lib/audit-labels";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function ActivityPage({
   params,
@@ -32,13 +33,11 @@ export default async function ActivityPage({
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Registro de actividad
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Auditoría de cambios y accesos sensibles.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Actividad"
+      title="Registro de actividad"
+      description="Auditoría de cambios y accesos sensibles."
+    >
 
       <div className="mt-8">
         {logs.length === 0 ? (
@@ -87,6 +86,6 @@ export default async function ActivityPage({
           </div>
         )}
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

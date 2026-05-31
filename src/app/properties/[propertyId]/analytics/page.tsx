@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { reviewReasons, getItems } from "@/lib/taxonomy-loader";
 import { SECTION_EDITORS } from "@/config/schemas/section-editors";
 import type { BadgeTone } from "@/lib/types";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 const reasons = getItems(reviewReasons);
 
@@ -165,13 +166,11 @@ export default async function AnalyticsPage({
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Analítica
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Gaps, contenido obsoleto y estado de calidad.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Analítica"
+      title="Analítica"
+      description="Gaps, contenido obsoleto y estado de calidad."
+    >
 
       {/* Summary stats */}
       <div className="mt-6 grid gap-3 sm:grid-cols-4">
@@ -262,7 +261,7 @@ export default async function AnalyticsPage({
           ))}
         </div>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }
 
