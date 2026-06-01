@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { GuidePreview } from "@/components/guide-preview";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function GuestGuidePage({
   params,
@@ -25,36 +26,33 @@ export default async function GuestGuidePage({
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Guía del huésped
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Previsualización en vivo de la guía. Para publicar, ve a{" "}
-        <Link
-          href={`/properties/${propertyId}/publishing`}
-          className="font-medium text-[var(--color-primary-600)] hover:underline"
-        >
-          Publicación
-        </Link>.
-      </p>
-
-      {/* Published status */}
-      <div className="mt-4">
-        {publishedVersion ? (
+    <ModuleContainer
+      eyebrow="Propiedad · Publicación"
+      title="Guía del huésped"
+      description={
+        <>
+          Previsualización en vivo de la guía. Para publicar, ve a{" "}
+          <Link
+            href={`/properties/${propertyId}/publishing`}
+            className="font-medium text-[var(--color-text-link)] hover:underline"
+          >
+            Publicación
+          </Link>
+          .
+        </>
+      }
+      chips={
+        publishedVersion ? (
           <Badge
             label={`v${publishedVersion.version} publicada${publishedVersion.publishedAt ? ` — ${publishedVersion.publishedAt.toLocaleDateString("es-ES")}` : ""}`}
             tone="success"
           />
         ) : (
           <Badge label="Sin versión publicada" tone="neutral" />
-        )}
-      </div>
-
-      {/* Live preview */}
-      <div className="mt-8">
-        <GuidePreview propertyId={propertyId} />
-      </div>
-    </div>
+        )
+      }
+    >
+      <GuidePreview propertyId={propertyId} />
+    </ModuleContainer>
   );
 }

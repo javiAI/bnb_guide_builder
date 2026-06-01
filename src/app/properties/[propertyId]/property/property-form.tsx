@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState, useState, useCallback, useRef, useEffect } from "react";
-import Link from "next/link";
-import { ArrowLeft, Pencil, Search, Home, UsersRound } from "lucide-react";
+import { Pencil, Search, Home, UsersRound } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
@@ -146,36 +146,17 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
 
-  // Infra dirty: tracks whether infrastructure fields differ from what's in DB
+  // Infra dirty: whether infrastructure fields differ from what's in DB (drives
+  // the infra section's "configured" affordance).
   const infraDirty =
     hasElevator !== (infra.hasElevator ?? false) ||
     buildingFloors !== (infra.buildingFloors ?? 1);
 
-  // Dirty tracking — compare against initial values
-  const isDirty = nickname !== p.propertyNickname ||
-    propertyType !== (p.propertyType ?? "") ||
-    roomType !== (p.roomType ?? "") ||
-    layoutKey !== (p.layoutKey ?? "") ||
-    environment !== (p.propertyEnvironment ?? "") ||
-    customPtLabel !== (p.customPropertyTypeLabel ?? "") ||
-    customPtDesc !== (p.customPropertyTypeDesc ?? "") ||
-    customRtLabel !== (p.customRoomTypeLabel ?? "") ||
-    customRtDesc !== (p.customRoomTypeDesc ?? "") ||
-    country !== (p.country ?? "España") ||
-    city !== (p.city ?? "") ||
-    province !== (p.region ?? "") ||
-    timezone !== (p.timezone ?? "Europe/Madrid") ||
-    maxGuests !== (p.maxGuests ?? 2) ||
-    maxAdults !== p.maxAdults ||
-    maxChildren !== p.maxChildren ||
-    infantsAllowed !== p.infantsAllowed ||
-    hasPrivateEntrance !== p.hasPrivateEntrance ||
-    streetAddress !== (p.streetAddress ?? "") ||
-    addressExtra !== (p.addressExtra ?? "") ||
-    postalCode !== (p.postalCode ?? "") ||
-    latitude !== p.latitude ||
-    longitude !== p.longitude ||
-    infraDirty;
+  // Auto-save: edits persist as you make them (no "Guardar" button). The hook
+  // reads the form's live FormData, so every control is captured generically —
+  // no per-field wiring.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef);
 
   const flashTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
@@ -277,24 +258,12 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
       : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <Link
-        href={`/properties/${propertyId}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
-      >
-        <ArrowLeft size={12} aria-hidden="true" />
-        Volver al panel
-      </Link>
-
+    <div>
       <PageHeader
         eyebrow="Datos básicos"
         title={nickname}
         description="Clasificación, ubicación, capacidad e infraestructura. Estos datos definen la base de la guía y alimentan el resto de secciones."
-        actions={
-          <InlineSaveStatus
-            status={pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : "saved"}
-          />
-        }
+        actions={<AutoSaveStatus pending={pending} />}
         chips={
           <>
             <PageHeaderChip icon={Home} label="Tipo" value={ptLabel} />
@@ -303,7 +272,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         }
       />
 
-      <form action={formAction}>
+      <form ref={formRef} action={formAction}>
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
@@ -510,11 +479,7 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
           </CollapsibleSection>
         </NumberedSection>
 
-        {state?.error && <p className="mb-4 text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
-
-        <button type="submit" disabled={pending || !isDirty} className="inline-flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50">
-          {pending ? "Guardando…" : "Guardar cambios"}
-        </button>
+        {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}
       </form>
     </div>
   );

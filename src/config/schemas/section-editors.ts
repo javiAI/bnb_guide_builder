@@ -23,8 +23,15 @@ export interface SectionEditorDef {
   label: string;
   /** Short description (Spanish) */
   description: string;
-  /** Navigation group */
-  group: "content" | "outputs" | "operations";
+  /** Navigation group (value-chain: Contenido → Asistente → Publicación → Operaciones) */
+  group: "content" | "assistant" | "publishing" | "operations";
+  /**
+   * Hide this editor from the workspace nav while keeping its route + label
+   * resolvable. Used for surfaces reached contextually rather than from the
+   * sidebar: `guest-guide` (preview, opened via "Vista huésped") and `activity`
+   * (audit log, folded under Configuración).
+   */
+  hideFromNav?: boolean;
   /** Phase in which this editor is implemented */
   phase: number;
   /** Property fields that determine completeness */
@@ -38,7 +45,7 @@ export interface SectionEditorDef {
 }
 
 export const SECTION_EDITORS: SectionEditorDef[] = [
-  // ── Content group ──
+  // ── Contenido ── (wizard order + "define el espacio → equípalo"; gating first)
   {
     key: "property",
     label: "Propiedad",
@@ -62,14 +69,6 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     group: "content",
     phase: 3,
     hasList: true,
-  },
-  {
-    key: "policies",
-    label: "Normas",
-    description: "Normas de convivencia y restricciones",
-    group: "content",
-    phase: 4,
-    taxonomySource: "policyTaxonomy",
   },
   {
     key: "spaces",
@@ -102,14 +101,12 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     hasDetail: true,
   },
   {
-    key: "troubleshooting",
-    label: "Incidencias",
-    description: "Playbooks para resolver problemas comunes",
+    key: "policies",
+    label: "Normas",
+    description: "Normas de convivencia y restricciones",
     group: "content",
     phase: 4,
-    taxonomySource: "troubleshootingTaxonomy",
-    hasList: true,
-    hasDetail: true,
+    taxonomySource: "policyTaxonomy",
   },
   {
     key: "local-guide",
@@ -120,40 +117,57 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     hasList: true,
     hasDetail: true,
   },
-  // ── Outputs group ──
+  {
+    key: "troubleshooting",
+    label: "Soluciones",
+    description: "Guías para resolver problemas comunes (alimentan la guía + IA)",
+    group: "content",
+    phase: 4,
+    taxonomySource: "troubleshootingTaxonomy",
+    hasList: true,
+    hasDetail: true,
+  },
+  // ── Huésped ── (lo que el huésped experimenta: la guía del huésped + el
+  //    asistente IA). El asistente vive como entrada de nav (página /ai con chat
+  //    + conocimiento) y también como chat acoplado en el rail / burbuja flotante.
+  {
+    key: "ai",
+    label: "Asistente IA",
+    description: "Chat + base de conocimiento (RAG)",
+    group: "publishing",
+    phase: 5,
+  },
   {
     key: "knowledge",
     label: "Base de conocimiento",
     description: "Datos estructurados para IA y guía",
-    group: "outputs",
+    group: "publishing",
     phase: 5,
+    // Plegada dentro de la página del Asistente IA (/ai) — sin entrada propia de nav.
+    hideFromNav: true,
   },
+  // ── Publicación ── (lo que llega al huésped)
   {
     key: "guest-guide",
     label: "Guía del huésped",
     description: "Versiones publicables de la guía",
-    group: "outputs",
+    group: "publishing",
     phase: 5,
     taxonomySource: "guideOutputs",
-  },
-  {
-    key: "ai",
-    label: "Asistente IA",
-    description: "Conversaciones y retrieval pipeline",
-    group: "outputs",
-    phase: 5,
+    // Reached via "Vista huésped"; the publishing hub folds in the preview.
+    hideFromNav: true,
   },
   {
     key: "messaging",
     label: "Mensajería",
     description: "Templates y automatizaciones",
-    group: "outputs",
+    group: "operations",
     phase: 6,
     taxonomySource: "messagingTouchpoints",
     hasList: true,
     hasDetail: true,
   },
-  // ── Operations group ──
+  // ── Operaciones ── (día a día)
   {
     key: "media",
     label: "Media",
@@ -165,7 +179,7 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
   },
   {
     key: "ops",
-    label: "Operaciones",
+    label: "Operativa",
     description: "Checklist, stock e inventario",
     group: "operations",
     phase: 7,
@@ -176,6 +190,8 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     description: "Historial de cambios y auditoría",
     group: "operations",
     phase: 7,
+    // Folded under Configuración (low frequency); route kept.
+    hideFromNav: true,
   },
 ];
 

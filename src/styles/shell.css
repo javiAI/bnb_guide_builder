@@ -1,0 +1,58 @@
+/* ============================================================
+   Operator shell collapse + resize (Liora 16F.5)
+   ------------------------------------------------------------
+   Panel WIDTH lives in inline CSS vars on <html> (--sidebar-width /
+   --rail-width), set by the pre-paint script in layout.tsx and by the
+   shell-chrome toggles + resize handle. These attribute rules govern only
+   CONTENT VISIBILITY — never width — so the two concerns never fight over the
+   cascade.
+   ============================================================ */
+
+/* Nav collapsed → icon-rail. The width var already shrank to the collapsed
+   value; here we hide labels + the resizer and center the icons. Only
+   meaningful at lg+ (below lg the sidebar is hidden, mobile drawer is used). */
+@media (min-width: 1024px) {
+  html[data-nav-collapsed="true"] .shell-nav-label,
+  html[data-nav-collapsed="true"] .shell-nav-group-label,
+  html[data-nav-collapsed="true"] .shell-nav-progress,
+  html[data-nav-collapsed="true"] .shell-prop-switcher,
+  html[data-nav-collapsed="true"] .shell-logo-wordmark,
+  html[data-nav-collapsed="true"] .shell-nav-resizer {
+    display: none;
+  }
+
+  html[data-nav-collapsed="true"] .shell-nav-item,
+  html[data-nav-collapsed="true"] .shell-nav-footer-link {
+    justify-content: center;
+  }
+
+  /* Collapsed → the brand shows the mark only, centred in the icon-rail width. */
+  html[data-nav-collapsed="true"] .shell-logo-slot {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* Rail collapsed → fully hidden (no layout space). It is re-opened from the
+   floating pull-tab (RailDrawerTab) pinned to the right edge; --rail-width is 0
+   so the content-grid track collapses too. */
+html[data-rail-collapsed="true"] .shell-rail {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  /* "Vista huésped" lives in the rail; surface it in the topbar only when the
+     rail is collapsed at xl+. Below xl the rail is absent and the topbar button
+     shows via its own responsive utilities. */
+  html:not([data-rail-collapsed="true"]) .shell-guest-view-btn {
+    display: none;
+  }
+
+  /* The assistant is docked in the rail at xl; the floating bubble only takes
+     over when the rail is collapsed (at xl+). Below xl the rail is absent and
+     the bubble shows via its base `fixed`/`grid` utilities. */
+  html:not([data-rail-collapsed="true"]) .shell-chat-bubble {
+    display: none;
+  }
+}

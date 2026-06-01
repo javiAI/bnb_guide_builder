@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { guideOutputs, getItems } from "@/lib/taxonomy-loader";
-import { runAllValidations } from "@/lib/validations/run-all";
+import { getValidationsForProperty } from "@/lib/validations/run-all";
 import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import type { ValidationFinding, ValidationSeverity } from "@/lib/validations/cross-validations";
 import type { BadgeTone } from "@/lib/types";
@@ -13,6 +13,8 @@ import type { GuideTree } from "@/lib/types/guide-tree";
 import { PublishButton, UnpublishButton, RollbackButton } from "./publish-actions";
 import { DiffPanel, DiffPanelSkeleton } from "./diff-panel";
 import { ShareableLink } from "./shareable-link";
+import { ModuleContainer } from "@/components/layout/module-container";
+import { GuidePreview } from "@/components/guide-preview";
 
 type OutputItem = {
   id: string;
@@ -122,9 +124,6 @@ export default async function PublishingPage({
       country: true,
       checkInStart: true,
       primaryAccessMethod: true,
-      maxGuests: true,
-      infantsAllowed: true,
-      accessMethodsJson: true,
       publicSlug: true,
     },
   });
@@ -178,11 +177,7 @@ export default async function PublishingPage({
       orderBy: { version: "desc" },
       select: { treeJson: true },
     }),
-    runAllValidations(propertyId, {
-      maxGuests: property.maxGuests,
-      infantsAllowed: property.infantsAllowed,
-      accessMethodsJson: property.accessMethodsJson,
-    }),
+    getValidationsForProperty(propertyId),
   ]);
 
   const publishedTree =
@@ -216,14 +211,11 @@ export default async function PublishingPage({
   const qrSvg = handoff?.qrSvg ?? null;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Publicación
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Publica una versión inmutable de la guía. Cada publicación congela el estado actual.
-      </p>
-
+    <ModuleContainer
+      eyebrow="Propiedad · Publicación"
+      title="Publicación"
+      description="Previsualiza la guía, revisa los bloqueos y publica una versión inmutable. Cada publicación congela el estado actual."
+    >
       {/* Summary badges */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Badge
@@ -241,6 +233,22 @@ export default async function PublishingPage({
         )}
         <Badge label={`${knowledgeCount} items de conocimiento`} tone="neutral" />
       </div>
+
+      {/* ── Previsualización (guía del huésped) — folded into the hub (16F.5) ── */}
+      <section className="mt-8">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            Previsualización
+          </h2>
+          <Link
+            href={`/properties/${propertyId}/guest-guide`}
+            className="text-[13px] font-medium text-[var(--color-text-link)] hover:underline"
+          >
+            Abrir vista huésped →
+          </Link>
+        </div>
+        <GuidePreview propertyId={propertyId} />
+      </section>
 
       {/* ── Publish action ── */}
       <div className="mt-8 rounded-[var(--radius-xl)] border border-[var(--border)] bg-[var(--surface-elevated)] p-6">
@@ -395,6 +403,6 @@ export default async function PublishingPage({
           })}
         </div>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

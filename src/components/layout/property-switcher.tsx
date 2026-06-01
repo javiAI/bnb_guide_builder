@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronsUpDown, Check, Plus } from "lucide-react";
+import { useDismiss } from "@/lib/use-dismiss";
 
 export interface SwitchableProperty {
   id: string;
@@ -38,26 +39,10 @@ export function PropertySwitcher({
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    function onClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  useDismiss(open, containerRef, () => setOpen(false));
 
   return (
-    <div ref={containerRef} className="relative mx-3 my-3.5">
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         aria-haspopup="menu"

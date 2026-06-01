@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { changeIncidentStatusAction } from "@/lib/actions/incident.actions";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import type { ActionResult } from "@/lib/types/action-result";
 
 interface Props {
@@ -23,9 +24,11 @@ export function IncidentStatusForm({ incidentId, propertyId, currentStatus }: Pr
     changeIncidentStatusAction,
     null,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef);
 
   return (
-    <form action={formAction} className="mt-3 flex flex-wrap items-center gap-3">
+    <form ref={formRef} action={formAction} className="mt-3 flex flex-wrap items-center gap-3">
       <input type="hidden" name="incidentId" value={incidentId} />
       <input type="hidden" name="propertyId" value={propertyId} />
       <label className="flex items-center gap-2 text-sm">
@@ -42,15 +45,7 @@ export function IncidentStatusForm({ incidentId, propertyId, currentStatus }: Pr
           ))}
         </select>
       </label>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-60"
-      >
-        Guardar
-      </button>
-      {pending && <InlineSaveStatus status="saving" />}
-      {!pending && state?.success && <InlineSaveStatus status="saved" />}
+      <AutoSaveStatus pending={pending} />
       {!pending && state && !state.success && (
         <span className="text-xs text-[var(--color-danger-500)]">
           {state.error ?? "Error"}

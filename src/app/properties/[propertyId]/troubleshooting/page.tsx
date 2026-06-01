@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { troubleshootingTaxonomy, findItem } from "@/lib/taxonomy-loader";
 import { SEVERITY_BADGE } from "@/lib/troubleshooting-severity";
 import { CreatePlaybookForm } from "./create-playbook-form";
-import { TroubleshootingTabs } from "./troubleshooting-tabs";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function TroubleshootingPage({
   params,
@@ -27,15 +27,11 @@ export default async function TroubleshootingPage({
   });
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Incidencias
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Playbooks de resolución de incidencias frecuentes.
-      </p>
-
-      <TroubleshootingTabs propertyId={propertyId} active="playbooks" />
+    <ModuleContainer
+      eyebrow="Propiedad · Soluciones"
+      title="Soluciones"
+      description="Guías para resolver problemas comunes — alimentan la guía del huésped y el asistente IA. Las ocurrencias reales viven en Incidencias (Operaciones)."
+    >
 
       <div className="mt-8">
         {playbooks.length === 0 ? (
@@ -80,6 +76,6 @@ export default async function TroubleshootingPage({
           <CreatePlaybookForm propertyId={propertyId} />
         </div>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }

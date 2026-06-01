@@ -37,7 +37,7 @@ function GenerateLocaleButton({
       <button
         type="submit"
         disabled={pending}
-        className="ml-1.5 rounded-[var(--radius-sm)] bg-[var(--color-primary-500)] px-2 py-0.5 text-xs font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+        className="ml-1.5 rounded-[var(--radius-sm)] bg-[var(--color-action-primary)] px-2 py-0.5 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
       >
         {pending ? "…" : "Generar"}
       </button>
@@ -69,7 +69,7 @@ export function LocaleSwitcher({
               className={[
                 "rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-[var(--color-primary-500)] text-white"
+                  ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
                   : "border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--foreground)] hover:bg-[var(--color-neutral-100)]",
               ].join(" ")}
             >

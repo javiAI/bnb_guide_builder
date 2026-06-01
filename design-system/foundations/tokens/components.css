@@ -198,6 +198,18 @@
   --topbar-padding-x:  var(--space-4);
   --topbar-fg:         var(--color-text-primary);
 
+  /* ════════ CONTENT CONTAINER ════════ */
+  /* Fluid max-width for the operator module container (<ModuleContainer>).
+     Legible on small screens, exploits large displays; the collapsible rail
+     frees additional width when hidden. */
+  --content-max:       var(--size-content-max);
+
+  /* ════════ PUBLISHING RAIL ════════ */
+  /* Default rail width. The shell-chrome resize handle + pre-paint script
+     override this inline on <html> (collapsed = 0px / fully hidden; resized =
+     clamped). Default-collapsed unless the user has expanded it. */
+  --rail-width:        var(--size-rail);
+
   /* ════════ MODAL / DIALOG ════════ */
   --modal-bg:        var(--color-background-elevated);
   --modal-fg:        var(--color-text-primary);

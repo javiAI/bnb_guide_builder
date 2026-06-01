@@ -38,6 +38,7 @@ export default async function WorkspaceLayout({
       propertyId={propertyId}
       propertyNickname={property.propertyNickname}
       publicSlug={property.publicSlug}
+      defaultLocale={property.defaultLocale ?? "es"}
       workspaceProperties={workspaceProperties}
     >
       {children}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { ReservationForm } from "./reservation-form";
 import { ReservationRow } from "./reservation-row";
+import { ModuleContainer } from "@/components/layout/module-container";
 
 export default async function ReservationsPage({
   params,
@@ -40,22 +41,19 @@ export default async function ReservationsPage({
   const cancelled = reservations.filter((r) => r.status === "cancelled");
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">Reservas</h1>
-          <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-            Reservas registradas manualmente. Al crearse, se materializan los
-            drafts de las automations activas.
-          </p>
-        </div>
+    <ModuleContainer
+      eyebrow="Propiedad · Reservas"
+      title="Reservas"
+      description="Reservas registradas manualmente. Al crearse, se materializan los drafts de las automations activas."
+      actions={
         <Link
           href={`/properties/${propertyId}/messaging/drafts`}
-          className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-1.5 text-xs font-medium text-[var(--color-neutral-700)] hover:bg-[var(--color-neutral-100)]"
+          className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-xs font-medium text-[var(--color-text-secondary)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
         >
           Ver drafts pendientes →
         </Link>
-      </div>
+      }
+    >
 
       <div className="mt-6">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">
@@ -123,6 +121,6 @@ export default async function ReservationsPage({
           </ul>
         </div>
       )}
-    </div>
+    </ModuleContainer>
   );
 }

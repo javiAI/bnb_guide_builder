@@ -814,21 +814,23 @@ describe("Component invariants · effect cleanup", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. Command-bar slot is non-interactive (placeholder until 16E)
+// 9. Command palette is interactive (16F.5 activated the ⌘K — was a slot in 16D)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Component invariants · command-bar slot non-interactive (operator)", () => {
-  // Scope: operator only — guest surfaces don't have a command-bar slot.
-  it("command-bar-slot.tsx is aria-hidden + has no interactive handlers", () => {
-    const file = "src/components/layout/command-bar-slot.tsx";
+describe("Component invariants · command palette interactive (operator, 16F.5)", () => {
+  // Scope: operator only — guest surfaces don't have a command palette. 16F.5
+  // replaced the non-interactive command-bar slot with a real Radix Dialog +
+  // fuse.js palette opened with ⌘K (FUTURE §8.2 item retired).
+  it("command-palette.tsx is the interactive ⌘K palette (Radix Dialog + ⌘K)", () => {
+    const file = "src/components/layout/command-palette.tsx";
     if (!operatorAuditedFiles.includes(file)) {
       // Defensive: only run when the file is in scope under operator/shared
       // profile. Today it is via `src/components/layout/**/*.tsx`.
       return;
     }
     const content = readSrc(file);
-    expect(content).toMatch(/aria-hidden=("true"|\{true\})/);
-    expect(content).not.toMatch(/\bon(Click|Change|Input|KeyDown|KeyUp|Submit)=/);
+    expect(content).toMatch(/@radix-ui\/react-dialog/);
+    expect(content).toMatch(/metaKey/);
   });
 });
 
@@ -887,7 +889,7 @@ describe("Component invariants · primitive adoption (operator)", () => {
 
 describe("Component invariants · interactive elements use button/Link", () => {
   it("no <div>/<span> with onClick/onKeyDown handlers on audited surfaces", () => {
-    // Two documented exceptions:
+    // Three documented exceptions:
     //
     //   1. `aria-hidden` decorations (backdrop scrims, mouse-only dismiss
     //      gestures): not in focus order or AT tree, "use a button" rule
@@ -900,6 +902,11 @@ describe("Component invariants · interactive elements use button/Link", () => {
     //      handlers). Requiring all three signals (role, tabIndex, keydown)
     //      ensures keyboard parity with a native button — a div with onClick
     //      alone still fails.
+    //
+    //   3. WAI-ARIA window splitter: `role="separator"` + `tabIndex={0}` +
+    //      `onKeyDown` (+ `aria-valuenow/min/max`). A resizable-panel handle is
+    //      a separator, NOT a button — this is the canonical pattern for a
+    //      draggable/keyboard-resizable splitter (shell-chrome PanelResizeHandle).
     const violations: string[] = [];
     for (const file of auditedFiles) {
       if (!file.endsWith(".tsx")) continue;
@@ -907,10 +914,10 @@ describe("Component invariants · interactive elements use button/Link", () => {
       for (const tag of iterateOpenTags(content, ["div", "span"])) {
         const { name, attrs, openIdx } = tag;
         if (/\baria-hidden=("true"|\{true\})/.test(attrs)) continue;
-        const hasRoleButton = /\brole=("button"|\{"button"\})/.test(attrs);
+        const hasA11yRole = /\brole=("button"|\{"button"\}|"separator"|\{"separator"\})/.test(attrs);
         const hasTabIndex = /\btabIndex=\{?\s*0\s*\}?/.test(attrs);
         const hasKeyDown = /\bonKeyDown=\{/.test(attrs);
-        if (hasRoleButton && hasTabIndex && hasKeyDown) continue;
+        if (hasA11yRole && hasTabIndex && hasKeyDown) continue;
         if (/\bon(Click|KeyDown|KeyUp|Submit)=\{/.test(attrs)) {
           violations.push(
             `${file}:${lineNumber(content, openIdx)}  <${name}> with handler — use <button> or <Link>`,

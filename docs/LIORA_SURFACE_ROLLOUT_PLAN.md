@@ -78,6 +78,23 @@ Migration order and status for each product surface adopting the Liora foundatio
 - No brand color usage in operator shell (neutral warm-analytical theme).
 - `var(--sidebar-width)` kept as-is (defined in `design-system/foundations/tokens/components.css`).
 
+### 16F.5 — Operator shell foundation 🚧 (`feat/liora-operator-shell-foundation`, PR-ready)
+
+**Scope**: the *common shell* anticipated in the 16E.5/16F consolidation note — closes the deferred shell work from 16D (command palette, right rail, header heterogeneity). **Adds functionality** (not "0 functional"): persistent collapse, real ⌘K, real notifications, nav-level route unification.
+
+**Key pieces**:
+
+- `src/components/layout/module-container.tsx` — NEW: single operator page container (shared sticky `<PageHeader>` + body); width/gutters owned by AppShell `<main>` via `--content-max` (1200px, new token in primitives + components).
+- `src/components/ui/page-header.tsx` — `sticky` (default true): column-aligned bg + border under the topbar, robust when nested in a form.
+- `src/lib/navigation.ts` + `src/config/schemas/section-editors.ts` — IA reorg into **3 visible value-chain groups** (CONTENIDO · SALIDAS · OPERACIONES; the `assistant` group is empty/filtered — see below), curated `NAV_ORDER` + auto-append fallback, `hideFromNav`. Content order: Resumen · Propiedad · Acceso · **Espacios · Sistemas · Equipamiento** · Guía local · Soluciones · Normas · Contactos. `troubleshooting`→**"Soluciones"**, `publishing`→**"Guía del huésped"** (group label "Salidas"), `messaging`→Operaciones; `ai`/`knowledge`/`guest-guide`/`activity` = `hideFromNav`.
+- `src/styles/shell.css` + `src/lib/shell-prefs.ts` + `src/components/layout/shell-chrome.tsx` — collapse + **resize** of both panels. Width in inline CSS vars on `<html>` (pre-paint + toggles + resizer); attributes govern only visibility. `DrawerTab` = centered edge pull-tab (same system both sides: nav→icon-rail 56px, rail→hidden 0); `PanelResizeHandle` = `role="separator"` drag + keyboard + double-click reset.
+- `src/components/layout/command-palette.tsx` + `src/lib/services/operator-search.service.ts` + `src/lib/actions/operator-search.actions.ts` — NEW: ⌘K **comprehensive search** (Radix Dialog + fuse.js, no new dep) over a per-property index (sections + contacts + spaces + systems + equipamiento + guía local + soluciones + policy concepts), deep-linking to each section. Replaces the 16D `command-bar-slot.tsx` (deleted).
+- `src/components/layout/assistant-launcher.tsx` — NEW: the Asistente IA + Base de conocimiento live in a **right-side drawer** (Radix Dialog, ⌘J), out of the nav. `AssistantChat` + a link to `/knowledge`.
+- `src/components/layout/notifications-popover.tsx` + `src/lib/services/operator-notifications.service.ts` — NEW: real feed (publish blockers + open incidents), read-only. `src/lib/use-dismiss.ts` — shared click-outside+Escape hook for the non-modal dropdowns.
+- `topbar.tsx` — `AssistantLauncher` + `CommandPalette` + `NotificationsPopover`; removed global "Publicar"; "Vista huésped" conditional. `publishing-rail.tsx` — "Vista huésped" link, "Atajos" removed. `publishing/page.tsx` folds `<GuidePreview>`; `guest-guide/page.tsx` migrated + conserved as the preview surface (out of nav).
+
+**Audit scope**: layout components (`src/components/layout/**`) + overview + troubleshooting are auto-audited (`operator-overview`) and pass `component-invariants` + `parity-static`. Legacy ad-hoc pages (knowledge/ai/ops/media/analytics/reservations/incidents/local-guide/settings) got header/shell consistency only — full per-module body parity deferred (not in `AUDITED_SURFACES`). `AssistantChat` (`src/components/assistant/`) is not in audited globs. `CURRENT_LIORA_PHASE` → `"16F.5"`.
+
 ### 16E — Operator modules
 
 Surfaces: property wizard (all steps), property editor, space editor.

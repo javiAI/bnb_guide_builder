@@ -75,6 +75,7 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/icon-button-link.tsx",
       "src/components/ui/button-link.tsx",
       "src/components/ui/page-header.tsx",
+      "src/components/ui/page-header-fade.tsx",
       "src/components/ui/numbered-section.tsx",
       "src/components/ui/page-header-chip.tsx",
       "src/components/ui/hover-card.tsx",
@@ -489,7 +490,7 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
  * the past — i.e. a previous rama promised to remove the exception and
  * shipped without doing so.
  */
-export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16E.6" | "16F" | "16G";
+export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16E.6" | "16F" | "16F.5" | "16G";
 export type RemoveBy = LioraPhase | "never";
 
 export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
@@ -498,11 +499,12 @@ export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
   "16E.5",
   "16E.6",
   "16F",
+  "16F.5",
   "16G",
 ] as const;
 
 /** Active Liora phase the allowlist is being audited against. */
-export const CURRENT_LIORA_PHASE: LioraPhase = "16F";
+export const CURRENT_LIORA_PHASE: LioraPhase = "16F.5";
 
 export interface ExceptionEntry {
   file: string;

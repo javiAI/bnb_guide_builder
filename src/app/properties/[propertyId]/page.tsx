@@ -9,7 +9,6 @@ import {
   Bed,
   Bath,
   History,
-  type LucideIcon,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import {
@@ -19,7 +18,7 @@ import {
   type BadgeTone,
 } from "@/lib/types";
 import { getDerived } from "@/lib/services/property-derived.service";
-import { runAllValidations } from "@/lib/validations/run-all";
+import { getValidationsForProperty } from "@/lib/validations/run-all";
 import { getSpaceTypeLabel } from "@/lib/taxonomy-loader";
 import { ACTION_LABELS, getEntityLabel } from "@/lib/audit-labels";
 import { formatRelativeEs } from "@/lib/format-relative-es";
@@ -35,6 +34,8 @@ import {
   type SpacesTableRow,
 } from "@/components/overview/spaces-table-card";
 import { ChipRow } from "@/components/overview/chip-row";
+import { ModuleContainer } from "@/components/layout/module-container";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -58,24 +59,6 @@ function formatActivityMessage(
   const info = ACTION_LABELS[action as keyof typeof ACTION_LABELS];
   if (!info) return { message: `${entity} · ${action}` };
   return { message: `${entity} ${info.verbPast}`, tone: info.tone };
-}
-
-interface ChipProps {
-  icon: LucideIcon;
-  label?: string;
-  emphasis?: string;
-}
-
-function Chip({ icon: Icon, label, emphasis }: ChipProps) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-2.5 py-1 text-[12px] text-[var(--color-text-secondary)]">
-      <Icon size={12} aria-hidden="true" className="shrink-0 text-[var(--color-text-muted)]" />
-      {label && <span>{label}</span>}
-      {emphasis && (
-        <span className="font-semibold text-[var(--color-text-primary)]">{emphasis}</span>
-      )}
-    </span>
-  );
 }
 
 interface SectionHeadingProps {
@@ -127,8 +110,6 @@ export default async function OverviewPage({
       bedroomsCount: true,
       bathroomsCount: true,
       bedsCount: true,
-      infantsAllowed: true,
-      accessMethodsJson: true,
       updatedAt: true,
     },
   });
@@ -138,11 +119,7 @@ export default async function OverviewPage({
   const [derived, validations, spacesRaw, amenityCount, contactsCount, auditEntries] =
     await Promise.all([
       getDerived(propertyId),
-      runAllValidations(propertyId, {
-        maxGuests: property.maxGuests,
-        infantsAllowed: property.infantsAllowed,
-        accessMethodsJson: property.accessMethodsJson,
-      }),
+      getValidationsForProperty(propertyId),
       prisma.space.findMany({
         where: { propertyId, status: "active" },
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -219,79 +196,63 @@ export default async function OverviewPage({
     };
   });
 
+  const statusPill = (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium ${STATUS_PILL_BG[statusTone]}`}
+    >
+      {status === "active" ? (
+        <CheckCircle2 size={12} aria-hidden="true" />
+      ) : (
+        <Clock size={12} aria-hidden="true" />
+      )}
+      {statusLabel}
+    </span>
+  );
+
   return (
-    <div>
-      <header className="mb-7">
-        <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-          <span
-            className="inline-block h-px w-3 bg-[var(--color-text-subtle)]"
-            aria-hidden="true"
-          />
-          Propiedad · Resumen
-        </p>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-[28px] font-semibold leading-[1.15] tracking-[-0.015em] text-[var(--color-text-primary)]">
-              {property.propertyNickname}
-            </h1>
-            {location && (
-              <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
-                {location}
-              </p>
-            )}
-          </div>
-          <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-medium ${STATUS_PILL_BG[statusTone]}`}
-          >
-            {status === "active" ? (
-              <CheckCircle2 size={12} aria-hidden="true" />
-            ) : (
-              <Clock size={12} aria-hidden="true" />
-            )}
-            {statusLabel}
-          </span>
-        </div>
-
-        <div className="mt-3">
-          <ChipRow>
-            {[
-              location && <Chip key="location" icon={MapPin} label={location} />,
-              property.maxGuests != null && (
-                <Chip
-                  key="guests"
-                  icon={UsersRound}
-                  label="Hasta "
-                  emphasis={pluralize(property.maxGuests, "huésped", "huéspedes")}
-                />
-              ),
-              property.bedroomsCount != null && (
-                <Chip
-                  key="bedrooms"
-                  icon={BedDouble}
-                  emphasis={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
-                />
-              ),
-              property.bathroomsCount != null && (
-                <Chip
-                  key="bathrooms"
-                  icon={Bath}
-                  emphasis={pluralize(property.bathroomsCount, "baño", "baños")}
-                />
-              ),
-              property.bedsCount != null && property.bedsCount > 0 && (
-                <Chip
-                  key="beds"
-                  icon={Bed}
-                  emphasis={pluralize(property.bedsCount, "cama", "camas")}
-                />
-              ),
-              <Chip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
-            ].filter(Boolean) as React.ReactElement[]}
-          </ChipRow>
-        </div>
-        <hr className="mt-5 border-[var(--color-border-subtle)]" />
-      </header>
-
+    <ModuleContainer
+      eyebrow="Propiedad · Resumen"
+      title={property.propertyNickname}
+      description={location || undefined}
+      actions={statusPill}
+      chips={
+        <ChipRow>
+          {[
+            location && <PageHeaderChip key="location" icon={MapPin} label={location} />,
+            property.maxGuests != null && (
+              <PageHeaderChip
+                key="guests"
+                icon={UsersRound}
+                label="Hasta"
+                value={pluralize(property.maxGuests, "huésped", "huéspedes")}
+              />
+            ),
+            property.bedroomsCount != null && (
+              <PageHeaderChip
+                key="bedrooms"
+                icon={BedDouble}
+                value={pluralize(property.bedroomsCount, "dormitorio", "dormitorios")}
+              />
+            ),
+            property.bathroomsCount != null && (
+              <PageHeaderChip
+                key="bathrooms"
+                icon={Bath}
+                value={pluralize(property.bathroomsCount, "baño", "baños")}
+              />
+            ),
+            property.bedsCount != null && property.bedsCount > 0 && (
+              <PageHeaderChip
+                key="beds"
+                icon={Bed}
+                value={pluralize(property.bedsCount, "cama", "camas")}
+              />
+            ),
+            <PageHeaderChip key="edited" icon={History} label={`Editada ${lastEditedRel}`} />,
+          ].filter(Boolean) as React.ReactElement[]}
+        </ChipRow>
+      }
+    >
       <section className="mb-7">
         <SectionHeading num="01" title="Estado de la guía" />
         <ReadinessHeroCard
@@ -344,6 +305,6 @@ export default async function OverviewPage({
           totalCount={spaceRows.length}
         />
       </section>
-    </div>
+    </ModuleContainer>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { saveSettingsAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 
 interface SettingsFormProps {
   propertyId: string;
@@ -42,12 +44,15 @@ export function SettingsForm({
     saveSettingsAction,
     null,
   );
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef);
 
   const inputClass =
     "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
 
   return (
     <form
+      ref={formRef}
       action={formAction}
       className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5"
     >
@@ -56,12 +61,6 @@ export function SettingsForm({
       {state?.error && (
         <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
           {state.error}
-        </p>
-      )}
-
-      {state?.success && (
-        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-success-50)] p-3 text-sm text-[var(--color-success-700)]">
-          Configuración guardada.
         </p>
       )}
 
@@ -95,13 +94,9 @@ export function SettingsForm({
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-4 inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Guardar configuración"}
-      </button>
+      <div className="mt-4">
+        <AutoSaveStatus pending={pending} />
+      </div>
     </form>
   );
 }

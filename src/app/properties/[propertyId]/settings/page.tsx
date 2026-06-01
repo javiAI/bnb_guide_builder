@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
+import { ModuleContainer } from "@/components/layout/module-container";
 import { SettingsForm } from "./settings-form";
 import { AirbnbImportPreview } from "./airbnb-import-preview";
 import { BookingImportPreview } from "./booking-import-preview";
@@ -27,13 +29,11 @@ export default async function SettingsPage({
   if (!property) notFound();
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">
-        Configuración
-      </h1>
-      <p className="mt-2 text-sm text-[var(--color-neutral-500)]">
-        Defaults, zona horaria y estado de la propiedad.
-      </p>
+    <ModuleContainer
+      eyebrow="Propiedad · Configuración"
+      title="Configuración"
+      description="Defaults, zona horaria y estado de la propiedad."
+    >
 
       <div className="mt-6 flex items-center gap-3">
         <Badge
@@ -58,8 +58,24 @@ export default async function SettingsPage({
 
       <BookingImportPreview propertyId={propertyId} />
 
+      {/* Actividad — folded here (low frequency); the /activity route is kept. */}
+      <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
+        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+          Actividad
+        </h2>
+        <p className="mt-1 text-[13px] leading-[1.5] text-[var(--color-text-secondary)]">
+          Historial de cambios y accesos sensibles de la propiedad.
+        </p>
+        <Link
+          href={`/properties/${propertyId}/activity`}
+          className="mt-3 inline-flex min-h-[44px] items-center text-[13px] font-medium text-[var(--color-text-link)] hover:underline"
+        >
+          Ver registro de actividad →
+        </Link>
+      </div>
+
       {/* Danger zone */}
-      <div className="mt-10 rounded-[var(--radius-lg)] border border-[var(--color-danger-200)] bg-[var(--color-danger-50)] p-5">
+      <div className="mt-8 rounded-[var(--radius-lg)] border border-[var(--color-danger-200)] bg-[var(--color-danger-50)] p-5">
         <h2 className="text-sm font-semibold text-[var(--color-danger-700)]">
           Zona peligrosa
         </h2>
@@ -68,6 +84,6 @@ export default async function SettingsPage({
           Esta funcionalidad estará disponible en una futura versión.
         </p>
       </div>
-    </div>
+    </ModuleContainer>
   );
 }
