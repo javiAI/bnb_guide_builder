@@ -3856,6 +3856,37 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 - **⌘K (decisión 4) ampliado a búsqueda integral (round 5)**: índice por-propiedad (`operator-search.service` + `getOperatorSearchAction`) sobre secciones + entidades configuradas + conceptos de normas, con deep-link a cada sección — no solo `WORKSPACE_NAV`.
 - **`/simplify` aplicado** (4 agentes): `useDismiss` hook compartido, drawer del Asistente sobre Radix Dialog (focus trap), resize sin render por-pointermove, dedup de clases muertas, `distinct` en amenities.
 - **Gates**: tsc + vitest (2130) + build + invariants/parity/dark verdes; axe 0 serious|critical (overview/policies, light+dark); `/liora-ui-kit-parity` PASS 8.9 (overview shell). **Pendientes** (follow-ups en `FUTURE.md §8.2/§8.5/§8.6`): anclas de búsqueda por-fila, gestión de conocimiento dentro del drawer, merge completo de ocurrencias en `/incidents`, test de contrato de clases `shell-*`, audit de parity sobre drawer/search.
+- **Merged**: PR #116 squash → `main` (`b0acf89`, 2026-06-01), CI completo verde (E2E + axe). El **estado final (rounds 6+) difiere del cierre rounds 1–5** de arriba, tras iteración con el usuario: el grupo "Asistente" drawer se reemplazó por **`/ai` que unifica chat + base de conocimiento** (sin pestañas; `/knowledge` redirige) + una **burbuja flotante no-modal** (cuando el rail está colapsado); el rail derecho pasó a **panel compañero** (publish status + atajos de guía + asistente acoplado, **colapsado por defecto**); theme toggle cíclico 32px con tooltip estilado; `Tooltip` con `placement`+clamp de viewport; ⌘K unificado en una tecla; `PageHeader` con separador→degradado reactivo al scroll; logo de marca en topbar; **auto-save genérico** `useFormAutoSave` + `AutoSaveStatus` aplicado a Propiedad/Configuración/Soluciones/estado-Incidencia. Review Copilot **GREEN** (3 must-fix + 1 a11y resueltos). El auto-save del **resto** de editores se difiere a **16F.6** (abajo).
+
+---
+
+### Rama 16F.6 — `feat/liora-16F.6-editor-autosave`
+
+**Propósito**: completar el auto-guardado en los editores de sección que 16F.5 dejó diferidos. 16F.5 introdujo el patrón (`useFormAutoSave` + `AutoSaveStatus`: guardar al editar, **sin botón "Guardar" ni texto "Guardado" persistente**, como Acceso) y lo aplicó a Propiedad/Configuración/Soluciones/estado-Incidencia. 16F.6 lo extiende al resto para que **toda** edición de sección persista sola — coherente en toda la app. Polish/consolidación post-16F.5; **no** es la auditoría visual formal de módulos (eso es 16E).
+
+**Naturaleza**: cambio de comportamiento (auto-save) + limpieza oportunista de tokens legacy en los ficheros tocados. Sin schema, sin migración, sin server actions nuevas (reusa las acciones de guardado existentes vía `requestSubmit`/llamada imperativa).
+
+**Ordenación vs 16E (dura)**: 16F.6 y 16E (`feat/liora-operator-module-rollout`) tocan los MISMOS ficheros de módulo (policies, systems, knowledge, tarjetas) y ambos editan `src/test/parity-allowlist.ts`. **No son paralelizables** — 16F.6 va **primero** (rápido) y 16E parte de los módulos ya con auto-save + tokens limpios. Arrancar 16E antes solo genera conflictos a rehacer.
+
+**Decisiones Fase -1 (a aprobar al arrancar la rama)**:
+1. **`useFormAutoSave` + arg `watch?: string`**. Para forms cuyo payload sale de estado→JSON (Normas `buildPoliciesJson`, Sistemas `handleSubmit` desde estado), el form pasa `watch={JSON.stringify(...)}` como señal de cambio adicional (el diff de FormData solo no los ve). El hook genérico no enumera campos.
+2. **Forms** (`<form action>`/`onSubmit`): `policies-form`, `system-detail-form`, `local-events-radius-form` → ref + hook (+ `watch` donde aplique), fuera el botón, `<AutoSaveStatus pending>`.
+3. **Tarjetas con modo-edición** (`contact-card`, `space-card`, `bed-manager`, `amenity-detail-panel`, `knowledge-item-card`): rework editar→**"Listo"/"Cerrar"** (no "Guardar"); auto-save en cambios; el botón de borrado se mantiene. La affordance exacta de salida del modo edición se confirma al arrancar.
+4. **Imperativas** (las que no usan `<form>`): debounce de la llamada a la acción en cambio de estado.
+5. **Token cleanup oportunista**: migrar los legacy (`--border`, `--surface-elevated`, `--foreground`, `--color-neutral-*`, `--color-primary-*`) de los ficheros tocados a semánticos, de paso. **NO** añadir esos módulos a `AUDITED_SURFACES` (eso es 16E — invariantes de adopción de primitivos completos).
+6. **Bump `CURRENT_LIORA_PHASE`** a `"16F.6"` (extiende `LioraPhase` + `LIORA_PHASE_ORDER`, entre `"16F.5"` y `"16G"`).
+
+**Tests**: extender `use-form-auto-save.test.tsx` (path `watch`); invariantes existentes + `tooltip-pattern` verdes; axe 0 serious|critical en los módulos tocados (light+dark) **con datos reales** (p.ej. items de conocimiento renderizados — fue donde 16F.5 destapó un contrast bug en `KnowledgeItemCard`).
+
+**Criterio de done**: todos los editores de sección auto-guardan + **persisten en vivo** (verificado con Playwright, cero pérdida de ediciones); sin botón "Guardar" ni "Guardado" persistente; CI completo verde (E2E + axe); review Copilot GREEN.
+
+**No-alcance**: auditoría formal `AUDITED_SURFACES`/primitivos de esos módulos (16E); 16G; redesign del assistant/`ai` visual (16F).
+
+**Docs a actualizar al terminar**: `ROADMAP.md` (16F.6 ✅); `CLAUDE.md` § auto-save pattern si cambia el contrato del hook (`watch`).
+
+**Skills**: `/simplify` (obligatorio antes de PR), `/pre-commit-review` (por commit), `/playwright-cli` + `/webapp-testing` (verificar persistencia en vivo).
+
+> **Nota 16E (post-16F.6)**: el rollout formal de auditoría de módulos operator (`feat/liora-operator-module-rollout`, § arriba) arranca **tras mergear 16F.6**. Puede partirse en sub-ramas E1/E2/E3 por grupo de módulos, pero son **secuenciales entre sí** (todas tocan `parity-allowlist.ts` + `CURRENT_LIORA_PHASE`) — no paralelas.
 
 ---
 
