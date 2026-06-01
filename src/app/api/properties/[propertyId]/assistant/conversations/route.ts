@@ -10,6 +10,13 @@ export const GET = withOperatorGuards<{ propertyId: string }>(
       orderBy: { updatedAt: "desc" },
       include: {
         _count: { select: { messages: true } },
+        // First user message = a human-readable preview for the history list.
+        messages: {
+          where: { role: "user" },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { body: true },
+        },
       },
     });
 
@@ -20,6 +27,9 @@ export const GET = withOperatorGuards<{ propertyId: string }>(
         audience: c.audience,
         language: c.language,
         messageCount: c._count.messages,
+        // Display-only snippet for the history list — bounded here so the
+        // contract isn't "send the whole message body and let CSS clamp it".
+        preview: c.messages[0]?.body.slice(0, 160) ?? null,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
       })),

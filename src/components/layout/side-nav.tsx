@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   Wrench,
   MapPin,
   BookOpen,
+  Bot,
   MessageSquare,
   Image,
   ClipboardCheck,
@@ -31,7 +33,8 @@ import {
   type NavGroup,
 } from "@/lib/navigation";
 import { SectionProgress } from "@/components/section-progress";
-import { NavResizeHandle } from "./shell-chrome";
+import { Tooltip } from "@/components/ui/tooltip";
+import { NavResizeHandle, useNavCollapsed } from "./shell-chrome";
 import {
   PropertySwitcher,
   type SwitchableProperty,
@@ -49,6 +52,7 @@ const NAV_ICONS: Partial<Record<string, LucideIcon>> = {
   policies:      ScrollText,
   contacts:      Phone,
   publishing:    BookOpen,
+  ai:            Bot,
   reservations:  CalendarDays,
   messaging:     MessageSquare,
   incidents:     Flag,
@@ -74,6 +78,9 @@ export function SideNav({
   variant = "desktop",
 }: SideNavProps) {
   const pathname = usePathname();
+  // When collapsed, only the icons show — the label moves into a hover tooltip
+  // (the established styled Tooltip, not the native `title`).
+  const collapsed = useNavCollapsed();
 
   const groups = (
     ["content", "assistant", "publishing", "operations"] as const satisfies readonly NavGroup[]
@@ -83,13 +90,25 @@ export function SideNav({
       label: NAV_GROUP_LABELS[group],
       items: WORKSPACE_NAV.filter((item) => item.group === group),
     }))
-    // The "assistant" group is empty (ai + knowledge live in the right-side
-    // drawer, hideFromNav) — don't render an empty group header.
+    // The "assistant" group is currently empty ("ai" lives in the "publishing"
+    // /Huésped group, knowledge folds into the /ai page) — don't render an empty
+    // group header.
     .filter((group) => group.items.length > 0);
 
   function isActive(item: NavItem): boolean {
     return isNavItemActive(item, pathname, propertyId);
   }
+
+  // Collapsed → wrap the trigger in the styled hover tooltip (the label is
+  // hidden in the icon rail); expanded → the label is visible, no tooltip.
+  const withTooltip = (node: ReactNode, label: string): ReactNode =>
+    collapsed ? (
+      <Tooltip text={label} className="block w-full">
+        {node}
+      </Tooltip>
+    ) : (
+      node
+    );
 
   const visibilityClass =
     variant === "desktop" ? "hidden lg:flex" : "flex";
@@ -123,33 +142,31 @@ export function SideNav({
               {group.items.map((item) => {
                 const active = isActive(item);
                 const Icon = NAV_ICONS[item.key];
-                return (
-                  <li key={item.key}>
-                    <Link
-                      href={item.href(propertyId)}
-                      title={item.label}
-                      className={`shell-nav-item flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium no-underline transition-colors hover:no-underline ${
-                        active
-                          ? "bg-[var(--color-interactive-selected)] text-[var(--color-interactive-selected-fg)] hover:text-[var(--color-interactive-selected-fg)]"
-                          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
-                      }`}
-                    >
-                      {Icon && (
-                        <Icon
-                          size={16}
-                          className={`shrink-0 ${active ? "text-[var(--color-interactive-selected-fg)]" : "text-[var(--color-text-muted)]"}`}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <span className="shell-nav-label flex-1 truncate">{item.label}</span>
-                      {sectionScores?.[item.key] !== undefined && (
-                        <span className="shell-nav-progress">
-                          <SectionProgress score={sectionScores[item.key]} />
-                        </span>
-                      )}
-                    </Link>
-                  </li>
+                const link = (
+                  <Link
+                    href={item.href(propertyId)}
+                    className={`shell-nav-item flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium no-underline transition-colors hover:no-underline ${
+                      active
+                        ? "bg-[var(--color-interactive-selected)] text-[var(--color-interactive-selected-fg)] hover:text-[var(--color-interactive-selected-fg)]"
+                        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    {Icon && (
+                      <Icon
+                        size={16}
+                        className={`shrink-0 ${active ? "text-[var(--color-interactive-selected-fg)]" : "text-[var(--color-text-muted)]"}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span className="shell-nav-label flex-1 truncate">{item.label}</span>
+                    {sectionScores?.[item.key] !== undefined && (
+                      <span className="shell-nav-progress">
+                        <SectionProgress score={sectionScores[item.key]} />
+                      </span>
+                    )}
+                  </Link>
                 );
+                return <li key={item.key}>{withTooltip(link, item.label)}</li>;
               })}
             </ul>
           </div>
@@ -157,14 +174,16 @@ export function SideNav({
       </nav>
 
       <div className="border-t border-[var(--color-border-default)] px-2 py-2">
-        <Link
-          href="/properties/new/welcome"
-          title="Nueva propiedad"
-          className="shell-nav-footer-link flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
-        >
-          <Home size={16} className="shrink-0" aria-hidden="true" />
-          <span className="shell-nav-label">Nueva propiedad</span>
-        </Link>
+        {withTooltip(
+          <Link
+            href="/properties/new/welcome"
+            className="shell-nav-footer-link flex min-h-[44px] items-center gap-2.5 rounded-[8px] px-3 py-2 text-[13px] font-medium text-[var(--color-text-muted)] no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] hover:no-underline"
+          >
+            <Home size={16} className="shrink-0" aria-hidden="true" />
+            <span className="shell-nav-label">Nueva propiedad</span>
+          </Link>,
+          "Nueva propiedad",
+        )}
       </div>
       {variant === "desktop" && <NavResizeHandle />}
     </aside>

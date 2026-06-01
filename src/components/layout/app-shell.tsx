@@ -2,8 +2,10 @@ import { SideNav } from "./side-nav";
 import { Topbar } from "./topbar";
 import { MobileNavDrawer } from "./mobile-nav-drawer";
 import { PublishingRail } from "./publishing-rail";
+import { AssistantLauncher } from "./assistant-launcher";
 import { NavDrawerTab, RailDrawerTab } from "./shell-chrome";
 import { getDerived } from "@/lib/services/property-derived.service";
+import { getPublicGuideHandoff } from "@/lib/services/public-guide-qr.service";
 import {
   getOperatorNotifications,
   type OperatorNotification,
@@ -14,6 +16,7 @@ interface AppShellProps {
   propertyId: string;
   propertyNickname: string;
   publicSlug: string | null;
+  defaultLocale: string;
   workspaceProperties: SwitchableProperty[];
   children: React.ReactNode;
 }
@@ -22,16 +25,18 @@ export async function AppShell({
   propertyId,
   propertyNickname,
   publicSlug,
+  defaultLocale,
   workspaceProperties,
   children,
 }: AppShellProps) {
   // Independent fail-soft reads run concurrently — a cache miss or failure in
   // one must not block (or break) the navigation chrome.
-  const [derived, notifications] = await Promise.all([
+  const [derived, notifications, handoff] = await Promise.all([
     getDerived(propertyId).catch(() => null),
     getOperatorNotifications(propertyId).catch(
       () => [] as OperatorNotification[],
     ),
+    getPublicGuideHandoff(publicSlug).catch(() => null),
   ]);
 
   let sectionScores: Record<string, number> | undefined;
@@ -52,6 +57,7 @@ export async function AppShell({
     };
     overallScore = derived.readiness.overall;
   }
+  const publishable = derived?.readiness?.publishable ?? false;
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--color-background-page)]">
@@ -83,14 +89,19 @@ export async function AppShell({
           </main>
           <PublishingRail
             propertyId={propertyId}
-            publicSlug={publicSlug}
-            sectionScores={sectionScores}
+            publicUrl={handoff?.publicUrl ?? null}
+            qrSvg={handoff?.qrSvg ?? null}
             overallScore={overallScore}
+            publishable={publishable}
+            defaultLocale={defaultLocale}
           />
         </div>
       </div>
       <NavDrawerTab />
       <RailDrawerTab />
+      {/* Floating chat bubble — visible below xl, or at xl when the rail is
+          collapsed (it hosts the docked chat otherwise). See shell.css. */}
+      <AssistantLauncher propertyId={propertyId} defaultLocale={defaultLocale} />
     </div>
   );
 }

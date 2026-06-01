@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, type LucideIcon } from "lucide-react";
+import { IconButton } from "@/components/ui/icon-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
 type Theme = "light" | "dark" | "auto";
@@ -40,6 +42,9 @@ function applyTheme(theme: Theme) {
   }
 }
 
+// Cycle order: auto → light → dark → auto. `auto` follows the OS
+// (prefers-color-scheme) — the sensible default; light/dark are explicit
+// overrides persisted in localStorage.
 const NEXT: Record<Theme, Theme> = { auto: "light", light: "dark", dark: "auto" };
 
 const LABELS: Record<Theme, string> = {
@@ -48,12 +53,18 @@ const LABELS: Record<Theme, string> = {
   dark: "Tema oscuro",
 };
 
-const ICONS: Record<Theme, React.ElementType> = {
+const ICONS: Record<Theme, LucideIcon> = {
   auto: Monitor,
   light: Sun,
   dark: Moon,
 };
 
+/**
+ * Theme switcher (Liora 16F.5). A single icon button that cycles
+ * auto → light → dark; the current mode shows on hover via the styled
+ * `<Tooltip>` (placement="bottom" — it sits in the topbar). Matches the 32px
+ * topbar icon buttons.
+ */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("auto");
   const [hydrated, setHydrated] = useState(false);
@@ -89,14 +100,15 @@ export function ThemeToggle() {
   const Icon = ICONS[theme];
 
   return (
-    <button
-      type="button"
-      onClick={cycle}
-      aria-label={LABELS[theme]}
-      title={LABELS[theme]}
-      className="recipe-interactive-hover grid h-11 w-11 place-items-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)]"
-    >
-      <Icon size={16} aria-hidden="true" />
-    </button>
+    <Tooltip text={LABELS[theme]} placement="bottom">
+      <IconButton
+        icon={Icon}
+        iconSize={16}
+        size="sm"
+        tone="neutral"
+        onClick={cycle}
+        aria-label={LABELS[theme]}
+      />
+    </Tooltip>
   );
 }

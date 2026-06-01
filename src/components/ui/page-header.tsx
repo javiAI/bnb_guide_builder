@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { PageHeaderFade } from "./page-header-fade";
 
 interface PageHeaderProps {
   eyebrow?: ReactNode;
@@ -8,14 +9,15 @@ interface PageHeaderProps {
   actions?: ReactNode;
   chips?: ReactNode;
   className?: string;
-  /** Bottom hairline. Ignored when `sticky` (the sticky border serves as rule). */
+  /** Bottom hairline. Ignored when `sticky` (the gradient fade serves as rule). */
   showRule?: boolean;
   /**
    * Stick the header directly under the topbar on scroll — the operator-shell
-   * default. A solid page background + bottom border mask content scrolling
-   * underneath. No negative-margin bleed is used: the header masks the content
-   * column it shares, so it is robust regardless of how deeply it is nested
-   * inside the page (e.g. embedded in a client form component).
+   * default. A solid page background masks the header content; below it a
+   * gradient strip (opaque at the top → transparent at the bottom) dissolves
+   * content as it scrolls under, instead of a hard border. No negative-margin
+   * bleed is used: the header masks the content column it shares, so it is
+   * robust regardless of how deeply it is nested (e.g. inside a client form).
    */
   sticky?: boolean;
 }
@@ -35,10 +37,12 @@ export function PageHeader({
       className={cn(
         "mb-6",
         sticky &&
-          "sticky top-[var(--topbar-height)] z-20 border-b border-[var(--color-border-default)] bg-[var(--color-background-page)] pb-4 pt-6",
+          "sticky top-[var(--topbar-height)] z-20 bg-[var(--color-background-page)] pb-4 pt-6",
         className,
       )}
     >
+      {/* Scroll-reactive boundary: hairline at the top, gradient on scroll. */}
+      {sticky && <PageHeaderFade />}
       {eyebrow && (
         <div
           className={cn(

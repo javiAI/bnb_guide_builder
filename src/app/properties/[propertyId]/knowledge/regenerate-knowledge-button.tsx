@@ -46,7 +46,7 @@ export function RegenerateKnowledgeButton({ propertyId }: { propertyId: string }
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)]"
+        className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)]"
       >
         Regenerar todo
       </button>

@@ -75,6 +75,7 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/icon-button-link.tsx",
       "src/components/ui/button-link.tsx",
       "src/components/ui/page-header.tsx",
+      "src/components/ui/page-header-fade.tsx",
       "src/components/ui/numbered-section.tsx",
       "src/components/ui/page-header-chip.tsx",
       "src/components/ui/hover-card.tsx",

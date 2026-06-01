@@ -30,7 +30,7 @@ export function EscalationHandoff({ handoff }: Props) {
   const emergency = handoff.emergencyPriority;
   return (
     <article
-      className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3"
+      className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3"
       data-escalation-intent={handoff.intentId}
       data-emergency={emergency ? "true" : "false"}
     >
@@ -38,23 +38,23 @@ export function EscalationHandoff({ handoff }: Props) {
         <span
           className={
             emergency
-              ? "rounded-full bg-[var(--color-danger-50,#fff5f5)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-danger-600,#c53030)]"
-              : "rounded-full bg-[var(--color-primary-50,#f0f7ff)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary-600,#2563eb)]"
+              ? "rounded-full bg-[var(--color-status-error-bg)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-status-error-text)]"
+              : "rounded-full bg-[var(--color-action-primary-subtle)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-action-primary-subtle-fg)]"
           }
         >
           {emergency ? "Emergencia" : "Contacto"}
         </span>
-        <h4 className="text-sm font-semibold text-[var(--foreground)]">
+        <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
           {handoff.intentLabel}
         </h4>
       </header>
 
-      <p className="text-xs text-[var(--color-neutral-500)]">
+      <p className="text-xs text-[var(--color-text-secondary)]">
         {FALLBACK_COPY[handoff.fallbackLevel]}
       </p>
 
       {handoff.contacts.length === 0 ? (
-        <p className="text-xs italic text-[var(--color-neutral-400)]">
+        <p className="text-xs italic text-[var(--color-text-muted)]">
           No se encontraron contactos alcanzables para esta propiedad.
         </p>
       ) : (
@@ -62,25 +62,25 @@ export function EscalationHandoff({ handoff }: Props) {
           {handoff.contacts.map((c) => (
             <li
               key={c.id}
-              className="rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--background)] p-2"
+              className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-page)] p-2"
             >
               <div className="flex flex-wrap items-baseline gap-2">
-                <strong className="text-sm text-[var(--foreground)]">
+                <strong className="text-sm text-[var(--color-text-primary)]">
                   {c.displayName}
                 </strong>
                 {c.isPrimary && (
-                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-neutral-400)]">
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">
                     Principal
                   </span>
                 )}
                 {c.emergencyAvailable && (
-                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-danger-600,#c53030)]">
+                  <span className="text-[10px] uppercase tracking-wide text-[var(--color-status-error-text)]">
                     24/7
                   </span>
                 )}
               </div>
               {c.notes && (
-                <p className="mt-1 text-xs text-[var(--color-neutral-500)]">
+                <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                   {c.notes}
                 </p>
               )}
@@ -91,7 +91,7 @@ export function EscalationHandoff({ handoff }: Props) {
                       key={ch.kind}
                       href={ch.href}
                       aria-label={`${CHANNEL_ACTION[ch.kind]} ${c.displayName}`}
-                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-3 py-2 text-xs font-medium text-white"
+                      className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-3 py-2 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
                     >
                       {CHANNEL_LABEL[ch.kind]}
                     </a>

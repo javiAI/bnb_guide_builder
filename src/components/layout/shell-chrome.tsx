@@ -70,6 +70,26 @@ function useCollapse(
   return { collapsed, toggle };
 }
 
+/**
+ * Read-only reactive view of the nav's collapsed state for consumers that need
+ * to render differently when collapsed (e.g. `SideNav` shows hover tooltips on
+ * the icon-only items). Collapse lives on `<html data-nav-collapsed>` (set by
+ * the pre-paint script + the toggle), so we mirror it into React via a
+ * `MutationObserver` rather than lifting it into shared state.
+ */
+export function useNavCollapsed(): boolean {
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    const el = document.documentElement;
+    const read = () => setCollapsed(el.getAttribute(NAV_COLLAPSED_ATTR) === "true");
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(el, { attributes: true, attributeFilter: [NAV_COLLAPSED_ATTR] });
+    return () => observer.disconnect();
+  }, []);
+  return collapsed;
+}
+
 interface DrawerTabConfig {
   /** Which panel edge the tab hugs (and the open/close direction). */
   side: "left" | "right";
@@ -163,8 +183,8 @@ export function RailDrawerTab() {
       widthVar={RAIL_WIDTH_VAR}
       widthKey={RAIL_WIDTH_KEY}
       bounds={RAIL_WIDTH}
-      labelExpanded="Ocultar panel de publicación"
-      labelCollapsed="Mostrar panel de publicación"
+      labelExpanded="Ocultar panel lateral"
+      labelCollapsed="Mostrar panel lateral"
       breakpoint="xl"
     />
   );

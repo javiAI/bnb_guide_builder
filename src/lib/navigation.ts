@@ -50,10 +50,11 @@ const NAV_ORDER: readonly string[] = [
   "troubleshooting",
   "policies",
   "contacts",
-  // SALIDAS — lo que llega al huésped
+  // HUÉSPED — lo que el huésped experimenta: la guía + el asistente IA
   "publishing",
-  // OPERACIONES — día a día (Asistente IA + Conocimiento viven en el panel
-  // derecho, no en el nav; ver section-editors hideFromNav)
+  "ai",
+  // OPERACIONES — día a día (Base de conocimiento se pliega en la página /ai;
+  // ver section-editors hideFromNav)
   "reservations",
   "messaging",
   "incidents",
@@ -125,10 +126,10 @@ export function isNavItemActive(item: NavItem, pathname: string, propertyId: str
 
 export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
   content: "Contenido",
-  // "assistant" has no visible nav items (ai + knowledge are hideFromNav — the
-  // assistant lives in the right-side drawer); the group is filtered out when
-  // empty by SideNav. The label is kept for the type + any future use.
+  // "assistant" no tiene ítems (ai/knowledge se reasignaron al grupo
+  // "publishing" = "Huésped"); SideNav filtra grupos vacíos. Label conservado
+  // para el tipo.
   assistant: "Asistente",
-  publishing: "Salidas",
+  publishing: "Huésped",
   operations: "Operaciones",
 };

@@ -127,24 +127,23 @@ export const SECTION_EDITORS: SectionEditorDef[] = [
     hasList: true,
     hasDetail: true,
   },
-  // ── Asistente ── (companion tool, no en el nav: vive en el panel derecho
-  //    persistente vía AssistantLauncher; Base de conocimiento se pliega ahí)
+  // ── Huésped ── (lo que el huésped experimenta: la guía del huésped + el
+  //    asistente IA). El asistente vive como entrada de nav (página /ai con chat
+  //    + conocimiento) y también como chat acoplado en el rail / burbuja flotante.
   {
     key: "ai",
     label: "Asistente IA",
-    description: "Conversaciones y retrieval pipeline",
-    group: "assistant",
+    description: "Chat + base de conocimiento (RAG)",
+    group: "publishing",
     phase: 5,
-    // Reached from the persistent right-side assistant drawer (⌘J), not the nav.
-    hideFromNav: true,
   },
   {
     key: "knowledge",
     label: "Base de conocimiento",
     description: "Datos estructurados para IA y guía",
-    group: "assistant",
+    group: "publishing",
     phase: 5,
-    // Folded into the assistant drawer (mostly auto-extracted); route kept.
+    // Plegada dentro de la página del Asistente IA (/ai) — sin entrada propia de nav.
     hideFromNav: true,
   },
   // ── Publicación ── (lo que llega al huésped)

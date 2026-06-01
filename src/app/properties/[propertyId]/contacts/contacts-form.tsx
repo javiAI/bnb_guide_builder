@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Eye, Plus, Siren, Users } from "lucide-react";
+import { Eye, Plus, Siren, Users } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
@@ -131,14 +130,6 @@ export function ContactsForm({ propertyId, contacts }: ContactsFormProps) {
 
   return (
     <div>
-      <Link
-        href={`/properties/${propertyId}`}
-        className="mb-4 inline-flex items-center gap-1 text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text-primary)]"
-      >
-        <ArrowLeft size={14} aria-hidden="true" />
-        Volver al panel
-      </Link>
-
       <PageHeader
         eyebrow="Propiedad · Contactos"
         title="Contactos"

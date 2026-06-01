@@ -108,17 +108,15 @@ export function CommandPalette({ propertyId }: CommandPaletteProps) {
         <button
           type="button"
           aria-label="Buscar en la propiedad"
-          title="Buscar (⌘K)"
           className="recipe-icon-btn-32 flex h-8 w-8 items-center justify-center rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] xl:w-full xl:justify-start xl:gap-2.5 xl:px-3"
         >
           <Search size={14} aria-hidden="true" className="shrink-0" />
           <span className="hidden min-w-0 flex-1 truncate text-left text-[13px] xl:inline">
             Buscar en la propiedad…
           </span>
-          <span className="ml-auto hidden shrink-0 items-center gap-1 xl:flex">
-            <kbd className={KBD_CLASS}>⌘</kbd>
-            <kbd className={KBD_CLASS}>K</kbd>
-          </span>
+          <kbd className={`${KBD_CLASS} ml-auto hidden shrink-0 tracking-wide xl:inline-block`}>
+            ⌘K
+          </kbd>
         </button>
       </Dialog.Trigger>
 

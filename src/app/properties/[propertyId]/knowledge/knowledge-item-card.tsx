@@ -118,7 +118,7 @@ export function KnowledgeItemCard({
             <button
               type="submit"
               disabled={updatePending}
-              className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
             >
               {updatePending ? "Guardando…" : "Guardar"}
             </button>
@@ -170,7 +170,7 @@ export function KnowledgeItemCard({
               <button
                 type="button"
                 onClick={() => setPrefixOpen((v) => !v)}
-                className="text-xs text-[var(--color-primary-600)] hover:underline"
+                className="text-xs text-[var(--color-text-link)] hover:underline"
               >
                 {prefixOpen ? "Ocultar contexto IA" : "Ver contexto IA"}
               </button>

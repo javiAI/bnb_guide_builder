@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { updatePlaybookAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { visibilityLevelsTaxonomy } from "@/lib/taxonomies/visibility-levels";
 import { getItems } from "@/lib/taxonomies/_helpers";
 
@@ -51,26 +52,20 @@ export function PlaybookDetailForm({
     updatePlaybookAction,
     null,
   );
-
-  const saveStatus = pending
-    ? "saving"
-    : state?.success
-      ? "saved"
-      : state?.error
-        ? "error"
-        : undefined;
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef);
 
   const inputClass =
     "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form ref={formRef} action={formAction} className="space-y-6">
       <input type="hidden" name="playbookId" value={playbook.id} />
       <input type="hidden" name="propertyId" value={propertyId} />
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">Detalles</h2>
-        {saveStatus && <InlineSaveStatus status={saveStatus} />}
+        <AutoSaveStatus pending={pending} />
       </div>
 
       {state?.error && (
@@ -211,14 +206,6 @@ export function PlaybookDetailForm({
           )}
         </div>
       </fieldset>
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Guardar cambios"}
-      </button>
     </form>
   );
 }

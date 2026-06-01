@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { Eye } from "lucide-react";
 import { CommandPalette } from "./command-palette";
 import { NotificationsPopover } from "./notifications-popover";
-import { AssistantLauncher } from "./assistant-launcher";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { WORKSPACE_NAV, isNavItemActive } from "@/lib/navigation";
 import type { OperatorNotification } from "@/lib/services/operator-notifications.service";
@@ -34,11 +33,25 @@ export function Topbar({
       className="sticky top-0 z-30 flex items-center border-b border-[var(--color-border-default)] bg-[var(--color-background-page)]"
       style={{ height: "var(--topbar-height)" }}
     >
-      <div
-        className="hidden h-full shrink-0 items-center border-r border-[var(--color-border-default)] px-5 lg:flex"
+      {/* Brand: full wordmark when the nav is expanded, mark-only when collapsed
+          (see shell.css). No right border — the header reads as one bar; the
+          nav/content divider lives only below the topbar (the sidebar border). */}
+      <Link
+        href="/"
+        aria-label="Guide Builder · Propiedades"
+        className="shell-logo-slot hidden h-full shrink-0 items-center gap-2.5 px-5 no-underline lg:flex"
         style={{ width: "var(--sidebar-width)" }}
-        aria-hidden="true"
-      />
+      >
+        <span
+          aria-hidden="true"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] bg-[var(--color-action-primary)] text-[14px] font-bold leading-none text-[var(--color-action-primary-fg)]"
+        >
+          G
+        </span>
+        <span className="shell-logo-wordmark truncate text-[15px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)]">
+          Guide Builder
+        </span>
+      </Link>
 
       <div className="flex flex-1 min-w-0 items-center gap-2 px-3 sm:px-4 lg:px-5">
         {mobileNavSlot}
@@ -67,7 +80,6 @@ export function Topbar({
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
-          <AssistantLauncher propertyId={propertyId} />
           <NotificationsPopover notifications={notifications} />
           {/* "Vista huésped" lives in the rail; surfaced here only when the rail
               is collapsed (xl+) or absent (below xl) — see src/styles/shell.css. */}

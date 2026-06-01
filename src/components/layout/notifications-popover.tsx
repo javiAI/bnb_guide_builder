@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Flag, TriangleAlert, type LucideIcon } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useDismiss } from "@/lib/use-dismiss";
 import type {
   OperatorNotification,
@@ -38,16 +39,17 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
 
   return (
     <div ref={ref} className="relative">
-      <IconButton
-        icon={Bell}
-        iconSize={15}
-        size="sm"
-        tone="neutral"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-label={label}
-        aria-expanded={open}
-        title={label}
-      />
+      <Tooltip text={label} placement="bottom">
+        <IconButton
+          icon={Bell}
+          iconSize={15}
+          size="sm"
+          tone="neutral"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label={label}
+          aria-expanded={open}
+        />
+      </Tooltip>
       {count > 0 && (
         <span className="pointer-events-none absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-[var(--color-status-error-solid)] px-1 text-[10px] font-semibold leading-none text-[var(--color-status-error-solid-fg)]">
           {count > 9 ? "9+" : count}

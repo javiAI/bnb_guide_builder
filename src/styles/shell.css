@@ -16,6 +16,7 @@
   html[data-nav-collapsed="true"] .shell-nav-group-label,
   html[data-nav-collapsed="true"] .shell-nav-progress,
   html[data-nav-collapsed="true"] .shell-prop-switcher,
+  html[data-nav-collapsed="true"] .shell-logo-wordmark,
   html[data-nav-collapsed="true"] .shell-nav-resizer {
     display: none;
   }
@@ -23,6 +24,13 @@
   html[data-nav-collapsed="true"] .shell-nav-item,
   html[data-nav-collapsed="true"] .shell-nav-footer-link {
     justify-content: center;
+  }
+
+  /* Collapsed → the brand shows the mark only, centred in the icon-rail width. */
+  html[data-nav-collapsed="true"] .shell-logo-slot {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
   }
 }
 
@@ -38,6 +46,13 @@ html[data-rail-collapsed="true"] .shell-rail {
      rail is collapsed at xl+. Below xl the rail is absent and the topbar button
      shows via its own responsive utilities. */
   html:not([data-rail-collapsed="true"]) .shell-guest-view-btn {
+    display: none;
+  }
+
+  /* The assistant is docked in the rail at xl; the floating bubble only takes
+     over when the rail is collapsed (at xl+). Below xl the rail is absent and
+     the bubble shows via its base `fixed`/`grid` utilities. */
+  html:not([data-rail-collapsed="true"]) .shell-chat-bubble {
     display: none;
   }
 }
