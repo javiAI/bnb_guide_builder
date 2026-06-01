@@ -120,7 +120,7 @@ export default async function PlaybookDetailPage({
         href={`/properties/${propertyId}/troubleshooting`}
         className="text-sm text-[var(--color-primary-500)] hover:text-[var(--color-primary-600)]"
       >
-        &larr; Volver a Averías
+        &larr; Volver a Soluciones
       </Link>
 
       <div className="mt-4">

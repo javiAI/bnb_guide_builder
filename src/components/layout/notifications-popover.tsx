@@ -48,6 +48,8 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
           onClick={() => setOpen((prev) => !prev)}
           aria-label={label}
           aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-controls={open ? "notifications-popover" : undefined}
         />
       </Tooltip>
       {count > 0 && (
@@ -58,7 +60,8 @@ export function NotificationsPopover({ notifications }: NotificationsPopoverProp
 
       {open && (
         <div
-          role="menu"
+          id="notifications-popover"
+          role="dialog"
           aria-label="Notificaciones"
           className="absolute right-0 top-[calc(100%+8px)] z-50 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[12px] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-popover)]"
         >

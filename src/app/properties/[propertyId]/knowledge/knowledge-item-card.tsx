@@ -157,7 +157,7 @@ export function KnowledgeItemCard({
           <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
             {item.bodyMd}
           </p>
-          <div className="mt-2 flex items-center gap-3 text-xs text-[var(--color-neutral-400)]">
+          <div className="mt-2 flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
             {item.confidenceScore != null && (
               <span>Confianza: {Math.round(item.confidenceScore * 100)}%</span>
             )}

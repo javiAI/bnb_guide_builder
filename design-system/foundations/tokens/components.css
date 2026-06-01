@@ -206,7 +206,8 @@
 
   /* ════════ PUBLISHING RAIL ════════ */
   /* Default rail width. The shell-chrome resize handle + pre-paint script
-     override this inline on <html> (collapsed = 48px; resized = clamped). */
+     override this inline on <html> (collapsed = 0px / fully hidden; resized =
+     clamped). Default-collapsed unless the user has expanded it. */
   --rail-width:        var(--size-rail);
 
   /* ════════ MODAL / DIALOG ════════ */
