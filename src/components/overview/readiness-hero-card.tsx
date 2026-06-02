@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { TextLink } from "@/components/ui/text-link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
@@ -55,8 +56,8 @@ function readinessState(
     };
   }
   return {
-    label: "Aún no usable",
-    detail: "Completa los campos pendientes para que la guía sea legible para tus huéspedes.",
+    label: "En progreso",
+    detail: "Completa los campos pendientes para que la guía sea útil y legible para tus huéspedes.",
   };
 }
 
@@ -156,11 +157,12 @@ export function ReadinessHeroCard({
       </div>
 
       {issues.length > 0 && (
-        <div className="mt-5 border-t border-[var(--color-border-subtle)] pt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
+        <div className="mt-5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] p-4">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
+            <AlertTriangle size={13} aria-hidden="true" />
             {issues.length} {issues.length === 1 ? "incidencia pendiente" : "incidencias pendientes"}
           </p>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-2.5 space-y-2">
             {issues.slice(0, 3).map((f) => (
               <li
                 key={f.id}

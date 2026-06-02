@@ -34,7 +34,11 @@ export function TimelineList({ items, emptyText, className }: TimelineListProps)
     <ol
       className={cn(
         "relative flex-1 pl-4",
-        "before:absolute before:left-1 before:top-1.5 before:bottom-1.5 before:w-px before:bg-[var(--color-border-default)] before:content-['']",
+        // Spine centered at 7px (left-1.5=6px + w-0.5=2px → center 7px) so it
+        // aligns exactly with the 8px dots (li left 16px + dot left -13px +
+        // half 4px = center 7px). A 1px line can't share an integer center
+        // with an 8px (even) dot, so the connector is 2px.
+        "before:absolute before:left-1.5 before:top-1.5 before:bottom-1.5 before:w-0.5 before:bg-[var(--color-border-default)] before:content-['']",
         className,
       )}
     >
