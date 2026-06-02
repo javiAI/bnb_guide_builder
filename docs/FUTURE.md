@@ -111,6 +111,53 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 
 ---
 
+## 8. Operator shell — diferidos de 16D
+
+### 8.1 Overview right rail
+
+**Estado**: diferido. Registrado en Fase -1 de 16D.
+
+Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets de actividad reciente, estado de sincronización con plataformas, o resumen de reservas próximas. No implementado en 16D porque requiere diseño de layout adicional (columna 3 en el grid) y definir qué datos son más útiles ahí.
+
+**Trigger**: cuando el overview tenga suficiente densidad de datos (reservas, mensajes, analítica) que justifique una columna de contexto permanente.
+
+### 8.2 Command palette funcional
+
+**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`), incluida la **búsqueda integral de contenido**. El ⌘K es Radix Dialog + `fuse.js` (sin dep nueva; `cmdk` descartado) en `src/components/layout/command-palette.tsx`, alimentado por un índice por-propiedad (`src/lib/services/operator-search.service.ts`, lazy vía `getOperatorSearchAction`): secciones + contactos + espacios + sistemas + equipamiento + guía local + soluciones + conceptos de normas; cada resultado deep-linka a su sección.
+
+**Follow-ups** (diferidos):
+
+- **Anclas por-fila**: hoy los resultados aterrizan en la **sección** (`/contacts`), no en la fila concreta. El `id` del entry ya codifica la entidad (`contact:<id>`…) — falta threading `#<id>` en el `href` + que cada página honre el hash (scroll+highlight).
+- **Acciones** server-side en el palette (publicar, crear espacio) + búsqueda **cross-property**.
+- **Asimetría de normas**: el índice toma normas del **catálogo de taxonomía** (discoverability de conceptos no configurados) mientras el resto son entidades **configuradas**. Unificar (indexar normas configuradas, o extender el catálogo a sistemas/amenities) si la asimetría confunde.
+- Lazy-import de `fuse.js` (≈30 KB) como hace el buscador huésped, si el bundle del shell lo justifica.
+
+### 8.4 Notificaciones operator — fuentes adicionales
+
+**Estado**: 16F.5 implementó el feed v1 (`src/lib/services/operator-notifications.service.ts`): bloqueos de publicación + incidencias abiertas, popover read-only en el topbar.
+
+**Follow-ups**: drafts de mensajería pendientes + conocimiento stale como fuentes adicionales (la decisión Fase -1 de 16F.5 las dejó fuera de v1). Lazy-load del feed en `onOpen` si el coste por-página de `getValidationsForProperty` se vuelve relevante (hoy cache()'d por render). Marcar-como-leído / dismiss.
+
+### 8.5 Rail auto-hide por grupo + contrato de clases del shell
+
+**Estado**: diferidos de 16F.5.
+
+- **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
+- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio. Igual para los bounds del pre-paint (`208/360/240`, `264/440/300`) vs `shell-prefs.ts` — un test que asegure que el script literal contiene los mismos números.
+
+### 8.6 Asistente IA + Soluciones — profundización (diferidos de 16F.5)
+
+- **Gestión de conocimiento dentro del drawer**: hoy el drawer del Asistente (`assistant-launcher.tsx`) monta `AssistantChat` + un **link** a `/knowledge`. Profundización: plegar la gestión del conocimiento (añadir tips, regenerar, ver huecos) como pestaña dentro del propio drawer en vez de navegar fuera.
+- **Merge completo de ocurrencias en Incidencias**: 16F.5 reubicó el **acceso** a las ocurrencias (fuera de Soluciones, hacia Operaciones·Incidencias enlazado desde `/incidents`), pero quedan dos superficies (`/incidents` triage + `/troubleshooting/incidents` registro con creación vinculada a playbook/target). Merge real = mover el `CreateIncidentForm` vinculado a `/incidents` y retirar la segunda ruta, sin perder el linking a playbook.
+
+### 8.3 Brand themes para el operator shell
+
+**Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
+
+Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
+
+---
+
 ## 9. Video optimization pipeline
 
 **Estado**: diferido.
@@ -318,53 +365,6 @@ Implementación paralela `GooglePlacesProvider` para hosts en mercados donde Map
 - La UI y el pipeline ignoran qué provider respondió (solo queda `provider` persistido en `LocalPlace.provider` para auditoría).
 
 Esperar demanda de un mercado concreto antes de escribir el segundo provider.
-
----
-
-## 8. Operator shell — diferidos de 16D
-
-### 8.1 Overview right rail
-
-**Estado**: diferido. Registrado en Fase -1 de 16D.
-
-Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets de actividad reciente, estado de sincronización con plataformas, o resumen de reservas próximas. No implementado en 16D porque requiere diseño de layout adicional (columna 3 en el grid) y definir qué datos son más útiles ahí.
-
-**Trigger**: cuando el overview tenga suficiente densidad de datos (reservas, mensajes, analítica) que justifique una columna de contexto permanente.
-
-### 8.2 Command palette funcional
-
-**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`), incluida la **búsqueda integral de contenido**. El ⌘K es Radix Dialog + `fuse.js` (sin dep nueva; `cmdk` descartado) en `src/components/layout/command-palette.tsx`, alimentado por un índice por-propiedad (`src/lib/services/operator-search.service.ts`, lazy vía `getOperatorSearchAction`): secciones + contactos + espacios + sistemas + equipamiento + guía local + soluciones + conceptos de normas; cada resultado deep-linka a su sección.
-
-**Follow-ups** (diferidos):
-
-- **Anclas por-fila**: hoy los resultados aterrizan en la **sección** (`/contacts`), no en la fila concreta. El `id` del entry ya codifica la entidad (`contact:<id>`…) — falta threading `#<id>` en el `href` + que cada página honre el hash (scroll+highlight).
-- **Acciones** server-side en el palette (publicar, crear espacio) + búsqueda **cross-property**.
-- **Asimetría de normas**: el índice toma normas del **catálogo de taxonomía** (discoverability de conceptos no configurados) mientras el resto son entidades **configuradas**. Unificar (indexar normas configuradas, o extender el catálogo a sistemas/amenities) si la asimetría confunde.
-- Lazy-import de `fuse.js` (≈30 KB) como hace el buscador huésped, si el bundle del shell lo justifica.
-
-### 8.4 Notificaciones operator — fuentes adicionales
-
-**Estado**: 16F.5 implementó el feed v1 (`src/lib/services/operator-notifications.service.ts`): bloqueos de publicación + incidencias abiertas, popover read-only en el topbar.
-
-**Follow-ups**: drafts de mensajería pendientes + conocimiento stale como fuentes adicionales (la decisión Fase -1 de 16F.5 las dejó fuera de v1). Lazy-load del feed en `onOpen` si el coste por-página de `getValidationsForProperty` se vuelve relevante (hoy cache()'d por render). Marcar-como-leído / dismiss.
-
-### 8.5 Rail auto-hide por grupo + contrato de clases del shell
-
-**Estado**: diferidos de 16F.5.
-
-- **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
-- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio. Igual para los bounds del pre-paint (`208/360/240`, `264/440/300`) vs `shell-prefs.ts` — un test que asegure que el script literal contiene los mismos números.
-
-### 8.6 Asistente IA + Soluciones — profundización (diferidos de 16F.5)
-
-- **Gestión de conocimiento dentro del drawer**: hoy el drawer del Asistente (`assistant-launcher.tsx`) monta `AssistantChat` + un **link** a `/knowledge`. Profundización: plegar la gestión del conocimiento (añadir tips, regenerar, ver huecos) como pestaña dentro del propio drawer en vez de navegar fuera.
-- **Merge completo de ocurrencias en Incidencias**: 16F.5 reubicó el **acceso** a las ocurrencias (fuera de Soluciones, hacia Operaciones·Incidencias enlazado desde `/incidents`), pero quedan dos superficies (`/incidents` triage + `/troubleshooting/incidents` registro con creación vinculada a playbook/target). Merge real = mover el `CreateIncidentForm` vinculado a `/incidents` y retirar la segunda ruta, sin perder el linking a playbook.
-
-### 8.3 Brand themes para el operator shell
-
-**Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
-
-Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
 
 ---
 
