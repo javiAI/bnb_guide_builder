@@ -216,51 +216,6 @@ describe("validateVisibilityLeaks", () => {
     expect(out).toHaveLength(0);
   });
 
-  it("error when public amenity stores a sensitive_text field (am.wifi.password)", () => {
-    const out = validateVisibilityLeaks(
-      baseCtx({
-        amenityInstances: [
-          {
-            amenityKey: "am.wifi",
-            instanceKey: "default",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.ssid": "MyNet", "wifi.password": "supersecret" },
-            visibility: "guest",
-          },
-        ],
-      }),
-    );
-    expect(out).toHaveLength(1);
-    expect(out[0].severity).toBe("error");
-    expect(out[0].id).toBe("visibility_leak_am.wifi_default");
-    expect(out[0].message).toContain("Contraseña");
-  });
-
-  it("dedupes finding ids per instanceKey when amenity has multiple instances", () => {
-    const out = validateVisibilityLeaks(
-      baseCtx({
-        amenityInstances: [
-          {
-            amenityKey: "am.wifi",
-            instanceKey: "guest",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.password": "a" },
-            visibility: "guest",
-          },
-          {
-            amenityKey: "am.wifi",
-            instanceKey: "office",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.password": "b" },
-            visibility: "guest",
-          },
-        ],
-      }),
-    );
-    expect(out).toHaveLength(2);
-    expect(new Set(out.map((f) => f.id)).size).toBe(2);
-  });
-
   it("error when a guest-visible system stores a sensitive field (sys.internet.password)", () => {
     const out = validateVisibilityLeaks(
       baseCtx({

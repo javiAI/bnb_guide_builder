@@ -191,7 +191,7 @@ describe("Field dependency engine", () => {
   it("getAllDependentFields returns fields from rules", () => {
     const fields = getAllDependentFields();
     expect(fields).toContain("lock.brand");
-    expect(fields).toContain("wifi.ssid");
+    expect(fields).toContain("coffee_maker.subtype");
     expect(fields).toContain("pol.pets.max");
   });
 

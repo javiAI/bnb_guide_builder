@@ -116,22 +116,6 @@
       "rationale": "La cafetera necesita subtipo e instrucciones reutilizables."
     },
     {
-      "id": "dfr.wifi_selected",
-      "trigger": "amenities.selected",
-      "condition": {
-        "contains": "am.wifi"
-      },
-      "shown_fields": [
-        "wifi.ssid",
-        "wifi.password",
-        "wifi.router_location",
-        "wifi.speed_tier",
-        "wifi.troubleshooting"
-      ],
-      "defaults": {},
-      "rationale": "El wifi requiere credenciales y soporte básico."
-    },
-    {
       "id": "dfr.parking_selected",
       "trigger": "amenities.selected",
       "condition": {
