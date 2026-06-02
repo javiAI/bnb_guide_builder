@@ -618,3 +618,19 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 
 10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
 
+## 27. Overview (Resumen) — rethink de presentación + honestidad de readiness
+
+> Origen: revisión UX profunda de la pestaña Resumen durante 16I-1 (2026-06-02). 16I-1 cerró el **pulido visual/estandarización** (primitivos, focus, timeline, alert panel, chip de estado, KPI/task badges). Lo de abajo son cambios **funcionales / de producto** detectados que exceden el contrato visual de 16I-1 y se difieren con decisión explícita del usuario.
+
+**Estado**: diferido (post-16I-1).
+**Trigger**: cuando se retome Resumen para profundizar, o cuando las integraciones (reservas/mensajería) aporten dato real.
+
+1. **Gate de publicación real** (ALTO). `publishGuideVersionAction` (`src/lib/actions/guide.actions.ts`) **no exige readiness ni ausencia de blockers** — solo sesión + ownership. Por tanto "publicable", "incidencias/blockers" y los estados del hero son **puramente informativos**: se puede publicar una guía con WiFi vacío o cerradura sin backup. Decisión pendiente: definir un "mínimo viable de guía" y enforcearlo en la action (o reencuadrar formalmente readiness como calidad, no gate). Incluye decidir si Contactos entra en el mínimo.
+2. **Readiness ampliada a las 8 secciones del huésped**. Hoy el score solo cubre 4 (spaces/amenities/systems/arrival). **Contactos, Normas, Guía local, Soluciones** alimentan secciones reales del huésped (emergencia, normas, local, cómo-usar) pero no puntúan — una guía "publicable" puede salir **sin un solo contacto de anfitrión** (sección emergencia vacía). Extender `completeness_rules.json` + `completeness.service` a una cobertura de las 8.
+3. **Unificar WiFi a una sola fuente** (planificado como rama `feat/unify-wifi-source`, Fase -1 esbozada). WiFi se captura en `sys.internet` (lee la validación) **y** `am.wifi` (lee completitud), pese a que `am.wifi` es `derived_from_system`. Viola "no capturar una verdad dos veces". Migración additive + alinear completitud↔validación.
+4. **Quick-fix in-context** (planificado como `feat/overview-quick-fix`). Slide-over para resolver blockers atómicos (SSID/password, backup de acceso, horarios) sin abandonar Resumen; hoy todo deep-linka a otra pestaña.
+5. **Rethink del valor de las KPI cards + tabla de Espacios en Resumen**. El usuario cuestiona (a) que las KPIs (Espacios/Equipamiento/Contactos/Bloqueantes) sean simples/poco informativas, (b) que al pulsarlas naveguen a la pestaña (redundante con el nav), (c) que la tabla de Espacios en Resumen sea redundante con la pestaña Espacios. Explorar: ¿qué información de un vistazo aporta valor real aquí?, ¿inline vs navegación?, ¿densidad informativa manteniendo minimalismo?
+6. **Priorización de "Siguientes acciones"**. Hoy ordena por score asc + blockers/errors primero ("priorizadas por impacto"). Explorar otros ejes (esfuerzo estimado, journey stage, recencia) o priorización mixta.
+7. **Definición de "camas" en los chips**. `property.bedsCount` refleja fielmente las `BedConfiguration` (declarado == actual; verificado sin bug). Pero un `bt.sofa_bed_*` cuenta como "cama", lo que puede no coincidir con el modelo mental del host. Decisión de producto/taxonomía: ¿"camas" incluye sofá-cama?, ¿mostrar "plazas" en su lugar?, ¿separar camas fijas de convertibles?
+8. **Reservas / Mensajería en Resumen**. Diferido hasta que exista integración real (Airbnb/Booking/WhatsApp). Hoy serían UI vacía o falsa.
+

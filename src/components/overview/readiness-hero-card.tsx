@@ -83,7 +83,7 @@ export function ReadinessHeroCard({
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
-      <div className="flex flex-wrap items-start gap-6">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-5">
         <div className="relative h-[88px] w-[88px] shrink-0">
           <svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true">
             <circle
@@ -120,7 +120,7 @@ export function ReadinessHeroCard({
           <span className="sr-only">Completitud {overall} de 100</span>
         </div>
 
-        <div className="min-w-[200px] flex-1">
+        <div className="min-w-[220px] max-w-[28rem]">
           <div className="flex items-center gap-2">
             <Badge label={tier.word} tone={tier.tone} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
@@ -135,7 +135,7 @@ export function ReadinessHeroCard({
           </p>
         </div>
 
-        <div className="flex min-w-[200px] flex-col gap-2.5">
+        <div className="flex min-w-[220px] flex-1 flex-col gap-2.5">
           {OVERVIEW_SECTIONS.map((section) => {
             const score = scores[section.key];
             const tone = meterTone(score);
@@ -167,7 +167,7 @@ export function ReadinessHeroCard({
       </div>
 
       {issues.length > 0 && (
-        <div className="mt-5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] p-4">
+        <div className="mt-5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] p-4">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
             <AlertTriangle size={13} aria-hidden="true" />
             {issues.length} {issues.length === 1 ? "incidencia pendiente" : "incidencias pendientes"}
