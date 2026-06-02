@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useActionState, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import {
   updateKnowledgeItemAction,
   deleteKnowledgeItemAction,
@@ -50,36 +52,47 @@ export function KnowledgeItemCard({
     null,
   );
 
+  // Auto-save: edits persist as you make them (no "Guardar" button). The form
+  // mounts only when editing, so the hook re-attaches when it appears; `flush()`
+  // before closing guarantees the last keystroke persists. `topic`/`bodyMd` are
+  // required, so the validity gate skips saving an emptied title/body.
+  const formRef = useRef<HTMLFormElement>(null);
+  const flush = useFormAutoSave(formRef);
+  const closeEditing = () => {
+    flush();
+    setEditing(false);
+  };
+
   const inputClass =
-    "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
+    "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
 
   const fieldError = (field: string) =>
     updateState?.fieldErrors?.[field]?.[0];
 
   if (editing) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-5">
-        <form action={updateAction}>
+      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
+        <form ref={formRef} action={updateAction}>
           <input type="hidden" name="itemId" value={item.id} />
           <input type="hidden" name="propertyId" value={propertyId} />
 
           {updateState?.error && (
-            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-danger-50)] p-3 text-sm text-[var(--color-danger-700)]">
+            <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
               {updateState.error}
             </p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block sm:col-span-2">
-              <span className="text-xs text-[var(--color-neutral-500)]">Tema *</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Tema *</span>
               <input name="topic" type="text" required defaultValue={item.topic} className={inputClass} />
               {fieldError("topic") && (
-                <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("topic")}</p>
+                <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("topic")}</p>
               )}
             </label>
 
             <label className="block sm:col-span-2">
-              <span className="text-xs text-[var(--color-neutral-500)]">Contenido (Markdown) *</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Contenido (Markdown) *</span>
               <textarea
                 name="bodyMd"
                 required
@@ -88,12 +101,12 @@ export function KnowledgeItemCard({
                 className={inputClass}
               />
               {fieldError("bodyMd") && (
-                <p className="mt-1 text-xs text-[var(--color-danger-500)]">{fieldError("bodyMd")}</p>
+                <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{fieldError("bodyMd")}</p>
               )}
             </label>
 
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Visibilidad</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Visibilidad</span>
               <select name="visibility" defaultValue={item.visibility} className={inputClass}>
                 <option value="guest">Huésped</option>
                 <option value="ai">AI</option>
@@ -102,7 +115,7 @@ export function KnowledgeItemCard({
             </label>
 
             <label className="block">
-              <span className="text-xs text-[var(--color-neutral-500)]">Etapa del journey</span>
+              <span className="text-xs text-[var(--color-text-muted)]">Etapa del journey</span>
               <select name="journeyStage" defaultValue={item.journeyStage ?? ""} className={inputClass}>
                 <option value="">— Sin etapa —</option>
                 <option value="pre_booking">Pre-reserva</option>
@@ -114,21 +127,15 @@ export function KnowledgeItemCard({
             </label>
           </div>
 
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={updatePending}
-              className="inline-flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-            >
-              {updatePending ? "Guardando…" : "Guardar"}
-            </button>
+          <div className="mt-4 flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setEditing(false)}
-              className="inline-flex items-center justify-center rounded-[var(--radius-md)] border border-[var(--border)] px-5 py-2 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
+              onClick={closeEditing}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)]"
             >
-              Cancelar
+              Listo
             </button>
+            <AutoSaveStatus pending={updatePending} />
           </div>
         </form>
       </div>
@@ -136,11 +143,11 @@ export function KnowledgeItemCard({
   }
 
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-medium text-[var(--foreground)]">
+            <h3 className="text-sm font-medium text-[var(--color-text-primary)]">
               {item.topic}
             </h3>
             <Badge label={visibilityLabel} tone={visibilityTone} />
@@ -154,7 +161,7 @@ export function KnowledgeItemCard({
               <Badge label={item.chunkType} tone="neutral" />
             )}
           </div>
-          <p className="mt-1 line-clamp-2 text-xs text-[var(--color-neutral-500)]">
+          <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-muted)]">
             {item.bodyMd}
           </p>
           <div className="mt-2 flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
@@ -175,7 +182,7 @@ export function KnowledgeItemCard({
                 {prefixOpen ? "Ocultar contexto IA" : "Ver contexto IA"}
               </button>
               {prefixOpen && (
-                <pre className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-neutral-50)] p-2 text-xs text-[var(--color-neutral-600)]">
+                <pre className="mt-1 whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-background-muted)] p-2 text-xs text-[var(--color-text-secondary)]">
                   {item.contextPrefix}
                 </pre>
               )}
@@ -187,7 +194,7 @@ export function KnowledgeItemCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-[var(--radius-md)] border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--color-neutral-100)]"
+            className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-interactive-hover)]"
           >
             Editar
           </button>
@@ -197,7 +204,7 @@ export function KnowledgeItemCard({
             <button
               type="submit"
               disabled={deletePending}
-              className="rounded-[var(--radius-md)] border border-[var(--color-danger-200)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-600)] transition-colors hover:bg-[var(--color-danger-50)] disabled:opacity-50"
+              className="rounded-[var(--radius-md)] border border-[var(--color-status-error-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-error-text)] transition-colors hover:bg-[var(--color-status-error-bg)] disabled:opacity-50"
             >
               {deletePending ? "…" : "Eliminar"}
             </button>

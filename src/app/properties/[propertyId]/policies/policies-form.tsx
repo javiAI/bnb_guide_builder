@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useRef } from "react";
 import Link from "next/link";
 import { Moon, Cigarette, PartyPopper, Camera, SprayCan, UserPlus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -10,7 +10,8 @@ import { IconBadge } from "@/components/ui/icon-badge";
 import { RadioCardGroup } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { savePoliciesAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
@@ -119,7 +120,13 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
   // ── Form action ──
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePoliciesAction, null);
 
-  const saveStatus = pending ? "saving" : state?.success ? "saved" : state?.error ? "error" : undefined;
+  // Auto-save: edits persist as you make them (no "Guardar" button). The
+  // payload is built state→JSON at submit time, so `watch` is the change signal
+  // — the per-render FormData diff alone misses the toggles/steppers/textareas
+  // that have no `name`. `requestSubmit()` runs the form action below, which
+  // serialises the same JSON.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef, 700, () => JSON.stringify(buildPoliciesJson()));
 
   // Build the typed JSON for submission
   function buildPoliciesJson(): PoliciesData {
@@ -203,6 +210,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
 
   return (
     <form
+      ref={formRef}
       action={(formData) => {
         formData.set("policiesJson", JSON.stringify(buildPoliciesJson()));
         formAction(formData);
@@ -212,6 +220,7 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         eyebrow="Propiedad · Normas"
         title="Normas de la casa"
         description="Lo que puede y no puede hacer el huésped. Escribe con el mismo tono con el que hablarías en persona — firme y cálido, no burocrático."
+        actions={<AutoSaveStatus pending={pending} />}
       />
 
       <input type="hidden" name="propertyId" value={propertyId} />
@@ -467,17 +476,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         </div>
       </NumberedSection>
 
-      {/* ── Submit ── */}
-      <div className="mt-2 flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-        >
-          {pending ? "Guardando…" : "Guardar normas"}
-        </button>
-        {saveStatus && <InlineSaveStatus status={saveStatus} />}
-      </div>
     </form>
   );
 }
