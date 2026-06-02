@@ -111,17 +111,6 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 
 ---
 
-## 26. Analytics dashboard de la guía pública
-
-> Renumerado de §8 → §26 para resolver la colisión con "§8 Operator shell — diferidos de 16D/16F.5" (referenciado como §8.2/§8.5/§8.6 en CLAUDE.md). El orden de este doc no es estricto.
-
-**Estado**: diferido.
-**Trigger**: >50 properties publicadas o demanda explícita de hosts.
-
-10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
-
----
-
 ## 9. Video optimization pipeline
 
 **Estado**: diferido.
@@ -617,4 +606,15 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 ### Por qué no se hace inline en la rama actual
 
 16F es una rama de **paridad visual** (0 cambios funcionales, 0 schema, 0 API). Cada grupo de arriba implica modelo de datos nuevo (`Conversation`/`Message`/`resolved`), ingest de canal externo, o pipeline de envío — superficie de regresión y producto nuevo que no cabe en un re-skin. Implementarlos parcialmente sería peor que diferirlos: un inbox sin ingest real es una pantalla vacía que miente sobre lo que el producto hace hoy.
+
+---
+
+## 26. Analytics dashboard de la guía pública
+
+> Renumerado de §8 → §26 (la colisión era con "§8 Operator shell — diferidos de 16D/16F.5", referenciado como §8.2/§8.5/§8.6 en CLAUDE.md). Reubicado al final para mantener el orden numérico.
+
+**Estado**: diferido.
+**Trigger**: >50 properties publicadas o demanda explícita de hosts.
+
+10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
 
