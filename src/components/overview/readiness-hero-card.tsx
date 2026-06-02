@@ -33,30 +33,47 @@ const TONE_BG: Record<"ok" | "warn" | "low", string> = {
   low: "bg-[var(--color-status-error-solid)]",
 };
 
+interface ReadinessState {
+  /** Short categorical tag for the status chip. */
+  tag: string;
+  tone: "success" | "warning" | "neutral";
+  /** Descriptive headline. */
+  label: string;
+  detail: string;
+}
+
 function readinessState(
   publishable: boolean,
   usable: boolean,
   blockerCount: number,
-): { label: string; detail: string } {
+): ReadinessState {
   if (publishable && blockerCount === 0) {
     return {
+      tag: "Lista",
+      tone: "success",
       label: "Tu guía está lista",
       detail: "Todo verificado. Puedes publicar y compartir el enlace ahora mismo.",
     };
   }
   if (usable && blockerCount > 0) {
     return {
+      tag: "Casi lista",
+      tone: "warning",
       label: "Casi lista",
       detail: `Quedan ${blockerCount} bloqueante${blockerCount === 1 ? "" : "s"} antes de una publicación óptima.`,
     };
   }
   if (usable) {
     return {
+      tag: "Casi lista",
+      tone: "warning",
       label: "Usable, sin pulir",
       detail: "Puedes compartirla, pero quedan secciones con baja completitud.",
     };
   }
   return {
+    tag: "En progreso",
+    tone: "neutral",
     label: "En progreso",
     detail: "Completa los campos pendientes para que la guía sea útil y legible para tus huéspedes.",
   };
@@ -74,12 +91,6 @@ export function ReadinessHeroCard({
   const issues = [...blockers, ...errors];
   const state = readinessState(publishable, usable, blockers.length);
   const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * overall) / 100;
-  const tier: { word: string; tone: "success" | "warning" | "neutral" } =
-    publishable && blockers.length === 0
-      ? { word: "Lista", tone: "success" }
-      : usable
-        ? { word: "Casi lista", tone: "warning" }
-        : { word: "En progreso", tone: "neutral" };
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
@@ -122,7 +133,7 @@ export function ReadinessHeroCard({
 
         <div className="min-w-[220px] max-w-[28rem]">
           <div className="flex items-center gap-2">
-            <Badge label={tier.word} tone={tier.tone} />
+            <Badge label={state.tag} tone={state.tone} />
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
               Completitud · {overall} de 100
             </span>
