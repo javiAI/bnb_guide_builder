@@ -3950,6 +3950,66 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
+### Rama 16I-1 — `feat/liora-16I-1-overview-polish` (Resumen)
+
+**Propósito**: Pulir y estandarizar la pestaña **Resumen** (overview) — primera de las 10 ramas de FASE 16I. Lleva la superficie de "suelo de paridad cumplido" a "experiencia perfeccionada": adopta primitivos compartidos donde Resumen aún rueda código propio, afina densidad/jerarquía/estados, y **sube** el score `/liora-ui-kit-parity` vs `operator/index.html` por encima del suelo 8.5. Hace el **bump único** `CURRENT_LIORA_PHASE → "16I"` (prerequisito ordinal de 16I-2..10, que también tocan `parity-allowlist.ts`).
+
+**Archivos a crear**:
+
+- Ninguno (pulido sobre superficie ya auditada en 16D). Screenshots de paridad en `eval-artifacts/16I/overview/` (artefacto, no código).
+
+**Archivos a modificar**:
+
+- `src/app/properties/[propertyId]/page.tsx` — borrar `SectionHeading` local; adoptar el primitivo compartido `NumberedSection` (01 hero · 02 actividad/KPIs · two-up **sin número** · 03 espacios, alineado al kit); actions vía `<TextLink size="sm">` (icono `Plus` en "Añadir espacio", `Ver analítica` → `/analytics`); afinar spacing/densidad.
+- `src/components/overview/kpi-strip.tsx` — pulido visual (sublíneas/tono, hover/focus, ≥44); **conteos de configuración** (espacios/equipamiento/contactos/bloqueantes), sin analítica.
+- `src/components/overview/readiness-hero-card.tsx` — jerarquía/densidad, consistencia de tokens.
+- `src/components/overview/tasks-list-card.tsx`, `activity-feed-card.tsx`, `spaces-table-card.tsx` — consistencia de empty-states + densidad + estados hover/focus.
+- `src/test/parity-allowlist.ts` — phase bump: `"16I"` en la union `LioraPhase` + en `LIORA_PHASE_ORDER` (tras `"16F.6"`) + `CURRENT_LIORA_PHASE → "16I"`; refresh de `AUDITED_SURFACES` (operator-overview) si cambia el file-list.
+
+**Tests**:
+
+- `component-invariants.test.ts` verde (primitive-adoption, touch-target ≥44, tone quartet, copy-lint ES, web API guards, governance-shape con `CURRENT_LIORA_PHASE = "16I"`).
+- `parity-static` + `dark-parity.test.ts` verdes.
+- axe-core `serious|critical = 0` en `/properties/[id]` light + dark **con datos reales**.
+- `/liora-ui-kit-parity` ≥ suelo y **> baseline** de Resumen. (No existe suite unitaria dedicada de overview; cobertura = invariantes estáticos + axe.)
+
+**Criterio de done**:
+
+- ✅ `SectionHeading` local eliminado; Resumen usa `NumberedSection` como las otras 8 pestañas operator.
+- ✅ 0 hex en JSX; tokens semánticos; targets ≥44 en todo clickable.
+- ✅ Score `/liora-ui-kit-parity` de Resumen **subido** vs baseline.
+- ✅ Gates verdes: `prisma generate → tsc → vitest → build`; component-invariants + parity-static + dark-parity; axe 0 serious|critical light+dark.
+- ✅ `CURRENT_LIORA_PHASE = "16I"`; `LIORA_PHASE_ORDER` con `"16I"` tras `"16F.6"`.
+- ✅ Sección "Audited surfaces / test coverage" en la PR.
+
+**Restricciones**:
+
+- ❌ Tocar shell/layout común (`src/components/layout/**`) — ya pulido en 16F.5.
+- ❌ Analítica real (visitas/preguntas IA/copias Wi-Fi/incidencias con deltas) — sin datos/modelo; diferido post-16I.
+- ❌ Schema/taxonomía/DB salvo mini Fase -1 explícita (no anticipada).
+- ❌ Crear primitivos compartidos nuevos por un único uso (p.ej. `StatusPill`).
+- ❌ Duplicados por versión (`*V2`, `New*`, etc.) ni convivencias legacy.
+
+**Dependencias / Riesgos**:
+
+- ⚠️ Phase bump: verificar que las 8 listas de excepción de `parity-allowlist.ts` están vacías antes del bump (hoy lo están) → no dispara cleanup heredado.
+- ⚠️ `NumberedSection` lo consumen 8 pestañas: **no se restila**; Resumen lo adopta tal cual (acepta eyebrow mayúscula vs 15px del mock — consistencia con la app real > fidelidad al kit estático, regla dura Liora).
+- ⚠️ axe con datos reales requiere una propiedad sembrada con estados vacíos y poblados.
+
+**No-alcance**:
+
+- Otras pestañas 16I (2–10).
+- Superficies output/operaciones (analytics, publishing, media, etc.).
+- Cambios funcionales mayores diferidos (tri-estado §24, plano §22, meta sistemas §21, EntityMediaCard §23).
+
+**Preparación**:
+
+- **Contexto a leer**: `docs/MASTER_PLAN_V2.md § FASE 16I`; `docs/LIORA_SURFACE_ROLLOUT_PLAN.md § 16I`; CLAUDE.md §§ Primitivos 16D.5 / Allowlist governance / Branch closure 16E+; `design-system/docs/LIORA_REFERENCE_MAPPING.md`; kit `operator/index.html`.
+- **Docs a actualizar al terminar**: `docs/MASTER_PLAN_V2.md` (marcar 16I-1), `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` (estado overview), `docs/ROADMAP.md`.
+- **Skills**: `/frontend-design`, `/liora-ui-kit-parity`, `/simplify` (obligatorio antes de PR).
+
+---
+
 ### Rama 16G — `chore/remove-legacy-ui`
 
 **Propósito**: barrido final. Elimina:
