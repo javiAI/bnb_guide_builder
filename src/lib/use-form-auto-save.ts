@@ -8,20 +8,21 @@ import { useCallback, useEffect, useRef, type RefObject } from "react";
  *
  * Works for `<form action={…}>` and `<form onSubmit={…}>` alike (it calls
  * `requestSubmit()`, which fires whichever the form uses). It's lossless across
- * control styles by combining triggers on the same debounced submit:
+ * control styles via two trigger sources feeding one debounced submit:
  *  - a per-render FormData diff — catches controlled state (text fields,
  *    steppers, radio-cards, map pins, hidden inputs React updates);
  *  - native `input`/`change` listeners — catch uncontrolled fields
- *    (`defaultValue`) that change the DOM without a React re-render;
- *  - an optional `watch` serializer — catches state that never reaches a form
- *    field at all (payloads built state→JSON at submit time, e.g. policies'
- *    `buildPoliciesJson()` or systems' `handleSubmit`). The form's existing
- *    action/onSubmit still does the actual serialisation; `watch` is only the
- *    change signal.
- * Either way it reads the form's live `FormData`, so it never hand-lists fields
- * and never silently drops one. The form's controlled state persists across the
- * action's revalidation, so the post-save render serialises identically and
- * never re-submits (no loop).
+ *    (`defaultValue`) that change the DOM without a React re-render.
+ * For forms whose payload is built state→JSON with no name-bearing inputs (e.g.
+ * policies' `buildPoliciesJson()` or systems' `handleSubmit`), pass `watch`: a
+ * serialiser of that state. When provided it is the *authoritative* change
+ * signal and replaces the FormData diff (the serialised state fully covers the
+ * form), so no per-render FormData work runs; the form's existing action/onSubmit
+ * still does the real save.
+ * Without `watch` it reads the form's live `FormData`, so it never hand-lists
+ * fields and never silently drops one. The form's controlled state persists
+ * across the action's revalidation, so the post-save render serialises
+ * identically and never re-submits (no loop).
  *
  * `requestSubmit()` runs native validation; we gate it on `checkValidity()`
  * first so an invalid form (e.g. an empty required field) is skipped silently
@@ -91,8 +92,14 @@ export function useFormAutoSave(
       lastRef.current = null;
     }
     if (!form) return;
+    // When `watch` is provided it is the authoritative change signal — these
+    // forms build their payload state→JSON and have no independent name-bearing
+    // inputs, so the serialised state fully covers the form and we skip the
+    // per-render FormData serialise (which would otherwise run on every render,
+    // including unrelated pending-state toggles). Otherwise the FormData diff is
+    // the signal.
     const w = watchRef.current;
-    const serialized = serializeForm(form) + (w ? ` ${w()}` : "");
+    const serialized = w ? w() : serializeForm(form);
     if (lastRef.current === null) {
       lastRef.current = serialized; // first observation — establish baseline, don't save
       return;

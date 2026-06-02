@@ -112,11 +112,7 @@ export function SystemDetailForm({
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-5">
-      {isPending && (
-        <div className="flex justify-end">
-          <AutoSaveStatus pending />
-        </div>
-      )}
+      <AutoSaveStatus pending={isPending} />
       {hasFields && subtype.detailsFields.length > 0 && (
         <Card variant="overview">
           <SectionEyebrow icon={Users} className="mb-4">
