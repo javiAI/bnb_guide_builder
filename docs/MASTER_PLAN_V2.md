@@ -4010,6 +4010,33 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
+### Rama post-16I-A — `feat/wifi-unify-overview-quickfix`
+
+**Propósito**: Follow-ups funcionales de Resumen catalogados en `docs/FUTURE.md §27.3` (WiFi single-source) y `§27.4` (quick-fix in-context). Decisión explícita del usuario (2026-06-02) de hacerlos juntos, en una PR posterior a 16I-1 (#120, ya mergeada). Fase -1 aprobada. **No es una pestaña 16I** — es un fix funcional cross-cutting + una mejora UI de Resumen.
+
+**Parte A — WiFi single source** (additive, sin migración de datos — 0 instancias `am.wifi`):
+
+- La fuente de verdad **ya es** `PropertySystem(sys.internet).detailsJson.{ssid,password}` (la escribe el wizard step-4, la lee `validateWifiComplete`, y `resolveDerivation` deriva `am.wifi` de ahí — fijado por `wizard-wifi-integration.test.ts`). Esta rama cierra 3 incoherencias residuales:
+- `taxonomies/system_subtypes.json`: añadir a `sys.internet` los campos WiFi (`ssid` req · `password` `sensitive_text` req · `router_location` internal · `speed_tier` enum_optional · `troubleshooting` markdown_short) → el editor de Sistemas (config-driven) los expone **post-wizard** (hoy `fields: []` → no editables).
+- `taxonomies/amenity_subtypes.json`: quitar los campos credenciales del subtipo `am.wifi` (es `derived_from_system`, sin instancia → vestigiales).
+- `taxonomies/completeness_rules.json`: quitar `am.wifi` de `coreAmenityKeys` (nunca es instancia → penaliza siempre Equipamiento; el WiFi ya puntúa vía `sys.internet`, que está en `recommendedSystemKeys`).
+
+**Parte B — Overview quick-fix** (UI, sin tocar datos):
+
+- Slide-over (Radix Dialog) en Resumen que monta el editor mínimo de los blockers atómicos **WiFi** (campos `sys.internet`), **backup de acceso** y **check-in/out**, reusando los forms de sección + `useFormAutoSave` + server actions. Guardar → readiness/tareas refrescan en sitio. Deep-nav para lo complejo. Focus-trap/scroll-lock/Escape + axe del overlay.
+
+**Tests**: `field-type-coverage` (tipos en system subtypes), `completeness`, `wizard-wifi-integration` (debe seguir verde), `guest-leak-invariants` (password `sensitive` no filtra a guest), axe del overlay; verificar render guest del WiFi (`wifi_copy`) + var de messaging.
+
+**Criterio de done**: editor de Sistemas edita credenciales WiFi · `am.wifi` derivado puro · Equipamiento ya no penalizado por `am.wifi` · quick-fix resuelve los 3 blockers sin navegar · gates verdes (`prisma generate → tsc → vitest → build`) + axe 0 light+dark · `/simplify`.
+
+**Restricciones**: ❌ migración destructiva (additive) · ❌ tocar otras pestañas/sistemas · ❌ `am.wifi` configurable.
+
+**No-alcance**: resto de `§27` (publish gate, readiness→8 secciones, KPI/espacios rethink, priorización de tareas, definición de "camas", reservas/mensajería).
+
+**Preparación**: leer `FUTURE.md §27`, `cross-validations.ts`, `completeness.service.ts`, `amenity-derivation-resolver.ts`, el editor de Sistemas. **Skills**: `/frontend-design` (overlay), `/simplify` (obligatorio antes de PR). **Docs a actualizar al terminar**: `FUTURE.md` (marcar §27.3/§27.4 hechos), `docs/ROADMAP.md`.
+
+---
+
 ### Rama 16G — `chore/remove-legacy-ui`
 
 **Propósito**: barrido final. Elimina:
