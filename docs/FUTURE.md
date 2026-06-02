@@ -634,3 +634,20 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 7. **Definición de "camas" en los chips**. `property.bedsCount` refleja fielmente las `BedConfiguration` (declarado == actual; verificado sin bug). Pero un `bt.sofa_bed_*` cuenta como "cama", lo que puede no coincidir con el modelo mental del host. Decisión de producto/taxonomía: ¿"camas" incluye sofá-cama?, ¿mostrar "plazas" en su lugar?, ¿separar camas fijas de convertibles?
 8. **Reservas / Mensajería en Resumen**. Diferido hasta que exista integración real (Airbnb/Booking/WhatsApp). Hoy serían UI vacía o falsa.
 
+## 28. Relevancia condicional de sistemas y amenities (option relevance por elecciones previas)
+
+> Origen: Fase -1 de 16I-2 (2026-06-02). Hoy los **espacios** tienen relevancia (`getAvailableSpaceTypes(roomType, layoutKey)` → required/recommended/optional/**excluded**), pero **sistemas** y **amenities** se ofrecen de forma **uniforme** — sus items de taxonomía no llevan condición de relevancia. Consecuencia: opciones que no aplican saturan la UI y pueden penalizar completitud. Caso canónico: `sys.elevator` (+ `am.elevator`) aparece aunque el edificio sea de una sola planta — un ascensor solo tiene sentido en un edificio multi-planta.
+
+**Estado**: 16I-2 implementa el **slice elevador** (`sys.elevator` relevante solo si `buildingFloors ≥ 2`) como **primera instancia + prueba del patrón**. El **rollout completo** queda diferido a una rama dedicada (`feat/system-amenity-relevance` o similar).
+
+**Principio (refuerzo de la regla "una sola fuente de la verdad")**: la relevancia se computa a partir de elecciones previas ya capturadas (no se duplica el dato). `buildingFloors` es la señal del elevador; NO se crea un `hasElevator` paralelo (eso se elimina en 16I-2 — el ascensor vive en `sys.elevator`).
+
+**Plan (rollout completo, rama dedicada)**:
+
+1. **Schema `relevantWhen`** en items de `system_taxonomy.json` / amenities (reusa los operadores del `conditional-engine` — `equals`/`contains`/`intersects`/`gte`/…): p.ej. `sys.elevator: { "buildingFloors": { "gte": 2 } }`, `sys.pool_maintenance: { "requiresAmenity": "am.pool" }`, amenities por `roomType`/`propertyEnvironment`.
+2. **Servicio de relevancia** `getRelevantSystems(ctx)` / `getRelevantAmenities(ctx)` (espejo de `getAvailableSpaceTypes`) keyed por atributos de propiedad (floors, environment, type, layout, spaces/amenities configurados) → relevant / hidden.
+3. **Editores filtran por relevancia**: los irrelevantes no aparecen (o quedan bajo "avanzado/otros"), nunca como ruido.
+4. **Completitud** no penaliza sistemas/amenities **irrelevantes** (extender `completeness.service` para descontar del denominador los no aplicables).
+
+**Casos candidatos**: ascensor (multi-planta), mantenimiento de piscina ↔ `am.pool`, sistemas de exterior ↔ `propertyEnvironment`, amenities de cocina ↔ presencia de cocina, etc. (catálogo completo se levanta en la rama dedicada).
+

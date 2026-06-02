@@ -4010,6 +4010,47 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
+### Rama 16I-2 — `feat/liora-16I-2-property-polish` (Propiedad)
+
+**Propósito**: 2ª pestaña de FASE 16I. Pulir **Propiedad** (datos básicos) elevando representación + estandarización + integridad de datos. Fase -1 aprobada (2026-06-02). Marco UX aprobado: **"un solo sistema visual; interacción según la forma del dato"** — Propiedad es un **form de ajustes** (campos fijos), NO un cockpit de colección. Tiene **waiver de kit** (#112: no hay editor de propiedad en `subpages.html`) → sin parity 1:1; el gate es UX/representación + invariantes compartidos + **coherencia con Acceso** (16E.6, casi-final).
+
+**Parte A — Representación / visual**:
+
+- Convertir Propiedad de "todo plegado" (`CollapsibleSection`) a **form de ajustes con estado a la vista** (revelar valores, editar in-place; el auto-save ya existe). Compartir el sistema visual de Acceso (cards de agrupación, cabeceras `NumberedSection`, voz de copy, densidad, tokens).
+- **Nuevo primitivo `src/components/ui/field.tsx`** (Input/Select/Textarea + label) con tokens + `focus-visible` + a11y → reemplaza los `FIELD_CLS` raw. Sirve a Propiedad y a futuras pestañas/forms.
+- Explorar **presentación de opciones en tarjetas compactas** (tiles) vs filas alargadas para los pickers (tipo/espacio/distribución/entorno) — vía `/frontend-design` + mockups.
+- Inline-name + derived-counts → primitivos / `Card`.
+
+**Parte B — Integridad de datos (unificación)**:
+
+- **Unificar ascensor → `sys.elevator`** (fuente única, como WiFi/heating en post-16I-A): el `conditional-engine` (`context-builder.ts`) lee la presencia de `sys.elevator` en vez de `infrastructureJson.hasElevator`; se **elimina `hasElevator`** de Propiedad. Migración additive + tests. (`am.elevator` ya es `derived_from_system`.)
+- **Reframe Edificio**: `buildingFloors` se **conserva** (es la **señal de relevancia** del elevador, no dato muerto); `hasPrivateEntrance` (sin consumidor, dominio Acceso) → mover a Acceso o cablear/eliminar (decidir en impl). Posible fusión/retirada de "Edificio" si adelgaza.
+
+**Parte C — Relevancia condicional (slice elevador + plan)**:
+
+- **Slice**: `sys.elevator` (+ `am.elevator`) solo es **relevante/ofrecido** cuando el edificio es multi-planta (`buildingFloors ≥ 2`) — **primera instancia** del patrón de relevancia para sistemas/amenities; `buildingFloors` es la señal.
+- **Plan documentado** (`FUTURE §28` + spec de rama dedicada): capa de relevancia para todos los sistemas/amenities. **El rollout completo NO entra en 16I-2.**
+
+**Archivos a crear**: `src/components/ui/field.tsx`; helper mínimo de relevancia para el slice elevador.
+
+**Archivos a modificar**: `property/property-form.tsx`, `lib/actions/editor.actions.ts` + `schemas/editor.schema.ts` (quitar `hasElevator` de infra; resolver private-entrance), `conditional-engine/context-builder.ts` (leer `sys.elevator`), `taxonomies/system_taxonomy.json` (`relevantWhen` para `sys.elevator`), `src/test/parity-allowlist.ts` (añadir `field.tsx` a `shared-primitives`), tests, `docs/FUTURE.md` (§28).
+
+**Tests**: `field` primitive (a11y/tokens); property-form (form visible, option cards); unificación ascensor (conditional-engine lee `sys.elevator`; migración); relevance slice (elevador oculto si single-floor); axe 0 light/dark datos reales; `component-invariants`/`parity-static`/`dark-parity`.
+
+**Criterio de done**: Propiedad como form visible coherente con Acceso; `Field` adoptado (0 inputs raw); ascensor fuente única (sin `hasElevator` en Property); `buildingFloors` gatea relevancia del elevador; datos muertos resueltos; plan de relevancia documentado; gates verdes (`prisma generate→tsc→vitest→build`) + axe 0 light/dark; `/simplify`.
+
+**Restricciones**: ❌ tocar el cockpit de Acceso (solo referencia); ❌ rollout completo de relevancia (solo slice elevador); ❌ duplicar info; ❌ migración destructiva (additive).
+
+**No-alcance**: relevancia condicional de todos los sistemas/amenities (`FUTURE §28`, rama dedicada); otras pestañas 16I.
+
+**Preparación**:
+
+- **Contexto a leer**: `MASTER_PLAN § FASE 16I` + esta §; `access/` (coherencia: `section-shell`, `HorariosEditor`, cockpit); `space-availability-rules.ts` (template de relevancia); `conditional-engine/`.
+- **Skills**: `/frontend-design`, `/liora-ui-kit-parity` (silueta propia → gate por invariantes), `/simplify` (obligatorio antes de PR).
+- **Docs a actualizar al terminar**: MASTER_PLAN (marcar 16I-2), `LIORA_SURFACE_ROLLOUT_PLAN`, `ROADMAP`, `FUTURE §28`.
+
+---
+
 ### Rama post-16I-A — `feat/system-amenity-source-unify`
 
 **Propósito**: Una sola fuente de verdad para los amenities respaldados por un sistema (`docs/FUTURE.md §27.3`, ampliado a todos). Decisión explícita del usuario (2026-06-02), PR posterior a 16I-1 (#120, ya mergeada). **No es una pestaña 16I** — es un fix funcional de taxonomía/validación. El quick-fix in-context (`§27.4`, Parte B original) queda **diferido** a una rama futura.
