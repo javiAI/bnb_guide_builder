@@ -4010,30 +4010,30 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
-### Rama post-16I-A — `feat/wifi-unify-overview-quickfix`
+### Rama post-16I-A — `feat/system-amenity-source-unify`
 
-**Propósito**: Follow-ups funcionales de Resumen catalogados en `docs/FUTURE.md §27.3` (WiFi single-source) y `§27.4` (quick-fix in-context). Decisión explícita del usuario (2026-06-02) de hacerlos juntos, en una PR posterior a 16I-1 (#120, ya mergeada). Fase -1 aprobada. **No es una pestaña 16I** — es un fix funcional cross-cutting + una mejora UI de Resumen.
+**Propósito**: Una sola fuente de verdad para los amenities respaldados por un sistema (`docs/FUTURE.md §27.3`, ampliado a todos). Decisión explícita del usuario (2026-06-02), PR posterior a 16I-1 (#120, ya mergeada). **No es una pestaña 16I** — es un fix funcional de taxonomía/validación. El quick-fix in-context (`§27.4`, Parte B original) queda **diferido** a una rama futura.
 
-**Parte A — WiFi single source** (additive, sin migración de datos — 0 instancias `am.wifi`):
+**Hallazgo (Fase -1)**: la fuente de verdad del WiFi **ya era** `PropertySystem(sys.internet).detailsJson.{ssid,password}` (lo escribe el wizard step-4, lo lee `validateWifiComplete`, y `resolveDerivation` deriva `am.wifi` — fijado por `wizard-wifi-integration.test.ts`). `sys.internet.detailsFields` **ya define** ssid/password (no hubo que tocar `system_subtypes.json`). Lo roto era un modelo dual a medio migrar: `am.wifi` tenía subtipo vestigial + `am.wifi`/`am.heating` colados en `coreAmenityKeys` (penalizando Equipamiento, porque un amenity derivado nunca es instancia).
 
-- La fuente de verdad **ya es** `PropertySystem(sys.internet).detailsJson.{ssid,password}` (la escribe el wizard step-4, la lee `validateWifiComplete`, y `resolveDerivation` deriva `am.wifi` de ahí — fijado por `wizard-wifi-integration.test.ts`). Esta rama cierra 3 incoherencias residuales:
-- `taxonomies/system_subtypes.json`: añadir a `sys.internet` los campos WiFi (`ssid` req · `password` `sensitive_text` req · `router_location` internal · `speed_tier` enum_optional · `troubleshooting` markdown_short) → el editor de Sistemas (config-driven) los expone **post-wizard** (hoy `fields: []` → no editables).
-- `taxonomies/amenity_subtypes.json`: quitar los campos credenciales del subtipo `am.wifi` (es `derived_from_system`, sin instancia → vestigiales).
-- `taxonomies/completeness_rules.json`: quitar `am.wifi` de `coreAmenityKeys` (nunca es instancia → penaliza siempre Equipamiento; el WiFi ya puntúa vía `sys.internet`, que está en `recommendedSystemKeys`).
+**Cambios (additive, sin migración de datos)**:
 
-**Parte B — Overview quick-fix** (UI, sin tocar datos):
+- `taxonomies/amenity_subtypes.json`: eliminado el subtipo `am.wifi` (derivado → las credenciales viven en `sys.internet`).
+- `taxonomies/dynamic_field_rules.json`: eliminada la regla `dfr.wifi_selected` (am.wifi no es seleccionable).
+- `taxonomies/completeness_rules.json`: `coreAmenityKeys` ahora solo los 3 amenities genuinos (tv, coffee_maker, kitchen_basics); fuera `am.wifi` **y** `am.heating` (ambos `derived_from_system` → puntúan vía sistemas).
+- `src/lib/validations/cross-validations.ts`: `validateVisibilityLeaks` extendido a **sistemas** (la red anti-leak sigue al dato: la password sensible vive ahora en `sys.internet`); `isSensitiveField` cubre `type:"password"`.
+- `src/test/amenity-destinations.test.ts`: **guards nuevos** — ningún amenity system-backed (`derived_from_system` **o** `moved_to_system`) puede ser core key ni tener subtipo configurable. Lockean el principio para los 9 (5 derived + 4 moved).
+- Auditoría completa: los 9 amenities respaldados por sistema confirmados limpios (∩ coreKeys = ∅, ∩ subtypes = ∅). `am.tv`↔`sys.cable_tv` y `am.ethernet`/`am.pocket_wifi`↔`sys.internet` son **distintos** (dispositivo/puerto vs servicio) — la taxonomía los mantiene `amenity_configurable` a propósito.
 
-- Slide-over (Radix Dialog) en Resumen que monta el editor mínimo de los blockers atómicos **WiFi** (campos `sys.internet`), **backup de acceso** y **check-in/out**, reusando los forms de sección + `useFormAutoSave` + server actions. Guardar → readiness/tareas refrescan en sitio. Deep-nav para lo complejo. Focus-trap/scroll-lock/Escape + axe del overlay.
+**Tests**: `amenity-destinations` (guards), `completeness-scoring`, `cross-validations` (system-leak), `phase5-features`, `config-driven`, `section-editors`, `wizard-wifi-integration` (verde), `guest-leak-invariants` (password sensible no filtra). Suite completa verde.
 
-**Tests**: `field-type-coverage` (tipos en system subtypes), `completeness`, `wizard-wifi-integration` (debe seguir verde), `guest-leak-invariants` (password `sensitive` no filtra a guest), axe del overlay; verificar render guest del WiFi (`wifi_copy`) + var de messaging.
+**Criterio de done**: `am.wifi` derivado puro (sin subtipo) · Equipamiento ya no penalizado por amenities system-backed · red anti-leak cubre sistemas · guards verdes · gates `prisma generate → tsc → vitest → build` verdes · `/simplify`.
 
-**Criterio de done**: editor de Sistemas edita credenciales WiFi · `am.wifi` derivado puro · Equipamiento ya no penalizado por `am.wifi` · quick-fix resuelve los 3 blockers sin navegar · gates verdes (`prisma generate → tsc → vitest → build`) + axe 0 light+dark · `/simplify`.
+**Restricciones**: ❌ migración destructiva (additive) · ❌ UI (sin tocar componentes; el quick-fix se difiere) · ❌ tocar otras pestañas.
 
-**Restricciones**: ❌ migración destructiva (additive) · ❌ tocar otras pestañas/sistemas · ❌ `am.wifi` configurable.
+**No-alcance**: quick-fix in-context (`§27.4`, rama futura) + resto de `§27` (publish gate, readiness→8 secciones, KPI/espacios rethink, priorización de tareas, definición de "camas", reservas/mensajería).
 
-**No-alcance**: resto de `§27` (publish gate, readiness→8 secciones, KPI/espacios rethink, priorización de tareas, definición de "camas", reservas/mensajería).
-
-**Preparación**: leer `FUTURE.md §27`, `cross-validations.ts`, `completeness.service.ts`, `amenity-derivation-resolver.ts`, el editor de Sistemas. **Skills**: `/frontend-design` (overlay), `/simplify` (obligatorio antes de PR). **Docs a actualizar al terminar**: `FUTURE.md` (marcar §27.3/§27.4 hechos), `docs/ROADMAP.md`.
+**Docs a actualizar al terminar**: `FUTURE.md` (marcar §27.3 hecho; §27.4 sigue diferido), `docs/ROADMAP.md`.
 
 ---
 

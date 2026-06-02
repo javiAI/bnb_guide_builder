@@ -62,24 +62,31 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     expect(wifi?.target).toBe("sys.internet");
   });
 
-  // ── Single source of truth (no duplication): a system-backed amenity
-  // (`derived_from_system`, e.g. wifi/heating/hot_water/cooling/elevator) must
-  // NOT be re-captured as a configurable amenity — its data lives on the owning
-  // system. These guards prevent re-introducing the dual-model duplication. ──
-  const derivedFromSystemIds = new Set(
+  // ── Single source of truth (no duplication): a "system-backed" amenity is
+  // one whose data lives on a system — whether it surfaces as a read-only
+  // derived chip (`derived_from_system`: wifi/heating/hot_water/cooling/elevator)
+  // or was moved entirely to the system (`moved_to_system`: smoke/co alarms,
+  // fire extinguisher, first-aid kit). NEITHER may be re-captured as a
+  // configurable amenity (core key or subtype) — that duplicates the truth.
+  // These guards prevent re-introducing the dual-model the wifi/heating fix removed.
+  const systemBackedAmenityIds = new Set(
     amenityTaxonomy.items
-      .filter((i) => i.destination === "derived_from_system")
+      .filter(
+        (i) =>
+          i.destination === "derived_from_system" ||
+          i.destination === "moved_to_system",
+      )
       .map((i) => i.id),
   );
 
-  it("no derived_from_system amenity is a core amenity in completeness", () => {
+  it("no system-backed amenity is a core amenity in completeness", () => {
     const core = getCompletenessRule("amenities").coreAmenityKeys;
-    expect(core.filter((k) => derivedFromSystemIds.has(k))).toEqual([]);
+    expect(core.filter((k) => systemBackedAmenityIds.has(k))).toEqual([]);
   });
 
-  it("no derived_from_system amenity has a configurable amenity subtype", () => {
+  it("no system-backed amenity has a configurable amenity subtype", () => {
     const subtypeIds = amenitySubtypes.subtypes.map((s) => s.amenity_id);
-    expect(subtypeIds.filter((id) => derivedFromSystemIds.has(id))).toEqual([]);
+    expect(subtypeIds.filter((id) => systemBackedAmenityIds.has(id))).toEqual([]);
   });
 
   it("all 13 ax.* items are moved_to_access", () => {
