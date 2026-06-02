@@ -132,7 +132,7 @@ export function TasksListCard({
             <li key={task.id}>
               <Link
                 href={task.ctaUrl}
-                className="group flex min-h-[44px] items-start gap-3 rounded-[var(--radius-md)] px-2 py-3 transition-colors hover:bg-[var(--color-interactive-hover)]"
+                className="group flex min-h-[44px] items-start gap-3 rounded-[var(--radius-md)] px-2 py-3 transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
               >
                 <IconBadge icon={task.icon} tone={task.iconTone} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">

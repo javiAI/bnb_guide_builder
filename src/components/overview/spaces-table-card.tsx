@@ -116,7 +116,7 @@ export function SpacesTableCard({
               >
                 <Link
                   href={`/properties/${propertyId}/spaces`}
-                  className="flex min-h-[44px] items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-interactive-hover)]"
+                  className="flex min-h-[44px] items-center gap-3 px-4 py-3 transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-border-focus)]"
                 >
                   <IconBadge icon={BedDouble} tone="neutral" />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">

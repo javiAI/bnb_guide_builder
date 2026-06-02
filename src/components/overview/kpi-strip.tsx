@@ -65,7 +65,7 @@ export function KpiStrip({
           <Link
             key={kpi.label}
             href={kpi.href}
-            className={`group relative flex flex-col gap-1 px-5 py-4 transition-colors hover:bg-[var(--color-interactive-hover)] ${
+            className={`group relative flex flex-col gap-1 px-5 py-4 transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-border-focus)] ${
               i < kpis.length - 1
                 ? "border-b border-[var(--color-border-subtle)] sm:border-b-0 sm:border-r"
                 : ""
