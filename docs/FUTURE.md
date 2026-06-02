@@ -111,12 +111,50 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 
 ---
 
-## 8. Analytics dashboard de la guía pública
+## 8. Operator shell — diferidos de 16D
 
-**Estado**: diferido.
-**Trigger**: >50 properties publicadas o demanda explícita de hosts.
+### 8.1 Overview right rail
 
-10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
+**Estado**: diferido. Registrado en Fase -1 de 16D.
+
+Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets de actividad reciente, estado de sincronización con plataformas, o resumen de reservas próximas. No implementado en 16D porque requiere diseño de layout adicional (columna 3 en el grid) y definir qué datos son más útiles ahí.
+
+**Trigger**: cuando el overview tenga suficiente densidad de datos (reservas, mensajes, analítica) que justifique una columna de contexto permanente.
+
+### 8.2 Command palette funcional
+
+**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`), incluida la **búsqueda integral de contenido**. El ⌘K es Radix Dialog + `fuse.js` (sin dep nueva; `cmdk` descartado) en `src/components/layout/command-palette.tsx`, alimentado por un índice por-propiedad (`src/lib/services/operator-search.service.ts`, lazy vía `getOperatorSearchAction`): secciones + contactos + espacios + sistemas + equipamiento + guía local + soluciones + conceptos de normas; cada resultado deep-linka a su sección.
+
+**Follow-ups** (diferidos):
+
+- **Anclas por-fila**: hoy los resultados aterrizan en la **sección** (`/contacts`), no en la fila concreta. El `id` del entry ya codifica la entidad (`contact:<id>`…) — falta threading `#<id>` en el `href` + que cada página honre el hash (scroll+highlight).
+- **Acciones** server-side en el palette (publicar, crear espacio) + búsqueda **cross-property**.
+- **Asimetría de normas**: el índice toma normas del **catálogo de taxonomía** (discoverability de conceptos no configurados) mientras el resto son entidades **configuradas**. Unificar (indexar normas configuradas, o extender el catálogo a sistemas/amenities) si la asimetría confunde.
+- Lazy-import de `fuse.js` (≈30 KB) como hace el buscador huésped, si el bundle del shell lo justifica.
+
+### 8.4 Notificaciones operator — fuentes adicionales
+
+**Estado**: 16F.5 implementó el feed v1 (`src/lib/services/operator-notifications.service.ts`): bloqueos de publicación + incidencias abiertas, popover read-only en el topbar.
+
+**Follow-ups**: drafts de mensajería pendientes + conocimiento stale como fuentes adicionales (la decisión Fase -1 de 16F.5 las dejó fuera de v1). Lazy-load del feed en `onOpen` si el coste por-página de `getValidationsForProperty` se vuelve relevante (hoy cache()'d por render). Marcar-como-leído / dismiss.
+
+### 8.5 Rail auto-hide por grupo + contrato de clases del shell
+
+**Estado**: diferidos de 16F.5.
+
+- **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
+- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio. Igual para los bounds del pre-paint (`208/360/240`, `264/440/300`) vs `shell-prefs.ts` — un test que asegure que el script literal contiene los mismos números.
+
+### 8.6 Asistente IA + Soluciones — profundización (diferidos de 16F.5)
+
+- **Gestión de conocimiento dentro del drawer**: hoy el drawer del Asistente (`assistant-launcher.tsx`) monta `AssistantChat` + un **link** a `/knowledge`. Profundización: plegar la gestión del conocimiento (añadir tips, regenerar, ver huecos) como pestaña dentro del propio drawer en vez de navegar fuera.
+- **Merge completo de ocurrencias en Incidencias**: 16F.5 reubicó el **acceso** a las ocurrencias (fuera de Soluciones, hacia Operaciones·Incidencias enlazado desde `/incidents`), pero quedan dos superficies (`/incidents` triage + `/troubleshooting/incidents` registro con creación vinculada a playbook/target). Merge real = mover el `CreateIncidentForm` vinculado a `/incidents` y retirar la segunda ruta, sin perder el linking a playbook.
+
+### 8.3 Brand themes para el operator shell
+
+**Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
+
+Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
 
 ---
 
@@ -140,18 +178,15 @@ Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + va
 
 ---
 
-## 11. Liora Design Replatform
+## 11. Liora Design Replatform — ⚠️ YA NO ES TRABAJO DIFERIDO (es la fase activa)
 
-**Estado**: preparado — plan de ejecución completo en [MASTER_PLAN_V2.md § FASE 16](MASTER_PLAN_V2.md) (7 ramas 16A-G).
-**Trigger para activar**: entrega del paquete de diseño Liora (tokens + primitivos + superficies).
+**Estado (2026-06-02)**: **en ejecución avanzada, no diferido.** El roadmap vivo está en [ROADMAP.md § Progreso Fase 16](ROADMAP.md) + [MASTER_PLAN_V2.md § FASE 16](MASTER_PLAN_V2.md). Son **8 ramas 16A–16H** (no 7) + sub-ramas. Merged: 16A–16D, 16D.5 governance, 16E.5 (paridad de todos los módulos de contenido), 16E.6 (access cockpit), 16F.5 (operator shell, #116), 16F.6 (editor autosave, #118). En marcha/planificado: **16I pulido de contenido** (10 ramas, una por pestaña), 16F assistant `/ai`, 16G legacy removal, 16H guest rewrite.
 
-Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 16A junto con el paquete de diseño.
+Este apartado se conserva solo como pointer histórico. Correcciones a notas obsoletas que vivían aquí:
 
-### Follow-up: `InfoTooltip` trigger target-size — ✅ RESUELTO en `feat/liora-policies-visual-parity` (16E.5)
-
-**Estado**: resuelto (no diferido). Originalmente registrado como cleanup de primitivo compartido transversal; cerrado en la misma rama tras review de PR #110 (Copilot).
-
-`src/components/ui/info-tooltip.tsx` renderizaba su trigger `(i)` como `<span role="button">` a 16×16 (`h-4 w-4`), por debajo del floor de 44 hit-area. **Fix aplicado en el primitivo compartido** (cubre `property/`, `spaces/`, wizard `step-3/4`, `policies/` atómicamente): nuevo `recipe-icon-btn-16` en `src/styles/recipes.css` (16 visual + 28px slop `::before`, −14px/lado = 44 hit en fine pointers, visual 16×16 intacto; coarse-grow a 44), registrado en las 3 listas de governance de `component-invariants.test.ts` con el cap del regex `hasDocumentedSlop` ampliado de −12 a −14. Pendiente aparte (no en esta rama): ampliar el walker estático para inspeccionar spans `role="button"` (hoy solo cubre `<button>/<a>/<Link>` — limitación documentada en CLAUDE.md § static-analysis gate honestidad).
+- Los docs Liora **sí existen** (se crearon en 16A/16B/16C): `docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_COMPONENT_MAPPING.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`. **No** existen `LIORA_MIGRATION_RULES.md` ni `LIORA_COMPONENT_MAPPING_TEMPLATE.md` (nombres tentativos que nunca se materializaron — el mapping vive en `LIORA_COMPONENT_MAPPING.md`, las reglas de migración en `design-system/docs/DESIGN_MIGRATION.md`).
+- Skill `/liora-ui-kit-parity` existe y es el gate de paridad por superficie.
+- El follow-up "InfoTooltip trigger target-size" (16×16 < 44 hit-area) quedó **resuelto** en `feat/liora-policies-visual-parity` (recipe `recipe-icon-btn-16`, PR #110) — retirado de aquí por estar cerrado.
 
 ---
 
@@ -330,53 +365,6 @@ Implementación paralela `GooglePlacesProvider` para hosts en mercados donde Map
 - La UI y el pipeline ignoran qué provider respondió (solo queda `provider` persistido en `LocalPlace.provider` para auditoría).
 
 Esperar demanda de un mercado concreto antes de escribir el segundo provider.
-
----
-
-## 8. Operator shell — diferidos de 16D
-
-### 8.1 Overview right rail
-
-**Estado**: diferido. Registrado en Fase -1 de 16D.
-
-Panel lateral derecho en la página de overview (`/properties/[id]`) con widgets de actividad reciente, estado de sincronización con plataformas, o resumen de reservas próximas. No implementado en 16D porque requiere diseño de layout adicional (columna 3 en el grid) y definir qué datos son más útiles ahí.
-
-**Trigger**: cuando el overview tenga suficiente densidad de datos (reservas, mensajes, analítica) que justifique una columna de contexto permanente.
-
-### 8.2 Command palette funcional
-
-**Estado**: ✅ Implementado en 16F.5 (`feat/liora-operator-shell-foundation`), incluida la **búsqueda integral de contenido**. El ⌘K es Radix Dialog + `fuse.js` (sin dep nueva; `cmdk` descartado) en `src/components/layout/command-palette.tsx`, alimentado por un índice por-propiedad (`src/lib/services/operator-search.service.ts`, lazy vía `getOperatorSearchAction`): secciones + contactos + espacios + sistemas + equipamiento + guía local + soluciones + conceptos de normas; cada resultado deep-linka a su sección.
-
-**Follow-ups** (diferidos):
-
-- **Anclas por-fila**: hoy los resultados aterrizan en la **sección** (`/contacts`), no en la fila concreta. El `id` del entry ya codifica la entidad (`contact:<id>`…) — falta threading `#<id>` en el `href` + que cada página honre el hash (scroll+highlight).
-- **Acciones** server-side en el palette (publicar, crear espacio) + búsqueda **cross-property**.
-- **Asimetría de normas**: el índice toma normas del **catálogo de taxonomía** (discoverability de conceptos no configurados) mientras el resto son entidades **configuradas**. Unificar (indexar normas configuradas, o extender el catálogo a sistemas/amenities) si la asimetría confunde.
-- Lazy-import de `fuse.js` (≈30 KB) como hace el buscador huésped, si el bundle del shell lo justifica.
-
-### 8.4 Notificaciones operator — fuentes adicionales
-
-**Estado**: 16F.5 implementó el feed v1 (`src/lib/services/operator-notifications.service.ts`): bloqueos de publicación + incidencias abiertas, popover read-only en el topbar.
-
-**Follow-ups**: drafts de mensajería pendientes + conocimiento stale como fuentes adicionales (la decisión Fase -1 de 16F.5 las dejó fuera de v1). Lazy-load del feed en `onOpen` si el coste por-página de `getValidationsForProperty` se vuelve relevante (hoy cache()'d por render). Marcar-como-leído / dismiss.
-
-### 8.5 Rail auto-hide por grupo + contrato de clases del shell
-
-**Estado**: diferidos de 16F.5.
-
-- **Rail condicional por grupo**: §3 del dossier pedía ocultar el rail en Operaciones/Analítica (mostrarlo solo en Contenido). 16F.5 entregó el colapso manual persistente; el auto-hide por grupo de ruta requiere exponer el grupo activo al shell (server) — diferido. Trigger: si el rail molesta en surfaces no-Contenido.
-- **Test de contrato de clases `shell-*`**: el colapso acopla ~9 clases marker (`shell-nav-label`, `shell-rail`, etc.) entre `src/styles/shell.css` y los componentes, sin test que verifique que coinciden. Añadir un invariante (grep clases renderizadas vs selectores de `shell.css`, estilo `dark-parity.test.ts`) para que un rename no rompa el colapso en silencio. Igual para los bounds del pre-paint (`208/360/240`, `264/440/300`) vs `shell-prefs.ts` — un test que asegure que el script literal contiene los mismos números.
-
-### 8.6 Asistente IA + Soluciones — profundización (diferidos de 16F.5)
-
-- **Gestión de conocimiento dentro del drawer**: hoy el drawer del Asistente (`assistant-launcher.tsx`) monta `AssistantChat` + un **link** a `/knowledge`. Profundización: plegar la gestión del conocimiento (añadir tips, regenerar, ver huecos) como pestaña dentro del propio drawer en vez de navegar fuera.
-- **Merge completo de ocurrencias en Incidencias**: 16F.5 reubicó el **acceso** a las ocurrencias (fuera de Soluciones, hacia Operaciones·Incidencias enlazado desde `/incidents`), pero quedan dos superficies (`/incidents` triage + `/troubleshooting/incidents` registro con creación vinculada a playbook/target). Merge real = mover el `CreateIncidentForm` vinculado a `/incidents` y retirar la segunda ruta, sin perder el linking a playbook.
-
-### 8.3 Brand themes para el operator shell
-
-**Estado**: diferido. El operator shell usa el tema neutral de Liora (warm-analytical). Rama 16D no adopta brand themes de guest/color.
-
-Posibilidad de permitir al host configurar un color de marca (`brandPaletteKey`) que tiña también el shell del operador, no solo la guía pública del huésped. Requiere evaluar si tiene sentido o si confunde la distinción operator/guest.
 
 ---
 
@@ -618,4 +606,15 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 ### Por qué no se hace inline en la rama actual
 
 16F es una rama de **paridad visual** (0 cambios funcionales, 0 schema, 0 API). Cada grupo de arriba implica modelo de datos nuevo (`Conversation`/`Message`/`resolved`), ingest de canal externo, o pipeline de envío — superficie de regresión y producto nuevo que no cabe en un re-skin. Implementarlos parcialmente sería peor que diferirlos: un inbox sin ingest real es una pantalla vacía que miente sobre lo que el producto hace hoy.
+
+---
+
+## 26. Analytics dashboard de la guía pública
+
+> Renumerado de §8 → §26 (la colisión era con "§8 Operator shell — diferidos de 16D/16F.5", referenciado como §8.2/§8.5/§8.6 en CLAUDE.md). Reubicado al final para mantener el orden numérico.
+
+**Estado**: diferido.
+**Trigger**: >50 properties publicadas o demanda explícita de hosts.
+
+10F introduce tracking MVP lightweight vía `POST /api/g/:slug/_track` (no-op inicial). Extensión futura: dashboard `/properties/[id]/analytics` con top secciones, tasa de apertura por journey stage, tasa de resolución de issues (13D), tiempo a primer contacto. Requiere agregación + rango temporal + export CSV.
 

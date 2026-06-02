@@ -1,6 +1,6 @@
 # Plan maestro V2 — Outputs, Intelligence & Integrations
 
-Versión: 2026-04-26 (rev. 6 — Fases 8–15 cerradas; 13C `feat/guide-maps-embedded` queda como única rama funcional pendiente del plan original; Fase 16 Liora Design Replatform sigue bloqueada por entrega del paquete de diseño y no bloquea 13C)
+Versión: 2026-06-02 (rev. 7 — Fases 8–15 cerradas; Fase 16 Liora **en ejecución avanzada** (16A–16F.6 merged; siguiente 16I pulido de contenido); 13C `feat/guide-maps-embedded` única rama funcional pendiente del plan original, independiente de Liora)
 Continuación de: [archive/v1-master-plan-executed.md](archive/v1-master-plan-executed.md) (fases 1A–7B completadas)
 Alcance: 9 fases (8–16), 47 ramas, ~47 PRs independientes y revisables
 
@@ -215,9 +215,9 @@ Esto mantiene el plan como fuente de verdad viva y auditable.
 | 13 | Guía local + issue reporting | 4 | Bajo | Medio | No | ⏳ parcial — 13A/13B/13D ✅, 13C `feat/guide-maps-embedded` pendiente |
 | 14 | Platform integrations | 5 | Alto | Alto | Posible | ✅ cerrada (14A–14E) |
 | 15 | Auth & access control | 5 | Alto | Alto | Sí (NextAuth + per-property scope) | ✅ cerrada (15A–15E) |
-| 16 | Liora Design Replatform | 7 | Alto | Alto | Sí (componentes UI) | ⏳ bloqueada — espera entrega del paquete de diseño |
+| 16 | Liora Design Replatform | 8 (16A–16H) | Alto | Alto | Sí (componentes UI) | ⏳ en ejecución — 16A–16F.6 ✅; 16I pulido de contenido siguiente |
 
-**Estado actual (post-15E, 2026-04-26)**: la fila funcional del plan original está esencialmente cerrada. Única rama del plan original sin cerrar: **13C `feat/guide-maps-embedded`** (mapa embebido en la guía pública, reusando `buildGuideMapData` + `obfuscateAnchor` de 13B + capability primitive de 15C). Fase 16 (Liora) sigue bloqueada por entrega externa del paquete de diseño y **no bloquea** ni 13C ni los items de `FUTURE.md`. Las reglas anti-legacy de Liora (`docs/ARCHITECTURE_OVERVIEW.md` §14) aplican a todo trabajo funcional desde ya.
+**Estado actual (post-15E, 2026-04-26)**: la fila funcional del plan original está esencialmente cerrada. Única rama del plan original sin cerrar: **13C `feat/guide-maps-embedded`** (mapa embebido en la guía pública, reusando `buildGuideMapData` + `obfuscateAnchor` de 13B + capability primitive de 15C). Fase 16 (Liora) ya está **en ejecución avanzada** (16A–16F.6 merged; ver § FASE 16) y **no bloquea** ni 13C ni los items de `FUTURE.md`. Las reglas anti-legacy de Liora (`docs/ARCHITECTURE_OVERVIEW.md` §14) aplican a todo trabajo funcional desde ya.
 
 ---
 
@@ -1929,7 +1929,7 @@ Sin fotos, la Guest Guide vale a medias. Sin capa de presentación, además, **t
 
 ## FASE 15 — Auth & access control foundation
 
-**Estado**: bloqueada por entrega del paquete de diseño Liora. Las ramas están definidas a nivel de alcance y dependencia, pero **sin archivos concretos** hasta que el paquete llegue.
+**Estado**: ✅ cerrada (15A–15E).
 
 **Iniciativa transversal**: Surgió como hallazgo duro en la review de Rama 14B. Las rutas `/api/properties/[propertyId]/...` usan solo `findUnique → 404`, sin sesiones ni membership checks. Fase 15 (4 ramas 15A-15D) establece la base: (a) operator auth + sessions, (b) route guards + ownership, (c) public-guide capabilities, (d) hardening + AuditLog. Rama 15E (import-apply) depende críticamente de esta base.
 
@@ -2747,18 +2747,14 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 | `customs` (`propertyType`, `primaryAccessMethod` sin match taxonómico) | ❌ | Server rechaza con 400 `INVALID_RESOLUTION`. UI muestra como sugerencias informativas con botón "copiar etiqueta". | `customPropertyTypeLabel` / `customAccessMethodLabel` — solo se setean desde el editor manual. |
 
 
-**Estado**: bloqueada por entrega del paquete de diseño Liora. Las ramas están definidas a nivel de alcance y dependencia, pero **sin archivos concretos** hasta que el paquete llegue.
+**Estado (2026-06-02)**: el paquete de diseño Liora **ya se entregó** y vive en `design-system/` (kebab, trackeado en Git). Fase 16 está **en ejecución avanzada** — ver § FASE 16 abajo (16A–16F.6 merged; siguiente 16I pulido de contenido).
 
-**Prerrequisito duro**: entrega del paquete de diseño Liora (tokens, primitivos, superficies). Sin paquete, ninguna rama 16A-G arranca.
-
-**No bloquea** el flujo funcional en vuelo: 10G/H/I, Fase 11, Fase 12, Fase 13, Fase 14 avanzan con independencia. Fase 16 se intercala cuando la entrega ocurra.
-
-**Artefactos que se crean al arrancar Rama 16A** (no antes):
-- `docs/LIORA_DESIGN_ADOPTION_PLAN.md` — mapa tokens Liora ↔ `src/config/design-tokens.ts` + orden de rollout por superficie.
-- `docs/LIORA_MIGRATION_RULES.md` — extensión operativa de las reglas anti-legacy (ver `docs/ARCHITECTURE_OVERVIEW.md` §14) con criterios específicos del paquete.
-- `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md` — plantilla de tabla `componente → reused | reskinned | rewritten | deleted` que cada PR 16B-F rellena.
-- `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` — orden de migración por superficie con dependencias entre primitivos y shells.
-- Skills/prompts específicos en `.claude/commands/` si se necesitan (ej: `/liora-component-map`). No se anticipan hoy.
+**Artefactos Liora** (ya creados en 16A/16B/16C, se actualizan al cerrar cada rama):
+- `docs/LIORA_DESIGN_ADOPTION_PLAN.md` — mapa de tokens adoptados + aliases legacy + ownership de retirada (16A).
+- `docs/LIORA_COMPONENT_MAPPING.md` — tabla `componente → reused | reskinned | rewritten | deleted` (16B). **No existe** `LIORA_COMPONENT_MAPPING_TEMPLATE.md` — el mapping vive aquí.
+- `docs/LIORA_SURFACE_ROLLOUT_PLAN.md` — orden de migración por superficie + estado por rama (16C+).
+- Reglas de migración: `design-system/docs/DESIGN_MIGRATION.md`. **No existe** `docs/LIORA_MIGRATION_RULES.md`.
+- Skill de auditoría de paridad: `/liora-ui-kit-parity` (mapping versionado en `design-system/docs/LIORA_REFERENCE_MAPPING.md`).
 
 **Reglas duras aplicables desde ya** (sin esperar al paquete): ver `docs/ARCHITECTURE_OVERVIEW.md` §14 "Legacy management & migration discipline" y el bloque homólogo en `CLAUDE.md`. En particular: no introducir duplicados `V2`/`New*`/`Better*`/`Next*`, no consolidar polish visual final en ramas funcionales en vuelo, no abrir convivencias legacy sin plan de retirada documentado.
 
@@ -2768,7 +2764,7 @@ El cliente envía `payload` (no `diff`) — el server reconstruye su propio diff
 
 **Objetivo**: replatform visual integral del producto sobre el sistema de diseño Liora ("Warm Analytical Minimalism": olive primary, terracotta accent, info blue-grey sobre warm-neutrals; borders antes que sombras). Cero cambios funcionales — la replatform se hace componente a componente y superficie a superficie, manteniendo paridad de comportamiento, accesibilidad y telemetría con el estado pre-rama.
 
-**Estado actual**: 🟢 **lista para arrancar**. El paquete vive en `design-system/` (kebab, trackeado en Git): foundations (tokens en 3 capas + base.css + themes.css + tailwind.tokens.ts + shadcn.css) y references/liora-ui-kits (operator/messaging/guest HTMLs, referencia de layout, no de paleta — los kits usan azul-gris frío que no se adopta como brand). Saneado y validado por `npm run validate:design-system` (chore `chore/plan-update-liora`).
+**Estado actual (2026-06-02)**: 🟡 **en ejecución avanzada**. Merged: 16A–16D, 16D.5, 16E.5 (todos los módulos de contenido), 16E.6, 16F.5 (#116), 16F.6 (#118). Siguiente **Fase 16I** (pulido de contenido, abajo); pendientes 16F assistant, 16G, 16H. El § Rama 16E monolítico quedó superado (ver su nota de reconciliación). El paquete vive en `design-system/` (kebab, trackeado en Git): foundations (tokens en 3 capas + base.css + themes.css + tailwind.tokens.ts + shadcn.css) y references/liora-ui-kits (operator/messaging/guest HTMLs, referencia de layout, no de paleta — los kits usan azul-gris frío que no se adopta como brand). Validado por `npm run validate:design-system`.
 
 **Decisiones permanentes** (vinculantes en toda la fase, no se retiran):
 1. Path canónico único: `design-system/` (kebab, trackeado en Git).
@@ -3323,6 +3319,8 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 
 ### Rama 16E — `feat/liora-operator-module-rollout`
 
+> **🔵 NOTA DE RECONCILIACIÓN (2026-06-02) — este § está mayormente superado.** El core de contenido de 16E (paridad visual + audit de los módulos editor) se ejecutó **por adelantado y fuera de orden** en sub-ramas paralelas: **16E.5** portó spaces (9.0 #113) / amenities (8.9 #107) / systems (9.0 #109) / policies (8.7 #110) / contacts (9.1 #111) / property (waiver #112) / messaging (8.9 #108), y **16E.6** el access cockpit (#106). Esas superficies ya están en `AUDITED_SURFACES` con `profile: "operator"` y pasan los gates. **La rama `feat/liora-operator-module-rollout` NO se ejecutará como estaba escrita** (E1/E2/E3 monolíticas). Lo que el spec original cubría y **sigue pendiente** se reparte así: (a) **Guía local** y **Soluciones** (nunca portadas/auditadas a fondo) → **FASE 16I** (pulido de contenido, abajo); (b) el grupo **output/operaciones** (knowledge, ops, media, analytics, reservations, incidents, settings, publishing, guest-guide preview, activity) → fase posterior a 16I, aún sin planificar en detalle; (c) **wizard** → rama futura cuando `subpages.html` añada `page-onboarding`. **El id "16E" no se reabre como fase** — `CURRENT_LIORA_PHASE` ya está en `"16F.6"` y el gate de phase-order rechaza un `removeBy: "16E"`. El texto siguiente se conserva como registro de la intención original + la estrategia Alt-2 (útil para entender el contrato de audit por-módulo que heredan 16I y fases posteriores).
+
 **Propósito**: superficies de módulos del operador. **Alt-2 (estrategia aprobada Fase -1)**: una rama Git contiene E1 como PR real contra `main`; al cerrar E1 se decide con stats explícitos si E2 + E3 continúan en sub-PRs internos sobre la misma rama o se parten en ramas reales separadas. Esto evita un PR final monolítico y permite incorporar feedback temprano antes de migrar el resto.
 
 **Umbral de partición** (gate duro, Alt-2): la decisión se toma al cerrar **E1** (no al cerrar E2 como en la spec original). Si el diff de E1 supera **80 archivos tocados** o **5.000 LOC netas añadidas/borradas**, E2 y E3 se ejecutan en ramas reales separadas (`feat/liora-operator-modules-ops`, `feat/liora-operator-modules-outputs`). Si E1 cabe holgadamente bajo el umbral, E2 + E3 continúan como sub-PRs internos con un PR final que acumula los tres. La decisión se documenta en la PR description de E1 con `git diff main --stat`.
@@ -3431,7 +3429,7 @@ Cross-rama signal: declares which `removeBy` it can clear from earlier phases.
 
 ### Rama 16E.5 — `feat/liora-operator-content-visual-parity`
 
-**Estado**: bloqueada hasta que 16E (`feat/liora-operator-module-rollout`) cierre. Es la **siguiente rama prioritaria** después de E1 — no se ejecuta E2/E3 sin decisión explícita del usuario que opte por saltarse este paso.
+**Estado**: ✅ merged. Se ejecutó **por adelantado**, antes que el 16E monolítico (que quedó superado — ver nota de reconciliación en § Rama 16E): access cockpit (#102) + lote paralelo #107–#113 para el resto de módulos de contenido (spaces 9.0 / amenities 8.9 / systems 9.0 / policies 8.7 / contacts 9.1 / property waiver / messaging 8.9).
 
 **Propósito**: completar la paridad visual real de los content modules migrados con baseline únicamente en E1 (Sub-PR E1 ramas 16E). E1 aplica tokens semánticos + a11y + glyph fixes + AUDITED_SURFACES, pero mantiene la estructura `CollapsibleSection` actual cuando rehacerla implica rediseño de UX/form flow. 16E.5 cierra ese gap convirtiendo cada surface en silueta Liora real (`arrival-hero`, `access-grid`, `arrival-steps`, chip strips de eyebrow row, section numbering 01/02/03, hero treatments, etc.) **sin tocar server actions, schema Prisma, ni lógica config-driven**.
 
@@ -3890,7 +3888,65 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 **Skills**: `/simplify` (obligatorio antes de PR), `/pre-commit-review` (por commit), `/playwright-cli` + `/webapp-testing` (verificar persistencia en vivo).
 
-> **Nota 16E (post-16F.6)**: el rollout formal de auditoría de módulos operator (`feat/liora-operator-module-rollout`, § arriba) arranca **tras mergear 16F.6**. Puede partirse en sub-ramas E1/E2/E3 por grupo de módulos, pero son **secuenciales entre sí** (todas tocan `parity-allowlist.ts` + `CURRENT_LIORA_PHASE`) — no paralelas.
+> **Nota 16E (post-16F.6) — ACTUALIZADA 2026-06-02**: el rollout monolítico de 16E (`feat/liora-operator-module-rollout`) **no se ejecuta** como estaba escrito (ver nota de reconciliación al inicio del § Rama 16E). El trabajo de contenido operador que queda se hace como **FASE 16I** (abajo): pulido por-pestaña, **una rama por pestaña, secuencial**, con aprobación del usuario por PR.
+
+---
+
+### FASE 16I — Pulido de experiencia de contenido operador (10 sub-ramas)
+
+**Origen**: feedback de usuario (2026-06-02), tras cerrar 16F.5 (#116) + 16F.6 (#118). El usuario pide pulir **una a una** las pestañas de contenido del operador para llevarlas de "suelo de paridad cumplido" a "experiencia perfeccionada": mejores visuales, mejor UX, coherencia de componentes y estandarización máxima de primitivos. Esta fase **reemplaza** el rollout monolítico de 16E para el contenido (16E.5/16E.6 ya portaron el grueso; 16I pule + completa lo que faltó).
+
+**Naturaleza**: replatform de pulido. Alcance **primario visual/UX/estandarización**. **Excepción explícita al contrato Liora 0-funcional**: se permiten **cambios menores de taxonomía/DB** cuando una pestaña los necesite (p.ej. un flag de taxonomía, un campo nullable additive). No es vía libre — cada cambio funcional exige: (a) mini Fase -1 en su rama, (b) migración additive/backward-compatible (`prisma db push` en dev), (c) nota explícita en la PR description. Los **cambios funcionales mayores** ya catalogados (tri-estado equipamiento FUTURE §24, plano espacios §22, meta sistemas §21, EntityMediaCard §23) **siguen diferidos** — no entran en 16I salvo decisión explícita del usuario en la Fase -1 de esa pestaña.
+
+**Decisiones de fase (aprobadas 2026-06-02)**:
+
+1. **Phase-id `16I`**. Extiende `LioraPhase` union + se inserta en `LIORA_PHASE_ORDER` **inmediatamente después de `"16F.6"`** (el array define el orden de comparación, no la letra — "16I" sortea correctamente aunque su letra sea posterior a G/H). `CURRENT_LIORA_PHASE` → `"16I"` en el commit 1 de la **primera** rama 16I. Listas de excepción vacías hoy → el bump no dispara cleanup heredado.
+2. **Una rama por pestaña** (10), **secuenciales entre sí**. No paralelizables: todas tocan `src/test/parity-allowlist.ts` (refresh de `AUDITED_SURFACES`) + primitivos compartidos. Cada una su PR.
+3. **Aprobación del usuario por pestaña** (constraint duro): ninguna rama 16I se mergea sin OK explícito del usuario tras revisar su PR. El asistente nunca auto-mergea.
+4. **Orden de ejecución = orden del nav**: Resumen → Propiedad → Acceso → Espacios → Sistemas → Equipamiento → Guía local → Soluciones → Normas → Contactos. Las dos de **trabajo real** (Guía local #7, Soluciones #8) van en posición media; pueden adelantarse si el usuario prefiere desbloquear lo pesado primero (decisión suya al arrancar).
+5. **Objetivo de parity = subir, no solo mantener**: cada rama re-corre `/liora-ui-kit-parity`; en las pestañas ya portadas (9.0/8.9/…) el objetivo es **mejorar** densidad/jerarquía/interacción, no quedarse en el suelo 8.5.
+6. **Bump de `CURRENT_LIORA_PHASE` una sola vez** (a `"16I"`) al arrancar la primera rama; las 10 operan bajo `"16I"` y cierran sus propias excepciones (idealmente cero). No se bumpea por-rama.
+
+**Tabla de ramas** (cada fila = semilla del § que esa rama rellena en su Fase -1 vía `pre-branch-gate`):
+
+| # | Rama | Pestaña | Estado hoy | Kit ref | Alcance 16I |
+|---|------|---------|------------|---------|-------------|
+| 1 | `feat/liora-16I-1-overview-polish` | Resumen | auditada (16D) | `operator/index.html` | Refinamiento UX, estandarizar primitivos (bajo) |
+| 2 | `feat/liora-16I-2-property-polish` | Propiedad | baseline + waiver | sin editor en kit | UX + silueta propia (sin kit que igualar) |
+| 3 | `feat/liora-16I-3-access-polish` | Acceso | cockpit (16E.6) | `page-llegada` | Refinamiento sobre cockpit |
+| 4 | `feat/liora-16I-4-spaces-polish` | Espacios | parity 9.0 (#113) | `page-espacios` | Refinamiento >suelo (§22/§23 diferidos) |
+| 5 | `feat/liora-16I-5-systems-polish` | Sistemas | parity 9.0 (#109) | `page-sistemas` | Refinamiento (§21 diferido) |
+| 6 | `feat/liora-16I-6-amenities-polish` | Equipamiento | parity 8.9 (#107) | `page-equipamiento` | Refinamiento (§24/§18.2 diferidos) |
+| 7 | `feat/liora-16I-7-local-guide-parity` | Guía local | **sin auditar** (solo tokens) | `page-guialocal` | **Port completo + audit (ALTO)** |
+| 8 | `feat/liora-16I-8-troubleshooting-parity` | Soluciones | baseline, sin port | `page-averias` (parcial) | **Port UX + audit (ALTO)** |
+| 9 | `feat/liora-16I-9-policies-polish` | Normas | parity 8.7 (#110) | `page-normas` | Refinamiento |
+| 10 | `feat/liora-16I-10-contacts-polish` | Contactos | parity 9.1 (#111) | `page-contactos` | Refinamiento |
+
+**Las dos ramas de trabajo real**:
+
+- **#7 Guía local** (`local-guide/`): hoy NO está en `AUDITED_SURFACES` ni en `EXPECTED_OPERATOR_SCOPE_PATTERNS`; 16F.6 solo migró tokens. La rama hace el port completo a la silueta `page-guialocal` + adopción de primitivos + la **añade a `AUDITED_SURFACES`** (`profile: "operator"`) + a `EXPECTED_OPERATOR_SCOPE_PATTERNS`. Gate `/liora-ui-kit-parity` ≥8.5. Única rama que podría tocar taxonomía (categorías POI/eventos) si el pulido lo pide — additive.
+- **#8 Soluciones** (`troubleshooting/`): SÍ está auditada (baseline) pero nunca recibió port de silueta (no entró en el lote #107–113). El kit `page-averias` no tiene ref 1:1 de editor de playbook/registro de incidencias → port parcial: portar lo que mapea (header, ritmo de secciones, filas de playbook/ocurrencia) + UX polish + subir el component-fidelity, manteniendo el linking playbook↔incidencia.
+
+**Contrato/gate común por rama** (hereda el branch-closure template de 16D.5):
+
+1. **Fase -1** (§2.1): resumen técnico + conceptual + ambigüedades + alternativas → aprobación del usuario. `pre-branch-gate` inyecta la plantilla del § si está vacío.
+2. `/frontend-design` — design thinking (Purpose/Tone/Constraints/Differentiation) antes de tocar código.
+3. Implementación con primitivos (`<Card>`, `<SectionEyebrow>`, `<IconBadge>`, `<IconButton>`, `<TextLink>`, `<ButtonLink>`, `tone.ts`); 0 hex en JSX; tokens semánticos; targets ≥44.
+4. `/liora-ui-kit-parity` — **subir** el score (o ≥8.5 en las nuevas). Screenshots en `eval-artifacts/16I/<tab>/`.
+5. `/simplify` sobre toda la rama (obligatorio antes de PR).
+6. Gates verdes: `prisma generate → tsc → vitest → build`; `component-invariants` + `parity-static` + `dark-parity`; axe 0 serious|critical light+dark **con datos reales**.
+7. **`AUDITED_SURFACES` refresh en el mismo commit** (la pestaña ya está, salvo guía local que se añade nueva).
+8. Si toca schema/taxonomía: migración additive + nota en PR + test si aplica.
+9. PR con branch-closure template (sección "Audited surfaces / test coverage") → **aprobación del usuario** → merge.
+
+**No-alcance de 16I**:
+
+- Superficies output/operaciones (knowledge, ops, media, analytics, reservations, incidents, settings, publishing, guest-guide preview, activity) — fase posterior, sin planificar en detalle aún.
+- Assistant `/ai` redesign (16F).
+- Legacy removal (16G), guest rewrite (16H).
+- Cambios funcionales mayores (tri-estado §24, plano §22, meta sistemas §21, EntityMediaCard §23) salvo opt-in explícito del usuario en la Fase -1 de la pestaña.
+
+**Ordenación vs 16G/16H**: 16I ejecuta **antes** que 16G y 16H pese a su letra posterior — G/H se asignaron en la planificación original (ejecutan al final del replatform); 16I es una fase forward insertada por feedback. `LIORA_PHASE_ORDER` refleja el orden real de ejecución: `… 16F.6 → 16I → 16F(assistant) → 16G → 16H`.
 
 ---
 
