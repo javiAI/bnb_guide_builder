@@ -11,12 +11,18 @@ Migration order and status for each product surface adopting the Liora foundatio
 |---------|------|--------|--------|
 | Token infra + fonts | global (`src/app/`) | 16A | ✅ migrated |
 | Core UI primitives (`src/components/ui/`) | operator surfaces | 16B | ✅ migrated |
-| **Guest guide** | `/g/:slug` | **16C** | **✅ migrated** |
+| **Guest guide** (16C reskin — superseded by 16H rewrite) | `/g/:slug` | **16C** | ✅ migrated (pending 16H clean rewrite) |
 | Operator shell (sidebar, topbar) | `/properties/**` | 16D | ✅ migrated |
-| Operator modules (wizard, editor) — **baseline** | `/properties/**` | 16E | 🟡 in progress |
-| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,troubleshooting,policies}` | 16E.5 | 🟡 in progress (access ✅, policies ✅; rest pending) |
-| Messaging + assistant | `/properties/*/messaging`, `/g/:slug` chat | 16F | ⬜ pending |
+| Governance (primitives + invariants + closure template) | `src/test/` | 16D.5 | ✅ merged (#99) |
+| Operator content modules — **baseline migration** | `/properties/**` | 16E (E1) | ✅ baseline done (superseded by 16E.5/16E.6) |
+| Operator content modules — **visual parity port** | `/properties/[id]/{access,spaces,amenities,systems,policies,contacts}` | 16E.5 + 16E.6 | ✅ ported (spaces 9.0/amenities 8.9/systems 9.0/policies 8.7/contacts 9.1; access cockpit 16E.6; property waiver) — PRs #102,#106,#107–#113 |
+| Operator shell foundation (⌘K, rail, nav IA, autosave) | `/properties/**` | 16F.5 + 16F.6 | ✅ merged (#116, #118) |
+| Messaging (template authoring, automations, drafts) | `/properties/*/messaging` | 16F | ✅ ported (#108, 8.9) |
+| Assistant `/ai` (chat + knowledge) | `/properties/*/ai` | 16F | ⬜ pending |
+| **Content tab polish** (visual/UX/standardization, one branch per tab) | `/properties/[id]/{overview,property,access,spaces,systems,amenities,local-guide,troubleshooting,policies,contacts}` | **16I** | 🔜 planned (10 branches; see § 16I below) |
+| Output/ops surfaces (knowledge, ops, media, analytics, reservations, incidents, settings, publishing, activity) | `/properties/**` | post-16I | ⬜ unaudited (deferred) |
 | Legacy alias removal | global | 16G | ⬜ pending |
+| Guest guide clean rewrite (definitive bundle) | `/g/:slug` | 16H | ⬜ pending |
 
 ---
 
@@ -78,7 +84,7 @@ Migration order and status for each product surface adopting the Liora foundatio
 - No brand color usage in operator shell (neutral warm-analytical theme).
 - `var(--sidebar-width)` kept as-is (defined in `design-system/foundations/tokens/components.css`).
 
-### 16F.5 — Operator shell foundation 🚧 (`feat/liora-operator-shell-foundation`, PR-ready)
+### 16F.5 — Operator shell foundation ✅ (`feat/liora-operator-shell-foundation`, PR #116 merged `b0acf89`; + 16F.6 editor autosave #118 `549c053`)
 
 **Scope**: the *common shell* anticipated in the 16E.5/16F consolidation note — closes the deferred shell work from 16D (command palette, right rail, header heterogeneity). **Adds functionality** (not "0 functional"): persistent collapse, real ⌘K, real notifications, nav-level route unification.
 
@@ -141,14 +147,16 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 
 | Module | E1 baseline status | UI Kit Parity status | Follow-up branch |
 |--------|--------------------|----------------------|------------------|
-| `access/` | ✅ baseline migrated | ✅ parity ported (global 8.7, PASS) | `feat/liora-operator-content-visual-parity` |
-| `spaces/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
-| `amenities/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
-| `systems/` | ✅ baseline migrated | ✅ parity ported (global 9.0, PASS) | `feat/liora-systems-visual-parity` |
-| `troubleshooting/` | ✅ baseline migrated | ⬜ deferred required | `feat/liora-operator-content-visual-parity` |
-| `property/` | ✅ baseline migrated | ⬜ deferred (no editor kit ref — partial parity vs listing+detail summary) | `feat/liora-operator-content-visual-parity` if visually below kit at E1 close |
-| `policies/` | ⬜ no E1 baseline (shipped here) | ✅ parity ported (global 8.7, PASS) | `feat/liora-policies-visual-parity` (dedicated branch) |
-| wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama distinct from 16E.5 once `subpages.html` adds `page-onboarding` |
+| `access/` | ✅ baseline migrated | ✅ **cockpit port (16E.6, #106)** — media-backed arrival cockpit | `feat/liora-access-parking-map-autodiscovery` (16E.6) |
+| `spaces/` | ✅ baseline migrated | ✅ **parity ported (global 9.0, PASS, #113)** | `feat/liora-spaces-visual-parity` |
+| `amenities/` | ✅ baseline migrated | ✅ **parity ported (global 8.9, PASS, #107)** | `feat/liora-amenities-visual-parity` |
+| `systems/` | ✅ baseline migrated | ✅ parity ported (global 9.0, PASS, #109) | `feat/liora-systems-visual-parity` |
+| `troubleshooting/` | ✅ baseline migrated | ⬜ **NOT ported** — baseline-only, no full silhouette port (kit `page-averias` has no 1:1 editor/registry ref). **Scheduled in 16I** (`feat/liora-16I-8-troubleshooting-parity`). | 16I |
+| `property/` | ✅ baseline migrated | 🟡 partial — waiver (kit `page-propiedades` is listing+detail, no editor form; #112). **Polish + own silhouette in 16I** (`feat/liora-16I-2-property-polish`). | 16I |
+| `policies/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ parity ported (global 8.7, PASS, #110) | `feat/liora-policies-visual-parity` |
+| `contacts/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ parity ported (global 9.1, PASS, #111) | `feat/liora-contacts-visual-parity` |
+| `local-guide/` | 🟡 tokens-only (16F.6) | ⬜ **NOT ported** — only legacy→semantic token migration in 16F.6; never audited (absent from `AUDITED_SURFACES`). **Full port + audit in 16I** (`feat/liora-16I-7-local-guide-parity`, kit `page-guialocal`). | 16I |
+| wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama once `subpages.html` adds `page-onboarding` |
 
 ##### Parity audit verdict — `policies/` (`feat/liora-policies-visual-parity`)
 
@@ -530,7 +538,28 @@ First adopted in 16E.5 access cockpit (commit 7a). **Status: APPROVED design-sys
 Surfaces: messaging thread UI, AI assistant chat widget (operator + guest).
 Key files: `src/components/messaging/`, `src/components/public-guide/guide-search.tsx` (semantic assistant panel).
 
+### 16I — Content tab polish 🔜 (planned 2026-06-02)
+
+**Goal**: take each of the 10 operator **content** tabs from "parity floor met" to "perfected experience" — better visuals, UX, component coherence, and primitive standardization. Spec: `MASTER_PLAN_V2.md § FASE 16I`. **One branch per tab, sequential**, each its own PR + user approval before merge (all touch `parity-allowlist.ts` + shared primitives → not parallelizable). `CURRENT_LIORA_PHASE` → `"16I"`.
+
+**Scope**: primarily visual/UX/standardization. **Minor taxonomy/DB changes are permitted per tab** when a polish genuinely needs them (explicit exception to the Liora 0-functional contract — requires a mini Fase -1 + migration note in that branch's PR). Each tab re-runs `/liora-ui-kit-parity` aiming to **raise** the already-ported scores, not just maintain ≥8.5.
+
+| # | Branch | Tab | Today | 16I work |
+|---|--------|-----|-------|----------|
+| 1 | `feat/liora-16I-1-overview-polish` | Resumen | audited (16D) | UX refinement, primitive standardization (low) |
+| 2 | `feat/liora-16I-2-property-polish` | Propiedad | baseline + waiver | UX + own silhouette (no editor kit ref) |
+| 3 | `feat/liora-16I-3-access-polish` | Acceso | cockpit (16E.6) | refinement on cockpit |
+| 4 | `feat/liora-16I-4-spaces-polish` | Espacios | parity 9.0 | beyond-floor refinement (§22 plano, §23 EntityMediaCard deferred) |
+| 5 | `feat/liora-16I-5-systems-polish` | Sistemas | parity 9.0 | refinement (§21 meta deferred) |
+| 6 | `feat/liora-16I-6-amenities-polish` | Equipamiento | parity 8.9 | refinement (§24 tri-state, §18.2 split deferred) |
+| 7 | `feat/liora-16I-7-local-guide-parity` | Guía local | tokens-only, **unaudited** | **full port + audit** (kit `page-guialocal`) — HIGH |
+| 8 | `feat/liora-16I-8-troubleshooting-parity` | Soluciones | baseline, no port | **full UX port + audit** (kit `page-averias` partial) — HIGH |
+| 9 | `feat/liora-16I-9-policies-polish` | Normas | parity 8.7 | refinement |
+| 10 | `feat/liora-16I-10-contacts-polish` | Contactos | parity 9.1 | refinement |
+
+**Per-branch gate**: Fase -1 → `/frontend-design` → implement → `/liora-ui-kit-parity` (raise score) → `/simplify` → axe 0 serious/critical light+dark + `component-invariants`/`parity-static`/`dark-parity` green → add/refresh `AUDITED_SURFACES` entry (`profile: "operator"`) in the same commit → PR → **user approval** → merge. Branches 7 & 8 add their surfaces to `AUDITED_SURFACES` + `EXPECTED_OPERATOR_SCOPE_PATTERNS` for the first time (local-guide, and a full troubleshooting port).
+
 ### 16G — Legacy alias removal
 
 Removes `src/styles/legacy-aliases.css` (46 vars added in 16A as compatibility shims).
-Gate: all 16D/E/F surfaces must be migrated first. `liora-legacy-alias-registry.test.ts` tracks remaining aliases.
+Gate: all 16D/E/F/I surfaces must be migrated first. `liora-legacy-alias-registry.test.ts` tracks remaining aliases.

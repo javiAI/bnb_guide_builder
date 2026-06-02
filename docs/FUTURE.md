@@ -111,7 +111,9 @@ Colocar tarjetas no-intrusivas ("¿Reservar desayuno?", "Transfer al aeropuerto"
 
 ---
 
-## 8. Analytics dashboard de la guía pública
+## 26. Analytics dashboard de la guía pública
+
+> Renumerado de §8 → §26 para resolver la colisión con "§8 Operator shell — diferidos de 16D/16F.5" (referenciado como §8.2/§8.5/§8.6 en CLAUDE.md). El orden de este doc no es estricto.
 
 **Estado**: diferido.
 **Trigger**: >50 properties publicadas o demanda explícita de hosts.
@@ -140,18 +142,15 @@ Extensión futura: botón "Traducir automáticamente con IA" (Claude Sonnet + va
 
 ---
 
-## 11. Liora Design Replatform
+## 11. Liora Design Replatform — ⚠️ YA NO ES TRABAJO DIFERIDO (es la fase activa)
 
-**Estado**: preparado — plan de ejecución completo en [MASTER_PLAN_V2.md § FASE 16](MASTER_PLAN_V2.md) (7 ramas 16A-G).
-**Trigger para activar**: entrega del paquete de diseño Liora (tokens + primitivos + superficies).
+**Estado (2026-06-02)**: **en ejecución avanzada, no diferido.** El roadmap vivo está en [ROADMAP.md § Progreso Fase 16](ROADMAP.md) + [MASTER_PLAN_V2.md § FASE 16](MASTER_PLAN_V2.md). Son **8 ramas 16A–16H** (no 7) + sub-ramas. Merged: 16A–16D, 16D.5 governance, 16E.5 (paridad de todos los módulos de contenido), 16E.6 (access cockpit), 16F.5 (operator shell, #116), 16F.6 (editor autosave, #118). En marcha/planificado: **16I pulido de contenido** (10 ramas, una por pestaña), 16F assistant `/ai`, 16G legacy removal, 16H guest rewrite.
 
-Las reglas anti-legacy que protegen la frontera del replatform ya están vigentes hoy — ver [ARCHITECTURE_OVERVIEW.md §14](ARCHITECTURE_OVERVIEW.md). Docs y skills específicos (`docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_MIGRATION_RULES.md`, `docs/LIORA_COMPONENT_MAPPING_TEMPLATE.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`, eventualmente skills `/liora-*`) **no existen todavía** — se crean al arrancar rama 16A junto con el paquete de diseño.
+Este apartado se conserva solo como pointer histórico. Correcciones a notas obsoletas que vivían aquí:
 
-### Follow-up: `InfoTooltip` trigger target-size — ✅ RESUELTO en `feat/liora-policies-visual-parity` (16E.5)
-
-**Estado**: resuelto (no diferido). Originalmente registrado como cleanup de primitivo compartido transversal; cerrado en la misma rama tras review de PR #110 (Copilot).
-
-`src/components/ui/info-tooltip.tsx` renderizaba su trigger `(i)` como `<span role="button">` a 16×16 (`h-4 w-4`), por debajo del floor de 44 hit-area. **Fix aplicado en el primitivo compartido** (cubre `property/`, `spaces/`, wizard `step-3/4`, `policies/` atómicamente): nuevo `recipe-icon-btn-16` en `src/styles/recipes.css` (16 visual + 28px slop `::before`, −14px/lado = 44 hit en fine pointers, visual 16×16 intacto; coarse-grow a 44), registrado en las 3 listas de governance de `component-invariants.test.ts` con el cap del regex `hasDocumentedSlop` ampliado de −12 a −14. Pendiente aparte (no en esta rama): ampliar el walker estático para inspeccionar spans `role="button"` (hoy solo cubre `<button>/<a>/<Link>` — limitación documentada en CLAUDE.md § static-analysis gate honestidad).
+- Los docs Liora **sí existen** (se crearon en 16A/16B/16C): `docs/LIORA_DESIGN_ADOPTION_PLAN.md`, `docs/LIORA_COMPONENT_MAPPING.md`, `docs/LIORA_SURFACE_ROLLOUT_PLAN.md`. **No** existen `LIORA_MIGRATION_RULES.md` ni `LIORA_COMPONENT_MAPPING_TEMPLATE.md` (nombres tentativos que nunca se materializaron — el mapping vive en `LIORA_COMPONENT_MAPPING.md`, las reglas de migración en `design-system/docs/DESIGN_MIGRATION.md`).
+- Skill `/liora-ui-kit-parity` existe y es el gate de paridad por superficie.
+- El follow-up "InfoTooltip trigger target-size" (16×16 < 44 hit-area) quedó **resuelto** en `feat/liora-policies-visual-parity` (recipe `recipe-icon-btn-16`, PR #110) — retirado de aquí por estar cerrado.
 
 ---
 
