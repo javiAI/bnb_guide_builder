@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState, useState, useTransition, type FormEvent } from "react";
+import { useActionState, useState, useTransition, useRef, type FormEvent } from "react";
 import { Settings2, Users, Wrench } from "lucide-react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
 import { stripNulls } from "@/lib/utils";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Card } from "@/components/ui/card";
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import {
@@ -32,7 +34,10 @@ function FieldInput({
   value: unknown;
   onChange: (val: unknown) => void;
 }) {
-  const primitive = renderFieldInput({ field, value, onChange });
+  // Auto-save persists each field on its own → `gateRequired: false` drops the
+  // HTML `required` (incompatible with incremental save); the asterisk below
+  // stays as a soft hint and `updateSystemAction` persists partial JSON.
+  const primitive = renderFieldInput({ field, value, onChange, gateRequired: false });
 
   // `boolean` (and any future wrapsOwnLabel type) emits its own <label>
   // inline — don't wrap again. For sensitive booleans we append the tag
@@ -83,6 +88,13 @@ export function SystemDetailForm({
   const [notes, setNotes] = useState(internalNotes ?? "");
   const [vis, setVis] = useState(visibility);
 
+  // Auto-save: edits persist as you make them (no "Guardar" button). The form
+  // has no `name`-bearing inputs — the payload is built from state in
+  // `handleSubmit` — so `watch` is the change signal; `requestSubmit()` fires
+  // the submit below.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef, 700, () => JSON.stringify({ details, ops, notes, vis }));
+
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData();
@@ -98,7 +110,8 @@ export function SystemDetailForm({
   const hasFields = subtype && (subtype.detailsFields.length > 0 || subtype.opsFields.length > 0);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <AutoSaveStatus pending={isPending} />
       {hasFields && subtype.detailsFields.length > 0 && (
         <Card variant="overview">
           <SectionEyebrow icon={Users} className="mb-4">
@@ -172,17 +185,6 @@ export function SystemDetailForm({
       {result && !result.success && result.error && (
         <p className="text-[12px] text-[var(--color-status-error-text)]">{result.error}</p>
       )}
-      {result?.success && (
-        <p className="text-[12px] text-[var(--color-status-success-text)]">Guardado correctamente</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="inline-flex min-h-[44px] items-center self-start rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-[14px] font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-50"
-      >
-        {isPending ? "Guardando…" : "Guardar cambios"}
-      </button>
     </form>
   );
 }

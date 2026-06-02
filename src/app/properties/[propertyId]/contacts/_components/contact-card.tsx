@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { Phone, Pencil } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useAutoSaveEditToggle } from "@/lib/use-form-auto-save";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import { cn } from "@/lib/cn";
 import { updateContactAction, deleteContactAction } from "@/lib/actions/editor.actions";
@@ -84,7 +86,9 @@ export function ContactCard({
   propertyId: string;
   tone: ContactGroupTone;
 }) {
-  const [editing, setEditing] = useState(false);
+  // Auto-save: edits persist as you make them (no "Guardar" button); the card
+  // opens to edit and closes with "Listo" (which flushes the pending save).
+  const { editing, formRef, open, close } = useAutoSaveEditToggle();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     updateContactAction,
     null,
@@ -124,7 +128,7 @@ export function ContactCard({
           size="md"
           aria-label={editing ? `Cerrar edición de ${contact.displayName}` : `Editar ${contact.displayName}`}
           aria-expanded={editing}
-          onClick={() => setEditing((v) => !v)}
+          onClick={() => (editing ? close() : open())}
         />
       </div>
 
@@ -143,7 +147,7 @@ export function ContactCard({
       />
 
       {editing && (
-        <form action={formAction} className="space-y-4 border-t border-[var(--color-border-subtle)] pt-4">
+        <form ref={formRef} action={formAction} className="space-y-4 border-t border-[var(--color-border-subtle)] pt-4">
           <input type="hidden" name="contactId" value={contact.id} />
           <input type="hidden" name="propertyId" value={propertyId} />
 
@@ -232,9 +236,12 @@ export function ContactCard({
           <FormErrors state={state} />
 
           <div className="flex items-center justify-between">
-            <button type="submit" disabled={pending} className={PRIMARY_BTN}>
-              {pending ? "Guardando..." : "Guardar"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={close} className={PRIMARY_BTN}>
+                Listo
+              </button>
+              <AutoSaveStatus pending={pending} />
+            </div>
             <DeleteConfirmationButton
               title="Eliminar contacto"
               description={`Se eliminará ${contact.displayName}. Esta acción no se puede deshacer.`}

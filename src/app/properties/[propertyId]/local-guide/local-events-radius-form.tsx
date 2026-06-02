@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { updateLocalEventsRadiusAction } from "@/lib/actions/editor.actions";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 
 interface Props {
   propertyId: string;
@@ -10,42 +12,45 @@ interface Props {
 
 /** Host-facing control for the per-property event-search radius. Drives the
  * PHQ/Ticketmaster `within` / `radius` query params and widens Firecrawl's
- * curated-source applicability filter on the next sync tick. */
+ * curated-source applicability filter on the next sync tick. Auto-saves as you
+ * edit (no "Guardar" button). */
 export function LocalEventsRadiusForm({ propertyId, initialRadiusKm }: Props) {
   const [value, setValue] = useState<string>(String(initialRadiusKm));
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(
-    null,
-  );
+  const [error, setError] = useState<string | null>(null);
 
-  const dirty = value !== String(initialRadiusKm);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef, 700);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Skip invalid intermediate states (e.g. the field cleared mid-edit) so
+    // auto-save never persists garbage or flashes an error while typing.
+    const n = Number(value);
+    if (!value.trim() || !Number.isInteger(n) || n < 1 || n > 200) return;
     const fd = new FormData();
     fd.append("propertyId", propertyId);
     fd.append("radiusKm", value);
     startTransition(async () => {
       const res = await updateLocalEventsRadiusAction(null, fd);
-      if (res.success) {
-        setMessage({ kind: "ok", text: "Radio actualizado." });
-      } else {
-        const err =
-          res.fieldErrors?.radiusKm?.[0] ?? res.error ?? "No se pudo actualizar.";
-        setMessage({ kind: "error", text: err });
-      }
+      setError(
+        res.success
+          ? null
+          : (res.fieldErrors?.radiusKm?.[0] ?? res.error ?? "No se pudo actualizar."),
+      );
     });
   }
 
   return (
     <form
+      ref={formRef}
       onSubmit={onSubmit}
-      className="flex flex-wrap items-end gap-3 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-4"
+      className="flex flex-wrap items-end gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4"
     >
       <div className="flex flex-col gap-1">
         <label
           htmlFor="local-events-radius-km"
-          className="text-xs font-semibold uppercase tracking-wide text-[var(--color-neutral-500)]"
+          className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
         >
           Radio de búsqueda (km)
         </label>
@@ -59,27 +64,18 @@ export function LocalEventsRadiusForm({ propertyId, initialRadiusKm }: Props) {
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            setMessage(null);
+            setError(null);
           }}
-          className="w-28 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]"
+          className="w-28 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
         />
       </div>
-      <button
-        type="submit"
-        disabled={!dirty || pending}
-        className="rounded-[var(--radius-md)] bg-[var(--color-primary-500)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-      >
-        {pending ? "Guardando…" : "Guardar"}
-      </button>
-      {message ? (
-        <p
-          role="status"
-          className={`text-sm ${message.kind === "ok" ? "text-[var(--color-success-600,#16a34a)]" : "text-[var(--color-danger-600,#dc2626)]"}`}
-        >
-          {message.text}
+      <AutoSaveStatus pending={pending} />
+      {error ? (
+        <p role="status" className="text-sm text-[var(--color-status-error-text)]">
+          {error}
         </p>
       ) : (
-        <p className="text-xs text-[var(--color-neutral-500)]">
+        <p className="text-xs text-[var(--color-text-muted)]">
           Aplicado en la próxima sincronización de eventos (PredictHQ, Ticketmaster y Firecrawl).
         </p>
       )}

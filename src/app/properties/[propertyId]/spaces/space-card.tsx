@@ -15,7 +15,8 @@ import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
 import { getSpaceIcon } from "@/lib/icons/space-icons";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -153,11 +154,9 @@ export function SpaceCard({
   const [features, setFeatures] = useState<FeatureState>(
     (space.featuresJson as FeatureState) ?? {},
   );
-  const [featuresDirty, setFeaturesDirty] = useState(false);
 
   function setFeature(fieldId: string, value: FeatureValue) {
     setFeatures((prev) => ({ ...prev, [fieldId]: value }));
-    setFeaturesDirty(true);
   }
 
   // ── Feature groups ──
@@ -181,24 +180,19 @@ export function SpaceCard({
     FormData
   >(updateSpaceDetailsAction, null);
 
-  useEffect(() => {
-    if (detailsState?.success) {
-      setFeaturesDirty(false);
-      setNotesDirty(false);
-    }
-  }, [detailsState]);
+  // Auto-save: feature toggles + notes persist as you edit (no "Guardar"
+  // button). `features` is mirrored into a hidden `featuresJson` input and the
+  // notes are named fields, so the FormData diff + native listeners catch
+  // everything. `flushDetails()` runs on collapse so the last edit isn't lost.
+  const detailsFormRef = useRef<HTMLFormElement>(null);
+  const flushDetails = useFormAutoSave(detailsFormRef);
 
-  const [notesDirty, setNotesDirty] = useState(false);
   const [showInternalNotes, setShowInternalNotes] = useState(Boolean(space.internalNotes));
-  const formDirty = featuresDirty || notesDirty;
-
-  const saveStatus = detailsPending
-    ? "saving"
-    : detailsState?.success
-      ? "saved"
-      : detailsState?.error
-        ? "error"
-        : undefined;
+  // Controlled so the hidden mirror keeps the edited value when the notes are
+  // hidden mid-edit — an uncontrolled textarea + a `space.internalNotes` hidden
+  // fallback would overwrite the in-progress edit with the stale server value
+  // (lost edit). Auto-save then persists the live state.
+  const [internalNotes, setInternalNotes] = useState(space.internalNotes ?? "");
 
   // ── Archive / Restore ──
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -321,7 +315,7 @@ export function SpaceCard({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setExpanded((prev) => !prev)}
+              onClick={() => { if (expanded) flushDetails(); setExpanded((prev) => !prev); }}
               className="-mx-1 flex min-h-[44px] min-w-0 flex-1 items-center rounded-[var(--radius-md)] px-1 text-left transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
               aria-expanded={expanded}
             >
@@ -341,7 +335,7 @@ export function SpaceCard({
             </button>
             <button
               type="button"
-              onClick={() => setExpanded((prev) => !prev)}
+              onClick={() => { if (expanded) flushDetails(); setExpanded((prev) => !prev); }}
               className="recipe-icon-btn-32 grid h-8 w-8 flex-shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-secondary)]"
               aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
               aria-expanded={expanded}
@@ -430,7 +424,7 @@ export function SpaceCard({
             )}
 
             {/* All remaining feature groups except dimensions */}
-            <form id={`details-${space.id}`} action={detailsAction}>
+            <form id={`details-${space.id}`} ref={detailsFormRef} action={detailsAction}>
               <input type="hidden" name="spaceId" value={space.id} />
               <input type="hidden" name="propertyId" value={propertyId} />
               <input type="hidden" name="featuresJson" value={featuresJson} />
@@ -468,7 +462,6 @@ export function SpaceCard({
                   rows={2}
                   defaultValue={space.guestNotes ?? ""}
                   placeholder="Información útil sobre este espacio visible en la guía del huésped…"
-                  onChange={() => setNotesDirty(true)}
                   className={inputCls}
                 />
               </SpaceSection>
@@ -486,24 +479,23 @@ export function SpaceCard({
                     className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
                   />
                   Notas internas
-                  {space.internalNotes && (
+                  {internalNotes && (
                     <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
                   )}
                 </button>
-                {showInternalNotes && (
+                {showInternalNotes ? (
                   <div className="mt-2">
                     <textarea
                       name="internalNotes"
                       rows={2}
-                      defaultValue={space.internalNotes ?? ""}
+                      value={internalNotes}
+                      onChange={(e) => setInternalNotes(e.target.value)}
                       placeholder="Notas de operación solo visibles para el operador…"
-                      onChange={() => setNotesDirty(true)}
                       className={inputCls}
                     />
                   </div>
-                )}
-                {!showInternalNotes && (
-                  <input type="hidden" name="internalNotes" value={space.internalNotes ?? ""} />
+                ) : (
+                  <input type="hidden" name="internalNotes" value={internalNotes} />
                 )}
               </div>
             </form>
@@ -552,15 +544,7 @@ export function SpaceCard({
             {/* Footer — outside form to avoid nested <form> */}
             <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
               <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  form={`details-${space.id}`}
-                  disabled={detailsPending || !formDirty}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 py-2 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-                >
-                  {detailsPending ? "Guardando…" : "Guardar cambios"}
-                </button>
-                {saveStatus && <InlineSaveStatus status={saveStatus} />}
+                <AutoSaveStatus pending={detailsPending} />
                 {detailsState?.error && (
                   <span className="text-xs text-[var(--color-status-error-text)]">{detailsState.error}</span>
                 )}

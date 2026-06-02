@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useState, useRef } from "react";
 import {
   addBedAction,
   updateBedAction,
@@ -8,6 +8,8 @@ import {
   updateBedConfigAction,
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 
@@ -193,7 +195,7 @@ function BedRow({
 }) {
   const [quantity, setQuantity] = useState(bed.quantity);
   const [expanded, setExpanded] = useState(false);
-  const [, updateAction, updatePending] = useActionState<ActionResult | null, FormData>(
+  const [, updateAction] = useActionState<ActionResult | null, FormData>(
     updateBedAction,
     null,
   );
@@ -205,6 +207,14 @@ function BedRow({
     updateBedConfigAction,
     null,
   );
+
+  // Auto-save: quantity changes persist via a hidden mirror form; the config
+  // panel persists as you edit (configJson is mirrored into a hidden input, so
+  // the FormData diff catches every control). `flushConfig()` runs on collapse.
+  const qtyFormRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(qtyFormRef);
+  const configFormRef = useRef<HTMLFormElement>(null);
+  const flushConfig = useFormAutoSave(configFormRef);
 
   const cfg = bed.configJson ?? {};
   const [mattressType, setMattressType] = useState<string>((cfg.mattressType as string) ?? "");
@@ -219,24 +229,6 @@ function BedRow({
   const typeInfo = findItem(bedTypes, bed.bedType);
   const isCustom = bed.bedType === "bt.other";
   const cap = isCustom ? customCapacity : (typeInfo?.sleepingCapacity ?? 1);
-  const quantityDirty = quantity !== bed.quantity;
-
-  const pillowsDirty = useMemo(() => {
-    const a = [...pillowTypes].sort();
-    const b = [...((cfg.pillowTypes as string[]) ?? [])].sort();
-    if (a.length !== b.length) return true;
-    return a.some((v, i) => v !== b[i]);
-  }, [pillowTypes, cfg.pillowTypes]);
-
-  const configDirty =
-    mattressType !== ((cfg.mattressType as string) ?? "") ||
-    mattressFirmness !== ((cfg.mattressFirmness as string) ?? "") ||
-    pillowsDirty ||
-    linenIncluded !== ((cfg.linenIncluded as boolean) ?? false) ||
-    extraBlanket !== ((cfg.extraBlanket as boolean) ?? false) ||
-    mattressProtector !== ((cfg.mattressProtector as boolean) ?? false) ||
-    (isCustom && customLabelEdit !== ((cfg.customLabel as string) ?? "")) ||
-    (isCustom && customCapacity !== ((cfg.customCapacity as number) ?? 1));
 
   const configSerialized = useMemo(
     () =>
@@ -290,7 +282,7 @@ function BedRow({
         {/* Config toggle */}
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => { if (expanded) flushConfig(); setExpanded((v) => !v); }}
           title="Configurar colchón, almohada y ropa de cama"
           className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
             hasConfig
@@ -329,23 +321,15 @@ function BedRow({
           </button>
         </div>
 
-        {/* Save quantity (only when dirty) */}
-        {quantityDirty && (
-          <form action={updateAction}>
-            <input type="hidden" name="bedId" value={bed.id} />
-            <input type="hidden" name="propertyId" value={propertyId} />
-            <input type="hidden" name="spaceId" value={spaceId} />
-            <input type="hidden" name="bedType" value={bed.bedType} />
-            <input type="hidden" name="quantity" value={quantity} />
-            <button
-              type="submit"
-              disabled={updatePending}
-              className="rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-2.5 py-1 text-xs font-medium text-[var(--color-action-primary-fg)] hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-            >
-              {updatePending ? "…" : "Guardar"}
-            </button>
-          </form>
-        )}
+        {/* Quantity auto-saves on change via this hidden mirror form
+            (display:contents so it adds no layout box). */}
+        <form ref={qtyFormRef} action={updateAction} className="contents">
+          <input type="hidden" name="bedId" value={bed.id} />
+          <input type="hidden" name="propertyId" value={propertyId} />
+          <input type="hidden" name="spaceId" value={spaceId} />
+          <input type="hidden" name="bedType" value={bed.bedType} />
+          <input type="hidden" name="quantity" value={quantity} />
+        </form>
 
         {/* Delete */}
         <form action={deleteAction}>
@@ -367,7 +351,7 @@ function BedRow({
 
       {/* Expandable config panel */}
       {expanded && (
-        <form action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3 space-y-4">
+        <form ref={configFormRef} action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3 space-y-4">
           <input type="hidden" name="bedId" value={bed.id} />
           <input type="hidden" name="spaceId" value={spaceId} />
           <input type="hidden" name="configJson" value={configSerialized} />
@@ -465,16 +449,7 @@ function BedRow({
           </div>
 
           <div className="flex items-center gap-3 pt-1">
-            <button
-              type="submit"
-              disabled={configPending || !configDirty}
-              className="rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-1.5 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-            >
-              {configPending ? "Guardando…" : "Guardar configuración"}
-            </button>
-            {configState?.success && !configDirty && (
-              <span className="text-xs text-[var(--color-status-success-text)]">Guardado</span>
-            )}
+            <AutoSaveStatus pending={configPending} />
             {configState?.error && (
               <span className="text-xs text-[var(--color-status-error-text)]">{configState.error}</span>
             )}

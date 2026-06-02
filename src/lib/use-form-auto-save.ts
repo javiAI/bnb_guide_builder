@@ -1,25 +1,44 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 /**
- * Generic auto-save for `<form>` section editors (Liora 16F.5). Edits persist as
- * you make them — like the Acceso section — so there is no "Guardar" button.
- * Drop-in: give the form a ref and call this hook; nothing per-field is needed.
+ * Generic auto-save for `<form>` section editors (Liora 16F.5, extended in
+ * 16F.6). Edits persist as you make them — like the Acceso section — so there
+ * is no "Guardar" button. Drop-in: give the form a ref and call this hook;
+ * nothing per-field is needed.
  *
  * Works for `<form action={…}>` and `<form onSubmit={…}>` alike (it calls
  * `requestSubmit()`, which fires whichever the form uses). It's lossless across
- * control styles by combining two triggers on the same debounced submit:
+ * control styles via two trigger sources feeding one debounced submit:
  *  - a per-render FormData diff — catches controlled state (text fields,
  *    steppers, radio-cards, map pins, hidden inputs React updates);
  *  - native `input`/`change` listeners — catch uncontrolled fields
  *    (`defaultValue`) that change the DOM without a React re-render.
- * Either way it reads the form's live `FormData`, so it never hand-lists fields
- * and never silently drops one. The form's controlled state persists across the
- * action's revalidation, so the post-save render serialises identically and
- * never re-submits (no loop).
+ * For forms whose payload is built state→JSON with no name-bearing inputs (e.g.
+ * policies' `buildPoliciesJson()` or systems' `handleSubmit`), pass `watch`: a
+ * serialiser of that state. When provided it is the *authoritative* change
+ * signal and replaces the FormData diff (the serialised state fully covers the
+ * form), so no per-render FormData work runs; the form's existing action/onSubmit
+ * still does the real save.
+ * Without `watch` it reads the form's live `FormData`, so it never hand-lists
+ * fields and never silently drops one. The form's controlled state persists
+ * across the action's revalidation, so the post-save render serialises
+ * identically and never re-submits (no loop).
  *
- * `requestSubmit()` runs native validation, gated by `checkValidity()` first so
- * an invalid form (e.g. an empty required field) is skipped silently until
- * valid — no browser validation bubbles.
+ * `requestSubmit()` runs native validation; we gate it on `checkValidity()`
+ * first so an invalid form (e.g. an empty required field) is skipped silently
+ * until valid — no browser validation bubbles flashing on every debounce tick.
+ * Because incremental auto-save is incompatible with all-or-nothing `required`
+ * gating, forms that want every field to persist on its own must not emit HTML
+ * `required` (keep the asterisk as a soft hint) — see the systems detail form.
+ *
+ * Conditionally-mounted forms (edit-cards, collapsible bodies) are supported:
+ * the hook re-attaches its listeners and re-establishes the baseline whenever
+ * `formRef.current` changes, so a form that mounts after the hook does still
+ * auto-saves.
+ *
+ * Lossless on close/navigate: a pending debounced save is flushed (a) on
+ * unmount, and (b) on demand via the returned `flush()` — call it right before
+ * collapsing/closing an edit surface so the last keystroke is never dropped.
  */
 function serializeForm(form: HTMLFormElement): string {
   const parts: string[] = [];
@@ -32,14 +51,55 @@ function serializeForm(form: HTMLFormElement): string {
   return parts.join("&");
 }
 
-export function useFormAutoSave(formRef: RefObject<HTMLFormElement | null>, delay = 700): void {
+export function useFormAutoSave(
+  formRef: RefObject<HTMLFormElement | null>,
+  delay = 700,
+  watch?: () => string,
+): () => void {
   const lastRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // True while a debounce timer is armed; cleared when it fires or is flushed.
+  // Lets unmount/flush submit a pending save exactly once (no double submit).
+  const pendingRef = useRef(false);
+  // The form the native listeners are currently bound to — tracked so we can
+  // re-bind when a conditionally-rendered form mounts/unmounts.
+  const boundFormRef = useRef<HTMLFormElement | null>(null);
+  // Keep the latest `watch` without re-memoising `schedule` (callers pass fresh
+  // inline closures every render).
+  const watchRef = useRef(watch);
+  watchRef.current = watch;
+
+  const submitIfValid = useCallback((form: HTMLFormElement) => {
+    if (typeof form.checkValidity === "function" && !form.checkValidity()) return;
+    form.requestSubmit();
+  }, []);
 
   const schedule = useCallback(() => {
     const form = formRef.current;
+    // A new (or removed) form → re-bind listeners and drop the stale baseline
+    // so we re-establish it against the freshly-mounted form rather than
+    // comparing across instances.
+    if (boundFormRef.current !== form) {
+      if (boundFormRef.current) {
+        boundFormRef.current.removeEventListener("input", schedule);
+        boundFormRef.current.removeEventListener("change", schedule);
+      }
+      if (form) {
+        form.addEventListener("input", schedule);
+        form.addEventListener("change", schedule);
+      }
+      boundFormRef.current = form;
+      lastRef.current = null;
+    }
     if (!form) return;
-    const serialized = serializeForm(form);
+    // When `watch` is provided it is the authoritative change signal — these
+    // forms build their payload state→JSON and have no independent name-bearing
+    // inputs, so the serialised state fully covers the form and we skip the
+    // per-render FormData serialise (which would otherwise run on every render,
+    // including unrelated pending-state toggles). Otherwise the FormData diff is
+    // the signal.
+    const w = watchRef.current;
+    const serialized = w ? w() : serializeForm(form);
     if (lastRef.current === null) {
       lastRef.current = serialized; // first observation — establish baseline, don't save
       return;
@@ -47,33 +107,68 @@ export function useFormAutoSave(formRef: RefObject<HTMLFormElement | null>, dela
     if (serialized === lastRef.current) return; // nothing submittable changed
     lastRef.current = serialized;
     clearTimeout(timerRef.current);
+    pendingRef.current = true;
     timerRef.current = setTimeout(() => {
-      if (typeof form.checkValidity === "function" && !form.checkValidity()) return;
-      form.requestSubmit();
+      pendingRef.current = false;
+      submitIfValid(form);
     }, delay);
-  }, [formRef, delay]);
+  }, [formRef, delay, submitIfValid]);
 
-  // Controlled changes re-render → observe via the live FormData. No dep array:
-  // intentionally runs after every render.
+  // Submit a pending save immediately. Call before collapsing/closing an edit
+  // surface (the form may unmount before the debounce fires). Idempotent.
+  const flush = useCallback(() => {
+    if (!pendingRef.current) return;
+    pendingRef.current = false;
+    clearTimeout(timerRef.current);
+    const form = formRef.current ?? boundFormRef.current;
+    if (form) submitIfValid(form);
+  }, [formRef, submitIfValid]);
+
+  // Controlled changes (and the form mounting/unmounting) re-render → observe
+  // via the live FormData and re-bind listeners. No dep array: intentionally
+  // runs after every render.
   useEffect(() => {
     schedule();
   });
 
-  // Uncontrolled fields (defaultValue) mutate the DOM without re-rendering —
-  // catch them via native input/change events.
+  // Detach listeners + flush any pending save on unmount. React runs cleanup
+  // before detaching the DOM node, so the form is still submittable here — this
+  // makes navigation away lossless too. The per-render effect intentionally
+  // does NOT clear the timer (that would cancel the debounce on an unrelated
+  // re-render such as the pending-state toggle).
   useEffect(() => {
-    const form = formRef.current;
-    if (!form) return;
-    form.addEventListener("input", schedule);
-    form.addEventListener("change", schedule);
     return () => {
-      form.removeEventListener("input", schedule);
-      form.removeEventListener("change", schedule);
+      const form = boundFormRef.current;
+      if (form) {
+        form.removeEventListener("input", schedule);
+        form.removeEventListener("change", schedule);
+      }
+      const pending = pendingRef.current;
+      pendingRef.current = false;
+      clearTimeout(timerRef.current);
+      if (pending && form) submitIfValid(form);
     };
-  }, [formRef, schedule]);
+  }, [schedule, submitIfValid]);
 
-  // Clear any pending debounce on unmount (the per-render effect intentionally
-  // does NOT clear on every render — that would cancel the debounce on an
-  // unrelated re-render such as the pending-state toggle).
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  return flush;
+}
+
+/**
+ * Edit-toggle card helper built on `useFormAutoSave` for cards whose `<form>`
+ * mounts only while editing (contacts, knowledge). The hook re-attaches when
+ * the form appears, and `close()` flushes the pending save before unmounting it
+ * so the last keystroke is never dropped. Wire `formRef` to the `<form>`,
+ * `open()` to the edit affordance, and `close()` to the "Listo" button (and to
+ * a pencil toggle as `editing ? close() : open()`).
+ */
+export function useAutoSaveEditToggle(delay = 700, watch?: () => string) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const flush = useFormAutoSave(formRef, delay, watch);
+  const open = useCallback(() => setEditing(true), []);
+  const close = useCallback(() => {
+    flush();
+    setEditing(false);
+  }, [flush]);
+  return { editing, formRef, open, close };
 }

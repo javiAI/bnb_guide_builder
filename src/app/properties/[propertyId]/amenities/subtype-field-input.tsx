@@ -10,9 +10,13 @@ interface SubtypeFieldInputProps {
 }
 
 export function SubtypeFieldInput({ field, value, onChange }: SubtypeFieldInputProps) {
+  // The amenity detail panel auto-saves each field on its own → `gateRequired:
+  // false` drops the HTML `required` (incompatible with incremental save); the
+  // panel shows no asterisk and the action persists partial JSON.
   return renderFieldInput({
     field,
     value,
     onChange: (val) => onChange(field.id, val),
+    gateRequired: false,
   });
 }
