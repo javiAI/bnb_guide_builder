@@ -146,7 +146,8 @@ vi.mock("@/lib/db", () => {
     {
       id: "sys_2",
       systemKey: "sys.internet",
-      detailsJson: { provider: "Movistar" },
+      // ssid=public, password=sensitive, provider=internal (per system_subtypes).
+      detailsJson: { ssid: "MiRed", password: "secret123", provider: "Movistar" },
       opsJson: null,
       visibility: "guest",
     },
@@ -380,6 +381,20 @@ describe("extractFromSystems", () => {
     const internetChunks = chunks.filter((c) => c.entityId === "sys_2");
     expect(internetChunks).toHaveLength(1);
     expect(internetChunks[0].chunkType).toBe("fact");
+  });
+
+  it("filters by field-level visibility — wifi password never reaches a guest chunk", async () => {
+    const chunks = await extractFromSystems("prop_1");
+    const internetFact = chunks.find(
+      (c) => c.entityId === "sys_2" && c.chunkType === "fact",
+    );
+    expect(internetFact).toBeDefined();
+    // ssid is public → surfaced; password (sensitive) + provider (internal)
+    // must NOT appear in a guest-visibility chunk.
+    expect(internetFact!.bodyMd).toContain("MiRed");
+    expect(internetFact!.bodyMd).not.toContain("secret123");
+    expect(internetFact!.bodyMd).not.toContain("Movistar");
+    expect(internetFact!.visibility).toBe("guest");
   });
 });
 

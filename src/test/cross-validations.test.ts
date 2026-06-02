@@ -216,7 +216,12 @@ describe("validateVisibilityLeaks", () => {
     expect(out).toHaveLength(0);
   });
 
-  it("error when a guest-visible system stores a sensitive field (sys.internet.password)", () => {
+  it("does NOT flag a guest sys.internet holding a password (canonical state, not a leak)", () => {
+    // Systems use field-level visibility: a guest-visible sys.internet with a
+    // sensitive password is exactly what the wizard creates. The password is
+    // protected at extraction time (extractFromSystems filters by declared
+    // field visibility), so this must NOT produce a leak finding — otherwise
+    // every freshly-created property would be flagged.
     const out = validateVisibilityLeaks(
       baseCtx({
         systems: [
@@ -228,9 +233,6 @@ describe("validateVisibilityLeaks", () => {
         ],
       }),
     );
-    expect(out).toHaveLength(1);
-    expect(out[0].severity).toBe("error");
-    expect(out[0].id).toBe("visibility_leak_system_sys.internet");
-    expect(out[0].message).toContain("Contraseña");
+    expect(out).toEqual([]);
   });
 });

@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
 import {
   findSystemItem,
+  findSystemSubtype,
   findAmenityItem,
   getSpaceTypeLabel,
   contactTypes,
@@ -878,6 +879,24 @@ export async function extractFromSpaces(
   return chunks;
 }
 
+/**
+ * Whether a system detailsField (declared `public | internal | sensitive`) may
+ * be surfaced in a knowledge chunk of the given audience. Sensitive never;
+ * internal only in internal chunks; public anywhere. Undeclared fields default
+ * to `internal` (never guest/AI). This is what keeps the wifi password
+ * (`sys.internet.password`, sensitive) out of a guest/AI knowledge chunk even
+ * though `sys.internet` itself is guest-visible — field-level visibility, not
+ * entity-level.
+ */
+function systemDetailVisibleAt(
+  fieldVisibility: string,
+  chunkVisibility: VisibilityLevel,
+): boolean {
+  if (fieldVisibility === "public") return true;
+  if (fieldVisibility === "internal") return chunkVisibility === "internal";
+  return false; // sensitive (or anything unexpected)
+}
+
 export async function extractFromSystems(
   propertyId: string,
   locale = "es",
@@ -911,10 +930,24 @@ export async function extractFromSystems(
     const systemItem = findSystemItem(sys.systemKey);
     const systemLabel = systemItem?.label ?? sys.systemKey;
 
+    // Field-level visibility: surface only detailsJson values whose declared
+    // field visibility is allowed at this chunk's audience. Stops sensitive
+    // (wifi password) and internal fields from leaking into guest/AI chunks.
+    const detailFieldVisibility = new Map(
+      (findSystemSubtype(sys.systemKey)?.detailsFields ?? []).map(
+        (f) => [f.id, f.visibility ?? "internal"] as const,
+      ),
+    );
     const details = sys.detailsJson as Record<string, string | null> | null;
     const detailsSummary = details
-      ? Object.values(details)
-          .filter((v): v is string => typeof v === "string" && v.length > 0)
+      ? Object.entries(details)
+          .filter(
+            ([k, v]) =>
+              typeof v === "string" &&
+              v.length > 0 &&
+              systemDetailVisibleAt(detailFieldVisibility.get(k) ?? "internal", visibility),
+          )
+          .map(([, v]) => v as string)
           .slice(0, 2)
           .join(". ")
       : null;

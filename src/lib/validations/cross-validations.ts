@@ -10,7 +10,7 @@
  * passes it in.
  */
 
-import { findSubtype, findSystemSubtype } from "@/lib/taxonomy-loader";
+import { findSubtype } from "@/lib/taxonomy-loader";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export type ValidationSeverity = "blocker" | "error" | "warning";
@@ -61,26 +61,7 @@ const SMART_LOCK_KEYS = new Set(["am.smart_lock", "am.keypad"]);
  * uses the type to imply visibility for free-text secrets like wifi passwords).
  */
 function isSensitiveField(field: { type: string; visibility?: string }): boolean {
-  return (
-    field.visibility === "sensitive" ||
-    field.type === "sensitive_text" ||
-    field.type === "password"
-  );
-}
-
-/** Labels of sensitive fields (per `isSensitiveField`) that hold a non-empty
- * value in `details`. Shared by the amenity + system leak scans. */
-function leakedSensitiveLabels(
-  fields: ReadonlyArray<{ id: string; label: string; type: string; visibility?: string }>,
-  details: Record<string, unknown>,
-): string[] {
-  return fields
-    .filter(isSensitiveField)
-    .filter((f) => {
-      const v = details[f.id];
-      return v !== undefined && v !== null && v !== "";
-    })
-    .map((f) => f.label);
+  return field.visibility === "sensitive" || field.type === "sensitive_text";
 }
 
 /**
@@ -185,15 +166,18 @@ export function validateInfantsVsCrib(
 }
 
 /**
- * Visibility leak: an amenity instance OR a property system marked
- * `visibility="guest"` (or `"ai"`) must not contain detailsJson values for
- * fields whose taxonomy declaration is sensitive (`visibility: "sensitive"`,
- * `type: "sensitive_text"` or `type: "password"`). If it does, the field would
- * be served to guests / the AI via the guest-facing retrieval path.
+ * Visibility leak: an amenity instance marked `visibility="guest"` (or `"ai"`)
+ * must not contain detailsJson values for fields whose taxonomy declaration says
+ * `visibility: "sensitive"`. If it does, the field would be served to guests /
+ * the AI via the guest-facing retrieval path.
  *
- * Systems are scanned alongside amenities because secrets that used to live on
- * an amenity subtype (e.g. the wifi password) now live on the owning system
- * (`sys.internet.password`, sensitive) — the net follows the data.
+ * Systems are intentionally NOT scanned here. Unlike an amenity instance (one
+ * operator-set visibility for the whole instance), systems use **field-level**
+ * visibility: a system can be guest-visible (so it appears in the guide) while a
+ * field like `sys.internet.password` is declared sensitive. That field-level
+ * filter is enforced at extraction time (`extractFromSystems`), so a guest
+ * `sys.internet` holding a password is the canonical, correct state — not a
+ * leak. Scanning it here would false-positive on every freshly-created property.
  */
 export function validateVisibilityLeaks(
   ctx: ValidationContext,
@@ -204,7 +188,13 @@ export function validateVisibilityLeaks(
     const subtype = inst.subtypeKey ? findSubtype(inst.subtypeKey) : undefined;
     if (!subtype) continue;
     const details = (inst.detailsJson ?? {}) as Record<string, unknown>;
-    const leaked = leakedSensitiveLabels(subtype.fields, details);
+    const leaked = subtype.fields
+      .filter(isSensitiveField)
+      .filter((f) => {
+        const v = details[f.id];
+        return v !== undefined && v !== null && v !== "";
+      })
+      .map((f) => f.label);
     if (leaked.length === 0) continue;
 
     findings.push({
@@ -212,22 +202,6 @@ export function validateVisibilityLeaks(
       severity: "error",
       message: `"${inst.amenityKey}" (${inst.instanceKey}) expone datos sensibles (${leaked.join(", ")}) con visibilidad ${inst.visibility}. Súbele la visibilidad o elimina esos campos.`,
       ctaUrl: `/properties/${ctx.propertyId}/amenities`,
-      ctaLabel: "Revisar visibilidad",
-    });
-  }
-  for (const sys of ctx.systems) {
-    if (sys.visibility !== "guest" && sys.visibility !== "ai") continue;
-    const subtype = findSystemSubtype(sys.systemKey);
-    if (!subtype) continue;
-    const details = (sys.detailsJson ?? {}) as Record<string, unknown>;
-    const leaked = leakedSensitiveLabels(subtype.detailsFields, details);
-    if (leaked.length === 0) continue;
-
-    findings.push({
-      id: `visibility_leak_system_${sys.systemKey}`,
-      severity: "error",
-      message: `"${sys.systemKey}" expone datos sensibles (${leaked.join(", ")}) con visibilidad ${sys.visibility}. Súbele la visibilidad o elimina esos campos.`,
-      ctaUrl: `/properties/${ctx.propertyId}/systems`,
       ctaLabel: "Revisar visibilidad",
     });
   }
