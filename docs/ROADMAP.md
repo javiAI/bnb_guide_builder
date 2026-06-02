@@ -2,7 +2,7 @@
 
 Estado actual y próximos pasos. Este documento es el punto de entrada rápido; el detalle ejecutable vive en `MASTER_PLAN_V2.md`.
 
-## Donde estamos (2026-06-02)
+## Dónde estamos (2026-06-02)
 
 ### Completado — MASTER_PLAN v1 (fases 1A-7B, 20 PRs)
 

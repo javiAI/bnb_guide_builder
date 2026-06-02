@@ -140,7 +140,7 @@ Regla: cita con `[FILE.md:Lxx-Lyy](research/FILE.md#Lxx-Lyy)`. Nunca copies el c
 - [docs/LIORA_SURFACE_ROLLOUT_PLAN.md § 16I](LIORA_SURFACE_ROLLOUT_PLAN.md) — estado por pestaña.
 - `CLAUDE.md` § "Patrones de UI — Operator shell" + § "Primitivos obligatorios (Fase 16D.5)" + § "Allowlist governance".
 - `src/test/parity-allowlist.ts` (`AUDITED_SURFACES`, `CURRENT_LIORA_PHASE`, `LioraPhase`) + `src/test/component-invariants.test.ts`.
-- El kit de la pestaña: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` (mapping en `.claude/skills/liora-ui-kit-parity/reference-mapping.md`).
+- El kit de la pestaña: `design-system/references/liora-ui-kits/ui_kits/operator/subpages.html` (mapping versionado en `design-system/docs/LIORA_REFERENCE_MAPPING.md`).
 - `design-system/docs/DESIGN_MIGRATION.md` (legacy → semantic + per-branch gates).
 
 **Otra rama abierta (independiente de Liora, decisión de producto cuándo)**: **13C `feat/guide-maps-embedded`** — única rama **funcional** del plan original sin cerrar. Reusa `buildGuideMapData` + `obfuscateAnchor` de 13B + surface de 10F. Se hará sobre los primitivos Liora ya existentes.
