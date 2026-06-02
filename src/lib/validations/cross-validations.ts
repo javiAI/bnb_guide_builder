@@ -68,6 +68,21 @@ function isSensitiveField(field: { type: string; visibility?: string }): boolean
   );
 }
 
+/** Labels of sensitive fields (per `isSensitiveField`) that hold a non-empty
+ * value in `details`. Shared by the amenity + system leak scans. */
+function leakedSensitiveLabels(
+  fields: ReadonlyArray<{ id: string; label: string; type: string; visibility?: string }>,
+  details: Record<string, unknown>,
+): string[] {
+  return fields
+    .filter(isSensitiveField)
+    .filter((f) => {
+      const v = details[f.id];
+      return v !== undefined && v !== null && v !== "";
+    })
+    .map((f) => f.label);
+}
+
 /**
  * Wifi is a derived amenity: activated by PropertySystem(sys.internet). If the
  * system exists but details are missing ssid/password, the wifi badge lights up
@@ -189,13 +204,7 @@ export function validateVisibilityLeaks(
     const subtype = inst.subtypeKey ? findSubtype(inst.subtypeKey) : undefined;
     if (!subtype) continue;
     const details = (inst.detailsJson ?? {}) as Record<string, unknown>;
-    const leaked = subtype.fields
-      .filter(isSensitiveField)
-      .filter((f) => {
-        const v = details[f.id];
-        return v !== undefined && v !== null && v !== "";
-      })
-      .map((f) => f.label);
+    const leaked = leakedSensitiveLabels(subtype.fields, details);
     if (leaked.length === 0) continue;
 
     findings.push({
@@ -211,13 +220,7 @@ export function validateVisibilityLeaks(
     const subtype = findSystemSubtype(sys.systemKey);
     if (!subtype) continue;
     const details = (sys.detailsJson ?? {}) as Record<string, unknown>;
-    const leaked = subtype.detailsFields
-      .filter(isSensitiveField)
-      .filter((f) => {
-        const v = details[f.id];
-        return v !== undefined && v !== null && v !== "";
-      })
-      .map((f) => f.label);
+    const leaked = leakedSensitiveLabels(subtype.detailsFields, details);
     if (leaked.length === 0) continue;
 
     findings.push({
