@@ -45,6 +45,56 @@ function Harness({ required = false }: { required?: boolean }) {
   );
 }
 
+// State that never reaches a form field — only `watch` can see it. The form has
+// no inputs at all, so the FormData diff is constant; the save must come from
+// the watched serialisation changing.
+function WatchHarness() {
+  const ref = useRef<HTMLFormElement>(null);
+  const [payload, setPayload] = useState({ n: 0 });
+  useFormAutoSave(ref, DELAY, () => JSON.stringify(payload));
+  return (
+    <form ref={ref} aria-label="f">
+      <button type="button" onClick={() => setPayload({ n: 1 })}>
+        bump
+      </button>
+    </form>
+  );
+}
+
+// The form mounts AFTER the hook (conditional render) → exercises re-attach.
+function ConditionalHarness() {
+  const ref = useRef<HTMLFormElement>(null);
+  const [show, setShow] = useState(false);
+  useFormAutoSave(ref, DELAY);
+  return (
+    <>
+      <button type="button" onClick={() => setShow(true)}>
+        show
+      </button>
+      {show && (
+        <form ref={ref} aria-label="f">
+          <input name="a" defaultValue="" aria-label="a" />
+        </form>
+      )}
+    </>
+  );
+}
+
+// Exposes the returned `flush()` on a button so a test can flush before the
+// debounce fires (mirrors a "Listo/Cerrar" handler).
+function FlushHarness() {
+  const ref = useRef<HTMLFormElement>(null);
+  const flush = useFormAutoSave(ref, DELAY);
+  return (
+    <form ref={ref} aria-label="f">
+      <input name="a" defaultValue="" aria-label="a" />
+      <button type="button" onClick={flush}>
+        listo
+      </button>
+    </form>
+  );
+}
+
 describe("useFormAutoSave", () => {
   it("does not save on mount (establishes a baseline)", () => {
     render(<Harness />);
@@ -99,5 +149,52 @@ describe("useFormAutoSave", () => {
     rerender(<Harness />);
     act(() => vi.advanceTimersByTime(DELAY * 2));
     expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves when the watched serialisation changes (state not in any field)", () => {
+    const { getByText } = render(<WatchHarness />);
+    fireEvent.click(getByText("bump")); // setState → watch() returns a new string
+    act(() => vi.advanceTimersByTime(DELAY));
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-attaches to a form that mounts after the hook (conditional render)", () => {
+    const { getByText, getByLabelText } = render(<ConditionalHarness />);
+    fireEvent.click(getByText("show")); // form mounts now, after the hook did
+    fireEvent.change(getByLabelText("a"), { target: { value: "hi" } });
+    act(() => vi.advanceTimersByTime(DELAY));
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("flush() submits a pending save immediately (before the debounce fires)", () => {
+    const { getByLabelText, getByText } = render(<FlushHarness />);
+    fireEvent.change(getByLabelText("a"), { target: { value: "x" } });
+    expect(submitSpy).not.toHaveBeenCalled(); // still within the debounce window
+    fireEvent.click(getByText("listo")); // flush()
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+    // The pending timer was cleared by flush — it must not fire a second save.
+    act(() => vi.advanceTimersByTime(DELAY * 2));
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("flush() is a no-op when nothing is pending", () => {
+    const { getByText } = render(<FlushHarness />);
+    fireEvent.click(getByText("listo")); // no edits → nothing pending
+    act(() => vi.advanceTimersByTime(DELAY * 2));
+    expect(submitSpy).not.toHaveBeenCalled();
+  });
+
+  it("flushes a pending save on unmount (lossless on navigate/close)", () => {
+    const { getByLabelText, unmount } = render(<Harness />);
+    fireEvent.change(getByLabelText("a"), { target: { value: "x" } });
+    // Unmount BEFORE the debounce fires — the cleanup must flush, not drop it.
+    act(() => unmount());
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not flush on unmount when no save is pending", () => {
+    const { unmount } = render(<Harness />);
+    act(() => unmount());
+    expect(submitSpy).not.toHaveBeenCalled();
   });
 });
