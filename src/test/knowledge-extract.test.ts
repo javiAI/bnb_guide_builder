@@ -320,16 +320,20 @@ describe("extractFromContacts", () => {
 });
 
 describe("extractFromAmenities", () => {
-  it("emits existence chunk for each amenity, usage chunk when guestInstructions set", async () => {
+  it("emits existence chunk per extractable amenity, usage chunk when guestInstructions set", async () => {
     const chunks = await extractFromAmenities("prop_1");
-    // 5 amenities: 3 with guestInstructions (wifi, pool), 2 without → 5 existence + 2 usage = 7
-    // But ami_4 (gym) has visibility=ai with no guestInstructions → 1 existence
-    // Actually: wifi+instructions, pool+instructions, gym(no instructions), washing_machine(no instructions), parking(no instructions)
-    // Wait: wifi has instructions, pool has instructions → 5 existence + 2 usage = 7
+    // am.wifi (ami_1) is derived_from_system → skipped here (extracted via
+    // extractFromSystems). Remaining: washer, pool, gym, parking → 4 existence;
+    // only pool has guestInstructions → 1 usage.
     const existenceChunks = chunks.filter((c) => c.chunkType === "fact");
     const usageChunks = chunks.filter((c) => c.chunkType === "procedure");
-    expect(existenceChunks).toHaveLength(5);
-    expect(usageChunks).toHaveLength(2);
+    expect(existenceChunks).toHaveLength(4);
+    expect(usageChunks).toHaveLength(1);
+  });
+
+  it("skips derived_from_system amenities (am.wifi sourced from sys.internet, not extracted as an amenity)", async () => {
+    const chunks = await extractFromAmenities("prop_1");
+    expect(chunks.filter((c) => c.entityId === "ami_1")).toHaveLength(0);
   });
 
   it("propagates visibility from amenity instance", async () => {

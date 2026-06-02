@@ -4,6 +4,7 @@ import {
   findSystemItem,
   findSystemSubtype,
   findAmenityItem,
+  getAmenityDestination,
   getSpaceTypeLabel,
   contactTypes,
   propertyTypes,
@@ -686,6 +687,15 @@ export async function extractFromAmenities(
   const isEn = locale === "en";
 
   for (const inst of instances) {
+    // `derived_from_system` amenities (e.g. am.wifi) are sourced from their
+    // owning system and extracted via extractFromSystems — where field-level
+    // visibility keeps secrets like the wifi password out of guest/AI chunks.
+    // A legacy PropertyAmenityInstance for one of them is vestigial; since its
+    // credential subtype no longer exists, there is no taxonomy-backed way to
+    // redact its detailsJson here, so skip it rather than risk dumping a
+    // password into a chunk. (Derived-from-space/access amenities keep their
+    // existing amenity extraction — they carry no sensitive fields.)
+    if (getAmenityDestination(inst.amenityKey) === "derived_from_system") continue;
     const visibility = toNonSensitiveVisibility(inst.visibility);
     const amenityItem = findAmenityItem(inst.amenityKey);
     const amenityLabel = amenityItem?.label ?? inst.amenityKey;
@@ -889,12 +899,12 @@ export async function extractFromSpaces(
  * entity-level.
  */
 function systemDetailVisibleAt(
-  fieldVisibility: string,
+  fieldVisibility: "public" | "internal" | "sensitive",
   chunkVisibility: VisibilityLevel,
 ): boolean {
   if (fieldVisibility === "public") return true;
   if (fieldVisibility === "internal") return chunkVisibility === "internal";
-  return false; // sensitive (or anything unexpected)
+  return false; // sensitive
 }
 
 export async function extractFromSystems(
