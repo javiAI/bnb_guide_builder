@@ -56,10 +56,12 @@ vi.mock("@/lib/db", () => ({
     propertyAmenityInstance: {
       findMany: vi.fn().mockResolvedValue([
         {
+          // am.washer is amenity_configurable (am.wifi is derived_from_system →
+          // skipped by extractFromAmenities; its data lives on sys.internet).
           id: "a1",
-          amenityKey: "am.wifi",
-          detailsJson: { ssid: "CasaWifi", password: "secret" },
-          guestInstructions: "Router is in the entry hall.",
+          amenityKey: "am.washer",
+          detailsJson: { brand: "Bosch" },
+          guestInstructions: "Detergent is under the sink.",
           visibility: "guest",
         },
       ]),

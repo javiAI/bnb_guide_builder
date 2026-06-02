@@ -4010,6 +4010,33 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
+### Rama post-16I-A — `feat/system-amenity-source-unify`
+
+**Propósito**: Una sola fuente de verdad para los amenities respaldados por un sistema (`docs/FUTURE.md §27.3`, ampliado a todos). Decisión explícita del usuario (2026-06-02), PR posterior a 16I-1 (#120, ya mergeada). **No es una pestaña 16I** — es un fix funcional de taxonomía/validación. El quick-fix in-context (`§27.4`, Parte B original) queda **diferido** a una rama futura.
+
+**Hallazgo (Fase -1)**: la fuente de verdad del WiFi **ya era** `PropertySystem(sys.internet).detailsJson.{ssid,password}` (lo escribe el wizard step-4, lo lee `validateWifiComplete`, y `resolveDerivation` deriva `am.wifi` — fijado por `wizard-wifi-integration.test.ts`). `sys.internet.detailsFields` **ya define** ssid/password (no hubo que tocar `system_subtypes.json`). Lo roto era un modelo dual a medio migrar: `am.wifi` tenía subtipo vestigial + `am.wifi`/`am.heating` colados en `coreAmenityKeys` (penalizando Equipamiento, porque un amenity derivado nunca es instancia).
+
+**Cambios (additive, sin migración de datos)**:
+
+- `taxonomies/amenity_subtypes.json`: eliminado el subtipo `am.wifi` (derivado → las credenciales viven en `sys.internet`).
+- `taxonomies/dynamic_field_rules.json`: eliminada la regla `dfr.wifi_selected` (am.wifi no es seleccionable).
+- `taxonomies/completeness_rules.json`: `coreAmenityKeys` ahora solo los 3 amenities genuinos (tv, coffee_maker, kitchen_basics); fuera `am.wifi` **y** `am.heating` (ambos `derived_from_system` → puntúan vía sistemas).
+- `src/lib/services/knowledge-extract.service.ts`: `extractFromSystems` aplica **field-level visibility** a `detailsJson` — `public` visible en cualquier chunk, `internal` solo en chunks internal, `sensitive`/password **nunca** en chunks guest/AI (campos no declarados → internal por defecto). Esa es la red anti-leak de sistemas (la password de `sys.internet` se protege a nivel de campo). `validateVisibilityLeaks` **sigue siendo amenity-only** (los sistemas usan field-level visibility, no entity-level; escanearlos ahí daría falso positivo en el estado canónico wizard).
+- `src/test/amenity-destinations.test.ts`: **guards nuevos** — ningún amenity system-backed (`derived_from_system` **o** `moved_to_system`) puede ser core key ni tener subtipo configurable. Lockean el principio para los 9 (5 derived + 4 moved).
+- Auditoría completa: los 9 amenities respaldados por sistema confirmados limpios (∩ coreKeys = ∅, ∩ subtypes = ∅). `am.tv`↔`sys.cable_tv` y `am.ethernet`/`am.pocket_wifi`↔`sys.internet` son **distintos** (dispositivo/puerto vs servicio) — la taxonomía los mantiene `amenity_configurable` a propósito.
+
+**Tests**: `amenity-destinations` (guards), `completeness-scoring`, `cross-validations` (system-leak), `phase5-features`, `config-driven`, `section-editors`, `wizard-wifi-integration` (verde), `guest-leak-invariants` (password sensible no filtra). Suite completa verde.
+
+**Criterio de done**: `am.wifi` derivado puro (sin subtipo) · Equipamiento ya no penalizado por amenities system-backed · red anti-leak cubre sistemas · guards verdes · gates `prisma generate → tsc → vitest → build` verdes · `/simplify`.
+
+**Restricciones**: ❌ migración destructiva (additive) · ❌ UI (sin tocar componentes; el quick-fix se difiere) · ❌ tocar otras pestañas.
+
+**No-alcance**: quick-fix in-context (`§27.4`, rama futura) + resto de `§27` (publish gate, readiness→8 secciones, KPI/espacios rethink, priorización de tareas, definición de "camas", reservas/mensajería).
+
+**Docs a actualizar al terminar**: `FUTURE.md` (marcar §27.3 hecho; §27.4 sigue diferido), `docs/ROADMAP.md`.
+
+---
+
 ### Rama 16G — `chore/remove-legacy-ui`
 
 **Propósito**: barrido final. Elimina:

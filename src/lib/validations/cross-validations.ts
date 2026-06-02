@@ -166,10 +166,18 @@ export function validateInfantsVsCrib(
 }
 
 /**
- * Visibility leak: an amenity instance marked `visibility="guest"` (or
- * `"ai"`) must not contain detailsJson values for fields whose taxonomy
- * declaration says `visibility: "sensitive"`. If it does, the field would be
- * served to guests / the AI via the guest-facing retrieval path.
+ * Visibility leak: an amenity instance marked `visibility="guest"` (or `"ai"`)
+ * must not contain detailsJson values for fields whose taxonomy declaration says
+ * `visibility: "sensitive"`. If it does, the field would be served to guests /
+ * the AI via the guest-facing retrieval path.
+ *
+ * Systems are intentionally NOT scanned here. Unlike an amenity instance (one
+ * operator-set visibility for the whole instance), systems use **field-level**
+ * visibility: a system can be guest-visible (so it appears in the guide) while a
+ * field like `sys.internet.password` is declared sensitive. That field-level
+ * filter is enforced at extraction time (`extractFromSystems`), so a guest
+ * `sys.internet` holding a password is the canonical, correct state — not a
+ * leak. Scanning it here would false-positive on every freshly-created property.
  */
 export function validateVisibilityLeaks(
   ctx: ValidationContext,

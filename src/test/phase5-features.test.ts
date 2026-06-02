@@ -46,14 +46,6 @@ describe("Rule engine follow-up fields", () => {
     expect(deps.visibleFields.has("arrival.media.lockbox")).toBe(true);
   });
 
-  it("wifi amenity shows credential fields", () => {
-    const deps = resolveFieldDependencies({
-      "amenities.selected": ["am.wifi"],
-    });
-    expect(deps.visibleFields.has("wifi.ssid")).toBe(true);
-    expect(deps.visibleFields.has("wifi.password")).toBe(true);
-  });
-
   it("coffee maker shows subtype fields", () => {
     const deps = resolveFieldDependencies({
       "amenities.selected": ["am.coffee_maker"],
@@ -65,10 +57,10 @@ describe("Rule engine follow-up fields", () => {
   it("multiple triggers resolve independently", () => {
     const deps = resolveFieldDependencies({
       "arrival.access.method": "am.smart_lock",
-      "amenities.selected": ["am.wifi"],
+      "amenities.selected": ["am.coffee_maker"],
     });
     expect(deps.visibleFields.has("lock.brand")).toBe(true);
-    expect(deps.visibleFields.has("wifi.ssid")).toBe(true);
+    expect(deps.visibleFields.has("coffee_maker.subtype")).toBe(true);
     expect(deps.matchedRules.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -100,11 +92,10 @@ describe("Rule engine follow-up fields", () => {
 // ── Amenity subtypes ──
 
 describe("Amenity subtype configuration", () => {
-  it("wifi has subtype with credential fields", () => {
-    const subtype = findSubtype("am.wifi");
-    expect(subtype).toBeDefined();
-    const fieldIds = subtype!.fields.map((f) => f.id);
-    expect(fieldIds.length).toBeGreaterThan(0);
+  it("wifi is derived from sys.internet and has no configurable amenity subtype", () => {
+    // am.wifi is destination=derived_from_system → credentials live on
+    // sys.internet (the single source of truth), not on an amenity subtype.
+    expect(findSubtype("am.wifi")).toBeUndefined();
   });
 
   it("coffee_maker has subtype with type selection", () => {
@@ -263,7 +254,7 @@ describe("Rule engine coverage", () => {
     // Access fields
     expect(fields).toContain("lock.brand");
     // Amenity fields
-    expect(fields).toContain("wifi.ssid");
+    expect(fields).toContain("coffee_maker.subtype");
     // Policy fields
     expect(fields).toContain("pol.pets.max");
     // Parking fields

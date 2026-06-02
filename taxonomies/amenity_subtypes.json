@@ -133,64 +133,6 @@
       ]
     },
     {
-      "amenity_id": "am.wifi",
-      "label": "Detalle de wifi",
-      "description": "Configuración operativa y de soporte del wifi.",
-      "fields": [
-        {
-          "id": "wifi.ssid",
-          "label": "Nombre de red",
-          "description": "Nombre exacto de la red wifi visible para el huésped.",
-          "type": "text",
-          "required": true
-        },
-        {
-          "id": "wifi.password",
-          "label": "Contraseña",
-          "description": "Clave de acceso al wifi. Debe marcarse como sensible por defecto.",
-          "type": "sensitive_text",
-          "required": true
-        },
-        {
-          "id": "wifi.router_location",
-          "label": "Ubicación del router",
-          "description": "Ubicación física del router para operaciones o troubleshooting.",
-          "type": "text_optional",
-          "visibility": "internal"
-        },
-        {
-          "id": "wifi.speed_tier",
-          "label": "Nivel de velocidad",
-          "description": "Clasificación comercial simple para expectativas de uso.",
-          "type": "enum_optional",
-          "options": [
-            {
-              "id": "basic",
-              "label": "Básica",
-              "description": "Adecuada para navegación y mensajería."
-            },
-            {
-              "id": "streaming",
-              "label": "Streaming",
-              "description": "Adecuada para vídeo y uso familiar."
-            },
-            {
-              "id": "remote_work",
-              "label": "Teletrabajo",
-              "description": "Adecuada para videollamadas y trabajo remoto."
-            }
-          ]
-        },
-        {
-          "id": "wifi.troubleshooting",
-          "label": "Resolución de incidencias",
-          "description": "Pasos breves para reinicio o solución básica.",
-          "type": "markdown_short"
-        }
-      ],
-      "media_requirements": []
-    },
-    {
       "amenity_id": "am.pool",
       "label": "Detalle de piscina",
       "description": "Configuración, reglas y características relevantes de la piscina.",

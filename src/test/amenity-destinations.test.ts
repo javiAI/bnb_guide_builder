@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { amenityTaxonomy, systemTaxonomy } from "@/lib/taxonomy-loader";
+import {
+  amenityTaxonomy,
+  systemTaxonomy,
+  amenitySubtypes,
+  getCompletenessRule,
+} from "@/lib/taxonomy-loader";
 import type { AmenityDestination } from "@/lib/types/taxonomy";
 
 import { DESTINATIONS, applyDestinations } from "../../scripts/apply-amenity-destinations";
@@ -55,6 +60,33 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     const wifi = amenityTaxonomy.items.find((i) => i.id === "am.wifi");
     expect(wifi?.destination).toBe("derived_from_system");
     expect(wifi?.target).toBe("sys.internet");
+  });
+
+  // ── Single source of truth (no duplication): a "system-backed" amenity is
+  // one whose data lives on a system — whether it surfaces as a read-only
+  // derived chip (`derived_from_system`: wifi/heating/hot_water/cooling/elevator)
+  // or was moved entirely to the system (`moved_to_system`: smoke/co alarms,
+  // fire extinguisher, first-aid kit). NEITHER may be re-captured as a
+  // configurable amenity (core key or subtype) — that duplicates the truth.
+  // These guards prevent re-introducing the dual-model the wifi/heating fix removed.
+  const systemBackedAmenityIds = new Set(
+    amenityTaxonomy.items
+      .filter(
+        (i) =>
+          i.destination === "derived_from_system" ||
+          i.destination === "moved_to_system",
+      )
+      .map((i) => i.id),
+  );
+
+  it("no system-backed amenity is a core amenity in completeness", () => {
+    const core = getCompletenessRule("amenities").coreAmenityKeys;
+    expect(core.filter((k) => systemBackedAmenityIds.has(k))).toEqual([]);
+  });
+
+  it("no system-backed amenity has a configurable amenity subtype", () => {
+    const subtypeIds = amenitySubtypes.subtypes.map((s) => s.amenity_id);
+    expect(subtypeIds.filter((id) => systemBackedAmenityIds.has(id))).toEqual([]);
   });
 
   it("all 13 ax.* items are moved_to_access", () => {

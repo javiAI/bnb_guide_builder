@@ -336,10 +336,10 @@ describe("Amenities editor is taxonomy-driven", () => {
   });
 
   it("some amenities have subtype configurations", () => {
-    // wifi and coffee_maker should have subtypes
-    const wifiSubtype = findSubtype("am.wifi");
-    expect(wifiSubtype).toBeDefined();
-    expect(wifiSubtype!.fields.length).toBeGreaterThan(0);
+    // pool and coffee_maker should have subtypes (am.wifi is derived → no subtype)
+    const poolSubtype = findSubtype("am.pool");
+    expect(poolSubtype).toBeDefined();
+    expect(poolSubtype!.fields.length).toBeGreaterThan(0);
 
     const coffeeSubtype = findSubtype("am.coffee_maker");
     expect(coffeeSubtype).toBeDefined();

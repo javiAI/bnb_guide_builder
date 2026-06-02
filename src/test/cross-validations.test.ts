@@ -216,48 +216,23 @@ describe("validateVisibilityLeaks", () => {
     expect(out).toHaveLength(0);
   });
 
-  it("error when public amenity stores a sensitive_text field (am.wifi.password)", () => {
+  it("does NOT flag a guest sys.internet holding a password (canonical state, not a leak)", () => {
+    // Systems use field-level visibility: a guest-visible sys.internet with a
+    // sensitive password is exactly what the wizard creates. The password is
+    // protected at extraction time (extractFromSystems filters by declared
+    // field visibility), so this must NOT produce a leak finding — otherwise
+    // every freshly-created property would be flagged.
     const out = validateVisibilityLeaks(
       baseCtx({
-        amenityInstances: [
+        systems: [
           {
-            amenityKey: "am.wifi",
-            instanceKey: "default",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.ssid": "MyNet", "wifi.password": "supersecret" },
+            systemKey: "sys.internet",
+            detailsJson: { ssid: "MyNet", password: "supersecret" },
             visibility: "guest",
           },
         ],
       }),
     );
-    expect(out).toHaveLength(1);
-    expect(out[0].severity).toBe("error");
-    expect(out[0].id).toBe("visibility_leak_am.wifi_default");
-    expect(out[0].message).toContain("Contraseña");
-  });
-
-  it("dedupes finding ids per instanceKey when amenity has multiple instances", () => {
-    const out = validateVisibilityLeaks(
-      baseCtx({
-        amenityInstances: [
-          {
-            amenityKey: "am.wifi",
-            instanceKey: "guest",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.password": "a" },
-            visibility: "guest",
-          },
-          {
-            amenityKey: "am.wifi",
-            instanceKey: "office",
-            subtypeKey: "am.wifi",
-            detailsJson: { "wifi.password": "b" },
-            visibility: "guest",
-          },
-        ],
-      }),
-    );
-    expect(out).toHaveLength(2);
-    expect(new Set(out.map((f) => f.id)).size).toBe(2);
+    expect(out).toEqual([]);
   });
 });
