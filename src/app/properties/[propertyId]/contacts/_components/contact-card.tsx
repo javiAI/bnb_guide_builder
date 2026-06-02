@@ -1,10 +1,10 @@
 "use client";
 
-import { useActionState, useState, useRef } from "react";
+import { useActionState } from "react";
 import { Phone, Pencil } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { useAutoSaveEditToggle } from "@/lib/use-form-auto-save";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import { cn } from "@/lib/cn";
 import { updateContactAction, deleteContactAction } from "@/lib/actions/editor.actions";
@@ -86,21 +86,13 @@ export function ContactCard({
   propertyId: string;
   tone: ContactGroupTone;
 }) {
-  const [editing, setEditing] = useState(false);
+  // Auto-save: edits persist as you make them (no "Guardar" button); the card
+  // opens to edit and closes with "Listo" (which flushes the pending save).
+  const { editing, formRef, open, close } = useAutoSaveEditToggle();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     updateContactAction,
     null,
   );
-
-  // Auto-save: edits persist as you make them (no "Guardar" button). The form
-  // mounts only when editing, so the hook re-attaches its listeners when it
-  // appears. `flush()` before closing guarantees the last keystroke persists.
-  const formRef = useRef<HTMLFormElement>(null);
-  const flush = useFormAutoSave(formRef);
-  const closeEditing = () => {
-    flush();
-    setEditing(false);
-  };
 
   const typeLabel = getTypeLabel(contact.roleKey);
   const isEmergency = tone === "danger";
@@ -136,7 +128,7 @@ export function ContactCard({
           size="md"
           aria-label={editing ? `Cerrar edición de ${contact.displayName}` : `Editar ${contact.displayName}`}
           aria-expanded={editing}
-          onClick={() => (editing ? closeEditing() : setEditing(true))}
+          onClick={() => (editing ? close() : open())}
         />
       </div>
 
@@ -245,7 +237,7 @@ export function ContactCard({
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button type="button" onClick={closeEditing} className={PRIMARY_BTN}>
+              <button type="button" onClick={close} className={PRIMARY_BTN}>
                 Listo
               </button>
               <AutoSaveStatus pending={pending} />

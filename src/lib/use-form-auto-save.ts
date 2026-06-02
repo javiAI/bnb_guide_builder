@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
 /**
  * Generic auto-save for `<form>` section editors (Liora 16F.5, extended in
@@ -151,4 +151,24 @@ export function useFormAutoSave(
   }, [schedule, submitIfValid]);
 
   return flush;
+}
+
+/**
+ * Edit-toggle card helper built on `useFormAutoSave` for cards whose `<form>`
+ * mounts only while editing (contacts, knowledge). The hook re-attaches when
+ * the form appears, and `close()` flushes the pending save before unmounting it
+ * so the last keystroke is never dropped. Wire `formRef` to the `<form>`,
+ * `open()` to the edit affordance, and `close()` to the "Listo" button (and to
+ * a pencil toggle as `editing ? close() : open()`).
+ */
+export function useAutoSaveEditToggle(delay = 700, watch?: () => string) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const flush = useFormAutoSave(formRef, delay, watch);
+  const open = useCallback(() => setEditing(true), []);
+  const close = useCallback(() => {
+    flush();
+    setEditing(false);
+  }, [flush]);
+  return { editing, formRef, open, close };
 }

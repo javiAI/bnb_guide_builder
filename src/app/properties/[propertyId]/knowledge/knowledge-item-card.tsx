@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useActionState, useRef } from "react";
+import { useState, useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { useAutoSaveEditToggle } from "@/lib/use-form-auto-save";
 import {
   updateKnowledgeItemAction,
   deleteKnowledgeItemAction,
@@ -39,8 +39,13 @@ export function KnowledgeItemCard({
   visibilityTone,
   journeyLabel,
 }: KnowledgeItemCardProps) {
-  const [editing, setEditing] = useState(false);
   const [prefixOpen, setPrefixOpen] = useState(false);
+
+  // Auto-save: edits persist as you make them (no "Guardar" button); the card
+  // opens to edit and closes with "Listo" (which flushes the pending save).
+  // `topic`/`bodyMd` are required, so the validity gate skips saving an emptied
+  // title/body.
+  const { editing, formRef, open, close } = useAutoSaveEditToggle();
 
   const [updateState, updateAction, updatePending] = useActionState<ActionResult | null, FormData>(
     updateKnowledgeItemAction,
@@ -51,17 +56,6 @@ export function KnowledgeItemCard({
     deleteKnowledgeItemAction,
     null,
   );
-
-  // Auto-save: edits persist as you make them (no "Guardar" button). The form
-  // mounts only when editing, so the hook re-attaches when it appears; `flush()`
-  // before closing guarantees the last keystroke persists. `topic`/`bodyMd` are
-  // required, so the validity gate skips saving an emptied title/body.
-  const formRef = useRef<HTMLFormElement>(null);
-  const flush = useFormAutoSave(formRef);
-  const closeEditing = () => {
-    flush();
-    setEditing(false);
-  };
 
   const inputClass =
     "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
@@ -130,7 +124,7 @@ export function KnowledgeItemCard({
           <div className="mt-4 flex items-center gap-3">
             <button
               type="button"
-              onClick={closeEditing}
+              onClick={close}
               className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)]"
             >
               Listo
@@ -193,7 +187,7 @@ export function KnowledgeItemCard({
         <div className="ml-4 flex shrink-0 gap-2">
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={open}
             className="rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-interactive-hover)]"
           >
             Editar

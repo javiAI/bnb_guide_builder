@@ -34,11 +34,10 @@ function FieldInput({
   value: unknown;
   onChange: (val: unknown) => void;
 }) {
-  // Auto-save persists each field on its own, so HTML `required` (all-or-nothing
-  // submit gating, incompatible with incremental save) is stripped — the
-  // asterisk below stays as a soft hint and `updateSystemAction` persists
-  // partial JSON.
-  const primitive = renderFieldInput({ field: { ...field, required: false }, value, onChange });
+  // Auto-save persists each field on its own → `gateRequired: false` drops the
+  // HTML `required` (incompatible with incremental save); the asterisk below
+  // stays as a soft hint and `updateSystemAction` persists partial JSON.
+  const primitive = renderFieldInput({ field, value, onChange, gateRequired: false });
 
   // `boolean` (and any future wrapsOwnLabel type) emits its own <label>
   // inline — don't wrap again. For sensitive booleans we append the tag

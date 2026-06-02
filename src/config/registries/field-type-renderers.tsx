@@ -260,10 +260,20 @@ const RENDERERS: Record<SubtypeFieldType, Renderer> = {
  * Render the input primitive for a field's type. Throws the same loud error
  * as the validator registry if the type is unknown — extension test enforces
  * that every key in FIELD_TYPES has a RENDERERS entry.
+ *
+ * `gateRequired: false` drops the HTML `required` attribute for forms that
+ * auto-save each field on its own — all-or-nothing `required` gating is
+ * incompatible with incremental persistence (`requestSubmit()` refuses an
+ * invalid form). The caller keeps showing the asterisk as a soft hint and the
+ * server action persists partial data. Default `true` preserves `field.required`.
  */
-export function renderFieldInput(props: FieldInputProps): ReactNode {
-  getFieldType(props.field.type); // validate the type string, throws on miss
-  return RENDERERS[props.field.type as SubtypeFieldType](props);
+export function renderFieldInput(
+  props: FieldInputProps & { gateRequired?: boolean },
+): ReactNode {
+  const { gateRequired, ...rest } = props;
+  getFieldType(rest.field.type); // validate the type string, throws on miss
+  const field = gateRequired === false ? { ...rest.field, required: false } : rest.field;
+  return RENDERERS[field.type as SubtypeFieldType]({ ...rest, field });
 }
 
 export function fieldTypeWrapsOwnLabel(type: string): boolean {

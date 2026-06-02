@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, act } from "@testing-library/react";
 import { useRef, useState } from "react";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { useFormAutoSave, useAutoSaveEditToggle } from "@/lib/use-form-auto-save";
 
 const DELAY = 700;
 
@@ -92,6 +92,26 @@ function FlushHarness() {
         listo
       </button>
     </form>
+  );
+}
+
+// Edit-toggle card: form mounts only while editing; "listo" closes (flush).
+function ToggleHarness() {
+  const { editing, formRef, open, close } = useAutoSaveEditToggle(DELAY);
+  return (
+    <div>
+      <button type="button" onClick={editing ? close : open}>
+        toggle
+      </button>
+      {editing && (
+        <form ref={formRef} aria-label="f">
+          <input name="a" defaultValue="" aria-label="a" />
+          <button type="button" onClick={close}>
+            listo
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 
@@ -196,5 +216,26 @@ describe("useFormAutoSave", () => {
     const { unmount } = render(<Harness />);
     act(() => unmount());
     expect(submitSpy).not.toHaveBeenCalled();
+  });
+
+  it("useAutoSaveEditToggle: opens the form, then auto-saves an edit", () => {
+    const { getByText, getByLabelText } = render(<ToggleHarness />);
+    fireEvent.click(getByText("toggle")); // open → form mounts
+    fireEvent.change(getByLabelText("a"), { target: { value: "x" } });
+    act(() => vi.advanceTimersByTime(DELAY));
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("useAutoSaveEditToggle: close() flushes the pending save and unmounts the form", () => {
+    const { getByText, getByLabelText, queryByLabelText } = render(<ToggleHarness />);
+    fireEvent.click(getByText("toggle")); // open
+    fireEvent.change(getByLabelText("a"), { target: { value: "x" } });
+    expect(submitSpy).not.toHaveBeenCalled(); // still within the debounce window
+    fireEvent.click(getByText("listo")); // close() → flush then unmount
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+    expect(queryByLabelText("a")).toBeNull(); // form unmounted
+    // The cleared debounce must not fire a second save after unmount.
+    act(() => vi.advanceTimersByTime(DELAY * 2));
+    expect(submitSpy).toHaveBeenCalledTimes(1);
   });
 });
