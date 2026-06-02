@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   CheckCircle2,
@@ -9,6 +8,7 @@ import {
   Bed,
   Bath,
   History,
+  Plus,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import {
@@ -36,6 +36,8 @@ import {
 import { ChipRow } from "@/components/overview/chip-row";
 import { ModuleContainer } from "@/components/layout/module-container";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
+import { NumberedSection } from "@/components/ui/numbered-section";
+import { TextLink } from "@/components/ui/text-link";
 
 function pluralize(n: number, singular: string, plural: string): string {
   return `${n} ${n === 1 ? singular : plural}`;
@@ -59,36 +61,6 @@ function formatActivityMessage(
   const info = ACTION_LABELS[action as keyof typeof ACTION_LABELS];
   if (!info) return { message: `${entity} · ${action}` };
   return { message: `${entity} ${info.verbPast}`, tone: info.tone };
-}
-
-interface SectionHeadingProps {
-  num: string;
-  title: string;
-  action?: { label: string; href: string };
-}
-
-function SectionHeading({ num, title, action }: SectionHeadingProps) {
-  return (
-    <div className="mb-3 flex items-center justify-between">
-      <h2 className="flex items-center gap-3 text-[15px] font-semibold text-[var(--color-text-primary)]">
-        <span
-          aria-hidden="true"
-          className="grid h-[22px] min-w-[22px] place-items-center rounded-[6px] bg-[var(--color-background-muted)] px-1.5 text-[10px] font-semibold tabular-nums tracking-wider text-[var(--color-text-secondary)]"
-        >
-          {num}
-        </span>
-        {title}
-      </h2>
-      {action && (
-        <Link
-          href={action.href}
-          className="text-[12px] font-medium text-[var(--color-text-link)] hover:underline"
-        >
-          {action.label}
-        </Link>
-      )}
-    </div>
-  );
 }
 
 export default async function OverviewPage({
@@ -253,8 +225,7 @@ export default async function OverviewPage({
         </ChipRow>
       }
     >
-      <section className="mb-7">
-        <SectionHeading num="01" title="Estado de la guía" />
+      <NumberedSection number="01" title="Estado de la guía">
         <ReadinessHeroCard
           propertyId={propertyId}
           overall={readiness.overall}
@@ -264,10 +235,21 @@ export default async function OverviewPage({
           blockers={validations.blockers}
           errors={validations.errors}
         />
-      </section>
+      </NumberedSection>
 
-      <section className="mb-7">
-        <SectionHeading num="02" title="Actividad" />
+      <NumberedSection
+        number="02"
+        title="Actividad"
+        action={
+          <TextLink
+            href={`/properties/${propertyId}/analytics`}
+            size="sm"
+            arrow
+          >
+            Ver analítica
+          </TextLink>
+        }
+      >
         <KpiStrip
           propertyId={propertyId}
           spacesCount={spacesRaw.length}
@@ -275,10 +257,11 @@ export default async function OverviewPage({
           contactsCount={contactsCount}
           blockersCount={validations.blockers.length + validations.errors.length}
         />
-      </section>
+      </NumberedSection>
 
-      <section className="mb-7">
-        <SectionHeading num="03" title="Acciones y eventos" />
+      {/* Two-up — left unnumbered (supporting row, mirrors the kit): each card
+          self-describes via its own SectionEyebrow header. */}
+      <section className="mb-8">
         <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
           <TasksListCard
             propertyId={propertyId}
@@ -290,21 +273,26 @@ export default async function OverviewPage({
         </div>
       </section>
 
-      <section className="mb-2">
-        <SectionHeading
-          num="04"
-          title="Espacios"
-          action={{
-            label: "+ Añadir espacio",
-            href: `/properties/${propertyId}/spaces`,
-          }}
-        />
+      <NumberedSection
+        number="03"
+        title="Espacios"
+        action={
+          <TextLink
+            href={`/properties/${propertyId}/spaces`}
+            size="sm"
+            className="inline-flex items-center gap-1"
+          >
+            <Plus size={12} aria-hidden="true" />
+            Añadir espacio
+          </TextLink>
+        }
+      >
         <SpacesTableCard
           propertyId={propertyId}
           rows={spaceRows}
           totalCount={spaceRows.length}
         />
-      </section>
+      </NumberedSection>
     </ModuleContainer>
   );
 }
