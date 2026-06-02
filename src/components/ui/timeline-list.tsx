@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { BadgeTone } from "@/lib/types";
-import { TONE_DOT_BORDER } from "@/lib/tone";
+import { TONE_DOT_FILL } from "@/lib/tone";
 import { cn } from "@/lib/cn";
 
 /* `content` renders directly inside <li> — block or inline both valid per HTML
@@ -31,25 +31,38 @@ export function TimelineList({ items, emptyText, className }: TimelineListProps)
   }
 
   return (
-    <ol
-      className={cn(
-        "relative flex-1 pl-4",
-        "before:absolute before:left-1 before:top-1.5 before:bottom-1.5 before:w-px before:bg-[var(--color-border-default)] before:content-['']",
-        className,
-      )}
-    >
-      {items.map((item) => {
+    <ol className={cn("flex flex-1 flex-col", className)}>
+      {items.map((item, idx) => {
         const tone = item.tone ?? "neutral";
+        // Connector segments are drawn per-item and bounded: the first item has
+        // no segment above its dot, the last none below — so the spine spans
+        // exactly first-dot → last-dot and never overshoots. The dot's elevated
+        // ring masks the line crossing behind it. Dot center sits at 10px
+        // (top-[6px] + half of h-2), aligned with the first text line.
+        const showAbove = idx > 0;
+        const showBelow = idx < items.length - 1;
         return (
           <li
             key={item.id}
-            className="relative py-1.5 pl-1 text-[13px] leading-relaxed text-[var(--color-text-primary)]"
+            className="relative pb-3 pl-5 text-[13px] leading-relaxed text-[var(--color-text-primary)] last:pb-0"
           >
+            {showAbove && (
+              <span
+                aria-hidden="true"
+                className="absolute left-[4px] top-0 h-[10px] w-px -translate-x-1/2 bg-[var(--color-border-default)]"
+              />
+            )}
+            {showBelow && (
+              <span
+                aria-hidden="true"
+                className="absolute left-[4px] top-[10px] bottom-0 w-px -translate-x-1/2 bg-[var(--color-border-default)]"
+              />
+            )}
             <span
               aria-hidden="true"
               className={cn(
-                "absolute left-[-13px] top-[10px] h-[8px] w-[8px] rounded-full border-2 bg-[var(--color-background-elevated)]",
-                TONE_DOT_BORDER[tone],
+                "absolute left-[4px] top-[6px] h-2 w-2 -translate-x-1/2 rounded-full ring-4 ring-[var(--color-background-elevated)]",
+                TONE_DOT_FILL[tone],
               )}
             />
             {item.content}

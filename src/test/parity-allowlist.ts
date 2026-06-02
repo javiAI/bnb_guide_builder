@@ -490,7 +490,7 @@ export const FORBIDDEN_SUFFIX_LEGACY: ReadonlyArray<{
  * the past — i.e. a previous rama promised to remove the exception and
  * shipped without doing so.
  */
-export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16E.6" | "16F" | "16F.5" | "16F.6" | "16G";
+export type LioraPhase = "16D.5" | "16E" | "16E.5" | "16E.6" | "16F" | "16F.5" | "16F.6" | "16I" | "16G" | "16H";
 export type RemoveBy = LioraPhase | "never";
 
 export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
@@ -501,11 +501,17 @@ export const LIORA_PHASE_ORDER: ReadonlyArray<LioraPhase> = [
   "16F",
   "16F.5",
   "16F.6",
+  // 16I — content-tab polish (FASE 16I). Inserted immediately after 16F.6:
+  // the array order is the comparison timeline, not the letter, so "16I"
+  // sorts before "16G"/"16H" (forward phase inserted by feedback). See
+  // MASTER_PLAN_V2.md § FASE 16I decision 1.
+  "16I",
   "16G",
+  "16H",
 ] as const;
 
 /** Active Liora phase the allowlist is being audited against. */
-export const CURRENT_LIORA_PHASE: LioraPhase = "16F.6";
+export const CURRENT_LIORA_PHASE: LioraPhase = "16I";
 
 export interface ExceptionEntry {
   file: string;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Home, Sparkles, Phone, AlertCircle, type LucideIcon } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
 
 interface Kpi {
   label: string;
@@ -61,33 +62,36 @@ export function KpiStrip({
     <div className="grid grid-cols-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] sm:grid-cols-4">
       {kpis.map((kpi, i) => {
         const Icon = kpi.icon;
+        const isWarn = kpi.tone === "warn";
         return (
           <Link
             key={kpi.label}
             href={kpi.href}
-            className={`group relative flex flex-col gap-1 px-5 py-4 transition-colors hover:bg-[var(--color-interactive-hover)] ${
+            className={`group relative flex flex-col gap-2 px-5 py-4 transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-border-focus)] ${
               i < kpis.length - 1
                 ? "border-b border-[var(--color-border-subtle)] sm:border-b-0 sm:border-r"
                 : ""
             } ${i === 0 || i === 1 ? "border-b sm:border-b-0" : ""}`}
           >
-            <span className="flex items-center gap-2">
-              <Icon
-                size={12}
-                aria-hidden="true"
-                className="text-[var(--color-text-muted)]"
-              />
+            <span className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                 {kpi.label}
               </span>
+              <IconBadge icon={Icon} tone={isWarn ? "warning" : "neutral"} />
             </span>
-            <span className="text-[24px] font-semibold tabular-nums leading-none tracking-[-0.01em] text-[var(--color-text-primary)]">
+            <span
+              className={`text-[24px] font-semibold tabular-nums leading-none tracking-[-0.01em] ${
+                isWarn
+                  ? "text-[var(--color-status-warning-text)]"
+                  : "text-[var(--color-text-primary)]"
+              }`}
+            >
               {kpi.value}
             </span>
             {kpi.hint && (
               <span
                 className={`text-[12px] ${
-                  kpi.tone === "warn"
+                  isWarn
                     ? "text-[var(--color-status-warning-text)]"
                     : "text-[var(--color-text-secondary)]"
                 }`}

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { TextLink } from "@/components/ui/text-link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
@@ -31,32 +33,49 @@ const TONE_BG: Record<"ok" | "warn" | "low", string> = {
   low: "bg-[var(--color-status-error-solid)]",
 };
 
+interface ReadinessState {
+  /** Short categorical tag for the status chip. */
+  tag: string;
+  tone: "success" | "warning" | "neutral";
+  /** Descriptive headline. */
+  label: string;
+  detail: string;
+}
+
 function readinessState(
   publishable: boolean,
   usable: boolean,
   blockerCount: number,
-): { label: string; detail: string } {
+): ReadinessState {
   if (publishable && blockerCount === 0) {
     return {
+      tag: "Lista",
+      tone: "success",
       label: "Tu guía está lista",
       detail: "Todo verificado. Puedes publicar y compartir el enlace ahora mismo.",
     };
   }
   if (usable && blockerCount > 0) {
     return {
+      tag: "Casi lista",
+      tone: "warning",
       label: "Casi lista",
       detail: `Quedan ${blockerCount} bloqueante${blockerCount === 1 ? "" : "s"} antes de una publicación óptima.`,
     };
   }
   if (usable) {
     return {
+      tag: "Casi lista",
+      tone: "warning",
       label: "Usable, sin pulir",
       detail: "Puedes compartirla, pero quedan secciones con baja completitud.",
     };
   }
   return {
-    label: "Aún no usable",
-    detail: "Completa los campos pendientes para que la guía sea legible para tus huéspedes.",
+    tag: "En progreso",
+    tone: "neutral",
+    label: "En progreso",
+    detail: "Completa los campos pendientes para que la guía sea útil y legible para tus huéspedes.",
   };
 }
 
@@ -75,7 +94,7 @@ export function ReadinessHeroCard({
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
-      <div className="flex flex-wrap items-start gap-6">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-5">
         <div className="relative h-[88px] w-[88px] shrink-0">
           <svg viewBox="0 0 88 88" width="88" height="88" aria-hidden="true">
             <circle
@@ -112,11 +131,14 @@ export function ReadinessHeroCard({
           <span className="sr-only">Completitud {overall} de 100</span>
         </div>
 
-        <div className="min-w-[200px] flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Completitud · {overall} de 100
-          </p>
-          <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.01em] text-[var(--color-text-primary)]">
+        <div className="min-w-[220px] max-w-[28rem]">
+          <div className="flex items-center gap-2">
+            <Badge label={state.tag} tone={state.tone} />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+              Completitud · {overall} de 100
+            </span>
+          </div>
+          <p className="mt-1.5 text-[20px] font-semibold leading-[1.2] tracking-[-0.01em] text-[var(--color-text-primary)]">
             {state.label}
           </p>
           <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
@@ -124,7 +146,7 @@ export function ReadinessHeroCard({
           </p>
         </div>
 
-        <div className="flex min-w-[200px] flex-col gap-2.5">
+        <div className="flex min-w-[220px] flex-1 flex-col gap-2.5">
           {OVERVIEW_SECTIONS.map((section) => {
             const score = scores[section.key];
             const tone = meterTone(score);
@@ -132,7 +154,7 @@ export function ReadinessHeroCard({
               <Link
                 key={section.key}
                 href={`/properties/${propertyId}/${section.href}`}
-                className="group flex min-h-[44px] items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm transition-colors hover:bg-[var(--color-interactive-hover)]"
+                className="group flex min-h-[44px] items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1 text-sm transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
               >
                 <span className="min-w-[36px] text-right font-medium tabular-nums text-[var(--color-text-primary)]">
                   {score}%
@@ -156,11 +178,12 @@ export function ReadinessHeroCard({
       </div>
 
       {issues.length > 0 && (
-        <div className="mt-5 border-t border-[var(--color-border-subtle)] pt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
+        <div className="mt-5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] p-4">
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-status-warning-text)]">
+            <AlertTriangle size={13} aria-hidden="true" />
             {issues.length} {issues.length === 1 ? "incidencia pendiente" : "incidencias pendientes"}
           </p>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-2.5 space-y-2">
             {issues.slice(0, 3).map((f) => (
               <li
                 key={f.id}
