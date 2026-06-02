@@ -10,7 +10,7 @@
  * passes it in.
  */
 
-import { findSubtype } from "@/lib/taxonomy-loader";
+import { findSubtype, findSystemSubtype } from "@/lib/taxonomy-loader";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 export type ValidationSeverity = "blocker" | "error" | "warning";
@@ -61,7 +61,11 @@ const SMART_LOCK_KEYS = new Set(["am.smart_lock", "am.keypad"]);
  * uses the type to imply visibility for free-text secrets like wifi passwords).
  */
 function isSensitiveField(field: { type: string; visibility?: string }): boolean {
-  return field.visibility === "sensitive" || field.type === "sensitive_text";
+  return (
+    field.visibility === "sensitive" ||
+    field.type === "sensitive_text" ||
+    field.type === "password"
+  );
 }
 
 /**
@@ -166,10 +170,15 @@ export function validateInfantsVsCrib(
 }
 
 /**
- * Visibility leak: an amenity instance marked `visibility="guest"` (or
- * `"ai"`) must not contain detailsJson values for fields whose taxonomy
- * declaration says `visibility: "sensitive"`. If it does, the field would be
- * served to guests / the AI via the guest-facing retrieval path.
+ * Visibility leak: an amenity instance OR a property system marked
+ * `visibility="guest"` (or `"ai"`) must not contain detailsJson values for
+ * fields whose taxonomy declaration is sensitive (`visibility: "sensitive"`,
+ * `type: "sensitive_text"` or `type: "password"`). If it does, the field would
+ * be served to guests / the AI via the guest-facing retrieval path.
+ *
+ * Systems are scanned alongside amenities because secrets that used to live on
+ * an amenity subtype (e.g. the wifi password) now live on the owning system
+ * (`sys.internet.password`, sensitive) — the net follows the data.
  */
 export function validateVisibilityLeaks(
   ctx: ValidationContext,
@@ -194,6 +203,28 @@ export function validateVisibilityLeaks(
       severity: "error",
       message: `"${inst.amenityKey}" (${inst.instanceKey}) expone datos sensibles (${leaked.join(", ")}) con visibilidad ${inst.visibility}. Súbele la visibilidad o elimina esos campos.`,
       ctaUrl: `/properties/${ctx.propertyId}/amenities`,
+      ctaLabel: "Revisar visibilidad",
+    });
+  }
+  for (const sys of ctx.systems) {
+    if (sys.visibility !== "guest" && sys.visibility !== "ai") continue;
+    const subtype = findSystemSubtype(sys.systemKey);
+    if (!subtype) continue;
+    const details = (sys.detailsJson ?? {}) as Record<string, unknown>;
+    const leaked = subtype.detailsFields
+      .filter(isSensitiveField)
+      .filter((f) => {
+        const v = details[f.id];
+        return v !== undefined && v !== null && v !== "";
+      })
+      .map((f) => f.label);
+    if (leaked.length === 0) continue;
+
+    findings.push({
+      id: `visibility_leak_system_${sys.systemKey}`,
+      severity: "error",
+      message: `"${sys.systemKey}" expone datos sensibles (${leaked.join(", ")}) con visibilidad ${sys.visibility}. Súbele la visibilidad o elimina esos campos.`,
+      ctaUrl: `/properties/${ctx.propertyId}/systems`,
       ctaLabel: "Revisar visibilidad",
     });
   }

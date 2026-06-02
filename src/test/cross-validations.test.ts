@@ -260,4 +260,22 @@ describe("validateVisibilityLeaks", () => {
     expect(out).toHaveLength(2);
     expect(new Set(out.map((f) => f.id)).size).toBe(2);
   });
+
+  it("error when a guest-visible system stores a sensitive field (sys.internet.password)", () => {
+    const out = validateVisibilityLeaks(
+      baseCtx({
+        systems: [
+          {
+            systemKey: "sys.internet",
+            detailsJson: { ssid: "MyNet", password: "supersecret" },
+            visibility: "guest",
+          },
+        ],
+      }),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].severity).toBe("error");
+    expect(out[0].id).toBe("visibility_leak_system_sys.internet");
+    expect(out[0].message).toContain("Contraseña");
+  });
 });
