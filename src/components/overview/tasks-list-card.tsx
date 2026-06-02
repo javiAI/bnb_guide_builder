@@ -14,6 +14,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { IconBadge, type IconBadgeTone } from "@/components/ui/icon-badge";
+import { Badge } from "@/components/ui/badge";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
 import { OVERVIEW_SECTIONS } from "./section-map";
@@ -142,23 +143,17 @@ export function TasksListCard({
                   <p className="text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
                     {task.sub}
                   </p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--color-text-muted)]">
-                    <span>{task.meta}</span>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] text-[var(--color-text-muted)]">
+                      {task.meta}
+                    </span>
                     {task.impact && (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span
-                          className={
-                            task.impact === "Alto impacto"
-                              ? "font-medium text-[var(--color-action-primary)]"
-                              : ""
-                          }
-                        >
-                          {task.impact}
-                        </span>
-                      </>
+                      <Badge
+                        label={task.impact}
+                        tone={task.impact === "Alto impacto" ? "warning" : "neutral"}
+                      />
                     )}
-                  </p>
+                  </div>
                 </div>
                 <ArrowRight
                   size={16}

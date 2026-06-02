@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { TextLink } from "@/components/ui/text-link";
 import type { SectionScores } from "@/lib/services/completeness.service";
 import type { ValidationFinding } from "@/lib/validations/cross-validations";
@@ -73,6 +74,12 @@ export function ReadinessHeroCard({
   const issues = [...blockers, ...errors];
   const state = readinessState(publishable, usable, blockers.length);
   const offset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * overall) / 100;
+  const tier: { word: string; tone: "success" | "warning" | "neutral" } =
+    publishable && blockers.length === 0
+      ? { word: "Lista", tone: "success" }
+      : usable
+        ? { word: "Casi lista", tone: "warning" }
+        : { word: "En progreso", tone: "neutral" };
 
   return (
     <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5">
@@ -114,10 +121,13 @@ export function ReadinessHeroCard({
         </div>
 
         <div className="min-w-[200px] flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Completitud · {overall} de 100
-          </p>
-          <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.01em] text-[var(--color-text-primary)]">
+          <div className="flex items-center gap-2">
+            <Badge label={tier.word} tone={tier.tone} />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+              Completitud · {overall} de 100
+            </span>
+          </div>
+          <p className="mt-1.5 text-[20px] font-semibold leading-[1.2] tracking-[-0.01em] text-[var(--color-text-primary)]">
             {state.label}
           </p>
           <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
