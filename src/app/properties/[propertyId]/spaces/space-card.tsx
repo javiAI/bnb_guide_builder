@@ -188,6 +188,11 @@ export function SpaceCard({
   const flushDetails = useFormAutoSave(detailsFormRef);
 
   const [showInternalNotes, setShowInternalNotes] = useState(Boolean(space.internalNotes));
+  // Controlled so the hidden mirror keeps the edited value when the notes are
+  // hidden mid-edit — an uncontrolled textarea + a `space.internalNotes` hidden
+  // fallback would overwrite the in-progress edit with the stale server value
+  // (lost edit). Auto-save then persists the live state.
+  const [internalNotes, setInternalNotes] = useState(space.internalNotes ?? "");
 
   // ── Archive / Restore ──
   const [confirmArchive, setConfirmArchive] = useState(false);
@@ -474,23 +479,23 @@ export function SpaceCard({
                     className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
                   />
                   Notas internas
-                  {space.internalNotes && (
+                  {internalNotes && (
                     <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
                   )}
                 </button>
-                {showInternalNotes && (
+                {showInternalNotes ? (
                   <div className="mt-2">
                     <textarea
                       name="internalNotes"
                       rows={2}
-                      defaultValue={space.internalNotes ?? ""}
+                      value={internalNotes}
+                      onChange={(e) => setInternalNotes(e.target.value)}
                       placeholder="Notas de operación solo visibles para el operador…"
                       className={inputCls}
                     />
                   </div>
-                )}
-                {!showInternalNotes && (
-                  <input type="hidden" name="internalNotes" value={space.internalNotes ?? ""} />
+                ) : (
+                  <input type="hidden" name="internalNotes" value={internalNotes} />
                 )}
               </div>
             </form>
