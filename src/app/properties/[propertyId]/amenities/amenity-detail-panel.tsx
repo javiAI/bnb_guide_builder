@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { updateAmenityAction, toggleAmenityAction } from "@/lib/actions/editor.actions";
-import type { ActionResult } from "@/lib/types/action-result";
-import { InlineSaveStatus } from "@/components/ui/inline-save-status";
+import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { SubtypeFieldInput } from "./subtype-field-input";
 import type { EnrichedAmenityItem } from "./page";
 import type { SubtypeField } from "@/lib/types/taxonomy";
@@ -26,7 +26,7 @@ function isFieldVisible(field: SubtypeField, details: Record<string, unknown>): 
 
 export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailPanelProps) {
   const [isPending, startTransition] = useTransition();
-  const [saveResult, setSaveResult] = useState<ActionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [details, setDetails] = useState<Record<string, unknown>>(
     item.detailsJson ?? {},
@@ -36,8 +36,18 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
     setDetails((prev) => ({ ...prev, [fieldId]: value }));
   }
 
-  async function handleSave() {
-    // If no DB row yet (e.g. canonicalOwner auto-enabled), create it first
+  // Auto-save: edits persist as you make them (no "Guardar" button). The panel
+  // has no native form fields (everything is controlled), so we wrap the fields
+  // in a <form> and use `watch` over the details. `item.dbId` is part of the
+  // signal so that, for an amenity with no DB row yet, the create step's id
+  // arriving via revalidation re-triggers a save that persists the details the
+  // create couldn't. `requestSubmit()` fires `save()` below.
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef, 700, () => JSON.stringify({ dbId: item.dbId, details }));
+
+  function save() {
+    // If no DB row yet (e.g. canonicalOwner auto-enabled), create it first; the
+    // details are persisted on the follow-up save once the new dbId arrives.
     if (!item.dbId) {
       const createFd = new FormData();
       createFd.set("propertyId", propertyId);
@@ -46,10 +56,8 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
       if (spaceId) createFd.set("spaceId", spaceId);
 
       startTransition(async () => {
-        await toggleAmenityAction(null, createFd);
-        // After creating, the page will revalidate and we get a dbId
-        // For now, just signal success
-        setSaveResult({ success: true });
+        const res = await toggleAmenityAction(null, createFd);
+        setError(res.success ? null : (res.error ?? "No se pudo guardar."));
       });
       return;
     }
@@ -65,18 +73,10 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
     if (item.hasSubtype) formData.set("subtypeKey", item.id);
 
     startTransition(async () => {
-      const result = await updateAmenityAction(null, formData);
-      setSaveResult(result);
+      const res = await updateAmenityAction(null, formData);
+      setError(res.success ? null : (res.error ?? "No se pudo guardar."));
     });
   }
-
-  const saveStatus = isPending
-    ? "saving" as const
-    : saveResult?.success
-      ? "saved" as const
-      : saveResult?.error
-        ? "error" as const
-        : undefined;
 
   const visibleFields = item.subtypeFields.filter((f) => isFieldVisible(f, details));
 
@@ -86,62 +86,60 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
         <h4 className="text-xs font-semibold text-[var(--color-text-primary)]">
           {item.label}
         </h4>
-        {saveStatus && <InlineSaveStatus status={saveStatus} />}
+        <AutoSaveStatus pending={isPending} />
       </div>
 
-      {saveResult?.error && (
+      {error && (
         <p className="mb-3 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-2 text-xs text-[var(--color-status-error-text)]">
-          {saveResult.error}
+          {error}
         </p>
       )}
 
-      <div className="space-y-3">
-        {visibleFields.map((field) => {
-          // Boolean fields render their own label inline
-          if (field.type === "boolean") {
-            return (
-              <SubtypeFieldInput
-                key={field.id}
-                field={field}
-                value={details[field.id]}
-                onChange={handleFieldChange}
-              />
-            );
-          }
-          return (
-            <div key={field.id}>
-              <label className="block">
-                <span className="text-xs font-medium text-[var(--color-text-primary)]">
-                  {field.label}
-                </span>
-                {field.description && (
-                  <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
-                    {field.description}
-                  </span>
-                )}
+      <form
+        ref={formRef}
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
+        <div className="space-y-3">
+          {visibleFields.map((field) => {
+            // Boolean fields render their own label inline
+            if (field.type === "boolean") {
+              return (
                 <SubtypeFieldInput
+                  key={field.id}
                   field={field}
                   value={details[field.id]}
                   onChange={handleFieldChange}
                 />
-              </label>
-            </div>
-          );
-        })}
-      </div>
+              );
+            }
+            return (
+              <div key={field.id}>
+                <label className="block">
+                  <span className="text-xs font-medium text-[var(--color-text-primary)]">
+                    {field.label}
+                  </span>
+                  {field.description && (
+                    <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
+                      {field.description}
+                    </span>
+                  )}
+                  <SubtypeFieldInput
+                    field={field}
+                    value={details[field.id]}
+                    onChange={handleFieldChange}
+                  />
+                </label>
+              </div>
+            );
+          })}
+        </div>
+      </form>
 
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isPending}
-          className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-2 text-xs font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:opacity-60"
-        >
-          {isPending ? "Guardando…" : "Guardar"}
-        </button>
-      </div>
-
-      {/* Photos for this amenity instance */}
+      {/* Photos for this amenity instance — outside the auto-save form so the
+          gallery's own controls never nest inside it. */}
       {item.dbId && (
         <div className="mt-4 border-t border-[var(--color-border-default)] pt-3">
           <EntityGallery
