@@ -6,8 +6,9 @@
  * availability — no bespoke evaluator.
  *
  * Today only `sys.elevator` carries a `relevantWhen` (multi-floor, non-house).
- * The full rollout (every system/amenity, editors filtering by relevance,
- * completeness ignoring irrelevant items) is deferred to a dedicated branch.
+ * The full rollout (a `getRelevantSystems(ctx)` filter over the catalog, editors
+ * hiding irrelevant items, completeness ignoring them) is deferred to a
+ * dedicated branch — this slice ships only the per-item predicate it needs.
  */
 
 import { evaluateItemAvailability } from "@/lib/conditional-engine/evaluator";
@@ -16,8 +17,4 @@ import type { SystemItem } from "@/lib/types/taxonomy";
 
 export function isSystemRelevant(item: SystemItem, ctx: PropertyContext): boolean {
   return evaluateItemAvailability(item.relevantWhen ?? null, ctx).available;
-}
-
-export function getRelevantSystems(items: SystemItem[], ctx: PropertyContext): SystemItem[] {
-  return items.filter((item) => isSystemRelevant(item, ctx));
 }

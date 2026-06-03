@@ -67,7 +67,7 @@ function FieldChrome({
 
 type InputProps = FieldChromeProps & InputHTMLAttributes<HTMLInputElement>;
 
-export function Input({ label, help, labelTone, required, className, id: idProp, ...rest }: InputProps) {
+export function FieldInput({ label, help, labelTone, required, className, id: idProp, ...rest }: InputProps) {
   const reactId = useId();
   const id = idProp ?? reactId;
   const helpId = `${id}-help`;
@@ -86,7 +86,7 @@ export function Input({ label, help, labelTone, required, className, id: idProp,
 
 type SelectProps = FieldChromeProps & SelectHTMLAttributes<HTMLSelectElement>;
 
-export function Select({ label, help, labelTone, required, className, id: idProp, children, ...rest }: SelectProps) {
+export function FieldSelect({ label, help, labelTone, required, className, id: idProp, children, ...rest }: SelectProps) {
   const reactId = useId();
   const id = idProp ?? reactId;
   const helpId = `${id}-help`;
@@ -107,7 +107,7 @@ export function Select({ label, help, labelTone, required, className, id: idProp
 
 type TextareaProps = FieldChromeProps & TextareaHTMLAttributes<HTMLTextAreaElement>;
 
-export function Textarea({ label, help, labelTone, required, className, id: idProp, ...rest }: TextareaProps) {
+export function FieldTextarea({ label, help, labelTone, required, className, id: idProp, ...rest }: TextareaProps) {
   const reactId = useId();
   const id = idProp ?? reactId;
   const helpId = `${id}-help`;

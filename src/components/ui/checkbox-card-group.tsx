@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { OptionTile, RecommendedBadge } from "./card-tile";
 
 export interface CheckboxCardOption {
   id: string;
@@ -22,14 +22,6 @@ interface CheckboxCardGroupProps {
   layout?: "stack" | "grid";
 }
 
-function RecommendedBadge() {
-  return (
-    <span className="ml-2 inline-block rounded-full bg-[var(--color-interactive-selected)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-interactive-selected-fg)]">
-      Recomendado
-    </span>
-  );
-}
-
 export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack" }: CheckboxCardGroupProps) {
   function toggle(id: string) {
     if (value.includes(id)) {
@@ -45,13 +37,13 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
         {options.map((option) => {
           const selected = value.includes(option.id);
           return (
-            <label
+            <OptionTile
               key={option.id}
-              className={`relative flex min-h-[44px] cursor-pointer flex-col gap-0.5 rounded-[var(--radius-lg)] border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-border-focus)] ${
-                selected
-                  ? "border-[var(--color-action-primary)] bg-[var(--color-interactive-selected)]"
-                  : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-emphasis)]"
-              }`}
+              selected={selected}
+              label={option.label}
+              description={option.description}
+              recommended={option.recommended}
+              showRecommended={showRecommended}
             >
               <input
                 type="checkbox"
@@ -61,23 +53,7 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
                 onChange={() => toggle(option.id)}
                 className="sr-only"
               />
-              {selected && (
-                <Check
-                  size={16}
-                  aria-hidden="true"
-                  className="absolute right-2 top-2 text-[var(--color-action-primary)]"
-                />
-              )}
-              <span className="block pr-5 text-sm font-medium text-[var(--color-text-primary)]">
-                {option.label}
-                {showRecommended && option.recommended && <RecommendedBadge />}
-              </span>
-              {option.description && (
-                <span className="block text-xs leading-snug text-[var(--color-text-muted)]">
-                  {option.description}
-                </span>
-              )}
-            </label>
+            </OptionTile>
           );
         })}
       </fieldset>

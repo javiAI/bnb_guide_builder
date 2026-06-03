@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { isSystemRelevant, getRelevantSystems } from "@/lib/services/system-relevance";
+import { isSystemRelevant } from "@/lib/services/system-relevance";
 import { buildSyntheticContext } from "@/lib/conditional-engine/context-builder";
 import { findSystemItem } from "@/lib/taxonomy-loader";
-import type { SystemItem } from "@/lib/types/taxonomy";
 
 const elevator = findSystemItem("sys.elevator")!;
 // A system with no relevantWhen — must always be relevant.
@@ -42,16 +41,5 @@ describe("isSystemRelevant — systems without a rule", () => {
   it("are always relevant", () => {
     expect(isSystemRelevant(internet, ctx("pt.house", 1))).toBe(true);
     expect(isSystemRelevant(internet, ctx("pt.apartment", 9))).toBe(true);
-  });
-});
-
-describe("getRelevantSystems", () => {
-  it("filters the list by relevance", () => {
-    const items: SystemItem[] = [internet, elevator];
-    expect(getRelevantSystems(items, ctx("pt.house", 5)).map((i) => i.id)).toEqual(["sys.internet"]);
-    expect(getRelevantSystems(items, ctx("pt.apartment", 1)).map((i) => i.id)).toEqual([
-      "sys.internet",
-      "sys.elevator",
-    ]);
   });
 });

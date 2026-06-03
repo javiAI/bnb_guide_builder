@@ -6,6 +6,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { cn } from "@/lib/cn";
 import { readCssVar, resolveCssColor } from "@/lib/css-var";
+import { addCollapsedAttribution } from "@/lib/maplibre-attribution";
 import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
 import { buildCirclePolygon } from "@/lib/utils/geo";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -422,32 +423,11 @@ export function MultiPinMap({
     if (interactive) {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     }
-    // Attribution at bottom-left (MapLibre default). The per-mode visibility
-    // chip strip lives in the same corner with fully-opaque backgrounds and
-    // renders ABOVE the control via z-10, covering the compact "ⓘ" icon. When
-    // no intercity modes are enabled (or all are hidden) the strip is empty,
-    // but the control collapses to its compact pill — visually unobtrusive.
-    const attribCtrl = new maplibregl.AttributionControl({ compact: true });
-    map.addControl(attribCtrl, "bottom-left");
-    // MapLibre's compact AttributionControl ships expanded on mount and on
-    // every style/source change. Close it on mount and re-close after every
-    // styledata event (MapLibre may regenerate the control's DOM when it
-    // re-evaluates source attribution). No MutationObserver — watching the
-    // control's subtree while writing back to it can trip a ping-pong loop
-    // against MapLibre's own DOM updates.
-    const collapseAttribution = () => {
-      const nodes = containerRef.current?.querySelectorAll(".maplibregl-ctrl-attrib");
-      nodes?.forEach((el) => {
-        if (el instanceof HTMLDetailsElement && el.open) el.open = false;
-        if (el.classList.contains("maplibregl-compact-show")) {
-          el.classList.remove("maplibregl-compact-show");
-        }
-      });
-    };
-    collapseAttribution();
-    const rafId = requestAnimationFrame(collapseAttribution);
-    map.on("load", collapseAttribution);
-    map.on("styledata", collapseAttribution);
+    // Compact attribution that starts (and stays) collapsed at bottom-left —
+    // shared with LocationMap. The per-mode visibility chip strip lives in the
+    // same corner with fully-opaque backgrounds and renders ABOVE the control
+    // via z-10, covering the compact "ⓘ" icon.
+    const disposeAttribution = addCollapsedAttribution(map);
     if (interactive) {
       map.on("click", (ev) => {
         handleMapClickRef.current(ev.lngLat.lat, ev.lngLat.lng);
@@ -457,7 +437,7 @@ export function MultiPinMap({
     setMapReady(true);
 
     return () => {
-      cancelAnimationFrame(rafId);
+      disposeAttribution();
       map.remove();
       mapRef.current = null;
       anchorMarkerRef.current = null;

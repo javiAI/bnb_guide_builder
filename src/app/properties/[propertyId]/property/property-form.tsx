@@ -7,7 +7,7 @@ import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/chec
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { Input, Select, Textarea } from "@/components/ui/field";
+import { FieldInput, FieldSelect, FieldTextarea } from "@/components/ui/field";
 import { Card } from "@/components/ui/card";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
@@ -63,8 +63,8 @@ function CustomTypeFields({
 }) {
   return (
     <div className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-      <Input label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} />
-      <Textarea label="Descripción" value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} />
+      <FieldInput label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} />
+      <FieldTextarea label="Descripción" value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} />
     </div>
   );
 }
@@ -367,14 +367,14 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <NumberedSection number="02" title="Ubicación">
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
-              <Input label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
+              <FieldInput label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
+              <FieldInput label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="sm:col-span-2">
-                <Input label="Dirección (vía y número)" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" />
+                <FieldInput label="Dirección (vía y número)" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" />
               </div>
-              <Input label="Piso / Puerta" name="addressExtra" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" />
+              <FieldInput label="Piso / Puerta" name="addressExtra" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" />
             </div>
             <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
             <input type="hidden" name="latitude" value={latitude ?? ""} />
@@ -391,15 +391,15 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
+              <FieldSelect label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
                 <option value="">Seleccionar</option>
                 {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
-              </Select>
-              <Input label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
+              </FieldSelect>
+              <FieldInput label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
             </div>
-            <Select label="Zona horaria" labelTone="muted" required name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
+            <FieldSelect label="Zona horaria" labelTone="muted" required name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
               {COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
-            </Select>
+            </FieldSelect>
           </div>
         </NumberedSection>
 
