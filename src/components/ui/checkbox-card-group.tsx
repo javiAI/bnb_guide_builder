@@ -1,8 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { OptionTile, RecommendedBadge } from "./card-tile";
-import { withViewTransition } from "@/lib/view-transition";
 
 export interface CheckboxCardOption {
   id: string;
@@ -22,15 +20,9 @@ interface CheckboxCardGroupProps {
    * grid. Additive — existing callers are unaffected.
    */
   layout?: "stack" | "grid";
-  /**
-   * Grid-only: inline detail rendered inside a tile when it's selected (e.g. the
-   * "Otro" custom form). The tile grows + spans full width; the change is morphed
-   * via View Transitions.
-   */
-  renderExpanded?: (id: string) => ReactNode;
 }
 
-export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack", renderExpanded }: CheckboxCardGroupProps) {
+export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack" }: CheckboxCardGroupProps) {
   function toggle(id: string) {
     if (value.includes(id)) {
       onChange(value.filter((v) => v !== id));
@@ -52,14 +44,13 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
               description={option.description}
               recommended={option.recommended}
               showRecommended={showRecommended}
-              expandedContent={renderExpanded?.(option.id)}
             >
               <input
                 type="checkbox"
                 name={name}
                 value={option.id}
                 checked={selected}
-                onChange={() => withViewTransition(() => toggle(option.id))}
+                onChange={() => toggle(option.id)}
                 className="sr-only"
               />
             </OptionTile>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, Home, UsersRound, DoorOpen, MapPin } from "lucide-react";
+import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -11,6 +11,7 @@ import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { FieldInput, FieldSelect, FieldTextarea } from "@/components/ui/field";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { roundCoord } from "@/lib/round-coord";
+import { withViewTransition } from "@/lib/view-transition";
 import { Card } from "@/components/ui/card";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
@@ -31,14 +32,18 @@ import dynamic from "next/dynamic";
 
 const LocationMap = dynamic(() => import("@/components/ui/location-map").then((m) => m.LocationMap), { ssr: false, loading: () => <div className="flex h-64 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-sm text-[var(--color-text-muted)]">Cargando mapa...</div> });
 
-const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item) => ({
-  id: item.id, label: item.label, description: item.description,
-}));
-const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
-  id: item.id, label: item.label, description: item.description,
-}));
+// "Otro" is no longer a selectable tile — it's a "+ Añadir otro" button. The
+// `*.other` sentinels stay in the taxonomy (single-select value + export
+// mapping) but are filtered out of the grid.
+const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes)
+  .filter((item) => item.id !== "pt.other")
+  .map((item) => ({ id: item.id, label: item.label, description: item.description }));
+const roomTypeOptions: RadioCardOption[] = getItems(roomTypes)
+  .filter((item) => item.id !== "rt.other")
+  .map((item) => ({ id: item.id, label: item.label, description: item.description }));
 // Multiselect — a property can be e.g. mountain + ski + rural. No "Sin definir"
-// sentinel: an empty selection IS "not defined". `env.other` carries a free label.
+// sentinel: an empty selection IS "not defined". Custom environments are free
+// labels managed separately (customEnvironmentLabels), not taxonomy items.
 const environmentOptions: CheckboxCardOption[] = getItems(propertyEnvironments).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
@@ -46,31 +51,53 @@ const provinces = getItems(spanishProvinces);
 
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
 
-// "Otro (especifica)" fields — rendered *inside* the selected "Otro" tile (via
-// the card group's `renderExpanded`), so the form reveals in place, no detached
-// box. The tile supplies the border/tint + a top divider. `nameOnly` drops the
-// description (environments only need a label).
-function OtherDetailsFields({
-  label,
-  onLabelChange,
-  desc,
-  onDescChange,
-  nameOnly,
-  placeholder,
-}: {
+// "+ Añadir otro" affordance — dashed, signals "add a custom option" without
+// being a selectable tile. Shared by the type/space/environment pickers.
+function AddOtherButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-default)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-emphasis)] hover:text-[var(--color-text-primary)]"
+    >
+      <Plus size={16} aria-hidden="true" />
+      {label}
+    </button>
+  );
+}
+
+// Reusable "remove" icon-button for custom entries.
+function RemoveButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Quitar"
+      className="recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-secondary)]"
+    >
+      <X size={14} aria-hidden="true" />
+    </button>
+  );
+}
+
+// Single custom "Otro" card (type/space): name + description, primary-tinted to
+// read as the selected option, with a remove control.
+function CustomOptionCard({ label, onLabelChange, desc, onDescChange, onRemove, placeholder }: {
   label: string;
-  onLabelChange: (value: string) => void;
-  desc?: string;
-  onDescChange?: (value: string) => void;
-  nameOnly?: boolean;
+  onLabelChange: (v: string) => void;
+  desc: string;
+  onDescChange: (v: string) => void;
+  onRemove: () => void;
   placeholder?: string;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-[var(--radius-lg)] border-2 border-[var(--color-action-primary)] bg-[var(--color-interactive-selected)] p-3">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">Tu opción personalizada</span>
+        <RemoveButton onClick={onRemove} />
+      </div>
       <FieldInput label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} placeholder={placeholder} />
-      {!nameOnly && onDescChange && (
-        <FieldTextarea label="Descripción" value={desc ?? ""} onChange={(e) => onDescChange(e.target.value)} rows={2} />
-      )}
+      <FieldTextarea label="Descripción" value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} />
     </div>
   );
 }
@@ -87,7 +114,7 @@ interface PropertyFormProps {
     customPropertyTypeDesc: string | null;
     customRoomTypeLabel: string | null;
     customRoomTypeDesc: string | null;
-    customEnvironmentLabel: string | null;
+    customEnvironmentLabels: string[];
     country: string | null;
     city: string | null;
     region: string | null;
@@ -119,7 +146,11 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [customPtDesc, setCustomPtDesc] = useState(p.customPropertyTypeDesc ?? "");
   const [customRtLabel, setCustomRtLabel] = useState(p.customRoomTypeLabel ?? "");
   const [customRtDesc, setCustomRtDesc] = useState(p.customRoomTypeDesc ?? "");
-  const [customEnvLabel, setCustomEnvLabel] = useState(p.customEnvironmentLabel ?? "");
+  // Entorno is multiselect, so several custom environments are allowed.
+  const [customEnvLabels, setCustomEnvLabels] = useState<string[]>(p.customEnvironmentLabels ?? []);
+  const addCustomEnv = () => withViewTransition(() => setCustomEnvLabels((l) => [...l, ""]));
+  const updateCustomEnv = (i: number, v: string) => setCustomEnvLabels((l) => l.map((x, j) => (j === i ? v : x)));
+  const removeCustomEnv = (i: number) => withViewTransition(() => setCustomEnvLabels((l) => l.filter((_, j) => j !== i)));
   // Classification accordion: at most one picker open at a time (the rest show
   // their selected value as a summary). Default: all collapsed.
   const [openPicker, setOpenPicker] = useState<"propertyType" | "roomType" | "environment" | null>(null);
@@ -261,12 +292,11 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
 
   const ptLabel = propertyType === "pt.other" ? (customPtLabel || "Otro") : findItem(propertyTypes, propertyType)?.label ?? "Sin definir";
   const rtLabel = roomType === "rt.other" ? (customRtLabel || "Otro") : findItem(roomTypes, roomType)?.label ?? "Sin definir";
-  const envLabel = environments.length > 0
-    ? environments
-        .map((id) => (id === "env.other" ? (customEnvLabel || "Otro") : findItem(propertyEnvironments, id)?.label))
-        .filter(Boolean)
-        .join(", ")
-    : "Sin definir";
+  const envParts = [
+    ...environments.map((id) => findItem(propertyEnvironments, id)?.label),
+    ...customEnvLabels.map((l) => l.trim()).filter(Boolean),
+  ].filter(Boolean);
+  const envLabel = envParts.length > 0 ? envParts.join(", ") : "Sin definir";
 
   // Accordion: opening a picker collapses the others; clicking the open one closes it.
   const togglePicker = (key: "propertyType" | "roomType" | "environment") =>
@@ -309,7 +339,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
-        <input type="hidden" name="customEnvironmentLabel" value={customEnvLabel} />
+        {customEnvLabels.map((l, i) => (l.trim() ? <input key={`cenv-${i}`} type="hidden" name="customEnvironmentLabels" value={l} /> : null))}
         {/* infrastructureJson owns exactly { buildingFloors } — always sent so the
             serialised form is stable across saves (no mount/unmount diff loop). */}
         <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
@@ -320,53 +350,42 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
           <div className="space-y-2">
             <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={openPicker === "propertyType"} onToggle={() => togglePicker("propertyType")}>
               <p className={`mb-3 ${HELP_CLS}`}>¿Qué clase de alojamiento es? Define la base de la guía.</p>
-              <RadioCardGroup
-                name="_propertyType"
-                options={propertyTypeOptions}
-                value={propertyType}
-                onChange={setPropertyType}
-                showRecommended={false}
-                layout="grid"
-                renderExpanded={(id) =>
-                  id === "pt.other" ? (
-                    <OtherDetailsFields label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} placeholder="ej. Casa flotante" />
-                  ) : null
-                }
-              />
+              <div className="space-y-3">
+                <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} layout="grid" />
+                {propertyType === "pt.other" ? (
+                  <CustomOptionCard label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} onRemove={() => withViewTransition(() => setPropertyType(""))} placeholder="ej. Casa flotante" />
+                ) : (
+                  <AddOtherButton label="Añadir otro tipo" onClick={() => withViewTransition(() => setPropertyType("pt.other"))} />
+                )}
+              </div>
             </CollapsibleSection>
 
             <CollapsibleSection title="Tipo de espacio" selectedLabel={rtLabel} expanded={openPicker === "roomType"} onToggle={() => togglePicker("roomType")}>
               <p className={`mb-3 ${HELP_CLS}`}>¿El huésped reserva el alojamiento entero o una habitación?</p>
-              <RadioCardGroup
-                name="_roomType"
-                options={roomTypeOptions}
-                value={roomType}
-                onChange={setRoomType}
-                showRecommended={false}
-                layout="grid"
-                renderExpanded={(id) =>
-                  id === "rt.other" ? (
-                    <OtherDetailsFields label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} placeholder="ej. Cápsula" />
-                  ) : null
-                }
-              />
+              <div className="space-y-3">
+                <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} layout="grid" />
+                {roomType === "rt.other" ? (
+                  <CustomOptionCard label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} onRemove={() => withViewTransition(() => setRoomType(""))} placeholder="ej. Cápsula" />
+                ) : (
+                  <AddOtherButton label="Añadir otro tipo de espacio" onClick={() => withViewTransition(() => setRoomType("rt.other"))} />
+                )}
+              </div>
             </CollapsibleSection>
 
             <CollapsibleSection title="Entorno" selectedLabel={envLabel} expanded={openPicker === "environment"} onToggle={() => togglePicker("environment")}>
               <p className={`mb-3 ${HELP_CLS}`}>Selecciona todos los que apliquen — ayuda a filtrar equipamiento y opciones relevantes. Déjalo vacío si ninguno encaja.</p>
-              <CheckboxCardGroup
-                name="_environments"
-                options={environmentOptions}
-                value={environments}
-                onChange={setEnvironments}
-                showRecommended={false}
-                layout="grid"
-                renderExpanded={(id) =>
-                  id === "env.other" ? (
-                    <OtherDetailsFields label={customEnvLabel} onLabelChange={setCustomEnvLabel} nameOnly placeholder="ej. Desierto" />
-                  ) : null
-                }
-              />
+              <div className="space-y-3">
+                <CheckboxCardGroup name="_environments" options={environmentOptions} value={environments} onChange={setEnvironments} showRecommended={false} layout="grid" />
+                {customEnvLabels.map((lbl, i) => (
+                  <div key={`ce-${i}`} className="flex items-start gap-2 rounded-[var(--radius-lg)] border-2 border-[var(--color-action-primary)] bg-[var(--color-interactive-selected)] p-3">
+                    <div className="min-w-0 flex-1">
+                      <FieldInput label="Entorno personalizado" required value={lbl} onChange={(e) => updateCustomEnv(i, e.target.value)} placeholder="ej. Desierto" />
+                    </div>
+                    <div className="pt-6"><RemoveButton onClick={() => removeCustomEnv(i)} /></div>
+                  </div>
+                ))}
+                <AddOtherButton label="Añadir otro entorno" onClick={addCustomEnv} />
+              </div>
             </CollapsibleSection>
           </div>
         </NumberedSection>

@@ -58,31 +58,6 @@ describe("field primitives — a11y (axe, jsdom)", () => {
     expect(await blockingViolations(container)).toEqual([]);
   });
 
-  it("RadioCardGroup grid with an expanded 'Otro' tile (inline form) passes axe", async () => {
-    const { container, getByLabelText } = render(
-      <RadioCardGroup
-        name="ptype"
-        layout="grid"
-        showRecommended={false}
-        value="pt.other"
-        onChange={() => {}}
-        options={[
-          { id: "pt.apartment", label: "Apartamento", description: "Piso en edificio" },
-          { id: "pt.other", label: "Otro", description: "No incluido arriba" },
-        ]}
-        renderExpanded={(id) =>
-          id === "pt.other" ? (
-            <FieldInput label="Nombre" required value="Casa flotante" onChange={() => {}} />
-          ) : null
-        }
-      />,
-    );
-    // The inline form's input is reachable + labeled (it lives outside the
-    // selection <label>, so it doesn't collide with the radio).
-    expect(getByLabelText("Nombre", { exact: false })).toBeTruthy();
-    expect(await blockingViolations(container)).toEqual([]);
-  });
-
   it("CheckboxCardGroup layout=grid has accessible checkbox names + passes axe", async () => {
     const { container } = render(
       <CheckboxCardGroup

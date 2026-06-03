@@ -16,7 +16,7 @@ export const propertySchema = z.object({
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
   customRoomTypeDesc: z.string().optional(),
-  customEnvironmentLabel: z.string().optional(),
+  customEnvironmentLabels: z.array(z.string()).optional().default([]),
   country: z.string().min(1, "El país es obligatorio"),
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),

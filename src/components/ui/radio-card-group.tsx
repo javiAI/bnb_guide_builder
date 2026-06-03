@@ -1,8 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { OptionTile, RecommendedBadge } from "./card-tile";
-import { withViewTransition } from "@/lib/view-transition";
 
 export interface RadioCardOption {
   id: string;
@@ -23,15 +21,9 @@ interface RadioCardGroupProps {
    * are unaffected.
    */
   layout?: "stack" | "grid";
-  /**
-   * Grid-only: inline detail rendered inside a tile when it's selected (e.g. the
-   * "Otro" custom form). The tile grows + spans full width; the change is morphed
-   * via View Transitions.
-   */
-  renderExpanded?: (id: string) => ReactNode;
 }
 
-export function RadioCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack", renderExpanded }: RadioCardGroupProps) {
+export function RadioCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack" }: RadioCardGroupProps) {
   if (layout === "grid") {
     return (
       <fieldset className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,14 +37,13 @@ export function RadioCardGroup({ name, options, value, onChange, showRecommended
               description={option.description}
               recommended={option.recommended}
               showRecommended={showRecommended}
-              expandedContent={renderExpanded?.(option.id)}
             >
               <input
                 type="radio"
                 name={name}
                 value={option.id}
                 checked={selected}
-                onChange={() => withViewTransition(() => onChange(option.id))}
+                onChange={() => onChange(option.id)}
                 className="sr-only"
               />
             </OptionTile>

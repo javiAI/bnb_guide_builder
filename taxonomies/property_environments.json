@@ -43,11 +43,6 @@
       "id": "env.resort",
       "label": "Resort / complejo vacacional",
       "description": "Propiedad dentro de un resort o complejo vacacional con servicios compartidos."
-    },
-    {
-      "id": "env.other",
-      "label": "Otro",
-      "description": "Entorno no incluido en las opciones anteriores."
     }
   ]
 }

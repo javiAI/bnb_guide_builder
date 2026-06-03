@@ -145,7 +145,7 @@ export async function savePropertyAction(
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
     customRoomTypeDesc: (formData.get("customRoomTypeDesc") as string) || undefined,
-    customEnvironmentLabel: (formData.get("customEnvironmentLabel") as string) || undefined,
+    customEnvironmentLabels: (formData.getAll("customEnvironmentLabels") as string[]).map((s) => s.trim()).filter(Boolean),
     country: formData.get("country") as string,
     city: formData.get("city") as string,
     region: (formData.get("region") as string) || undefined,

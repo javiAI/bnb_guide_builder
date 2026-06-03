@@ -22,7 +22,7 @@ export default async function PropertyPage({ params }: Props) {
         customPropertyTypeDesc: true,
         customRoomTypeLabel: true,
         customRoomTypeDesc: true,
-        customEnvironmentLabel: true,
+        customEnvironmentLabels: true,
         country: true,
         city: true,
         region: true,
