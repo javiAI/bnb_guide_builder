@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { Globe, Loader2, MapPin, SquarePen, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Globe, Loader2, MapPin, type LucideIcon } from "lucide-react";
 import { Tooltip } from "@/components/ui/tooltip";
+import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { cn } from "@/lib/cn";
 import { formatDistance } from "@/lib/services/places";
 
@@ -97,12 +92,10 @@ export function PlaceListRow({
   disabled: boolean;
 }) {
   const TrailingIcon = trailingAction.icon;
-  const [editing, setEditing] = useState(false);
   const trimmedName = name.trim();
   const hasRealName = trimmedName !== "" && trimmedName !== "-";
   const displayName = hasRealName ? trimmedName : null;
   const placeholder = placeholderName ?? "Añadir nombre";
-  const [draft, setDraft] = useState(displayName ?? "");
   const rowRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -110,24 +103,6 @@ export function PlaceListRow({
       rowRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [isActive]);
-
-  const startEdit = useCallback(() => {
-    if (!onRename) return;
-    setDraft(displayName ?? "");
-    setEditing(true);
-  }, [displayName, onRename]);
-
-  const commit = useCallback(() => {
-    if (!onRename) return;
-    const trimmed = draft.trim();
-    if (trimmed !== trimmedName) onRename(trimmed);
-    setEditing(false);
-  }, [draft, trimmedName, onRename]);
-
-  const cancel = useCallback(() => {
-    setDraft(displayName ?? "");
-    setEditing(false);
-  }, [displayName]);
 
   const distance = distanceMeters !== null ? formatDistance(distanceMeters) : null;
   const displayAddress = formatDisplayAddress(address);
@@ -151,67 +126,18 @@ export function PlaceListRow({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1">
-          {editing && editable ? (
-            <input
-              type="text"
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onBlur={commit}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  commit();
-                } else if (e.key === "Escape") {
-                  e.preventDefault();
-                  cancel();
-                }
-              }}
+          {editable ? (
+            <InlineEditText
+              value={name}
+              onCommit={(next) => onRename?.(next)}
+              placeholder={placeholder}
+              ariaLabel="Nombre"
+              textClassName="text-[13px] font-medium"
               disabled={disabled}
-              aria-label="Nombre"
-              className={cn(
-                "min-w-0 flex-1 rounded-[4px] border border-[var(--color-action-primary)] bg-[var(--color-background-elevated)]",
-                "px-1 py-0.5 text-[13px] font-medium text-[var(--color-text-primary)] outline-none",
-                "focus:ring-1 focus:ring-[var(--color-action-primary)]",
-              )}
+              revealOnHover
+              withTooltip
+              iconSize={12}
             />
-          ) : editable ? (
-            <>
-              <Tooltip text={displayName ?? placeholder} className="min-w-0 shrink">
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  disabled={disabled}
-                  className={cn(
-                    "min-w-0 max-w-full truncate text-left text-[13px] font-medium",
-                    displayName
-                      ? "text-[var(--color-text-primary)] hover:text-[var(--color-action-primary)]"
-                      : "italic text-[var(--color-text-subtle)] hover:text-[var(--color-action-primary)]",
-                    "focus-visible:outline-none focus-visible:underline",
-                    "disabled:cursor-not-allowed",
-                  )}
-                >
-                  {displayName ?? placeholder}
-                </button>
-              </Tooltip>
-              <Tooltip text={hasRealName ? "Editar nombre" : placeholder}>
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  disabled={disabled}
-                  aria-label={hasRealName ? "Editar nombre" : placeholder}
-                  className={cn(
-                    "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[4px] text-[var(--color-text-muted)] opacity-0",
-                    "transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100",
-                    "hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-secondary)]",
-                    "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-action-primary)]",
-                    "disabled:cursor-not-allowed disabled:opacity-30",
-                  )}
-                >
-                  <SquarePen size={12} aria-hidden="true" />
-                </button>
-              </Tooltip>
-            </>
           ) : (
             <Tooltip text={displayName ?? placeholder} className="min-w-0 shrink">
               <span

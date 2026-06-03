@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Pencil, Search, Home, UsersRound } from "lucide-react";
+import { Search, Home, UsersRound, DoorOpen, MapPin } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -9,6 +9,7 @@ import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { FieldInput, FieldSelect, FieldTextarea } from "@/components/ui/field";
+import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { Card } from "@/components/ui/card";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
@@ -108,7 +109,6 @@ interface PropertyFormProps {
 }
 
 export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: PropertyFormProps) {
-  const [editingName, setEditingName] = useState(false);
   const [nickname, setNickname] = useState(p.propertyNickname);
 
   const [propertyType, setPropertyType] = useState(p.propertyType ?? "");
@@ -145,10 +145,6 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [hasElevator, setHasElevator] = useState<boolean>(hasElevatorSystem);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
-
-  // Only send infrastructureJson when buildingFloors changed — avoids
-  // overwriting any other infra keys on unrelated saves.
-  const infraDirty = buildingFloors !== (infra.buildingFloors ?? 1);
 
   // Elevator relevance (config-driven, FUTURE §28): the `sys.elevator` taxonomy
   // item carries a `relevantWhen` rule (not a house & multi-floor). Evaluating
@@ -208,8 +204,18 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     } catch { /* ignore */ }
   }
 
+  // Auto-geocode on address blur — but only once per distinct address. Without
+  // this guard a blur that fires repeatedly (focus bouncing during auto-save
+  // re-renders) re-geocodes the same address in a loop, which is what made the
+  // "Guardando…" indicator + the provincia flash fire continuously. The explicit
+  // "Encontrar ubicación" button bypasses this (calls handleGeocode directly).
+  const lastGeocodedKey = useRef<string | null>(null);
   function handleAddressBlur() {
-    if (country.trim() && city.trim() && streetAddress.trim() && !geocoding) handleGeocode();
+    if (!(country.trim() && city.trim() && streetAddress.trim()) || geocoding) return;
+    const key = `${country.trim()}|${city.trim()}|${streetAddress.trim()}`;
+    if (key === lastGeocodedKey.current) return;
+    lastGeocodedKey.current = key;
+    handleGeocode();
   }
 
   async function handleGeocode() {
@@ -269,13 +275,24 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     <div>
       <PageHeader
         eyebrow="Datos básicos"
-        title={nickname}
+        title={
+          <InlineEditText
+            value={nickname}
+            onCommit={setNickname}
+            placeholder="Nombre de la propiedad"
+            ariaLabel="Nombre de la propiedad"
+            textClassName="text-[22px] font-semibold leading-[1.15] tracking-[-0.015em] sm:text-[28px]"
+            iconSize={20}
+          />
+        }
         description="Clasificación, ubicación, capacidad e infraestructura. Estos datos definen la base de la guía y alimentan el resto de secciones."
         actions={<AutoSaveStatus pending={pending} />}
         chips={
           <>
             <PageHeaderChip icon={Home} label="Tipo" value={ptLabel} />
+            <PageHeaderChip icon={DoorOpen} label="Espacio" value={rtLabel} />
             <PageHeaderChip icon={UsersRound} label="Capacidad" value={`${maxGuests} huéspedes`} />
+            {city.trim() && <PageHeaderChip icon={MapPin} label="Ubicación" value={city} />}
           </>
         }
       />
@@ -292,38 +309,11 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
         <input type="hidden" name="customEnvironmentLabel" value={customEnvLabel} />
-        {/* Only send infrastructureJson when buildingFloors changed — avoids overwriting existing JSON keys on unrelated saves */}
-        {infraDirty && (
-          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
-        )}
-
-        {/* Inline editable name */}
-        <div className="mb-8 rounded-[var(--radius-lg)] border-2 border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4">
-          <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Nombre de la propiedad
-          </span>
-          {editingName ? (
-            <input
-              name="propertyNickname"
-              type="text"
-              required
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              autoFocus
-              onBlur={() => setEditingName(false)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setEditingName(false); } }}
-              className="w-full rounded-[var(--radius-md)] border border-[var(--color-border-focus)] bg-[var(--color-background-elevated)] px-3 py-1.5 text-lg font-bold text-[var(--color-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-border-focus)]"
-            />
-          ) : (
-            <>
-              <button type="button" onClick={() => setEditingName(true)} className="group flex min-h-[44px] w-full items-center justify-between rounded-[var(--radius-md)] px-1 py-2 text-left transition-colors hover:bg-[var(--color-interactive-hover)]">
-                <span className="text-lg font-bold text-[var(--color-text-primary)]">{nickname}</span>
-                <Pencil size={16} aria-hidden="true" className="text-[var(--color-text-muted)] transition-colors group-hover:text-[var(--color-action-primary)]" />
-              </button>
-              <input type="hidden" name="propertyNickname" value={nickname} />
-            </>
-          )}
-        </div>
+        {/* infrastructureJson owns exactly { buildingFloors } — always sent so the
+            serialised form is stable across saves (no mount/unmount diff loop). */}
+        <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
+        {/* Property name is edited inline in the page title above. */}
+        <input type="hidden" name="propertyNickname" value={nickname} />
 
         <NumberedSection number="01" title="Clasificación">
           <div className="space-y-2">
