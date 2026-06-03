@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X } from "lucide-react";
+import { useActionState, useState, useRef, useEffect, useMemo } from "react";
+import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, BedDouble, ArrowUpDown } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -13,6 +13,7 @@ import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { roundCoord } from "@/lib/round-coord";
 import { withViewTransition } from "@/lib/view-transition";
 import { Card } from "@/components/ui/card";
+import { IconBadge } from "@/components/ui/icon-badge";
 import { useFormAutoSave, autoSaveSubmit } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
@@ -50,6 +51,7 @@ const environmentOptions: CheckboxCardOption[] = getItems(propertyEnvironments).
 const provinces = getItems(spanishProvinces);
 
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
+const MAX_TOTAL_GUESTS = 30;
 
 // "+ Añadir otro" affordance — dashed, signals "add a custom option" without
 // being a selectable tile. Shared by the type/space/environment pickers.
@@ -168,9 +170,13 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [latitude, setLatitude] = useState<number | null>(p.latitude != null ? roundCoord(p.latitude) : null);
   const [longitude, setLongitude] = useState<number | null>(p.longitude != null ? roundCoord(p.longitude) : null);
   const [geocoding, setGeocoding] = useState(false);
-  const [maxGuests, setMaxGuests] = useState(p.maxGuests ?? 2);
-  const [maxAdults, setMaxAdults] = useState(p.maxAdults);
-  const [maxChildren, setMaxChildren] = useState(p.maxChildren);
+  // Capacity follows the industry-standard model: adults + children counters,
+  // total derived from their sum (no separate "total" control). Submitted via a
+  // hidden maxGuests input; self-heals any legacy row where maxGuests drifted
+  // from maxAdults + maxChildren.
+  const [maxAdults, setMaxAdults] = useState(Math.max(1, p.maxAdults));
+  const [maxChildren, setMaxChildren] = useState(Math.max(0, p.maxChildren));
+  const totalGuests = maxAdults + maxChildren;
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
   const [hasPrivateEntrance, setHasPrivateEntrance] = useState(p.hasPrivateEntrance);
 
@@ -266,23 +272,6 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     }
   }
 
-  const handleMaxGuestsChange = useCallback((val: number) => {
-    setMaxGuests(val);
-    const newAdults = Math.min(maxAdults, val);
-    setMaxAdults(newAdults);
-    setMaxChildren(val - newAdults);
-  }, [maxAdults]);
-
-  const handleMaxAdultsChange = useCallback((val: number) => {
-    setMaxAdults(val);
-    setMaxChildren(maxGuests - val);
-  }, [maxGuests]);
-
-  const handleMaxChildrenChange = useCallback((val: number) => {
-    setMaxChildren(val);
-    setMaxAdults(maxGuests - val);
-  }, [maxGuests]);
-
   const ptLabel = propertyType === "pt.other" ? (customPtLabel || "Otro") : findItem(propertyTypes, propertyType)?.label ?? "Sin definir";
   const rtLabel = roomType === "rt.other" ? (customRtLabel || "Otro") : findItem(roomTypes, roomType)?.label ?? "Sin definir";
   const envParts = [
@@ -315,7 +304,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
           <>
             <PageHeaderChip icon={Home} label="Tipo" value={ptLabel} />
             <PageHeaderChip icon={DoorOpen} label="Espacio" value={rtLabel} />
-            <PageHeaderChip icon={UsersRound} label="Capacidad" value={`${maxGuests} huéspedes`} />
+            <PageHeaderChip icon={UsersRound} label="Capacidad" value={`${totalGuests} huéspedes`} />
             {city.trim() && <PageHeaderChip icon={MapPin} label="Ubicación" value={city} />}
           </>
         }
@@ -425,70 +414,101 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
 
         <NumberedSection number="03" title="Capacidad">
           <div className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">Máximo de huéspedes</span>
-                <InfoTooltip text="Define el máximo total de huéspedes. Siempre debe haber al menos 1 adulto. Los adultos adicionales representan plazas flexibles: cada una puede ser ocupada por un adulto o un niño. Si seleccionas niños, esas plazas solo pueden ser ocupadas por menores de 14 años." />
-              </div>
-              <NumberStepper label="Máximo de huéspedes" name="maxGuests" value={maxGuests} onChange={handleMaxGuestsChange} min={1} max={30} />
-              <div className="ml-4 space-y-2 border-l-2 border-[var(--color-border-default)] pl-4">
-                <NumberStepper label="Número máximo de adultos" name="maxAdults" value={maxAdults} onChange={handleMaxAdultsChange} min={1} max={maxGuests} />
-                <NumberStepper label="Niños (menores de 14 años)" name="maxChildren" value={maxChildren} onChange={handleMaxChildrenChange} min={0} max={maxGuests - 1} />
-              </div>
-              <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
-                <input type="checkbox" name="infantsAllowed" checked={infantsAllowed} onChange={(e) => setInfantsAllowed(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-                <span className="text-sm text-[var(--color-text-primary)]">Se admiten bebés (cuna disponible)</span>
-                <InfoTooltip text="Los bebés menores de 2 años no cuentan como huéspedes." />
-              </label>
-            </div>
-
-            {/* Habitaciones y baños — derivados de Espacios */}
+            {/* Aforo — adults + children counters; total is their live sum. */}
             <Card variant="overview">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">Habitaciones y baños</p>
+              <div className="flex items-center gap-2">
+                <IconBadge icon={UsersRound} tone="primary" />
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Aforo de huéspedes</h3>
+                <InfoTooltip text="Debe haber al menos 1 adulto. Los bebés menores de 2 años no cuentan en el aforo." />
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <NumberStepper layout="stacked" label="Adultos" name="maxAdults" value={maxAdults} onChange={setMaxAdults} min={1} max={MAX_TOTAL_GUESTS - maxChildren} />
+                <NumberStepper layout="stacked" label="Niños (−14)" name="maxChildren" value={maxChildren} onChange={setMaxChildren} min={0} max={MAX_TOTAL_GUESTS - maxAdults} />
+              </div>
+
+              {/* Derived total — the result of adults + children. */}
+              <div className="mt-3 flex items-baseline justify-between border-t border-[var(--color-border-default)] pt-3">
+                <span className="text-sm text-[var(--color-text-secondary)]">Aforo total</span>
+                <span className="text-sm text-[var(--color-text-secondary)]">
+                  <span className="text-base font-semibold text-[var(--color-text-primary)]">{totalGuests}</span> huéspedes
+                </span>
+              </div>
+              <input type="hidden" name="maxGuests" value={totalGuests} />
+
+              <label className="mt-3 flex min-h-[44px] cursor-pointer items-center gap-3 border-t border-[var(--color-border-default)] pt-3">
+                <IconBadge icon={Baby} tone="neutral" />
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-[var(--color-text-primary)]">Se admiten bebés (cuna disponible)</span>
+                  <span className="block text-xs text-[var(--color-text-muted)]">No cuentan en el aforo.</span>
+                </span>
+                <input type="checkbox" name="infantsAllowed" checked={infantsAllowed} onChange={(e) => setInfantsAllowed(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
+              </label>
+            </Card>
+
+            {/* Dormitorios y baños — derived (read-only) from Espacios. */}
+            <Card variant="overview">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <IconBadge icon={BedDouble} tone="neutral" />
+                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Dormitorios y baños</h3>
+                </div>
                 <TextLink href={`/properties/${propertyId}/spaces`} size="sm" arrow>
                   Gestionar espacios
                 </TextLink>
               </div>
-              <div className="mt-2 flex gap-6">
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  <span className="font-medium text-[var(--color-text-primary)]">{p.bedroomsCount ?? 0}</span> dormitorios
-                </span>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  <span className="font-medium text-[var(--color-text-primary)]">{p.bathroomsCount ?? 0}</span> baños
-                </span>
+              <div className="mt-3 flex gap-8">
+                <div>
+                  <p className="text-xl font-semibold text-[var(--color-text-primary)]">{p.bedroomsCount ?? 0}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">dormitorios</p>
+                </div>
+                <div>
+                  <p className="text-xl font-semibold text-[var(--color-text-primary)]">{p.bathroomsCount ?? 0}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">baños</p>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-[var(--color-text-muted)]">Calculado automáticamente a partir de los espacios definidos.</p>
+              <p className="mt-3 text-xs text-[var(--color-text-muted)]">Calculado automáticamente a partir de los espacios definidos.</p>
             </Card>
           </div>
         </NumberedSection>
 
         <NumberedSection number="04" title="Edificio">
           <div className="space-y-4">
-            <NumberStepper label="Número de plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
+            <NumberStepper label="Plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
 
-            {elevatorRelevant && (
-              <div className="space-y-2">
-                <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">El edificio tiene ascensor</span>
-                  <InfoTooltip text="Marca si el edificio dispone de ascensor. Se guarda como parte de los sistemas del edificio; los detalles opcionales (ubicación, si requiere llave, plantas que cubre) se configuran en la sección Sistemas." />
-                </label>
-                <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
-                {hasElevator && (
-                  <p className={`pl-6 ${HELP_CLS}`}>
-                    Detalles opcionales (ubicación, llave, plantas) en{" "}
-                    <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
-                  </p>
+            {/* Building features — consistent toggle rows (icon · label · helper · check). */}
+            <Card variant="overview">
+              <div className="space-y-3">
+                {elevatorRelevant && (
+                  <div>
+                    <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
+                      <IconBadge icon={ArrowUpDown} tone="neutral" />
+                      <span className="flex-1">
+                        <span className="block text-sm font-medium text-[var(--color-text-primary)]">El edificio tiene ascensor</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">Se guarda en los sistemas del edificio.</span>
+                      </span>
+                      <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
+                    </label>
+                    <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
+                    {hasElevator && (
+                      <p className={`mt-1 pl-[42px] ${HELP_CLS}`}>
+                        Detalles opcionales (ubicación, llave, plantas) en{" "}
+                        <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
 
-            <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
-              <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">Entrada privada</span>
-              <InfoTooltip text="La vivienda tiene una entrada independiente que el huésped usa sin compartir pasillos o zonas interiores con otros inquilinos o el anfitrión." />
-            </label>
+                <label className={`flex min-h-[44px] cursor-pointer items-center gap-3 ${elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}`}>
+                  <IconBadge icon={DoorOpen} tone="neutral" />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-[var(--color-text-primary)]">Entrada privada</span>
+                    <span className="block text-xs text-[var(--color-text-muted)]">Entrada independiente, sin zonas compartidas con otros inquilinos o el anfitrión.</span>
+                  </span>
+                  <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
+                </label>
+              </div>
+            </Card>
           </div>
         </NumberedSection>
 

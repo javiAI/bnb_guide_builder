@@ -11,6 +11,10 @@ interface NumberStepperProps {
   name?: string;
   /** Unit suffix shown after the value (e.g. "kg", "EUR") */
   suffix?: string;
+  /** "row" (default): label left, controls right — full-width form row.
+   *  "stacked": label centered on top, controls below — a compact tile for
+   *  side-by-side counters. */
+  layout?: "row" | "stacked";
 }
 
 const stepBtnCls = "inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:cursor-not-allowed disabled:bg-[var(--button-disabled-bg)] disabled:text-[var(--button-disabled-fg)]";
@@ -24,34 +28,49 @@ export function NumberStepper({
   onChange,
   name,
   suffix,
+  layout = "row",
 }: NumberStepperProps) {
+  const controls = (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        disabled={value <= min}
+        onClick={() => onChange(Math.max(min, value - step))}
+        className={stepBtnCls}
+        aria-label={`Reducir ${label}`}
+      >
+        &minus;
+      </button>
+      <span className={`min-w-[2rem] text-center font-semibold text-[var(--color-text-primary)] ${layout === "stacked" ? "text-lg" : "text-sm"}`}>
+        {value}{suffix ? ` ${suffix}` : ""}
+      </span>
+      <button
+        type="button"
+        disabled={value >= max}
+        onClick={() => onChange(Math.min(max, value + step))}
+        className={stepBtnCls}
+        aria-label={`Aumentar ${label}`}
+      >
+        +
+      </button>
+    </div>
+  );
+
+  if (layout === "stacked") {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-3">
+        {name && <input type="hidden" name={name} value={value} />}
+        <span className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</span>
+        {controls}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 py-3">
       {name && <input type="hidden" name={name} value={value} />}
       <span className="text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          disabled={value <= min}
-          onClick={() => onChange(Math.max(min, value - step))}
-          className={stepBtnCls}
-          aria-label={`Reducir ${label}`}
-        >
-          &minus;
-        </button>
-        <span className="min-w-[2rem] text-center text-sm font-semibold text-[var(--color-text-primary)]">
-          {value}{suffix ? ` ${suffix}` : ""}
-        </span>
-        <button
-          type="button"
-          disabled={value >= max}
-          onClick={() => onChange(Math.min(max, value + step))}
-          className={stepBtnCls}
-          aria-label={`Aumentar ${label}`}
-        >
-          +
-        </button>
-      </div>
+      {controls}
     </div>
   );
 }
