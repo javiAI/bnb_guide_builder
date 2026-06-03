@@ -12,7 +12,7 @@
     {
       "id": "env.beach",
       "label": "Playa",
-      "description": "Propiedad cercana al mar o zona costera."
+      "description": "Propiedad junto al mar o en zona costera."
     },
     {
       "id": "env.mountain",
@@ -36,8 +36,8 @@
     },
     {
       "id": "env.waterfront",
-      "label": "Primera línea de agua",
-      "description": "Propiedad directamente a pie de costa, lago o río (waterfront)."
+      "label": "Río o ribera",
+      "description": "Propiedad junto a un río o ribera fluvial."
     },
     {
       "id": "env.resort",
