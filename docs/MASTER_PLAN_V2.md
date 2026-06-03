@@ -4014,34 +4014,45 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 **Propósito**: 2ª pestaña de FASE 16I. Pulir **Propiedad** (datos básicos) elevando representación + estandarización + integridad de datos. Fase -1 aprobada (2026-06-02). Marco UX aprobado: **"un solo sistema visual; interacción según la forma del dato"** — Propiedad es un **form de ajustes** (campos fijos), NO un cockpit de colección. Tiene **waiver de kit** (#112: no hay editor de propiedad en `subpages.html`) → sin parity 1:1; el gate es UX/representación + invariantes compartidos + **coherencia con Acceso** (16E.6, casi-final).
 
+**Alcance ampliado (Fase -1 reabierta 2026-06-03)**: tras el análisis profundo, el usuario aprobó 5 corrientes (todas en 16I-2): A polish, B ascensor **Option A**, C motor de relevancia, D **entorno multiselect** (migración de modelo+rule-engine), E **mapa paridad Acceso**. Decisiones de diseño fijadas: tiles **siempre visibles** (cero estado oculto); ascensor **se configura en Propiedad** (no en Sistemas) pero persiste como `sys.elevator` (GUI por modelo mental, storage por consumo); Casa → sin opción de ascensor.
+
 **Parte A — Representación / visual**:
 
-- Convertir Propiedad de "todo plegado" (`CollapsibleSection`) a **form de ajustes con estado a la vista** (revelar valores, editar in-place; el auto-save ya existe). Compartir el sistema visual de Acceso (cards de agrupación, cabeceras `NumberedSection`, voz de copy, densidad, tokens).
-- **Nuevo primitivo `src/components/ui/field.tsx`** (Input/Select/Textarea + label) con tokens + `focus-visible` + a11y → reemplaza los `FIELD_CLS` raw. Sirve a Propiedad y a futuras pestañas/forms.
-- Explorar **presentación de opciones en tarjetas compactas** (tiles) vs filas alargadas para los pickers (tipo/espacio/distribución/entorno) — vía `/frontend-design` + mockups.
+- Convertir Propiedad de "todo plegado" (`CollapsibleSection`) a **form de ajustes con estado a la vista**: clasificación (tipo/espacio/distribución/entorno) como **rejilla de tiles compactos siempre visible** (`RadioCardGroup`/`CheckboxCardGroup` con `layout="grid"`, prop aditivo default `"stack"`), seleccionado resaltado, cambio en 1 clic. Compartir el sistema visual de Acceso (`NumberedSection`, voz de copy, densidad, tokens).
+- **Nuevo primitivo `src/components/ui/field.tsx`** (Input/Select/Textarea + label) con tokens + `focus-visible` + a11y (`useId`/`aria-describedby`) → reemplaza los `FIELD_CLS` raw. Sirve a Propiedad y a futuras pestañas/forms.
 - Inline-name + derived-counts → primitivos / `Card`.
 
-**Parte B — Integridad de datos (unificación)**:
+**Parte B — Ascensor (Option A: GUI en Propiedad, fuente única `sys.elevator`)**:
 
-- **Unificar ascensor → `sys.elevator`** (fuente única, como WiFi/heating en post-16I-A): el `conditional-engine` (`context-builder.ts`) lee la presencia de `sys.elevator` en vez de `infrastructureJson.hasElevator`; se **elimina `hasElevator`** de Propiedad. Migración additive + tests. (`am.elevator` ya es `derived_from_system`.)
-- **Reframe Edificio**: `buildingFloors` se **conserva** (es la **señal de relevancia** del elevador, no dato muerto); `hasPrivateEntrance` (sin consumidor, dominio Acceso) → mover a Acceso o cablear/eliminar (decidir en impl). Posible fusión/retirada de "Edificio" si adelgaza.
+- El **check "¿Hay ascensor?" vive en Propiedad/Edificio** (modelo mental del operador: describe su edificio), gateado por relevancia. Es la **fuente única**: `savePropertyAction` **reconcilia la fila `PropertySystem(systemKey="sys.elevator")`** (crea si on / borra si off) + `writeAudit`. Se **elimina `infrastructureJson.hasElevator`** (almacenamiento muerto: no lo leía nadie) y el `context-builder` deja de leer la columna inexistente `property.hasElevator` → la deriva de `systems.includes("sys.elevator")` (limpia plumbing roto).
+- **Detalles opcionales en Sistemas**: los `detailsFields` de `sys.elevator` (ubicación, requiere llave, plantas, mantenimiento) siguen editándose en Sistemas, visibles solo si la fila existe. `sys.elevator` lleva flag **`managedInProperty: true`**; el **picker de Sistemas (`create-system-form.tsx`) lo filtra** (no se "añade" ahí — su existencia se gobierna en Propiedad). Cambio quirúrgico (1 flag + 1 filtro), no el rediseño visual de Sistemas.
+- **Reframe Edificio**: `buildingFloors` se **conserva** (señal de relevancia); `hasPrivateEntrance` se mantiene en Edificio (hecho del edificio; mover a Acceso = fuera de alcance, ❌ tocar cockpit).
 
-**Parte C — Relevancia condicional (slice elevador + plan)**:
+**Parte C — Motor de relevancia (slice elevador + plan)**:
 
-- **Slice**: `sys.elevator` (+ `am.elevator`) solo es **relevante/ofrecido** cuando el edificio es multi-planta (`buildingFloors ≥ 2`) — **primera instancia** del patrón de relevancia para sistemas/amenities; `buildingFloors` es la señal.
-- **Plan documentado** (`FUTURE §28` + spec de rama dedicada): capa de relevancia para todos los sistemas/amenities. **El rollout completo NO entra en 16I-2.**
+- `SystemItem.relevantWhen?: ItemRules` (taxonomía) + helper `isSystemRelevant`/`getRelevantSystems` que **reutiliza `evaluateItemAvailability`** (sin evaluator nuevo). `sys.elevator.relevantWhen` = **no es Casa Y multi-planta**: `allOf[ not(propertyType=pt.house), anyOf[ propertyType in {pt.apartment,pt.boutique_hotel}, buildingFloors≥2 ] ]`. El check del form se gatea por este helper (mecanismo end-to-end, no `>=2` hardcodeado).
+- **Plan documentado** (`FUTURE §28`): rollout de relevancia a todos los sistemas/amenities (`getRelevantSystems`/`getRelevantAmenities` en editores + completeness no penaliza irrelevantes). **NO entra en 16I-2.**
 
-**Archivos a crear**: `src/components/ui/field.tsx`; helper mínimo de relevancia para el slice elevador.
+**Parte D — Entorno multiselect (migración modelo + rule-engine)**:
 
-**Archivos a modificar**: `property/property-form.tsx`, `lib/actions/editor.actions.ts` + `schemas/editor.schema.ts` (quitar `hasElevator` de infra; resolver private-entrance), `conditional-engine/context-builder.ts` (leer `sys.elevator`), `taxonomies/system_taxonomy.json` (`relevantWhen` para `sys.elevator`), `src/test/parity-allowlist.ts` (añadir `field.tsx` a `shared-primitives`), tests, `docs/FUTURE.md` (§28).
+- `Property.propertyEnvironment String?` → **`propertyEnvironments String[]`** (`prisma db push --accept-data-loss`). El form usa **`CheckboxCardGroup layout="grid"`** (montaña+esquí+rural+lago…); **se elimina "Sin definir"** (selección vacía = sin definir).
+- Consumidores que dirigen comportamiento (los dos): `space-availability.service.ts` (`environmentOverlays`: `o.environment === environment` → `environments.includes(o.environment)`) y `amenities/page.tsx` (gate env: `relevantEnvironments.includes(propEnv)` → `.some(e => propEnvs.includes(e))`). Plus `editor.schema`/`editor.actions`/`context-builder`/`conditional-engine/types` (slot escalar `propertyEnvironment` → propiedad-array vía `propertyFields`; **ningún rule JSON usa el slot hoy**). El wizard **no** toca el campo → migración acotada al editor.
 
-**Tests**: `field` primitive (a11y/tokens); property-form (form visible, option cards); unificación ascensor (conditional-engine lee `sys.elevator`; migración); relevance slice (elevador oculto si single-floor); axe 0 light/dark datos reales; `component-invariants`/`parity-static`/`dark-parity`.
+**Parte E — Mapa paridad con Acceso**:
 
-**Criterio de done**: Propiedad como form visible coherente con Acceso; `Field` adoptado (0 inputs raw); ascensor fuente única (sin `hasElevator` en Property); `buildingFloors` gatea relevancia del elevador; datos muertos resueltos; plan de relevancia documentado; gates verdes (`prisma generate→tsc→vitest→build`) + axe 0 light/dark; `/simplify`.
+- **Mejorar el `LocationMap` existente** (no crear componente nuevo; reuse): añadir `maplibregl.FullscreenControl` ("hacer grande") + colapsar la atribución al montar (quitar `maplibregl-compact-show`, **mismo truco que `multi-pin-map.tsx` de Acceso**). Ambos ya comparten maplibre + `useTilesStyleUrl`.
 
-**Restricciones**: ❌ tocar el cockpit de Acceso (solo referencia); ❌ rollout completo de relevancia (solo slice elevador); ❌ duplicar info; ❌ migración destructiva (additive).
+**Archivos a crear**: `src/components/ui/field.tsx`; `src/lib/services/system-relevance.ts`.
 
-**No-alcance**: relevancia condicional de todos los sistemas/amenities (`FUTURE §28`, rama dedicada); otras pestañas 16I.
+**Archivos a modificar**: `property/property-form.tsx`, `property/page.tsx` (cargar `hasElevatorSystem`), `lib/actions/editor.actions.ts` + `schemas/editor.schema.ts` (reconciliar `sys.elevator`; `propertyEnvironments[]`; quitar `hasElevator` de infra), `conditional-engine/context-builder.ts` + `types.ts` + `evaluator.ts` (elevator desde systems; `buildingFloors`; entorno array), `taxonomies/system_taxonomy.json` (`relevantWhen` + `managedInProperty` en `sys.elevator`), `lib/types/taxonomy.ts` (`SystemItem.relevantWhen`/`managedInProperty`), `systems/create-system-form.tsx` (+ `page.tsx`, filtrar `managedInProperty`), `space-availability.service.ts`, `amenities/page.tsx`, `spaces/page.tsx`, `components/ui/{radio,checkbox}-card-group.tsx` (`layout`), `components/ui/location-map.tsx` (fullscreen + attrib), `prisma/schema.prisma` (`propertyEnvironments String[]`), `src/test/parity-allowlist.ts` (`field.tsx` a `shared-primitives`), tests, `docs/FUTURE.md` (§28).
+
+**Tests**: `field` primitive (a11y/tokens); `system-relevance` (elevador relevante iff no-Casa & multi-planta; sistemas sin `relevantWhen` siempre relevantes); reconciliación `sys.elevator` (create/delete + audit); `context-builder` (elevator desde systems, `buildingFloors`); entorno multiselect (overlays + gate amenities con array); `create-system-form` filtra `managedInProperty`; axe 0 light/dark datos reales; `component-invariants`/`parity-static`/`dark-parity`.
+
+**Criterio de done**: Propiedad como form visible coherente con Acceso (tiles siempre visibles); `Field` adoptado (0 inputs raw); ascensor configurado en Propiedad, fuente única `sys.elevator` (sin `hasElevator` muerto), relevancia config-driven; entorno multiselect funcional sin romper disponibilidad de Espacios/Equipamiento; mapa con fullscreen + atribución colapsada (paridad Acceso); plan de relevancia documentado; gates verdes (`prisma generate→tsc→vitest→build`) + axe 0 light/dark; `/simplify`.
+
+**Restricciones**: ❌ tocar el **rediseño visual** del cockpit de Acceso (sí un filtro quirúrgico en el picker de Sistemas); ❌ rollout completo de relevancia (solo slice elevador); ❌ duplicar info (ascensor = 1 fuente); ❌ migración destructiva de datos (reconciliación no borra detalles al cambiar tipo).
+
+**No-alcance**: relevancia condicional de todos los sistemas/amenities (`FUTURE §28`, rama dedicada); rediseño visual de Sistemas/Espacios/Equipamiento; "Otro" custom de entorno; otras pestañas 16I.
 
 **Preparación**:
 

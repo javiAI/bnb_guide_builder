@@ -638,9 +638,11 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 
 > Origen: Fase -1 de 16I-2 (2026-06-02). Hoy los **espacios** tienen relevancia (`getAvailableSpaceTypes(roomType, layoutKey)` → required/recommended/optional/**excluded**), pero **sistemas** y **amenities** se ofrecen de forma **uniforme** — sus items de taxonomía no llevan condición de relevancia. Consecuencia: opciones que no aplican saturan la UI y pueden penalizar completitud. Caso canónico: `sys.elevator` (+ `am.elevator`) aparece aunque el edificio sea de una sola planta — un ascensor solo tiene sentido en un edificio multi-planta.
 
-**Estado**: 16I-2 implementa el **slice elevador** (`sys.elevator` relevante solo si `buildingFloors ≥ 2`) como **primera instancia + prueba del patrón**. El **rollout completo** queda diferido a una rama dedicada (`feat/system-amenity-relevance` o similar).
+**Estado**: 16I-2 implementa el **slice elevador** como **primera instancia + prueba del patrón**, vía `SystemItem.relevantWhen` + helper `isSystemRelevant`/`getRelevantSystems` (reusa `evaluateItemAvailability`). Regla del elevador: **no es Casa Y multi-planta** — `allOf[ not(propertyType=pt.house), anyOf[ propertyType in {pt.apartment,pt.boutique_hotel}, buildingFloors≥2 ] ]` (un ascensor solo tiene sentido en edificio multi-unidad/multi-planta; un chalet unifamiliar no lo ofrece). El **rollout completo** queda diferido a una rama dedicada (`feat/system-amenity-relevance` o similar).
 
-**Principio (refuerzo de la regla "una sola fuente de la verdad")**: la relevancia se computa a partir de elecciones previas ya capturadas (no se duplica el dato). `buildingFloors` es la señal del elevador; NO se crea un `hasElevator` paralelo (eso se elimina en 16I-2 — el ascensor vive en `sys.elevator`).
+**Decisión de UI (Option A, 16I-2)**: el ascensor **se configura en Propiedad/Edificio** (modelo mental: el operador describe su edificio; el huésped solo lo usa, no hay instrucciones que redactar) pero **persiste como `sys.elevator`** (fuente única que ya consume el huésped). GUI por modelo mental ≠ storage por consumo — `sys.elevator.managedInProperty: true` saca su "alta" del picker de Sistemas; los `detailsFields` opcionales (ubicación/llave/plantas/mantenimiento) siguen en Sistemas si la fila existe.
+
+**Principio (refuerzo de la regla "una sola fuente de la verdad")**: la relevancia se computa a partir de elecciones previas ya capturadas (no se duplica el dato). `propertyType` + `buildingFloors` son las señales del elevador; NO se crea un `hasElevator` paralelo (`infrastructureJson.hasElevator` se elimina en 16I-2 — el ascensor vive en `sys.elevator`).
 
 **Plan (rollout completo, rama dedicada)**:
 
