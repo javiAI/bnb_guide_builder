@@ -57,7 +57,6 @@ describe("Property environment + attribute mapping (1E)", () => {
       propertyNickname: "Test",
       propertyType: "pt.apartment",
       roomType: "rt.entire_place",
-      layoutKey: "lk.one_bed",
       country: "España",
       city: "Madrid",
       streetAddress: "Calle Mayor 1",

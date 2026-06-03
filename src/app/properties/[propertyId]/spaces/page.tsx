@@ -38,7 +38,6 @@ export default async function SpacesPage({
         id: true,
         maxGuests: true,
         roomType: true,
-        layoutKey: true,
         propertyType: true,
         propertyEnvironments: true,
       },
@@ -98,12 +97,11 @@ export default async function SpacesPage({
     }
   }
 
-  // Compute available space types from roomType + layoutKey + overlays
-  // (propertyType + propertyEnvironments). Treat missing roomType as unknown —
-  // don't apply entire-place rules to legacy/incomplete properties.
+  // Compute available space types from roomType + overlays (propertyType +
+  // propertyEnvironments). Treat missing roomType as unknown — don't apply
+  // entire-place rules to legacy/incomplete properties.
   const { required, recommended, optional, excluded } = resolveSpaceAvailability({
     roomType: property.roomType ?? "",
-    layoutKey: property.layoutKey ?? null,
     propertyType: property.propertyType ?? null,
     environments: property.propertyEnvironments,
   });

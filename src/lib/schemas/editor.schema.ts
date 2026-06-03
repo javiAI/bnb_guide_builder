@@ -11,12 +11,12 @@ export const propertySchema = z.object({
   propertyNickname: z.string().min(1, "El nombre es obligatorio"),
   propertyType: z.string().min(1, "El tipo de propiedad es obligatorio"),
   roomType: z.string().min(1, "El tipo de espacio es obligatorio"),
-  layoutKey: z.string().nullable().optional(),
   propertyEnvironments: z.array(z.string()).optional().default([]),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
   customRoomTypeDesc: z.string().optional(),
+  customEnvironmentLabel: z.string().optional(),
   country: z.string().min(1, "El país es obligatorio"),
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),
@@ -38,9 +38,6 @@ export const propertySchema = z.object({
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
-).refine(
-  (d) => d.roomType !== "rt.entire_place" || !!d.layoutKey,
-  { message: "La distribución es obligatoria para alojamientos completos", path: ["layoutKey"] },
 );
 
 export type PropertyData = z.infer<typeof propertySchema>;

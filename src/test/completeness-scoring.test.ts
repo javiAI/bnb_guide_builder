@@ -119,7 +119,7 @@ describe("computeAmenitiesCompleteness", () => {
 describe("computeOverallReadiness", () => {
   it("composes scores, marks usable when all sections ≥ 70", async () => {
     propFind.mockResolvedValue({
-      roomType: "rt.entire_place", layoutKey: null,
+      roomType: "rt.entire_place",
       checkInStart: "16:00", checkInEnd: "20:00", checkOutTime: "11:00",
       primaryAccessMethod: "am.smart_lock",
       accessMethodsJson: { unit: { methods: ["am.smart_lock", "am.lockbox"] } },
@@ -158,7 +158,7 @@ describe("computeOverallReadiness", () => {
 
   it("not publishable when any section below 85", async () => {
     propFind.mockResolvedValue({
-      roomType: null, layoutKey: null,
+      roomType: null,
       checkInStart: null, checkInEnd: null, checkOutTime: null,
       primaryAccessMethod: null, accessMethodsJson: null,
     });
@@ -175,7 +175,7 @@ describe("computeOverallReadiness", () => {
 
 describe("computeSpacesCompleteness", () => {
   it("returns 0 when property has no roomType", async () => {
-    propFind.mockResolvedValue({ roomType: null, layoutKey: null });
+    propFind.mockResolvedValue({ roomType: null });
     expect(await computeSpacesCompleteness("p1")).toBe(0);
   });
 });

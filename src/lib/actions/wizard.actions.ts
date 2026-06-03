@@ -9,7 +9,7 @@ import {
   step4Schema,
   fullWizardSchema,
 } from "@/lib/schemas/wizard.schema";
-import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
+import { SPACE_TYPE_LABELS, CHILDREN_AGE_LIMIT } from "@/lib/taxonomy-loader";
 import { recomputePropertyCounts } from "@/lib/property-counts";
 import type { ActionResult } from "@/lib/types/action-result";
 
@@ -163,7 +163,6 @@ export async function saveStep1Action(
   const raw = {
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
-    layoutKey: (formData.get("layoutKey") as string) || undefined,
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
@@ -352,7 +351,6 @@ export async function completeWizardAction(
         propertyNickname: d.propertyNickname,
         propertyType: d.propertyType,
         roomType: d.roomType,
-        layoutKey: d.layoutKey,
         customPropertyTypeLabel: d.customPropertyTypeLabel,
         customPropertyTypeDesc: d.customPropertyTypeDesc,
         customRoomTypeLabel: d.customRoomTypeLabel,
@@ -450,21 +448,6 @@ export async function completeWizardAction(
           });
         }
       }
-    }
-
-    // Create layout-derived spaces (non-bedroom spaces implied by layoutKey)
-    const layoutSpaceType = d.layoutKey ? LAYOUT_SPACE_MAP[d.layoutKey] : undefined;
-    if (layoutSpaceType) {
-      await tx.space.create({
-        data: {
-          propertyId: prop.id,
-          spaceType: layoutSpaceType,
-          name: getSpaceTypeLabel(layoutSpaceType),
-          sortOrder: sortOrder++,
-          createdBy: "wizard",
-          wizardSeedKey: `layout_${d.layoutKey}`,
-        },
-      });
     }
 
     // Create bathroom space derived from bathroomsCount

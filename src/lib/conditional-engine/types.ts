@@ -34,7 +34,6 @@ export type OperatorPredicate = {
 export type AtomicCondition = {
   propertyType?: OperatorPredicate;
   roomType?: OperatorPredicate;
-  layoutKey?: OperatorPredicate;
   propertyFields?: Record<string, OperatorPredicate | Primitive | Primitive[] | boolean>;
   requiresSpaces?: string[];
   requiresSystems?: string[];
@@ -45,10 +44,10 @@ export type AtomicCondition = {
  * Composable rule.  `allOf` / `anyOf` / `not` can nest freely, and are
  * AND-joined with the atomic keys declared on the same object. Only the
  * explicit keys of `AtomicCondition` (`propertyType`, `roomType`,
- * `layoutKey`, `propertyFields`, `requiresSpaces`, `requiresSystems`,
- * `requiresAmenities`) are understood by the evaluator; unknown keys are
- * silently ignored — prefer `propertyFields.<name>` for anything that doesn't
- * fit a dedicated slot (e.g. the multi-valued `propertyEnvironments` array via
+ * `propertyFields`, `requiresSpaces`, `requiresSystems`, `requiresAmenities`)
+ * are understood by the evaluator; unknown keys are silently ignored — prefer
+ * `propertyFields.<name>` for anything that doesn't fit a dedicated slot (e.g.
+ * the multi-valued `propertyEnvironments` array via
  * `propertyFields.propertyEnvironments: { containsAny: [...] }`).
  */
 export type ItemRules = AtomicCondition & {
@@ -62,7 +61,6 @@ export type PropertyContext = {
     id: string;
     propertyType?: string | null;
     roomType?: string | null;
-    layoutKey?: string | null;
     /** Multi-valued (a property can be e.g. mountain + ski + rural). */
     propertyEnvironments?: string[];
     floorLevel?: number | null;

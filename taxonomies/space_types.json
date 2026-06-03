@@ -13,7 +13,6 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -41,7 +40,6 @@
       "recommended": true,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -71,7 +69,6 @@
       "recommended": true,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [
         "sp.kitchen_living",
         "sp.kitchen_dining_living"
@@ -103,7 +100,6 @@
       "recommended": true,
       "allowsSleeping": true,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [
         "sp.open_plan",
         "sp.kitchen_living",
@@ -137,7 +133,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [
         "sp.open_plan",
         "sp.kitchen_dining_living"
@@ -168,7 +163,6 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -197,7 +191,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -226,7 +219,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -256,7 +248,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -285,7 +276,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -314,7 +304,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -343,7 +332,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -361,9 +349,6 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": [
-        "layout.studio"
-      ],
       "mutuallyExclusiveWith": [
         "sp.bedroom",
         "sp.living_room",
@@ -389,9 +374,6 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": [
-        "layout.loft"
-      ],
       "mutuallyExclusiveWith": [
         "sp.bedroom",
         "sp.living_room",
@@ -414,9 +396,6 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": true,
-      "derivedByLayoutKeys": [
-        "layout.open_plan_living_dining"
-      ],
       "mutuallyExclusiveWith": [
         "sp.living_room",
         "sp.dining",
@@ -440,9 +419,6 @@
       "allowsSleeping": true,
       "expectsBeds": true,
       "isComposite": true,
-      "derivedByLayoutKeys": [
-        "layout.kitchen_living"
-      ],
       "mutuallyExclusiveWith": [
         "sp.kitchen",
         "sp.living_room",
@@ -465,9 +441,6 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": true,
-      "derivedByLayoutKeys": [
-        "layout.kitchen_dining_living"
-      ],
       "mutuallyExclusiveWith": [
         "sp.kitchen",
         "sp.living_room",
@@ -491,7 +464,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",
@@ -520,7 +492,6 @@
       "recommended": false,
       "allowsSleeping": false,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.private_room",
@@ -538,7 +509,6 @@
       "recommended": false,
       "allowsSleeping": true,
       "isComposite": false,
-      "derivedByLayoutKeys": [],
       "mutuallyExclusiveWith": [],
       "applicableRoomTypes": [
         "rt.entire_place",

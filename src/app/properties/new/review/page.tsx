@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { findItem, propertyTypes, roomTypes, accessMethods, buildingAccessMethods, bedTypes, SPACE_TYPE_LABELS, getSpaceTypeLabel, LAYOUT_SPACE_MAP } from "@/lib/taxonomy-loader";
+import { findItem, propertyTypes, roomTypes, accessMethods, buildingAccessMethods, bedTypes, SPACE_TYPE_LABELS, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
 import { ReviewActions } from "./review-actions";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -156,7 +156,6 @@ export default async function WizardReviewPage({ searchParams }: Props) {
   ];
 
   // Pre-populated spaces preview
-  const layoutKey = state.layoutKey as string | undefined;
   const bathroomsCount = (state.bathroomsCount as number) ?? 0;
   const prePopulatedSpaces: string[] = [];
 
@@ -179,10 +178,6 @@ export default async function WizardReviewPage({ searchParams }: Props) {
       prePopulatedSpaces.push(`Dormitorio ${i + 1}`);
     }
   }
-
-  // Living/studio space from layoutKey
-  const layoutSpaceType = layoutKey ? LAYOUT_SPACE_MAP[layoutKey] : undefined;
-  if (layoutSpaceType) prePopulatedSpaces.push(getSpaceTypeLabel(layoutSpaceType));
 
   // Bathrooms
   for (let i = 0; i < bathroomsCount; i++) {

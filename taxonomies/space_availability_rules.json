@@ -1,10 +1,10 @@
 {
   "file": "space_availability_rules.json",
-  "version": "2026-04-13",
+  "version": "2026-06-03",
   "locale": "es-ES",
   "units_system": "metric",
-  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos según cada combinación de roomType y layoutKey. Consumido por getAvailableSpaceTypes() en taxonomy-loader. Los overlays por propertyType y propertyEnvironment se aplican sobre el resultado base para sesgar el selector de creación (servicio resolveSpaceAvailability).",
-  "overlaysNote": "Cada overlay sólo puede PROMOVER tipos de 'optional' a 'recommended'. Nunca se altera 'required' ni 'excluded' — el layout sigue mandando sobre el contexto.",
+  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos por roomType. Consumido por getAvailableSpaceTypes() en taxonomy-loader. Los overlays por propertyType y propertyEnvironment se aplican sobre el resultado base para sesgar el selector de creación (servicio resolveSpaceAvailability). La distribución (layoutKey) se retiró en 16I-2: era una simplificación property-level de una realidad por-espacio; los espacios se configuran libremente en la sección Espacios.",
+  "overlaysNote": "Cada overlay sólo puede PROMOVER tipos de 'optional' a 'recommended'. Nunca se altera 'required' ni 'excluded' — la base por roomType manda sobre el contexto.",
   "propertyTypeOverlays": [
     { "propertyType": "pt.house",           "promoteToRecommended": ["sp.garden", "sp.garage", "sp.patio"] },
     { "propertyType": "pt.apartment",       "promoteToRecommended": ["sp.balcony"] },
@@ -21,134 +21,41 @@
     { "environment": "env.waterfront",  "promoteToRecommended": ["sp.pool", "sp.patio"] },
     { "environment": "env.resort",      "promoteToRecommended": ["sp.pool"] }
   ],
-  "layoutKeys": [
-    { "id": "layout.separate_rooms",          "label": "Habitaciones separadas",          "description": "Dormitorios, salón, cocina y baño en estancias diferenciadas." },
-    { "id": "layout.kitchen_living",          "label": "Cocina-salón abierto",            "description": "Cocina y salón integrados en un espacio único." },
-    { "id": "layout.kitchen_dining_living",   "label": "Cocina-comedor-salón",            "description": "Cocina, comedor y salón integrados en un gran espacio diáfano." },
-    { "id": "layout.open_plan_living_dining", "label": "Salón-comedor abierto",           "description": "Salón y comedor integrados, con cocina separada." },
-    { "id": "layout.studio",                  "label": "Estudio",                         "description": "Espacio único que integra dormitorio, sala y cocina sin separación." },
-    { "id": "layout.loft",                    "label": "Loft",                            "description": "Espacio diáfano de doble altura con zona de descanso elevada." }
-  ],
   "rules": [
     {
       "roomType": "rt.entire_place",
-      "layout": "layout.separate_rooms",
       "required":    ["sp.bathroom"],
       "recommended": ["sp.kitchen", "sp.living_room", "sp.bedroom"],
-      "optional":    ["sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.shared_area", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 1,
-      "bedroomsMax": 20,
-      "bathroomsMin": 1,
-      "bathroomsMax": 20
-    },
-    {
-      "roomType": "rt.entire_place",
-      "layout": "layout.studio",
-      "required":    ["sp.bathroom", "sp.studio"],
-      "recommended": [],
-      "optional":    ["sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.bedroom", "sp.living_room", "sp.kitchen", "sp.dining", "sp.shared_area", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 0,
-      "bathroomsMin": 1,
-      "bathroomsMax": 5
-    },
-    {
-      "roomType": "rt.entire_place",
-      "layout": "layout.loft",
-      "required":    ["sp.bathroom", "sp.loft"],
-      "recommended": ["sp.kitchen"],
-      "optional":    ["sp.dining", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.bedroom", "sp.living_room", "sp.shared_area", "sp.studio", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 0,
-      "bathroomsMin": 1,
-      "bathroomsMax": 10
-    },
-    {
-      "roomType": "rt.entire_place",
-      "layout": "layout.kitchen_living",
-      "required":    ["sp.bathroom", "sp.kitchen_living"],
-      "recommended": ["sp.bedroom"],
-      "optional":    ["sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.kitchen", "sp.living_room", "sp.shared_area", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 20,
-      "bathroomsMin": 1,
-      "bathroomsMax": 20
-    },
-    {
-      "roomType": "rt.entire_place",
-      "layout": "layout.kitchen_dining_living",
-      "required":    ["sp.bathroom", "sp.kitchen_dining_living"],
-      "recommended": ["sp.bedroom"],
-      "optional":    ["sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.kitchen", "sp.living_room", "sp.dining", "sp.shared_area", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 20,
-      "bathroomsMin": 1,
-      "bathroomsMax": 20
-    },
-    {
-      "roomType": "rt.entire_place",
-      "layout": "layout.open_plan_living_dining",
-      "required":    ["sp.bathroom", "sp.open_plan"],
-      "recommended": ["sp.kitchen", "sp.bedroom"],
-      "optional":    ["sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.other"],
-      "excluded":    ["sp.living_room", "sp.dining", "sp.shared_area", "sp.studio", "sp.loft", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 20,
-      "bathroomsMin": 1,
-      "bathroomsMax": 20
+      "optional":    ["sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living", "sp.other"],
+      "excluded":    ["sp.shared_area"]
     },
     {
       "roomType": "rt.private_room",
-      "layout": null,
       "required":    ["sp.bedroom", "sp.bathroom"],
       "recommended": ["sp.shared_area"],
       "optional":    ["sp.office", "sp.balcony", "sp.storage", "sp.other"],
-      "excluded":    ["sp.kitchen", "sp.living_room", "sp.dining", "sp.laundry", "sp.garden", "sp.garage", "sp.pool", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 1,
-      "bedroomsMax": 1,
-      "bathroomsMin": 1,
-      "bathroomsMax": 2
+      "excluded":    ["sp.kitchen", "sp.living_room", "sp.dining", "sp.laundry", "sp.garden", "sp.garage", "sp.pool", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"]
     },
     {
       "roomType": "rt.shared_room",
-      "layout": null,
       "required":    ["sp.bathroom"],
       "recommended": ["sp.shared_area"],
       "optional":    ["sp.other"],
-      "excluded":    ["sp.bedroom", "sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 0,
-      "bathroomsMin": 1,
-      "bathroomsMax": 5
+      "excluded":    ["sp.bedroom", "sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"]
     },
     {
       "roomType": "rt.hotel_room",
-      "layout": null,
       "required":    ["sp.bedroom", "sp.bathroom"],
       "recommended": [],
       "optional":    ["sp.balcony", "sp.other"],
-      "excluded":    ["sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.shared_area", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 1,
-      "bedroomsMax": 1,
-      "bathroomsMin": 1,
-      "bathroomsMax": 2
+      "excluded":    ["sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.shared_area", "sp.studio", "sp.loft", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"]
     },
     {
       "roomType": "rt.other",
-      "layout": null,
       "required":    [],
       "recommended": ["sp.bathroom"],
-      "optional":    ["sp.bedroom", "sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.studio", "sp.loft", "sp.shared_area", "sp.other"],
-      "excluded":    ["sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living"],
-      "bedroomsMin": 0,
-      "bedroomsMax": 20,
-      "bathroomsMin": 0,
-      "bathroomsMax": 20
+      "optional":    ["sp.bedroom", "sp.kitchen", "sp.living_room", "sp.dining", "sp.office", "sp.laundry", "sp.balcony", "sp.patio", "sp.garden", "sp.garage", "sp.storage", "sp.pool", "sp.studio", "sp.loft", "sp.shared_area", "sp.open_plan", "sp.kitchen_living", "sp.kitchen_dining_living", "sp.other"],
+      "excluded":    []
     }
   ]
 }

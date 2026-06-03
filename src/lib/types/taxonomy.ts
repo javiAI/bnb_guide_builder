@@ -172,7 +172,6 @@ export interface SpaceTypeItem extends TaxonomyItem {
   // Narrower than `allowsSleeping` (which covers e.g. living rooms that *can*
   // host a bed but don't require one). Drives `bedsConfigured` in scoring.
   expectsBeds?: boolean;
-  derivedByLayoutKeys: string[];
   mutuallyExclusiveWith: string[];
   applicableRoomTypes: string[];
 }
@@ -182,23 +181,12 @@ export interface SpaceTypesTaxonomyFile extends TaxonomyFileBase {
 }
 
 // Space availability rules (space_availability_rules.json)
-export interface SpaceLayoutKey {
-  id: string;
-  label: string;
-  description: string;
-}
-
 export interface SpaceAvailabilityRule {
   roomType: string;
-  layout: string | null;
   required: string[];
   recommended: string[];
   optional: string[];
   excluded: string[];
-  bedroomsMin: number;
-  bedroomsMax: number;
-  bathroomsMin: number;
-  bathroomsMax: number;
 }
 
 export interface SpaceAvailabilityPropertyTypeOverlay {
@@ -212,7 +200,6 @@ export interface SpaceAvailabilityEnvironmentOverlay {
 }
 
 export interface SpaceAvailabilityRulesFile extends TaxonomyFileBase {
-  layoutKeys: SpaceLayoutKey[];
   rules: SpaceAvailabilityRule[];
   propertyTypeOverlays?: SpaceAvailabilityPropertyTypeOverlay[];
   environmentOverlays?: SpaceAvailabilityEnvironmentOverlay[];

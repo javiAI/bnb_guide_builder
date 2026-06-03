@@ -13,7 +13,6 @@ import { prisma } from "@/lib/db";
 
 export interface SnapshotProperty {
   roomType: string | null;
-  layoutKey: string | null;
   checkInStart: string | null;
   checkInEnd: string | null;
   checkOutTime: string | null;
@@ -73,7 +72,6 @@ export async function loadPropertySnapshot(
       where: { id: propertyId },
       select: {
         roomType: true,
-        layoutKey: true,
         checkInStart: true,
         checkInEnd: true,
         checkOutTime: true,

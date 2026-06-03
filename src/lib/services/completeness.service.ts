@@ -57,11 +57,11 @@ export async function computeSpacesCompleteness(
     snapshot?.property ??
     (await prisma.property.findUnique({
       where: { id: propertyId },
-      select: { roomType: true, layoutKey: true },
+      select: { roomType: true },
     }));
   if (!property?.roomType) return 0;
 
-  const availability = getAvailableSpaceTypes(property.roomType, property.layoutKey ?? null);
+  const availability = getAvailableSpaceTypes(property.roomType);
 
   const spaces =
     snapshot?.spaces ??

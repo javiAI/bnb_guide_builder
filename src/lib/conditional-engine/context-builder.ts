@@ -72,7 +72,6 @@ export async function buildPropertyContext(
       id: propertyId,
       propertyType: (property.propertyType as string | null) ?? null,
       roomType: (property.roomType as string | null) ?? null,
-      layoutKey: (property.layoutKey as string | null) ?? null,
       propertyEnvironments: (property.propertyEnvironments as string[] | null) ?? [],
       floorLevel: (property.floorLevel as number | null) ?? null,
       buildingFloors: infra?.buildingFloors ?? null,

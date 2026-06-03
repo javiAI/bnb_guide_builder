@@ -8,7 +8,6 @@ import { saveStep1Action } from "@/lib/actions/wizard.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { propertyTypes } from "@/lib/taxonomies/property-types";
 import { roomTypes } from "@/lib/taxonomies/room-types";
-import { spaceAvailabilityRules } from "@/lib/taxonomies/space-availability-rules";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import type { StepFormProps } from "@/lib/types/wizard";
 
@@ -20,20 +19,14 @@ const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
 
-const layoutKeyOptions: RadioCardOption[] = spaceAvailabilityRules.layoutKeys.map((lk) => ({
-  id: lk.id, label: lk.label, description: lk.description,
-}));
-
 type Step1FormProps = StepFormProps;
 
 export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, snapshotStep }: Step1FormProps) {
   const initPt = (initialState.propertyType as string) ?? null;
   const initRt = (initialState.roomType as string) ?? null;
-  const initLk = (initialState.layoutKey as string) ?? null;
 
   const [propertyType, setPropertyType] = useState<string | null>(initPt);
   const [roomType, setRoomType] = useState<string | null>(initRt);
-  const [layoutKey, setLayoutKey] = useState<string | null>(initLk);
   const [customPtLabel, setCustomPtLabel] = useState((initialState.customPropertyTypeLabel as string) ?? "");
   const [customPtDesc, setCustomPtDesc] = useState((initialState.customPropertyTypeDesc as string) ?? "");
   const [customRtLabel, setCustomRtLabel] = useState((initialState.customRoomTypeLabel as string) ?? "");
@@ -42,7 +35,6 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
   // Collapse state
   const [ptExpanded, setPtExpanded] = useState(!initPt);
   const [rtExpanded, setRtExpanded] = useState(!!initPt && !initRt);
-  const [lkExpanded, setLkExpanded] = useState(!!initRt && initRt === "rt.entire_place" && !initLk);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
     saveStep1Action,
@@ -63,12 +55,8 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
 
   const handleRoomTypeSelect = useCallback((value: string) => {
     setRoomType(value);
-    setLayoutKey(null); // reset layout when room type changes
     if (value !== "rt.other") {
-      setTimeout(() => {
-        setRtExpanded(false);
-        if (value === "rt.entire_place") setLkExpanded(true);
-      }, 200);
+      setTimeout(() => setRtExpanded(false), 200);
     }
   }, []);
 
@@ -93,10 +81,7 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
 
   const ptReady = !!propertyType && (propertyType !== "pt.other" || customPtLabel.length > 0);
   const rtReady = !!roomType && (roomType !== "rt.other" || customRtLabel.length > 0);
-  const lkReady = roomType !== "rt.entire_place" || !!layoutKey;
-  const canContinue = ptReady && rtReady && lkReady;
-
-  const lkLabel = layoutKey ? layoutKeyOptions.find((o) => o.id === layoutKey)?.label ?? null : null;
+  const canContinue = ptReady && rtReady;
 
   return (
     <WizardShell
@@ -114,7 +99,6 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
         <input type="hidden" name="sessionId" value={sessionId} />
         <input type="hidden" name="propertyType" value={propertyType ?? ""} />
         <input type="hidden" name="roomType" value={roomType ?? ""} />
-        <input type="hidden" name="layoutKey" value={layoutKey ?? ""} />
         <input type="hidden" name="customPropertyTypeLabel" value={customPtLabel} />
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
@@ -227,33 +211,6 @@ export function Step1Form({ sessionId, initialState, maxStepReached, snapshot, s
               )}
               {state?.fieldErrors?.customRoomTypeLabel && (
                 <p className="mt-2 text-sm text-[var(--color-danger-500)]">{state.fieldErrors.customRoomTypeLabel[0]}</p>
-              )}
-            </CollapsibleSection>
-          )}
-
-          {/* Layout — only for entire place */}
-          {rtReady && roomType === "rt.entire_place" && (
-            <CollapsibleSection
-              title="Distribución"
-              selectedLabel={lkLabel}
-              expanded={lkExpanded}
-              onToggle={() => setLkExpanded(!lkExpanded)}
-            >
-              <p className="mb-3 text-xs text-[var(--color-neutral-500)]">
-                ¿Cómo están organizados los espacios del alojamiento?
-              </p>
-              <RadioCardGroup
-                name="_layoutKey"
-                options={layoutKeyOptions}
-                value={layoutKey}
-                onChange={(value) => {
-                  setLayoutKey(value);
-                  setTimeout(() => setLkExpanded(false), 200);
-                }}
-                showRecommended={false}
-              />
-              {state?.fieldErrors?.layoutKey && (
-                <p className="mt-2 text-sm text-[var(--color-danger-500)]">{state.fieldErrors.layoutKey[0]}</p>
               )}
             </CollapsibleSection>
           )}

@@ -4,6 +4,7 @@ import { useActionState, useState, useCallback, useRef, useEffect, useMemo } fro
 import { Pencil, Search, Home, UsersRound } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
@@ -21,7 +22,6 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { propertyTypes } from "@/lib/taxonomies/property-types";
 import { roomTypes } from "@/lib/taxonomies/room-types";
 import { spanishProvinces } from "@/lib/taxonomies/spanish-provinces";
-import { spaceAvailabilityRules } from "@/lib/taxonomies/space-availability-rules";
 import { propertyEnvironments } from "@/lib/taxonomies/property-environments";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { COMMON_TIMEZONES } from "@/lib/timezones";
@@ -35,36 +35,43 @@ const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item
 const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
-const layoutKeyOptions: RadioCardOption[] = spaceAvailabilityRules.layoutKeys.map((lk) => ({
-  id: lk.id, label: lk.label, description: lk.description,
-}));
 // Multiselect — a property can be e.g. mountain + ski + rural. No "Sin definir"
-// sentinel: an empty selection IS "not defined".
+// sentinel: an empty selection IS "not defined". `env.other` carries a free label.
 const environmentOptions: CheckboxCardOption[] = getItems(propertyEnvironments).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
 const provinces = getItems(spanishProvinces);
 
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
-const PICKER_LABEL_CLS = "text-sm font-semibold text-[var(--color-text-primary)]";
 
-// Custom "Otro" name/description fields, shared by the property-type and
-// room-type pickers (identical shape, different bound state).
-function CustomTypeFields({
+// "Otro (especifica)" inline panel — shared by the type/space/environment
+// pickers. Styled to read as a deepening of the selected "Otro" tile (subtle
+// bordered panel + eyebrow), not a detached contrasting box. `nameOnly` drops
+// the description (environments only need a label).
+function OtherDetailsPanel({
   label,
   onLabelChange,
   desc,
   onDescChange,
+  nameOnly,
+  placeholder,
 }: {
   label: string;
   onLabelChange: (value: string) => void;
-  desc: string;
-  onDescChange: (value: string) => void;
+  desc?: string;
+  onDescChange?: (value: string) => void;
+  nameOnly?: boolean;
+  placeholder?: string;
 }) {
   return (
-    <div className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-      <FieldInput label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} />
-      <FieldTextarea label="Descripción" value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} />
+    <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+        Tu opción personalizada
+      </p>
+      <FieldInput label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} placeholder={placeholder} />
+      {!nameOnly && onDescChange && (
+        <FieldTextarea label="Descripción" value={desc ?? ""} onChange={(e) => onDescChange(e.target.value)} rows={2} />
+      )}
     </div>
   );
 }
@@ -76,12 +83,12 @@ interface PropertyFormProps {
     propertyNickname: string;
     propertyType: string | null;
     roomType: string | null;
-    layoutKey: string | null;
     propertyEnvironments: string[];
     customPropertyTypeLabel: string | null;
     customPropertyTypeDesc: string | null;
     customRoomTypeLabel: string | null;
     customRoomTypeDesc: string | null;
+    customEnvironmentLabel: string | null;
     country: string | null;
     city: string | null;
     region: string | null;
@@ -109,12 +116,15 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
 
   const [propertyType, setPropertyType] = useState(p.propertyType ?? "");
   const [roomType, setRoomType] = useState(p.roomType ?? "");
-  const [layoutKey, setLayoutKey] = useState(p.layoutKey ?? "");
   const [environments, setEnvironments] = useState<string[]>(p.propertyEnvironments ?? []);
   const [customPtLabel, setCustomPtLabel] = useState(p.customPropertyTypeLabel ?? "");
   const [customPtDesc, setCustomPtDesc] = useState(p.customPropertyTypeDesc ?? "");
   const [customRtLabel, setCustomRtLabel] = useState(p.customRoomTypeLabel ?? "");
   const [customRtDesc, setCustomRtDesc] = useState(p.customRoomTypeDesc ?? "");
+  const [customEnvLabel, setCustomEnvLabel] = useState(p.customEnvironmentLabel ?? "");
+  // Classification accordion: at most one picker open at a time (the rest show
+  // their selected value as a summary). Default: all collapsed.
+  const [openPicker, setOpenPicker] = useState<"propertyType" | "roomType" | "environment" | null>(null);
   const [country, setCountry] = useState(p.country ?? "España");
   const [city, setCity] = useState(p.city ?? "");
   const [province, setProvince] = useState(p.region ?? "");
@@ -246,6 +256,17 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   }, [maxGuests]);
 
   const ptLabel = propertyType === "pt.other" ? (customPtLabel || "Otro") : findItem(propertyTypes, propertyType)?.label ?? "Sin definir";
+  const rtLabel = roomType === "rt.other" ? (customRtLabel || "Otro") : findItem(roomTypes, roomType)?.label ?? "Sin definir";
+  const envLabel = environments.length > 0
+    ? environments
+        .map((id) => (id === "env.other" ? (customEnvLabel || "Otro") : findItem(propertyEnvironments, id)?.label))
+        .filter(Boolean)
+        .join(", ")
+    : "Sin definir";
+
+  // Accordion: opening a picker collapses the others; clicking the open one closes it.
+  const togglePicker = (key: "propertyType" | "roomType" | "environment") =>
+    setOpenPicker((cur) => (cur === key ? null : key));
 
   return (
     <div>
@@ -266,7 +287,6 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
-        <input type="hidden" name="layoutKey" value={roomType === "rt.entire_place" ? layoutKey : ""} />
         {environments.map((env) => (
           <input key={`env-${env}`} type="hidden" name="propertyEnvironments" value={env} />
         ))}
@@ -274,6 +294,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
+        <input type="hidden" name="customEnvironmentLabel" value={customEnvLabel} />
         {/* Only send infrastructureJson when buildingFloors changed — avoids overwriting existing JSON keys on unrelated saves */}
         {infraDirty && (
           <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
@@ -308,59 +329,30 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         </div>
 
         <NumberedSection number="01" title="Clasificación">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <p className={PICKER_LABEL_CLS}>Tipo de propiedad</p>
+          <div className="space-y-2">
+            <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={openPicker === "propertyType"} onToggle={() => togglePicker("propertyType")}>
+              <p className={`mb-3 ${HELP_CLS}`}>¿Qué clase de alojamiento es? Define la base de la guía.</p>
               <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} layout="grid" />
               {propertyType === "pt.other" && (
-                <CustomTypeFields label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} />
+                <OtherDetailsPanel label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} placeholder="ej. Casa flotante" />
               )}
-            </div>
+            </CollapsibleSection>
 
-            <div className="space-y-2">
-              <p className={PICKER_LABEL_CLS}>Tipo de espacio</p>
+            <CollapsibleSection title="Tipo de espacio" selectedLabel={rtLabel} expanded={openPicker === "roomType"} onToggle={() => togglePicker("roomType")}>
+              <p className={`mb-3 ${HELP_CLS}`}>¿El huésped reserva el alojamiento entero o una habitación?</p>
               <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} layout="grid" />
               {roomType === "rt.other" && (
-                <CustomTypeFields label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} />
+                <OtherDetailsPanel label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} placeholder="ej. Cápsula" />
               )}
-            </div>
+            </CollapsibleSection>
 
-            {roomType === "rt.entire_place" && (
-              <div className="space-y-2">
-                <p className={PICKER_LABEL_CLS}>Distribución</p>
-                <p className={HELP_CLS}>
-                  ¿Cómo están organizados los espacios? Esto determina qué tipos de espacio puedes añadir.
-                </p>
-                {layoutKey && layoutKey !== (p.layoutKey ?? "") && (
-                  <div className="rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-3 py-2 text-xs text-[var(--color-status-warning-text)]">
-                    Cambiar la distribución puede generar conflictos con los espacios ya creados. Revisa la sección Espacios tras guardar.
-                  </div>
-                )}
-                <RadioCardGroup
-                  name="_layoutKey"
-                  options={layoutKeyOptions}
-                  value={layoutKey || null}
-                  onChange={setLayoutKey}
-                  showRecommended={false}
-                  layout="grid"
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <p className={PICKER_LABEL_CLS}>Entorno</p>
-              <p className={HELP_CLS}>
-                Selecciona todos los que apliquen — ayuda a filtrar equipamiento y opciones relevantes. Déjalo vacío si ninguno encaja.
-              </p>
-              <CheckboxCardGroup
-                name="_environments"
-                options={environmentOptions}
-                value={environments}
-                onChange={setEnvironments}
-                showRecommended={false}
-                layout="grid"
-              />
-            </div>
+            <CollapsibleSection title="Entorno" selectedLabel={envLabel} expanded={openPicker === "environment"} onToggle={() => togglePicker("environment")}>
+              <p className={`mb-3 ${HELP_CLS}`}>Selecciona todos los que apliquen — ayuda a filtrar equipamiento y opciones relevantes. Déjalo vacío si ninguno encaja.</p>
+              <CheckboxCardGroup name="_environments" options={environmentOptions} value={environments} onChange={setEnvironments} showRecommended={false} layout="grid" />
+              {environments.includes("env.other") && (
+                <OtherDetailsPanel label={customEnvLabel} onLabelChange={setCustomEnvLabel} nameOnly placeholder="ej. Desierto" />
+              )}
+            </CollapsibleSection>
           </div>
         </NumberedSection>
 

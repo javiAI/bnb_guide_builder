@@ -23,7 +23,6 @@ describe("Property editor schema", () => {
       propertyNickname: "Casa Playa",
       propertyType: "pt.apartment",
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       country: "España",
       city: "Valencia",
       streetAddress: "Calle Mayor, 10",
@@ -53,11 +52,13 @@ describe("Property editor schema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects rt.entire_place without layoutKey", () => {
+  it("accepts rt.entire_place without distribución (layoutKey removed in 16I-2)", () => {
     const result = propertySchema.safeParse({
       propertyNickname: "Test",
       propertyType: "pt.house",
       roomType: "rt.entire_place",
+      propertyEnvironments: ["env.mountain", "env.other"],
+      customEnvironmentLabel: "Desierto",
       country: "España",
       city: "Madrid",
       streetAddress: "Calle Sol, 5",
@@ -67,7 +68,7 @@ describe("Property editor schema", () => {
       maxChildren: 0,
       infantsAllowed: false,
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects maxGuests below 1", () => {
@@ -75,7 +76,6 @@ describe("Property editor schema", () => {
       propertyNickname: "Test",
       propertyType: "pt.house",
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       country: "España",
       city: "Madrid",
       streetAddress: "Calle Sol, 5",

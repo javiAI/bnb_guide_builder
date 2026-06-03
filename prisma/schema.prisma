@@ -72,7 +72,6 @@ model Property {
   propertyNickname        String   @map("property_nickname")
   propertyType            String?  @map("property_type")
   roomType                String?  @map("room_type")
-  layoutKey               String?  @map("layout_key")
   propertyEnvironments    String[] @map("property_environments")
   country                 String?
   city                    String?
@@ -101,6 +100,7 @@ model Property {
   customPropertyTypeDesc  String?  @map("custom_property_type_desc")
   customRoomTypeLabel     String?  @map("custom_room_type_label")
   customRoomTypeDesc      String?  @map("custom_room_type_desc")
+  customEnvironmentLabel  String?  @map("custom_environment_label")
   customAccessMethodLabel String?  @map("custom_access_method_label")
   customAccessMethodDesc  String?  @map("custom_access_method_desc")
   infantsAllowed          Boolean  @default(false) @map("infants_allowed")

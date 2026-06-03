@@ -1,6 +1,6 @@
 /**
  * Space availability resolver — layers propertyType + environment overlays
- * on top of the base (roomType + layoutKey) rule.
+ * on top of the base (roomType) rule.
  *
  * Overlays can only PROMOTE optional → recommended. Required and excluded
  * lists stay untouched: those encode hard layout constraints and are not
@@ -25,7 +25,6 @@ export interface ResolvedSpaceAvailability {
 
 export interface ResolveSpaceAvailabilityInput {
   roomType: string;
-  layoutKey: string | null;
   propertyType: string | null;
   /** A property can carry several environments (mountain + ski + …). */
   environments: string[];
@@ -59,7 +58,7 @@ function collectPromotions(
 export function resolveSpaceAvailability(
   input: ResolveSpaceAvailabilityInput,
 ): ResolvedSpaceAvailability {
-  const base = getAvailableSpaceTypes(input.roomType, input.layoutKey);
+  const base = getAvailableSpaceTypes(input.roomType);
   const promotions = collectPromotions(input.propertyType, input.environments);
   if (promotions.size === 0) return base;
 
