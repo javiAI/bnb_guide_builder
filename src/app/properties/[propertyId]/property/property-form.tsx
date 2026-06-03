@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useMemo } from "react";
-import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, BedDouble, ArrowUpDown } from "lucide-react";
+import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, BedDouble, ArrowUpDown, type LucideIcon } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -79,6 +79,30 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
     >
       <X size={14} aria-hidden="true" />
     </button>
+  );
+}
+
+// Feature toggle row: icon · label + helper · checkbox. The whole row is the
+// (≥44) hit target. Omit `name` when submission goes through a sibling hidden
+// input (e.g. the elevator's explicit true/false intent).
+function ToggleRow({ icon, label, helper, checked, onChange, name, className }: {
+  icon: LucideIcon;
+  label: string;
+  helper?: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  name?: string;
+  className?: string;
+}) {
+  return (
+    <label className={`flex min-h-[44px] cursor-pointer items-center gap-3 ${className ?? ""}`}>
+      <IconBadge icon={icon} tone="neutral" />
+      <span className="flex-1">
+        <span className="block text-sm font-medium text-[var(--color-text-primary)]">{label}</span>
+        {helper && <span className="block text-xs text-[var(--color-text-muted)]">{helper}</span>}
+      </span>
+      <input type="checkbox" name={name} checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
+    </label>
   );
 }
 
@@ -436,14 +460,15 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
               </div>
               <input type="hidden" name="maxGuests" value={totalGuests} />
 
-              <label className="mt-3 flex min-h-[44px] cursor-pointer items-center gap-3 border-t border-[var(--color-border-default)] pt-3">
-                <IconBadge icon={Baby} tone="neutral" />
-                <span className="flex-1">
-                  <span className="block text-sm font-medium text-[var(--color-text-primary)]">Se admiten bebés (cuna disponible)</span>
-                  <span className="block text-xs text-[var(--color-text-muted)]">No cuentan en el aforo.</span>
-                </span>
-                <input type="checkbox" name="infantsAllowed" checked={infantsAllowed} onChange={(e) => setInfantsAllowed(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-              </label>
+              <ToggleRow
+                icon={Baby}
+                label="Se admiten bebés (cuna disponible)"
+                helper="No cuentan en el aforo."
+                name="infantsAllowed"
+                checked={infantsAllowed}
+                onChange={setInfantsAllowed}
+                className="mt-3 border-t border-[var(--color-border-default)] pt-3"
+              />
             </Card>
 
             {/* Dormitorios y baños — derived (read-only) from Espacios. */}
@@ -481,14 +506,13 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
               <div className="space-y-3">
                 {elevatorRelevant && (
                   <div>
-                    <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
-                      <IconBadge icon={ArrowUpDown} tone="neutral" />
-                      <span className="flex-1">
-                        <span className="block text-sm font-medium text-[var(--color-text-primary)]">El edificio tiene ascensor</span>
-                        <span className="block text-xs text-[var(--color-text-muted)]">Se guarda en los sistemas del edificio.</span>
-                      </span>
-                      <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
-                    </label>
+                    <ToggleRow
+                      icon={ArrowUpDown}
+                      label="El edificio tiene ascensor"
+                      helper="Se guarda en los sistemas del edificio."
+                      checked={hasElevator}
+                      onChange={setHasElevator}
+                    />
                     <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
                     {hasElevator && (
                       <p className={`mt-1 pl-[42px] ${HELP_CLS}`}>
@@ -499,14 +523,15 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
                   </div>
                 )}
 
-                <label className={`flex min-h-[44px] cursor-pointer items-center gap-3 ${elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}`}>
-                  <IconBadge icon={DoorOpen} tone="neutral" />
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-[var(--color-text-primary)]">Entrada privada</span>
-                    <span className="block text-xs text-[var(--color-text-muted)]">Entrada independiente, sin zonas compartidas con otros inquilinos o el anfitrión.</span>
-                  </span>
-                  <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
-                </label>
+                <ToggleRow
+                  icon={DoorOpen}
+                  label="Entrada privada"
+                  helper="Entrada independiente, sin zonas compartidas con otros inquilinos o el anfitrión."
+                  name="hasPrivateEntrance"
+                  checked={hasPrivateEntrance}
+                  onChange={setHasPrivateEntrance}
+                  className={elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}
+                />
               </div>
             </Card>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ZoomIn, X, Move } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -55,6 +55,17 @@ function MapCanvas({
   const armedRef = useRef(armed);
   armedRef.current = armed;
 
+  // Create the draggable pin + wire its dragend once; shared by the mount effect
+  // and the coordinate-update effect so the marker wiring lives in one place.
+  const attachMarker = useCallback((map: maplibregl.Map, mLng: number, mLat: number) => {
+    const marker = createMarker(map, mLng, mLat);
+    marker.on("dragend", () => {
+      const pos = marker.getLngLat();
+      onPositionChangeRef.current(pos.lat, pos.lng);
+    });
+    markerRef.current = marker;
+  }, []);
+
   useEffect(() => {
     if (!styleUrl || !containerRef.current || mapRef.current) return;
 
@@ -72,16 +83,7 @@ function MapCanvas({
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     const disposeAttribution = addCollapsedAttribution(map);
 
-    const attachMarker = (mLng: number, mLat: number) => {
-      const marker = createMarker(map, mLng, mLat);
-      marker.on("dragend", () => {
-        const pos = marker.getLngLat();
-        onPositionChangeRef.current(pos.lat, pos.lng);
-      });
-      markerRef.current = marker;
-    };
-
-    if (lat != null && lng != null) attachMarker(lng, lat);
+    if (lat != null && lng != null) attachMarker(map, lng, lat);
 
     map.on("click", (e) => {
       if (!armedRef.current) return; // only place the pin when armed
@@ -89,7 +91,7 @@ function MapCanvas({
       onPositionChangeRef.current(clickLat, clickLng);
       setArmed(false); // one placement per arm
       if (markerRef.current) markerRef.current.setLngLat([clickLng, clickLat]);
-      else attachMarker(clickLng, clickLat);
+      else attachMarker(map, clickLng, clickLat);
     });
 
     mapRef.current = map;
@@ -109,15 +111,10 @@ function MapCanvas({
     if (markerRef.current) {
       markerRef.current.setLngLat([lng, lat]);
     } else {
-      const marker = createMarker(mapRef.current, lng, lat);
-      marker.on("dragend", () => {
-        const pos = marker.getLngLat();
-        onPositionChangeRef.current(pos.lat, pos.lng);
-      });
-      markerRef.current = marker;
+      attachMarker(mapRef.current, lng, lat);
     }
     mapRef.current.flyTo({ center: [lng, lat], zoom: 15, duration: 1000 });
-  }, [lat, lng]);
+  }, [lat, lng, attachMarker]);
 
   if (error) return <div className={`${heightClass} ${FALLBACK_BOX}`}>{error}</div>;
   if (!styleUrl) return <div className={`${heightClass} ${FALLBACK_BOX}`}>Cargando mapa...</div>;
