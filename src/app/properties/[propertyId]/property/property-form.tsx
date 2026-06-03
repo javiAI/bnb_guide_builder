@@ -44,11 +44,11 @@ const provinces = getItems(spanishProvinces);
 
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
 
-// "Otro (especifica)" inline panel — shared by the type/space/environment
-// pickers. Styled to read as a deepening of the selected "Otro" tile (subtle
-// bordered panel + eyebrow), not a detached contrasting box. `nameOnly` drops
-// the description (environments only need a label).
-function OtherDetailsPanel({
+// "Otro (especifica)" fields — rendered *inside* the selected "Otro" tile (via
+// the card group's `renderExpanded`), so the form reveals in place, no detached
+// box. The tile supplies the border/tint + a top divider. `nameOnly` drops the
+// description (environments only need a label).
+function OtherDetailsFields({
   label,
   onLabelChange,
   desc,
@@ -64,10 +64,7 @@ function OtherDetailsPanel({
   placeholder?: string;
 }) {
   return (
-    <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
-        Tu opción personalizada
-      </p>
+    <div className="space-y-3">
       <FieldInput label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} placeholder={placeholder} />
       {!nameOnly && onDescChange && (
         <FieldTextarea label="Descripción" value={desc ?? ""} onChange={(e) => onDescChange(e.target.value)} rows={2} />
@@ -332,26 +329,53 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
           <div className="space-y-2">
             <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={openPicker === "propertyType"} onToggle={() => togglePicker("propertyType")}>
               <p className={`mb-3 ${HELP_CLS}`}>¿Qué clase de alojamiento es? Define la base de la guía.</p>
-              <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} layout="grid" />
-              {propertyType === "pt.other" && (
-                <OtherDetailsPanel label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} placeholder="ej. Casa flotante" />
-              )}
+              <RadioCardGroup
+                name="_propertyType"
+                options={propertyTypeOptions}
+                value={propertyType}
+                onChange={setPropertyType}
+                showRecommended={false}
+                layout="grid"
+                renderExpanded={(id) =>
+                  id === "pt.other" ? (
+                    <OtherDetailsFields label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} placeholder="ej. Casa flotante" />
+                  ) : null
+                }
+              />
             </CollapsibleSection>
 
             <CollapsibleSection title="Tipo de espacio" selectedLabel={rtLabel} expanded={openPicker === "roomType"} onToggle={() => togglePicker("roomType")}>
               <p className={`mb-3 ${HELP_CLS}`}>¿El huésped reserva el alojamiento entero o una habitación?</p>
-              <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} layout="grid" />
-              {roomType === "rt.other" && (
-                <OtherDetailsPanel label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} placeholder="ej. Cápsula" />
-              )}
+              <RadioCardGroup
+                name="_roomType"
+                options={roomTypeOptions}
+                value={roomType}
+                onChange={setRoomType}
+                showRecommended={false}
+                layout="grid"
+                renderExpanded={(id) =>
+                  id === "rt.other" ? (
+                    <OtherDetailsFields label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} placeholder="ej. Cápsula" />
+                  ) : null
+                }
+              />
             </CollapsibleSection>
 
             <CollapsibleSection title="Entorno" selectedLabel={envLabel} expanded={openPicker === "environment"} onToggle={() => togglePicker("environment")}>
               <p className={`mb-3 ${HELP_CLS}`}>Selecciona todos los que apliquen — ayuda a filtrar equipamiento y opciones relevantes. Déjalo vacío si ninguno encaja.</p>
-              <CheckboxCardGroup name="_environments" options={environmentOptions} value={environments} onChange={setEnvironments} showRecommended={false} layout="grid" />
-              {environments.includes("env.other") && (
-                <OtherDetailsPanel label={customEnvLabel} onLabelChange={setCustomEnvLabel} nameOnly placeholder="ej. Desierto" />
-              )}
+              <CheckboxCardGroup
+                name="_environments"
+                options={environmentOptions}
+                value={environments}
+                onChange={setEnvironments}
+                showRecommended={false}
+                layout="grid"
+                renderExpanded={(id) =>
+                  id === "env.other" ? (
+                    <OtherDetailsFields label={customEnvLabel} onLabelChange={setCustomEnvLabel} nameOnly placeholder="ej. Desierto" />
+                  ) : null
+                }
+              />
             </CollapsibleSection>
           </div>
         </NumberedSection>
