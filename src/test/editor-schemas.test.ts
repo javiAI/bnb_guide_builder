@@ -52,7 +52,7 @@ describe("Property editor schema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts rt.entire_place without distribución (layoutKey removed in 16I-2)", () => {
+  it("accepts rt.entire_place with multiple environments + custom 'Otro' env", () => {
     const result = propertySchema.safeParse({
       propertyNickname: "Test",
       propertyType: "pt.house",
