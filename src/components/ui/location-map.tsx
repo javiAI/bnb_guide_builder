@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ZoomIn, X } from "lucide-react";
+import { ZoomIn, X, MapPin } from "lucide-react";
+import { cn } from "@/lib/cn";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { readCssVar } from "@/lib/css-var";
@@ -41,6 +42,13 @@ function MapCanvas({
   const onPositionChangeRef = useRef(onPositionChange);
   onPositionChangeRef.current = onPositionChange;
   const { styleUrl, error } = useTilesStyleUrl();
+  // Manual-pin mode: the pin only moves on a map click while "armed" (after the
+  // operator taps the pin button). Idle clicks do nothing — so panning/exploring
+  // never relocates the property by accident. Dragging the existing pin is always
+  // allowed (an unambiguous, deliberate gesture).
+  const [armed, setArmed] = useState(false);
+  const armedRef = useRef(armed);
+  armedRef.current = armed;
 
   useEffect(() => {
     if (!styleUrl || !containerRef.current || mapRef.current) return;
@@ -71,8 +79,10 @@ function MapCanvas({
     if (lat != null && lng != null) attachMarker(lng, lat);
 
     map.on("click", (e) => {
+      if (!armedRef.current) return; // only place the pin when armed
       const { lat: clickLat, lng: clickLng } = e.lngLat;
       onPositionChangeRef.current(clickLat, clickLng);
+      setArmed(false); // one placement per arm
       if (markerRef.current) markerRef.current.setLngLat([clickLng, clickLat]);
       else attachMarker(clickLng, clickLat);
     });
@@ -110,7 +120,26 @@ function MapCanvas({
   return (
     <div className={`relative ${heightClass} w-full`}>
       <div ref={containerRef} className="h-full w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border-default)]" />
+      <button
+        type="button"
+        onClick={() => setArmed((a) => !a)}
+        aria-label="Colocar el pin manualmente"
+        aria-pressed={armed}
+        className={cn(
+          "absolute left-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+          armed
+            ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
+            : "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
+        )}
+      >
+        <MapPin size={18} aria-hidden="true" />
+      </button>
       {overlay}
+      {armed && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 z-[2] -translate-x-1/2 rounded-full bg-[var(--color-background-overlay)] px-3 py-1 text-[12px] font-medium text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px]">
+          Toca el mapa para colocar el pin
+        </div>
+      )}
     </div>
   );
 }
@@ -123,7 +152,7 @@ function ZoomButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Ampliar mapa"
-      className="absolute left-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]"
+      className="absolute left-3 top-[60px] z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]"
     >
       <ZoomIn size={18} aria-hidden="true" />
     </button>

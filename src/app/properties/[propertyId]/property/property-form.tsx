@@ -157,8 +157,11 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [country, setCountry] = useState(p.country ?? "España");
   const [city, setCity] = useState(p.city ?? "");
   const [province, setProvince] = useState(p.region ?? "");
-  const [streetAddress, setStreetAddress] = useState(p.streetAddress ?? "");
-  const [addressExtra, setAddressExtra] = useState(p.addressExtra ?? "");
+  // The address is a single full field now (no separate Piso/Puerta) — merge any
+  // legacy addressExtra into it on load; addressExtra is then cleared on save.
+  const [streetAddress, setStreetAddress] = useState(
+    [p.streetAddress, p.addressExtra].map((s) => s?.trim()).filter(Boolean).join(", "),
+  );
   const [postalCode, setPostalCode] = useState(p.postalCode ?? "");
   const [timezone, setTimezone] = useState(p.timezone ?? "Europe/Madrid");
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set());
@@ -236,20 +239,9 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     } catch { /* ignore */ }
   }
 
-  // Auto-geocode on address blur — but only once per distinct address. Without
-  // this guard a blur that fires repeatedly (focus bouncing during auto-save
-  // re-renders) re-geocodes the same address in a loop, which is what made the
-  // "Guardando…" indicator + the provincia flash fire continuously. The explicit
-  // "Encontrar ubicación" button bypasses this (calls handleGeocode directly).
-  const lastGeocodedKey = useRef<string | null>(null);
-  function handleAddressBlur() {
-    if (!(country.trim() && city.trim() && streetAddress.trim()) || geocoding) return;
-    const key = `${country.trim()}|${city.trim()}|${streetAddress.trim()}`;
-    if (key === lastGeocodedKey.current) return;
-    lastGeocodedKey.current = key;
-    handleGeocode();
-  }
-
+  // Geocoding runs ONLY when the operator clicks "Encontrar ubicación" — never
+  // automatically. Auto-geocoding on blur fought manual edits (e.g. clearing the
+  // provincia) by re-deriving + re-saving them, which read as a glitchy loop.
   async function handleGeocode() {
     // País + Ciudad + Dirección son obligatorios para una búsqueda determinista.
     if (geocoding || !country.trim() || !city.trim() || !streetAddress.trim()) return;
@@ -397,12 +389,9 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
               <FieldInput label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
               <FieldInput label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="sm:col-span-2">
-                <FieldInput label="Dirección (vía y número)" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" />
-              </div>
-              <FieldInput label="Piso / Puerta" name="addressExtra" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" />
-            </div>
+            <FieldInput label="Dirección" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="ej. Calle Ramón y Cajal 17, 2º C" help="Dirección completa: vía, número y, si aplica, piso/puerta." />
+            {/* Piso/Puerta merged into the full address above — clear the legacy column on save. */}
+            <input type="hidden" name="addressExtra" value="" />
             <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
             <input type="hidden" name="latitude" value={latitude ?? ""} />
             <input type="hidden" name="longitude" value={longitude ?? ""} />
