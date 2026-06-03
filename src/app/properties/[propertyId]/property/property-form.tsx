@@ -251,7 +251,8 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   }
 
   async function handleGeocode() {
-    if (geocoding || (!city && !country)) return;
+    // País + Ciudad + Dirección son obligatorios para una búsqueda determinista.
+    if (geocoding || !country.trim() || !city.trim() || !streetAddress.trim()) return;
     setGeocoding(true);
     try {
       const res = await fetch("/api/geo/geocode", {
@@ -406,7 +407,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
             <input type="hidden" name="latitude" value={latitude ?? ""} />
             <input type="hidden" name="longitude" value={longitude ?? ""} />
 
-            <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40">
+            <button type="button" disabled={geocoding || !country.trim() || !city.trim() || !streetAddress.trim()} onClick={handleGeocode} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40">
               <Search size={14} aria-hidden="true" />
               {geocoding ? "Buscando..." : "Encontrar ubicación"}
             </button>
