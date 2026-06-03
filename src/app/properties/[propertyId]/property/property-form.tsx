@@ -10,6 +10,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { FieldInput, FieldSelect, FieldTextarea } from "@/components/ui/field";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
+import { roundCoord } from "@/lib/round-coord";
 import { Card } from "@/components/ui/card";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
@@ -130,8 +131,8 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [postalCode, setPostalCode] = useState(p.postalCode ?? "");
   const [timezone, setTimezone] = useState(p.timezone ?? "Europe/Madrid");
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set());
-  const [latitude, setLatitude] = useState<number | null>(p.latitude);
-  const [longitude, setLongitude] = useState<number | null>(p.longitude);
+  const [latitude, setLatitude] = useState<number | null>(p.latitude != null ? roundCoord(p.latitude) : null);
+  const [longitude, setLongitude] = useState<number | null>(p.longitude != null ? roundCoord(p.longitude) : null);
   const [geocoding, setGeocoding] = useState(false);
   const [maxGuests, setMaxGuests] = useState(p.maxGuests ?? 2);
   const [maxAdults, setMaxAdults] = useState(p.maxAdults);
@@ -184,8 +185,8 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const autoFillCls = (name: string) => autoFilled.has(name) ? "!bg-[var(--color-action-primary-subtle)] !border-[var(--color-border-focus)]" : "";
 
   async function handlePinMove(lat: number, lng: number) {
-    setLatitude(lat);
-    setLongitude(lng);
+    setLatitude(roundCoord(lat));
+    setLongitude(roundCoord(lng));
     try {
       const res = await fetch("/api/geo/reverse", {
         method: "POST",
@@ -229,8 +230,8 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
       });
       const data = await res.json();
       if (data.matchFound) {
-        setLatitude(data.lat);
-        setLongitude(data.lng);
+        setLatitude(roundCoord(data.lat));
+        setLongitude(roundCoord(data.lng));
         const d = data.derived;
         if (d?.timezone && COMMON_TIMEZONES.some((tz) => tz.value === d.timezone)) { setTimezone(d.timezone); flashField("timezone"); }
         if (d?.provinceId) { setProvince(d.provinceId); flashField("region"); }
