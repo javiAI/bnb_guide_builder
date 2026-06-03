@@ -1,4 +1,5 @@
 import type { SubtypeFieldType } from "@/config/registries/field-type-registry";
+import type { ItemRules } from "@/lib/conditional-engine/types";
 
 // Reusable option shape (used by policy items, subtype fields, etc.)
 export interface TaxonomyOption {
@@ -230,6 +231,21 @@ export interface SystemItem {
   visibility: SystemVisibility;
   recommended: boolean;
   source: string[];
+  /**
+   * Optional conditional-relevance rule (FUTURE §28). When present, the item is
+   * only relevant/offered for properties whose context satisfies the rule —
+   * evaluated by `isSystemRelevant` via the same engine as space availability.
+   * First instance: `sys.elevator` (multi-floor, non-house). Absent ⇒ always
+   * relevant.
+   */
+  relevantWhen?: ItemRules;
+  /**
+   * When true, the system's *existence* is governed from another surface (the
+   * Property editor), not the Systems "add" picker. Its optional detail fields
+   * remain editable in Systems once the row exists. Used by `sys.elevator`
+   * (configured in Propiedad/Edificio, persisted here as the single source).
+   */
+  managedInProperty?: boolean;
 }
 
 export interface SystemGroup {

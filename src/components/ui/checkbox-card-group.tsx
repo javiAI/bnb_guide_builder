@@ -1,5 +1,7 @@
 "use client";
 
+import { Check } from "lucide-react";
+
 export interface CheckboxCardOption {
   id: string;
   label: string;
@@ -13,15 +15,73 @@ interface CheckboxCardGroupProps {
   value: string[];
   onChange: (values: string[]) => void;
   showRecommended?: boolean;
+  /**
+   * `stack` (default) = full-width rows. `grid` = compact tiles in a responsive
+   * grid. Additive — existing callers are unaffected.
+   */
+  layout?: "stack" | "grid";
 }
 
-export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true }: CheckboxCardGroupProps) {
+function RecommendedBadge() {
+  return (
+    <span className="ml-2 inline-block rounded-full bg-[var(--color-interactive-selected)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-interactive-selected-fg)]">
+      Recomendado
+    </span>
+  );
+}
+
+export function CheckboxCardGroup({ name, options, value, onChange, showRecommended = true, layout = "stack" }: CheckboxCardGroupProps) {
   function toggle(id: string) {
     if (value.includes(id)) {
       onChange(value.filter((v) => v !== id));
     } else {
       onChange([...value, id]);
     }
+  }
+
+  if (layout === "grid") {
+    return (
+      <fieldset className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {options.map((option) => {
+          const selected = value.includes(option.id);
+          return (
+            <label
+              key={option.id}
+              className={`relative flex min-h-[44px] cursor-pointer flex-col gap-0.5 rounded-[var(--radius-lg)] border-2 p-3 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-border-focus)] ${
+                selected
+                  ? "border-[var(--color-action-primary)] bg-[var(--color-interactive-selected)]"
+                  : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-emphasis)]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                name={name}
+                value={option.id}
+                checked={selected}
+                onChange={() => toggle(option.id)}
+                className="sr-only"
+              />
+              {selected && (
+                <Check
+                  size={16}
+                  aria-hidden="true"
+                  className="absolute right-2 top-2 text-[var(--color-action-primary)]"
+                />
+              )}
+              <span className="block pr-5 text-sm font-medium text-[var(--color-text-primary)]">
+                {option.label}
+                {showRecommended && option.recommended && <RecommendedBadge />}
+              </span>
+              {option.description && (
+                <span className="block text-xs leading-snug text-[var(--color-text-muted)]">
+                  {option.description}
+                </span>
+              )}
+            </label>
+          );
+        })}
+      </fieldset>
+    );
   }
 
   return (
@@ -48,11 +108,7 @@ export function CheckboxCardGroup({ name, options, value, onChange, showRecommen
             <div className="min-w-0 flex-1">
               <span className="block text-sm font-medium text-[var(--color-text-primary)]">
                 {option.label}
-                {showRecommended && option.recommended && (
-                  <span className="ml-2 inline-block rounded-full bg-[var(--color-interactive-selected)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-interactive-selected-fg)]">
-                    Recomendado
-                  </span>
-                )}
+                {showRecommended && option.recommended && <RecommendedBadge />}
               </span>
               <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
                 {option.description}

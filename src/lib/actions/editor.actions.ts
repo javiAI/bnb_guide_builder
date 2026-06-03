@@ -100,6 +100,37 @@ export async function deletePropertyAction(
 
 // ── Property editor (replaces basics) ──
 
+const ELEVATOR_SYSTEM_KEY = "sys.elevator";
+
+// Reconcile the single-source `sys.elevator` PropertySystem row from the
+// Property/Edificio elevator toggle. The elevator's *existence* is governed
+// from Propiedad (operator mental model: describing the building); its optional
+// detail fields stay editable in Sistemas. Mirrors create/deleteSystemAction
+// side-effects. Non-destructive: acts only on an explicit on/off intent — never
+// auto-removes the row on a relevance change (e.g. type → Casa).
+async function reconcilePropertyElevatorSystem(
+  propertyId: string,
+  wanted: boolean,
+): Promise<void> {
+  const existing = await prisma.propertySystem.findUnique({
+    where: { propertyId_systemKey: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY } },
+    select: { id: true },
+  });
+  if (wanted && !existing) {
+    const visibility = normaliseVisibility(
+      findSystemItem(ELEVATOR_SYSTEM_KEY)?.visibility ?? "public",
+    );
+    const created = await prisma.propertySystem.create({
+      data: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY, visibility },
+      select: { id: true },
+    });
+    invalidateKnowledgeInBackground(propertyId, "system", created.id);
+  } else if (!wanted && existing) {
+    await prisma.propertySystem.delete({ where: { id: existing.id } });
+    deleteEntityChunksInBackground(propertyId, "system", existing.id);
+  }
+}
+
 export async function savePropertyAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -110,7 +141,7 @@ export async function savePropertyAction(
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
     layoutKey: (formData.get("layoutKey") as string) || null,
-    propertyEnvironment: (formData.get("propertyEnvironment") as string) || null,
+    propertyEnvironments: formData.getAll("propertyEnvironments") as string[],
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
@@ -169,6 +200,14 @@ export async function savePropertyAction(
       arrivalSuggestionsCacheJson: Prisma.DbNull,
     },
   });
+
+  // Elevator: single source of truth is the `sys.elevator` system, toggled from
+  // Propiedad/Edificio. Only reconcile when the form sent an explicit intent
+  // (field present ⇒ the relevance-gated checkbox was rendered).
+  const elevatorIntent = formData.get("hasElevator");
+  if (elevatorIntent === "true" || elevatorIntent === "false") {
+    await reconcilePropertyElevatorSystem(propertyId, elevatorIntent === "true");
+  }
 
   recomputeAllInBackground(propertyId);
   // propertyNickname/city appear in contextPrefix of ALL chunk types; trigger full regen

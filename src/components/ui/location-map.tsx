@@ -43,7 +43,26 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
     });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    map.addControl(new maplibregl.FullscreenControl(), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-left");
+
+    // MapLibre's compact AttributionControl ships EXPANDED on mount and on every
+    // style/source change. Close it on mount + after load/styledata so the
+    // "OpenStreetMap contributors" banner starts collapsed — parity with the
+    // Access cockpit map (`multi-pin-map.tsx`). No MutationObserver (it would
+    // ping-pong against MapLibre's own DOM writes).
+    const collapseAttribution = () => {
+      containerRef.current?.querySelectorAll(".maplibregl-ctrl-attrib").forEach((el) => {
+        if (el instanceof HTMLDetailsElement && el.open) el.open = false;
+        if (el.classList.contains("maplibregl-compact-show")) {
+          el.classList.remove("maplibregl-compact-show");
+        }
+      });
+    };
+    collapseAttribution();
+    const rafId = requestAnimationFrame(collapseAttribution);
+    map.on("load", collapseAttribution);
+    map.on("styledata", collapseAttribution);
 
     if (lat != null && lng != null) {
       const marker = createMarker(map, lng, lat);
@@ -73,6 +92,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
     mapRef.current = map;
 
     return () => {
+      cancelAnimationFrame(rafId);
       map.remove();
       mapRef.current = null;
       markerRef.current = null;

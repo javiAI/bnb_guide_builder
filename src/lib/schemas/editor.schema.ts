@@ -12,7 +12,7 @@ export const propertySchema = z.object({
   propertyType: z.string().min(1, "El tipo de propiedad es obligatorio"),
   roomType: z.string().min(1, "El tipo de espacio es obligatorio"),
   layoutKey: z.string().nullable().optional(),
-  propertyEnvironment: z.string().nullable().optional(),
+  propertyEnvironments: z.array(z.string()).optional().default([]),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
@@ -33,7 +33,6 @@ export const propertySchema = z.object({
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   infrastructureJson: z.object({
-    hasElevator: z.boolean().optional(),
     buildingFloors: z.number().int().min(1).max(200).optional(),
   }).optional(),
 }).refine(

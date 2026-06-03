@@ -223,7 +223,19 @@
           "defaultCoverageRule": "property_only",
           "visibility": "public",
           "recommended": false,
-          "source": ["airbnb:elevator"]
+          "source": ["airbnb:elevator"],
+          "managedInProperty": true,
+          "relevantWhen": {
+            "allOf": [
+              { "not": { "propertyType": { "equals": "pt.house" } } },
+              {
+                "anyOf": [
+                  { "propertyType": { "in": ["pt.apartment", "pt.boutique_hotel"] } },
+                  { "propertyFields": { "buildingFloors": { "gte": 2 } } }
+                ]
+              }
+            ]
+          }
         },
         {
           "id": "sys.garbage",

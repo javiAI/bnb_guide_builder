@@ -8,7 +8,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: null,
-      environment: null,
+      environments: [],
     });
     // Base rule for separate_rooms has sp.pool in optional — untouched.
     expect(r.optional).toContain("sp.pool");
@@ -20,7 +20,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: null,
-      environment: "env.beach",
+      environments: ["env.beach"],
     });
     expect(r.recommended).toEqual(expect.arrayContaining(["sp.pool", "sp.patio", "sp.garden"]));
     expect(r.optional).not.toContain("sp.pool");
@@ -32,7 +32,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: "pt.apartment",
-      environment: null,
+      environments: [],
     });
     expect(r.recommended).toContain("sp.balcony");
     expect(r.optional).not.toContain("sp.balcony");
@@ -43,12 +43,26 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: "pt.house", // promotes garden, garage, patio
-      environment: "env.beach", // promotes pool, patio, garden
+      environments: ["env.beach"], // promotes pool, patio, garden
     });
     const recCount = r.recommended.filter((id) => id === "sp.patio").length;
     expect(recCount).toBe(1);
     expect(r.recommended).toEqual(
       expect.arrayContaining(["sp.pool", "sp.patio", "sp.garden", "sp.garage"]),
+    );
+  });
+
+  it("unions overlays from MULTIPLE environments (multiselect)", () => {
+    // A property can be several environments at once. beach promotes pool/patio/
+    // garden; urban promotes balcony — the selected set should collect all.
+    const r = resolveSpaceAvailability({
+      roomType: "rt.entire_place",
+      layoutKey: "layout.separate_rooms",
+      propertyType: null,
+      environments: ["env.beach", "env.urban"],
+    });
+    expect(r.recommended).toEqual(
+      expect.arrayContaining(["sp.pool", "sp.patio", "sp.garden", "sp.balcony"]),
     );
   });
 
@@ -60,7 +74,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.private_room",
       layoutKey: null,
       propertyType: null,
-      environment: "env.beach",
+      environments: ["env.beach"],
     });
     expect(r.excluded).toEqual(expect.arrayContaining(["sp.pool", "sp.garden"]));
     expect(r.recommended).not.toContain("sp.pool");
@@ -73,7 +87,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.studio",
       propertyType: "pt.apartment",
-      environment: "env.urban",
+      environments: ["env.urban"],
     });
     expect(r.required).toContain("sp.studio");
     expect(r.required).toContain("sp.bathroom");
@@ -85,7 +99,7 @@ describe("resolveSpaceAvailability", () => {
       roomType: "rt.entire_place",
       layoutKey: "layout.separate_rooms",
       propertyType: "pt.other",
-      environment: null,
+      environments: [],
     });
     // No overlay matches → every bucket should equal the base rule as-is.
     // Derived from the loader so this test doesn't break when the taxonomy

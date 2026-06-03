@@ -1,18 +1,22 @@
 "use client";
 
-import { useActionState, useState, useCallback, useRef, useEffect } from "react";
+import { useActionState, useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Pencil, Search, Home, UsersRound } from "lucide-react";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
+import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
+import { Input, Select, Textarea } from "@/components/ui/field";
+import { Card } from "@/components/ui/card";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { TextLink } from "@/components/ui/text-link";
 import { savePropertyAction } from "@/lib/actions/editor.actions";
+import { isSystemRelevant } from "@/lib/services/system-relevance";
+import { findSystemItem } from "@/lib/taxonomy-loader";
 import type { ActionResult } from "@/lib/types/action-result";
 import { propertyTypes } from "@/lib/taxonomies/property-types";
 import { roomTypes } from "@/lib/taxonomies/room-types";
@@ -23,7 +27,7 @@ import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 import { COMMON_TIMEZONES } from "@/lib/timezones";
 import dynamic from "next/dynamic";
 
-const LocationMap = dynamic(() => import("@/components/ui/location-map").then((m) => m.LocationMap), { ssr: false, loading: () => <div className="h-64 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] flex items-center justify-center text-sm text-[var(--color-text-muted)]">Cargando mapa...</div> });
+const LocationMap = dynamic(() => import("@/components/ui/location-map").then((m) => m.LocationMap), { ssr: false, loading: () => <div className="flex h-64 items-center justify-center rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] text-sm text-[var(--color-text-muted)]">Cargando mapa...</div> });
 
 const propertyTypeOptions: RadioCardOption[] = getItems(propertyTypes).map((item) => ({
   id: item.id, label: item.label, description: item.description,
@@ -34,17 +38,15 @@ const roomTypeOptions: RadioCardOption[] = getItems(roomTypes).map((item) => ({
 const layoutKeyOptions: RadioCardOption[] = spaceAvailabilityRules.layoutKeys.map((lk) => ({
   id: lk.id, label: lk.label, description: lk.description,
 }));
-const environmentOptions: RadioCardOption[] = getItems(propertyEnvironments).map((item) => ({
+// Multiselect — a property can be e.g. mountain + ski + rural. No "Sin definir"
+// sentinel: an empty selection IS "not defined".
+const environmentOptions: CheckboxCardOption[] = getItems(propertyEnvironments).map((item) => ({
   id: item.id, label: item.label, description: item.description,
 }));
 const provinces = getItems(spanishProvinces);
 
-// Shared field-control classes — semantic tokens, AA contrast in light + dark.
-const FIELD_CLS =
-  "mt-1 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)]";
-const FIELD_LABEL_CLS = "text-sm font-medium text-[var(--color-text-primary)]";
-const FIELD_LABEL_MUTED_CLS = "text-sm font-medium text-[var(--color-text-secondary)]";
 const HELP_CLS = "text-xs text-[var(--color-text-muted)]";
+const PICKER_LABEL_CLS = "text-sm font-semibold text-[var(--color-text-primary)]";
 
 // Custom "Otro" name/description fields, shared by the property-type and
 // room-type pickers (identical shape, different bound state).
@@ -60,21 +62,22 @@ function CustomTypeFields({
   onDescChange: (value: string) => void;
 }) {
   return (
-    <div className="mt-3 space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
-      <label className="block"><span className={FIELD_LABEL_CLS}>Nombre *</span><input type="text" value={label} onChange={(e) => onLabelChange(e.target.value)} className={FIELD_CLS} /></label>
-      <label className="block"><span className={FIELD_LABEL_CLS}>Descripción</span><textarea value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} className={FIELD_CLS} /></label>
+    <div className="space-y-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] p-4">
+      <Input label="Nombre" required value={label} onChange={(e) => onLabelChange(e.target.value)} />
+      <Textarea label="Descripción" value={desc} onChange={(e) => onDescChange(e.target.value)} rows={2} />
     </div>
   );
 }
 
 interface PropertyFormProps {
   propertyId: string;
+  hasElevatorSystem: boolean;
   property: {
     propertyNickname: string;
     propertyType: string | null;
     roomType: string | null;
     layoutKey: string | null;
-    propertyEnvironment: string | null;
+    propertyEnvironments: string[];
     customPropertyTypeLabel: string | null;
     customPropertyTypeDesc: string | null;
     customRoomTypeLabel: string | null;
@@ -100,14 +103,14 @@ interface PropertyFormProps {
   };
 }
 
-export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
+export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: PropertyFormProps) {
   const [editingName, setEditingName] = useState(false);
   const [nickname, setNickname] = useState(p.propertyNickname);
 
   const [propertyType, setPropertyType] = useState(p.propertyType ?? "");
   const [roomType, setRoomType] = useState(p.roomType ?? "");
   const [layoutKey, setLayoutKey] = useState(p.layoutKey ?? "");
-  const [environment, setEnvironment] = useState(p.propertyEnvironment ?? "");
+  const [environments, setEnvironments] = useState<string[]>(p.propertyEnvironments ?? []);
   const [customPtLabel, setCustomPtLabel] = useState(p.customPropertyTypeLabel ?? "");
   const [customPtDesc, setCustomPtDesc] = useState(p.customPropertyTypeDesc ?? "");
   const [customRtLabel, setCustomRtLabel] = useState(p.customRoomTypeLabel ?? "");
@@ -129,32 +132,34 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
   const [hasPrivateEntrance, setHasPrivateEntrance] = useState(p.hasPrivateEntrance);
 
-  const infra = p.infrastructureJson as {
-    hasElevator?: boolean;
-    buildingFloors?: number;
-  } | null ?? {};
-  const [hasElevator, setHasElevator] = useState<boolean>(infra.hasElevator ?? false);
+  const infra = (p.infrastructureJson as { buildingFloors?: number } | null) ?? {};
   const [buildingFloors, setBuildingFloors] = useState<number>(infra.buildingFloors ?? 1);
-
-  const [ptOpen, setPtOpen] = useState(false);
-  const [rtOpen, setRtOpen] = useState(false);
-  const [lkOpen, setLkOpen] = useState(false);
-  const [envOpen, setEnvOpen] = useState(false);
-  const [locOpen, setLocOpen] = useState(true);
-  const [guestsOpen, setGuestsOpen] = useState(true);
-  const [infraOpen, setInfraOpen] = useState(false);
+  // Elevator existence mirrors the `sys.elevator` system (single source).
+  const [hasElevator, setHasElevator] = useState<boolean>(hasElevatorSystem);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
 
-  // Infra dirty: whether infrastructure fields differ from what's in DB (drives
-  // the infra section's "configured" affordance).
-  const infraDirty =
-    hasElevator !== (infra.hasElevator ?? false) ||
-    buildingFloors !== (infra.buildingFloors ?? 1);
+  // Only send infrastructureJson when buildingFloors changed — avoids
+  // overwriting any other infra keys on unrelated saves.
+  const infraDirty = buildingFloors !== (infra.buildingFloors ?? 1);
+
+  // Elevator relevance (config-driven, FUTURE §28): the `sys.elevator` taxonomy
+  // item carries a `relevantWhen` rule (not a house & multi-floor). Evaluating
+  // it here gates the checkbox so the option only appears when it makes sense —
+  // the same engine + rule the future system-wide rollout will use.
+  const elevatorRelevant = useMemo(() => {
+    const item = findSystemItem("sys.elevator");
+    if (!item) return false;
+    return isSystemRelevant(item, {
+      property: { id: propertyId, propertyType: propertyType || null, buildingFloors },
+      spaces: [],
+      systems: [],
+      amenities: [],
+    });
+  }, [propertyId, propertyType, buildingFloors]);
 
   // Auto-save: edits persist as you make them (no "Guardar" button). The hook
-  // reads the form's live FormData, so every control is captured generically —
-  // no per-field wiring.
+  // reads the form's live FormData, so every control is captured generically.
   const formRef = useRef<HTMLFormElement>(null);
   useFormAutoSave(formRef);
 
@@ -241,21 +246,6 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
   }, [maxGuests]);
 
   const ptLabel = propertyType === "pt.other" ? (customPtLabel || "Otro") : findItem(propertyTypes, propertyType)?.label ?? "Sin definir";
-  const rtLabel = roomType === "rt.other" ? (customRtLabel || "Otro") : findItem(roomTypes, roomType)?.label ?? "Sin definir";
-  const lkLabel = layoutKey ? (layoutKeyOptions.find((o) => o.id === layoutKey)?.label ?? "Sin definir") : "Sin definir";
-  const envLabel = environment ? (findItem(propertyEnvironments, environment)?.label ?? "Sin definir") : "Sin definir";
-  const locationParts = [city, country].filter(Boolean);
-  const provLabel = provinces.find((pr) => pr.id === province)?.label;
-  if (provLabel) locationParts.push(provLabel);
-  const tzLabel = COMMON_TIMEZONES.find((t) => t.value === timezone)?.label ?? timezone ?? "";
-  const locationLabel = locationParts.length > 0 ? `${locationParts.join(", ")} · ${tzLabel}` : "Sin definir";
-  const guestsLabel = `${maxGuests} huéspedes (${maxAdults} adultos, ${maxChildren} niños)`;
-  const infraConfigured = infraDirty || (infra.hasElevator != null || infra.buildingFloors != null);
-  const infraLabel = !infraConfigured
-    ? "Sin configurar"
-    : hasElevator
-      ? `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""} · Ascensor`
-      : `${buildingFloors} planta${buildingFloors !== 1 ? "s" : ""}`;
 
   return (
     <div>
@@ -277,14 +267,16 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
         <input type="hidden" name="layoutKey" value={roomType === "rt.entire_place" ? layoutKey : ""} />
-        <input type="hidden" name="propertyEnvironment" value={environment} />
+        {environments.map((env) => (
+          <input key={`env-${env}`} type="hidden" name="propertyEnvironments" value={env} />
+        ))}
         <input type="hidden" name="customPropertyTypeLabel" value={customPtLabel} />
         <input type="hidden" name="customPropertyTypeDesc" value={customPtDesc} />
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
-        {/* Only send infrastructureJson when user changed infra fields — avoids overwriting existing JSON keys on unrelated saves */}
+        {/* Only send infrastructureJson when buildingFloors changed — avoids overwriting existing JSON keys on unrelated saves */}
         {infraDirty && (
-          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ hasElevator, buildingFloors })} />
+          <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
         )}
 
         {/* Inline editable name */}
@@ -306,9 +298,9 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
             />
           ) : (
             <>
-              <button type="button" onClick={() => setEditingName(true)} className="flex w-full items-center justify-between text-left group min-h-[44px] rounded-[var(--radius-md)] px-1 py-2 transition-colors hover:bg-[var(--color-interactive-hover)]">
+              <button type="button" onClick={() => setEditingName(true)} className="group flex min-h-[44px] w-full items-center justify-between rounded-[var(--radius-md)] px-1 py-2 text-left transition-colors hover:bg-[var(--color-interactive-hover)]">
                 <span className="text-lg font-bold text-[var(--color-text-primary)]">{nickname}</span>
-                <Pencil size={16} aria-hidden="true" className="text-[var(--color-text-muted)] group-hover:text-[var(--color-action-primary)] transition-colors" />
+                <Pencil size={16} aria-hidden="true" className="text-[var(--color-text-muted)] transition-colors group-hover:text-[var(--color-action-primary)]" />
               </button>
               <input type="hidden" name="propertyNickname" value={nickname} />
             </>
@@ -316,31 +308,31 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
         </div>
 
         <NumberedSection number="01" title="Clasificación">
-          <div className="space-y-2">
-            {/* Tipo de propiedad */}
-            <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={ptOpen} onToggle={() => setPtOpen(!ptOpen)}>
-              <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} />
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <p className={PICKER_LABEL_CLS}>Tipo de propiedad</p>
+              <RadioCardGroup name="_propertyType" options={propertyTypeOptions} value={propertyType} onChange={setPropertyType} showRecommended={false} layout="grid" />
               {propertyType === "pt.other" && (
                 <CustomTypeFields label={customPtLabel} onLabelChange={setCustomPtLabel} desc={customPtDesc} onDescChange={setCustomPtDesc} />
               )}
-            </CollapsibleSection>
+            </div>
 
-            {/* Tipo de espacio */}
-            <CollapsibleSection title="Tipo de espacio" selectedLabel={rtLabel} expanded={rtOpen} onToggle={() => setRtOpen(!rtOpen)}>
-              <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} />
+            <div className="space-y-2">
+              <p className={PICKER_LABEL_CLS}>Tipo de espacio</p>
+              <RadioCardGroup name="_roomType" options={roomTypeOptions} value={roomType} onChange={setRoomType} showRecommended={false} layout="grid" />
               {roomType === "rt.other" && (
                 <CustomTypeFields label={customRtLabel} onLabelChange={setCustomRtLabel} desc={customRtDesc} onDescChange={setCustomRtDesc} />
               )}
-            </CollapsibleSection>
+            </div>
 
-            {/* Distribución — solo para alojamiento completo */}
             {roomType === "rt.entire_place" && (
-              <CollapsibleSection title="Distribución" selectedLabel={lkLabel} expanded={lkOpen} onToggle={() => setLkOpen(!lkOpen)}>
-                <p className={`mb-3 ${HELP_CLS}`}>
+              <div className="space-y-2">
+                <p className={PICKER_LABEL_CLS}>Distribución</p>
+                <p className={HELP_CLS}>
                   ¿Cómo están organizados los espacios? Esto determina qué tipos de espacio puedes añadir.
                 </p>
                 {layoutKey && layoutKey !== (p.layoutKey ?? "") && (
-                  <div className="mb-3 rounded-[var(--radius-md)] bg-[var(--color-status-warning-bg)] border border-[var(--color-status-warning-border)] px-3 py-2 text-xs text-[var(--color-status-warning-text)]">
+                  <div className="rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-3 py-2 text-xs text-[var(--color-status-warning-text)]">
                     Cambiar la distribución puede generar conflictos con los espacios ya creados. Revisa la sección Espacios tras guardar.
                   </div>
                 )}
@@ -348,96 +340,90 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
                   name="_layoutKey"
                   options={layoutKeyOptions}
                   value={layoutKey || null}
-                  onChange={(val) => {
-                    setLayoutKey(val);
-                    setTimeout(() => setLkOpen(false), 200);
-                  }}
+                  onChange={setLayoutKey}
                   showRecommended={false}
+                  layout="grid"
                 />
-              </CollapsibleSection>
+              </div>
             )}
 
-            {/* Entorno */}
-            <CollapsibleSection title="Entorno" selectedLabel={envLabel} expanded={envOpen} onToggle={() => setEnvOpen(!envOpen)}>
-              <p className={`mb-3 ${HELP_CLS}`}>
-                Selecciona el tipo de entorno de la propiedad. Esto ayuda a filtrar equipamiento y opciones relevantes.
+            <div className="space-y-2">
+              <p className={PICKER_LABEL_CLS}>Entorno</p>
+              <p className={HELP_CLS}>
+                Selecciona todos los que apliquen — ayuda a filtrar equipamiento y opciones relevantes. Déjalo vacío si ninguno encaja.
               </p>
-              <RadioCardGroup
-                name="_environment"
-                options={[
-                  { id: "", label: "Sin definir", description: "No establecer entorno por ahora" },
-                  ...environmentOptions,
-                ]}
-                value={environment ?? ""}
-                onChange={(val) => {
-                  setEnvironment(val || "");
-                  setTimeout(() => setEnvOpen(false), 200);
-                }}
+              <CheckboxCardGroup
+                name="_environments"
+                options={environmentOptions}
+                value={environments}
+                onChange={setEnvironments}
                 showRecommended={false}
+                layout="grid"
               />
-            </CollapsibleSection>
+            </div>
           </div>
         </NumberedSection>
 
         <NumberedSection number="02" title="Ubicación">
-          {/* Ubicación y zona horaria */}
-          <CollapsibleSection title="Ubicación y zona horaria" selectedLabel={locationLabel} expanded={locOpen} onToggle={() => setLocOpen(!locOpen)}>
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block"><span className={FIELD_LABEL_CLS}>País *</span><input name="country" type="text" required value={country} onChange={(e) => setCountry(e.target.value)} className={`${FIELD_CLS} ${autoFillCls("country")}`} /></label>
-                <label className="block"><span className={FIELD_LABEL_CLS}>Ciudad *</span><input name="city" type="text" required value={city} onChange={(e) => setCity(e.target.value)} className={`${FIELD_CLS} ${autoFillCls("city")}`} /></label>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label className="block sm:col-span-2"><span className={FIELD_LABEL_CLS}>Dirección (vía y número) *</span><input name="streetAddress" type="text" required value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" className={`${FIELD_CLS} placeholder:text-[var(--color-text-placeholder)]`} /></label>
-                <label className="block"><span className={FIELD_LABEL_CLS}>Piso / Puerta</span><input name="addressExtra" type="text" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" className={`${FIELD_CLS} placeholder:text-[var(--color-text-placeholder)]`} /></label>
-              </div>
-              <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
-              <input type="hidden" name="latitude" value={latitude ?? ""} />
-              <input type="hidden" name="longitude" value={longitude ?? ""} />
-
-              <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40 transition-colors">
-                <Search size={14} aria-hidden="true" />
-                {geocoding ? "Buscando..." : "Encontrar ubicación"}
-              </button>
-
-              <LocationMap lat={latitude} lng={longitude} onPositionChange={handlePinMove} />
-              {latitude != null && longitude != null && (
-                <p className="text-xs text-[var(--color-text-muted)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block"><span className={FIELD_LABEL_MUTED_CLS}>Provincia</span><select name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={`${FIELD_CLS} ${autoFillCls("region")}`}><option value="">Seleccionar</option>{provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}</select></label>
-                <label className="block"><span className={FIELD_LABEL_MUTED_CLS}>Código postal</span><input name="postalCode" type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={`${FIELD_CLS} ${autoFillCls("postalCode")}`} /></label>
-              </div>
-              <label className="block"><span className={FIELD_LABEL_MUTED_CLS}>Zona horaria *</span><select name="timezone" required value={timezone} onChange={(e) => setTimezone(e.target.value)} className={`${FIELD_CLS} ${autoFillCls("timezone")}`}>{COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}</select></label>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
+              <Input label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
             </div>
-          </CollapsibleSection>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <Input label="Dirección (vía y número)" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} onBlur={handleAddressBlur} placeholder="ej. Calle Ramón y Cajal, 17" />
+              </div>
+              <Input label="Piso / Puerta" name="addressExtra" value={addressExtra} onChange={(e) => setAddressExtra(e.target.value)} placeholder="ej. 2º C" />
+            </div>
+            <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
+            <input type="hidden" name="latitude" value={latitude ?? ""} />
+            <input type="hidden" name="longitude" value={longitude ?? ""} />
+
+            <button type="button" disabled={geocoding || !streetAddress.trim() || !city.trim()} onClick={handleGeocode} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40">
+              <Search size={14} aria-hidden="true" />
+              {geocoding ? "Buscando..." : "Encontrar ubicación"}
+            </button>
+
+            <LocationMap lat={latitude} lng={longitude} onPositionChange={handlePinMove} />
+            {latitude != null && longitude != null && (
+              <p className="text-xs text-[var(--color-text-muted)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
+                <option value="">Seleccionar</option>
+                {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
+              </Select>
+              <Input label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
+            </div>
+            <Select label="Zona horaria" labelTone="muted" required name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
+              {COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+            </Select>
+          </div>
         </NumberedSection>
 
         <NumberedSection number="03" title="Capacidad">
-          <div className="space-y-2">
-            {/* Huéspedes */}
-            <CollapsibleSection title="Huéspedes" selectedLabel={guestsLabel} expanded={guestsOpen} onToggle={() => setGuestsOpen(!guestsOpen)}>
-              <div className="space-y-3">
-                <div className="flex items-center gap-1 mb-2">
-                  <span className={FIELD_LABEL_CLS}>Máximo de huéspedes</span>
-                  <InfoTooltip text="Define el máximo total de huéspedes. Siempre debe haber al menos 1 adulto. Los adultos adicionales representan plazas flexibles: cada una puede ser ocupada por un adulto o un niño. Si seleccionas niños, esas plazas solo pueden ser ocupadas por menores de 14 años." />
-                </div>
-                <NumberStepper label="Máximo de huéspedes" name="maxGuests" value={maxGuests} onChange={handleMaxGuestsChange} min={1} max={30} />
-                <div className="ml-4 space-y-2 border-l-2 border-[var(--color-border-default)] pl-4">
-                  <NumberStepper label="Número máximo de adultos" name="maxAdults" value={maxAdults} onChange={handleMaxAdultsChange} min={1} max={maxGuests} />
-                  <NumberStepper label="Niños (menores de 14 años)" name="maxChildren" value={maxChildren} onChange={handleMaxChildrenChange} min={0} max={maxGuests - 1} />
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" name="infantsAllowed" checked={infantsAllowed} onChange={(e) => setInfantsAllowed(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-                  <span className="text-sm text-[var(--color-text-primary)]">Se admiten bebés (cuna disponible)</span>
-                  <InfoTooltip text="Los bebés menores de 2 años no cuentan como huéspedes." />
-                </label>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">Máximo de huéspedes</span>
+                <InfoTooltip text="Define el máximo total de huéspedes. Siempre debe haber al menos 1 adulto. Los adultos adicionales representan plazas flexibles: cada una puede ser ocupada por un adulto o un niño. Si seleccionas niños, esas plazas solo pueden ser ocupadas por menores de 14 años." />
               </div>
-            </CollapsibleSection>
+              <NumberStepper label="Máximo de huéspedes" name="maxGuests" value={maxGuests} onChange={handleMaxGuestsChange} min={1} max={30} />
+              <div className="ml-4 space-y-2 border-l-2 border-[var(--color-border-default)] pl-4">
+                <NumberStepper label="Número máximo de adultos" name="maxAdults" value={maxAdults} onChange={handleMaxAdultsChange} min={1} max={maxGuests} />
+                <NumberStepper label="Niños (menores de 14 años)" name="maxChildren" value={maxChildren} onChange={handleMaxChildrenChange} min={0} max={maxGuests - 1} />
+              </div>
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
+                <input type="checkbox" name="infantsAllowed" checked={infantsAllowed} onChange={(e) => setInfantsAllowed(e.target.checked)} className="h-4 w-4 accent-[var(--color-action-primary)]" />
+                <span className="text-sm text-[var(--color-text-primary)]">Se admiten bebés (cuna disponible)</span>
+                <InfoTooltip text="Los bebés menores de 2 años no cuentan como huéspedes." />
+              </label>
+            </div>
 
             {/* Habitaciones y baños — derivados de Espacios */}
-            <div className="rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 py-3">
+            <Card variant="overview">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-[var(--color-text-primary)]">Habitaciones y baños</p>
                 <TextLink href={`/properties/${propertyId}/spaces`} size="sm" arrow>
@@ -453,30 +439,37 @@ export function PropertyForm({ propertyId, property: p }: PropertyFormProps) {
                 </span>
               </div>
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">Calculado automáticamente a partir de los espacios definidos.</p>
-            </div>
+            </Card>
           </div>
         </NumberedSection>
 
         <NumberedSection number="04" title="Edificio">
-          {/* Infraestructura del edificio */}
-          <CollapsibleSection title="Infraestructura del edificio" selectedLabel={infraLabel} expanded={infraOpen} onToggle={() => setInfraOpen(!infraOpen)}>
-            <div className="space-y-4">
-              <p className={HELP_CLS}>
-                Los sistemas de calefacción y refrigeración se gestionan en la sección{" "}
-                <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
-              </p>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">El edificio tiene ascensor</span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-2">
-                <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">Entrada privada</span>
-                <InfoTooltip text="La vivienda tiene una entrada independiente que el huésped usa sin compartir pasillos o zonas interiores con otros inquilinos o el anfitrión." />
-              </label>
-              <NumberStepper label="Número de plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
-            </div>
-          </CollapsibleSection>
+          <div className="space-y-4">
+            <NumberStepper label="Número de plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
+
+            {elevatorRelevant && (
+              <div className="space-y-2">
+                <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
+                  <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasElevator} onChange={(e) => setHasElevator(e.target.checked)} />
+                  <span className="text-sm font-medium text-[var(--color-text-primary)]">El edificio tiene ascensor</span>
+                  <InfoTooltip text="Marca si el edificio dispone de ascensor. Se guarda como parte de los sistemas del edificio; los detalles opcionales (ubicación, si requiere llave, plantas que cubre) se configuran en la sección Sistemas." />
+                </label>
+                <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
+                {hasElevator && (
+                  <p className={`pl-6 ${HELP_CLS}`}>
+                    Detalles opcionales (ubicación, llave, plantas) en{" "}
+                    <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
+              <input type="checkbox" name="hasPrivateEntrance" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={hasPrivateEntrance} onChange={(e) => setHasPrivateEntrance(e.target.checked)} />
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">Entrada privada</span>
+              <InfoTooltip text="La vivienda tiene una entrada independiente que el huésped usa sin compartir pasillos o zonas interiores con otros inquilinos o el anfitrión." />
+            </label>
+          </div>
         </NumberedSection>
 
         {state?.error && <p className="text-sm text-[var(--color-status-error-text)]">{state.error}</p>}

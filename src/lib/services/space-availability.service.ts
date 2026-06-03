@@ -27,12 +27,13 @@ export interface ResolveSpaceAvailabilityInput {
   roomType: string;
   layoutKey: string | null;
   propertyType: string | null;
-  environment: string | null;
+  /** A property can carry several environments (mountain + ski + …). */
+  environments: string[];
 }
 
 function collectPromotions(
   propertyType: string | null,
-  environment: string | null,
+  environments: string[],
 ): Set<string> {
   const out = new Set<string>();
   const { propertyTypeOverlays = [], environmentOverlays = [] } =
@@ -45,9 +46,9 @@ function collectPromotions(
       }
     }
   }
-  if (environment) {
+  if (environments.length > 0) {
     for (const o of environmentOverlays) {
-      if (o.environment === environment) {
+      if (environments.includes(o.environment)) {
         for (const id of o.promoteToRecommended) out.add(id);
       }
     }
@@ -59,7 +60,7 @@ export function resolveSpaceAvailability(
   input: ResolveSpaceAvailabilityInput,
 ): ResolvedSpaceAvailability {
   const base = getAvailableSpaceTypes(input.roomType, input.layoutKey);
-  const promotions = collectPromotions(input.propertyType, input.environment);
+  const promotions = collectPromotions(input.propertyType, input.environments);
   if (promotions.size === 0) return base;
 
   const requiredSet = new Set(base.required);

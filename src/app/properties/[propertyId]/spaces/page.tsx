@@ -40,7 +40,7 @@ export default async function SpacesPage({
         roomType: true,
         layoutKey: true,
         propertyType: true,
-        propertyEnvironment: true,
+        propertyEnvironments: true,
       },
     }),
     prisma.space.findMany({
@@ -99,13 +99,13 @@ export default async function SpacesPage({
   }
 
   // Compute available space types from roomType + layoutKey + overlays
-  // (propertyType + propertyEnvironment). Treat missing roomType as unknown —
+  // (propertyType + propertyEnvironments). Treat missing roomType as unknown —
   // don't apply entire-place rules to legacy/incomplete properties.
   const { required, recommended, optional, excluded } = resolveSpaceAvailability({
     roomType: property.roomType ?? "",
     layoutKey: property.layoutKey ?? null,
     propertyType: property.propertyType ?? null,
-    environment: property.propertyEnvironment ?? null,
+    environments: property.propertyEnvironments,
   });
 
   const allAvailable = [...required, ...recommended, ...optional];

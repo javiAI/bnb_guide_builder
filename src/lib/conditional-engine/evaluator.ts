@@ -64,12 +64,6 @@ function evaluateAtomic(rules: AtomicCondition, ctx: PropertyContext): string[] 
   if (rt) reasons.push(rt);
   const lk = checkSlot(rules.layoutKey, ctx.property.layoutKey, "layoutKey");
   if (lk) reasons.push(lk);
-  const env = checkSlot(
-    rules.propertyEnvironment,
-    ctx.property.propertyEnvironment,
-    "propertyEnvironment",
-  );
-  if (env) reasons.push(env);
 
   reasons.push(...checkPropertyFields(rules.propertyFields, ctx));
 
