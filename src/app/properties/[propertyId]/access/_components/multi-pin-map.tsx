@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { cn } from "@/lib/cn";
 import { readCssVar, resolveCssColor } from "@/lib/css-var";
 import { addCollapsedAttribution } from "@/lib/maplibre-attribution";
+import { createPropertyPinElement } from "@/lib/property-pin-element";
 import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
 import { buildCirclePolygon } from "@/lib/utils/geo";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -130,9 +131,9 @@ const PIN_VISUAL: Record<
   MultiPinSpec["kind"],
   { bg: string; ring: string; size: number }
 > = {
-  // Anchor uses a teardrop silhouette (rendered separately below) so it reads
-  // as "the property" at a glance against the round parking discs. `bg`/`ring`
-  // here only seed the teardrop fill / icon stroke colors.
+  // Anchor uses a teardrop silhouette so it reads as "the property" at a glance
+  // against the round parking discs. Its visuals live in the shared
+  // `createPropertyPinElement`; this entry only satisfies the Record's key set.
   anchor: {
     bg: "var(--color-action-primary)",
     ring: "var(--color-text-on-accent)",
@@ -182,10 +183,6 @@ const PIN_VISUAL: Record<
   },
 };
 
-// Inline Lucide `Home` glyph (currentColor stroke) — sits inside the anchor
-// teardrop head so the property reads as "home" against the parking discs.
-const ANCHOR_HOME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
-
 // Lucide `CircleParking` (inner ring + "P") — free pins. Mirrors the same
 // Lucide icon used by ParkingFeeBadge in the list so the map and list show
 // identical glyphs.
@@ -229,30 +226,9 @@ const ARRIVAL_MODE_SVG: Record<ArrivalPinMode, string> = {
 };
 
 function createAnchorElement(spec: MultiPinSpec, clickable: boolean): HTMLDivElement {
-  const v = PIN_VISUAL.anchor;
-  const height = Math.round(v.size * 1.25);
-  const el = document.createElement("div");
-  el.style.width = `${v.size}px`;
-  el.style.height = `${height}px`;
-  el.style.position = "relative";
-  el.style.cursor = clickable ? "pointer" : "default";
-  el.style.outlineOffset = "2px";
-  el.style.color = v.ring;
-  el.style.filter = "drop-shadow(var(--shadow-md))";
-  // Teardrop SVG (single path: round head + tapered tail). The icon overlays
-  // the head via absolute positioning so the SVG itself stays anchored to the
-  // marker's geographic point (tip at (0,0) in the SVG's coordinate system).
-  el.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${v.size}" height="${height}" viewBox="0 0 24 30" aria-hidden="true" style="position:absolute;inset:0;">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 7.5 9 16 11.3 18 .4.3 1 .3 1.4 0C15 28 24 19.5 24 12 24 5.4 18.6 0 12 0Z" fill="${v.bg}" stroke="${v.ring}" stroke-width="1.5"/>
-    </svg>
-    <span style="position:absolute;top:5px;left:0;right:0;display:grid;place-items:center;height:24px;color:${v.ring};">${ANCHOR_HOME_SVG}</span>
-  `;
-  if (spec.label) {
-    el.title = spec.label;
-    el.setAttribute("aria-label", spec.label);
-  }
-  return el;
+  // The property anchor is the shared property pin (single source) so it reads
+  // identically here and on the Propiedad location map.
+  return createPropertyPinElement({ label: spec.label, clickable });
 }
 
 // Suggestion pins (both parking and arrival) share a single neutral hue +

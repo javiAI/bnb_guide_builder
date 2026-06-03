@@ -13,7 +13,7 @@ import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { roundCoord } from "@/lib/round-coord";
 import { withViewTransition } from "@/lib/view-transition";
 import { Card } from "@/components/ui/card";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { useFormAutoSave, autoSaveSubmit } from "@/lib/use-form-auto-save";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
@@ -321,7 +321,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         }
       />
 
-      <form ref={formRef} action={formAction}>
+      <form ref={formRef} onSubmit={autoSaveSubmit(formAction)}>
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="propertyType" value={propertyType} />
         <input type="hidden" name="roomType" value={roomType} />
@@ -385,9 +385,19 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
 
         <NumberedSection number="02" title="Ubicación">
           <div className="space-y-4">
+            {/* Address block in postal order: país/ciudad → provincia/CP → calle.
+                Provincia + CP sit beside Ciudad (geographically related) and are
+                auto-filled by geocoding (muted labels + flash) but editable. */}
             <div className="grid gap-4 sm:grid-cols-2">
               <FieldInput label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
               <FieldInput label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldSelect label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
+                <option value="">Seleccionar</option>
+                {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
+              </FieldSelect>
+              <FieldInput label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
             </div>
             <FieldInput label="Dirección" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="ej. Calle Ramón y Cajal 17, 2º C" help="Dirección completa: vía, número y, si aplica, piso/puerta." />
             {/* Piso/Puerta merged into the full address above — clear the legacy column on save. */}
@@ -406,14 +416,8 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
               <p className="text-xs text-[var(--color-text-muted)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FieldSelect label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
-                <option value="">Seleccionar</option>
-                {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
-              </FieldSelect>
-              <FieldInput label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
-            </div>
-            <FieldSelect label="Zona horaria" labelTone="muted" required name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
+            {/* Timezone is derived from país/coords on geocode — editable, not required. */}
+            <FieldSelect label="Zona horaria" labelTone="muted" name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
               {COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
             </FieldSelect>
           </div>

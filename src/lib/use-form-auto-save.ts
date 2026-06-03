@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 
 /**
  * Generic auto-save for `<form>` section editors (Liora 16F.5, extended in
@@ -20,9 +20,16 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
  * form), so no per-render FormData work runs; the form's existing action/onSubmit
  * still does the real save.
  * Without `watch` it reads the form's live `FormData`, so it never hand-lists
- * fields and never silently drops one. The form's controlled state persists
- * across the action's revalidation, so the post-save render serialises
- * identically and never re-submits (no loop).
+ * fields and never silently drops one. React state persists across the action's
+ * revalidation, so the post-save render serialises identically and never
+ * re-submits — *provided the form does not auto-reset*. Wire the form with
+ * `onSubmit={autoSaveSubmit(formAction)}`, NOT `action={formAction}`: React 19
+ * resets a managed `<form action={fn}>` after the action resolves, which reverts
+ * a controlled `<select>`'s DOM to its first `<option>` (React leaves the stale
+ * DOM in place because the `value` prop didn't change), so the next FormData
+ * read differs and the save loops forever. Auto-save forms are long-lived
+ * editors that must never reset — `autoSaveSubmit` dispatches the action
+ * manually so React's managed reset never runs.
  *
  * `requestSubmit()` runs native validation; we gate it on `checkValidity()`
  * first so an invalid form (e.g. an empty required field) is skipped silently
@@ -49,6 +56,21 @@ function serializeForm(form: HTMLFormElement): string {
   // mount/unmount — sort so only real value changes count as a change.
   parts.sort();
   return parts.join("&");
+}
+
+/**
+ * Submit handler for an auto-saving `<form>`. Use it instead of
+ * `action={formAction}` so React 19's managed-form auto-reset never runs (see
+ * the `useFormAutoSave` note): it prevents the native submit and dispatches the
+ * `useActionState` action manually with the form's live `FormData`. The action
+ * still updates `state`/`pending` exactly as `action={fn}` would — only the
+ * reset is skipped. Pass the `formAction` returned by `useActionState`.
+ */
+export function autoSaveSubmit(dispatch: (formData: FormData) => void) {
+  return (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    dispatch(new FormData(event.currentTarget));
+  };
 }
 
 export function useFormAutoSave(

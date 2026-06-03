@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ZoomIn, X, MapPin } from "lucide-react";
+import { ZoomIn, X, Move } from "lucide-react";
 import { cn } from "@/lib/cn";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { readCssVar } from "@/lib/css-var";
 import { useTilesStyleUrl } from "@/hooks/use-tiles-style-url";
 import { addCollapsedAttribution } from "@/lib/maplibre-attribution";
+import { createPropertyPinElement } from "@/lib/property-pin-element";
 
 interface LocationMapProps {
   lat: number | null;
@@ -17,10 +17,15 @@ interface LocationMapProps {
 }
 
 function createMarker(map: maplibregl.Map, lng: number, lat: number): maplibregl.Marker {
-  const primaryColor = readCssVar("--color-action-primary");
-  const options: maplibregl.MarkerOptions = { draggable: true };
-  if (primaryColor) options.color = primaryColor;
-  return new maplibregl.Marker(options).setLngLat([lng, lat]).addTo(map);
+  // Shared property pin (teardrop + Home glyph), anchored at its tip — the same
+  // marker the Access cockpit map uses, so the property reads identically.
+  return new maplibregl.Marker({
+    element: createPropertyPinElement({ clickable: true }),
+    anchor: "bottom",
+    draggable: true,
+  })
+    .setLngLat([lng, lat])
+    .addTo(map);
 }
 
 const FALLBACK_BOX =
@@ -126,17 +131,17 @@ function MapCanvas({
         aria-label="Colocar el pin manualmente"
         aria-pressed={armed}
         className={cn(
-          "absolute left-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
+          "absolute bottom-3 right-3 z-[2] grid h-11 w-11 place-items-center rounded-full shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
           armed
             ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
             : "bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)]",
         )}
       >
-        <MapPin size={18} aria-hidden="true" />
+        <Move size={18} aria-hidden="true" />
       </button>
       {overlay}
       {armed && (
-        <div className="pointer-events-none absolute bottom-3 left-1/2 z-[2] -translate-x-1/2 rounded-full bg-[var(--color-background-overlay)] px-3 py-1 text-[12px] font-medium text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px]">
+        <div className="pointer-events-none absolute top-3 left-1/2 z-[2] max-w-[200px] -translate-x-1/2 rounded-[var(--radius-lg)] bg-[var(--color-background-overlay)] px-3 py-1 text-center text-[12px] font-medium text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px]">
           Toca el mapa para colocar el pin
         </div>
       )}
@@ -152,7 +157,7 @@ function ZoomButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Ampliar mapa"
-      className="absolute left-3 top-[60px] z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]"
+      className="absolute left-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]"
     >
       <ZoomIn size={18} aria-hidden="true" />
     </button>
