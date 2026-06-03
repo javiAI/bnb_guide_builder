@@ -188,7 +188,7 @@ export function LocationMap({ lat, lng, onPositionChange }: LocationMapProps) {
               <button
                 type="button"
                 aria-label="Cerrar"
-                className="absolute right-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]"
+                className="absolute left-3 top-3 z-[2] grid h-11 w-11 place-items-center rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] shadow-[var(--shadow-md)] backdrop-blur-[2px] transition-colors duration-100 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]"
               >
                 <X size={18} aria-hidden="true" />
               </button>

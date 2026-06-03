@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 
 /**
  * Generic auto-save for `<form>` section editors (Liora 16F.5, extended in
@@ -65,11 +65,18 @@ function serializeForm(form: HTMLFormElement): string {
  * `useActionState` action manually with the form's live `FormData`. The action
  * still updates `state`/`pending` exactly as `action={fn}` would — only the
  * reset is skipped. Pass the `formAction` returned by `useActionState`.
+ *
+ * The dispatch is wrapped in `startTransition`: a `useActionState` action called
+ * outside a transition warns and leaves `isPending` stuck (so the
+ * "Guardando…" status flickers). The `FormData` is read synchronously from the
+ * live form *before* the transition, since `event.currentTarget` is only valid
+ * during the event.
  */
 export function autoSaveSubmit(dispatch: (formData: FormData) => void) {
   return (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    dispatch(new FormData(event.currentTarget));
+    const formData = new FormData(event.currentTarget);
+    startTransition(() => dispatch(formData));
   };
 }
 
