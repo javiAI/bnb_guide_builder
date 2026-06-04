@@ -120,11 +120,17 @@ async function reconcilePropertyElevatorSystem(
     const visibility = normaliseVisibility(
       findSystemItem(ELEVATOR_SYSTEM_KEY)?.visibility ?? "public",
     );
-    const created = await prisma.propertySystem.create({
-      data: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY, visibility },
-      select: { id: true },
-    });
-    invalidateKnowledgeInBackground(propertyId, "system", created.id);
+    try {
+      const created = await prisma.propertySystem.create({
+        data: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY, visibility },
+        select: { id: true },
+      });
+      invalidateKnowledgeInBackground(propertyId, "system", created.id);
+    } catch (err) {
+      // A racing auto-save may have created the row first — the desired state
+      // ("elevator exists") is already met, so a unique violation is a no-op.
+      if ((err as { code?: string }).code !== "P2002") throw err;
+    }
   } else if (!wanted && existing) {
     await prisma.propertySystem.delete({ where: { id: existing.id } });
     deleteEntityChunksInBackground(propertyId, "system", existing.id);
@@ -207,6 +213,9 @@ export async function savePropertyAction(
   const elevatorIntent = formData.get("hasElevator");
   if (elevatorIntent === "true" || elevatorIntent === "false") {
     await reconcilePropertyElevatorSystem(propertyId, elevatorIntent === "true");
+    // Toggling the elevator creates/deletes a PropertySystem row — keep the
+    // Systems route (server component) consistent, like create/deleteSystemAction.
+    revalidatePath(`/properties/${propertyId}/systems`);
   }
 
   recomputeAllInBackground(propertyId);

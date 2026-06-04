@@ -226,6 +226,11 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     });
   }, [propertyId, propertyType, buildingFloors, floorLevel]);
 
+  // Show the elevator toggle when it's relevant OR already enabled — so an
+  // operator can always turn off an existing elevator even if relevance later
+  // drops (e.g. floor set back to 0); otherwise it'd be stuck on with no UI.
+  const showElevator = elevatorRelevant || hasElevator;
+
   // Auto-save: edits persist as you make them (no "Guardar" button). The hook
   // reads the form's live FormData, so every control is captured generically.
   const formRef = useRef<HTMLFormElement>(null);
@@ -447,7 +452,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
             <p className={`mt-3 ${HELP_CLS}`}>En qué planta se encuentra la vivienda (0 = planta baja). Cuando está en una planta superior, el ascensor es relevante para llegar a ella y podrás indicar si el edificio dispone de uno.</p>
 
             <div className="mt-3 space-y-3 border-t border-[var(--color-border-default)] pt-3">
-              {elevatorRelevant && (
+              {showElevator && (
                 <div>
                   <ToggleRow
                     icon={ArrowUpDown}
@@ -473,7 +478,7 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
                 name="hasPrivateEntrance"
                 checked={hasPrivateEntrance}
                 onChange={setHasPrivateEntrance}
-                className={elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}
+                className={showElevator ? "border-t border-[var(--color-border-default)] pt-3" : ""}
               />
             </div>
           </Card>

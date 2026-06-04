@@ -3,7 +3,7 @@
   "version": "2026-06-03",
   "locale": "es-ES",
   "units_system": "metric",
-  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos por roomType. Consumido por getAvailableSpaceTypes() en taxonomy-loader. Los overlays por propertyType y propertyEnvironment se aplican sobre el resultado base para sesgar el selector de creación (servicio resolveSpaceAvailability). Los espacios se configuran libremente en la sección Espacios.",
+  "description": "Define qué tipos de espacio son obligatorios, recomendados, opcionales o excluidos por roomType. Consumido por getAvailableSpaceTypes() en taxonomy-loader. Los overlays por propertyType y propertyEnvironments (multiselect) se aplican sobre el resultado base para sesgar el selector de creación (servicio resolveSpaceAvailability). Los espacios se configuran libremente en la sección Espacios.",
   "overlaysNote": "Cada overlay sólo puede PROMOVER tipos de 'optional' a 'recommended'. Nunca se altera 'required' ni 'excluded' — la base por roomType manda sobre el contexto.",
   "propertyTypeOverlays": [
     { "propertyType": "pt.house",           "promoteToRecommended": ["sp.garden", "sp.garage", "sp.patio"] },

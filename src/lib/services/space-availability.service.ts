@@ -3,8 +3,8 @@
  * on top of the base (roomType) rule.
  *
  * Overlays can only PROMOTE optional → recommended. Required and excluded
- * lists stay untouched: those encode hard layout constraints and are not
- * negotiable by context. The goal is purely UX: when a user creates a space,
+ * lists stay untouched: those encode the base per-roomType requirements and are
+ * not negotiable by context. The goal is purely UX: when a user creates a space,
  * items that are "probably wanted for this kind of property" float up to the
  * recommended bucket so the selector surfaces them with the ★ marker.
  *
