@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { Tooltip } from "./tooltip";
 
 interface CollapsibleSectionProps {
@@ -46,75 +47,52 @@ export function CollapsibleSection({
   children,
   headerAction,
 }: CollapsibleSectionProps) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | "auto">(expanded ? "auto" : 0);
-  const [visible, setVisible] = useState(expanded);
-
-  useEffect(() => {
-    let expandTimer: ReturnType<typeof setTimeout> | undefined;
-    let collapseTimer: ReturnType<typeof setTimeout> | undefined;
-    let rafId: number | undefined;
-
-    if (expanded) {
-      setVisible(true);
-      rafId = requestAnimationFrame(() => {
-        if (contentRef.current) {
-          setHeight(contentRef.current.scrollHeight);
-          expandTimer = setTimeout(() => setHeight("auto"), 300);
-        }
-      });
-    } else {
-      if (contentRef.current) {
-        setHeight(contentRef.current.scrollHeight);
-        rafId = requestAnimationFrame(() => setHeight(0));
-      }
-      collapseTimer = setTimeout(() => setVisible(false), 300);
-    }
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      clearTimeout(expandTimer);
-      clearTimeout(collapseTimer);
-    };
-  }, [expanded]);
-
   return (
-    <div className="rounded-[var(--radius-lg)] border-2 transition-colors duration-200 border-[var(--color-border-default)] bg-[var(--color-background-elevated)]">
+    <div className="rounded-[var(--radius-lg)] border-2 border-[var(--color-border-default)] bg-[var(--color-background-elevated)]">
       <div className="flex items-center">
         <button
           type="button"
           onClick={onToggle}
-          className="flex-1 p-4 text-left min-w-0"
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 p-4 text-left"
         >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-[var(--color-text-primary)] shrink-0">{title}</span>
-            <div className="flex items-center gap-2 min-w-0">
-              {!expanded && selectedLabel && (
-                <SelectionBadge label={selectedLabel} />
-              )}
-              <span className="text-xs text-[var(--color-text-muted)] shrink-0">
-                {expanded ? "▲" : "▼"}
-              </span>
+          <div className="flex w-full items-center justify-between gap-2">
+            <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">{title}</span>
+            <div className="flex min-w-0 items-center gap-2">
+              {!expanded && selectedLabel && <SelectionBadge label={selectedLabel} />}
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className={cn(
+                  "shrink-0 text-[var(--color-text-muted)] transition-transform duration-300 ease-out motion-reduce:transition-none",
+                  !expanded && "-rotate-90",
+                )}
+              />
             </div>
           </div>
         </button>
-        {headerAction && (
-          <div className="flex-shrink-0 pr-3">
-            {headerAction}
-          </div>
-        )}
+        {headerAction && <div className="flex-shrink-0 pr-3">{headerAction}</div>}
       </div>
 
+      {/* Smooth collapse via grid-template-rows 0fr↔1fr (animates real height,
+          no max-height jank). Content stays mounted but is `inert` + faded out
+          when collapsed so it leaves the tab order and a11y tree. */}
       <div
-        ref={contentRef}
-        style={{ maxHeight: height === "auto" ? "none" : `${height}px` }}
-        className="overflow-hidden transition-all duration-300 ease-in-out"
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
       >
-        {visible && (
-          <div className="px-4 pb-4">
+        <div className="overflow-hidden" inert={!expanded}>
+          <div
+            className={cn(
+              "px-4 pb-4 transition-opacity duration-200 motion-reduce:transition-none",
+              expanded ? "opacity-100" : "opacity-0",
+            )}
+          >
             {children}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

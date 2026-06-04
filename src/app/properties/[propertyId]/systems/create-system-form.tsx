@@ -28,7 +28,10 @@ export function CreateSystemForm({ propertyId, existingKeys }: Props) {
   const available = groups
     .map((g) => ({
       ...g,
-      items: g.items.filter((i) => !existingKeys.includes(i.id)),
+      // `managedInProperty` systems (e.g. sys.elevator) are toggled from the
+      // Property editor — never "added" here. Their detail fields stay editable
+      // once the row exists (it shows as an installed system, not in this picker).
+      items: g.items.filter((i) => !existingKeys.includes(i.id) && !i.managedInProperty),
     }))
     .filter((g) => g.items.length > 0);
 

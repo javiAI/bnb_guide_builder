@@ -1,4 +1,5 @@
 import type { SubtypeFieldType } from "@/config/registries/field-type-registry";
+import type { ItemRules } from "@/lib/conditional-engine/types";
 
 // Reusable option shape (used by policy items, subtype fields, etc.)
 export interface TaxonomyOption {
@@ -171,7 +172,6 @@ export interface SpaceTypeItem extends TaxonomyItem {
   // Narrower than `allowsSleeping` (which covers e.g. living rooms that *can*
   // host a bed but don't require one). Drives `bedsConfigured` in scoring.
   expectsBeds?: boolean;
-  derivedByLayoutKeys: string[];
   mutuallyExclusiveWith: string[];
   applicableRoomTypes: string[];
 }
@@ -181,23 +181,12 @@ export interface SpaceTypesTaxonomyFile extends TaxonomyFileBase {
 }
 
 // Space availability rules (space_availability_rules.json)
-export interface SpaceLayoutKey {
-  id: string;
-  label: string;
-  description: string;
-}
-
 export interface SpaceAvailabilityRule {
   roomType: string;
-  layout: string | null;
   required: string[];
   recommended: string[];
   optional: string[];
   excluded: string[];
-  bedroomsMin: number;
-  bedroomsMax: number;
-  bathroomsMin: number;
-  bathroomsMax: number;
 }
 
 export interface SpaceAvailabilityPropertyTypeOverlay {
@@ -211,7 +200,6 @@ export interface SpaceAvailabilityEnvironmentOverlay {
 }
 
 export interface SpaceAvailabilityRulesFile extends TaxonomyFileBase {
-  layoutKeys: SpaceLayoutKey[];
   rules: SpaceAvailabilityRule[];
   propertyTypeOverlays?: SpaceAvailabilityPropertyTypeOverlay[];
   environmentOverlays?: SpaceAvailabilityEnvironmentOverlay[];
@@ -230,6 +218,21 @@ export interface SystemItem {
   visibility: SystemVisibility;
   recommended: boolean;
   source: string[];
+  /**
+   * Optional conditional-relevance rule (FUTURE §28). When present, the item is
+   * only relevant/offered for properties whose context satisfies the rule —
+   * evaluated by `isSystemRelevant` via the same engine as space availability.
+   * First instance: `sys.elevator` (multi-floor, non-house). Absent ⇒ always
+   * relevant.
+   */
+  relevantWhen?: ItemRules;
+  /**
+   * When true, the system's *existence* is governed from another surface (the
+   * Property editor), not the Systems "add" picker. Its optional detail fields
+   * remain editable in Systems once the row exists. Used by `sys.elevator`
+   * (configured in Propiedad/Edificio, persisted here as the single source).
+   */
+  managedInProperty?: boolean;
 }
 
 export interface SystemGroup {

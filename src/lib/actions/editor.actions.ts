@@ -100,6 +100,43 @@ export async function deletePropertyAction(
 
 // ── Property editor (replaces basics) ──
 
+const ELEVATOR_SYSTEM_KEY = "sys.elevator";
+
+// Reconcile the single-source `sys.elevator` PropertySystem row from the
+// Property/Edificio elevator toggle. The elevator's *existence* is governed
+// from Propiedad (operator mental model: describing the building); its optional
+// detail fields stay editable in Sistemas. Mirrors create/deleteSystemAction
+// side-effects. Non-destructive: acts only on an explicit on/off intent — never
+// auto-removes the row on a relevance change (e.g. type → Casa).
+async function reconcilePropertyElevatorSystem(
+  propertyId: string,
+  wanted: boolean,
+): Promise<void> {
+  const existing = await prisma.propertySystem.findUnique({
+    where: { propertyId_systemKey: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY } },
+    select: { id: true },
+  });
+  if (wanted && !existing) {
+    const visibility = normaliseVisibility(
+      findSystemItem(ELEVATOR_SYSTEM_KEY)?.visibility ?? "public",
+    );
+    try {
+      const created = await prisma.propertySystem.create({
+        data: { propertyId, systemKey: ELEVATOR_SYSTEM_KEY, visibility },
+        select: { id: true },
+      });
+      invalidateKnowledgeInBackground(propertyId, "system", created.id);
+    } catch (err) {
+      // A racing auto-save may have created the row first — the desired state
+      // ("elevator exists") is already met, so a unique violation is a no-op.
+      if ((err as { code?: string }).code !== "P2002") throw err;
+    }
+  } else if (!wanted && existing) {
+    await prisma.propertySystem.delete({ where: { id: existing.id } });
+    deleteEntityChunksInBackground(propertyId, "system", existing.id);
+  }
+}
+
 export async function savePropertyAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -109,12 +146,12 @@ export async function savePropertyAction(
     propertyNickname: formData.get("propertyNickname") as string,
     propertyType: formData.get("propertyType") as string,
     roomType: formData.get("roomType") as string,
-    layoutKey: (formData.get("layoutKey") as string) || null,
-    propertyEnvironment: (formData.get("propertyEnvironment") as string) || null,
+    propertyEnvironments: formData.getAll("propertyEnvironments") as string[],
     customPropertyTypeLabel: (formData.get("customPropertyTypeLabel") as string) || undefined,
     customPropertyTypeDesc: (formData.get("customPropertyTypeDesc") as string) || undefined,
     customRoomTypeLabel: (formData.get("customRoomTypeLabel") as string) || undefined,
     customRoomTypeDesc: (formData.get("customRoomTypeDesc") as string) || undefined,
+    customEnvironmentLabels: (formData.getAll("customEnvironmentLabels") as string[]).map((s) => s.trim()).filter(Boolean),
     country: formData.get("country") as string,
     city: formData.get("city") as string,
     region: (formData.get("region") as string) || undefined,
@@ -169,6 +206,17 @@ export async function savePropertyAction(
       arrivalSuggestionsCacheJson: Prisma.DbNull,
     },
   });
+
+  // Elevator: single source of truth is the `sys.elevator` system, toggled from
+  // Propiedad/Edificio. Only reconcile when the form sent an explicit intent
+  // (field present ⇒ the relevance-gated checkbox was rendered).
+  const elevatorIntent = formData.get("hasElevator");
+  if (elevatorIntent === "true" || elevatorIntent === "false") {
+    await reconcilePropertyElevatorSystem(propertyId, elevatorIntent === "true");
+    // Toggling the elevator creates/deletes a PropertySystem row — keep the
+    // Systems route (server component) consistent, like create/deleteSystemAction.
+    revalidatePath(`/properties/${propertyId}/systems`);
+  }
 
   recomputeAllInBackground(propertyId);
   // propertyNickname/city appear in contextPrefix of ALL chunk types; trigger full regen

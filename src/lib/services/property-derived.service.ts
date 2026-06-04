@@ -151,12 +151,12 @@ export async function computeSpaceAvailability(
     snapshot?.property ??
     (await prisma.property.findUnique({
       where: { id: propertyId },
-      select: { roomType: true, layoutKey: true },
+      select: { roomType: true },
     }));
   if (!property?.roomType) {
     return { required: [], recommended: [], optional: [], excluded: [] };
   }
-  return getAvailableSpaceTypes(property.roomType, property.layoutKey ?? null);
+  return getAvailableSpaceTypes(property.roomType);
 }
 
 export async function computeSystemCoverageBySpace(

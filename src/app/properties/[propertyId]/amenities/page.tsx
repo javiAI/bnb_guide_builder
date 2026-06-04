@@ -91,7 +91,7 @@ export default async function AmenitiesPage({
     where: { id: propertyId },
     select: {
       id: true,
-      propertyEnvironment: true,
+      propertyEnvironments: true,
       accessMethodsJson: true,
       spaces: {
         select: { id: true, spaceType: true, name: true, sortOrder: true },
@@ -151,7 +151,7 @@ export default async function AmenitiesPage({
 
   // ── Partition taxonomy into configurable vs derived vs excluded ──
 
-  const propEnv = property.propertyEnvironment;
+  const propEnvs = property.propertyEnvironments;
 
   const configurableItems: AmenityItem[] = [];
   const derivedItems: AmenityItem[] = [];
@@ -162,7 +162,7 @@ export default async function AmenitiesPage({
     // property's environment matches. Applies to both configurable and
     // derived variants.
     const scope = getAmenityScopePolicy(item.id);
-    if (scope?.relevantEnvironments?.length && (!propEnv || !scope.relevantEnvironments.includes(propEnv))) {
+    if (scope?.relevantEnvironments?.length && !scope.relevantEnvironments.some((e) => propEnvs.includes(e))) {
       continue;
     }
     if (isAmenityDerived(item.id)) {

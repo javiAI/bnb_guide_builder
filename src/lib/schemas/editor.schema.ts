@@ -11,12 +11,12 @@ export const propertySchema = z.object({
   propertyNickname: z.string().min(1, "El nombre es obligatorio"),
   propertyType: z.string().min(1, "El tipo de propiedad es obligatorio"),
   roomType: z.string().min(1, "El tipo de espacio es obligatorio"),
-  layoutKey: z.string().nullable().optional(),
-  propertyEnvironment: z.string().nullable().optional(),
+  propertyEnvironments: z.array(z.string()).optional().default([]),
   customPropertyTypeLabel: z.string().optional(),
   customPropertyTypeDesc: z.string().optional(),
   customRoomTypeLabel: z.string().optional(),
   customRoomTypeDesc: z.string().optional(),
+  customEnvironmentLabels: z.array(z.string()).optional().default([]),
   country: z.string().min(1, "El país es obligatorio"),
   city: z.string().min(1, "La ciudad es obligatoria"),
   region: z.string().optional(),
@@ -33,15 +33,12 @@ export const propertySchema = z.object({
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   infrastructureJson: z.object({
-    hasElevator: z.boolean().optional(),
     buildingFloors: z.number().int().min(1).max(200).optional(),
+    floorLevel: z.number().int().min(0).max(200).optional(),
   }).optional(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
-).refine(
-  (d) => d.roomType !== "rt.entire_place" || !!d.layoutKey,
-  { message: "La distribución es obligatoria para alojamientos completos", path: ["layoutKey"] },
 );
 
 export type PropertyData = z.infer<typeof propertySchema>;

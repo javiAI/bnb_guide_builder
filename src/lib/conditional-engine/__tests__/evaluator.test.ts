@@ -8,7 +8,7 @@ const baseCtx = (): PropertyContext =>
     {
       propertyType: "pt.villa",
       roomType: "rt.entire_place",
-      propertyEnvironment: "env.rural",
+      propertyEnvironments: ["env.rural"],
       maxGuests: 6,
       infantsAllowed: true,
       floorLevel: 0,
@@ -118,7 +118,7 @@ describe("evaluateItemAvailability", () => {
       allOf: [
         { propertyType: { in: ["pt.villa", "pt.house"] } },
         { roomType: { equals: "rt.entire_place" } },
-        { propertyEnvironment: { in: ["env.rural", "env.beach"] } },
+        { propertyFields: { propertyEnvironments: { containsAny: ["env.rural", "env.beach"] } } },
         { propertyFields: { maxGuests: { gte: 6 }, infantsAllowed: true } },
         { requiresSpaces: ["sp.garden"] },
         { requiresSystems: ["sys.pool_maintenance"] },

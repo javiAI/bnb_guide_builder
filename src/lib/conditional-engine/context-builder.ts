@@ -60,6 +60,9 @@ export async function buildPropertyContext(
 
   if (!property) throw new Error(`Property ${propertyId} not found`);
 
+  const systemKeys = systems.map((s) => s.systemKey);
+  const infra = property.infrastructureJson as { buildingFloors?: number; floorLevel?: number } | null;
+
   return {
     property: {
       // Spread raw record first so any extra fields are preserved, then
@@ -69,17 +72,20 @@ export async function buildPropertyContext(
       id: propertyId,
       propertyType: (property.propertyType as string | null) ?? null,
       roomType: (property.roomType as string | null) ?? null,
-      layoutKey: (property.layoutKey as string | null) ?? null,
-      propertyEnvironment: (property.propertyEnvironment as string | null) ?? null,
-      floorLevel: (property.floorLevel as number | null) ?? null,
-      hasElevator: (property.hasElevator as boolean | null) ?? null,
+      propertyEnvironments: (property.propertyEnvironments as string[] | null) ?? [],
+      // floorLevel + buildingFloors both live in infrastructureJson (no columns).
+      floorLevel: infra?.floorLevel ?? null,
+      buildingFloors: infra?.buildingFloors ?? null,
+      // Single source of truth: the elevator lives as a `sys.elevator` system
+      // (configured from the Property editor). No `hasElevator` column exists.
+      hasElevator: systemKeys.includes("sys.elevator"),
       maxGuests: (property.maxGuests as number | null) ?? null,
       maxAdults: (property.maxAdults as number | null) ?? null,
       maxChildren: (property.maxChildren as number | null) ?? null,
       infantsAllowed: (property.infantsAllowed as boolean | null) ?? null,
     },
     spaces: spaces.map((s) => ({ id: s.id, spaceType: s.spaceType })),
-    systems: systems.map((s) => s.systemKey),
+    systems: systemKeys,
     amenities: Array.from(new Set(amenities.map((a) => a.amenityKey))),
   };
 }

@@ -223,7 +223,14 @@
           "defaultCoverageRule": "property_only",
           "visibility": "public",
           "recommended": false,
-          "source": ["airbnb:elevator"]
+          "source": ["airbnb:elevator"],
+          "managedInProperty": true,
+          "relevantWhen": {
+            "allOf": [
+              { "not": { "propertyType": { "equals": "pt.house" } } },
+              { "propertyFields": { "floorLevel": { "gte": 1 } } }
+            ]
+          }
         },
         {
           "id": "sys.garbage",

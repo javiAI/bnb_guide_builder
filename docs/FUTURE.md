@@ -634,3 +634,22 @@ Regla de oro aplicada en 16F: ante la duda entre `derivable` y `aspirational`, g
 7. **Definición de "camas" en los chips**. `property.bedsCount` refleja fielmente las `BedConfiguration` (declarado == actual; verificado sin bug). Pero un `bt.sofa_bed_*` cuenta como "cama", lo que puede no coincidir con el modelo mental del host. Decisión de producto/taxonomía: ¿"camas" incluye sofá-cama?, ¿mostrar "plazas" en su lugar?, ¿separar camas fijas de convertibles?
 8. **Reservas / Mensajería en Resumen**. Diferido hasta que exista integración real (Airbnb/Booking/WhatsApp). Hoy serían UI vacía o falsa.
 
+## 28. Relevancia condicional de sistemas y amenities (option relevance por elecciones previas)
+
+> Origen: Fase -1 de 16I-2 (2026-06-02). Hoy los **espacios** tienen relevancia (`getAvailableSpaceTypes(roomType)` → required/recommended/optional/**excluded**), pero **sistemas** y **amenities** se ofrecen de forma **uniforme** — sus items de taxonomía no llevan condición de relevancia. Consecuencia: opciones que no aplican saturan la UI y pueden penalizar completitud. Caso canónico: `sys.elevator` (+ `am.elevator`) aparece aunque la vivienda esté en la planta baja — un ascensor solo importa para llegar a una unidad por encima de la planta baja.
+
+**Estado**: 16I-2 implementa el **slice elevador** como **primera instancia + prueba del patrón**, vía `SystemItem.relevantWhen` + helper `isSystemRelevant`/`getRelevantSystems` (reusa `evaluateItemAvailability`). Regla del elevador: **`sys.elevator` es relevante cuando la propiedad no es `pt.house` y la unidad está por encima de planta baja** — `allOf[ not(propertyType=pt.house), propertyFields.floorLevel≥1 ]`. La regla se refinó desde el criterio inicial de edificio multi-planta (`buildingFloors≥2` + tipos como apartment/boutique_hotel) porque `floorLevel` representa mejor la necesidad real de ascensor para llegar a la vivienda (un bajo no lo necesita aunque el edificio tenga varias plantas). El **rollout completo** queda diferido a una rama dedicada (`feat/system-amenity-relevance` o similar).
+
+**Decisión de UI (Option A, 16I-2)**: el ascensor **se configura en Propiedad/Edificio** (modelo mental: el operador describe su edificio; el huésped solo lo usa, no hay instrucciones que redactar) pero **persiste como `sys.elevator`** (fuente única que ya consume el huésped). GUI por modelo mental ≠ storage por consumo — `sys.elevator.managedInProperty: true` saca su "alta" del picker de Sistemas; los `detailsFields` opcionales (ubicación/llave/plantas/mantenimiento) siguen en Sistemas si la fila existe.
+
+**Principio (refuerzo de la regla "una sola fuente de la verdad")**: la relevancia se computa a partir de elecciones previas ya capturadas (no se duplica el dato). `propertyType` + `floorLevel` (planta de la unidad, en `infrastructureJson`) son las señales del elevador; NO se crea un `hasElevator` paralelo (`infrastructureJson.hasElevator` se elimina en 16I-2 — el ascensor vive en `sys.elevator`).
+
+**Plan (rollout completo, rama dedicada)**:
+
+1. **Schema `relevantWhen`** en items de `system_taxonomy.json` / amenities (reusa los operadores del `conditional-engine` — `equals`/`contains`/`intersects`/`gte`/…): p.ej. `sys.elevator: { "floorLevel": { "gte": 1 } }`, `sys.pool_maintenance: { "requiresAmenity": "am.pool" }`, amenities por `roomType`/`propertyEnvironments`.
+2. **Servicio de relevancia** `getRelevantSystems(ctx)` / `getRelevantAmenities(ctx)` (espejo de `getAvailableSpaceTypes`) keyed por atributos de propiedad (floors, environment, type, layout, spaces/amenities configurados) → relevant / hidden.
+3. **Editores filtran por relevancia**: los irrelevantes no aparecen (o quedan bajo "avanzado/otros"), nunca como ruido.
+4. **Completitud** no penaliza sistemas/amenities **irrelevantes** (extender `completeness.service` para descontar del denominador los no aplicables).
+
+**Casos candidatos**: ascensor (planta de la unidad por encima de la baja), mantenimiento de piscina ↔ `am.pool`, sistemas de exterior ↔ `propertyEnvironments`, amenities de cocina ↔ presencia de cocina, etc. (catálogo completo se levanta en la rama dedicada).
+

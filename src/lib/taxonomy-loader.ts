@@ -1153,18 +1153,14 @@ export function getSpaceTypesWithExpectedBeds(): ReadonlySet<string> {
 
 export function getSpaceAvailabilityRule(
   roomType: string,
-  layoutKey: string | null,
 ): SpaceAvailabilityRule | undefined {
-  return spaceAvailabilityRules.rules.find(
-    (r) => r.roomType === roomType && r.layout === layoutKey,
-  );
+  return spaceAvailabilityRules.rules.find((r) => r.roomType === roomType);
 }
 
 export function getAvailableSpaceTypes(
   roomType: string,
-  layoutKey: string | null,
 ): { required: string[]; recommended: string[]; optional: string[]; excluded: string[] } {
-  const rule = getSpaceAvailabilityRule(roomType, layoutKey);
+  const rule = getSpaceAvailabilityRule(roomType);
   if (!rule) return { required: [], recommended: [], optional: [], excluded: [] };
   return {
     required: rule.required,
@@ -1173,17 +1169,6 @@ export function getAvailableSpaceTypes(
     excluded: rule.excluded,
   };
 }
-
-/** Maps layout keys to the non-bedroom space type they imply (derived from taxonomy derivedByLayoutKeys). */
-export const LAYOUT_SPACE_MAP: Record<string, string> = (() => {
-  const map: Record<string, string> = {};
-  for (const item of spaceTypes.items) {
-    for (const layoutKey of item.derivedByLayoutKeys) {
-      map[layoutKey] = item.id;
-    }
-  }
-  return map;
-})();
 
 // ── System taxonomy helpers ──
 

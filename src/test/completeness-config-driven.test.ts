@@ -48,7 +48,7 @@ describe("completeness rules — config-driven", () => {
     });
 
     it("spaces scenario → exact score from fixed JSON weights", async () => {
-      propFind.mockResolvedValue({ roomType: "rt.entire_place", layoutKey: null });
+      propFind.mockResolvedValue({ roomType: "rt.entire_place" });
       spaceFind.mockResolvedValue([
         { id: "s1", spaceType: "sp.bedroom", beds: [{ id: "b1" }], amenityPlacements: [{ id: "pl1" }] },
         { id: "s2", spaceType: "sp.bathroom", beds: [], amenityPlacements: [{ id: "pl2" }] },
@@ -75,7 +75,7 @@ describe("completeness rules — config-driven", () => {
     });
 
     const scenario = () => {
-      propFind.mockResolvedValue({ roomType: "rt.entire_place", layoutKey: null });
+      propFind.mockResolvedValue({ roomType: "rt.entire_place" });
       spaceFind.mockResolvedValue([
         { id: "s1", spaceType: "sp.bedroom", beds: [{ id: "b1" }], amenityPlacements: [] },
         { id: "s2", spaceType: "sp.bathroom", beds: [], amenityPlacements: [] },

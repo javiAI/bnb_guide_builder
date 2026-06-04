@@ -6,11 +6,10 @@ describe("resolveSpaceAvailability", () => {
   it("returns the base matrix when no overlays apply", () => {
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       propertyType: null,
-      environment: null,
+      environments: [],
     });
-    // Base rule for separate_rooms has sp.pool in optional — untouched.
+    // Base entire_place rule has sp.pool in optional — untouched.
     expect(r.optional).toContain("sp.pool");
     expect(r.recommended).not.toContain("sp.pool");
   });
@@ -18,9 +17,8 @@ describe("resolveSpaceAvailability", () => {
   it("promotes env.beach suggestions (pool + patio + garden) into recommended", () => {
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       propertyType: null,
-      environment: "env.beach",
+      environments: ["env.beach"],
     });
     expect(r.recommended).toEqual(expect.arrayContaining(["sp.pool", "sp.patio", "sp.garden"]));
     expect(r.optional).not.toContain("sp.pool");
@@ -30,9 +28,8 @@ describe("resolveSpaceAvailability", () => {
   it("promotes pt.apartment → sp.balcony", () => {
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       propertyType: "pt.apartment",
-      environment: null,
+      environments: [],
     });
     expect(r.recommended).toContain("sp.balcony");
     expect(r.optional).not.toContain("sp.balcony");
@@ -41,9 +38,8 @@ describe("resolveSpaceAvailability", () => {
   it("merges propertyType + environment overlays (union, no dupes)", () => {
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       propertyType: "pt.house", // promotes garden, garage, patio
-      environment: "env.beach", // promotes pool, patio, garden
+      environments: ["env.beach"], // promotes pool, patio, garden
     });
     const recCount = r.recommended.filter((id) => id === "sp.patio").length;
     expect(recCount).toBe(1);
@@ -52,15 +48,27 @@ describe("resolveSpaceAvailability", () => {
     );
   });
 
-  it("never moves items across excluded — hard layout constraint wins", () => {
+  it("unions overlays from MULTIPLE environments (multiselect)", () => {
+    // A property can be several environments at once. beach promotes pool/patio/
+    // garden; urban promotes balcony — the selected set should collect all.
+    const r = resolveSpaceAvailability({
+      roomType: "rt.entire_place",
+      propertyType: null,
+      environments: ["env.beach", "env.urban"],
+    });
+    expect(r.recommended).toEqual(
+      expect.arrayContaining(["sp.pool", "sp.patio", "sp.garden", "sp.balcony"]),
+    );
+  });
+
+  it("never moves items across excluded — roomType constraint wins", () => {
     // rt.private_room excludes sp.pool and sp.garden.
     // env.beach tries to promote those items; they must stay excluded
     // and must not appear in recommended.
     const r = resolveSpaceAvailability({
       roomType: "rt.private_room",
-      layoutKey: null,
       propertyType: null,
-      environment: "env.beach",
+      environments: ["env.beach"],
     });
     expect(r.excluded).toEqual(expect.arrayContaining(["sp.pool", "sp.garden"]));
     expect(r.recommended).not.toContain("sp.pool");
@@ -68,28 +76,24 @@ describe("resolveSpaceAvailability", () => {
   });
 
   it("never demotes required items — already-required stays required", () => {
-    // layout.studio requires sp.studio; no overlay should shuffle it.
+    // sp.bathroom is required for entire_place; overlays only promote optional →
+    // recommended and must never pull a required item out of `required`.
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.studio",
       propertyType: "pt.apartment",
-      environment: "env.urban",
+      environments: ["env.urban"],
     });
-    expect(r.required).toContain("sp.studio");
     expect(r.required).toContain("sp.bathroom");
   });
 
   it("is a no-op when neither propertyType nor environment match an overlay", () => {
-    const base = getAvailableSpaceTypes("rt.entire_place", "layout.separate_rooms");
+    const base = getAvailableSpaceTypes("rt.entire_place");
     const r = resolveSpaceAvailability({
       roomType: "rt.entire_place",
-      layoutKey: "layout.separate_rooms",
       propertyType: "pt.other",
-      environment: null,
+      environments: [],
     });
     // No overlay matches → every bucket should equal the base rule as-is.
-    // Derived from the loader so this test doesn't break when the taxonomy
-    // evolves (we're asserting the no-op contract, not the taxonomy content).
     expect(r).toEqual(base);
   });
 });
