@@ -73,7 +73,8 @@ export async function buildPropertyContext(
       propertyType: (property.propertyType as string | null) ?? null,
       roomType: (property.roomType as string | null) ?? null,
       propertyEnvironments: (property.propertyEnvironments as string[] | null) ?? [],
-      floorLevel: (property.floorLevel as number | null) ?? null,
+      // floorLevel + buildingFloors both live in infrastructureJson (no columns).
+      floorLevel: infra?.floorLevel ?? null,
       buildingFloors: infra?.buildingFloors ?? null,
       // Single source of truth: the elevator lives as a `sys.elevator` system
       // (configured from the Property editor). No `hasElevator` column exists.
