@@ -61,7 +61,7 @@ export async function buildPropertyContext(
   if (!property) throw new Error(`Property ${propertyId} not found`);
 
   const systemKeys = systems.map((s) => s.systemKey);
-  const infra = property.infrastructureJson as { buildingFloors?: number } | null;
+  const infra = property.infrastructureJson as { buildingFloors?: number; floorLevel?: number } | null;
 
   return {
     property: {

@@ -34,6 +34,7 @@ export const propertySchema = z.object({
   longitude: z.number().min(-180).max(180).optional().nullable(),
   infrastructureJson: z.object({
     buildingFloors: z.number().int().min(1).max(200).optional(),
+    floorLevel: z.number().int().min(0).max(200).optional(),
   }).optional(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),

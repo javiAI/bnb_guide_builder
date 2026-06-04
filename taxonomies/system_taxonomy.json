@@ -228,12 +228,7 @@
           "relevantWhen": {
             "allOf": [
               { "not": { "propertyType": { "equals": "pt.house" } } },
-              {
-                "anyOf": [
-                  { "propertyType": { "in": ["pt.apartment", "pt.boutique_hotel"] } },
-                  { "propertyFields": { "buildingFloors": { "gte": 2 } } }
-                ]
-              }
+              { "propertyFields": { "floorLevel": { "gte": 1 } } }
             ]
           }
         },

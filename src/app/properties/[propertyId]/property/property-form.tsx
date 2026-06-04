@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useMemo } from "react";
-import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, BedDouble, ArrowUpDown, type LucideIcon } from "lucide-react";
+import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, ArrowUpDown, type LucideIcon } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -154,8 +154,6 @@ interface PropertyFormProps {
     maxChildren: number;
     infantsAllowed: boolean;
     hasPrivateEntrance: boolean;
-    bedroomsCount: number | null;
-    bathroomsCount: number | null;
     latitude: number | null;
     longitude: number | null;
     infrastructureJson: unknown;
@@ -204,27 +202,29 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
   const [infantsAllowed, setInfantsAllowed] = useState(p.infantsAllowed);
   const [hasPrivateEntrance, setHasPrivateEntrance] = useState(p.hasPrivateEntrance);
 
-  const infra = (p.infrastructureJson as { buildingFloors?: number } | null) ?? {};
+  const infra = (p.infrastructureJson as { buildingFloors?: number; floorLevel?: number } | null) ?? {};
   const [buildingFloors, setBuildingFloors] = useState<number>(infra.buildingFloors ?? 1);
+  // Which floor the unit is on (0 = ground). Drives elevator relevance below.
+  const [floorLevel, setFloorLevel] = useState<number>(infra.floorLevel ?? 0);
   // Elevator existence mirrors the `sys.elevator` system (single source).
   const [hasElevator, setHasElevator] = useState<boolean>(hasElevatorSystem);
 
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePropertyAction, null);
 
   // Elevator relevance (config-driven, FUTURE §28): the `sys.elevator` taxonomy
-  // item carries a `relevantWhen` rule (not a house & multi-floor). Evaluating
-  // it here gates the checkbox so the option only appears when it makes sense —
-  // the same engine + rule the future system-wide rollout will use.
+  // item carries a `relevantWhen` rule (not a house & the unit is above ground).
+  // Evaluating it here gates the checkbox so the option only appears when it
+  // makes sense — the same engine + rule the future system-wide rollout will use.
   const elevatorRelevant = useMemo(() => {
     const item = findSystemItem("sys.elevator");
     if (!item) return false;
     return isSystemRelevant(item, {
-      property: { id: propertyId, propertyType: propertyType || null, buildingFloors },
+      property: { id: propertyId, propertyType: propertyType || null, buildingFloors, floorLevel },
       spaces: [],
       systems: [],
       amenities: [],
     });
-  }, [propertyId, propertyType, buildingFloors]);
+  }, [propertyId, propertyType, buildingFloors, floorLevel]);
 
   // Auto-save: edits persist as you make them (no "Guardar" button). The hook
   // reads the form's live FormData, so every control is captured generically.
@@ -322,14 +322,14 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
             iconSize={20}
           />
         }
-        description="Clasificación, ubicación, capacidad e infraestructura. Estos datos definen la base de la guía y alimentan el resto de secciones."
+        description="Ubicación, clasificación, edificio y capacidad. Estos datos definen la base de la guía y alimentan el resto de secciones."
         actions={<AutoSaveStatus pending={pending} />}
         chips={
           <>
+            {city.trim() && <PageHeaderChip icon={MapPin} label="Ubicación" value={city} />}
             <PageHeaderChip icon={Home} label="Tipo" value={ptLabel} />
             <PageHeaderChip icon={DoorOpen} label="Espacio" value={rtLabel} />
             <PageHeaderChip icon={UsersRound} label="Capacidad" value={`${totalGuests} huéspedes`} />
-            {city.trim() && <PageHeaderChip icon={MapPin} label="Ubicación" value={city} />}
           </>
         }
       />
@@ -346,13 +346,53 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         <input type="hidden" name="customRoomTypeLabel" value={customRtLabel} />
         <input type="hidden" name="customRoomTypeDesc" value={customRtDesc} />
         {customEnvLabels.map((l, i) => (l.trim() ? <input key={`cenv-${i}`} type="hidden" name="customEnvironmentLabels" value={l} /> : null))}
-        {/* infrastructureJson owns exactly { buildingFloors } — always sent so the
-            serialised form is stable across saves (no mount/unmount diff loop). */}
-        <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors })} />
+        {/* infrastructureJson owns { buildingFloors, floorLevel } — always sent so
+            the serialised form is stable across saves (no mount/unmount diff loop). */}
+        <input type="hidden" name="infrastructureJson" value={JSON.stringify({ buildingFloors, floorLevel })} />
         {/* Property name is edited inline in the page title above. */}
         <input type="hidden" name="propertyNickname" value={nickname} />
 
-        <NumberedSection number="01" title="Clasificación">
+        <NumberedSection number="01" title="Ubicación">
+          <div className="space-y-4">
+            {/* Address block in postal order: país/ciudad → provincia/CP → calle.
+                Provincia + CP sit beside Ciudad (geographically related) and are
+                auto-filled by geocoding (muted labels + flash) but editable. */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldInput label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
+              <FieldInput label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FieldSelect label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
+                <option value="">Seleccionar</option>
+                {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
+              </FieldSelect>
+              <FieldInput label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
+            </div>
+            <FieldInput label="Dirección" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="ej. Calle Ramón y Cajal 17, 2º C" help="Dirección completa: vía, número y, si aplica, piso/puerta." />
+            {/* Piso/Puerta merged into the full address above — clear the legacy column on save. */}
+            <input type="hidden" name="addressExtra" value="" />
+            <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
+            <input type="hidden" name="latitude" value={latitude ?? ""} />
+            <input type="hidden" name="longitude" value={longitude ?? ""} />
+
+            <button type="button" disabled={geocoding || !country.trim() || !city.trim() || !streetAddress.trim()} onClick={handleGeocode} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40">
+              <Search size={14} aria-hidden="true" />
+              {geocoding ? "Buscando..." : "Encontrar ubicación"}
+            </button>
+
+            <LocationMap lat={latitude} lng={longitude} onPositionChange={handlePinMove} />
+            {latitude != null && longitude != null && (
+              <p className="text-xs text-[var(--color-text-muted)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
+            )}
+
+            {/* Timezone is derived from país/coords on geocode — editable, not required. */}
+            <FieldSelect label="Zona horaria" labelTone="muted" name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
+              {COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
+            </FieldSelect>
+          </div>
+        </NumberedSection>
+
+        <NumberedSection number="02" title="Clasificación">
           <div className="space-y-2">
             <CollapsibleSection title="Tipo de propiedad" selectedLabel={ptLabel} expanded={openPicker === "propertyType"} onToggle={() => togglePicker("propertyType")}>
               <p className={`mb-3 ${HELP_CLS}`}>¿Qué clase de alojamiento es? Define la base de la guía.</p>
@@ -396,110 +436,13 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
           </div>
         </NumberedSection>
 
-        <NumberedSection number="02" title="Ubicación">
+        <NumberedSection number="03" title="Edificio">
           <div className="space-y-4">
-            {/* Address block in postal order: país/ciudad → provincia/CP → calle.
-                Provincia + CP sit beside Ciudad (geographically related) and are
-                auto-filled by geocoding (muted labels + flash) but editable. */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FieldInput label="País" required name="country" value={country} onChange={(e) => setCountry(e.target.value)} className={autoFillCls("country")} />
-              <FieldInput label="Ciudad" required name="city" value={city} onChange={(e) => setCity(e.target.value)} className={autoFillCls("city")} />
+            <div className="space-y-2">
+              <NumberStepper label="Plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
+              <NumberStepper label="Planta de la propiedad" value={floorLevel} onChange={setFloorLevel} min={0} max={buildingFloors} />
+              <p className={HELP_CLS}>En qué planta está la vivienda (0 = planta baja). Si está por encima de la baja, se pregunta por el ascensor.</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FieldSelect label="Provincia" labelTone="muted" name="region" value={province} onChange={(e) => setProvince(e.target.value)} className={autoFillCls("region")}>
-                <option value="">Seleccionar</option>
-                {provinces.map((pr) => <option key={pr.id} value={pr.id}>{pr.label}</option>)}
-              </FieldSelect>
-              <FieldInput label="Código postal" labelTone="muted" name="postalCode" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className={autoFillCls("postalCode")} />
-            </div>
-            <FieldInput label="Dirección" required name="streetAddress" value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="ej. Calle Ramón y Cajal 17, 2º C" help="Dirección completa: vía, número y, si aplica, piso/puerta." />
-            {/* Piso/Puerta merged into the full address above — clear the legacy column on save. */}
-            <input type="hidden" name="addressExtra" value="" />
-            <input type="hidden" name="addressLevel" value={p.addressLevel ?? "exact"} />
-            <input type="hidden" name="latitude" value={latitude ?? ""} />
-            <input type="hidden" name="longitude" value={longitude ?? ""} />
-
-            <button type="button" disabled={geocoding || !country.trim() || !city.trim() || !streetAddress.trim()} onClick={handleGeocode} className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] hover:underline disabled:opacity-40">
-              <Search size={14} aria-hidden="true" />
-              {geocoding ? "Buscando..." : "Encontrar ubicación"}
-            </button>
-
-            <LocationMap lat={latitude} lng={longitude} onPositionChange={handlePinMove} />
-            {latitude != null && longitude != null && (
-              <p className="text-xs text-[var(--color-text-muted)]">{latitude.toFixed(5)}, {longitude.toFixed(5)}</p>
-            )}
-
-            {/* Timezone is derived from país/coords on geocode — editable, not required. */}
-            <FieldSelect label="Zona horaria" labelTone="muted" name="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={autoFillCls("timezone")}>
-              {COMMON_TIMEZONES.map((tz) => <option key={tz.value} value={tz.value}>{tz.label}</option>)}
-            </FieldSelect>
-          </div>
-        </NumberedSection>
-
-        <NumberedSection number="03" title="Capacidad">
-          <div className="space-y-4">
-            {/* Aforo — adults + children counters; total is their live sum. */}
-            <Card variant="overview">
-              <div className="flex items-center gap-2">
-                <IconBadge icon={UsersRound} tone="primary" />
-                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Aforo de huéspedes</h3>
-                <InfoTooltip text="Debe haber al menos 1 adulto. Los bebés menores de 2 años no cuentan en el aforo." />
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <NumberStepper layout="stacked" label="Adultos" name="maxAdults" value={maxAdults} onChange={setMaxAdults} min={1} max={MAX_TOTAL_GUESTS - maxChildren} />
-                <NumberStepper layout="stacked" label="Niños (−14)" name="maxChildren" value={maxChildren} onChange={setMaxChildren} min={0} max={MAX_TOTAL_GUESTS - maxAdults} />
-              </div>
-
-              {/* Derived total — the result of adults + children. */}
-              <div className="mt-3 flex items-baseline justify-between border-t border-[var(--color-border-default)] pt-3">
-                <span className="text-sm text-[var(--color-text-secondary)]">Aforo total</span>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  <span className="text-base font-semibold text-[var(--color-text-primary)]">{totalGuests}</span> huéspedes
-                </span>
-              </div>
-              <input type="hidden" name="maxGuests" value={totalGuests} />
-
-              <ToggleRow
-                icon={Baby}
-                label="Se admiten bebés (cuna disponible)"
-                helper="No cuentan en el aforo."
-                name="infantsAllowed"
-                checked={infantsAllowed}
-                onChange={setInfantsAllowed}
-                className="mt-3 border-t border-[var(--color-border-default)] pt-3"
-              />
-            </Card>
-
-            {/* Dormitorios y baños — derived (read-only) from Espacios. */}
-            <Card variant="overview">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <IconBadge icon={BedDouble} tone="neutral" />
-                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Dormitorios y baños</h3>
-                </div>
-                <TextLink href={`/properties/${propertyId}/spaces`} size="sm" arrow>
-                  Gestionar espacios
-                </TextLink>
-              </div>
-              <div className="mt-3 flex gap-8">
-                <div>
-                  <p className="text-xl font-semibold text-[var(--color-text-primary)]">{p.bedroomsCount ?? 0}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">dormitorios</p>
-                </div>
-                <div>
-                  <p className="text-xl font-semibold text-[var(--color-text-primary)]">{p.bathroomsCount ?? 0}</p>
-                  <p className="text-xs text-[var(--color-text-muted)]">baños</p>
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-[var(--color-text-muted)]">Calculado automáticamente a partir de los espacios definidos.</p>
-            </Card>
-          </div>
-        </NumberedSection>
-
-        <NumberedSection number="04" title="Edificio">
-          <div className="space-y-4">
-            <NumberStepper label="Plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
 
             {/* Building features — consistent toggle rows (icon · label · helper · check). */}
             <Card variant="overview">
@@ -534,6 +477,45 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
                 />
               </div>
             </Card>
+          </div>
+        </NumberedSection>
+
+        <NumberedSection number="04" title="Capacidad">
+          <div className="space-y-4">
+            {/* Aforo — adults + children counters; total is their live sum. */}
+            <Card variant="overview">
+              <div className="flex items-center gap-2">
+                <IconBadge icon={UsersRound} tone="primary" />
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Aforo de huéspedes</h3>
+                <InfoTooltip text="Debe haber al menos 1 adulto. Los bebés menores de 2 años no cuentan en el aforo." />
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <NumberStepper layout="stacked" label="Adultos" name="maxAdults" value={maxAdults} onChange={setMaxAdults} min={1} max={MAX_TOTAL_GUESTS - maxChildren} />
+                <NumberStepper layout="stacked" label="Niños (−14)" name="maxChildren" value={maxChildren} onChange={setMaxChildren} min={0} max={MAX_TOTAL_GUESTS - maxAdults} />
+              </div>
+
+              {/* Derived total — the result of adults + children. */}
+              <div className="mt-3 flex items-baseline justify-between border-t border-[var(--color-border-default)] pt-3">
+                <span className="text-sm text-[var(--color-text-secondary)]">Aforo total</span>
+                <span className="text-sm text-[var(--color-text-secondary)]">
+                  <span className="text-base font-semibold text-[var(--color-text-primary)]">{totalGuests}</span> huéspedes
+                </span>
+              </div>
+              <input type="hidden" name="maxGuests" value={totalGuests} />
+
+              <ToggleRow
+                icon={Baby}
+                label="Se admiten bebés"
+                helper="No cuentan en el aforo. La cuna, trona y demás equipamiento de bebé se gestionan en Equipamiento."
+                name="infantsAllowed"
+                checked={infantsAllowed}
+                onChange={setInfantsAllowed}
+                className="mt-3 border-t border-[var(--color-border-default)] pt-3"
+              />
+            </Card>
+            {/* Dormitorios y baños viven en Espacios (fuente de verdad); no se
+                duplican aquí — la distribución ya no se configura en Propiedad. */}
           </div>
         </NumberedSection>
 
