@@ -437,47 +437,46 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
         </NumberedSection>
 
         <NumberedSection number="03" title="Edificio">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <NumberStepper label="Plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
-              <NumberStepper label="Planta de la propiedad" value={floorLevel} onChange={setFloorLevel} min={0} max={buildingFloors} />
-              <p className={HELP_CLS}>En qué planta está la vivienda (0 = planta baja). Si está por encima de la baja, se pregunta por el ascensor.</p>
+          {/* One box for the whole building: floor counters (like Aforo) + the
+              feature toggles below a divider. */}
+          <Card variant="overview">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <NumberStepper layout="stacked" label="Plantas del edificio" value={buildingFloors} onChange={setBuildingFloors} min={1} max={200} />
+              <NumberStepper layout="stacked" label="Planta de la propiedad" value={floorLevel} onChange={setFloorLevel} min={0} max={buildingFloors} />
             </div>
+            <p className={`mt-3 ${HELP_CLS}`}>En qué planta se encuentra la vivienda (0 = planta baja). Cuando está en una planta superior, el ascensor es relevante para llegar a ella y podrás indicar si el edificio dispone de uno.</p>
 
-            {/* Building features — consistent toggle rows (icon · label · helper · check). */}
-            <Card variant="overview">
-              <div className="space-y-3">
-                {elevatorRelevant && (
-                  <div>
-                    <ToggleRow
-                      icon={ArrowUpDown}
-                      label="El edificio tiene ascensor"
-                      helper="Se guarda en los sistemas del edificio."
-                      checked={hasElevator}
-                      onChange={setHasElevator}
-                    />
-                    <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
-                    {hasElevator && (
-                      <p className={`mt-1 pl-[42px] ${HELP_CLS}`}>
-                        Detalles opcionales (ubicación, llave, plantas) en{" "}
-                        <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
-                      </p>
-                    )}
-                  </div>
-                )}
+            <div className="mt-3 space-y-3 border-t border-[var(--color-border-default)] pt-3">
+              {elevatorRelevant && (
+                <div>
+                  <ToggleRow
+                    icon={ArrowUpDown}
+                    label="El edificio tiene ascensor"
+                    helper="Se guarda en los sistemas del edificio."
+                    checked={hasElevator}
+                    onChange={setHasElevator}
+                  />
+                  <input type="hidden" name="hasElevator" value={hasElevator ? "true" : "false"} />
+                  {hasElevator && (
+                    <p className={`mt-1 pl-[42px] ${HELP_CLS}`}>
+                      Detalles opcionales (ubicación, llave, plantas) en{" "}
+                      <TextLink href={`/properties/${propertyId}/systems`} size="sm">Sistemas</TextLink>.
+                    </p>
+                  )}
+                </div>
+              )}
 
-                <ToggleRow
-                  icon={DoorOpen}
-                  label="Entrada privada"
-                  helper="Entrada independiente, sin zonas compartidas con otros inquilinos o el anfitrión."
-                  name="hasPrivateEntrance"
-                  checked={hasPrivateEntrance}
-                  onChange={setHasPrivateEntrance}
-                  className={elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}
-                />
-              </div>
-            </Card>
-          </div>
+              <ToggleRow
+                icon={DoorOpen}
+                label="Entrada privada"
+                helper="Entrada independiente, sin zonas compartidas con otros inquilinos o el anfitrión."
+                name="hasPrivateEntrance"
+                checked={hasPrivateEntrance}
+                onChange={setHasPrivateEntrance}
+                className={elevatorRelevant ? "border-t border-[var(--color-border-default)] pt-3" : ""}
+              />
+            </div>
+          </Card>
         </NumberedSection>
 
         <NumberedSection number="04" title="Capacidad">
