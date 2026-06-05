@@ -178,10 +178,12 @@
 /*
  * Entity cockpit card view-transition (shared primitive — Access + Spaces +
  * future media-backed surfaces). Each card carries a unique inline
- * `view-transition-name` plus the `recipe-entity-card-vt` class which assigns
- * `view-transition-class: entity-card`. Tuning the class instead of per-name
- * lets it cover DYNAMIC ids (Spaces cards) the static per-name rules below
- * cannot enumerate. Same 320ms emphasis curve as the Access cards.
+ * `view-transition-name` (`cockpit-card-${id}` for Access, `space-card-${id}`
+ * for Spaces) so the browser morphs it individually, plus the
+ * `recipe-entity-card-vt` class which assigns `view-transition-class:
+ * entity-card`. Tuning the CLASS (one rule) covers every card — including
+ * DYNAMIC ids (Spaces) that static per-name rules cannot enumerate — using the
+ * same class-based mechanism the method rows already rely on. 320ms emphasis.
  */
 .recipe-entity-card-vt {
   view-transition-class: entity-card;
@@ -196,25 +198,15 @@
 }
 
 /*
- * Cockpit view-transition tuning. Each card has view-transition-name set in
- * subsystem-card.tsx as `cockpit-card-${id}`; here we tune timing/easing for all
- * four. Default UA value is ~250ms linear-ish; we want slightly longer + emphasis.
+ * Root + method-row view-transition tuning. The cockpit cards are tuned by the
+ * `.entity-card` class above (was per-name `cockpit-card-*` — migrated in
+ * 16I-4). Default UA value is ~250ms linear-ish; we want slightly longer +
+ * emphasis.
  */
 @supports (view-transition-name: none) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 280ms;
-    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  ::view-transition-old(cockpit-card-building),
-  ::view-transition-new(cockpit-card-building),
-  ::view-transition-old(cockpit-card-unit),
-  ::view-transition-new(cockpit-card-unit),
-  ::view-transition-old(cockpit-card-parking),
-  ::view-transition-new(cockpit-card-parking),
-  ::view-transition-old(cockpit-card-accessibility),
-  ::view-transition-new(cockpit-card-accessibility) {
-    animation-duration: 320ms;
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   /* MethodRow rows carry view-transition-class: method-row + a unique

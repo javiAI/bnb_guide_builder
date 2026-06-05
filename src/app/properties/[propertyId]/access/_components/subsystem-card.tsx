@@ -6,7 +6,11 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useS
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { deleteMediaAction } from "@/lib/actions/media.actions";
-import type { CardRole } from "./cockpit-grid";
+import {
+  EntityMediaCard,
+  EntityCardStatusPill,
+  type EntityCardRole,
+} from "@/components/ui/entity-media-card";
 import { HoverCard } from "@/components/ui/hover-card";
 import {
   MediaCarousel,
@@ -92,7 +96,7 @@ export interface SubsystemSelectedItem {
 }
 
 interface SubsystemCardProps {
-  role: CardRole;
+  role: EntityCardRole;
   cockpitId: AccessCockpitId;
   propertyId: string;
   icon: LucideIcon;
@@ -366,9 +370,6 @@ export function SubsystemCard({
   const titleId = useId();
   const bodyId = useId();
 
-  // Per-card view-transition-name lets the browser morph each card individually.
-  const cardStyle = { viewTransitionName: `cockpit-card-${cockpitId}` } as React.CSSProperties;
-
   // Order: primary first, then the rest in given order. Visible cap then
   // overflow into the "+N" reveal.
   const { ordered, visible, hidden } = useMemo(() => {
@@ -516,306 +517,140 @@ export function SubsystemCard({
 
   const isParkingCockpit = cockpitId === PARKING_COCKPIT_ID;
 
-  let body: ReactNode;
-  if (role === "active") {
-    body = (
-      <div
-        id={`access-cockpit-${cockpitId}`}
-        style={cardStyle}
-        className="overflow-hidden rounded-[20px] border border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] shadow-[var(--elevation-surface-sm)]"
-      >
-        {/* Media-first layout: cover area on top, title button below.
-           The cover doubles as a collapse trigger via `onCollapse` — clicking
-           anywhere on the image (except the lightbox button) collapses the
-           card, mirroring the collapsed expand-overlay pattern.
+  // ── Cover carousel (media slot) ──
+  // Shown on every collapsed card; on expand the parking cockpit hides it
+  // (its hero is the embedded map rendered in the body via `children`).
+  const showCarousel = role === "active" ? !isParkingCockpit : true;
+  const media = showCarousel ? (
+    <MediaCarousel
+      slides={carouselSlides}
+      propertyId={propertyId}
+      title={title}
+      variant={role === "active" ? "active" : "collapsed"}
+      uploadEntityType="access_method"
+      uploadUsageKey={uploadUsageKey}
+      placeholderGradient={placeholderGradient}
+      currentIdx={carouselIdx}
+      onCurrentIdxChange={setCarouselIdx}
+      onLightboxOpen={handleLightboxOpen}
+      {...(role === "active"
+        ? {}
+        : { bodyId, onExpand, eagerFirstSlide: cockpitId === BUILDING_COCKPIT_ID })}
+    />
+  ) : null;
 
-           Parking cockpit opts out: its hero is the embedded map rendered in
-           the body (`<ArrivalCockpitMap />`), not a photo carousel — parking
-           is fundamentally about geography, not aesthetics. */}
-        {!isParkingCockpit && (
-          <MediaCarousel
-            slides={carouselSlides}
-            propertyId={propertyId}
-            title={title}
-            variant="active"
-            uploadEntityType="access_method"
-            uploadUsageKey={uploadUsageKey}
-            placeholderGradient={placeholderGradient}
-            currentIdx={carouselIdx}
-            onCurrentIdxChange={setCarouselIdx}
-            onLightboxOpen={handleLightboxOpen}
-          />
-        )}
-        {lightboxIdx !== null && (
-          <MediaLightbox
-            slides={stableSlides}
-            index={lightboxIdx}
-            onIndexChange={handleLightboxIndexChange}
-            onClose={handleLightboxClose}
-            onSlideDelete={handleSlideDelete}
-            uploadConfig={lightboxUploadConfig}
-            lightboxMap={lightboxMap}
-            lightboxSidePanel={lightboxSidePanel}
-          />
-        )}
-        {/* Header: collapse trigger (flex-1) + cover-upload camera (sibling,
-           never nested). Splitting avoids a button-inside-button. */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-expanded={true}
-            aria-controls={bodyId}
-            aria-labelledby={titleId}
-            onClick={onCollapse}
-            className={cn(
-              "group flex min-w-0 flex-1 items-center gap-3 p-5 text-left",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
-              "hover:bg-[var(--color-background-muted)]/40",
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
-            >
-              <Icon size={20} aria-hidden="true" />
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span
-                id={titleId}
-                className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
-              >
-                {title}
-              </span>
-              {expandedSubtitle && (
-                <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
-                  {expandedSubtitle}
-                </span>
-              )}
-            </span>
-          </button>
-          {!isParkingCockpit && (
-            <CoverUploadIconButton
-              propertyId={propertyId}
-              uploadUsageKey={uploadUsageKey}
-              coverCount={coverCount}
-              firstUrl={coverFirstUrl}
-              secondUrl={coverSecondUrl}
-              className="mr-4 flex-none"
-            />
-          )}
-        </div>
-        <section
-          id={bodyId}
-          role="region"
-          aria-labelledby={titleId}
-          className="border-t border-[var(--color-border-default)] p-5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {children}
-        </section>
-      </div>
-    );
-  } else {
-    // ────────────────────────────────────────────────────────────────────
-    // Collapsed branch — Liora "spaces-card" silhouette:
-    //   <article>
-    //     <div media-area>      ← media expand <button> + dots (siblings)
-    //     <button body-expand>  ← header + strip + foot pill
-    //   </article>
-    //
-    // Two sibling expand buttons (media + body) → no nested interactive HTML;
-    // dots are siblings of both, never inside them. Tab-stops per card =
-    // 1 (media-expand) + N dots + 1 (body-expand). View-transition-name
-    // sits on the <article> so the morph animates the whole shell.
-    // ────────────────────────────────────────────────────────────────────
-    body = (
-    <article
-      id={`access-cockpit-${cockpitId}`}
-      data-component="subsystem-card-collapsed"
-      aria-labelledby={titleId}
-      style={cardStyle}
-      className={cn(
-        "group relative flex min-h-[260px] w-full flex-col overflow-hidden rounded-[20px] text-left",
-        // Card-level hover (border + shadow). Same arbitrary-property
-        // [box-shadow:...] dance as the previous <button> — `shadow-[var(--…)]`
-        // is mis-parsed by Tailwind v3 as a shadow color. We use a literal
-        // box-shadow rule via `[box-shadow:var(--elevation-surface-lg)]`.
-        "transition-[border-color,box-shadow] duration-200 ease-out",
-        "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
-        "hover:[box-shadow:var(--elevation-surface-lg)]",
-        "focus-within:[box-shadow:var(--elevation-surface-md)]",
-      )}
-    >
-      <MediaCarousel
-        slides={carouselSlides}
-        propertyId={propertyId}
-        title={title}
-        variant="collapsed"
-        uploadEntityType="access_method"
-        uploadUsageKey={uploadUsageKey}
-        placeholderGradient={placeholderGradient}
-        bodyId={bodyId}
-        onExpand={onExpand}
-        onLightboxOpen={handleLightboxOpen}
-        currentIdx={carouselIdx}
-        onCurrentIdxChange={setCarouselIdx}
-        eagerFirstSlide={cockpitId === BUILDING_COCKPIT_ID}
+  // ── Lightbox (overlay slot) — same in both roles ──
+  const overlay =
+    lightboxIdx !== null ? (
+      <MediaLightbox
+        slides={stableSlides}
+        index={lightboxIdx}
+        onIndexChange={handleLightboxIndexChange}
+        onClose={handleLightboxClose}
+        onSlideDelete={handleSlideDelete}
+        uploadConfig={lightboxUploadConfig}
+        lightboxMap={lightboxMap}
+        lightboxSidePanel={lightboxSidePanel}
       />
-      {lightboxIdx !== null && (
-        <MediaLightbox
-          slides={stableSlides}
-          index={lightboxIdx}
-          onIndexChange={handleLightboxIndexChange}
-          onClose={handleLightboxClose}
-          onSlideDelete={handleSlideDelete}
-          uploadConfig={lightboxUploadConfig}
-          lightboxMap={lightboxMap}
-          lightboxSidePanel={lightboxSidePanel}
-        />
-      )}
+    ) : null;
 
-      {/* ── Body ───────────────────────────────────────────────── */}
-      <button
-        type="button"
-        aria-expanded={false}
-        aria-controls={bodyId}
-        aria-labelledby={titleId}
-        onClick={onExpand}
-        className={cn(
-          "flex flex-1 flex-col gap-3 p-4 text-left",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-action-primary)]",
-        )}
-      >
-        {/* Header row: icon-badge + title + status pill on the right.
-           Status pill drops on `empty` (placeholder + hint convey state). */}
-        <span className="flex w-full items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid h-10 w-10 flex-none place-items-center rounded-[12px] bg-[var(--color-action-primary)] text-[var(--color-text-on-accent)]"
-          >
-            <Icon size={20} aria-hidden="true" />
-          </span>
-          <span
-            id={titleId}
-            title={title}
-            className="min-w-0 flex-1 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
-          >
-            {title}
-          </span>
-          <StatusPill status={status} />
-        </span>
+  // ── Cover-upload affordance ──
+  // Active header sibling (`mr-4`) / collapsed hover overlay (absolute).
+  // Parking opts out (no cover photos — the embedded map is the hero).
+  const coverUpload = !isParkingCockpit ? (
+    <CoverUploadIconButton
+      propertyId={propertyId}
+      uploadUsageKey={uploadUsageKey}
+      coverCount={coverCount}
+      firstUrl={coverFirstUrl}
+      secondUrl={coverSecondUrl}
+      className={
+        role === "active"
+          ? "mr-4 flex-none"
+          : "absolute bottom-3 right-3 z-[20] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+      }
+    />
+  ) : null;
 
-        {/* Strip — visible-cap policy + HoverCard popover with full ordered
-           list. items-start on the wrapper keeps the Radix Trigger inline-flex
-           wrapper from being stretched by the parent flex-col (preserves the
-           6h hover scope fix: popover opens only over the strip itself). */}
-        <span className="flex flex-1 flex-col items-start justify-end overflow-visible">
-          {ordered.length === 0 ? (
-            <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
-              <Plus size={14} aria-hidden="true" className="flex-none" />
-              <span className="truncate">Añade características</span>
-            </span>
-          ) : (
-            <HoverCard
-              contentClassName="max-w-[360px]"
-              trigger={
-                <span className="flex flex-nowrap items-center gap-2 overflow-visible">
-                  {visible.map((item) => (
-                    <span key={item.id}>
-                      {renderTile(item, item.id === primaryId)}
-                    </span>
-                  ))}
-                  {hidden.length > 0 && (
-                    <span
-                      role="img"
-                      aria-label={`${hidden.length} más`}
-                      className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
-                    >
-                      +{hidden.length}
-                    </span>
+  // ── Collapsed body content (collapsedContent slot) ──
+  // The selected-feature tile strip (HoverCard overflow) or the empty hint.
+  // EntityMediaCard provides the bottom-aligned wrapper; we pass only the
+  // inner content.
+  const collapsedContent =
+    ordered.length === 0 ? (
+      <span className="inline-flex max-w-full items-center gap-2 text-[12px] text-[var(--color-text-muted)]">
+        <Plus size={14} aria-hidden="true" className="flex-none" />
+        <span className="truncate">Añade características</span>
+      </span>
+    ) : (
+      <HoverCard
+        contentClassName="max-w-[360px]"
+        trigger={
+          <span className="flex flex-nowrap items-center gap-2 overflow-visible">
+            {visible.map((item) => (
+              <span key={item.id}>{renderTile(item, item.id === primaryId)}</span>
+            ))}
+            {hidden.length > 0 && (
+              <span
+                role="img"
+                aria-label={`${hidden.length} más`}
+                className="grid h-8 min-w-[32px] flex-none place-items-center rounded-[8px] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-1.5 text-[11px] font-semibold text-[var(--color-text-secondary)]"
+              >
+                +{hidden.length}
+              </span>
+            )}
+          </span>
+        }
+        content={
+          <ul className="flex flex-col">
+            {ordered.map((it) => {
+              const isP = it.id === primaryId;
+              const ItemIcon = it.icon;
+              return (
+                <li
+                  key={it.id}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px]",
+                    isP && "bg-[var(--color-action-primary-subtle)]",
                   )}
-                </span>
-              }
-              content={
-                <ul className="flex flex-col">
-                  {ordered.map((it) => {
-                    const isP = it.id === primaryId;
-                    const ItemIcon = it.icon;
-                    return (
-                      <li
-                        key={it.id}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px]",
-                          isP && "bg-[var(--color-action-primary-subtle)]",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px]",
-                            isP
-                              ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
-                              : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-                          )}
-                        >
-                          <ItemIcon size={12} aria-hidden="true" />
-                        </span>
-                        <span
-                          title={it.label}
-                          className={cn(
-                            "min-w-0 flex-1 line-clamp-2",
-                            isP
-                              ? "font-semibold text-[var(--color-action-primary)]"
-                              : "text-[var(--color-text-primary)]",
-                          )}
-                        >
-                          {it.label}
-                        </span>
-                        {isP && (
-                          <Star
-                            size={11}
-                            fill="currentColor"
-                            strokeWidth={0}
-                            aria-hidden="true"
-                            className="flex-none text-[var(--color-action-primary)]"
-                          />
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              }
-            />
-          )}
-        </span>
-
-        {/* Visually-hidden media counts — kept for AT users / regression tests
-           that previously asserted the photo/video counts. The visible carousel
-           + dot count already conveys the same information sighted users. */}
-        <span className="sr-only">
-          <Upload size={12} aria-hidden="true" />
-          {photoCount} {photoCount === 1 ? "foto" : "fotos"},{" "}
-          <Video size={12} aria-hidden="true" />
-          {videoCount} {videoCount === 1 ? "vídeo" : "vídeos"}
-        </span>
-      </button>
-
-      {/* Hover-revealed cover upload — sibling of body-expand button (not nested
-         inside it). Appears in the body header area on card hover. Click stops
-         propagation so it doesn't trigger the body-expand. Parking opts out
-         (no cover photos — the embedded map is the hero on expand). */}
-      {!isParkingCockpit && (
-        <CoverUploadIconButton
-          propertyId={propertyId}
-          uploadUsageKey={uploadUsageKey}
-          coverCount={coverCount}
-          firstUrl={coverFirstUrl}
-          secondUrl={coverSecondUrl}
-          className="absolute bottom-3 right-3 z-[20] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-        />
-      )}
-    </article>
+                >
+                  <span
+                    className={cn(
+                      "grid h-[22px] w-[22px] flex-none place-items-center rounded-[6px]",
+                      isP
+                        ? "bg-[var(--color-action-primary)] text-[var(--color-action-primary-fg)]"
+                        : "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
+                    )}
+                  >
+                    <ItemIcon size={12} aria-hidden="true" />
+                  </span>
+                  <span
+                    title={it.label}
+                    className={cn(
+                      "min-w-0 flex-1 line-clamp-2",
+                      isP
+                        ? "font-semibold text-[var(--color-action-primary)]"
+                        : "text-[var(--color-text-primary)]",
+                    )}
+                  >
+                    {it.label}
+                  </span>
+                  {isP && (
+                    <Star
+                      size={11}
+                      fill="currentColor"
+                      strokeWidth={0}
+                      aria-hidden="true"
+                      className="flex-none text-[var(--color-action-primary)]"
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        }
+      />
     );
-  }
 
   return (
     <SubsystemLightboxContext.Provider value={openLightboxForUsageKey}>
@@ -827,35 +662,41 @@ export function SubsystemCard({
         initialSuggestions={parkingSuggestions ?? EMPTY_PARKING_SUGGESTIONS}
         radiusMeters={parkingRadiusMeters ?? DEFAULT_DISCOVERY_RADIUS_M}
       >
-        {body}
+        <EntityMediaCard
+          role={role}
+          viewTransitionName={`cockpit-card-${cockpitId}`}
+          domId={`access-cockpit-${cockpitId}`}
+          titleId={titleId}
+          bodyId={bodyId}
+          icon={Icon}
+          title={title}
+          subtitle={expandedSubtitle}
+          status={
+            <EntityCardStatusPill
+              tone={status === "configured" ? "success" : "warning"}
+              icon={status === "configured" ? Check : AlertTriangle}
+              label={status === "configured" ? "Configurado" : "Pendiente"}
+            />
+          }
+          media={media}
+          overlay={overlay}
+          collapsedContent={collapsedContent}
+          srOnly={
+            <>
+              <Upload size={12} aria-hidden="true" />
+              {photoCount} {photoCount === 1 ? "foto" : "fotos"},{" "}
+              <Video size={12} aria-hidden="true" />
+              {videoCount} {videoCount === 1 ? "vídeo" : "vídeos"}
+            </>
+          }
+          hoverOverlay={role === "active" ? undefined : coverUpload}
+          headerAction={role === "active" ? coverUpload : undefined}
+          onExpand={onExpand}
+          onCollapse={onCollapse}
+        >
+          {children}
+        </EntityMediaCard>
       </MaybeParkingProvider>
     </SubsystemLightboxContext.Provider>
-  );
-}
-
-// ── Status pill ─────────────────────────────────────────────────────────
-
-function StatusPill({ status }: { status: SubsystemStatus }) {
-  if (status === "configured") {
-    return (
-      <span
-        aria-label="Configurado"
-        title="Configurado"
-        className="inline-flex flex-none items-center gap-1 rounded-[8px] bg-[var(--color-status-success-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-status-success-text)]"
-      >
-        <Check size={11} strokeWidth={3} aria-hidden="true" />
-        Configurado
-      </span>
-    );
-  }
-  return (
-    <span
-      aria-label="Pendiente"
-      title="Pendiente"
-      className="inline-flex flex-none items-center gap-1 rounded-[8px] bg-[var(--color-status-warning-bg)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-status-warning-text)]"
-    >
-      <AlertTriangle size={11} strokeWidth={2.5} aria-hidden="true" />
-      Pendiente
-    </span>
   );
 }

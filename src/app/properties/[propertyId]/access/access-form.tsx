@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import {
   Camera,
   Clock,
@@ -38,7 +37,8 @@ import {
   parkingIconFor,
   accessibilityIconFor,
 } from "@/lib/icons/access-icons";
-import { CockpitGrid, type CardRole } from "./_components/cockpit-grid";
+import { EntityCardAccordion } from "@/components/ui/entity-card-accordion";
+import { withViewTransition } from "@/lib/view-transition";
 import { SubsystemCard, type SubsystemStatus } from "./_components/subsystem-card";
 import type { SubsystemSlides } from "./_components/subsystem-card.types";
 import { MethodList } from "./_components/method-list";
@@ -209,40 +209,9 @@ function deriveAccessibilityStatus(
     : "pending";
 }
 
-// Wrap state updates in a View Transition. flushSync forces React to commit
-// synchronously inside the transition callback so the "after" snapshot is
-// captured against the new DOM. When `expandClass` is true the `vt-expand`
-// class is added to <html> for the duration of the transition — see comment
-// on `setExpandedCardAnimated` for why that discriminator exists.
-//
-// All three ViewTransition promises (`ready`, `updateCallbackDone`,
-// `finished`) reject with AbortError when a newer transition interrupts
-// this one. We catch each defensively so the unhandled rejection doesn't
-// surface in Next.js' error overlay; cleanup of `vt-expand` still runs.
-type DocVT = Document & {
-  startViewTransition?: (cb: () => void) => {
-    ready?: Promise<unknown>;
-    updateCallbackDone?: Promise<unknown>;
-    finished?: Promise<unknown>;
-  };
-};
-
-function withViewTransition(update: () => void, expandClass = false): void {
-  const docVT = (typeof document !== "undefined" ? document : null) as DocVT | null;
-  if (!docVT || typeof docVT.startViewTransition !== "function") {
-    update();
-    return;
-  }
-  if (expandClass) document.documentElement.classList.add("vt-expand");
-  const transition = docVT.startViewTransition(() => flushSync(update));
-  transition.ready?.catch(() => {});
-  transition.updateCallbackDone?.catch(() => {});
-  transition.finished
-    ?.catch(() => {})
-    .finally(() => {
-      if (expandClass) document.documentElement.classList.remove("vt-expand");
-    });
-}
+// View-transition wrapper is shared in `@/lib/view-transition`. Card expand /
+// collapse passes `{ expandClass: true }` so the `vt-expand` class suppresses
+// inner method-row VT names during the morph (see `setExpandedCardAnimated`).
 
 // Selected-first ordering for method rows. Within "selected", primary (if any)
 // goes first; the rest preserve taxonomy order. Within "unselected", taxonomy
@@ -534,7 +503,7 @@ export function AccessForm({
       if (next !== null) {
         setExpandedSteps({ arrival: false, building: false, unit: false });
       }
-    }, true);
+    }, { expandClass: true });
   }, []);
 
   const handleStepToggle = useCallback((key: ArrivalStepKey) => {
@@ -553,7 +522,7 @@ export function AccessForm({
         };
       });
       setExpandedCard(null);
-    }, true);
+    }, { expandClass: true });
   }, []);
 
   useEffect(() => {
@@ -958,7 +927,7 @@ export function AccessForm({
             Pulsa una tarjeta para revisar o modificar.
           </p>
           <div ref={expandedCardWrapperRef}>
-          <CockpitGrid expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
+          <EntityCardAccordion expandedId={expandedCard} ids={ACCESS_COCKPIT_IDS}>
             {(id, role) => {
               const cardId = id as AccessCockpitId;
               if (cardId === "building") {
@@ -1124,7 +1093,7 @@ export function AccessForm({
                 </SubsystemCard>
               );
             }}
-          </CockpitGrid>
+          </EntityCardAccordion>
           </div>
         </NumberedSection>
 
