@@ -178,7 +178,7 @@ export function EntityMediaCard({
       aria-labelledby={titleId}
       style={cardStyle}
       className={cn(
-        "recipe-entity-card-vt group relative flex min-h-[260px] w-full flex-col overflow-hidden rounded-[20px] text-left",
+        "recipe-entity-card-vt group relative flex h-full min-h-[260px] w-full flex-col overflow-hidden rounded-[20px] text-left",
         "transition-[border-color,box-shadow] duration-200 ease-out",
         "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
         // `shadow-[var(--…)]` is mis-parsed by Tailwind v3 as a shadow color;

@@ -276,6 +276,36 @@ html.vt-expand .method-row {
 }
 
 /*
+ * Entity-card cockpit grid — shared by Spaces + Access (+ future media-backed
+ * surfaces) via <EntityCardAccordion>. Container-query responsive so the column
+ * count tracks the CONTAINER width (not the viewport): 1 col when narrow, 2 in
+ * the middle band, 4 when the host is wide enough that 4 cards stay comfortable.
+ * Deliberately skips 3 columns — the design contract is 1 / 2 / 4 only.
+ * `minmax(0, 1fr)` lets cards shrink without overflowing their content.
+ * The host carries `container-type: inline-size`; the expanded (single active
+ * card) state uses `grid-cols-1` directly and ignores these queries.
+ */
+.recipe-entity-card-grid-host {
+  container-type: inline-size;
+  container-name: entity-card-grid;
+}
+.recipe-entity-card-grid {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+@container entity-card-grid (min-width: 30rem) {
+  .recipe-entity-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container entity-card-grid (min-width: 64rem) {
+  .recipe-entity-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
  * Arrival cockpit tab strip — wraps the entire <ArrivalCockpitTabs> so the
  * tab labels + per-section summary text can collapse when the host (today:
  * the lightbox side panel, 280–480 px) is narrow. The toggle button + tab

@@ -25,10 +25,6 @@ export interface SpaceCardData {
   videoCount: number;
 }
 
-// Auto-fill card grid — up to 3 cols at the audited content width; one full-
-// width card when expanded (handled by EntityCardAccordion).
-const SPACES_GRID = "grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4";
-
 /**
  * Client island for a space-card cockpit grid (active or archived). Owns the
  * single-open accordion state (expand morphs via View Transition; collapses on
@@ -48,11 +44,7 @@ export function SpacesGrid({
   const byId = useMemo(() => new Map(cards.map((c) => [c.space.id, c])), [cards]);
   return (
     <div ref={wrapperRef}>
-      <EntityCardAccordion
-        expandedId={expandedId}
-        ids={ids}
-        collapsedClassName={SPACES_GRID}
-      >
+      <EntityCardAccordion expandedId={expandedId} ids={ids}>
         {(id, role) => {
           const card = byId.get(id);
           if (!card) return null;

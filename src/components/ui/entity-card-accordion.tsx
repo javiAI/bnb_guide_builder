@@ -7,43 +7,35 @@ import type { EntityCardRole } from "./entity-media-card";
 // EntityCardAccordion — single-open grid for EntityMediaCard surfaces.
 //
 // Generalized from the Access `cockpit-grid.tsx`. When one card is expanded it
-// is the ONLY card rendered (full-width, `grid-cols-1`); every other card
-// returns null — "open one, hide the rest". Collapsed, all cards render in a
-// responsive grid. The actual morph between the two layouts is the View
-// Transition driven by `withViewTransition({ expandClass: true })` in the
-// parent that owns `expandedId`.
+// is the ONLY card rendered (full-width, single column); every other card
+// returns null — "open one, hide the rest". The morph between the two layouts
+// is the View Transition driven by `useCockpitAccordion` in the parent.
 //
-// `collapsedClassName` lets each surface pick its collapsed grid: Access uses
-// the default 1/2-col; Spaces passes its auto-fill card grid. The expanded
-// layout is always a single full-width column.
+// Collapsed, cards lay out via the shared `recipe-entity-card-grid`
+// (container-query: 1 / 2 / 4 columns by the HOST width, never 3) so Spaces,
+// Access and future surfaces share one responsive behavior. The host carries
+// `container-type` so the column count tracks the content container, not the
+// viewport.
 // ─────────────────────────────────────────────────────────────────────────
-
-const DEFAULT_COLLAPSED_GRID = "grid gap-3 grid-cols-1 md:grid-cols-2";
-const EXPANDED_GRID = "grid gap-3 grid-cols-1";
 
 interface EntityCardAccordionProps {
   expandedId: string | null;
   ids: readonly string[];
-  /** Collapsed-state grid classes. Defaults to a 1/2-col responsive grid. */
-  collapsedClassName?: string;
   children: (id: string, role: EntityCardRole) => ReactNode;
 }
 
-export function EntityCardAccordion({
-  expandedId,
-  ids,
-  collapsedClassName,
-  children,
-}: EntityCardAccordionProps) {
+export function EntityCardAccordion({ expandedId, ids, children }: EntityCardAccordionProps) {
   const expanded = expandedId !== null;
   return (
-    <div className={expanded ? EXPANDED_GRID : collapsedClassName ?? DEFAULT_COLLAPSED_GRID}>
-      {ids.map((id) => {
-        const isActive = expandedId === id;
-        if (expanded && !isActive) return null;
-        const role: EntityCardRole = isActive ? "active" : "idle";
-        return <div key={id}>{children(id, role)}</div>;
-      })}
+    <div className="recipe-entity-card-grid-host">
+      <div className={expanded ? "grid grid-cols-1 gap-[0.875rem]" : "recipe-entity-card-grid"}>
+        {ids.map((id) => {
+          const isActive = expandedId === id;
+          if (expanded && !isActive) return null;
+          const role: EntityCardRole = isActive ? "active" : "idle";
+          return <div key={id} className="min-w-0">{children(id, role)}</div>;
+        })}
+      </div>
     </div>
   );
 }
