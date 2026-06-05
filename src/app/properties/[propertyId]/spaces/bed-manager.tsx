@@ -10,6 +10,7 @@ import {
 import type { ActionResult } from "@/lib/types/action-result";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Minus, Plus, Settings2, Trash2, TriangleAlert } from "lucide-react";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
 import {
@@ -263,19 +264,20 @@ function BedRow({
         </div>
 
         {/* Config toggle */}
-        <button
-          type="button"
-          onClick={() => { if (expanded) flushConfig(); setExpanded((v) => !v); }}
-          title="Configurar colchón, almohada y ropa de cama"
-          className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
-            hasConfig
-              ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
-              : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
-          }`}
-        >
-          <Settings2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
-          {expanded ? "Cerrar" : "Configurar"}
-        </button>
+        <Tooltip text="Configurar colchón, almohada y ropa de cama">
+          <button
+            type="button"
+            onClick={() => { if (expanded) flushConfig(); setExpanded((v) => !v); }}
+            className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
+              hasConfig
+                ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
+                : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
+            }`}
+          >
+            <Settings2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
+            {expanded ? "Cerrar" : "Configurar"}
+          </button>
+        </Tooltip>
 
         {/* Inline quantity stepper */}
         <div className="flex items-center gap-1">
@@ -317,14 +319,16 @@ function BedRow({
           <input type="hidden" name="bedId" value={bed.id} />
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="spaceId" value={spaceId} />
-          <button
-            type="submit"
-            disabled={deletePending}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
-            title="Eliminar cama"
-          >
-            <Trash2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip text="Eliminar cama">
+            <button
+              type="submit"
+              disabled={deletePending}
+              aria-label="Eliminar cama"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
+            >
+              <Trash2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
         </form>
       </div>
 

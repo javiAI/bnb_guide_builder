@@ -32,6 +32,11 @@ const NATIVE_TITLE = /(?:^|\s)title=/;
 const SCAN_FILES = [
   ...walk(join(ROOT, "src/components/layout"), [".tsx"]),
   join(ROOT, "src/components/ui/theme-toggle.tsx"),
+  // 16I-4 — the shared entity cockpit card primitive + the spaces bed manager
+  // surface hover tooltips on the operator cards (status pill, config/delete
+  // controls); they must use the styled <Tooltip>, never the native title=.
+  join(ROOT, "src/components/ui/entity-media-card.tsx"),
+  join(ROOT, "src/app/properties/[propertyId]/spaces/bed-manager.tsx"),
 ];
 
 describe("Operator shell tooltip pattern", () => {

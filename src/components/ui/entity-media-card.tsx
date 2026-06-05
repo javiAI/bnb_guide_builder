@@ -4,7 +4,8 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { BadgeTone } from "@/lib/types";
-import { TONE_PILL_BG, TONE_PILL_TEXT } from "@/lib/tone";
+import { TONE_PILL_TEXT } from "@/lib/tone";
+import { Tooltip } from "@/components/ui/tooltip";
 
 // ─────────────────────────────────────────────────────────────────────────
 // EntityMediaCard — shared "operator entity cockpit card" shell.
@@ -205,7 +206,6 @@ export function EntityMediaCard({
           <IconBadge icon={icon} />
           <span
             id={titleId}
-            title={title}
             className="min-w-0 flex-1 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]"
           >
             {title}
@@ -230,27 +230,36 @@ export function EntityMediaCard({
 // Shared across entity cards so Access (configured/pending) and Spaces
 // (complete/partial/none) render an identical pill. Tone-keyed via tone.ts.
 
+// Tone-keyed status indicator: a single cohesive circular Lucide glyph
+// (CircleCheck / CircleDot / CircleDashed / Circle — passed by the caller) in
+// the tone color, followed by the label. One glyph = perfectly centered, and
+// the dedicated circular icons read as status at a glance. The label collapses
+// to icon-only when the host grid is at 4 columns (narrow cards) via
+// `recipe-card-status-label`; the styled <Tooltip> always surfaces the full
+// label on hover (consistent app tooltip format, never the native gray/black
+// `title=`). `aria-label` announces the status even when icon-only.
 export function EntityCardStatusPill({
   tone,
   icon: Icon,
   label,
 }: {
   tone: BadgeTone;
-  icon?: LucideIcon;
+  icon: LucideIcon;
   label: string;
 }) {
   return (
-    <span
-      aria-label={label}
-      title={label}
-      className={cn(
-        "inline-flex flex-none items-center gap-1 rounded-[8px] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]",
-        TONE_PILL_BG[tone],
-        TONE_PILL_TEXT[tone],
-      )}
-    >
-      {Icon && <Icon size={11} strokeWidth={2.5} aria-hidden="true" />}
-      {label}
-    </span>
+    <Tooltip text={label} className="flex-none">
+      <span aria-label={label} className="inline-flex flex-none items-center gap-1.5">
+        <Icon size={20} strokeWidth={2} aria-hidden="true" className={cn("flex-none", TONE_PILL_TEXT[tone])} />
+        <span
+          className={cn(
+            "recipe-card-status-label text-[11px] font-semibold uppercase tracking-[0.04em]",
+            TONE_PILL_TEXT[tone],
+          )}
+        >
+          {label}
+        </span>
+      </span>
+    </Tooltip>
   );
 }

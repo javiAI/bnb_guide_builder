@@ -303,6 +303,13 @@ html.vt-expand .method-row {
   .recipe-entity-card-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+  /* At 4 columns the cards are narrow — collapse the status pill to its icon
+     (the styled Tooltip still surfaces the label on hover) so it never crowds
+     the card name. Tied to the SAME breakpoint that triggers 4-col, so the
+     label hides exactly when cards get tight. */
+  .recipe-card-status-label {
+    display: none;
+  }
 }
 
 /*

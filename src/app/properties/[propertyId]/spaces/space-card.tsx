@@ -8,9 +8,11 @@ import {
   BedDouble,
   Check,
   ChevronDown,
+  Circle,
+  CircleCheck,
+  CircleDot,
   Cog,
   Move,
-  Pencil,
   Ruler,
   StickyNote,
   UsersRound,
@@ -106,11 +108,12 @@ const PLACEHOLDER_GRADIENT =
 
 const STATUS_META: Record<
   SpaceProgressLevel,
-  { tone: BadgeTone; icon: LucideIcon | undefined; label: string; bar: string }
+  { tone: BadgeTone; icon: LucideIcon; label: string; bar: string }
 > = {
-  complete: { tone: "success", icon: Check, label: "Completa", bar: "bg-[var(--color-status-success-solid)]" },
-  partial: { tone: "warning", icon: Pencil, label: "En progreso", bar: "bg-[var(--color-status-warning-solid)]" },
-  none: { tone: "neutral", icon: undefined, label: "Sin datos", bar: "bg-[var(--color-border-strong)]" },
+  // Intuitive completion progression: empty ring -> ring+dot -> ring+check.
+  complete: { tone: "success", icon: CircleCheck, label: "Completa", bar: "bg-[var(--color-status-success-solid)]" },
+  partial: { tone: "warning", icon: CircleDot, label: "En progreso", bar: "bg-[var(--color-status-warning-solid)]" },
+  none: { tone: "neutral", icon: Circle, label: "Sin datos", bar: "bg-[var(--color-border-strong)]" },
 };
 
 function toCarouselSlides(slides: readonly SpaceMediaSlide[]): MediaCarouselSlide[] {

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, Loader2, Plus, Star, Upload, Video } from "lucide-react";
+import { CircleCheck, CircleDashed, Loader2, Plus, Star, Upload, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -674,7 +674,7 @@ export function SubsystemCard({
           status={
             <EntityCardStatusPill
               tone={status === "configured" ? "success" : "warning"}
-              icon={status === "configured" ? Check : AlertTriangle}
+              icon={status === "configured" ? CircleCheck : CircleDashed}
               label={status === "configured" ? "Configurado" : "Pendiente"}
             />
           }
