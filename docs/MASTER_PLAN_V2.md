@@ -4064,6 +4064,108 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ---
 
+### Rama 16I-4 — `feat/liora-16I-4-spaces-polish` (Espacios)
+
+> **16I-3 Acceso DIFERIDO** (decisión del usuario 2026-06-05): se ejecuta después. 16I-4 va a continuación. Como 16I-4 **migra Acceso al primitivo extraído** (sin rediseño), el futuro 16I-3 quedará sobre el primitivo ya compartido (menos alcance).
+
+**Propósito**: 4ª pestaña de FASE 16I, con **scope ampliado aprobado en Fase -1 (2026-06-05)**. Deja de ser solo "pulir Espacios": **extrae el patrón cockpit/card de Acceso a primitivos compartidos**, **migra Acceso** a ese primitivo sin cambio de comportamiento, lo **adopta en Espacios** (misma tarjeta, mismo acordeón "abre-una-esconde-resto", misma transición View-Transitions), **reescribe el editor de Espacios** con mejor UX, **migra la config de cama a taxonomía** y **estandariza los banners**. Activa explícitamente la extracción de `EntityMediaCard` (`FUTURE §23`, antes diferida a un 3er adopter — el usuario la adelanta por consistencia cross-superficie). Pensado para reutilizarse luego en Sistemas/Equipamiento.
+
+**Marco aprobado**: un solo sistema de tarjeta-cockpit compartido por Acceso, Espacios y futuras pestañas — mismos iconos, formato, comportamiento y transición. La referencia es Acceso (16E.6, estado casi-final), no Contactos.
+
+**Archivos a crear**:
+
+- `src/components/ui/entity-media-card.tsx` — `EntityMediaCard`: shell de tarjeta-cockpit (roles `idle`/`active`), slots `media`/`icon`/`title`/`subtitle?`/`status`/`collapsedContent`/`hoverOverlay?`/`children`, wiring View-Transitions (`viewTransitionId` + `view-transition-class: entity-card`) + a11y (dos botones-hermano, `titleId`/`bodyId`/`region`) + `onExpand`/`onCollapse`. Cover-como-slot (carousel en ambos adopters).
+- `src/components/ui/entity-card-accordion.tsx` — `EntityCardAccordion` (generaliza `cockpit-grid.tsx`): render-prop `(id, role)`, política de columnas, esconde no-activas cuando hay una expandida.
+- (Opcional, si procede) `src/lib/use-cockpit-collapse.ts` — hook click-outside + ESC (guards de portales Radix + campos editables) reutilizable.
+- `src/components/ui/entity-media-lightbox.tsx` (o `media-lightbox-core.tsx`) — **core genérico de lightbox de fotos** factorizado del `MediaLightbox` de Acceso. Acceso conserva sus paneles de parking como composición/adaptador; Espacios usa el core simple. **Si factorizar se vuelve demasiado grande, parar y reportar** (no crear una segunda implementación divergente sin justificación).
+- `taxonomies/bedding_options.json` — catálogo de bedding (mattress types, mattress firmness, pillow types; linen flags si aplica) con `source[]` para imports futuros. **Sin admin UI ni import logic en esta rama.**
+- `src/lib/taxonomies/bedding-options.ts` (loader) + types en `src/lib/types/taxonomy.ts`.
+- Loader batched media→slides por espacio (servicio nuevo o extensión de `space-cover.service.ts`): cover + count + signed URLs, **sin N+1**.
+- Screenshots de paridad en `eval-artifacts/16I/spaces/` (artefacto, no código).
+
+**Archivos a modificar**:
+
+- `src/lib/view-transition.ts` — promover `withViewTransition(update, { expandClass })` (mover la variante con `vt-expand` desde access-form; **borrar la copia local duplicada**).
+- `src/app/properties/[propertyId]/access/_components/subsystem-card.tsx` — pasa a componer `EntityMediaCard` (contenido access-específico — method-tiles/HoverCard, parking, lightbox, cover-upload — como slots/composición). Sin rediseño.
+- `src/app/properties/[propertyId]/access/_components/cockpit-grid.tsx` — reemplazado por `EntityCardAccordion` (o reexport fino).
+- `src/app/properties/[propertyId]/access/access-form.tsx` — usa la infra compartida (state + accordion + collapse), borra `withViewTransition` local.
+- `src/styles/recipes.css` — VT por `view-transition-class: entity-card` (los 4 nombres de Acceso migran a la clase; soporta IDs dinámicos de Espacios).
+- `src/app/properties/[propertyId]/spaces/space-card.tsx` — reescrita: compone `EntityMediaCard` (media = `MediaCarousel` `entityType="space"` `usageKey="space.<id>"`; collapsedContent = facts + progress/pill; children = editor reescrito) + editor con `<Field>` + chip-groups + `<IconButton>`.
+- `src/app/properties/[propertyId]/spaces/page.tsx` — `expandedSpaceId` state + `EntityCardAccordion` en "01 Espacios principales"; create-form ("02 Añadir espacio") siempre visible; archivados ("03"); banners vía `<Banner>`; loader media batched.
+- `src/app/properties/[propertyId]/spaces/bed-manager.tsx` — consume `bedding_options.json`; 3 SVG inline → Lucide (`TriangleAlert`/`Settings`/`Trash2`); steppers/delete → `<IconButton>`.
+- `src/app/properties/[propertyId]/spaces/create-space-form.tsx` — `<Field>` en inputs.
+- `src/components/ui/banner.tsx` — extensión **aditiva mínima** si se necesita título/link/contenido rico.
+- `src/lib/services/space-cover.service.ts` — retirar `loadSpaceCovers` **solo** cuando el loader nuevo cubra count + cover + signed URLs.
+- `src/test/parity-allowlist.ts` — `operator-spaces` ya está; refresh si cambia file-list. Primitivos nuevos a `shared-primitives`. **`CURRENT_LIORA_PHASE` se mantiene `"16I"`.**
+- Docs: `LIORA_SURFACE_ROLLOUT_PLAN.md`, `ROADMAP.md`, `FUTURE §23` (marcar extracción hecha), `CLAUDE.md` (patrón `EntityMediaCard` + § Espacios) al cerrar.
+
+**Tests**:
+
+- `entity-media-card` (roles/slots/a11y/VT name) + `entity-card-accordion` (esconde no-activas, expand/collapse).
+- `bedding-options` (loader: keys === ids del JSON; types).
+- Acceso: suite + specs existentes **verdes sin cambio** (gate de no-regresión tras commit 2) — view-transitions, parking, lightbox, accordion, parity.
+- Espacios: `space-availability-overlays` verde; media upload/lightbox/carousel para `entityType="space"`; loader media **sin N+1**; click-outside/ESC del accordion.
+- `component-invariants` + `parity-static` + `dark-parity` verdes; axe `serious|critical = 0` en `/spaces` light + dark **con datos reales** (vacío + poblado + editor expandido).
+- `/liora-ui-kit-parity` ≥ suelo y **> baseline 9.0** de Espacios.
+
+**Criterio de done**:
+
+- ✅ `EntityMediaCard` + `EntityCardAccordion` + `withViewTransition({expandClass})` + VT-class `entity-card` extraídos y compartidos.
+- ✅ Acceso migrado al primitivo, **visual y funcionalmente equivalente** (gate antes de tocar Espacios).
+- ✅ Espacios usa el mismo patrón: acordeón abre-una-esconde-resto + transición idéntica + cover carousel (`space`) + upload + lightbox.
+- ✅ Editor de Espacios reescrito (secciones limpias estilo Acceso, `<Field>`, chip-groups, `<IconButton>`, Lucide en bed-manager).
+- ✅ Bedding en taxonomía (sin schema DB; `configJson` libre; zod acepta strings).
+- ✅ Banners estandarizados con `<Banner>`.
+- ✅ Sin duplicación shell Access vs Spaces; 0 hex en JSX; tokens semánticos; targets ≥44.
+- ✅ Gates verdes (`prisma generate → tsc → vitest → build`; component-invariants + parity-static + dark-parity; axe 0) + `/simplify`.
+
+**Restricciones**:
+
+- ❌ Rediseñar Acceso (solo migración al primitivo manteniendo comportamiento).
+- ❌ Duplicar el shell (Access vs Spaces comparten `EntityMediaCard`).
+- ❌ Amenities/sistemas en los facts de Espacios (3er fact solo **space-owned**: camas/tipo-de-baño/m²/plazas; si no hay dato propio claro, 2 facts — no forzar densidad falsa).
+- ❌ Schema DB (bedding no lo requiere; cualquier cambio de schema exige mini Fase -1 explícita).
+- ❌ Admin UI / import logic de bedding en esta rama.
+- ❌ Segunda implementación divergente de lightbox (factorizar el core; si es demasiado grande, parar y reportar).
+- ❌ Otros módulos (Sistemas/Equipamiento no empiezan aquí).
+- ❌ Duplicados por versión (`*V2`, `New*`, etc.) ni convivencias legacy.
+- ❌ Tocar `src/components/layout/**` (shell ya pulido en 16F.5).
+
+**Dependencias / Riesgos**:
+
+- ⚠️ **Gate de equivalencia de Acceso** (tras commit 2): si Acceso cambia comportamiento o rompe parity (VT/parking/lightbox/accordion), **parar y corregir antes de tocar Espacios**.
+- ⚠️ VT-class para IDs dinámicos: validar que el morph de Acceso sigue idéntico con grouping por `::view-transition-group(.entity-card)` (hoy es per-name).
+- ⚠️ Factorización del lightbox: riesgo de tamaño; core genérico + adaptador parking. Parar/reportar si desborda.
+- ⚠️ Retirar `loadSpaceCovers` solo cuando el loader nuevo cubra count + cover + signed URLs (degradación a placeholder si falla el firmado, como hoy).
+- ⚠️ axe con datos reales requiere propiedad sembrada (estados vacío + poblado + editor expandido).
+
+**No-alcance**:
+
+- `§22 "Ver plano"` (sin opt-in; sigue diferido).
+- Rediseño visual de Acceso (lo hará 16I-3 sobre el primitivo).
+- Otras pestañas 16I; superficies output/operaciones.
+- Tri-estado equipamiento (`§24`), meta sistemas (`§21`).
+
+**Secuencia de commits aprobada**:
+
+1. Extraer infra: `withViewTransition({expandClass})` + `EntityMediaCard` + `EntityCardAccordion` + VT-class `entity-card` + (collapse hook si procede).
+2. Migrar Acceso al primitivo → **gate de equivalencia** (parity/no-regresión) antes de seguir.
+3. Adoptar en Espacios: accordion state + `EntityMediaCard` + `MediaCarousel` + loader media batched + create-form visible.
+4. Reescribir editor body: secciones limpias estilo Acceso + `<Field>` + chip-groups + `<IconButton>` + Lucide en bed-manager.
+5. Migrar bedding a `bedding_options.json` (loader/types/tests).
+6. Factorizar lightbox core + 3er fact space-owned.
+7. Estandarizar banners.
+8. Refresh docs/governance/tests.
+9. `/frontend-design`, `/liora-ui-kit-parity`, `/simplify`, gates completos → PR.
+
+**Preparación**:
+
+- **Contexto a leer**: esta §; Acceso (`subsystem-card.tsx`, `cockpit-grid.tsx`, `access-form.tsx` orquestación, `media-carousel.tsx`, `recipes.css §VT`, `@/lib/view-transition.ts`); Espacios (`spaces/**`); `bed_types.json`; `space_features.json`; `field.tsx` (16I-2); kit `operator/subpages.html § page-espacios`.
+- **Docs a actualizar al terminar**: `MASTER_PLAN_V2.md` (marcar 16I-4 + nota 16I-3 diferido), `LIORA_SURFACE_ROLLOUT_PLAN.md`, `ROADMAP.md`, `FUTURE §23` (extracción hecha), `CLAUDE.md` (patrón `EntityMediaCard` + § Espacios).
+- **Skills**: `/frontend-design`, `/liora-ui-kit-parity`, `/simplify` (obligatorio antes de PR), `/playwright-cli` + `/webapp-testing` (validar accordion/VT/upload en vivo).
+
+---
+
 ### Rama post-16I-A — `feat/system-amenity-source-unify`
 
 **Propósito**: Una sola fuente de verdad para los amenities respaldados por un sistema (`docs/FUTURE.md §27.3`, ampliado a todos). Decisión explícita del usuario (2026-06-02), PR posterior a 16I-1 (#120, ya mergeada). **No es una pestaña 16I** — es un fix funcional de taxonomía/validación. El quick-fix in-context (`§27.4`, Parte B original) queda **diferido** a una rama futura.
