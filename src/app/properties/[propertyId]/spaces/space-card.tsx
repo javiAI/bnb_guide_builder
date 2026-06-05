@@ -306,27 +306,26 @@ export function SpaceCard({
   ) => Promise<{ success: boolean }>;
   const deleteDescription = `Se eliminará "${space.name}" y todos sus datos (camas, fotos y características). Esta acción no se puede deshacer.`;
 
-  // Collapsed: hover-revealed overlay controls on the cover — trash (top-right,
-  // always) + upload (bottom-right, only when the cover already has media; the
-  // empty state uses the carousel's centered "Añade portada").
+  // Collapsed: hover-revealed action cluster at the body's bottom-right corner
+  // — NOT over the cover (the cover keeps its own expand affordance) and clear
+  // of the progress row on the left. `pointer-events-none` until revealed so it
+  // never creates a dead zone over the expand button when hidden.
   const hoverOverlay = (
-    <>
+    <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+      <SpaceMediaUpload
+        propertyId={propertyId}
+        spaceId={space.id}
+        className="rounded-md border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] shadow-sm hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
+      />
       <DeleteConfirmationButton
         title="Eliminar espacio"
         description={deleteDescription}
         entityId={space.id}
         fieldName="spaceId"
         action={deleteAction}
-        triggerClassName="absolute right-2 top-2 z-20 rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] opacity-0 backdrop-blur-[2px] transition-opacity duration-150 group-hover:opacity-100"
+        triggerClassName="border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-sm"
       />
-      {carouselSlides.length > 0 && (
-        <SpaceMediaUpload
-          propertyId={propertyId}
-          spaceId={space.id}
-          className="absolute bottom-2 right-2 z-20 bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] opacity-0 transition-opacity duration-150 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] group-hover:opacity-100"
-        />
-      )}
-    </>
+    </div>
   );
 
   // Expanded: a visible "add media" control in the header (subtle surface).

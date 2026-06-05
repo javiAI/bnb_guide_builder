@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 import { useMediaUpload } from "@/hooks/use-media-upload";
 import { cn } from "@/lib/cn";
 
@@ -58,7 +58,7 @@ export function SpaceMediaUpload({
         {uploading ? (
           <Loader2 size={16} aria-hidden="true" className="animate-spin" />
         ) : (
-          <ImagePlus size={16} aria-hidden="true" />
+          <Upload size={16} aria-hidden="true" />
         )}
       </button>
     </>
