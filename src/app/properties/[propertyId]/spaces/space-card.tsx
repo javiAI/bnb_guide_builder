@@ -263,7 +263,7 @@ export function SpaceCard({
         ))}
       </div>
       <span className="flex items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
-        <span className="h-[3px] max-w-[110px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
+        <span className="h-[3px] max-w-[72px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
           <span className={cn("block h-full rounded-full", status.bar)} style={{ width: `${percent}%` }} />
         </span>
         {percent}%
@@ -312,29 +312,21 @@ export function SpaceCard({
   // never creates a dead zone over the expand button when hidden.
   const hoverOverlay = (
     <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-      <SpaceMediaUpload
-        propertyId={propertyId}
-        spaceId={space.id}
-        className="rounded-md border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] shadow-sm hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
-      />
+      <SpaceMediaUpload propertyId={propertyId} spaceId={space.id} />
       <DeleteConfirmationButton
         title="Eliminar espacio"
         description={deleteDescription}
         entityId={space.id}
         fieldName="spaceId"
         action={deleteAction}
-        triggerClassName="border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-sm"
+        triggerClassName="rounded-full bg-[var(--color-background-muted)]"
       />
     </div>
   );
 
-  // Expanded: a visible "add media" control in the header (subtle surface).
+  // Expanded: the same upload control in the header.
   const headerAction = (
-    <SpaceMediaUpload
-      propertyId={propertyId}
-      spaceId={space.id}
-      className="mr-4 border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
-    />
+    <SpaceMediaUpload propertyId={propertyId} spaceId={space.id} className="mr-4" />
   );
 
   // ── Editor body — only built in the active role. EntityMediaCard ignores

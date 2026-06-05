@@ -46,9 +46,11 @@ export function SpaceMediaUpload({
           uploading ? "Subiendo media…" : error ? "Error al subir — reintentar" : "Añadir fotos o vídeos"
         }
         className={cn(
-          // Structural only — each call site sets the surface (overlay on the
-          // cover, subtle border in the active header) via `className`.
+          // Same circular icon-button as the Access cards' cover upload, so the
+          // shared control looks identical everywhere. Call sites only add
+          // positioning via `className`.
           "recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full transition-colors",
+          "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)] hover:bg-[var(--color-background-subtle)] hover:text-[var(--color-action-primary)]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-elevated)]",
           "disabled:cursor-not-allowed disabled:opacity-80",
           error && "ring-2 ring-[var(--color-status-error-solid)]",
