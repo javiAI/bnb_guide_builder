@@ -1,4 +1,6 @@
+import type { ReactNode } from "react";
 import { X } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { Icon, type IconName } from "./icon";
 
 type BannerType = "info" | "warning" | "danger";
@@ -29,12 +31,14 @@ const typeConfig: Record<
 
 interface BannerProps {
   type: BannerType;
-  message: string;
+  message: ReactNode;
+  /** Optional bold heading rendered above `message`. */
+  title?: ReactNode;
   /** When provided, renders a dismiss (X) button on the right that calls this. */
   onDismiss?: () => void;
 }
 
-export function Banner({ type, message, onDismiss }: BannerProps) {
+export function Banner({ type, message, title, onDismiss }: BannerProps) {
   const { bg, border, icon, iconTone } = typeConfig[type];
   return (
     <div
@@ -43,7 +47,10 @@ export function Banner({ type, message, onDismiss }: BannerProps) {
       role="alert"
     >
       <Icon name={icon} tone={iconTone} size="md" style={{ marginTop: "1px", flexShrink: 0 }} />
-      <span className="flex-1 text-sm">{message}</span>
+      <div className="flex-1">
+        {title && <p className="text-sm font-medium">{title}</p>}
+        <div className={cn("text-sm", title && "mt-1")}>{message}</div>
+      </div>
       {onDismiss && (
         <button
           type="button"
