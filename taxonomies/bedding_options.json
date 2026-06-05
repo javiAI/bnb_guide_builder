@@ -1,0 +1,27 @@
+{
+  "file": "bedding_options.json",
+  "version": "2026-06-05",
+  "locale": "es-ES",
+  "units_system": "metric",
+  "description": "Catálogo de opciones de ropa de cama por cama: tipo de colchón, firmeza del colchón y tipo de almohada. Consumido por BedManager (sección Camas de Espacios) y por la guía/IA. Se persiste por id en Bed.configJson (JSON libre, sin FK) — los ids deben permanecer estables. source[] reservado para mapeos de import de plataforma (vacío hoy).",
+  "mattressTypes": [
+    { "id": "spring", "label": "Muelles", "source": [] },
+    { "id": "memory_foam", "label": "Viscoelástica", "source": [] },
+    { "id": "latex", "label": "Látex", "source": [] },
+    { "id": "foam", "label": "Espuma", "source": [] },
+    { "id": "hybrid", "label": "Híbrido", "source": [] }
+  ],
+  "mattressFirmness": [
+    { "id": "soft", "label": "Blando", "source": [] },
+    { "id": "medium", "label": "Intermedio", "source": [] },
+    { "id": "firm", "label": "Firme", "source": [] }
+  ],
+  "pillowTypes": [
+    { "id": "down", "label": "Plumón", "source": [] },
+    { "id": "synthetic", "label": "Sintética", "source": [] },
+    { "id": "memory_foam", "label": "Viscoelástica", "source": [] },
+    { "id": "bamboo", "label": "Bambú", "source": [] },
+    { "id": "firm", "label": "Firme", "source": [] },
+    { "id": "adjustable", "label": "Ajustable", "source": [] }
+  ]
+}

@@ -10,31 +10,16 @@ import {
 import type { ActionResult } from "@/lib/types/action-result";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { Minus, Plus, Settings2, Trash2, TriangleAlert } from "lucide-react";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
+import {
+  mattressTypes as mattressTypeOptions,
+  mattressFirmness as mattressFirmnessOptions,
+  pillowTypes as pillowTypeOptions,
+} from "@/lib/taxonomies/bedding-options";
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 
 const bedTypeOptions = getItems(bedTypes);
-
-const MATTRESS_TYPES = [
-  { id: "spring", label: "Muelles" },
-  { id: "memory_foam", label: "Viscoelástica" },
-  { id: "latex", label: "Látex" },
-  { id: "foam", label: "Espuma" },
-  { id: "hybrid", label: "Híbrido" },
-];
-const MATTRESS_FIRMNESS = [
-  { id: "soft", label: "Blando" },
-  { id: "medium", label: "Intermedio" },
-  { id: "firm", label: "Firme" },
-];
-const PILLOW_TYPES = [
-  { id: "down", label: "Plumón" },
-  { id: "synthetic", label: "Sintética" },
-  { id: "memory_foam", label: "Viscoelástica" },
-  { id: "bamboo", label: "Bambú" },
-  { id: "firm", label: "Firme" },
-  { id: "adjustable", label: "Ajustable" },
-];
 
 const STEPPER_BTN_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
 const STEPPER_BTN_SM_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
@@ -90,9 +75,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           </p>
           {maxGuests != null && totalCapacity > maxGuests && (
             <div className="flex items-start gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-2.5 py-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-[var(--color-status-warning-icon)]" aria-hidden="true">
-                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
+              <TriangleAlert size={14} aria-hidden="true" className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-[var(--color-status-warning-icon)]" />
               <p className="text-xs text-[var(--color-status-warning-text)]">
                 Este espacio tiene camas para {totalCapacity} personas, más que el máximo actual de la propiedad ({maxGuests}). Esto no es un error — puedes tener más plazas de las habituales — pero conviene revisarlo si no es intencionado.
               </p>
@@ -149,7 +132,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
               className={STEPPER_BTN_CLS}
               aria-label="Reducir cantidad"
             >
-              &minus;
+              <Minus size={14} aria-hidden="true" />
             </button>
             <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
               {addQty}
@@ -161,7 +144,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
               className={STEPPER_BTN_CLS}
               aria-label="Aumentar cantidad"
             >
-              +
+              <Plus size={14} aria-hidden="true" />
             </button>
           </div>
 
@@ -290,9 +273,7 @@ function BedRow({
               : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
           }`}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-            <path fillRule="evenodd" d="M8.34 1.804A1 1 0 019.32 1h1.36a1 1 0 01.98.804l.295 1.473c.497.144.971.342 1.416.587l1.25-.834a1 1 0 011.262.125l.962.962a1 1 0 01.125 1.262l-.834 1.25c.245.445.443.919.587 1.416l1.473.294a1 1 0 01.804.98v1.361a1 1 0 01-.804.98l-1.473.295a6.95 6.95 0 01-.587 1.416l.834 1.25a1 1 0 01-.125 1.262l-.962.962a1 1 0 01-1.262.125l-1.25-.834a6.953 6.953 0 01-1.416.587l-.294 1.473a1 1 0 01-.98.804H9.32a1 1 0 01-.98-.804l-.295-1.473a6.957 6.957 0 01-1.416-.587l-1.25.834a1 1 0 01-1.262-.125l-.962-.962a1 1 0 01-.125-1.262l.834-1.25a6.957 6.957 0 01-.587-1.416l-1.473-.294A1 1 0 011 10.68V9.32a1 1 0 01.804-.98l1.473-.295c.144-.497.342-.971.587-1.416l-.834-1.25a1 1 0 01.125-1.262l.962-.962A1 1 0 015.38 3.03l1.25.834a6.957 6.957 0 011.416-.587l.294-1.473zM13 10a3 3 0 11-6 0 3 3 0 016 0z" clipRule="evenodd" />
-          </svg>
+          <Settings2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
           {expanded ? "Cerrar" : "Configurar"}
         </button>
 
@@ -305,7 +286,7 @@ function BedRow({
             className={STEPPER_BTN_SM_CLS}
             aria-label={`Reducir cantidad de ${typeInfo?.label ?? bed.bedType}`}
           >
-            &minus;
+            <Minus size={14} aria-hidden="true" />
           </button>
           <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
             {quantity}
@@ -317,7 +298,7 @@ function BedRow({
             className={STEPPER_BTN_SM_CLS}
             aria-label={`Aumentar cantidad de ${typeInfo?.label ?? bed.bedType}`}
           >
-            +
+            <Plus size={14} aria-hidden="true" />
           </button>
         </div>
 
@@ -342,9 +323,7 @@ function BedRow({
             className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-status-error-bg)] hover:text-[var(--color-status-error-text)] disabled:opacity-40"
             title="Eliminar cama"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-              <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.519.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-            </svg>
+            <Trash2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
           </button>
         </form>
       </div>
@@ -374,9 +353,9 @@ function BedRow({
                 <label className="block">
                   <span className="text-xs font-semibold text-[var(--color-text-primary)] mb-1 block">Capacidad (personas)</span>
                   <div className="flex items-center gap-1 mt-1">
-                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)] disabled:opacity-40" disabled={customCapacity <= 1} aria-label="Reducir capacidad">−</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)] disabled:opacity-40" disabled={customCapacity <= 1} aria-label="Reducir capacidad"><Minus size={14} aria-hidden="true" /></button>
                     <span className="w-6 text-center text-sm font-medium">{customCapacity}</span>
-                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)]" aria-label="Aumentar capacidad">+</button>
+                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)]" aria-label="Aumentar capacidad"><Plus size={14} aria-hidden="true" /></button>
                   </div>
                 </label>
               </div>
@@ -387,7 +366,7 @@ function BedRow({
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Colchón</p>
             <div className="flex flex-wrap gap-2">
-              {MATTRESS_TYPES.map((opt) => (
+              {mattressTypeOptions.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
@@ -400,7 +379,7 @@ function BedRow({
             </div>
             {mattressType && (
               <div className="mt-2 flex flex-wrap gap-2">
-                {MATTRESS_FIRMNESS.map((opt) => (
+                {mattressFirmnessOptions.map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
@@ -418,7 +397,7 @@ function BedRow({
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Almohadas</p>
             <div className="flex flex-wrap gap-2">
-              {PILLOW_TYPES.map((opt) => (
+              {pillowTypeOptions.map((opt) => (
                 <button
                   key={opt.id}
                   type="button"
