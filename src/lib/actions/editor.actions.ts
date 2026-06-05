@@ -636,6 +636,34 @@ export async function archiveSpaceAction(
   return { success: true };
 }
 
+export async function deleteSpaceAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const spaceId = formData.get("spaceId") as string;
+  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
+
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { propertyId: true },
+  });
+  if (!space) return { success: false, error: "Espacio no encontrado" };
+
+  await prisma.$transaction(async (tx) => {
+    // Polymorphic media links (entityType/entityId) are not a FK relation, so
+    // they don't cascade — remove them explicitly. Beds + system coverage
+    // cascade via their own FK onDelete.
+    await tx.mediaAssignment.deleteMany({ where: { entityType: "space", entityId: spaceId } });
+    await tx.space.delete({ where: { id: spaceId } });
+    await recomputePropertyCounts(tx, space.propertyId);
+  });
+
+  recomputeAllInBackground(space.propertyId);
+  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
+  revalidatePath(`/properties/${space.propertyId}/spaces`);
+  return { success: true };
+}
+
 export async function renameSpaceAction(
   _prev: ActionResult | null,
   formData: FormData,

@@ -1,11 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Camera, CheckCheck, DoorOpen, Plus } from "lucide-react";
+import { Camera, CheckCheck, DoorOpen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
-import { ButtonLink } from "@/components/ui/button-link";
 import { Banner } from "@/components/ui/banner";
 import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
 import { CreateSpaceForm } from "./create-space-form";
@@ -193,12 +192,6 @@ export default async function SpacesPage({
         eyebrow="Propiedad · Espacios"
         title="Espacios"
         description="Cada espacio tiene su ficha en la guía del huésped: una foto principal, dimensiones, camas y las peculiaridades que lo hacen único."
-        actions={
-          <ButtonLink href="#anadir-espacio">
-            <Plus size={15} aria-hidden="true" />
-            Añadir espacio
-          </ButtonLink>
-        }
         chips={
           <>
             <PageHeaderChip icon={DoorOpen} label={countChipLabel(spaces.length, "espacio", "espacios")} />
@@ -279,16 +272,14 @@ export default async function SpacesPage({
         )}
       </NumberedSection>
 
-      <div id="anadir-espacio" className="scroll-mt-20">
-        <NumberedSection number="02" title="Añadir espacio">
-          <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
-        </NumberedSection>
-      </div>
+      <NumberedSection number="02" title="Añadir espacio">
+        <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
+      </NumberedSection>
 
       {archivedSpaces.length > 0 && (
         <NumberedSection number="03" title={`Archivados (${archivedSpaces.length})`}>
           <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
-            Los espacios archivados no cuentan en capacidad ni aparecen en la guía del huésped. Puedes restaurarlos en cualquier momento.
+            Espacios archivados de versiones anteriores. No cuentan en capacidad ni aparecen en la guía del huésped — puedes eliminarlos definitivamente.
           </p>
           <SpacesGrid propertyId={propertyId} maxGuests={maxGuests} cards={archivedCards} />
         </NumberedSection>

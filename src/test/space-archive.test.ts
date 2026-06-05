@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => {
     property: { findUnique: vi.fn(), update: vi.fn() },
     propertySystem: { findMany: vi.fn() },
     propertyAmenityInstance: { findMany: vi.fn() },
+    mediaAssignment: { deleteMany: vi.fn() },
     $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
       return fn({
         space: {
@@ -23,6 +24,9 @@ vi.mock("@/lib/db", () => {
         },
         property: {
           update: (args: unknown) => prismaMock.property.update(args),
+        },
+        mediaAssignment: {
+          deleteMany: (args: unknown) => prismaMock.mediaAssignment.deleteMany(args),
         },
       });
     }),
@@ -38,13 +42,14 @@ vi.mock("@/lib/services/property-derived.service", async (importOriginal) => {
 import { prisma } from "@/lib/db";
 import { computeActualCounts, computeSleepingCapacity } from "@/lib/services/property-derived.service";
 import { buildPropertyContext } from "@/lib/conditional-engine/context-builder";
-import { archiveSpaceAction } from "@/lib/actions/editor.actions";
+import { archiveSpaceAction, deleteSpaceAction } from "@/lib/actions/editor.actions";
 
 const spaceFindMany = prisma.space.findMany as ReturnType<typeof vi.fn>;
 const spaceFindUnique = prisma.space.findUnique as ReturnType<typeof vi.fn>;
 const spaceUpdate = prisma.space.update as ReturnType<typeof vi.fn>;
 const spaceDelete = prisma.space.delete as ReturnType<typeof vi.fn>;
 const propertyUpdate = prisma.property.update as ReturnType<typeof vi.fn>;
+const mediaDeleteMany = prisma.mediaAssignment.deleteMany as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   spaceFindMany.mockReset();
@@ -52,6 +57,7 @@ beforeEach(() => {
   spaceUpdate.mockReset();
   spaceDelete.mockReset();
   propertyUpdate.mockReset();
+  mediaDeleteMany.mockReset();
 });
 
 describe("archived spaces are excluded from reads", () => {
@@ -158,5 +164,44 @@ describe("archiveSpaceAction", () => {
     const result = await archiveSpaceAction(null, makeForm({ spaceId: "missing", status: "archived" }));
     expect(result).toEqual({ success: false, error: "Espacio no encontrado" });
     expect(spaceUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteSpaceAction", () => {
+  function makeForm(entries: Record<string, string>): FormData {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries(entries)) fd.set(k, v);
+    return fd;
+  }
+
+  it("deletes the space + its polymorphic media assignments and returns success", async () => {
+    spaceFindUnique.mockResolvedValue({ propertyId: "prop-1" });
+    spaceFindMany.mockResolvedValue([]); // recomputePropertyCounts
+    spaceDelete.mockResolvedValue({});
+    mediaDeleteMany.mockResolvedValue({ count: 2 });
+    propertyUpdate.mockResolvedValue({});
+
+    const result = await deleteSpaceAction(null, makeForm({ spaceId: "s1" }));
+
+    expect(result).toEqual({ success: true });
+    expect(spaceDelete).toHaveBeenCalledWith({ where: { id: "s1" } });
+    // Polymorphic media links are removed explicitly (no FK cascade).
+    expect(mediaDeleteMany).toHaveBeenCalledWith({
+      where: { entityType: "space", entityId: "s1" },
+    });
+  });
+
+  it("returns error when the space does not exist (nothing deleted)", async () => {
+    spaceFindUnique.mockResolvedValue(null);
+    const result = await deleteSpaceAction(null, makeForm({ spaceId: "missing" }));
+    expect(result).toEqual({ success: false, error: "Espacio no encontrado" });
+    expect(spaceDelete).not.toHaveBeenCalled();
+    expect(mediaDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("returns error when spaceId is missing", async () => {
+    const result = await deleteSpaceAction(null, makeForm({}));
+    expect(result).toEqual({ success: false, error: "Espacio no encontrado" });
+    expect(spaceFindUnique).not.toHaveBeenCalled();
   });
 });

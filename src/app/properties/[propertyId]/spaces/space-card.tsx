@@ -22,7 +22,7 @@ import {
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
-  archiveSpaceAction,
+  deleteSpaceAction,
 } from "@/lib/actions/editor.actions";
 import { deleteMediaAction } from "@/lib/actions/media.actions";
 import type { ActionResult } from "@/lib/types/action-result";
@@ -42,6 +42,7 @@ import {
   EntityCardStatusPill,
   type EntityCardRole,
 } from "@/components/ui/entity-media-card";
+import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import {
   MediaCarousel,
   type MediaCarouselSlide,
@@ -217,13 +218,6 @@ export function SpaceCard({
 
   const [showInternalNotes, setShowInternalNotes] = useState(Boolean(space.internalNotes));
   const [internalNotes, setInternalNotes] = useState(space.internalNotes ?? "");
-
-  // ── Archive / restore ──
-  const [confirmArchive, setConfirmArchive] = useState(false);
-  const [archiveState, archiveAction, archivePending] = useActionState<ActionResult | null, FormData>(
-    archiveSpaceAction,
-    null,
-  );
 
   // ── Derived (facts + icon) ──
   const TypeIcon = getSpaceIcon(space.spaceType);
@@ -454,55 +448,18 @@ export function SpaceCard({
           )}
         </div>
 
-        {isArchived ? (
-          <form action={archiveAction}>
-            <input type="hidden" name="spaceId" value={space.id} />
-            <input type="hidden" name="status" value="active" />
-            <button
-              type="submit"
-              disabled={archivePending}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-50"
-            >
-              {archivePending ? "Restaurando…" : "Restaurar espacio"}
-            </button>
-            {archiveState?.error && (
-              <span className="ml-2 text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
-            )}
-          </form>
-        ) : confirmArchive ? (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-[var(--color-status-warning-text)]">¿Archivar este espacio?</span>
-            <form action={archiveAction}>
-              <input type="hidden" name="spaceId" value={space.id} />
-              <input type="hidden" name="status" value="archived" />
-              <button
-                type="submit"
-                disabled={archivePending}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {archivePending ? "Archivando…" : "Sí, archivar"}
-              </button>
-            </form>
-            <button
-              type="button"
-              onClick={() => setConfirmArchive(false)}
-              className="min-h-[44px] text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-            >
-              Cancelar
-            </button>
-            {archiveState?.error && (
-              <span className="text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
-            )}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirmArchive(true)}
-            className="min-h-[44px] text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-          >
-            Archivar espacio
-          </button>
-        )}
+        <DeleteConfirmationButton
+          title="Eliminar espacio"
+          description={`Se eliminará "${space.name}" y todos sus datos (camas, fotos y características). Esta acción no se puede deshacer.`}
+          entityId={space.id}
+          fieldName="spaceId"
+          action={
+            deleteSpaceAction as (
+              prev: { success: boolean } | null,
+              formData: FormData,
+            ) => Promise<{ success: boolean }>
+          }
+        />
       </div>
     </div>
   );
