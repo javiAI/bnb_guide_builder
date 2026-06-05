@@ -36,6 +36,9 @@ export const propertySchema = z.object({
     buildingFloors: z.number().int().min(1).max(200).optional(),
     floorLevel: z.number().int().min(0).max(200).optional(),
   }).optional(),
+  // Property-wide defaults each space inherits + can override (spaces editor).
+  usableAreaSqm: z.number().positive("Debe ser mayor que 0").optional().nullable(),
+  ceilingHeightCm: z.number().int().positive("Debe ser mayor que 0").optional().nullable(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },

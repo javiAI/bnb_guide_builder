@@ -36,15 +36,17 @@ const EXTRA_ITEMS: Record<string, { label: string; group: NavGroup; path: string
  * `activity` are intentionally absent (they are `hideFromNav`).
  */
 const NAV_ORDER: readonly string[] = [
-  // CONTENIDO — describe la estancia (identidad → llegada → features → entorno),
-  // luego la capa de referencia (soluciones, normas, contactos). Espacios va
-  // antes que Sistemas/Equipamiento por dependencia de datos (cobertura por
-  // espacio + amenities por espacio).
+  // CONTENIDO — flujo natural: defines los SISTEMAS de la vivienda (calefacción,
+  // AC, wifi… nivel propiedad), luego en ESPACIOS creas cada estancia + marcas
+  // qué sistemas la cubren (cobertura editable) y describes lo intrínseco, y por
+  // último en EQUIPAMIENTO colocas los amenities por cada espacio ya creado.
+  // (Sistemas antes que Espacios: la cobertura por-espacio necesita los sistemas
+  // definidos; Equipamiento después: la colocación necesita los espacios.)
   "overview",
   "property",
   "access",
-  "spaces",
   "systems",
+  "spaces",
   "amenities",
   "local-guide",
   "troubleshooting",

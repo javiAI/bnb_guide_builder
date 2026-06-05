@@ -14,6 +14,12 @@ interface UseMediaUploadConfig {
   propertyId: string;
   entityType: MediaEntityType;
   usageKey: string;
+  /** The entity the asset is assigned to. Defaults to `propertyId` (correct for
+   * `property` / `access_method`, whose entity IS the property). For `space` /
+   * `amenity_instance` / `system` the entity is the row itself, so pass its id
+   * (e.g. the spaceId) — otherwise assignMediaAction validates the wrong id and
+   * fails with "La entidad no pertenece a esta propiedad". */
+  entityId?: string;
 }
 
 /**
@@ -39,6 +45,7 @@ export function useMediaUpload(config: UseMediaUploadConfig | null | undefined) 
   const propertyId = config?.propertyId;
   const entityType = config?.entityType;
   const usageKey = config?.usageKey;
+  const entityId = config?.entityId;
   const ready = propertyId !== undefined && entityType !== undefined && usageKey !== undefined;
 
   const triggerFilePicker = useCallback(() => {
@@ -81,7 +88,7 @@ export function useMediaUpload(config: UseMediaUploadConfig | null | undefined) 
         const assign = await assignMediaAction(
           assetId,
           entityType,
-          propertyId,
+          entityId ?? propertyId,
           usageKey,
         );
         if (!assign.success) {
@@ -96,7 +103,7 @@ export function useMediaUpload(config: UseMediaUploadConfig | null | undefined) 
         setUploading(false);
       }
     },
-    [propertyId, entityType, usageKey, router],
+    [propertyId, entityType, usageKey, entityId, router],
   );
 
   return {

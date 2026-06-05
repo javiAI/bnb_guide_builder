@@ -180,54 +180,64 @@ describe("Space features taxonomy", () => {
     }
   });
 
-  it("bedroom-specific groups are returned only for sp.bedroom", () => {
+  // After the 16I lean redesign, the space editor keeps only INTRINSIC feature
+  // groups; amenity-/system-backed groups (heating, cooling, appliances,
+  // entertainment, supplies, connectivity…) were pruned and now live in
+  // Equipamiento / Sistemas (coverage). These assertions track that contract.
+  it("bedroom-specific intrinsic groups are returned only for sp.bedroom", () => {
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
     const bedroomIds = bedroomGroups.map((g) => g.id);
     const bathroomIds = bathroomGroups.map((g) => g.id);
-    expect(bedroomIds).toContain("sfg.bedroom_heating");
-    expect(bathroomIds).not.toContain("sfg.bedroom_heating");
+    expect(bedroomIds).toContain("sfg.bedroom_storage");
+    expect(bedroomIds).toContain("sfg.bedroom_privacy");
+    expect(bedroomIds).toContain("sfg.bedroom_views");
+    expect(bathroomIds).not.toContain("sfg.bedroom_storage");
+    // Climate is a system now — pruned from space features.
+    expect(bedroomIds).not.toContain("sfg.bedroom_heating");
+    expect(bedroomIds).not.toContain("sfg.bedroom_cooling");
   });
 
-  it("living room groups are returned for sp.living_room", () => {
+  it("living room intrinsic groups are returned for sp.living_room", () => {
     const livingGroups = getSpaceFeatureGroups("sp.living_room");
     const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
     const livingIds = livingGroups.map((g) => g.id);
     const bathroomIds = bathroomGroups.map((g) => g.id);
     expect(livingIds).toContain("sfg.living_seating");
-    expect(livingIds).toContain("sfg.living_entertainment");
-    expect(livingIds).toContain("sfg.living_comfort");
     expect(livingIds).toContain("sfg.living_views");
-    expect(bathroomIds).not.toContain("sfg.living_entertainment");
+    expect(bathroomIds).not.toContain("sfg.living_seating");
+    // Entertainment → amenities; comfort (heating/AC) → systems.
+    expect(livingIds).not.toContain("sfg.living_entertainment");
+    expect(livingIds).not.toContain("sfg.living_comfort");
   });
 
-  it("kitchen groups are returned for sp.kitchen and not for sp.bedroom", () => {
+  it("kitchen intrinsic groups are returned for sp.kitchen and not for sp.bedroom", () => {
     const kitchenGroups = getSpaceFeatureGroups("sp.kitchen");
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const kitchenIds = kitchenGroups.map((g) => g.id);
     const bedroomIds = bedroomGroups.map((g) => g.id);
     expect(kitchenIds).toContain("sfg.kitchen_type");
     expect(kitchenIds).toContain("sfg.kitchen_cooking");
-    expect(kitchenIds).toContain("sfg.kitchen_appliances");
-    expect(kitchenIds).toContain("sfg.kitchen_small_appliances");
-    expect(kitchenIds).toContain("sfg.kitchen_utensils");
     expect(kitchenIds).toContain("sfg.kitchen_layout");
     expect(bedroomIds).not.toContain("sfg.kitchen_cooking");
     expect(bedroomIds).not.toContain("sfg.kitchen_type");
+    // Appliances + utensils → amenities (Equipamiento).
+    expect(kitchenIds).not.toContain("sfg.kitchen_appliances");
+    expect(kitchenIds).not.toContain("sfg.kitchen_utensils");
   });
 
-  it("bathroom-specific groups are returned only for sp.bathroom", () => {
+  it("bathroom intrinsic groups are returned only for sp.bathroom", () => {
     const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const bathroomIds = bathroomGroups.map((g) => g.id);
     const bedroomIds = bedroomGroups.map((g) => g.id);
     expect(bathroomIds).toContain("sfg.bathroom_type");
     expect(bathroomIds).toContain("sfg.bathroom_fixtures");
-    expect(bathroomIds).toContain("sfg.bathroom_equipment");
-    expect(bathroomIds).toContain("sfg.bathroom_supplies");
     expect(bathroomIds).toContain("sfg.bathroom_accessibility");
     expect(bedroomIds).not.toContain("sfg.bathroom_type");
-    expect(bedroomIds).not.toContain("sfg.bathroom_equipment");
+    // Equipment + supplies → amenities.
+    expect(bathroomIds).not.toContain("sfg.bathroom_equipment");
+    expect(bathroomIds).not.toContain("sfg.bathroom_supplies");
   });
 
   it("dining groups include atmosphere and table", () => {
@@ -246,18 +256,21 @@ describe("Space features taxonomy", () => {
     expect(bathroomGroups.map((g) => g.id)).not.toContain("sfg.studio_layout");
   });
 
-  it("office gets workspace and connectivity groups", () => {
+  it("office gets the intrinsic workspace group (connectivity → systems)", () => {
     const officeGroups = getSpaceFeatureGroups("sp.office");
     const officeIds = officeGroups.map((g) => g.id);
     expect(officeIds).toContain("sfg.office_workspace");
-    expect(officeIds).toContain("sfg.office_connectivity");
+    expect(officeIds).not.toContain("sfg.office_connectivity");
   });
 
-  it("laundry gets appliances and ironing groups", () => {
+  it("laundry no longer carries appliance groups (washer/dryer/iron → amenities)", () => {
     const laundryGroups = getSpaceFeatureGroups("sp.laundry");
     const laundryIds = laundryGroups.map((g) => g.id);
-    expect(laundryIds).toContain("sfg.laundry_appliances");
-    expect(laundryIds).toContain("sfg.laundry_ironing");
+    // Laundry is defined by its appliances (amenities) + systems; intrinsically
+    // it only inherits the universal dimensions group.
+    expect(laundryIds).toContain("sfg.dimensions");
+    expect(laundryIds).not.toContain("sfg.laundry_appliances");
+    expect(laundryIds).not.toContain("sfg.laundry_ironing");
   });
 
   it("outdoor spaces get setup and environment groups", () => {
@@ -279,11 +292,11 @@ describe("Space features taxonomy", () => {
     expect(poolIds).toContain("sfg.pool_area");
   });
 
-  it("shared_area gets access and amenities groups", () => {
+  it("shared_area gets the intrinsic access group (services → amenities)", () => {
     const sharedGroups = getSpaceFeatureGroups("sp.shared_area");
     const sharedIds = sharedGroups.map((g) => g.id);
     expect(sharedIds).toContain("sfg.shared_access");
-    expect(sharedIds).toContain("sfg.shared_amenities");
+    expect(sharedIds).not.toContain("sfg.shared_amenities");
   });
 
   it("sp.other gets generic description group", () => {

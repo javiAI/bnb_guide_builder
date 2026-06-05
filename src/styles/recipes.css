@@ -49,6 +49,28 @@
 }
 
 /*
+ * Toggle chip — 28px visual + 8px ::before slop = 44 hit area on fine pointers.
+ * For compact, text-bearing selectable chips (space editor features/segments)
+ * that must stay visually small (Access-sized) without breaking the touch
+ * target. On coarse pointers the visual grows to 44 (min-height) and the slop
+ * collapses. Width comes from the chip's text + padding (always ≥ the icon
+ * minimums); the slop also widens the hit area by 16px. Used by
+ * src/components/ui/toggle-chip.tsx + the spaces editor segmented control.
+ */
+.recipe-chip-28 {
+  position: relative;
+}
+.recipe-chip-28::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+@media (pointer: coarse) {
+  .recipe-chip-28 { min-height: 44px; }
+  .recipe-chip-28::before { inset: 0; }
+}
+
+/*
  * Carousel dot — 24 visual + 20px ::before slop = 44 hit area on fine pointers.
  * On coarse pointers the visual itself grows to 44 and the slop collapses.
  *

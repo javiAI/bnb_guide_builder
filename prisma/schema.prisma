@@ -90,6 +90,11 @@ model Property {
   bedroomsCount           Int?     @map("bedrooms_count")
   bedsCount               Int?     @map("beds_count")
   bathroomsCount          Int?     @map("bathrooms_count")
+  // Property-wide defaults for space dimensions. Each space inherits these and
+  // can override per-space (spaces editor, "heredado de Propiedad" badge). The
+  // generic value lives here so the operator states it once for the whole home.
+  usableAreaSqm           Float?   @map("usable_area_sqm")
+  ceilingHeightCm         Int?     @map("ceiling_height_cm")
   checkInStart            String?  @map("check_in_start")
   checkInEnd              String?  @map("check_in_end")
   checkOutTime            String?  @map("check_out_time")

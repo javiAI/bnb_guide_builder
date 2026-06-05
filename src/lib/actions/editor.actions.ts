@@ -167,6 +167,8 @@ export async function savePropertyAction(
     hasPrivateEntrance: formData.get("hasPrivateEntrance") === "on" || formData.get("hasPrivateEntrance") === "true",
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
+    usableAreaSqm: formData.get("usableAreaSqm") ? Number(formData.get("usableAreaSqm")) : null,
+    ceilingHeightCm: formData.get("ceilingHeightCm") ? Number(formData.get("ceilingHeightCm")) : null,
   };
 
   const infraRaw = formData.get("infrastructureJson") as string | null;
@@ -598,36 +600,6 @@ export async function updateSpaceAction(
   await prisma.space.update({
     where: { id: spaceId },
     data: { ...result.data, createdBy: "user", wizardSeedKey: null },
-  });
-
-  recomputeAllInBackground(space.propertyId);
-  invalidateKnowledgeInBackground(space.propertyId, "space", spaceId);
-  revalidatePath(`/properties/${space.propertyId}/spaces`);
-  return { success: true };
-}
-
-export async function archiveSpaceAction(
-  _prev: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  const spaceId = formData.get("spaceId") as string;
-  const rawStatus = formData.get("status");
-
-  if (!spaceId) return { success: false, error: "Espacio no encontrado" };
-  if (rawStatus !== "active" && rawStatus !== "archived") {
-    return { success: false, error: "Estado inválido" };
-  }
-  const nextStatus = rawStatus;
-
-  const space = await prisma.space.findUnique({
-    where: { id: spaceId },
-    select: { propertyId: true },
-  });
-  if (!space) return { success: false, error: "Espacio no encontrado" };
-
-  await prisma.$transaction(async (tx) => {
-    await tx.space.update({ where: { id: spaceId }, data: { status: nextStatus } });
-    await recomputePropertyCounts(tx, space.propertyId);
   });
 
   recomputeAllInBackground(space.propertyId);

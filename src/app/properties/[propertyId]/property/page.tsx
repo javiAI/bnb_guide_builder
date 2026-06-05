@@ -38,6 +38,8 @@ export default async function PropertyPage({ params }: Props) {
         hasPrivateEntrance: true,
         latitude: true,
         longitude: true,
+        usableAreaSqm: true,
+        ceilingHeightCm: true,
         infrastructureJson: true,
       },
     }),

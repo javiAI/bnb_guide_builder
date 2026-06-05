@@ -42,7 +42,7 @@ vi.mock("@/lib/services/property-derived.service", async (importOriginal) => {
 import { prisma } from "@/lib/db";
 import { computeActualCounts, computeSleepingCapacity } from "@/lib/services/property-derived.service";
 import { buildPropertyContext } from "@/lib/conditional-engine/context-builder";
-import { archiveSpaceAction, deleteSpaceAction } from "@/lib/actions/editor.actions";
+import { deleteSpaceAction } from "@/lib/actions/editor.actions";
 
 const spaceFindMany = prisma.space.findMany as ReturnType<typeof vi.fn>;
 const spaceFindUnique = prisma.space.findUnique as ReturnType<typeof vi.fn>;
@@ -111,59 +111,6 @@ describe("archived spaces are excluded from reads", () => {
     };
     await buildPropertyContext(fakePrisma, "p");
     expect(calls[0]).toMatchObject({ propertyId: "p", status: "active" });
-  });
-});
-
-describe("archiveSpaceAction", () => {
-  function makeForm(entries: Record<string, string>): FormData {
-    const fd = new FormData();
-    for (const [k, v] of Object.entries(entries)) fd.set(k, v);
-    return fd;
-  }
-
-  it("updates status to archived and never deletes", async () => {
-    spaceFindUnique.mockResolvedValue({ propertyId: "prop-1" });
-    spaceFindMany.mockResolvedValue([]); // recomputePropertyCounts
-    spaceUpdate.mockResolvedValue({});
-    propertyUpdate.mockResolvedValue({});
-
-    const result = await archiveSpaceAction(null, makeForm({ spaceId: "s1", status: "archived" }));
-
-    expect(result).toEqual({ success: true });
-    expect(spaceUpdate).toHaveBeenCalledWith({
-      where: { id: "s1" },
-      data: { status: "archived" },
-    });
-    expect(spaceDelete).not.toHaveBeenCalled();
-  });
-
-  it("restores by updating status back to active", async () => {
-    spaceFindUnique.mockResolvedValue({ propertyId: "prop-1" });
-    spaceFindMany.mockResolvedValue([]);
-    spaceUpdate.mockResolvedValue({});
-    propertyUpdate.mockResolvedValue({});
-
-    const result = await archiveSpaceAction(null, makeForm({ spaceId: "s1", status: "active" }));
-
-    expect(result).toEqual({ success: true });
-    expect(spaceUpdate).toHaveBeenCalledWith({
-      where: { id: "s1" },
-      data: { status: "active" },
-    });
-  });
-
-  it("rejects invalid status values without touching the DB", async () => {
-    const result = await archiveSpaceAction(null, makeForm({ spaceId: "s1", status: "bogus" }));
-    expect(result).toEqual({ success: false, error: "Estado inválido" });
-    expect(spaceFindUnique).not.toHaveBeenCalled();
-    expect(spaceUpdate).not.toHaveBeenCalled();
-  });
-
-  it("returns error when space does not exist", async () => {
-    spaceFindUnique.mockResolvedValue(null);
-    const result = await archiveSpaceAction(null, makeForm({ spaceId: "missing", status: "archived" }));
-    expect(result).toEqual({ success: false, error: "Espacio no encontrado" });
-    expect(spaceUpdate).not.toHaveBeenCalled();
   });
 });
 

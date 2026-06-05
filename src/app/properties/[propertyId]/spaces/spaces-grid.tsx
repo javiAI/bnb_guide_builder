@@ -5,6 +5,7 @@ import { EntityCardAccordion } from "@/components/ui/entity-card-accordion";
 import { useCockpitAccordion } from "@/lib/use-cockpit-accordion";
 import { SpaceCard, type SpaceStatus } from "./space-card";
 import type { BedData } from "./bed-manager";
+import type { SpaceCoverageSystem } from "./space-systems-coverage";
 import type { SpaceMediaSlide } from "@/lib/services/space-media.service";
 
 /** Serializable per-card payload prepared by the server page. */
@@ -19,7 +20,7 @@ export interface SpaceCardData {
     status: SpaceStatus;
   };
   beds: BedData[];
-  spaceSystems: { id: string; systemKey: string; label: string }[];
+  coverageSystems: SpaceCoverageSystem[];
   slides: SpaceMediaSlide[];
   photoCount: number;
   videoCount: number;
@@ -33,10 +34,14 @@ export interface SpaceCardData {
 export function SpacesGrid({
   propertyId,
   maxGuests,
+  propertyAreaSqm,
+  propertyCeilingCm,
   cards,
 }: {
   propertyId: string;
   maxGuests: number | null;
+  propertyAreaSqm: number | null;
+  propertyCeilingCm: number | null;
   cards: SpaceCardData[];
 }) {
   const { expandedId, setExpanded, wrapperRef } = useCockpitAccordion();
@@ -52,12 +57,14 @@ export function SpacesGrid({
             <SpaceCard
               propertyId={propertyId}
               maxGuests={maxGuests}
+              propertyAreaSqm={propertyAreaSqm}
+              propertyCeilingCm={propertyCeilingCm}
               role={role}
               onExpand={() => setExpanded(id)}
               onCollapse={() => setExpanded(null)}
               space={card.space}
               beds={card.beds}
-              spaceSystems={card.spaceSystems}
+              coverageSystems={card.coverageSystems}
               slides={card.slides}
               photoCount={card.photoCount}
               videoCount={card.videoCount}

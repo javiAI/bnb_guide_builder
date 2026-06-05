@@ -103,7 +103,7 @@ interface Props {
   onIndexChange?: (idx: number) => void;
   onClose: () => void;
   onSlideDelete?: (assetId: string) => Promise<void>;
-  uploadConfig?: { propertyId: string; entityType: MediaEntityType; usageKey: string };
+  uploadConfig?: { propertyId: string; entityType: MediaEntityType; entityId?: string; usageKey: string };
   /** Optional slot for the live-map slide area. When provided alongside a
    * `live-map` slide, the slide renders this node (typically the unified
    * arrival-cockpit map) instead of the inline parking-only map. The side
@@ -693,7 +693,7 @@ function MediaManagementPanel({
   onDeleteRequest: (slideId: string) => void;
   onDeleteConfirm: (assetId: string) => void;
   onDeleteCancel: () => void;
-  uploadConfig?: { propertyId: string; entityType: MediaEntityType; usageKey: string };
+  uploadConfig?: { propertyId: string; entityType: MediaEntityType; entityId?: string; usageKey: string };
   uploading: boolean;
   uploadError: string | null;
   onUploadClick: () => void;

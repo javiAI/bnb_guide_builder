@@ -22,7 +22,7 @@ export function SpaceMediaUpload({
   className?: string;
 }) {
   const config = useMemo(
-    () => ({ propertyId, entityType: "space" as const, usageKey: `space.${spaceId}` }),
+    () => ({ propertyId, entityType: "space" as const, entityId: spaceId, usageKey: `space.${spaceId}` }),
     [propertyId, spaceId],
   );
   const { fileInputRef, uploading, error, triggerFilePicker, onFileChange } = useMediaUpload(config);

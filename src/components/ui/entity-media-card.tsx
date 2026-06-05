@@ -1,6 +1,6 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import { ChevronUp, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { BadgeTone } from "@/lib/types";
@@ -55,6 +55,10 @@ interface EntityMediaCardProps {
   title: string;
   /** Active header subtitle. */
   subtitle?: ReactNode;
+  /** Active-role editable title (e.g. <InlineEditText>). When set, the title is
+   * interactive so collapse moves to a dedicated chevron (no button-in-button).
+   * Omit for a static title that collapses on full-row click (Access). */
+  titleNode?: ReactNode;
   /** Idle header right slot — typically <EntityCardStatusPill>. */
   status?: ReactNode;
   /** Cover area (MediaCarousel). Parent wires variant/bodyId/onExpand/lightbox. */
@@ -97,6 +101,7 @@ export function EntityMediaCard({
   icon,
   title,
   subtitle,
+  titleNode,
   status,
   media,
   overlay,
@@ -123,38 +128,65 @@ export function EntityMediaCard({
       >
         {media}
         {overlay}
-        {/* Header: collapse trigger (flex-1) + optional action (sibling, never
-           nested) so we never produce a button-inside-button. */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-expanded={true}
-            aria-controls={bodyId}
-            aria-labelledby={titleId}
-            onClick={onCollapse}
-            className={cn(
-              "group flex min-w-0 flex-1 items-center gap-3 p-5 text-left",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
-              "hover:bg-[var(--color-background-muted)]/40",
-            )}
-          >
-            <IconBadge icon={icon} />
+        {/* Header. Two shapes, both avoiding button-in-button:
+           • titleNode set → editable title (interactive); collapse on a chevron.
+           • else → the whole title row is the collapse trigger (Access). */}
+        {titleNode ? (
+          <div className="flex items-center gap-3 p-5">
+            <span aria-hidden="true"><IconBadge icon={icon} /></span>
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span
-                id={titleId}
-                className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
-              >
-                {title}
-              </span>
+              <span id={titleId} className="min-w-0">{titleNode}</span>
               {subtitle && (
                 <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
                   {subtitle}
                 </span>
               )}
             </span>
-          </button>
-          {headerAction}
-        </div>
+            {headerAction}
+            <button
+              type="button"
+              aria-expanded={true}
+              aria-controls={bodyId}
+              aria-labelledby={titleId}
+              onClick={onCollapse}
+              aria-label="Contraer"
+              className="recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)]"
+            >
+              <ChevronUp size={18} aria-hidden="true" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-expanded={true}
+              aria-controls={bodyId}
+              aria-labelledby={titleId}
+              onClick={onCollapse}
+              className={cn(
+                "group flex min-w-0 flex-1 items-center gap-3 p-5 text-left",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-action-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background-page)]",
+                "hover:bg-[var(--color-background-muted)]/40",
+              )}
+            >
+              <IconBadge icon={icon} />
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span
+                  id={titleId}
+                  className="truncate text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
+                >
+                  {title}
+                </span>
+                {subtitle && (
+                  <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
+                    {subtitle}
+                  </span>
+                )}
+              </span>
+            </button>
+            {headerAction}
+          </div>
+        )}
         <section
           id={bodyId}
           role="region"

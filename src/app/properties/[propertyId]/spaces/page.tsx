@@ -7,8 +7,9 @@ import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { Banner } from "@/components/ui/banner";
 import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
+import { type SpaceCoverageSystem } from "./space-systems-coverage";
 import { CreateSpaceForm } from "./create-space-form";
-import { resolveSpaceProgress, PROGRESS_PERCENT, type FeatureState } from "./space-progress";
+import { resolveSpaceStatus, type FeatureState } from "./space-progress";
 import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
 import { loadSpaceMedia, spaceMediaOf } from "@/lib/services/space-media.service";
@@ -40,6 +41,8 @@ export default async function SpacesPage({
         roomType: true,
         propertyType: true,
         propertyEnvironments: true,
+        usableAreaSqm: true,
+        ceilingHeightCm: true,
       },
     }),
     prisma.space.findMany({
@@ -69,36 +72,26 @@ export default async function SpacesPage({
   // full ordered slide set per space so each card cover is a MediaCarousel.
   const media = await loadSpaceMedia(allSpaces.map((s) => s.id));
 
-  // Build default set respecting defaultCoverageRule from taxonomy:
-  // - all_relevant_spaces: shown on all spaces by default (can be overridden)
-  // - selected_spaces: only shown when explicitly override_yes
-  // - property_only: never shown on space cards
-  const defaultSystems = propertySystems.flatMap((sys) => {
+  // Per-space EDITABLE system coverage (Opción 1). Relevant systems = those that
+  // can cover spaces (defaultCoverageRule != property_only); for each we resolve
+  // the EFFECTIVE state (explicit override, else the taxonomy default) plus the
+  // per-space note. This replaces the old read-only "systems in this space" list
+  // — the operator now toggles coverage directly from the space editor.
+  const spaceRelevantSystems = propertySystems.flatMap((sys) => {
     const item = findSystemItem(sys.systemKey);
-    if (!item || item.defaultCoverageRule !== "all_relevant_spaces") return [];
-    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label }];
+    if (!item || item.defaultCoverageRule === "property_only") return [];
+    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label, defaultsOn: item.defaultCoverageRule === "all_relevant_spaces" }];
   });
-
-  // Build map: spaceId → SpaceSystem[], starting from inherited defaults then applying overrides
-  const systemsBySpace = new Map<string, { id: string; systemKey: string; label: string }[]>();
-  for (const space of spaces) {
-    systemsBySpace.set(space.id, [...defaultSystems]);
+  const coverageByKey = new Map<string, { mode: string; note: string | null }>();
+  for (const c of systemCoverages) {
+    coverageByKey.set(`${c.spaceId}|${c.systemId}`, { mode: c.mode, note: c.note ?? null });
   }
-  for (const coverage of systemCoverages) {
-    const item = findSystemItem(coverage.system.systemKey);
-    if (!item) continue;
-    const spaceId = coverage.spaceId;
-    const current = systemsBySpace.get(spaceId) ?? [];
-    if (coverage.mode === "override_no") {
-      systemsBySpace.set(spaceId, current.filter((s) => s.id !== coverage.system.id));
-    } else if (
-      coverage.mode === "override_yes" &&
-      item.defaultCoverageRule !== "property_only" &&
-      !current.some((s) => s.id === coverage.system.id)
-    ) {
-      current.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
-      systemsBySpace.set(spaceId, current);
-    }
+  function coverageFor(spaceId: string): SpaceCoverageSystem[] {
+    return spaceRelevantSystems.map((sys) => {
+      const cov = coverageByKey.get(`${spaceId}|${sys.id}`);
+      const covered = cov?.mode === "override_yes" ? true : cov?.mode === "override_no" ? false : sys.defaultsOn;
+      return { systemId: sys.id, systemKey: sys.systemKey, label: sys.label, covered, note: cov?.note ?? "", defaultsOn: sys.defaultsOn };
+    });
   }
 
   // Compute available space types from roomType + overlays (propertyType +
@@ -145,19 +138,17 @@ export default async function SpacesPage({
 
   // ── Header chips (derived from real data) ──
   const totalPhotos = spaces.reduce((sum, s) => sum + spaceMediaOf(media, s.id).photoCount, 0);
-  const completionPct =
-    spaces.length === 0
-      ? 0
-      : Math.round(
-          spaces.reduce((sum, s) => {
-            const level = resolveSpaceProgress(
-              s.spaceType,
-              (s.featuresJson as FeatureState) ?? {},
-              s.beds.length,
-            );
-            return sum + PROGRESS_PERCENT[level];
-          }, 0) / spaces.length,
-        );
+  // Honest readiness: how many spaces meet every applicable signal (photo +
+  // beds-if-sleeping + details). No fake average percentage.
+  const readyCount = spaces.filter(
+    (s) =>
+      resolveSpaceStatus(
+        s.spaceType,
+        (s.featuresJson as FeatureState) ?? {},
+        s.beds.length,
+        spaceMediaOf(media, s.id).photoCount > 0,
+      ) === "complete",
+  ).length;
 
   const maxGuests = property.maxGuests;
 
@@ -179,7 +170,7 @@ export default async function SpacesPage({
         quantity: b.quantity,
         configJson: b.configJson as Record<string, unknown> | null,
       })),
-      spaceSystems: space.status === "archived" ? [] : (systemsBySpace.get(space.id) ?? []),
+      coverageSystems: space.status === "archived" ? [] : coverageFor(space.id),
       slides: m.slides,
       photoCount: m.photoCount,
       videoCount: m.videoCount,
@@ -199,7 +190,15 @@ export default async function SpacesPage({
             <PageHeaderChip icon={DoorOpen} label={countChipLabel(spaces.length, "espacio", "espacios")} />
             <PageHeaderChip icon={Camera} label={countChipLabel(totalPhotos, "foto", "fotos")} />
             {spaces.length > 0 && (
-              <PageHeaderChip icon={CheckCheck} label="Completado" value={`${completionPct}%`} />
+              <PageHeaderChip
+                icon={CheckCheck}
+                label={
+                  <>
+                    <span className="font-semibold text-[var(--color-text-primary)]">{readyCount}</span>{" "}
+                    de {spaces.length} listos
+                  </>
+                }
+              />
             )}
           </>
         }
@@ -270,7 +269,13 @@ export default async function SpacesPage({
             </p>
           </div>
         ) : (
-          <SpacesGrid propertyId={propertyId} maxGuests={maxGuests} cards={activeCards} />
+          <SpacesGrid
+            propertyId={propertyId}
+            maxGuests={maxGuests}
+            propertyAreaSqm={property.usableAreaSqm}
+            propertyCeilingCm={property.ceilingHeightCm}
+            cards={activeCards}
+          />
         )}
       </NumberedSection>
 

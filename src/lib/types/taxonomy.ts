@@ -407,6 +407,10 @@ export interface SpaceFeatureField {
   type: "boolean" | "enum" | "enum_multiselect" | "number_optional" | "integer_optional" | "text" | "text_chips";
   options?: TaxonomyOption[];
   shown_if?: { field: string; equals: unknown };
+  /** Render hint for `enum`: `"select"` forces a compact dropdown (ordinal
+   * scales like noise level). Default + `shown_if` enums also use the dropdown;
+   * discrete top-level enums use a segmented control. */
+  control?: "select";
   source?: string[];
 }
 
@@ -415,6 +419,9 @@ export interface SpaceFeatureGroup {
   label: string;
   description: string;
   applies_to: string[]; // space type IDs, or ["*"] for all
+  /** Optional editor zone label (e.g. "Cocina"). On multi-zone combos the
+   * editor groups sections under these headers; single-zone types ignore it. */
+  zone?: string;
   fields: SpaceFeatureField[];
 }
 

@@ -567,7 +567,9 @@ export function SubsystemCard({
       className={
         role === "active"
           ? "mr-4 flex-none"
-          : "absolute bottom-3 right-3 z-[20] opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          : // Hover-revealed on fine pointers, always visible on coarse (touch
+            // has no hover — the upload control must stay reachable).
+            "absolute bottom-3 right-3 z-[20] opacity-0 transition-opacity duration-150 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
       }
     />
   ) : null;

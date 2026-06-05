@@ -18,7 +18,13 @@ interface DeleteConfirmationButtonProps {
   /** Override the trigger styling (e.g. an overlay variant on a media cover).
    * Merged over the default 32px icon-button chrome. */
   triggerClassName?: string;
+  /** Render a labeled text+icon trigger (e.g. "Eliminar espacio") instead of the
+   * icon-only square — for footers/danger rows where a bare icon reads as orphan. */
+  triggerLabel?: string;
 }
+
+const LABEL_TRIGGER_CLASS =
+  "inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-action-destructive-subtle)] hover:text-[var(--color-action-destructive)]";
 
 export function DeleteConfirmationButton({
   title,
@@ -28,6 +34,7 @@ export function DeleteConfirmationButton({
   action,
   requireConfirmText,
   triggerClassName,
+  triggerLabel,
 }: DeleteConfirmationButtonProps) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -62,11 +69,12 @@ export function DeleteConfirmationButton({
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
-        className={cn(DEFAULT_TRIGGER_CLASS, triggerClassName)}
+        className={triggerLabel ? cn(LABEL_TRIGGER_CLASS, triggerClassName) : cn(DEFAULT_TRIGGER_CLASS, triggerClassName)}
         aria-label={title}
         title={title}
       >
         <Icon name="trash" size="sm" tone="inherit" />
+        {triggerLabel && <span>{triggerLabel}</span>}
       </button>
 
       <dialog

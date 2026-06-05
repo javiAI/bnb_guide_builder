@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState, useRef } from "react";
+import { useActionState, useMemo, useState, useRef, useTransition } from "react";
 import {
   addBedAction,
   updateBedAction,
@@ -11,7 +11,9 @@ import type { ActionResult } from "@/lib/types/action-result";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Tooltip } from "@/components/ui/tooltip";
-import { Minus, Plus, Settings2, Trash2, TriangleAlert } from "lucide-react";
+import { ToggleChip } from "@/components/ui/toggle-chip";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Minus, Plus, Settings2, Trash2, TriangleAlert, X } from "lucide-react";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
 import {
   mattressTypes as mattressTypeOptions,
@@ -22,7 +24,6 @@ import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 
 const bedTypeOptions = getItems(bedTypes);
 
-const STEPPER_BTN_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
 const STEPPER_BTN_SM_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
 
 export interface BedData {
@@ -40,14 +41,24 @@ interface BedManagerProps {
 }
 
 export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerProps) {
-  const [addState, addAction, addPending] = useActionState<ActionResult | null, FormData>(
+  const [addState, addAction] = useActionState<ActionResult | null, FormData>(
     addBedAction,
     null,
   );
+  const [, startTransition] = useTransition();
 
-  const [selectedType, setSelectedType] = useState("");
-  const [addQty, setAddQty] = useState(1);
-  const [customBedLabel, setCustomBedLabel] = useState("");
+  // Direct add — selecting a type from the dropdown adds that bed (qty 1) at
+  // once. Custom beds get a placeholder name the operator renames in the modal.
+  // The useActionState dispatch must run inside a transition (imperative call).
+  function quickAddBed(typeId: string) {
+    const fd = new FormData();
+    fd.append("spaceId", spaceId);
+    fd.append("propertyId", propertyId);
+    fd.append("bedType", typeId);
+    fd.append("quantity", "1");
+    if (typeId === "bt.other") fd.append("customLabel", "Cama personalizada");
+    startTransition(() => { addAction(fd); });
+  }
 
   const totalCapacity = beds.reduce((sum, bed) => {
     if (bed.bedType === "bt.other") {
@@ -69,6 +80,25 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
         </div>
       )}
 
+      {/* Add bed — a discreet inline dropdown right after the beds: pick a type
+          and it's added at once (no panel, no extra section). */}
+      <div>
+        <select
+          aria-label="Añadir cama"
+          value=""
+          onChange={(e) => { if (e.target.value) quickAddBed(e.target.value); e.target.value = ""; }}
+          className="min-h-[44px] rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-strong)] bg-transparent px-3 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)] focus:border-[var(--color-border-focus)] focus:outline-none"
+        >
+          <option value="">+ Añadir cama…</option>
+          {bedTypeOptions.map((bt) => (
+            <option key={bt.id} value={bt.id}>{bt.label}</option>
+          ))}
+        </select>
+        {addState?.error && (
+          <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{addState.error}</p>
+        )}
+      </div>
+
       {totalCapacity > 0 && (
         <div className="space-y-1.5">
           <p className="text-xs text-[var(--color-text-secondary)] font-medium">
@@ -84,86 +114,6 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           )}
         </div>
       )}
-
-      {/* Add bed form */}
-      <form action={addAction} className="pt-1">
-        <input type="hidden" name="spaceId" value={spaceId} />
-        <input type="hidden" name="propertyId" value={propertyId} />
-        <input type="hidden" name="quantity" value={addQty} />
-        {selectedType === "bt.other" && (
-          <input type="hidden" name="customLabel" value={customBedLabel} />
-        )}
-
-        {addState?.error && (
-          <p className="mb-2 text-xs text-[var(--color-status-error-text)]">{addState.error}</p>
-        )}
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <select
-            name="bedType"
-            required
-            aria-label="Tipo de cama"
-            value={selectedType}
-            onChange={(e) => { setSelectedType(e.target.value); setCustomBedLabel(""); }}
-            className="flex-1 min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none"
-          >
-            <option value="">— Tipo de cama —</option>
-            {bedTypeOptions.map((bt) => (
-              <option key={bt.id} value={bt.id}>
-                {bt.label}{bt.recommended ? " ★" : ""}
-              </option>
-            ))}
-          </select>
-          {selectedType === "bt.other" && (
-            <input
-              type="text"
-              value={customBedLabel}
-              onChange={(e) => setCustomBedLabel(e.target.value)}
-              placeholder="Nombre (ej. Hammock, Tatami…)"
-              className="flex-1 min-w-[140px] rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
-            />
-          )}
-
-          {/* Compact quantity stepper */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={addQty <= 1}
-              onClick={() => setAddQty((q) => Math.max(1, q - 1))}
-              className={STEPPER_BTN_CLS}
-              aria-label="Reducir cantidad"
-            >
-              <Minus size={14} aria-hidden="true" />
-            </button>
-            <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
-              {addQty}
-            </span>
-            <button
-              type="button"
-              disabled={addQty >= 10}
-              onClick={() => setAddQty((q) => Math.min(10, q + 1))}
-              className={STEPPER_BTN_CLS}
-              aria-label="Aumentar cantidad"
-            >
-              <Plus size={14} aria-hidden="true" />
-            </button>
-          </div>
-
-          <button
-            type="submit"
-            disabled={addPending || !selectedType || (selectedType === "bt.other" && !customBedLabel.trim())}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 py-1.5 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-          >
-            {addPending ? "…" : "Añadir"}
-          </button>
-        </div>
-
-        {addState?.fieldErrors?.bedType && (
-          <p className="mt-1 text-xs text-[var(--color-status-error-text)]">
-            {addState.fieldErrors.bedType[0]}
-          </p>
-        )}
-      </form>
     </div>
   );
 }
@@ -263,19 +213,20 @@ function BedRow({
           )}
         </div>
 
-        {/* Config toggle */}
+        {/* Config — opens a focused modal (colchón / almohadas / ropa de cama),
+            not an inline gray panel. */}
         <Tooltip text="Configurar colchón, almohada y ropa de cama">
           <button
             type="button"
-            onClick={() => { if (expanded) flushConfig(); setExpanded((v) => !v); }}
-            className={`inline-flex min-h-[44px] items-center gap-1 rounded-[var(--radius-md)] border px-2 py-1 text-xs font-medium transition-colors ${
+            onClick={() => setExpanded(true)}
+            aria-label="Configurar colchón, almohada y ropa de cama"
+            className={`recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[var(--radius-md)] border transition-colors ${
               hasConfig
                 ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
                 : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
             }`}
           >
-            <Settings2 size={14} aria-hidden="true" className="h-3.5 w-3.5" />
-            {expanded ? "Cerrar" : "Configurar"}
+            <Settings2 size={14} aria-hidden="true" />
           </button>
         </Tooltip>
 
@@ -332,12 +283,32 @@ function BedRow({
         </form>
       </div>
 
-      {/* Expandable config panel */}
-      {expanded && (
-        <form ref={configFormRef} action={configAction} className="mt-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3 space-y-4">
-          <input type="hidden" name="bedId" value={bed.id} />
-          <input type="hidden" name="spaceId" value={spaceId} />
-          <input type="hidden" name="configJson" value={configSerialized} />
+      {/* Config modal — focused popup for this bed (no inline gray panel). */}
+      <Dialog.Root open={expanded} onOpenChange={(o) => { if (!o) flushConfig(); setExpanded(o); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--color-background-overlay)]" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-5 shadow-[var(--elevation-surface-lg)] focus:outline-none"
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <Dialog.Title className="text-base font-semibold text-[var(--color-text-primary)]">
+                {isCustom ? (customLabelEdit || "Cama personalizada") : (typeInfo?.label ?? bed.bedType)}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Cerrar"
+                  className="recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-full text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-background-muted)] hover:text-[var(--color-text-primary)]"
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              </Dialog.Close>
+            </div>
+            <form ref={configFormRef} action={configAction} className="space-y-4">
+              <input type="hidden" name="bedId" value={bed.id} />
+              <input type="hidden" name="spaceId" value={spaceId} />
+              <input type="hidden" name="configJson" value={configSerialized} />
 
           {/* Custom bed: name + capacity */}
           {isCustom && (
@@ -371,27 +342,27 @@ function BedRow({
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Colchón</p>
             <div className="flex flex-wrap gap-2">
               {mattressTypeOptions.map((opt) => (
-                <button
+                <ToggleChip
                   key={opt.id}
-                  type="button"
-                  onClick={() => setMattressType(mattressType === opt.id ? "" : opt.id)}
-                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressType === opt.id ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
+                  active={mattressType === opt.id}
+                  hideCheck
+                  onToggle={() => setMattressType(mattressType === opt.id ? "" : opt.id)}
                 >
                   {opt.label}
-                </button>
+                </ToggleChip>
               ))}
             </div>
             {mattressType && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {mattressFirmnessOptions.map((opt) => (
-                  <button
+                  <ToggleChip
                     key={opt.id}
-                    type="button"
-                    onClick={() => setMattressFirmness(mattressFirmness === opt.id ? "" : opt.id)}
-                    className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${mattressFirmness === opt.id ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
+                    active={mattressFirmness === opt.id}
+                    hideCheck
+                    onToggle={() => setMattressFirmness(mattressFirmness === opt.id ? "" : opt.id)}
                   >
                     {opt.label}
-                  </button>
+                  </ToggleChip>
                 ))}
               </div>
             )}
@@ -402,14 +373,13 @@ function BedRow({
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Almohadas</p>
             <div className="flex flex-wrap gap-2">
               {pillowTypeOptions.map((opt) => (
-                <button
+                <ToggleChip
                   key={opt.id}
-                  type="button"
-                  onClick={() => togglePillow(opt.id)}
-                  className={`inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${pillowTypes.includes(opt.id) ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]" : "border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]"}`}
+                  active={pillowTypes.includes(opt.id)}
+                  onToggle={() => togglePillow(opt.id)}
                 >
                   {opt.label}
-                </button>
+                </ToggleChip>
               ))}
             </div>
           </div>
@@ -437,8 +407,20 @@ function BedRow({
               <span className="text-xs text-[var(--color-status-error-text)]">{configState.error}</span>
             )}
           </div>
-        </form>
-      )}
+            </form>
+            <div className="mt-4 flex justify-end">
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  className="inline-flex min-h-[44px] items-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-4 text-sm font-medium text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)]"
+                >
+                  Listo
+                </button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

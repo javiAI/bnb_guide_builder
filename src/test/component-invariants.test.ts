@@ -382,7 +382,8 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
         const hasSlop =
           cls.includes("recipe-icon-btn-32") ||
           cls.includes("recipe-carousel-dot-24") ||
-          cls.includes("recipe-icon-btn-16");
+          cls.includes("recipe-icon-btn-16") ||
+          cls.includes("recipe-chip-28");
         const hasHeight = heightTokens.some((t) => cls.includes(t));
         const hasWidth = widthTokens.some((t) => cls.includes(t));
         const isTextBearingFloor =
@@ -422,6 +423,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "recipe-icon-btn-32",
       "recipe-carousel-dot-24",
       "recipe-icon-btn-16",
+      "recipe-chip-28",
     ];
     const violations: string[] = [];
     for (const file of operatorAuditedFiles) {
@@ -458,6 +460,7 @@ describe("Component invariants · touch targets (≥44 hit area)", () => {
       "recipe-icon-btn-32",
       "recipe-carousel-dot-24",
       "recipe-icon-btn-16",
+      "recipe-chip-28",
     ] as const;
     const recipesCss = readSrc("src/styles/recipes.css");
     const violations: string[] = [];
