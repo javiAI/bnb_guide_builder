@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { EntityCardAccordion } from "@/components/ui/entity-card-accordion";
 import { useCockpitAccordion } from "@/lib/use-cockpit-accordion";
 import { SpaceCard, type SpaceStatus } from "./space-card";
@@ -43,15 +44,17 @@ export function SpacesGrid({
   cards: SpaceCardData[];
 }) {
   const { expandedId, setExpanded, wrapperRef } = useCockpitAccordion();
+  const ids = useMemo(() => cards.map((c) => c.space.id), [cards]);
+  const byId = useMemo(() => new Map(cards.map((c) => [c.space.id, c])), [cards]);
   return (
     <div ref={wrapperRef}>
       <EntityCardAccordion
         expandedId={expandedId}
-        ids={cards.map((c) => c.space.id)}
+        ids={ids}
         collapsedClassName={SPACES_GRID}
       >
         {(id, role) => {
-          const card = cards.find((c) => c.space.id === id);
+          const card = byId.get(id);
           if (!card) return null;
           return (
             <SpaceCard

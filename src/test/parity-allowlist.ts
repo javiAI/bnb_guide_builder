@@ -452,6 +452,8 @@ export const LIORA_PRIMITIVE_IMPORT_PATHS: ReadonlyArray<string> = [
   "@/components/ui/page-header-chip",
   "@/components/ui/field",
   "@/components/ui/hover-card",
+  "@/components/ui/entity-media-card",
+  "@/components/ui/entity-card-accordion",
   "@/lib/tone",
 ];
 

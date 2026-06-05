@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { withViewTransition } from "@/lib/view-transition";
+import { isEditableTarget } from "@/lib/dom";
 
 // ─────────────────────────────────────────────────────────────────────────
 // useCockpitAccordion — single-open expand state for an EntityCardAccordion.
@@ -18,12 +19,6 @@ import { withViewTransition } from "@/lib/view-transition";
 
 const PORTAL_ESCAPE_SELECTOR =
   '[data-radix-popper-content-wrapper],[role="dialog"],[role="menu"],[role="tooltip"]';
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
-}
 
 export function useCockpitAccordion() {
   const [expandedId, setExpandedId] = useState<string | null>(null);

@@ -81,7 +81,7 @@ interface SpaceCardProps {
   beds: BedData[];
   spaceSystems?: SpaceSystem[];
   /** Cover-carousel slides (images first, then videos) — from loadSpaceMedia. */
-  slides?: readonly SpaceMediaSlide[];
+  slides: readonly SpaceMediaSlide[];
   photoCount?: number;
   videoCount?: number;
   /** Accordion role + handlers (owned by the parent grid via useCockpitAccordion). */
@@ -92,8 +92,6 @@ interface SpaceCardProps {
 
 const PLACEHOLDER_GRADIENT =
   "linear-gradient(135deg, var(--color-action-primary-subtle), var(--color-background-muted))";
-
-const EMPTY_SLIDES: readonly SpaceMediaSlide[] = [];
 
 const STATUS_META: Record<
   SpaceProgressLevel,
@@ -118,7 +116,7 @@ export function SpaceCard({
   space,
   beds,
   spaceSystems = [],
-  slides = EMPTY_SLIDES,
+  slides,
   photoCount = 0,
   videoCount = 0,
   role,
@@ -245,8 +243,10 @@ export function SpaceCard({
     />
   );
 
-  // ── Editor body (only mounted in the active role) ──
-  const editor = (
+  // ── Editor body — only built in the active role. EntityMediaCard ignores
+  // children when collapsed, so skip the element-tree allocation for the grid
+  // cards that aren't expanded.
+  const editor = role !== "active" ? null : (
     <div className="space-y-6">
       {/* Name */}
       <form ref={renameFormRef} action={renameAction}>

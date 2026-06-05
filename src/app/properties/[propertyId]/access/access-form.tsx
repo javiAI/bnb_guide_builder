@@ -39,6 +39,7 @@ import {
 } from "@/lib/icons/access-icons";
 import { EntityCardAccordion } from "@/components/ui/entity-card-accordion";
 import { withViewTransition } from "@/lib/view-transition";
+import { isEditableTarget } from "@/lib/dom";
 import { SubsystemCard, type SubsystemStatus } from "./_components/subsystem-card";
 import type { SubsystemSlides } from "./_components/subsystem-card.types";
 import { MethodList } from "./_components/method-list";
@@ -258,20 +259,6 @@ function toSubsystemItems(
       return item ? { id, icon: iconFor(id), label: item.label } : null;
     })
     .filter((it): it is SubsystemItem => it !== null);
-}
-
-// ESC handler must NOT collapse the cockpit while the user is typing inside an
-// input/textarea/select/contenteditable — that would feel like the editor swallowed
-// their work. Restrict collapse-on-ESC to non-editable focus targets.
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    target.isContentEditable
-  );
 }
 
 /** Minimal `LocalPlace` projection consumed by the parking panel. */
