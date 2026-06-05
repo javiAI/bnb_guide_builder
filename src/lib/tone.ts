@@ -14,3 +14,19 @@ export const TONE_DOT_FILL: Record<BadgeTone, string> = {
   warning: "bg-[var(--color-status-warning-solid)]",
   danger:  "bg-[var(--color-status-error-solid)]",
 };
+
+/** Soft pill background — tonal fill for status pills (entity cards, chips). */
+export const TONE_PILL_BG: Record<BadgeTone, string> = {
+  neutral: "bg-[var(--color-status-neutral-bg)]",
+  success: "bg-[var(--color-status-success-bg)]",
+  warning: "bg-[var(--color-status-warning-bg)]",
+  danger:  "bg-[var(--color-status-error-bg)]",
+};
+
+/** Pill text — paired with TONE_PILL_BG for AA contrast in light + dark. */
+export const TONE_PILL_TEXT: Record<BadgeTone, string> = {
+  neutral: "text-[var(--color-status-neutral-text)]",
+  success: "text-[var(--color-status-success-text)]",
+  warning: "text-[var(--color-status-warning-text)]",
+  danger:  "text-[var(--color-status-error-text)]",
+};

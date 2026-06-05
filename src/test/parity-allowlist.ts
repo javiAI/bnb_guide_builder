@@ -80,6 +80,10 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       "src/components/ui/page-header-chip.tsx",
       "src/components/ui/field.tsx",
       "src/components/ui/hover-card.tsx",
+      // 16I-4 — entity cockpit card primitives (extracted from the Access
+      // cockpit; adopted by Access + Spaces, designed for future surfaces).
+      "src/components/ui/entity-media-card.tsx",
+      "src/components/ui/entity-card-accordion.tsx",
       "src/lib/tone.ts",
     ],
   },

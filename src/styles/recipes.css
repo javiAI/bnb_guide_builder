@@ -176,6 +176,26 @@
 }
 
 /*
+ * Entity cockpit card view-transition (shared primitive — Access + Spaces +
+ * future media-backed surfaces). Each card carries a unique inline
+ * `view-transition-name` plus the `recipe-entity-card-vt` class which assigns
+ * `view-transition-class: entity-card`. Tuning the class instead of per-name
+ * lets it cover DYNAMIC ids (Spaces cards) the static per-name rules below
+ * cannot enumerate. Same 320ms emphasis curve as the Access cards.
+ */
+.recipe-entity-card-vt {
+  view-transition-class: entity-card;
+}
+@supports (view-transition-class: none) {
+  ::view-transition-group(.entity-card),
+  ::view-transition-old(.entity-card),
+  ::view-transition-new(.entity-card) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+/*
  * Cockpit view-transition tuning. Each card has view-transition-name set in
  * subsystem-card.tsx as `cockpit-card-${id}`; here we tune timing/easing for all
  * four. Default UA value is ~250ms linear-ish; we want slightly longer + emphasis.
