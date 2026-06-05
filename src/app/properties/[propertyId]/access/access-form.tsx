@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useCallback, useMemo, useRef, useState } from "react";
 import {
   Camera,
   Clock,
@@ -38,8 +38,8 @@ import {
   accessibilityIconFor,
 } from "@/lib/icons/access-icons";
 import { EntityCardAccordion } from "@/components/ui/entity-card-accordion";
+import { useCockpitAccordion } from "@/lib/use-cockpit-accordion";
 import { withViewTransition } from "@/lib/view-transition";
-import { isEditableTarget } from "@/lib/dom";
 import { SubsystemCard, type SubsystemStatus } from "./_components/subsystem-card";
 import type { SubsystemSlides } from "./_components/subsystem-card.types";
 import { MethodList } from "./_components/method-list";
@@ -449,56 +449,36 @@ export function AccessForm({
   const hasBuildingAccess =
     !buildingMethods.includes("ba.no_building") && buildingMethods.length > 0;
 
-  const [expandedCard, setExpandedCard] = useState<AccessCockpitId | null>(null);
   // Section-3 step expansion state, lifted up so a click on either section can
   // collapse the other in a single gesture (cross-section accordion).
   const [expandedSteps, setExpandedSteps] = useState<Record<ArrivalStepKey, boolean>>(
     () => ({ arrival: true, building: false, unit: false }),
   );
-  // Wraps the cockpit grid so the click-outside effect knows the bounds of
-  // the expanded surface. A click landing outside this wrapper collapses
-  // the card; clicks landing inside Radix portals (popovers, dialogs,
-  // dropdowns rendered to document.body) are excluded so opening a select
-  // doesn't auto-collapse the card behind it.
-  const expandedCardWrapperRef = useRef<HTMLDivElement | null>(null);
-  // Section-3 (arrival steps) wrapper. Cross-section toggling is owned by
-  // `handleStepToggle`, which atomically closes the section-2 card AND opens
-  // the section-3 step in a single view transition. The click-outside guard
-  // must ignore mousedowns landing inside section-3 — otherwise it fires
-  // FIRST, closing the card via a separate transition that races and
-  // clobbers the step-open commit.
+  // Section-3 (arrival steps) wrapper — passed to the accordion hook as an
+  // extra "inside" ref so clicks inside section-3 don't collapse the card
+  // (handleStepToggle owns the cross-section transition).
   const arrivalStepsWrapperRef = useRef<HTMLDivElement | null>(null);
+  const stepsInsideRefs = useMemo(() => [arrivalStepsWrapperRef], []);
 
-  // View Transitions API: morphs each card from idle position+size to expanded
-  // (and back) without flicker. Falls back to snap behavior if unsupported.
-  //
-  // The `vt-expand` class on <html> is the discriminator that prevents the
-  // expand-desync regression: MethodRow rows carry `view-transition-name:
-  // method-row-${id}` so they FLIP during primary-swap, but if those names
-  // were honored during expand the rows would escape the parent card's
-  // snapshot and animate independently — content would arrive ahead of
-  // silhouette. The CSS rule `html.vt-expand .method-row { view-transition-
-  // name: none !important; }` short-circuits the row names ONLY while the
-  // class is on <html>, so during expand the rows compose into the
-  // cockpit-card snapshot and morph as one unit. The class is removed in
-  // `finished.finally` so subsequent primary-swap transitions get the FLIP.
-  const setExpandedCardAnimated = useCallback((next: AccessCockpitId | null) => {
-    withViewTransition(() => {
-      setExpandedCard(next);
-      // Opening any section-2 card collapses every section-3 step in the same
-      // commit so the two sections behave as one accordion.
-      if (next !== null) {
-        setExpandedSteps({ arrival: false, building: false, unit: false });
-      }
-    }, { expandClass: true });
+  // Single-open card accordion (shared hook: View-Transition morph + Escape /
+  // click-outside collapse). Opening a card collapses the section-3 steps in
+  // the SAME transition via onExpandChange, so the two sections behave as one
+  // accordion. `setExpandedCard` (raw) lets handleStepToggle bundle the
+  // card-clear into its own transition.
+  const onCardExpandChange = useCallback((next: string | null) => {
+    if (next !== null) setExpandedSteps({ arrival: false, building: false, unit: false });
   }, []);
+  const {
+    expandedId: expandedCard,
+    setExpanded: setExpandedCardAnimated,
+    setExpandedRaw: setExpandedCard,
+    wrapperRef: expandedCardWrapperRef,
+  } = useCockpitAccordion({ extraInsideRefs: stepsInsideRefs, onExpandChange: onCardExpandChange });
 
   const handleStepToggle = useCallback((key: ArrivalStepKey) => {
     // Single-open accordion across sections 2 + 3. Clicking a closed step
-    // opens it and closes the other two; clicking the open step closes it
-    // (none open). Section-2 is unconditionally closed because the accordion
-    // invariant disallows a section-2 card and any section-3 step being open
-    // simultaneously — `setExpandedCard(null)` is a no-op when already null.
+    // opens it and closes the other two; clicking the open step closes it.
+    // Section-2 is unconditionally closed in the same transition.
     withViewTransition(() => {
       setExpandedSteps((prev) => {
         const isCurrentlyOpen = !!prev[key];
@@ -510,46 +490,7 @@ export function AccessForm({
       });
       setExpandedCard(null);
     }, { expandClass: true });
-  }, []);
-
-  useEffect(() => {
-    if (!expandedCard) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      if (isEditableTarget(e.target)) return;
-      setExpandedCardAnimated(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [expandedCard, setExpandedCardAnimated]);
-
-  // Click outside the expanded card collapses it. We bind on `mousedown` so
-  // the collapse fires before any focus shift in the click target — keeps
-  // the gesture snappy. Radix renders popovers / dialogs / menus into a
-  // body-level portal, so a `contains` check on the wrapper alone would
-  // collapse the card whenever the operator interacts with one of those
-  // surfaces; the closest-selector escape hatch covers the three Radix
-  // wrappers we use today (HoverCard, Dialog, DropdownMenu).
-  useEffect(() => {
-    if (!expandedCard) return;
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      const wrapper = expandedCardWrapperRef.current;
-      if (wrapper && wrapper.contains(target)) return;
-      const stepsWrapper = arrivalStepsWrapperRef.current;
-      if (stepsWrapper && stepsWrapper.contains(target)) return;
-      if (target instanceof Element) {
-        const portalEscape = target.closest(
-          '[data-radix-popper-content-wrapper],[role="dialog"],[role="menu"]',
-        );
-        if (portalEscape) return;
-      }
-      setExpandedCardAnimated(null);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [expandedCard, setExpandedCardAnimated]);
+  }, [setExpandedCard]);
 
   const [state, formAction] = useActionState<ActionResult | null, FormData>(
     saveAccessAction,
