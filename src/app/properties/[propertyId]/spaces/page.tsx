@@ -59,8 +59,11 @@ export default async function SpacesPage({
 
   if (!property) notFound();
 
-  const spaces = allSpaces.filter((s) => s.status !== "archived");
-  const archivedSpaces = allSpaces.filter((s) => s.status === "archived");
+  // Archiving was removed (spaces are deleted, not archived) — show every
+  // space in one grid. Any legacy archived row renders as a normal, deletable
+  // card (it stays excluded from derived counts via the status filter in the
+  // derivation services).
+  const spaces = allSpaces;
 
   // Batched media loader (one findMany for all spaces — no N+1). Returns the
   // full ordered slide set per space so each card cover is a MediaCarousel.
@@ -184,7 +187,6 @@ export default async function SpacesPage({
   }
 
   const activeCards = spaces.map(toCard);
-  const archivedCards = archivedSpaces.map(toCard);
 
   return (
     <div>
@@ -275,15 +277,6 @@ export default async function SpacesPage({
       <NumberedSection number="02" title="Añadir espacio">
         <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
       </NumberedSection>
-
-      {archivedSpaces.length > 0 && (
-        <NumberedSection number="03" title={`Archivados (${archivedSpaces.length})`}>
-          <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
-            Espacios archivados de versiones anteriores. No cuentan en capacidad ni aparecen en la guía del huésped — puedes eliminarlos definitivamente.
-          </p>
-          <SpacesGrid propertyId={propertyId} maxGuests={maxGuests} cards={archivedCards} />
-        </NumberedSection>
-      )}
     </div>
   );
 }

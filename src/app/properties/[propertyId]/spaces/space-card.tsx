@@ -43,6 +43,7 @@ import {
   type EntityCardRole,
 } from "@/components/ui/entity-media-card";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
+import { SpaceMediaUpload } from "./space-media-upload";
 import {
   MediaCarousel,
   type MediaCarouselSlide,
@@ -298,6 +299,45 @@ export function SpaceCard({
       />
     ) : null;
 
+  // ── Delete + media-upload affordances (shared across collapsed/expanded) ──
+  const deleteAction = deleteSpaceAction as (
+    prev: { success: boolean } | null,
+    formData: FormData,
+  ) => Promise<{ success: boolean }>;
+  const deleteDescription = `Se eliminará "${space.name}" y todos sus datos (camas, fotos y características). Esta acción no se puede deshacer.`;
+
+  // Collapsed: hover-revealed overlay controls on the cover — trash (top-right,
+  // always) + upload (bottom-right, only when the cover already has media; the
+  // empty state uses the carousel's centered "Añade portada").
+  const hoverOverlay = (
+    <>
+      <DeleteConfirmationButton
+        title="Eliminar espacio"
+        description={deleteDescription}
+        entityId={space.id}
+        fieldName="spaceId"
+        action={deleteAction}
+        triggerClassName="absolute right-2 top-2 z-20 rounded-full bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] opacity-0 backdrop-blur-[2px] transition-opacity duration-150 group-hover:opacity-100"
+      />
+      {carouselSlides.length > 0 && (
+        <SpaceMediaUpload
+          propertyId={propertyId}
+          spaceId={space.id}
+          className="absolute bottom-2 right-2 z-20 bg-[var(--color-background-overlay)] text-[var(--color-text-on-overlay)] opacity-0 transition-opacity duration-150 hover:bg-[color-mix(in_oklch,var(--color-background-overlay)_70%,black)] group-hover:opacity-100"
+        />
+      )}
+    </>
+  );
+
+  // Expanded: a visible "add media" control in the header (subtle surface).
+  const headerAction = (
+    <SpaceMediaUpload
+      propertyId={propertyId}
+      spaceId={space.id}
+      className="mr-4 border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)]"
+    />
+  );
+
   // ── Editor body — only built in the active role. EntityMediaCard ignores
   // children when collapsed, so skip the element-tree allocation for the grid
   // cards that aren't expanded.
@@ -450,15 +490,10 @@ export function SpaceCard({
 
         <DeleteConfirmationButton
           title="Eliminar espacio"
-          description={`Se eliminará "${space.name}" y todos sus datos (camas, fotos y características). Esta acción no se puede deshacer.`}
+          description={deleteDescription}
           entityId={space.id}
           fieldName="spaceId"
-          action={
-            deleteSpaceAction as (
-              prev: { success: boolean } | null,
-              formData: FormData,
-            ) => Promise<{ success: boolean }>
-          }
+          action={deleteAction}
         />
       </div>
     </div>
@@ -476,6 +511,8 @@ export function SpaceCard({
       media={media}
       overlay={overlay}
       collapsedContent={collapsedContent}
+      hoverOverlay={hoverOverlay}
+      headerAction={headerAction}
       srOnly={
         <>
           {photoCount} {photoCount === 1 ? "foto" : "fotos"}

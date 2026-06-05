@@ -2,7 +2,11 @@
 
 import { useActionState } from "react";
 import { useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/cn";
 import { Icon } from "./icon";
+
+const DEFAULT_TRIGGER_CLASS =
+  "recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-action-destructive)] hover:bg-[var(--color-action-destructive-subtle)] transition-colors";
 
 interface DeleteConfirmationButtonProps {
   title: string;
@@ -11,6 +15,9 @@ interface DeleteConfirmationButtonProps {
   fieldName: string;
   action: (prev: { success: boolean } | null, formData: FormData) => Promise<{ success: boolean }>;
   requireConfirmText?: string;
+  /** Override the trigger styling (e.g. an overlay variant on a media cover).
+   * Merged over the default 32px icon-button chrome. */
+  triggerClassName?: string;
 }
 
 export function DeleteConfirmationButton({
@@ -20,6 +27,7 @@ export function DeleteConfirmationButton({
   fieldName,
   action,
   requireConfirmText,
+  triggerClassName,
 }: DeleteConfirmationButtonProps) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -54,7 +62,7 @@ export function DeleteConfirmationButton({
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
-        className="recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-action-destructive)] hover:bg-[var(--color-action-destructive-subtle)] transition-colors"
+        className={cn(DEFAULT_TRIGGER_CLASS, triggerClassName)}
         aria-label={title}
         title={title}
       >
