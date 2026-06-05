@@ -1,8 +1,21 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, Check, ChevronDown, Move, Pencil, UsersRound, X, type LucideIcon } from "lucide-react";
+import {
+  BedDouble,
+  Check,
+  ChevronDown,
+  Cog,
+  Images,
+  Move,
+  Pencil,
+  Ruler,
+  StickyNote,
+  UsersRound,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import {
   renameSpaceAction,
   updateSpaceDetailsAction,
@@ -14,11 +27,24 @@ import { bedTypes } from "@/lib/taxonomies/bed-types";
 import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
+import type { BadgeTone } from "@/lib/types";
 import { getSpaceIcon } from "@/lib/icons/space-icons";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
+import {
+  EntityMediaCard,
+  EntityCardStatusPill,
+  type EntityCardRole,
+} from "@/components/ui/entity-media-card";
+import {
+  MediaCarousel,
+  type MediaCarouselSlide,
+} from "@/components/ui/media-carousel";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
+import { FieldInput, FieldSelect, fieldControlClass } from "@/components/ui/field";
+import type { SpaceMediaSlide } from "@/lib/services/space-media.service";
 import { cn } from "@/lib/cn";
 import { BedManager, type BedData } from "./bed-manager";
 import { EntityGallery } from "@/components/media/entity-gallery";
@@ -54,38 +80,37 @@ interface SpaceCardProps {
   space: SpaceData;
   beds: BedData[];
   spaceSystems?: SpaceSystem[];
-  /** Signed URL of the first space image; null → gradient placeholder. */
-  coverThumbUrl?: string | null;
-  /** Total images assigned to the space (cover badge); 0 → no badge. */
+  /** Cover-carousel slides (images first, then videos) — from loadSpaceMedia. */
+  slides?: readonly SpaceMediaSlide[];
   photoCount?: number;
+  videoCount?: number;
+  /** Accordion role + handlers (owned by the parent grid via useCockpitAccordion). */
+  role: EntityCardRole;
+  onExpand: () => void;
+  onCollapse: () => void;
 }
 
-const inputCls =
-  "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none";
+const PLACEHOLDER_GRADIENT =
+  "linear-gradient(135deg, var(--color-action-primary-subtle), var(--color-background-muted))";
 
-const PROGRESS_META: Record<
+const EMPTY_SLIDES: readonly SpaceMediaSlide[] = [];
+
+const STATUS_META: Record<
   SpaceProgressLevel,
-  { label: string; bar: string; pill: string; icon: LucideIcon | null }
+  { tone: BadgeTone; icon: LucideIcon | undefined; label: string; bar: string }
 > = {
-  complete: {
-    label: "Ficha completa",
-    bar: "bg-[var(--color-status-success-solid)]",
-    pill: "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-text)]",
-    icon: Check,
-  },
-  partial: {
-    label: "En progreso",
-    bar: "bg-[var(--color-status-warning-solid)]",
-    pill: "bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)]",
-    icon: Pencil,
-  },
-  none: {
-    label: "Sin datos",
-    bar: "bg-[var(--color-border-strong)]",
-    pill: "bg-[var(--color-status-neutral-bg)] text-[var(--color-status-neutral-text)]",
-    icon: null,
-  },
+  complete: { tone: "success", icon: Check, label: "Completa", bar: "bg-[var(--color-status-success-solid)]" },
+  partial: { tone: "warning", icon: Pencil, label: "En progreso", bar: "bg-[var(--color-status-warning-solid)]" },
+  none: { tone: "neutral", icon: undefined, label: "Sin datos", bar: "bg-[var(--color-border-strong)]" },
 };
+
+function toCarouselSlides(slides: readonly SpaceMediaSlide[]): MediaCarouselSlide[] {
+  return slides.map((s) =>
+    s.kind === "image"
+      ? { id: s.id, title: s.title, kind: "image", url: s.url, alt: s.alt }
+      : { id: s.id, title: s.title, kind: "video", alt: s.alt },
+  );
+}
 
 export function SpaceCard({
   propertyId,
@@ -93,118 +118,70 @@ export function SpaceCard({
   space,
   beds,
   spaceSystems = [],
-  coverThumbUrl = null,
+  slides = EMPTY_SLIDES,
   photoCount = 0,
+  videoCount = 0,
+  role,
+  onExpand,
+  onCollapse,
 }: SpaceCardProps) {
-  // ── Expand / collapse (editor body) ──
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | "auto">(0);
-  const [bodyVisible, setBodyVisible] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const titleId = useId();
+  const bodyId = useId();
+  const isArchived = space.status === "archived";
 
-  useEffect(() => {
-    let expandTimer: ReturnType<typeof setTimeout> | undefined;
-    let collapseTimer: ReturnType<typeof setTimeout> | undefined;
-    let rafId: number | undefined;
-
-    if (expanded) {
-      setBodyVisible(true);
-      rafId = requestAnimationFrame(() => {
-        if (bodyRef.current) {
-          setHeight(bodyRef.current.scrollHeight);
-          expandTimer = setTimeout(() => setHeight("auto"), 300);
-        }
-      });
-    } else {
-      if (bodyRef.current) {
-        setHeight(bodyRef.current.scrollHeight);
-        rafId = requestAnimationFrame(() => setHeight(0));
-      }
-      collapseTimer = setTimeout(() => setBodyVisible(false), 300);
-    }
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      clearTimeout(expandTimer);
-      clearTimeout(collapseTimer);
-    };
-  }, [expanded]);
-
-  // ── Inline name editing ──
-  const [editingName, setEditingName] = useState(false);
-  const [nameValue, setNameValue] = useState(space.name);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const [renameState, renameAction, renamePending] = useActionState<ActionResult | null, FormData>(
-    renameSpaceAction,
-    null,
-  );
-
-  useEffect(() => {
-    if (editingName) nameInputRef.current?.focus();
-  }, [editingName]);
-
-  useEffect(() => {
-    if (renameState?.success) {
-      setNameValue((current) => current.trim());
-      setEditingName(false);
-    }
-  }, [renameState]);
-
-  // ── Feature state ──
+  // ── Feature state (live progress + auto-saved via hidden mirror) ──
   const [features, setFeatures] = useState<FeatureState>(
     (space.featuresJson as FeatureState) ?? {},
   );
-
   function setFeature(fieldId: string, value: FeatureValue) {
     setFeatures((prev) => ({ ...prev, [fieldId]: value }));
   }
-
-  // ── Feature groups ──
   const featureGroups = useMemo(() => getSpaceFeatureGroups(space.spaceType), [space.spaceType]);
-
-  // ── Progress ──
-  // Recomputed live from the editable `features` state (not threaded from the
-  // server) so the foot bar/pill update as the operator toggles fields in the
-  // inline editor. The server computes the same signal from persisted data only
-  // for the page-level completion aggregate — the two sources are intentional.
   const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
   const progressLevel = useMemo(
     () => computeProgressDot(features, featureGroups, hasBeds, beds.length),
     [features, featureGroups, hasBeds, beds.length],
   );
   const featuresJson = useMemo(() => JSON.stringify(features), [features]);
+  const status = STATUS_META[progressLevel];
+  const percent = PROGRESS_PERCENT[progressLevel];
 
-  // ── Details save form ──
-  const [detailsState, detailsAction, detailsPending] = useActionState<
-    ActionResult | null,
-    FormData
-  >(updateSpaceDetailsAction, null);
+  // ── Cover carousel ──
+  const carouselSlides = useMemo(() => toCarouselSlides(slides), [slides]);
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  useEffect(() => {
+    const max = Math.max(0, carouselSlides.length - 1);
+    setCarouselIdx((prev) => Math.min(prev, max));
+  }, [carouselSlides.length]);
 
-  // Auto-save: feature toggles + notes persist as you edit (no "Guardar"
-  // button). `features` is mirrored into a hidden `featuresJson` input and the
-  // notes are named fields, so the FormData diff + native listeners catch
-  // everything. `flushDetails()` runs on collapse so the last edit isn't lost.
+  // ── Auto-save forms ──
+  const renameFormRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(renameFormRef);
+  const [renameState, renameAction, renamePending] = useActionState<ActionResult | null, FormData>(
+    renameSpaceAction,
+    null,
+  );
+
   const detailsFormRef = useRef<HTMLFormElement>(null);
-  const flushDetails = useFormAutoSave(detailsFormRef);
+  useFormAutoSave(detailsFormRef);
+  const [detailsState, detailsAction, detailsPending] = useActionState<ActionResult | null, FormData>(
+    updateSpaceDetailsAction,
+    null,
+  );
 
   const [showInternalNotes, setShowInternalNotes] = useState(Boolean(space.internalNotes));
-  // Controlled so the hidden mirror keeps the edited value when the notes are
-  // hidden mid-edit — an uncontrolled textarea + a `space.internalNotes` hidden
-  // fallback would overwrite the in-progress edit with the stale server value
-  // (lost edit). Auto-save then persists the live state.
   const [internalNotes, setInternalNotes] = useState(space.internalNotes ?? "");
 
-  // ── Archive / Restore ──
+  // ── Archive / restore ──
   const [confirmArchive, setConfirmArchive] = useState(false);
   const [archiveState, archiveAction, archivePending] = useActionState<ActionResult | null, FormData>(
     archiveSpaceAction,
     null,
   );
-  const isArchived = space.status === "archived";
 
-  // ── Derived ──
-  const typeInfo = findItem(spaceTypes, space.spaceType);
+  // ── Derived (facts + icon) ──
   const TypeIcon = getSpaceIcon(space.spaceType);
+  const typeInfo = findItem(spaceTypes, space.spaceType);
   const adultCapacity = beds.reduce((sum, bed) => {
     if (bed.bedType === "bt.other") {
       const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
@@ -224,440 +201,332 @@ export function SpaceCard({
     if (cribCount > 0) parts.push(`+ ${cribCount} ${cribCount === 1 ? "cuna" : "cunas"}`);
     capacityLabel = parts.join(" ");
   }
-
   const areaSqm = features["sf.area_sqm"];
   const areaLabel = typeof areaSqm === "number" && areaSqm > 0 ? `${areaSqm} m²` : null;
 
-  const progress = PROGRESS_META[progressLevel];
-  const StatusIcon = progress.icon;
-  const percent = PROGRESS_PERCENT[progressLevel];
+  // Space-owned facts only (never amenities/systems): type · area · capacity.
+  const facts: { key: string; icon: LucideIcon; label: string }[] = [
+    { key: "type", icon: TypeIcon, label: typeInfo?.label ?? space.spaceType },
+  ];
+  if (areaLabel) facts.push({ key: "area", icon: Move, label: areaLabel });
+  if (capacityLabel) facts.push({ key: "cap", icon: UsersRound, label: capacityLabel });
 
-  return (
-    <article
-      aria-label={nameValue}
-      className={cn(
-        "overflow-hidden rounded-[var(--radius-lg)] border transition-colors duration-200",
-        expanded && "col-span-full",
-        isArchived
-          ? "border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)] opacity-80"
-          : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-strong)]",
-      )}
-    >
-      {/* ── Cover ── */}
-      <div className="relative h-32 w-full overflow-hidden bg-[var(--color-background-muted)]">
-        {coverThumbUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverThumbUrl}
-            alt=""
-            draggable={false}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center bg-[linear-gradient(135deg,var(--color-action-primary-subtle),var(--color-background-muted))]">
-            <TypeIcon
-              size={30}
-              aria-hidden="true"
-              className="text-[var(--color-action-primary)] opacity-70"
-            />
-          </div>
-        )}
-        {photoCount > 0 && (
-          <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--color-background-overlay)] px-2 py-0.5 text-[11px] font-medium text-[var(--color-text-on-overlay)]">
-            <Camera size={11} aria-hidden="true" />
-            {photoCount}
+  const collapsedContent = (
+    <div className="flex w-full flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
+        {facts.map((f) => (
+          <span key={f.key} className="inline-flex items-center gap-1">
+            <f.icon size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
+            {f.label}
           </span>
-        )}
+        ))}
       </div>
-
-      {/* ── Body ── */}
-      <div className="p-4">
-        {editingName ? (
-          <form action={renameAction} className="flex items-center gap-2">
-            <input type="hidden" name="spaceId" value={space.id} />
-            <input
-              ref={nameInputRef}
-              type="text"
-              name="name"
-              aria-label="Nombre del espacio"
-              value={nameValue}
-              onChange={(e) => setNameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setNameValue(space.name);
-                  setEditingName(false);
-                }
-              }}
-              className="min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border-focus)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm font-semibold text-[var(--color-text-primary)] focus:outline-none"
-              autoComplete="off"
-            />
-            <button
-              type="submit"
-              disabled={renamePending || !nameValue.trim()}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-action-primary)] px-3 text-[var(--color-action-primary-fg)] transition-colors hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
-              aria-label="Guardar nuevo nombre del espacio"
-            >
-              <Check size={16} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setNameValue(space.name);
-                setEditingName(false);
-              }}
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)]"
-              aria-label="Cancelar renombrado"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
-          </form>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => { if (expanded) flushDetails(); setExpanded((prev) => !prev); }}
-              className="-mx-1 flex min-h-[44px] min-w-0 flex-1 items-center rounded-[var(--radius-md)] px-1 text-left transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
-              aria-expanded={expanded}
-            >
-              <span
-                className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]"
-              >
-                {nameValue}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditingName(true)}
-              className="recipe-icon-btn-32 grid h-8 w-8 flex-shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-secondary)]"
-              aria-label="Renombrar espacio"
-            >
-              <Pencil size={15} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => { if (expanded) flushDetails(); setExpanded((prev) => !prev); }}
-              className="recipe-icon-btn-32 grid h-8 w-8 flex-shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-secondary)]"
-              aria-label={expanded ? "Colapsar espacio" : "Expandir espacio"}
-              aria-expanded={expanded}
-            >
-              <ChevronDown
-                size={16}
-                aria-hidden="true"
-                className={cn("transition-transform duration-200", expanded && "rotate-180")}
-              />
-            </button>
-          </div>
-        )}
-
-        {/* ── Facts ── */}
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
-          <span className="inline-flex items-center gap-1">
-            <TypeIcon size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
-            {typeInfo?.label ?? space.spaceType}
-          </span>
-          {areaLabel && (
-            <span className="inline-flex items-center gap-1">
-              <Move size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
-              {areaLabel}
-            </span>
-          )}
-          {capacityLabel && (
-            <span className="inline-flex items-center gap-1">
-              <UsersRound size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
-              {capacityLabel}
-            </span>
-          )}
-        </div>
-
-        {/* ── Foot: progress + status pill ── */}
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="flex min-w-0 flex-1 items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
-            <span className="h-[3px] max-w-[110px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
-              <span
-                className={cn("block h-full rounded-full", progress.bar)}
-                style={{ width: `${percent}%` }}
-              />
-            </span>
-            {percent}%
-          </span>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-              progress.pill,
-            )}
-          >
-            {StatusIcon && <StatusIcon size={11} aria-hidden="true" />}
-            {progress.label}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Collapsible editor body ── */}
-      <div
-        ref={bodyRef}
-        style={{ maxHeight: height === "auto" ? "none" : `${height}px` }}
-        className="overflow-hidden transition-all duration-300 ease-in-out"
-      >
-        {bodyVisible && (
-          <div className="space-y-1 border-t border-[var(--color-border-default)] px-4 pb-6 pt-4">
-            {/* Dimensions */}
-            <SpaceSection label="Dimensiones">
-              {(() => {
-                const dimGroup = featureGroups.find((g) => g.id === "sfg.dimensions");
-                if (!dimGroup) return null;
-                return (
-                  <FlatFeatureSection
-                    group={dimGroup}
-                    features={features}
-                    onChangeFeature={setFeature}
-                    noBorder
-                  />
-                );
-              })()}
-            </SpaceSection>
-
-            {/* Beds */}
-            {hasBeds && (
-              <SpaceSection label="Camas">
-                <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} maxGuests={maxGuests} />
-              </SpaceSection>
-            )}
-
-            {/* All remaining feature groups except dimensions */}
-            <form id={`details-${space.id}`} ref={detailsFormRef} action={detailsAction}>
-              <input type="hidden" name="spaceId" value={space.id} />
-              <input type="hidden" name="propertyId" value={propertyId} />
-              <input type="hidden" name="featuresJson" value={featuresJson} />
-
-              {featureGroups
-                .filter((g) => g.id !== "sfg.dimensions")
-                .map((group) => (
-                  <SpaceSection key={group.id} label={group.label}>
-                    <FlatFeatureSection
-                      group={group}
-                      features={features}
-                      onChangeFeature={setFeature}
-                      noBorder
-                    />
-                  </SpaceSection>
-                ))}
-
-              {/* Custom "Otros" field */}
-              {featureGroups.length > 0 && (
-                <SpaceSection label="Otros detalles">
-                  <textarea
-                    rows={2}
-                    value={(features["sf.custom"] as string) ?? ""}
-                    onChange={(e) => setFeature("sf.custom", e.target.value || null)}
-                    placeholder="Cualquier detalle relevante que no encaje en las secciones anteriores…"
-                    className={inputCls}
-                  />
-                </SpaceSection>
-              )}
-
-              {/* Notes */}
-              <SpaceSection label="Notas para el huésped">
-                <textarea
-                  name="guestNotes"
-                  rows={2}
-                  defaultValue={space.guestNotes ?? ""}
-                  placeholder="Información útil sobre este espacio visible en la guía del huésped…"
-                  className={inputCls}
-                />
-              </SpaceSection>
-
-              {/* Internal notes — toggle */}
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => setShowInternalNotes((v) => !v)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-                >
-                  <ChevronDown
-                    size={14}
-                    aria-hidden="true"
-                    className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
-                  />
-                  Notas internas
-                  {internalNotes && (
-                    <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
-                  )}
-                </button>
-                {showInternalNotes ? (
-                  <div className="mt-2">
-                    <textarea
-                      name="internalNotes"
-                      rows={2}
-                      value={internalNotes}
-                      onChange={(e) => setInternalNotes(e.target.value)}
-                      placeholder="Notas de operación solo visibles para el operador…"
-                      className={inputCls}
-                    />
-                  </div>
-                ) : (
-                  <input type="hidden" name="internalNotes" value={internalNotes} />
-                )}
-              </div>
-            </form>
-
-            {/* Systems in this space — read-only */}
-            {spaceSystems.length > 0 && (
-              <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-muted)] px-4 py-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-semibold text-[var(--color-text-secondary)]">Sistemas en este espacio</p>
-                  <Link
-                    href={`/properties/${propertyId}/systems`}
-                    className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
-                  >
-                    Gestionar →
-                  </Link>
-                </div>
-                <ul className="mt-2 flex flex-wrap gap-2">
-                  {spaceSystems.map((sys) => (
-                    <li key={sys.id}>
-                      <Link
-                        href={`/properties/${propertyId}/systems/${sys.id}`}
-                        className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] px-3 py-0.5 text-xs text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-action-primary-subtle-fg)] hover:no-underline"
-                      >
-                        {sys.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Media gallery — only mount when expanded to avoid N server calls on page load */}
-            {expanded && (
-              <div className="mt-4">
-                <EntityGallery
-                  propertyId={propertyId}
-                  entityType="space"
-                  entityId={space.id}
-                  label="Fotos"
-                  defaultCollapsed
-                  compact
-                />
-              </div>
-            )}
-
-            {/* Footer — outside form to avoid nested <form> */}
-            <div className="mt-2 flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
-              <div className="flex items-center gap-3">
-                <AutoSaveStatus pending={detailsPending} />
-                {detailsState?.error && (
-                  <span className="text-xs text-[var(--color-status-error-text)]">{detailsState.error}</span>
-                )}
-              </div>
-
-              {isArchived ? (
-                <form action={archiveAction}>
-                  <input type="hidden" name="spaceId" value={space.id} />
-                  <input type="hidden" name="status" value="active" />
-                  <button
-                    type="submit"
-                    disabled={archivePending}
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-50"
-                  >
-                    {archivePending ? "Restaurando…" : "Restaurar espacio"}
-                  </button>
-                  {archiveState?.error && (
-                    <span className="ml-2 text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
-                  )}
-                </form>
-              ) : confirmArchive ? (
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-[var(--color-status-warning-text)]">¿Archivar este espacio?</span>
-                  <form action={archiveAction}>
-                    <input type="hidden" name="spaceId" value={space.id} />
-                    <input type="hidden" name="status" value="archived" />
-                    <button
-                      type="submit"
-                      disabled={archivePending}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
-                    >
-                      {archivePending ? "Archivando…" : "Sí, archivar"}
-                    </button>
-                  </form>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmArchive(false)}
-                    className="text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-                  >
-                    Cancelar
-                  </button>
-                  {archiveState?.error && (
-                    <span className="text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
-                  )}
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setConfirmArchive(true)}
-                  className="text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-                >
-                  Archivar espacio
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </article>
-  );
-}
-
-// ── Section wrapper — clear visual separation between topics ──
-
-function SpaceSection({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="my-2 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-4 py-4 first:mt-0">
-      <p className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-secondary)]">
-        <span className="inline-block h-2 w-2 flex-shrink-0 rounded-full bg-[var(--color-action-primary)]" />
-        {label}
-      </p>
-      {children}
+      <span className="flex items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
+        <span className="h-[3px] max-w-[110px] flex-1 overflow-hidden rounded-full bg-[var(--color-progress-track)]">
+          <span className={cn("block h-full rounded-full", status.bar)} style={{ width: `${percent}%` }} />
+        </span>
+        {percent}%
+      </span>
     </div>
   );
+
+  const media = (
+    <MediaCarousel
+      slides={carouselSlides}
+      propertyId={propertyId}
+      title={space.name}
+      variant={role === "active" ? "active" : "collapsed"}
+      uploadEntityType="space"
+      uploadUsageKey={`space.${space.id}`}
+      placeholderGradient={PLACEHOLDER_GRADIENT}
+      currentIdx={carouselIdx}
+      onCurrentIdxChange={setCarouselIdx}
+      {...(role === "active" ? {} : { bodyId, onExpand })}
+    />
+  );
+
+  // ── Editor body (only mounted in the active role) ──
+  const editor = (
+    <div className="space-y-6">
+      {/* Name */}
+      <form ref={renameFormRef} action={renameAction}>
+        <input type="hidden" name="spaceId" value={space.id} />
+        <FieldInput
+          name="name"
+          label="Nombre del espacio"
+          required
+          defaultValue={space.name}
+          autoComplete="off"
+          placeholder="Ej: Dormitorio principal"
+        />
+        {renameState?.error && (
+          <p className="mt-1 text-xs text-[var(--color-status-error-text)]">{renameState.error}</p>
+        )}
+      </form>
+
+      {/* Dimensions — controls update `features` state → mirrored into the
+         details form's hidden featuresJson input → auto-saved. */}
+      {(() => {
+        const dimGroup = featureGroups.find((g) => g.id === "sfg.dimensions");
+        if (!dimGroup) return null;
+        return (
+          <EditorSection icon={Ruler} label="Dimensiones">
+            <FlatFeatureSection group={dimGroup} features={features} onChangeFeature={setFeature} />
+          </EditorSection>
+        );
+      })()}
+
+      {/* Beds — BedManager renders its own forms, so it stays OUTSIDE the
+         details <form> (no nested forms). */}
+      {hasBeds && (
+        <EditorSection icon={BedDouble} label="Camas">
+          <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} maxGuests={maxGuests} />
+        </EditorSection>
+      )}
+
+      {/* Details form — feature groups + notes (auto-saved). */}
+      <form id={`details-${space.id}`} ref={detailsFormRef} action={detailsAction} className="space-y-6">
+        <input type="hidden" name="spaceId" value={space.id} />
+        <input type="hidden" name="propertyId" value={propertyId} />
+        <input type="hidden" name="featuresJson" value={featuresJson} />
+
+        {featureGroups
+          .filter((g) => g.id !== "sfg.dimensions")
+          .map((group) => (
+            <EditorSection key={group.id} label={group.label}>
+              <FlatFeatureSection group={group} features={features} onChangeFeature={setFeature} />
+            </EditorSection>
+          ))}
+
+        {featureGroups.length > 0 && (
+          <EditorSection label="Otros detalles">
+            <textarea
+              rows={2}
+              aria-label="Otros detalles"
+              value={(features["sf.custom"] as string) ?? ""}
+              onChange={(e) => setFeature("sf.custom", e.target.value || null)}
+              placeholder="Cualquier detalle relevante que no encaje en las secciones anteriores…"
+              className={fieldControlClass}
+            />
+          </EditorSection>
+        )}
+
+        <EditorSection icon={StickyNote} label="Notas para el huésped">
+          <textarea
+            name="guestNotes"
+            rows={2}
+            aria-label="Notas para el huésped"
+            defaultValue={space.guestNotes ?? ""}
+            placeholder="Información útil sobre este espacio visible en la guía del huésped…"
+            className={fieldControlClass}
+          />
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setShowInternalNotes((v) => !v)}
+              className="flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            >
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
+              />
+              Notas internas
+              {internalNotes && (
+                <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
+              )}
+            </button>
+            {showInternalNotes ? (
+              <textarea
+                name="internalNotes"
+                rows={2}
+                aria-label="Notas internas"
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                placeholder="Notas de operación solo visibles para el operador…"
+                className={cn(fieldControlClass, "mt-2")}
+              />
+            ) : (
+              <input type="hidden" name="internalNotes" value={internalNotes} />
+            )}
+          </div>
+        </EditorSection>
+      </form>
+
+      {/* Systems in this space — read-only */}
+      {spaceSystems.length > 0 && (
+        <EditorSection icon={Cog} label="Sistemas en este espacio">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[var(--color-text-secondary)]">Configurados desde Sistemas.</p>
+            <Link
+              href={`/properties/${propertyId}/systems`}
+              className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
+            >
+              Gestionar →
+            </Link>
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {spaceSystems.map((sys) => (
+              <li key={sys.id}>
+                <Link
+                  href={`/properties/${propertyId}/systems/${sys.id}`}
+                  className="inline-flex min-h-[44px] items-center rounded-full border border-[var(--color-action-primary-subtle)] bg-[var(--color-action-primary-subtle)] px-3 py-0.5 text-xs text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-action-primary-subtle-fg)] hover:no-underline"
+                >
+                  {sys.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </EditorSection>
+      )}
+
+      {/* Photos — full management (add/reorder/delete). The cover carousel above
+         shows the same images as the hero; this section manages them. */}
+      <EditorSection icon={Images} label="Fotos">
+        <EntityGallery
+          propertyId={propertyId}
+          entityType="space"
+          entityId={space.id}
+          label="Fotos"
+          defaultCollapsed
+          compact
+        />
+      </EditorSection>
+
+      {/* Footer — autosave status + archive/restore */}
+      <div className="flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
+        <div className="flex items-center gap-3">
+          <AutoSaveStatus pending={detailsPending || renamePending} />
+          {detailsState?.error && (
+            <span className="text-xs text-[var(--color-status-error-text)]">{detailsState.error}</span>
+          )}
+        </div>
+
+        {isArchived ? (
+          <form action={archiveAction}>
+            <input type="hidden" name="spaceId" value={space.id} />
+            <input type="hidden" name="status" value="active" />
+            <button
+              type="submit"
+              disabled={archivePending}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--color-action-primary-subtle-fg)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-50"
+            >
+              {archivePending ? "Restaurando…" : "Restaurar espacio"}
+            </button>
+            {archiveState?.error && (
+              <span className="ml-2 text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
+            )}
+          </form>
+        ) : confirmArchive ? (
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[var(--color-status-warning-text)]">¿Archivar este espacio?</span>
+            <form action={archiveAction}>
+              <input type="hidden" name="spaceId" value={space.id} />
+              <input type="hidden" name="status" value="archived" />
+              <button
+                type="submit"
+                disabled={archivePending}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-status-warning-solid)] px-3 py-1.5 text-xs font-medium text-[var(--color-status-warning-solid-fg)] transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {archivePending ? "Archivando…" : "Sí, archivar"}
+              </button>
+            </form>
+            <button
+              type="button"
+              onClick={() => setConfirmArchive(false)}
+              className="min-h-[44px] text-xs text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            >
+              Cancelar
+            </button>
+            {archiveState?.error && (
+              <span className="text-xs text-[var(--color-status-error-text)]">{archiveState.error}</span>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmArchive(true)}
+            className="min-h-[44px] text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+          >
+            Archivar espacio
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <EntityMediaCard
+      role={role}
+      viewTransitionName={`space-card-${space.id}`}
+      titleId={titleId}
+      bodyId={bodyId}
+      icon={TypeIcon}
+      title={space.name}
+      status={<EntityCardStatusPill tone={status.tone} icon={status.icon} label={status.label} />}
+      media={media}
+      collapsedContent={collapsedContent}
+      srOnly={
+        <>
+          {photoCount} {photoCount === 1 ? "foto" : "fotos"}
+          {videoCount > 0 && <>, {videoCount} {videoCount === 1 ? "vídeo" : "vídeos"}</>}
+        </>
+      }
+      onExpand={onExpand}
+      onCollapse={onCollapse}
+      className={isArchived ? "opacity-80" : undefined}
+    >
+      {editor}
+    </EntityMediaCard>
+  );
 }
 
-// ── Flat feature section — renders fields inside a SpaceSection ──
+// ── Editor section — flat SectionEyebrow header + content (Access body rhythm) ──
+
+function EditorSection({
+  icon,
+  label,
+  children,
+}: {
+  icon?: LucideIcon;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <SectionEyebrow icon={icon}>{label}</SectionEyebrow>
+      {children}
+    </section>
+  );
+}
+
+// ── Flat feature section — boolean chips + structured fields ──
 
 function FlatFeatureSection({
   group,
   features,
   onChangeFeature,
-  noBorder,
 }: {
   group: SpaceFeatureGroup;
   features: FeatureState;
   onChangeFeature: (fieldId: string, value: FeatureValue) => void;
-  noBorder?: boolean;
 }) {
-  const boolFields = group.fields.filter((f) => {
-    if (f.type !== "boolean") return false;
+  const visible = (f: SpaceFeatureField) => {
     if (f.shown_if) {
       const depValue = features[f.shown_if.field];
       if (depValue !== f.shown_if.equals) return false;
     }
     return true;
-  });
-
-  const structuredFields = group.fields.filter((f) => {
-    if (f.type === "boolean") return false;
-    if (f.shown_if) {
-      const depValue = features[f.shown_if.field];
-      if (depValue !== f.shown_if.equals) return false;
-    }
-    return true;
-  });
+  };
+  const boolFields = group.fields.filter((f) => f.type === "boolean" && visible(f));
+  const structuredFields = group.fields.filter((f) => f.type !== "boolean" && visible(f));
 
   if (boolFields.length === 0 && structuredFields.length === 0) return null;
 
-  const content = (
+  return (
     <>
       {boolFields.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {boolFields.map((field) => {
             const active = Boolean(features[field.id]);
             return (
@@ -696,12 +565,9 @@ function FlatFeatureSection({
       )}
     </>
   );
-
-  if (noBorder) return <>{content}</>;
-  return content;
 }
 
-// ── Structured field: enum, enum_multiselect, number, text, text_chips ──
+// ── Structured field: enum / enum_multiselect / number / text / text_chips ──
 
 function StructuredField({
   field,
@@ -712,29 +578,25 @@ function StructuredField({
   value: FeatureValue;
   onChange: (v: FeatureValue) => void;
 }) {
-  const tooltipText = field.tooltip ?? null;
-  const labelCls = "mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]";
-  const selectCls =
-    "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
+  const labelNode = (
+    <>
+      {field.label}
+      {field.tooltip && <InfoTooltip text={field.tooltip} />}
+    </>
+  );
 
   if (field.type === "enum" && field.options) {
     return (
-      <label className="block">
-        <span className={labelCls}>
-          {field.label}
-          {tooltipText && <InfoTooltip text={tooltipText} />}
-        </span>
-        <select
-          value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value || null)}
-          className={selectCls}
-        >
-          <option value="">—</option>
-          {field.options.map((opt) => (
-            <option key={opt.id} value={opt.id}>{opt.label}</option>
-          ))}
-        </select>
-      </label>
+      <FieldSelect
+        label={labelNode}
+        value={(value as string) ?? ""}
+        onChange={(e) => onChange(e.target.value || null)}
+      >
+        <option value="">—</option>
+        {field.options.map((opt) => (
+          <option key={opt.id} value={opt.id}>{opt.label}</option>
+        ))}
+      </FieldSelect>
     );
   }
 
@@ -742,10 +604,7 @@ function StructuredField({
     const selected = (value as string[]) ?? [];
     return (
       <div className="col-span-2 sm:col-span-3">
-        <p className={labelCls}>
-          {field.label}
-          {tooltipText && <InfoTooltip text={tooltipText} />}
-        </p>
+        <p className="mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]">{labelNode}</p>
         <div className="mt-1 flex flex-wrap gap-2">
           {field.options.map((opt) => {
             const checked = selected.includes(opt.id);
@@ -779,57 +638,38 @@ function StructuredField({
 
   if (field.type === "number_optional" || field.type === "integer_optional") {
     return (
-      <label className="block">
-        <span className={labelCls}>
-          {field.label}
-          {tooltipText && <InfoTooltip text={tooltipText} />}
-        </span>
-        <input
-          type="number"
-          step={field.type === "integer_optional" ? "1" : "0.1"}
-          min={0}
-          value={(value as number) ?? ""}
-          onChange={(e) => {
-            if (e.target.value === "") { onChange(null); return; }
-            const n = Number(e.target.value);
-            onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
-          }}
-          placeholder="—"
-          className={selectCls}
-        />
-      </label>
+      <FieldInput
+        label={labelNode}
+        type="number"
+        step={field.type === "integer_optional" ? "1" : "0.1"}
+        min={0}
+        value={(value as number) ?? ""}
+        placeholder="—"
+        onChange={(e) => {
+          if (e.target.value === "") { onChange(null); return; }
+          const n = Number(e.target.value);
+          onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
+        }}
+      />
     );
   }
 
   if (field.type === "text") {
     return (
       <div className="col-span-2 sm:col-span-3">
-        <label className="block">
-          <span className={labelCls}>
-            {field.label}
-            {tooltipText && <InfoTooltip text={tooltipText} />}
-          </span>
-          <input
-            type="text"
-            value={(value as string) ?? ""}
-            onChange={(e) => onChange(e.target.value || null)}
-            placeholder="Describe brevemente…"
-            className={cn(selectCls, "placeholder:text-[var(--color-text-placeholder)]")}
-          />
-        </label>
+        <FieldInput
+          label={labelNode}
+          type="text"
+          value={(value as string) ?? ""}
+          placeholder="Describe brevemente…"
+          onChange={(e) => onChange(e.target.value || null)}
+        />
       </div>
     );
   }
 
   if (field.type === "text_chips") {
-    return (
-      <TextChipsField
-        field={field}
-        value={value}
-        onChange={onChange}
-        labelCls={labelCls}
-      />
-    );
+    return <TextChipsField value={value} onChange={onChange} labelNode={labelNode} />;
   }
 
   return null;
@@ -838,19 +678,16 @@ function StructuredField({
 // ── Text chips field — press Enter to add a custom tag ──
 
 function TextChipsField({
-  field,
   value,
   onChange,
-  labelCls,
+  labelNode,
 }: {
-  field: SpaceFeatureField;
   value: FeatureValue;
   onChange: (v: FeatureValue) => void;
-  labelCls: string;
+  labelNode: React.ReactNode;
 }) {
   const [draft, setDraft] = useState("");
   const chips = (value as string[]) ?? [];
-  const tooltipText = field.tooltip ?? null;
 
   function addChip() {
     const trimmed = draft.trim();
@@ -858,7 +695,6 @@ function TextChipsField({
     onChange([...chips, trimmed]);
     setDraft("");
   }
-
   function removeChip(chip: string) {
     const next = chips.filter((c) => c !== chip);
     onChange(next.length > 0 ? next : null);
@@ -866,10 +702,7 @@ function TextChipsField({
 
   return (
     <div className="col-span-2 sm:col-span-3">
-      <p className={labelCls}>
-        {field.label}
-        {tooltipText && <InfoTooltip text={tooltipText} />}
-      </p>
+      <p className="mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]">{labelNode}</p>
       <div className="mt-1 flex flex-wrap gap-2">
         {chips.map((chip) => (
           <span

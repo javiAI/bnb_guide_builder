@@ -6,12 +6,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { ButtonLink } from "@/components/ui/button-link";
-import { SpaceCard } from "./space-card";
+import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
 import { CreateSpaceForm } from "./create-space-form";
 import { resolveSpaceProgress, PROGRESS_PERCENT, type FeatureState } from "./space-progress";
 import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
-import { loadSpaceCovers } from "@/lib/services/space-cover.service";
+import { loadSpaceMedia, spaceMediaOf } from "@/lib/services/space-media.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
 /** Header chip label: bold count + pluralized noun (e.g. "5 espacios"). */
@@ -62,8 +62,9 @@ export default async function SpacesPage({
   const spaces = allSpaces.filter((s) => s.status !== "archived");
   const archivedSpaces = allSpaces.filter((s) => s.status === "archived");
 
-  // Batched cover loader (one findMany for all spaces — no N+1).
-  const covers = await loadSpaceCovers(allSpaces.map((s) => s.id));
+  // Batched media loader (one findMany for all spaces — no N+1). Returns the
+  // full ordered slide set per space so each card cover is a MediaCarousel.
+  const media = await loadSpaceMedia(allSpaces.map((s) => s.id));
 
   // Build default set respecting defaultCoverageRule from taxonomy:
   // - all_relevant_spaces: shown on all spaces by default (can be overridden)
@@ -140,7 +141,7 @@ export default async function SpacesPage({
     .map((st) => ({ id: st.id, label: st.label, recommended: recommended.includes(st.id) }));
 
   // ── Header chips (derived from real data) ──
-  const totalPhotos = spaces.reduce((sum, s) => sum + (covers.get(s.id)?.photoCount ?? 0), 0);
+  const totalPhotos = spaces.reduce((sum, s) => sum + spaceMediaOf(media, s.id).photoCount, 0);
   const completionPct =
     spaces.length === 0
       ? 0
@@ -155,33 +156,35 @@ export default async function SpacesPage({
           }, 0) / spaces.length,
         );
 
-  function renderCard(space: (typeof allSpaces)[number]) {
-    return (
-      <SpaceCard
-        key={space.id}
-        propertyId={propertyId}
-        maxGuests={property!.maxGuests}
-        coverThumbUrl={covers.get(space.id)?.coverUrl ?? null}
-        photoCount={covers.get(space.id)?.photoCount ?? 0}
-        space={{
-          id: space.id,
-          spaceType: space.spaceType,
-          name: space.name,
-          guestNotes: space.guestNotes,
-          internalNotes: space.internalNotes,
-          featuresJson: space.featuresJson as Record<string, unknown> | null,
-          status: space.status === "archived" ? "archived" : "active",
-        }}
-        beds={space.beds.map((b) => ({
-          id: b.id,
-          bedType: b.bedType,
-          quantity: b.quantity,
-          configJson: b.configJson as Record<string, unknown> | null,
-        }))}
-        spaceSystems={space.status === "archived" ? [] : (systemsBySpace.get(space.id) ?? [])}
-      />
-    );
+  const maxGuests = property.maxGuests;
+
+  function toCard(space: (typeof allSpaces)[number]): SpaceCardData {
+    const m = spaceMediaOf(media, space.id);
+    return {
+      space: {
+        id: space.id,
+        spaceType: space.spaceType,
+        name: space.name,
+        guestNotes: space.guestNotes,
+        internalNotes: space.internalNotes,
+        featuresJson: space.featuresJson as Record<string, unknown> | null,
+        status: space.status === "archived" ? "archived" : "active",
+      },
+      beds: space.beds.map((b) => ({
+        id: b.id,
+        bedType: b.bedType,
+        quantity: b.quantity,
+        configJson: b.configJson as Record<string, unknown> | null,
+      })),
+      spaceSystems: space.status === "archived" ? [] : (systemsBySpace.get(space.id) ?? []),
+      slides: m.slides,
+      photoCount: m.photoCount,
+      videoCount: m.videoCount,
+    };
   }
+
+  const activeCards = spaces.map(toCard);
+  const archivedCards = archivedSpaces.map(toCard);
 
   return (
     <div>
@@ -263,9 +266,7 @@ export default async function SpacesPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
-            {spaces.map(renderCard)}
-          </div>
+          <SpacesGrid propertyId={propertyId} maxGuests={maxGuests} cards={activeCards} />
         )}
       </NumberedSection>
 
@@ -280,9 +281,7 @@ export default async function SpacesPage({
           <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
             Los espacios archivados no cuentan en capacidad ni aparecen en la guía del huésped. Puedes restaurarlos en cualquier momento.
           </p>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
-            {archivedSpaces.map(renderCard)}
-          </div>
+          <SpacesGrid propertyId={propertyId} maxGuests={maxGuests} cards={archivedCards} />
         </NumberedSection>
       )}
     </div>
