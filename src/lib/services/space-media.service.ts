@@ -2,13 +2,21 @@ import { prisma } from "@/lib/db";
 import { getDownloadUrl } from "@/lib/services/media-storage.service";
 
 /**
- * Plain (server-safe) slide shape for a space's cover carousel. Mapped to the
- * client `MediaCarouselSlide` in `space-card.tsx`. Spaces only carry images and
- * videos (no maps / live-maps like the access cockpit), so the union is small.
+ * Plain (server-safe) slide for a space's media. Mapped to the client
+ * `MediaCarouselSlide` (cover) and `SubsystemSlide` (shared lightbox) in
+ * `space-card.tsx`. Spaces only carry images and videos (no maps / live-maps
+ * like the access cockpit). `url` is signed for both kinds (the lightbox plays
+ * videos); `assetId` backs deletion; `blurhash` feeds the lightbox placeholder.
  */
-export type SpaceMediaSlide =
-  | { id: string; kind: "image"; url: string; alt: string; title: string }
-  | { id: string; kind: "video"; alt: string; title: string };
+export interface SpaceMediaSlide {
+  id: string;
+  assetId: string;
+  kind: "image" | "video";
+  url: string;
+  alt: string;
+  title: string;
+  blurhash: string | null;
+}
 
 export interface SpaceMedia {
   /** Ordered slides (images first, then videos) for the cover carousel. */
@@ -56,7 +64,7 @@ export async function loadSpaceMedia(
       id: true,
       entityId: true,
       mediaAsset: {
-        select: { id: true, storageKey: true, mimeType: true, caption: true },
+        select: { id: true, storageKey: true, mimeType: true, caption: true, blurhash: true },
       },
     },
     // DB order = display order. Images-before-videos is applied per group below.
@@ -75,35 +83,32 @@ export async function loadSpaceMedia(
       const images = group.filter((r) => r.mediaAsset.mimeType.startsWith("image/"));
       const videos = group.filter((r) => r.mediaAsset.mimeType.startsWith("video/"));
 
-      const imageSlides = (
+      // Sign images first, then videos — preserves the images-before-videos
+      // display order. A signing failure drops that slide (count is unaffected).
+      const ordered = [...images, ...videos];
+      const slides = (
         await Promise.all(
-          images.map(async (r): Promise<SpaceMediaSlide | null> => {
+          ordered.map(async (r): Promise<SpaceMediaSlide | null> => {
             try {
               const url = await getDownloadUrl(r.mediaAsset.storageKey);
               return {
                 id: r.id,
-                kind: "image",
+                assetId: r.mediaAsset.id,
+                kind: r.mediaAsset.mimeType.startsWith("video/") ? "video" : "image",
                 url,
                 alt: r.mediaAsset.caption ?? "",
                 title: r.mediaAsset.caption ?? "",
+                blurhash: r.mediaAsset.blurhash,
               };
             } catch {
-              // Drop unsigned slide; photoCount below still counts the asset.
               return null;
             }
           }),
         )
       ).filter((s): s is SpaceMediaSlide => s !== null);
 
-      const videoSlides: SpaceMediaSlide[] = videos.map((r) => ({
-        id: r.id,
-        kind: "video",
-        alt: r.mediaAsset.caption ?? "",
-        title: r.mediaAsset.caption ?? "",
-      }));
-
       result.set(spaceId, {
-        slides: [...imageSlides, ...videoSlides],
+        slides,
         photoCount: images.length,
         videoCount: videos.length,
       });

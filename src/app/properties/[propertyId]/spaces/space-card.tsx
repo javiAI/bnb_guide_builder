@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import {
   BedDouble,
   Check,
   ChevronDown,
   Cog,
-  Images,
   Move,
   Pencil,
   Ruler,
@@ -21,6 +22,7 @@ import {
   updateSpaceDetailsAction,
   archiveSpaceAction,
 } from "@/lib/actions/editor.actions";
+import { deleteMediaAction } from "@/lib/actions/media.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { spaceTypes, getSpaceTypeItem } from "@/lib/taxonomies/space-types";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
@@ -45,9 +47,9 @@ import {
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { FieldInput, FieldSelect, fieldControlClass } from "@/components/ui/field";
 import type { SpaceMediaSlide } from "@/lib/services/space-media.service";
+import type { SubsystemSlide } from "../access/_components/subsystem-card.types";
 import { cn } from "@/lib/cn";
 import { BedManager, type BedData } from "./bed-manager";
-import { EntityGallery } from "@/components/media/entity-gallery";
 import {
   computeProgressDot,
   PROGRESS_PERCENT,
@@ -55,6 +57,15 @@ import {
   type FeatureValue,
   type SpaceProgressLevel,
 } from "./space-progress";
+
+// Shared photo lightbox (same one Access cards use). Loaded lazily so its
+// static maplibre dependency (only exercised by Access's map slides — Spaces
+// never has them) stays out of the Spaces initial bundle; it loads on the
+// first lightbox open.
+const MediaLightbox = dynamic(
+  () => import("../access/_components/media-lightbox").then((m) => m.MediaLightbox),
+  { ssr: false },
+);
 
 export type SpaceStatus = "active" | "archived";
 
@@ -152,6 +163,40 @@ export function SpaceCard({
     setCarouselIdx((prev) => Math.min(prev, max));
   }, [carouselSlides.length]);
 
+  // ── Photo lightbox (shared MediaLightbox, same as Access cards) ──
+  const router = useRouter();
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const usageKey = `space.${space.id}`;
+  const lightboxSlides = useMemo<SubsystemSlide[]>(
+    () =>
+      slides.map((s) => ({
+        id: s.id,
+        assetId: s.assetId,
+        kind: s.kind,
+        url: s.url,
+        alt: s.alt,
+        blurhash: s.blurhash,
+        title: s.title,
+        usageKey,
+      })),
+    [slides, usageKey],
+  );
+  const uploadConfig = useMemo(
+    () => ({ propertyId, entityType: "space" as const, usageKey }),
+    [propertyId, usageKey],
+  );
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIdx(idx);
+    setCarouselIdx(idx);
+  }, []);
+  const handleSlideDelete = useCallback(
+    async (assetId: string) => {
+      await deleteMediaAction(assetId);
+      router.refresh();
+    },
+    [router],
+  );
+
   // ── Auto-save forms ──
   const renameFormRef = useRef<HTMLFormElement>(null);
   useFormAutoSave(renameFormRef);
@@ -235,13 +280,26 @@ export function SpaceCard({
       title={space.name}
       variant={role === "active" ? "active" : "collapsed"}
       uploadEntityType="space"
-      uploadUsageKey={`space.${space.id}`}
+      uploadUsageKey={usageKey}
       placeholderGradient={PLACEHOLDER_GRADIENT}
       currentIdx={carouselIdx}
       onCurrentIdxChange={setCarouselIdx}
+      onLightboxOpen={openLightbox}
       {...(role === "active" ? {} : { bodyId, onExpand })}
     />
   );
+
+  const overlay =
+    lightboxIdx !== null ? (
+      <MediaLightbox
+        slides={lightboxSlides}
+        index={lightboxIdx}
+        onIndexChange={openLightbox}
+        onClose={() => setLightboxIdx(null)}
+        onSlideDelete={handleSlideDelete}
+        uploadConfig={uploadConfig}
+      />
+    ) : null;
 
   // ── Editor body — only built in the active role. EntityMediaCard ignores
   // children when collapsed, so skip the element-tree allocation for the grid
@@ -380,18 +438,9 @@ export function SpaceCard({
         </EditorSection>
       )}
 
-      {/* Photos — full management (add/reorder/delete). The cover carousel above
-         shows the same images as the hero; this section manages them. */}
-      <EditorSection icon={Images} label="Fotos">
-        <EntityGallery
-          propertyId={propertyId}
-          entityType="space"
-          entityId={space.id}
-          label="Fotos"
-          defaultCollapsed
-          compact
-        />
-      </EditorSection>
+      {/* Photos are managed via the cover carousel (swipe + upload) and the
+         shared MediaLightbox (view / add / delete) — same as Access cards. No
+         separate gallery section. */}
 
       {/* Footer — autosave status + archive/restore */}
       <div className="flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
@@ -465,6 +514,7 @@ export function SpaceCard({
       title={space.name}
       status={<EntityCardStatusPill tone={status.tone} icon={status.icon} label={status.label} />}
       media={media}
+      overlay={overlay}
       collapsedContent={collapsedContent}
       srOnly={
         <>

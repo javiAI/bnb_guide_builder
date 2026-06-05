@@ -1,11 +1,11 @@
 /**
  * Contract test for the operator spaces media loader (`loadSpaceMedia`).
- * Pins the behavior the spaces grid relies on so future changes can't silently
- * regress it:
+ * Pins the behavior the spaces grid + shared lightbox rely on:
  *   - ONE batched `mediaAssignment.findMany` for all spaceIds (no N+1),
  *   - scoped to ready images OR videos,
  *   - per space: ordered slides (images first, then videos), photo/video counts,
- *   - image URLs signed; a signing failure drops that slide, count preserved.
+ *   - every slide carries assetId + signed url + blurhash (lightbox needs them);
+ *     a signing failure drops that slide, count preserved.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -24,10 +24,18 @@ const findMany = prisma.mediaAssignment.findMany as unknown as ReturnType<typeof
 const getUrl = getDownloadUrl as unknown as ReturnType<typeof vi.fn>;
 
 function img(id: string, entityId: string, storageKey: string, caption: string | null = null) {
-  return { id, entityId, mediaAsset: { id: `a-${id}`, storageKey, mimeType: "image/jpeg", caption } };
+  return {
+    id,
+    entityId,
+    mediaAsset: { id: `a-${id}`, storageKey, mimeType: "image/jpeg", caption, blurhash: null },
+  };
 }
 function vid(id: string, entityId: string, storageKey: string) {
-  return { id, entityId, mediaAsset: { id: `a-${id}`, storageKey, mimeType: "video/mp4", caption: null } };
+  return {
+    id,
+    entityId,
+    mediaAsset: { id: `a-${id}`, storageKey, mimeType: "video/mp4", caption: null, blurhash: null },
+  };
 }
 
 beforeEach(() => {
@@ -59,7 +67,7 @@ describe("loadSpaceMedia", () => {
     ]);
   });
 
-  it("builds ordered slides (images first, then videos) with signed image urls + counts", async () => {
+  it("builds ordered slides (images first, then videos) with signed urls + counts", async () => {
     findMany.mockResolvedValue([
       img("s1i1", "s1", "k1a", "Vista"),
       img("s1i2", "s1", "k1b"),
@@ -72,17 +80,17 @@ describe("loadSpaceMedia", () => {
     expect(s1.photoCount).toBe(2);
     expect(s1.videoCount).toBe(1);
     expect(s1.slides).toEqual([
-      { id: "s1i1", kind: "image", url: "signed:k1a", alt: "Vista", title: "Vista" },
-      { id: "s1i2", kind: "image", url: "signed:k1b", alt: "", title: "" },
-      { id: "s1v1", kind: "video", alt: "", title: "" },
+      { id: "s1i1", assetId: "a-s1i1", kind: "image", url: "signed:k1a", alt: "Vista", title: "Vista", blurhash: null },
+      { id: "s1i2", assetId: "a-s1i2", kind: "image", url: "signed:k1b", alt: "", title: "", blurhash: null },
+      { id: "s1v1", assetId: "a-s1v1", kind: "video", url: "signed:k1v", alt: "", title: "", blurhash: null },
     ]);
 
     const s2 = res.get("s2")!;
     expect(s2.photoCount).toBe(1);
     expect(s2.slides[0]).toMatchObject({ id: "s2i1", kind: "image", url: "signed:k2a" });
 
-    // Only image keys are signed (videos carry no URL).
-    expect(getUrl).toHaveBeenCalledTimes(3);
+    // Images + videos are all signed (the lightbox plays videos).
+    expect(getUrl).toHaveBeenCalledTimes(4);
   });
 
   it("drops a slide when signing fails but preserves photoCount", async () => {
@@ -94,7 +102,9 @@ describe("loadSpaceMedia", () => {
     const res = await loadSpaceMedia(["s1"]);
     const s1 = res.get("s1")!;
     expect(s1.photoCount).toBe(2);
-    expect(s1.slides).toEqual([{ id: "s1i2", kind: "image", url: "signed:k1b", alt: "", title: "" }]);
+    expect(s1.slides).toEqual([
+      { id: "s1i2", assetId: "a-s1i2", kind: "image", url: "signed:k1b", alt: "", title: "", blurhash: null },
+    ]);
   });
 
   it("omits spaces that have no ready media", async () => {
