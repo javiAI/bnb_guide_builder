@@ -216,12 +216,13 @@ describe("Space features taxonomy", () => {
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const kitchenIds = kitchenGroups.map((g) => g.id);
     const bedroomIds = bedroomGroups.map((g) => g.id);
-    expect(kitchenIds).toContain("sfg.kitchen_type");
-    expect(kitchenIds).toContain("sfg.kitchen_cooking");
+    // Equipment (appliances + cooking, incl. hob-type reveal) is one group; layout stays separate.
+    expect(kitchenIds).toContain("sfg.kitchen_equipment");
     expect(kitchenIds).toContain("sfg.kitchen_layout");
-    expect(bedroomIds).not.toContain("sfg.kitchen_cooking");
-    expect(bedroomIds).not.toContain("sfg.kitchen_type");
-    // Appliances + utensils → amenities (Equipamiento).
+    expect(bedroomIds).not.toContain("sfg.kitchen_equipment");
+    // Merged-away + amenity-backed groups must not reappear.
+    expect(kitchenIds).not.toContain("sfg.kitchen_type");
+    expect(kitchenIds).not.toContain("sfg.kitchen_cooking");
     expect(kitchenIds).not.toContain("sfg.kitchen_appliances");
     expect(kitchenIds).not.toContain("sfg.kitchen_utensils");
   });
@@ -231,10 +232,12 @@ describe("Space features taxonomy", () => {
     const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
     const bathroomIds = bathroomGroups.map((g) => g.id);
     const bedroomIds = bedroomGroups.map((g) => g.id);
-    expect(bathroomIds).toContain("sfg.bathroom_type");
     expect(bathroomIds).toContain("sfg.bathroom_fixtures");
+    // Access type folded into accessibility ("Acceso y accesibilidad"); the
+    // lonely "Tipo y acceso" group is gone.
     expect(bathroomIds).toContain("sfg.bathroom_accessibility");
-    expect(bedroomIds).not.toContain("sfg.bathroom_type");
+    expect(bathroomIds).not.toContain("sfg.bathroom_type");
+    expect(bedroomIds).not.toContain("sfg.bathroom_accessibility");
     // Equipment + supplies → amenities.
     expect(bathroomIds).not.toContain("sfg.bathroom_equipment");
     expect(bathroomIds).not.toContain("sfg.bathroom_supplies");

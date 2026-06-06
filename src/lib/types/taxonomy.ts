@@ -407,10 +407,6 @@ export interface SpaceFeatureField {
   type: "boolean" | "enum" | "enum_multiselect" | "number_optional" | "integer_optional" | "text" | "text_chips";
   options?: TaxonomyOption[];
   shown_if?: { field: string; equals: unknown };
-  /** Render hint for `enum`: `"select"` forces a compact dropdown (ordinal
-   * scales like noise level). Default + `shown_if` enums also use the dropdown;
-   * discrete top-level enums use a segmented control. */
-  control?: "select";
   source?: string[];
 }
 

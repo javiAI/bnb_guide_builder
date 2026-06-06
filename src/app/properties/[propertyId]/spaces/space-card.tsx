@@ -50,10 +50,9 @@ import {
 } from "@/components/ui/media-carousel";
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { ToggleChip } from "@/components/ui/toggle-chip";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { SpaceSystemsCoverage, type SpaceCoverageSystem } from "./space-systems-coverage";
-import { FieldInput, FieldSelect, fieldControlClass } from "@/components/ui/field";
+import { FieldInput, fieldControlClass } from "@/components/ui/field";
 import type { SpaceMediaSlide } from "@/lib/services/space-media.service";
 import type { SubsystemSlide } from "../access/_components/subsystem-card.types";
 import { cn } from "@/lib/cn";
@@ -88,7 +87,6 @@ interface SpaceData {
 
 interface SpaceCardProps {
   propertyId: string;
-  maxGuests: number | null;
   /** Property-wide dimension defaults — inherited (shown as placeholder) unless
    * the space sets its own value. */
   propertyAreaSqm?: number | null;
@@ -130,7 +128,6 @@ function toCarouselSlides(slides: readonly SpaceMediaSlide[]): MediaCarouselSlid
 
 export function SpaceCard({
   propertyId,
-  maxGuests,
   propertyAreaSqm = null,
   propertyCeilingCm = null,
   space,
@@ -379,7 +376,7 @@ export function SpaceCard({
          details <form> (no nested forms). */}
       {hasBeds && (
         <EditorSection icon={BedDouble} label="Camas">
-          <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} maxGuests={maxGuests} />
+          <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} />
         </EditorSection>
       )}
 
@@ -429,6 +426,27 @@ export function SpaceCard({
           return grid(bodyGroups);
         })()}
 
+        {/* Systems coverage — before notes (notes are last). Wrapped so its own
+            inputs don't trip the details-form auto-save (it has its own action). */}
+        <div onInput={(e) => e.stopPropagation()} onChange={(e) => e.stopPropagation()}>
+          <EditorSection icon={Cog} label="Sistemas en esta estancia">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                Marca los sistemas que llegan a esta estancia.
+              </p>
+              <Link
+                href={`/properties/${propertyId}/systems`}
+                className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
+              >
+                Gestionar →
+              </Link>
+            </div>
+            <div className="mt-2">
+              <SpaceSystemsCoverage propertyId={propertyId} spaceId={space.id} systems={coverageSystems} />
+            </div>
+          </EditorSection>
+        </div>
+
         <EditorSection icon={StickyNote} label="Notas para el huésped">
           <textarea
             name="guestNotes"
@@ -470,26 +488,6 @@ export function SpaceCard({
           </div>
         </EditorSection>
       </form>
-
-      {/* Systems in this space — EDITABLE coverage (Opción 1). Toggle which
-          property systems reach this space + a per-space note; the device type
-          is inherited from Sistemas. */}
-      <EditorSection icon={Cog} label="Sistemas en esta estancia">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-[var(--color-text-secondary)]">
-            Marca los que llegan a esta estancia. El tipo se define en Sistemas.
-          </p>
-          <Link
-            href={`/properties/${propertyId}/systems`}
-            className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
-          >
-            Gestionar →
-          </Link>
-        </div>
-        <div className="mt-2">
-          <SpaceSystemsCoverage propertyId={propertyId} spaceId={space.id} systems={coverageSystems} />
-        </div>
-      </EditorSection>
 
       {/* Photos are managed via the cover carousel (swipe + upload) and the
          shared MediaLightbox (view / add / delete) — same as Access cards. No
@@ -656,157 +654,178 @@ function FlatFeatureSection({
     }
     return true;
   };
-  const boolFields = group.fields.filter((f) => f.type === "boolean" && visible(f));
-  // text_chips ("Otro X") merge into the SAME chip row as the booleans — a
-  // dashed "Añadir otro…" chip right after the last option, no extra section.
-  const tagFields = group.fields.filter((f) => f.type === "text_chips" && visible(f));
-  const structuredFields = group.fields.filter(
-    (f) => f.type !== "boolean" && f.type !== "text_chips" && visible(f),
-  );
+  // Build render blocks in document order. Consecutive booleans / numbers group
+  // into one row; a trailing *_other_tags text_chips attaches to the preceding
+  // chip group or multiselect, so "Añadir otro…" always sits with its options
+  // (never floating). Everything is one chips/options system — no dropdowns.
+  type Block =
+    | { kind: "chips"; bools: SpaceFeatureField[]; tags?: SpaceFeatureField }
+    | { kind: "enum"; field: SpaceFeatureField }
+    | { kind: "multiselect"; field: SpaceFeatureField; tags?: SpaceFeatureField }
+    | { kind: "numbers"; fields: SpaceFeatureField[] }
+    | { kind: "text"; field: SpaceFeatureField }
+    | { kind: "tags"; field: SpaceFeatureField };
 
-  if (boolFields.length === 0 && tagFields.length === 0 && structuredFields.length === 0) return null;
+  const blocks: Block[] = [];
+  for (const f of group.fields) {
+    if (!visible(f)) continue;
+    const last = blocks[blocks.length - 1];
+    if (f.type === "boolean") {
+      if (last && last.kind === "chips" && !last.tags) last.bools.push(f);
+      else blocks.push({ kind: "chips", bools: [f] });
+    } else if (f.type === "text_chips") {
+      if (last && last.kind === "chips" && !last.tags) last.tags = f;
+      else if (last && last.kind === "multiselect" && !last.tags) last.tags = f;
+      else blocks.push({ kind: "tags", field: f });
+    } else if (f.type === "enum_multiselect") {
+      blocks.push({ kind: "multiselect", field: f });
+    } else if (f.type === "enum") {
+      blocks.push({ kind: "enum", field: f });
+    } else if (f.type === "number_optional" || f.type === "integer_optional") {
+      if (last && last.kind === "numbers") last.fields.push(f);
+      else blocks.push({ kind: "numbers", fields: [f] });
+    } else if (f.type === "text") {
+      blocks.push({ kind: "text", field: f });
+    }
+  }
+
+  if (blocks.length === 0) return null;
 
   return (
-    <>
-      {(boolFields.length > 0 || tagFields.length > 0) && (
-        <div className="flex flex-wrap gap-2">
-          {boolFields.map((field) => (
-            <Tooltip key={field.id} text={field.description}>
-              <ToggleChip
-                active={Boolean(features[field.id])}
-                onToggle={() => onChangeFeature(field.id, !features[field.id])}
-              >
-                {field.label}
-              </ToggleChip>
-            </Tooltip>
-          ))}
-          {tagFields.map((field) => (
-            <InlineTagChips
-              key={field.id}
-              value={features[field.id] ?? null}
-              onChange={(v) => onChangeFeature(field.id, v)}
+    <div className="space-y-4">
+      {blocks.map((block, i) => {
+        if (block.kind === "chips") {
+          return (
+            <div key={i} className="flex flex-wrap gap-2">
+              {block.bools.map((f) => (
+                <Tooltip key={f.id} text={f.description}>
+                  <ToggleChip active={Boolean(features[f.id])} onToggle={() => onChangeFeature(f.id, !features[f.id])}>
+                    {f.label}
+                  </ToggleChip>
+                </Tooltip>
+              ))}
+              {block.tags && (
+                <InlineTagChips value={features[block.tags.id] ?? null} onChange={(v) => onChangeFeature(block.tags!.id, v)} />
+              )}
+            </div>
+          );
+        }
+        if (block.kind === "enum") {
+          return <EnumChips key={i} field={block.field} value={(features[block.field.id] as string) ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+        }
+        if (block.kind === "multiselect") {
+          return (
+            <MultiChips
+              key={i}
+              field={block.field}
+              value={(features[block.field.id] as string[]) ?? null}
+              onChange={(v) => onChangeFeature(block.field.id, v)}
+              tagsValue={block.tags ? (features[block.tags.id] ?? null) : null}
+              onTagsChange={block.tags ? (v) => onChangeFeature(block.tags!.id, v) : undefined}
             />
-          ))}
-        </div>
-      )}
-
-      {structuredFields.length > 0 && (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3">
-          {structuredFields.map((field) => (
-            <StructuredField
-              key={field.id}
-              field={field}
-              value={features[field.id] ?? null}
-              onChange={(v) => onChangeFeature(field.id, v)}
-            />
-          ))}
-        </div>
-      )}
-    </>
+          );
+        }
+        if (block.kind === "numbers") {
+          return (
+            <div key={i} className="flex flex-wrap gap-x-4 gap-y-3">
+              {block.fields.map((f) => (
+                <NumberField key={f.id} field={f} value={(features[f.id] as number) ?? null} onChange={(v) => onChangeFeature(f.id, v)} />
+              ))}
+            </div>
+          );
+        }
+        if (block.kind === "text") {
+          return <TextField key={i} field={block.field} value={(features[block.field.id] as string) ?? ""} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+        }
+        return <LabeledTags key={i} field={block.field} value={features[block.field.id] ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+      })}
+    </div>
   );
 }
 
-// ── Structured field: enum / enum_multiselect / number / text / text_chips ──
+// ── Field option renderers — one chips/options system, no dropdowns ──
 
-function StructuredField({
-  field,
-  value,
-  onChange,
-}: {
-  field: SpaceFeatureField;
-  value: FeatureValue;
-  onChange: (v: FeatureValue) => void;
-}) {
-  const labelNode = (
+function fieldLabelContent(field: SpaceFeatureField) {
+  return (
     <>
       {field.label}
       {field.tooltip && <InfoTooltip text={field.tooltip} />}
     </>
   );
+}
 
-  if (field.type === "enum" && field.options) {
-    const current = (value as string) ?? "";
-    // Conditional reveals (shown_if) + explicitly-flagged ordinal scales use the
-    // shared compact dropdown — cleaner inline than a segmented track. Discrete
-    // top-level enums use a SegmentedControl; long sets a wrapping chip group.
-    if (field.shown_if || field.control === "select") {
-      return (
-        <FieldSelect
-          label={labelNode}
-          value={current}
-          onChange={(e) => onChange(e.target.value || null)}
-        >
-          <option value="">—</option>
-          {field.options.map((opt) => (
-            <option key={opt.id} value={opt.id}>{opt.label}</option>
-          ))}
-        </FieldSelect>
-      );
-    }
-    return (
-      <div className="col-span-2 sm:col-span-3">
-        <p className="mb-1.5 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]">{labelNode}</p>
-        {field.options.length <= 6 ? (
-          <SegmentedControl
-            options={field.options}
-            value={current || null}
-            onChange={(v) => onChange(v)}
-            ariaLabel={field.label}
-          />
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {field.options.map((opt) => (
-              <ToggleChip
-                key={opt.id}
-                active={current === opt.id}
-                hideCheck
-                onToggle={() => onChange(current === opt.id ? null : opt.id)}
-              >
-                {opt.label}
-              </ToggleChip>
-            ))}
-          </div>
-        )}
+function FieldLabel({ field }: { field: SpaceFeatureField }) {
+  return (
+    <p className="mb-1.5 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]">
+      {fieldLabelContent(field)}
+    </p>
+  );
+}
+
+function EnumChips({ field, value, onChange }: { field: SpaceFeatureField; value: string | null; onChange: (v: FeatureValue) => void }) {
+  const current = value ?? "";
+  return (
+    <div>
+      <FieldLabel field={field} />
+      <div className="flex flex-wrap gap-2">
+        {field.options?.map((opt) => (
+          <ToggleChip key={opt.id} active={current === opt.id} hideCheck onToggle={() => onChange(current === opt.id ? null : opt.id)}>
+            {opt.label}
+          </ToggleChip>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (field.type === "enum_multiselect" && field.options) {
-    const selected = (value as string[]) ?? [];
-    return (
-      <div className="col-span-2 sm:col-span-3">
-        <p className="mb-1 flex items-center gap-0.5 text-xs font-semibold text-[var(--color-text-primary)]">{labelNode}</p>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {field.options.map((opt) => {
-            const checked = selected.includes(opt.id);
-            return (
-              <ToggleChip
-                key={opt.id}
-                active={checked}
-                onToggle={() => {
-                  const next = checked
-                    ? selected.filter((id) => id !== opt.id)
-                    : [...selected, opt.id];
-                  onChange(next.length > 0 ? next : null);
-                }}
-              >
-                {opt.label}
-              </ToggleChip>
-            );
-          })}
-        </div>
+function MultiChips({
+  field,
+  value,
+  onChange,
+  tagsValue,
+  onTagsChange,
+}: {
+  field: SpaceFeatureField;
+  value: string[] | null;
+  onChange: (v: FeatureValue) => void;
+  tagsValue: FeatureValue;
+  onTagsChange?: (v: FeatureValue) => void;
+}) {
+  const selected = value ?? [];
+  return (
+    <div>
+      <FieldLabel field={field} />
+      <div className="flex flex-wrap gap-2">
+        {field.options?.map((opt) => {
+          const checked = selected.includes(opt.id);
+          return (
+            <ToggleChip
+              key={opt.id}
+              active={checked}
+              onToggle={() => {
+                const next = checked ? selected.filter((id) => id !== opt.id) : [...selected, opt.id];
+                onChange(next.length > 0 ? next : null);
+              }}
+            >
+              {opt.label}
+            </ToggleChip>
+          );
+        })}
+        {onTagsChange && <InlineTagChips value={tagsValue} onChange={onTagsChange} />}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (field.type === "number_optional" || field.type === "integer_optional") {
-    return (
+function NumberField({ field, value, onChange }: { field: SpaceFeatureField; value: number | null; onChange: (v: FeatureValue) => void }) {
+  return (
+    <div className="w-36">
       <FieldInput
-        label={labelNode}
+        label={fieldLabelContent(field)}
         type="number"
         step={field.type === "integer_optional" ? "1" : "0.1"}
         min={0}
-        value={(value as number) ?? ""}
+        value={value ?? ""}
         placeholder="—"
         onChange={(e) => {
           if (e.target.value === "") { onChange(null); return; }
@@ -814,26 +833,31 @@ function StructuredField({
           onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
         }}
       />
-    );
-  }
+    </div>
+  );
+}
 
-  if (field.type === "text") {
-    return (
-      <div className="col-span-2 sm:col-span-3">
-        <FieldInput
-          label={labelNode}
-          type="text"
-          value={(value as string) ?? ""}
-          placeholder="Describe brevemente…"
-          onChange={(e) => onChange(e.target.value || null)}
-        />
+function TextField({ field, value, onChange }: { field: SpaceFeatureField; value: string; onChange: (v: FeatureValue) => void }) {
+  return (
+    <FieldInput
+      label={fieldLabelContent(field)}
+      type="text"
+      value={value}
+      placeholder="Describe brevemente…"
+      onChange={(e) => onChange(e.target.value || null)}
+    />
+  );
+}
+
+function LabeledTags({ field, value, onChange }: { field: SpaceFeatureField; value: FeatureValue; onChange: (v: FeatureValue) => void }) {
+  return (
+    <div>
+      <FieldLabel field={field} />
+      <div className="flex flex-wrap gap-2">
+        <InlineTagChips value={value} onChange={onChange} />
       </div>
-    );
-  }
-
-  // text_chips are handled inline in FlatFeatureSection (merged into the chip
-  // row), never here.
-  return null;
+    </div>
+  );
 }
 
 // ── Inline tag chips — custom tags + a dashed "Añadir otro…" chip, rendered

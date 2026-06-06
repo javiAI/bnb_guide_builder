@@ -13,7 +13,7 @@ import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ToggleChip } from "@/components/ui/toggle-chip";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Minus, Plus, Settings2, Trash2, TriangleAlert, X } from "lucide-react";
+import { Minus, Plus, Settings2, Trash2, X } from "lucide-react";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
 import {
   mattressTypes as mattressTypeOptions,
@@ -37,10 +37,9 @@ interface BedManagerProps {
   propertyId: string;
   spaceId: string;
   beds: BedData[];
-  maxGuests?: number | null;
 }
 
-export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerProps) {
+export function BedManager({ propertyId, spaceId, beds }: BedManagerProps) {
   const [addState, addAction] = useActionState<ActionResult | null, FormData>(
     addBedAction,
     null,
@@ -87,7 +86,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
           aria-label="Añadir cama"
           value=""
           onChange={(e) => { if (e.target.value) quickAddBed(e.target.value); e.target.value = ""; }}
-          className="min-h-[44px] rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-strong)] bg-transparent px-3 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)] focus:border-[var(--color-border-focus)] focus:outline-none"
+          className="min-h-[40px] rounded-full border border-dashed border-[var(--color-border-default)] bg-transparent px-4 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:border-[var(--color-border-focus)] focus:outline-none"
         >
           <option value="">+ Añadir cama…</option>
           {bedTypeOptions.map((bt) => (
@@ -100,19 +99,9 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests }: BedManagerP
       </div>
 
       {totalCapacity > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-xs text-[var(--color-text-secondary)] font-medium">
-            Capacidad total: {totalCapacity} {totalCapacity === 1 ? "persona" : "personas"}
-          </p>
-          {maxGuests != null && totalCapacity > maxGuests && (
-            <div className="flex items-start gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-2.5 py-2">
-              <TriangleAlert size={14} aria-hidden="true" className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-[var(--color-status-warning-icon)]" />
-              <p className="text-xs text-[var(--color-status-warning-text)]">
-                Este espacio tiene camas para {totalCapacity} personas, más que el máximo actual de la propiedad ({maxGuests}). Esto no es un error — puedes tener más plazas de las habituales — pero conviene revisarlo si no es intencionado.
-              </p>
-            </div>
-          )}
-        </div>
+        <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+          Plazas en esta estancia: {totalCapacity} {totalCapacity === 1 ? "persona" : "personas"}
+        </p>
       )}
     </div>
   );

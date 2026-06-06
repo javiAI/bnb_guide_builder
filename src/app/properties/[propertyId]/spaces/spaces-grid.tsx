@@ -33,13 +33,11 @@ export interface SpaceCardData {
  */
 export function SpacesGrid({
   propertyId,
-  maxGuests,
   propertyAreaSqm,
   propertyCeilingCm,
   cards,
 }: {
   propertyId: string;
-  maxGuests: number | null;
   propertyAreaSqm: number | null;
   propertyCeilingCm: number | null;
   cards: SpaceCardData[];
@@ -56,7 +54,6 @@ export function SpacesGrid({
           return (
             <SpaceCard
               propertyId={propertyId}
-              maxGuests={maxGuests}
               propertyAreaSqm={propertyAreaSqm}
               propertyCeilingCm={propertyCeilingCm}
               role={role}

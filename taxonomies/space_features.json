@@ -320,8 +320,7 @@
               "id": "noisy_allday",
               "label": "Ruidoso día y noche"
             }
-          ],
-          "control": "select"
+          ]
         }
       ]
     },
@@ -352,51 +351,6 @@
           "label": "Otro",
           "description": "Otros elementos de accesibilidad del dormitorio.",
           "type": "text_chips"
-        }
-      ]
-    },
-    {
-      "id": "sfg.bathroom_type",
-      "label": "Tipo y acceso",
-      "description": "Privacidad y acceso del baño.",
-      "applies_to": [
-        "sp.bathroom"
-      ],
-      "fields": [
-        {
-          "id": "sf.bathroom_access_type",
-          "label": "Acceso",
-          "description": "Indica si el baño es de uso exclusivo o compartido.",
-          "tooltip": "¿Quién tiene acceso a este baño? Un baño en-suite está conectado directamente a un dormitorio.",
-          "type": "enum",
-          "options": [
-            {
-              "id": "ensuite",
-              "label": "En-suite: conectado a un dormitorio"
-            },
-            {
-              "id": "private_dedicated",
-              "label": "Privado: uso exclusivo de los huéspedes"
-            },
-            {
-              "id": "shared_guests",
-              "label": "Compartido entre habitaciones"
-            },
-            {
-              "id": "shared_host",
-              "label": "Compartido con el anfitrión"
-            }
-          ],
-          "source": [
-            "airbnb:private_bathroom",
-            "booking:private_bathroom"
-          ]
-        },
-        {
-          "id": "sf.bathroom_window",
-          "label": "Ventana exterior",
-          "description": "El baño tiene ventana con luz natural al exterior.",
-          "type": "boolean"
         }
       ]
     },
@@ -576,12 +530,41 @@
     },
     {
       "id": "sfg.bathroom_accessibility",
-      "label": "Accesibilidad",
-      "description": "Características de accesibilidad del baño.",
+      "label": "Acceso y accesibilidad",
+      "description": "Quién usa el baño y sus adaptaciones de accesibilidad.",
       "applies_to": [
         "sp.bathroom"
       ],
       "fields": [
+        {
+          "id": "sf.bathroom_access_type",
+          "label": "Acceso",
+          "description": "Indica si el baño es de uso exclusivo o compartido.",
+          "tooltip": "¿Quién tiene acceso a este baño? Un baño en-suite está conectado directamente a un dormitorio.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "ensuite",
+              "label": "En-suite: conectado a un dormitorio"
+            },
+            {
+              "id": "private_dedicated",
+              "label": "Privado: uso exclusivo de los huéspedes"
+            },
+            {
+              "id": "shared_guests",
+              "label": "Compartido entre habitaciones"
+            },
+            {
+              "id": "shared_host",
+              "label": "Compartido con el anfitrión"
+            }
+          ],
+          "source": [
+            "airbnb:private_bathroom",
+            "booking:private_bathroom"
+          ]
+        },
         {
           "id": "sf.grab_bars",
           "label": "Barras de apoyo",
@@ -644,9 +627,9 @@
       ]
     },
     {
-      "id": "sfg.kitchen_type",
-      "label": "Tipo de cocina",
-      "description": "Nivel de equipamiento y configuración de la cocina.",
+      "id": "sfg.kitchen_equipment",
+      "label": "Equipamiento",
+      "description": "Electrodomésticos y zona de cocción de esta cocina.",
       "applies_to": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -657,89 +640,73 @@
       "zone": "Cocina",
       "fields": [
         {
-          "id": "sf.kitchen_completeness",
-          "label": "Equipamiento",
-          "description": "Nivel de equipamiento de la cocina.",
-          "tooltip": "Cocina completa tiene fuegos, horno, nevera y utensilios. Kitchenette es una zona básica con microondas y nevera pequeña.",
-          "type": "enum",
-          "options": [
-            {
-              "id": "full",
-              "label": "Cocina completa"
-            },
-            {
-              "id": "kitchenette",
-              "label": "Kitchenette / cocina básica"
-            }
-          ],
-          "source": [
-            "airbnb:full_kitchen",
-            "booking:kitchenette"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "sfg.kitchen_cooking",
-      "label": "Cocción",
-      "description": "Equipamiento fijo de cocina para cocinar.",
-      "applies_to": [
-        "sp.kitchen",
-        "sp.kitchen_living",
-        "sp.kitchen_dining_living",
-        "sp.studio"
-      ],
-      "zone": "Cocina",
-      "fields": [
+          "id": "sf.kitchen_fridge",
+          "label": "Nevera",
+          "description": "Frigorífico disponible en la cocina.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.kitchen_freezer",
+          "label": "Congelador",
+          "description": "Congelador, independiente o integrado en la nevera.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.kitchen_microwave",
+          "label": "Microondas",
+          "description": "Horno microondas.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.kitchen_oven",
+          "label": "Horno",
+          "description": "Horno para cocinar al calor.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.extractor_hood",
+          "label": "Campana extractora",
+          "description": "Extractor de humos sobre la zona de cocción.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.kitchen_hob",
+          "label": "Placa de cocción",
+          "description": "Superficie para cocinar (fuegos de gas, vitrocerámica o inducción).",
+          "type": "boolean"
+        },
         {
           "id": "sf.hob_type",
-          "label": "Tipo de fuegos",
-          "description": "Tipo de placa de cocina disponible.",
+          "label": "Tipo de placa",
+          "description": "Tecnología de la placa de cocción.",
           "type": "enum",
+          "shown_if": {
+            "field": "sf.kitchen_hob",
+            "equals": true
+          },
           "options": [
-            {
-              "id": "none",
-              "label": "Sin fuegos"
-            },
             {
               "id": "gas",
               "label": "Gas"
             },
             {
-              "id": "electric",
-              "label": "Eléctrico"
+              "id": "ceramic",
+              "label": "Vitrocerámica"
             },
             {
               "id": "induction",
               "label": "Inducción"
             },
             {
-              "id": "ceramic",
-              "label": "Vitrocerámica"
+              "id": "electric",
+              "label": "Eléctrica"
             }
-          ],
-          "source": [
-            "airbnb:cooking_basics",
-            "booking:kitchenette"
           ]
         },
         {
-          "id": "sf.hobs_count",
-          "label": "Número de fuegos",
-          "description": "Cantidad de fuegos disponibles.",
-          "type": "integer_optional"
-        },
-        {
-          "id": "sf.extractor_hood",
-          "label": "Campana extractora",
-          "description": "Campana extractora instalada sobre los fuegos.",
-          "type": "boolean"
-        },
-        {
           "id": "sf.cooking_other_tags",
-          "label": "Otro equipamiento de cocción",
-          "description": "Otros aparatos de cocción no listados.",
-          "tooltip": "Por ejemplo: 'Plancha eléctrica', 'Freidora de aire', 'Wok eléctrico'.",
+          "label": "Otro equipamiento",
+          "description": "Otros electrodomésticos o elementos de cocción.",
           "type": "text_chips"
         }
       ]
@@ -787,7 +754,7 @@
     {
       "id": "sfg.living_seating",
       "label": "Asientos",
-      "description": "Sofá, sillones y capacidad de asientos.",
+      "description": "Mobiliario para sentarse en la zona de estar.",
       "applies_to": [
         "sp.living_room",
         "sp.open_plan",
@@ -799,18 +766,42 @@
       "zone": "Salón",
       "fields": [
         {
+          "id": "sf.sofa",
+          "label": "Sofá",
+          "description": "Hay un sofá en la zona de estar.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.armchairs",
+          "label": "Sillones o butacas",
+          "description": "Asientos individuales tipo sillón o butaca.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.coffee_table",
+          "label": "Mesa de centro",
+          "description": "Mesa baja frente al sofá.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.extra_chairs",
+          "label": "Sillas o taburetes extra",
+          "description": "Asientos adicionales disponibles en la estancia.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.sofa_type",
           "label": "Tipo de sofá",
-          "description": "Tipo de sofá principal disponible.",
+          "description": "Configuración del sofá principal.",
           "type": "enum",
+          "shown_if": {
+            "field": "sf.sofa",
+            "equals": true
+          },
           "options": [
             {
-              "id": "none",
-              "label": "Sin sofá"
-            },
-            {
               "id": "sofa",
-              "label": "Sofá"
+              "label": "Sofá estándar"
             },
             {
               "id": "sofa_bed",
@@ -818,40 +809,24 @@
             },
             {
               "id": "sectional",
-              "label": "Sofá esquinero"
-            },
-            {
-              "id": "armchairs",
-              "label": "Sillones"
+              "label": "Sofá rinconero"
             }
-          ],
-          "source": [
-            "booking:sofa"
           ]
         },
         {
           "id": "sf.seating_capacity",
-          "label": "Plazas de asiento",
-          "description": "Número total de personas que pueden sentarse cómodamente.",
-          "type": "integer_optional"
-        },
-        {
-          "id": "sf.coffee_table",
-          "label": "Mesa de centro",
-          "description": "Mesa de centro o mesita auxiliar.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.extra_chairs",
-          "label": "Sillas o taburetes extra",
-          "description": "Sillas, taburetes u otro asiento adicional disponible.",
-          "type": "boolean"
+          "label": "Plazas del sofá",
+          "description": "Personas que pueden sentarse cómodamente en el sofá.",
+          "type": "integer_optional",
+          "shown_if": {
+            "field": "sf.sofa",
+            "equals": true
+          }
         },
         {
           "id": "sf.seating_other_tags",
-          "label": "Otro mobiliario de asiento",
-          "description": "Otros elementos de asiento no listados.",
-          "tooltip": "Por ejemplo: 'Puf', 'Hamaca interior', 'Butaca de lectura'.",
+          "label": "Otro mobiliario",
+          "description": "Otros asientos o mobiliario de la zona de estar.",
           "type": "text_chips"
         }
       ]
@@ -888,8 +863,7 @@
               "id": "low",
               "label": "Poca (espacio oscuro)"
             }
-          ],
-          "control": "select"
+          ]
         },
         {
           "id": "sf.blackout_curtains_living",
@@ -1123,8 +1097,7 @@
               "id": "shared",
               "label": "Abierto / sin aislamiento"
             }
-          ],
-          "control": "select"
+          ]
         },
         {
           "id": "sf.whiteboard",
@@ -1232,8 +1205,7 @@
               "id": "private",
               "label": "Completamente privado"
             }
-          ],
-          "control": "select"
+          ]
         },
         {
           "id": "sf.outdoor_views",

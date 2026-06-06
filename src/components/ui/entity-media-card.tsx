@@ -134,7 +134,7 @@ export function EntityMediaCard({
         {titleNode ? (
           <div className="flex items-center gap-3 p-5">
             <span aria-hidden="true"><IconBadge icon={icon} /></span>
-            <span className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="flex min-w-0 flex-col gap-1">
               <span id={titleId} className="min-w-0">{titleNode}</span>
               {subtitle && (
                 <span className="text-[13px] leading-[1.45] text-[var(--color-text-secondary)]">
@@ -142,6 +142,16 @@ export function EntityMediaCard({
                 </span>
               )}
             </span>
+            {/* Large click-to-collapse area filling the header (everything that
+               isn't the editable title or the media action). Mouse convenience —
+               keyboard/SR use the labeled chevron, so this is aria-hidden. */}
+            <button
+              type="button"
+              aria-hidden="true"
+              tabIndex={-1}
+              onClick={onCollapse}
+              className="min-h-[44px] flex-1 cursor-pointer self-stretch rounded-[var(--radius-md)] transition-colors hover:bg-[var(--color-background-muted)]/40"
+            ></button>
             {headerAction}
             <button
               type="button"

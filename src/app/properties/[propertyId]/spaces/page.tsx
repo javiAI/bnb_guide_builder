@@ -150,8 +150,6 @@ export default async function SpacesPage({
       ) === "complete",
   ).length;
 
-  const maxGuests = property.maxGuests;
-
   function toCard(space: (typeof allSpaces)[number]): SpaceCardData {
     const m = spaceMediaOf(media, space.id);
     return {
@@ -271,7 +269,6 @@ export default async function SpacesPage({
         ) : (
           <SpacesGrid
             propertyId={propertyId}
-            maxGuests={maxGuests}
             propertyAreaSqm={property.usableAreaSqm}
             propertyCeilingCm={property.ceilingHeightCm}
             cards={activeCards}
