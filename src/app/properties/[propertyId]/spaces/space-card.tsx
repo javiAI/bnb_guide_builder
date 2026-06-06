@@ -11,6 +11,7 @@ import {
   CircleCheck,
   CircleDot,
   Cog,
+  Minus,
   Move,
   Plus,
   Ruler,
@@ -380,7 +381,30 @@ export function SpaceCard({
         </EditorSection>
       )}
 
-      {/* Details form — feature groups + notes (auto-saved). */}
+      {/* Systems coverage — part of the per-space essentials (Dimensiones ·
+         Camas · Sistemas), before the type-specific details. Every configured
+         system is selectable here. Own action + form, so it lives OUTSIDE the
+         details <form> (no nested forms, no auto-save cross-talk). */}
+      <EditorSection icon={Cog} label="Sistemas en esta estancia">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[var(--color-text-secondary)]">
+            Marca los sistemas que llegan a esta estancia.
+          </p>
+          <Link
+            href={`/properties/${propertyId}/systems`}
+            className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
+          >
+            Gestionar →
+          </Link>
+        </div>
+        <div className="mt-2">
+          <SpaceSystemsCoverage propertyId={propertyId} spaceId={space.id} systems={coverageSystems} />
+        </div>
+      </EditorSection>
+
+      {/* Details form — type-specific feature groups + notes (auto-saved). Each
+         group renders its main options on the left and any conditional reveals
+         in a right-hand detail panel. */}
       <form id={`details-${space.id}`} ref={detailsFormRef} action={detailsAction} className="space-y-6">
         <input type="hidden" name="spaceId" value={space.id} />
         <input type="hidden" name="propertyId" value={propertyId} />
@@ -390,19 +414,10 @@ export function SpaceCard({
           const bodyGroups = featureGroups.filter((g) => g.id !== "sfg.dimensions");
           const zonesPresent = new Set(bodyGroups.map((g) => g.zone).filter(Boolean));
           const useZones = zonesPresent.size >= 2;
-          const renderSection = (group: SpaceFeatureGroup) => (
+          const renderGroup = (group: SpaceFeatureGroup) => (
             <EditorSection key={group.id} label={group.label}>
-              <FlatFeatureSection group={group} features={features} onChangeFeature={setFeature} />
+              <GroupFields group={group} features={features} onChangeFeature={setFeature} />
             </EditorSection>
-          );
-          // On wide screens sections flow in 2 columns so the editor uses the
-          // width instead of one long full-width column. Combos (multi-zone)
-          // keep their zone headers, with each zone's sections in their own
-          // 2-column grid.
-          const grid = (groups: SpaceFeatureGroup[]) => (
-            <div className="grid gap-x-8 gap-y-6 lg:grid-cols-2 lg:items-start">
-              {groups.map(renderSection)}
-            </div>
           );
           if (useZones) {
             const zones: { label: string | null; groups: SpaceFeatureGroup[] }[] = [];
@@ -413,39 +428,18 @@ export function SpaceCard({
               else zones.push({ label: z, groups: [g] });
             }
             return (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {zones.map((zone, i) => (
-                  <div key={i} className="space-y-4">
+                  <div key={i} className="space-y-5">
                     {zone.label && <ZoneHeader label={zone.label} />}
-                    {grid(zone.groups)}
+                    {zone.groups.map(renderGroup)}
                   </div>
                 ))}
               </div>
             );
           }
-          return grid(bodyGroups);
+          return <div className="space-y-6">{bodyGroups.map(renderGroup)}</div>;
         })()}
-
-        {/* Systems coverage — before notes (notes are last). Wrapped so its own
-            inputs don't trip the details-form auto-save (it has its own action). */}
-        <div onInput={(e) => e.stopPropagation()} onChange={(e) => e.stopPropagation()}>
-          <EditorSection icon={Cog} label="Sistemas en esta estancia">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-[var(--color-text-secondary)]">
-                Marca los sistemas que llegan a esta estancia.
-              </p>
-              <Link
-                href={`/properties/${propertyId}/systems`}
-                className="text-xs font-medium text-[var(--color-text-link)] hover:underline"
-              >
-                Gestionar →
-              </Link>
-            </div>
-            <div className="mt-2">
-              <SpaceSystemsCoverage propertyId={propertyId} spaceId={space.id} systems={coverageSystems} />
-            </div>
-          </EditorSection>
-        </div>
 
         <EditorSection icon={StickyNote} label="Notas para el huésped">
           <textarea
@@ -636,39 +630,25 @@ function InheritedNumberField({
   );
 }
 
-// ── Flat feature section — boolean chips + structured fields ──
+// ── Feature group renderer — main options (left) + conditional reveals
+// (right detail panel). The shown_if fields move into a side panel so the main
+// chips keep the primary column; "Añadir otro" stays inline at the end of its
+// options. Single column when nothing is revealed. ──
 
-function FlatFeatureSection({
-  group,
-  features,
-  onChangeFeature,
-}: {
-  group: SpaceFeatureGroup;
-  features: FeatureState;
-  onChangeFeature: (fieldId: string, value: FeatureValue) => void;
-}) {
-  const visible = (f: SpaceFeatureField) => {
-    if (f.shown_if) {
-      const depValue = features[f.shown_if.field];
-      if (depValue !== f.shown_if.equals) return false;
-    }
-    return true;
-  };
-  // Build render blocks in document order. Consecutive booleans / numbers group
-  // into one row; a trailing *_other_tags text_chips attaches to the preceding
-  // chip group or multiselect, so "Añadir otro…" always sits with its options
-  // (never floating). Everything is one chips/options system — no dropdowns.
-  type Block =
-    | { kind: "chips"; bools: SpaceFeatureField[]; tags?: SpaceFeatureField }
-    | { kind: "enum"; field: SpaceFeatureField }
-    | { kind: "multiselect"; field: SpaceFeatureField; tags?: SpaceFeatureField }
-    | { kind: "numbers"; fields: SpaceFeatureField[] }
-    | { kind: "text"; field: SpaceFeatureField }
-    | { kind: "tags"; field: SpaceFeatureField };
+type Block =
+  | { kind: "chips"; bools: SpaceFeatureField[]; tags?: SpaceFeatureField }
+  | { kind: "enum"; field: SpaceFeatureField }
+  | { kind: "multiselect"; field: SpaceFeatureField; tags?: SpaceFeatureField }
+  | { kind: "numbers"; fields: SpaceFeatureField[] }
+  | { kind: "text"; field: SpaceFeatureField }
+  | { kind: "tags"; field: SpaceFeatureField };
 
+// Build render blocks in document order. Consecutive booleans / numbers group
+// into one row; a trailing *_other_tags text_chips attaches to the preceding
+// chip group or multiselect, so "Añadir otro…" always sits with its options.
+function buildBlocks(fields: SpaceFeatureField[]): Block[] {
   const blocks: Block[] = [];
-  for (const f of group.fields) {
-    if (!visible(f)) continue;
+  for (const f of fields) {
     const last = blocks[blocks.length - 1];
     if (f.type === "boolean") {
       if (last && last.kind === "chips" && !last.tags) last.bools.push(f);
@@ -688,57 +668,132 @@ function FlatFeatureSection({
       blocks.push({ kind: "text", field: f });
     }
   }
+  return blocks;
+}
 
-  if (blocks.length === 0) return null;
+function GroupFields({
+  group,
+  features,
+  onChangeFeature,
+}: {
+  group: SpaceFeatureGroup;
+  features: FeatureState;
+  onChangeFeature: (fieldId: string, value: FeatureValue) => void;
+}) {
+  const isVisible = (f: SpaceFeatureField) =>
+    !f.shown_if || features[f.shown_if.field] === f.shown_if.equals;
+  const mainFields = group.fields.filter((f) => !f.shown_if);
+  const revealFields = group.fields.filter((f) => f.shown_if && isVisible(f));
+  const blocks = buildBlocks(mainFields);
+  // A group whose only main control is a single labeled field is already named
+  // by its section header — drop the redundant field label.
+  const soleLabel =
+    mainFields.length === 1 &&
+    mainFields[0].type !== "boolean" &&
+    mainFields[0].type !== "text_chips";
+
+  const left = (
+    <div className="space-y-4">
+      {blocks.map((block, i) => renderBlock(block, i, features, onChangeFeature, soleLabel))}
+    </div>
+  );
+
+  if (revealFields.length === 0) return left;
 
   return (
-    <div className="space-y-4">
-      {blocks.map((block, i) => {
-        if (block.kind === "chips") {
-          return (
-            <div key={i} className="flex flex-wrap gap-2">
-              {block.bools.map((f) => (
-                <Tooltip key={f.id} text={f.description}>
-                  <ToggleChip active={Boolean(features[f.id])} onToggle={() => onChangeFeature(f.id, !features[f.id])}>
-                    {f.label}
-                  </ToggleChip>
-                </Tooltip>
-              ))}
-              {block.tags && (
-                <InlineTagChips value={features[block.tags.id] ?? null} onChange={(v) => onChangeFeature(block.tags!.id, v)} />
-              )}
-            </div>
-          );
-        }
-        if (block.kind === "enum") {
-          return <EnumChips key={i} field={block.field} value={(features[block.field.id] as string) ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
-        }
-        if (block.kind === "multiselect") {
-          return (
-            <MultiChips
-              key={i}
-              field={block.field}
-              value={(features[block.field.id] as string[]) ?? null}
-              onChange={(v) => onChangeFeature(block.field.id, v)}
-              tagsValue={block.tags ? (features[block.tags.id] ?? null) : null}
-              onTagsChange={block.tags ? (v) => onChangeFeature(block.tags!.id, v) : undefined}
-            />
-          );
-        }
-        if (block.kind === "numbers") {
-          return (
-            <div key={i} className="flex flex-wrap gap-x-4 gap-y-3">
-              {block.fields.map((f) => (
-                <NumberField key={f.id} field={f} value={(features[f.id] as number) ?? null} onChange={(v) => onChangeFeature(f.id, v)} />
-              ))}
-            </div>
-          );
-        }
-        if (block.kind === "text") {
-          return <TextField key={i} field={block.field} value={(features[block.field.id] as string) ?? ""} onChange={(v) => onChangeFeature(block.field.id, v)} />;
-        }
-        return <LabeledTags key={i} field={block.field} value={features[block.field.id] ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
-      })}
+    <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+      {left}
+      <div className="space-y-4 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)]/30 p-3.5">
+        {revealFields.map((f) => (
+          <RevealField
+            key={f.id}
+            field={f}
+            value={features[f.id] ?? null}
+            onChange={(v) => onChangeFeature(f.id, v)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function renderBlock(
+  block: Block,
+  key: number,
+  features: FeatureState,
+  onChangeFeature: (fieldId: string, value: FeatureValue) => void,
+  soleLabel: boolean,
+) {
+  if (block.kind === "chips") {
+    return (
+      <div key={key} className="flex flex-wrap gap-2">
+        {block.bools.map((f) => (
+          <Tooltip key={f.id} text={f.description}>
+            <ToggleChip active={Boolean(features[f.id])} onToggle={() => onChangeFeature(f.id, !features[f.id])}>
+              {f.label}
+            </ToggleChip>
+          </Tooltip>
+        ))}
+        {block.tags && (
+          <InlineTagChips value={features[block.tags.id] ?? null} onChange={(v) => onChangeFeature(block.tags!.id, v)} />
+        )}
+      </div>
+    );
+  }
+  if (block.kind === "enum") {
+    return <EnumChips key={key} field={block.field} hideLabel={soleLabel} value={(features[block.field.id] as string) ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+  }
+  if (block.kind === "multiselect") {
+    return (
+      <MultiChips
+        key={key}
+        field={block.field}
+        hideLabel={soleLabel}
+        value={(features[block.field.id] as string[]) ?? null}
+        onChange={(v) => onChangeFeature(block.field.id, v)}
+        tagsValue={block.tags ? (features[block.tags.id] ?? null) : null}
+        onTagsChange={block.tags ? (v) => onChangeFeature(block.tags!.id, v) : undefined}
+      />
+    );
+  }
+  if (block.kind === "numbers") {
+    return (
+      <div key={key} className="flex flex-wrap gap-x-6 gap-y-3">
+        {block.fields.map((f) => (
+          <NumberOrCount key={f.id} field={f} value={(features[f.id] as number) ?? null} onChange={(v) => onChangeFeature(f.id, v)} />
+        ))}
+      </div>
+    );
+  }
+  if (block.kind === "text") {
+    return <TextField key={key} field={block.field} value={(features[block.field.id] as string) ?? ""} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+  }
+  return <LabeledTags key={key} field={block.field} value={features[block.field.id] ?? null} onChange={(v) => onChangeFeature(block.field.id, v)} />;
+}
+
+// A single shown_if field rendered in the right-hand detail panel.
+function RevealField({ field, value, onChange }: { field: SpaceFeatureField; value: FeatureValue; onChange: (v: FeatureValue) => void }) {
+  if (field.type === "enum") {
+    return <EnumChips field={field} value={(value as string) ?? null} onChange={onChange} />;
+  }
+  if (field.type === "enum_multiselect") {
+    return <MultiChips field={field} value={(value as string[]) ?? null} onChange={onChange} tagsValue={null} />;
+  }
+  if (field.type === "integer_optional" || field.type === "number_optional") {
+    return <NumberOrCount field={field} value={(value as number) ?? null} onChange={onChange} />;
+  }
+  if (field.type === "text") {
+    return <TextField field={field} value={(value as string) ?? ""} onChange={onChange} />;
+  }
+  if (field.type === "text_chips") {
+    return <LabeledTags field={field} value={value} onChange={onChange} />;
+  }
+  // boolean reveal → a single labeled toggle chip
+  return (
+    <div>
+      <Tooltip text={field.description}>
+        <ToggleChip active={Boolean(value)} onToggle={() => onChange(!value)}>{field.label}</ToggleChip>
+      </Tooltip>
     </div>
   );
 }
@@ -762,11 +817,11 @@ function FieldLabel({ field }: { field: SpaceFeatureField }) {
   );
 }
 
-function EnumChips({ field, value, onChange }: { field: SpaceFeatureField; value: string | null; onChange: (v: FeatureValue) => void }) {
+function EnumChips({ field, value, onChange, hideLabel = false }: { field: SpaceFeatureField; value: string | null; onChange: (v: FeatureValue) => void; hideLabel?: boolean }) {
   const current = value ?? "";
   return (
     <div>
-      <FieldLabel field={field} />
+      {!hideLabel && <FieldLabel field={field} />}
       <div className="flex flex-wrap gap-2">
         {field.options?.map((opt) => (
           <ToggleChip key={opt.id} active={current === opt.id} hideCheck onToggle={() => onChange(current === opt.id ? null : opt.id)}>
@@ -784,17 +839,19 @@ function MultiChips({
   onChange,
   tagsValue,
   onTagsChange,
+  hideLabel = false,
 }: {
   field: SpaceFeatureField;
   value: string[] | null;
   onChange: (v: FeatureValue) => void;
   tagsValue: FeatureValue;
   onTagsChange?: (v: FeatureValue) => void;
+  hideLabel?: boolean;
 }) {
   const selected = value ?? [];
   return (
     <div>
-      <FieldLabel field={field} />
+      {!hideLabel && <FieldLabel field={field} />}
       <div className="flex flex-wrap gap-2">
         {field.options?.map((opt) => {
           const checked = selected.includes(opt.id);
@@ -817,20 +874,42 @@ function MultiChips({
   );
 }
 
-function NumberField({ field, value, onChange }: { field: SpaceFeatureField; value: number | null; onChange: (v: FeatureValue) => void }) {
+// Integer counts use a compact chip-height stepper (matches the bed config);
+// decimals (m², m³…) keep a narrow numeric input.
+const COUNT_BTN_CLS =
+  "recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
+
+function NumberOrCount({ field, value, onChange }: { field: SpaceFeatureField; value: number | null; onChange: (v: FeatureValue) => void }) {
+  if (field.type === "integer_optional") {
+    const v = value ?? 0;
+    const set = (n: number) => onChange(n <= 0 ? null : n);
+    return (
+      <div>
+        <FieldLabel field={field} />
+        <div className="inline-flex items-center gap-2">
+          <button type="button" disabled={v <= 0} onClick={() => set(v - 1)} aria-label={`Reducir ${field.label}`} className={COUNT_BTN_CLS}>
+            <Minus size={14} aria-hidden="true" />
+          </button>
+          <span className="min-w-[1.75rem] text-center text-sm font-semibold text-[var(--color-text-primary)]">{v}</span>
+          <button type="button" onClick={() => set(v + 1)} aria-label={`Aumentar ${field.label}`} className={COUNT_BTN_CLS}>
+            <Plus size={14} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
-    <div className="w-36">
+    <div className="w-28">
       <FieldInput
         label={fieldLabelContent(field)}
         type="number"
-        step={field.type === "integer_optional" ? "1" : "0.1"}
+        step="0.1"
         min={0}
         value={value ?? ""}
         placeholder="—"
         onChange={(e) => {
           if (e.target.value === "") { onChange(null); return; }
-          const n = Number(e.target.value);
-          onChange(field.type === "integer_optional" ? Math.trunc(n) : n);
+          onChange(Number(e.target.value));
         }}
       />
     </div>

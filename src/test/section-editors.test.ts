@@ -204,7 +204,10 @@ describe("Space features taxonomy", () => {
     const livingIds = livingGroups.map((g) => g.id);
     const bathroomIds = bathroomGroups.map((g) => g.id);
     expect(livingIds).toContain("sfg.living_seating");
-    expect(livingIds).toContain("sfg.living_views");
+    // Light split into single-select quality + multiselect ambience controls.
+    expect(livingIds).toContain("sfg.living_light");
+    expect(livingIds).toContain("sfg.living_ambience");
+    expect(livingIds).not.toContain("sfg.living_views");
     expect(bathroomIds).not.toContain("sfg.living_seating");
     // Entertainment → amenities; comfort (heating/AC) → systems.
     expect(livingIds).not.toContain("sfg.living_entertainment");

@@ -72,14 +72,15 @@ export default async function SpacesPage({
   // full ordered slide set per space so each card cover is a MediaCarousel.
   const media = await loadSpaceMedia(allSpaces.map((s) => s.id));
 
-  // Per-space EDITABLE system coverage (Opción 1). Relevant systems = those that
-  // can cover spaces (defaultCoverageRule != property_only); for each we resolve
-  // the EFFECTIVE state (explicit override, else the taxonomy default) plus the
-  // per-space note. This replaces the old read-only "systems in this space" list
-  // — the operator now toggles coverage directly from the space editor.
+  // Per-space EDITABLE system coverage (Opción 1). Every configured system is
+  // selectable per space — the operator picks which ones reach this room. The
+  // taxonomy default drives the initial state (`all_relevant_spaces` defaults
+  // ON; everything else, incl. property-global systems, defaults OFF and is
+  // opt-in). For each we resolve the EFFECTIVE state (explicit override, else
+  // the default) plus the per-space note.
   const spaceRelevantSystems = propertySystems.flatMap((sys) => {
     const item = findSystemItem(sys.systemKey);
-    if (!item || item.defaultCoverageRule === "property_only") return [];
+    if (!item) return [];
     return [{ id: sys.id, systemKey: sys.systemKey, label: item.label, defaultsOn: item.defaultCoverageRule === "all_relevant_spaces" }];
   });
   const coverageByKey = new Map<string, { mode: string; note: string | null }>();
@@ -124,6 +125,10 @@ export default async function SpacesPage({
   );
   const capacityMismatch =
     property.maxGuests != null && totalBedCapacity < property.maxGuests;
+  // Over-capacity: total sleeping places across ALL spaces exceeds the allowed
+  // guests. Non-blocking — surfaced as a warning so the operator can reconcile.
+  const capacityOver =
+    property.maxGuests != null && totalBedCapacity > property.maxGuests;
 
   // Spaces that conflict with current layout (in excluded list)
   const conflictingSpaces = spaces.filter((s) => excluded.includes(s.spaceType));
@@ -218,7 +223,7 @@ export default async function SpacesPage({
         </div>
       )}
 
-      {/* Capacity mismatch banner */}
+      {/* Capacity mismatch banner — under capacity (not enough beds). */}
       {capacityMismatch && (
         <div className="mb-4">
           <Banner
@@ -231,6 +236,27 @@ export default async function SpacesPage({
                 {" "}pero el máximo de huéspedes es{" "}
                 <span className="font-medium">{property.maxGuests}</span>.
                 {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
+                <Link href={`/properties/${propertyId}/property`} className="font-medium text-[var(--color-text-link)] hover:underline">Propiedad</Link>.
+              </>
+            }
+          />
+        </div>
+      )}
+
+      {/* Over capacity banner — total bed places across all spaces exceeds the
+         allowed guests. Non-blocking; just flags it for the operator. */}
+      {capacityOver && (
+        <div className="mb-4">
+          <Banner
+            type="warning"
+            title="Más camas que huéspedes"
+            message={
+              <>
+                Sumando todas las estancias, las camas permiten dormir a{" "}
+                <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "persona" : "personas"}</span>
+                {" "}pero el máximo de huéspedes es{" "}
+                <span className="font-medium">{property.maxGuests}</span>.
+                {" "}No bloquea nada, pero revisa el número de camas o el máximo en{" "}
                 <Link href={`/properties/${propertyId}/property`} className="font-medium text-[var(--color-text-link)] hover:underline">Propiedad</Link>.
               </>
             }

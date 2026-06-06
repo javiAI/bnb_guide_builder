@@ -381,12 +381,6 @@
           ]
         },
         {
-          "id": "sf.sink_count",
-          "label": "Número de lavabos",
-          "description": "Cantidad de lavabos en el baño.",
-          "type": "integer_optional"
-        },
-        {
           "id": "sf.shower",
           "label": "Ducha",
           "description": "Ducha disponible.",
@@ -394,6 +388,52 @@
           "source": [
             "airbnb:shower",
             "booking:shower"
+          ]
+        },
+        {
+          "id": "sf.bathtub",
+          "label": "Bañera",
+          "description": "Bañera disponible.",
+          "type": "boolean",
+          "source": [
+            "airbnb:bathtub",
+            "booking:bathtub"
+          ]
+        },
+        {
+          "id": "sf.towel_rail",
+          "label": "Toallero eléctrico",
+          "description": "Toallero calefactor eléctrico o hidráulico instalado.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.sink_count",
+          "label": "Número de lavabos",
+          "description": "Cantidad de lavabos en el baño.",
+          "type": "integer_optional"
+        },
+        {
+          "id": "sf.ventilation",
+          "label": "Ventilación",
+          "description": "Tipo de ventilación disponible.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "window",
+              "label": "Ventana"
+            },
+            {
+              "id": "extractor",
+              "label": "Extractor mecánico"
+            },
+            {
+              "id": "both",
+              "label": "Ventana y extractor"
+            },
+            {
+              "id": "none",
+              "label": "Sin ventilación"
+            }
           ]
         },
         {
@@ -453,16 +493,6 @@
           ]
         },
         {
-          "id": "sf.bathtub",
-          "label": "Bañera",
-          "description": "Bañera disponible.",
-          "type": "boolean",
-          "source": [
-            "airbnb:bathtub",
-            "booking:bathtub"
-          ]
-        },
-        {
           "id": "sf.bathtub_type",
           "label": "Tipo de bañera",
           "description": "Tipo de bañera disponible.",
@@ -495,36 +525,6 @@
             "field": "sf.bathtub",
             "equals": true
           }
-        },
-        {
-          "id": "sf.ventilation",
-          "label": "Ventilación",
-          "description": "Tipo de ventilación disponible.",
-          "type": "enum",
-          "options": [
-            {
-              "id": "window",
-              "label": "Ventana"
-            },
-            {
-              "id": "extractor",
-              "label": "Extractor mecánico"
-            },
-            {
-              "id": "both",
-              "label": "Ventana y extractor"
-            },
-            {
-              "id": "none",
-              "label": "Sin ventilación"
-            }
-          ]
-        },
-        {
-          "id": "sf.towel_rail",
-          "label": "Toallero eléctrico",
-          "description": "Toallero calefactor eléctrico o hidráulico instalado.",
-          "type": "boolean"
         }
       ]
     },
@@ -832,9 +832,9 @@
       ]
     },
     {
-      "id": "sfg.living_views",
-      "label": "Luz y ambiente",
-      "description": "Luz natural, vistas y ambiente del salón.",
+      "id": "sfg.living_light",
+      "label": "Luz natural",
+      "description": "Cantidad de luz natural que recibe la zona de estar.",
       "applies_to": [
         "sp.living_room",
         "sp.open_plan",
@@ -864,7 +864,23 @@
               "label": "Poca (espacio oscuro)"
             }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "id": "sfg.living_ambience",
+      "label": "Iluminación y oscurecimiento",
+      "description": "Control de la luz: oscurecimiento e iluminación regulable.",
+      "applies_to": [
+        "sp.living_room",
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
+      ],
+      "zone": "Salón",
+      "fields": [
         {
           "id": "sf.blackout_curtains_living",
           "label": "Cortinas o persianas opacas",
@@ -898,16 +914,6 @@
       "zone": "Comedor",
       "fields": [
         {
-          "id": "sf.dining_seats",
-          "label": "Plazas en mesa",
-          "description": "Número de personas que pueden sentarse a la mesa.",
-          "type": "integer_optional",
-          "source": [
-            "airbnb:dining_table",
-            "booking:dining_area"
-          ]
-        },
-        {
           "id": "sf.dining_table_type",
           "label": "Tipo de mesa",
           "description": "Tipo de mesa disponible.",
@@ -929,6 +935,16 @@
               "id": "foldable",
               "label": "Plegable"
             }
+          ]
+        },
+        {
+          "id": "sf.dining_seats",
+          "label": "Plazas en mesa",
+          "description": "Número de personas que pueden sentarse a la mesa.",
+          "type": "integer_optional",
+          "source": [
+            "airbnb:dining_table",
+            "booking:dining_area"
           ]
         },
         {

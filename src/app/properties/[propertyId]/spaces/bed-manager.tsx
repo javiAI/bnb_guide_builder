@@ -86,7 +86,7 @@ export function BedManager({ propertyId, spaceId, beds }: BedManagerProps) {
           aria-label="Añadir cama"
           value=""
           onChange={(e) => { if (e.target.value) quickAddBed(e.target.value); e.target.value = ""; }}
-          className="min-h-[40px] rounded-full border border-dashed border-[var(--color-border-default)] bg-transparent px-4 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:border-[var(--color-border-focus)] focus:outline-none"
+          className="inline-flex h-7 items-center rounded-full border border-dashed border-[var(--color-border-default)] bg-transparent px-3 text-[13px] font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] focus:border-[var(--color-border-focus)] focus:outline-none"
         >
           <option value="">+ Añadir cama…</option>
           {bedTypeOptions.map((bt) => (
