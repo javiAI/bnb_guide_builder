@@ -88,6 +88,10 @@ interface SpaceData {
 
 interface SpaceCardProps {
   propertyId: string;
+  /** Allowed guests + total bed places across ALL spaces — for the in-space
+   * over-capacity hint under the bed list. */
+  maxGuests: number | null;
+  propertyBedCapacity: number;
   /** Property-wide dimension defaults — inherited (shown as placeholder) unless
    * the space sets its own value. */
   propertyAreaSqm?: number | null;
@@ -129,6 +133,8 @@ function toCarouselSlides(slides: readonly SpaceMediaSlide[]): MediaCarouselSlid
 
 export function SpaceCard({
   propertyId,
+  maxGuests,
+  propertyBedCapacity,
   propertyAreaSqm = null,
   propertyCeilingCm = null,
   space,
@@ -377,7 +383,7 @@ export function SpaceCard({
          details <form> (no nested forms). */}
       {hasBeds && (
         <EditorSection icon={BedDouble} label="Camas">
-          <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} />
+          <BedManager propertyId={propertyId} spaceId={space.id} beds={beds} maxGuests={maxGuests} propertyBedCapacity={propertyBedCapacity} />
         </EditorSection>
       )}
 
@@ -630,10 +636,9 @@ function InheritedNumberField({
   );
 }
 
-// ── Feature group renderer — main options (left) + conditional reveals
-// (right detail panel). The shown_if fields move into a side panel so the main
-// chips keep the primary column; "Añadir otro" stays inline at the end of its
-// options. Single column when nothing is revealed. ──
+// ── Feature group renderer — full-width main options, with any conditional
+// (shown_if) reveals opening BELOW them (indented), never in a side column.
+// "Añadir otro" stays inline at the end of its options. ──
 
 type Block =
   | { kind: "chips"; bools: SpaceFeatureField[]; tags?: SpaceFeatureField }
@@ -692,27 +697,21 @@ function GroupFields({
     mainFields[0].type !== "boolean" &&
     mainFields[0].type !== "text_chips";
 
-  const left = (
+  return (
     <div className="space-y-4">
       {blocks.map((block, i) => renderBlock(block, i, features, onChangeFeature, soleLabel))}
-    </div>
-  );
-
-  if (revealFields.length === 0) return left;
-
-  return (
-    <div className="grid gap-x-6 gap-y-4 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-      {left}
-      <div className="space-y-4 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border-default)] bg-[var(--color-background-muted)]/30 p-3.5">
-        {revealFields.map((f) => (
-          <RevealField
-            key={f.id}
-            field={f}
-            value={features[f.id] ?? null}
-            onChange={(v) => onChangeFeature(f.id, v)}
-          />
-        ))}
-      </div>
+      {revealFields.length > 0 && (
+        <div className="space-y-4 border-l-2 border-[var(--color-border-default)] pl-4">
+          {revealFields.map((f) => (
+            <RevealField
+              key={f.id}
+              field={f}
+              value={features[f.id] ?? null}
+              onChange={(v) => onChangeFeature(f.id, v)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

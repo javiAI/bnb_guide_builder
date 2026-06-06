@@ -121,17 +121,19 @@ export function SpaceSystemsCoverage({
                 />
               </span>
             </button>
-            {s.covered && (
-              <div className="px-3 pb-2.5">
-                <input
-                  type="text"
-                  defaultValue={s.note}
-                  placeholder="Matiz para esta estancia (opcional)"
-                  onBlur={(e) => saveNote(s.systemId, e.target.value.trim())}
-                  className="min-h-[36px] w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-2.5 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:outline-none focus-visible:border-[var(--color-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
-                />
-              </div>
-            )}
+            {/* Note input always present (disabled when the system is off) so
+               every card is the same height regardless of state. */}
+            <div className="px-3 pb-2.5">
+              <input
+                key={`${s.systemId}-${s.covered}`}
+                type="text"
+                defaultValue={s.note}
+                disabled={!s.covered}
+                placeholder={s.covered ? "Matiz para esta estancia (opcional)" : "Actívalo para añadir un matiz"}
+                onBlur={(e) => saveNote(s.systemId, e.target.value.trim())}
+                className="min-h-[36px] w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-2.5 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:outline-none focus-visible:border-[var(--color-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--color-background-muted)]/40 disabled:text-[var(--color-text-muted)]"
+              />
+            </div>
           </div>
         );
       })}

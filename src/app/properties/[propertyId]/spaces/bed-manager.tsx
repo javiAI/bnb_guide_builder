@@ -13,7 +13,7 @@ import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ToggleChip } from "@/components/ui/toggle-chip";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Minus, Plus, Settings2, Trash2, X } from "lucide-react";
+import { Minus, Plus, Settings2, Trash2, TriangleAlert, X } from "lucide-react";
 import { bedTypes } from "@/lib/taxonomies/bed-types";
 import {
   mattressTypes as mattressTypeOptions,
@@ -37,9 +37,13 @@ interface BedManagerProps {
   propertyId: string;
   spaceId: string;
   beds: BedData[];
+  /** Allowed guests + total bed places across ALL spaces — drives the
+   * non-blocking over-capacity hint under the bed list. */
+  maxGuests?: number | null;
+  propertyBedCapacity?: number;
 }
 
-export function BedManager({ propertyId, spaceId, beds }: BedManagerProps) {
+export function BedManager({ propertyId, spaceId, beds, maxGuests, propertyBedCapacity = 0 }: BedManagerProps) {
   const [addState, addAction] = useActionState<ActionResult | null, FormData>(
     addBedAction,
     null,
@@ -103,6 +107,17 @@ export function BedManager({ propertyId, spaceId, beds }: BedManagerProps) {
           Plazas en esta estancia: {totalCapacity} {totalCapacity === 1 ? "persona" : "personas"}
         </p>
       )}
+
+      {/* Property-wide over-capacity hint, shown right where beds are edited.
+         Non-blocking — sum of all spaces' bed places exceeds the allowed guests. */}
+      {maxGuests != null && propertyBedCapacity > maxGuests && (
+        <div className="flex items-start gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-2.5 py-2">
+          <TriangleAlert size={14} aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[var(--color-status-warning-icon)]" />
+          <p className="text-xs text-[var(--color-status-warning-text)]">
+            Entre todas las estancias hay camas para {propertyBedCapacity} personas, más que el máximo de {maxGuests}. No bloquea nada; revísalo si no es intencionado.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -140,6 +155,12 @@ function BedRow({
   const flushConfig = useFormAutoSave(configFormRef);
 
   const cfg = bed.configJson ?? {};
+  const typeInfo = findItem(bedTypes, bed.bedType);
+  const isCustom = bed.bedType === "bt.other";
+  // A crib is not a regular bed — its config is about safety/portability, not
+  // mattress firmness or pillows. It gets its own field set.
+  const isCrib = bed.bedType === "bt.crib";
+
   const [mattressType, setMattressType] = useState<string>((cfg.mattressType as string) ?? "");
   const [mattressFirmness, setMattressFirmness] = useState<string>((cfg.mattressFirmness as string) ?? "");
   const [pillowTypes, setPillowTypes] = useState<string[]>((cfg.pillowTypes as string[]) ?? []);
@@ -148,23 +169,37 @@ function BedRow({
   const [mattressProtector, setMattressProtector] = useState<boolean>((cfg.mattressProtector as boolean) ?? false);
   const [customCapacity, setCustomCapacity] = useState<number>((cfg.customCapacity as number) ?? 1);
   const [customLabelEdit, setCustomLabelEdit] = useState<string>((cfg.customLabel as string) ?? "");
+  // Crib-specific config.
+  const [cribMattress, setCribMattress] = useState<boolean>((cfg.cribMattress as boolean) ?? false);
+  const [cribMattressExtra, setCribMattressExtra] = useState<boolean>((cfg.cribMattressExtra as boolean) ?? false);
+  const [cribLinen, setCribLinen] = useState<boolean>((cfg.cribLinen as boolean) ?? false);
+  const [cribMobile, setCribMobile] = useState<boolean>((cfg.cribMobile as boolean) ?? false);
+  const [cribFoldable, setCribFoldable] = useState<boolean>((cfg.cribFoldable as boolean) ?? false);
 
-  const typeInfo = findItem(bedTypes, bed.bedType);
-  const isCustom = bed.bedType === "bt.other";
   const cap = isCustom ? customCapacity : (typeInfo?.sleepingCapacity ?? 1);
 
   const configSerialized = useMemo(
     () =>
-      JSON.stringify({
-        mattressType,
-        mattressFirmness,
-        pillowTypes,
-        linenIncluded,
-        extraBlanket,
-        mattressProtector,
-        ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}),
-      }),
+      JSON.stringify(
+        isCrib
+          ? { cribMattress, cribMattressExtra, cribLinen, cribMobile, cribFoldable }
+          : {
+              mattressType,
+              mattressFirmness,
+              pillowTypes,
+              linenIncluded,
+              extraBlanket,
+              mattressProtector,
+              ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}),
+            },
+      ),
     [
+      isCrib,
+      cribMattress,
+      cribMattressExtra,
+      cribLinen,
+      cribMobile,
+      cribFoldable,
       mattressType,
       mattressFirmness,
       pillowTypes,
@@ -182,7 +217,9 @@ function BedRow({
   }
 
   // Has any config been set?
-  const hasConfig = !!(cfg.mattressType || cfg.mattressFirmness || (cfg.pillowTypes as string[] | undefined)?.length || cfg.linenIncluded || cfg.extraBlanket || cfg.mattressProtector || cfg.customLabel);
+  const hasConfig = isCrib
+    ? !!(cfg.cribMattress || cfg.cribMattressExtra || cfg.cribLinen || cfg.cribMobile || cfg.cribFoldable)
+    : !!(cfg.mattressType || cfg.mattressFirmness || (cfg.pillowTypes as string[] | undefined)?.length || cfg.linenIncluded || cfg.extraBlanket || cfg.mattressProtector || cfg.customLabel);
 
   return (
     <div className="py-2">
@@ -202,13 +239,13 @@ function BedRow({
           )}
         </div>
 
-        {/* Config — opens a focused modal (colchón / almohadas / ropa de cama),
-            not an inline gray panel. */}
-        <Tooltip text="Configurar colchón, almohada y ropa de cama">
+        {/* Config — opens a focused modal. Cribs get a crib-specific field set
+            (safety / portability), not mattress / pillows / linen. */}
+        <Tooltip text={isCrib ? "Configurar la cuna" : "Configurar colchón, almohada y ropa de cama"}>
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            aria-label="Configurar colchón, almohada y ropa de cama"
+            aria-label={isCrib ? "Configurar la cuna" : "Configurar colchón, almohada y ropa de cama"}
             className={`recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[var(--radius-md)] border transition-colors ${
               hasConfig
                 ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
@@ -326,7 +363,29 @@ function BedRow({
             </div>
           )}
 
+          {/* Crib — safety / portability config (not mattress firmness/pillows). */}
+          {isCrib && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Cuna</p>
+              <div className="space-y-1.5">
+                {[
+                  { key: "cribMattress", label: "Colchón incluido", val: cribMattress, set: setCribMattress },
+                  { key: "cribMattressExtra", label: "Colchón extra disponible", val: cribMattressExtra, set: setCribMattressExtra },
+                  { key: "cribLinen", label: "Ropa de cuna incluida", val: cribLinen, set: setCribLinen },
+                  { key: "cribMobile", label: "Movible (con ruedas)", val: cribMobile, set: setCribMobile },
+                  { key: "cribFoldable", label: "Plegable / de viaje", val: cribFoldable, set: setCribFoldable },
+                ].map(({ key, label, val, set }) => (
+                  <label key={key} className="flex cursor-pointer items-center gap-2">
+                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={val} onChange={(e) => set(e.target.checked)} />
+                    <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Mattress type */}
+          {!isCrib && (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Colchón</p>
             <div className="flex flex-wrap gap-2">
@@ -356,8 +415,10 @@ function BedRow({
               </div>
             )}
           </div>
+          )}
 
           {/* Pillows */}
+          {!isCrib && (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Almohadas</p>
             <div className="flex flex-wrap gap-2">
@@ -372,8 +433,10 @@ function BedRow({
               ))}
             </div>
           </div>
+          )}
 
           {/* Linen */}
+          {!isCrib && (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Ropa de cama</p>
             <div className="space-y-1.5">
@@ -389,6 +452,7 @@ function BedRow({
               ))}
             </div>
           </div>
+          )}
 
           <div className="flex items-center gap-3 pt-1">
             <AutoSaveStatus pending={configPending} />

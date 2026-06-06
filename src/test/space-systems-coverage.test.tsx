@@ -36,12 +36,18 @@ describe("SpaceSystemsCoverage", () => {
     expect(switches[2]).toHaveAttribute("aria-checked", "true");
   });
 
-  it("shows the per-space note input only on covered systems", () => {
+  it("shows a uniform note input on every system (enabled when covered, disabled otherwise)", () => {
     render(<SpaceSystemsCoverage propertyId="p1" spaceId="s1" systems={SYSTEMS} />);
-    // Covered systems (heating, ventilation) get a note field; the uncovered one doesn't.
+    // Covered systems (heating, ventilation) get an editable note field…
     const notes = screen.getAllByPlaceholderText("Matiz para esta estancia (opcional)");
     expect(notes).toHaveLength(2);
     expect(notes[0]).toHaveValue("Radiador");
+    expect(notes[0]).not.toBeDisabled();
+    // …the uncovered one keeps the same-size input but disabled, so all cards
+    // are the same height.
+    const disabled = screen.getAllByPlaceholderText("Actívalo para añadir un matiz");
+    expect(disabled).toHaveLength(1);
+    expect(disabled[0]).toBeDisabled();
   });
 
   it("toggling an uncovered system persists override_yes for that system+space", () => {

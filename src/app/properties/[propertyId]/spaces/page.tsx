@@ -15,6 +15,11 @@ import { resolveSpaceAvailability } from "@/lib/services/space-availability.serv
 import { loadSpaceMedia, spaceMediaOf } from "@/lib/services/space-media.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
 
+/** Building/property-infrastructure systems that never belong to a single room
+ * — excluded from per-space coverage (an elevator is the building's, refuse
+ * collection is the property's). */
+const SPACE_SYSTEM_BLACKLIST = new Set<string>(["sys.elevator", "sys.garbage"]);
+
 /** Header chip label: bold count + pluralized noun (e.g. "5 espacios"). */
 function countChipLabel(n: number, singular: string, plural: string) {
   return (
@@ -73,14 +78,15 @@ export default async function SpacesPage({
   const media = await loadSpaceMedia(allSpaces.map((s) => s.id));
 
   // Per-space EDITABLE system coverage (Opción 1). Every configured system is
-  // selectable per space — the operator picks which ones reach this room. The
-  // taxonomy default drives the initial state (`all_relevant_spaces` defaults
-  // ON; everything else, incl. property-global systems, defaults OFF and is
-  // opt-in). For each we resolve the EFFECTIVE state (explicit override, else
-  // the default) plus the per-space note.
+  // selectable per space EXCEPT building/property-infrastructure ones that never
+  // belong to a single room (the elevator is the building's, refuse collection
+  // is the property's). The taxonomy default drives the initial state
+  // (`all_relevant_spaces` defaults ON; everything else, incl. property-global
+  // systems like water/electricity, defaults OFF and is opt-in). For each we
+  // resolve the EFFECTIVE state (explicit override, else the default) + the note.
   const spaceRelevantSystems = propertySystems.flatMap((sys) => {
     const item = findSystemItem(sys.systemKey);
-    if (!item) return [];
+    if (!item || SPACE_SYSTEM_BLACKLIST.has(sys.systemKey)) return [];
     return [{ id: sys.id, systemKey: sys.systemKey, label: item.label, defaultsOn: item.defaultCoverageRule === "all_relevant_spaces" }];
   });
   const coverageByKey = new Map<string, { mode: string; note: string | null }>();
@@ -125,10 +131,6 @@ export default async function SpacesPage({
   );
   const capacityMismatch =
     property.maxGuests != null && totalBedCapacity < property.maxGuests;
-  // Over-capacity: total sleeping places across ALL spaces exceeds the allowed
-  // guests. Non-blocking — surfaced as a warning so the operator can reconcile.
-  const capacityOver =
-    property.maxGuests != null && totalBedCapacity > property.maxGuests;
 
   // Spaces that conflict with current layout (in excluded list)
   const conflictingSpaces = spaces.filter((s) => excluded.includes(s.spaceType));
@@ -243,26 +245,8 @@ export default async function SpacesPage({
         </div>
       )}
 
-      {/* Over capacity banner — total bed places across all spaces exceeds the
-         allowed guests. Non-blocking; just flags it for the operator. */}
-      {capacityOver && (
-        <div className="mb-4">
-          <Banner
-            type="warning"
-            title="Más camas que huéspedes"
-            message={
-              <>
-                Sumando todas las estancias, las camas permiten dormir a{" "}
-                <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "persona" : "personas"}</span>
-                {" "}pero el máximo de huéspedes es{" "}
-                <span className="font-medium">{property.maxGuests}</span>.
-                {" "}No bloquea nada, pero revisa el número de camas o el máximo en{" "}
-                <Link href={`/properties/${propertyId}/property`} className="font-medium text-[var(--color-text-link)] hover:underline">Propiedad</Link>.
-              </>
-            }
-          />
-        </div>
-      )}
+      {/* Over-capacity is surfaced inside each space's bed section (under "Plazas
+         en esta estancia"), not as a top banner — it appears where you add beds. */}
 
       {/* Missing required spaces hint */}
       {missingRequired.length > 0 && spaces.length > 0 && (
@@ -295,6 +279,8 @@ export default async function SpacesPage({
         ) : (
           <SpacesGrid
             propertyId={propertyId}
+            maxGuests={property.maxGuests}
+            propertyBedCapacity={totalBedCapacity}
             propertyAreaSqm={property.usableAreaSqm}
             propertyCeilingCm={property.ceilingHeightCm}
             cards={activeCards}
