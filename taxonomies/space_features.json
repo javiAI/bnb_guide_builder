@@ -121,16 +121,6 @@
           ]
         },
         {
-          "id": "sf.en_suite_bathroom",
-          "label": "Baño en suite",
-          "description": "Baño privado vinculado únicamente a este dormitorio.",
-          "type": "boolean",
-          "source": [
-            "airbnb:private_bathroom",
-            "booking:en_suite_bathroom"
-          ]
-        },
-        {
           "id": "sf.window_blinds",
           "label": "Persianas",
           "description": "Persianas instaladas en la ventana.",
@@ -193,6 +183,67 @@
               "label": "Ambas capas: filtrantes + blackout"
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "sfg.ensuite_bathroom",
+      "label": "Baño en suite",
+      "description": "Baño privado dentro del dormitorio. Los baños independientes (no atados a un dormitorio) se configuran como espacio Baño propio.",
+      "applies_to": [
+        "sp.bedroom",
+        "sp.studio",
+        "sp.loft"
+      ],
+      "fields": [
+        {
+          "id": "sf.en_suite_bathroom",
+          "label": "Baño en suite",
+          "description": "Baño privado dentro de este dormitorio.",
+          "type": "boolean",
+          "source": [
+            "airbnb:private_bathroom",
+            "booking:en_suite_bathroom"
+          ]
+        },
+        {
+          "id": "sf.ensuite_fixtures",
+          "label": "Instalaciones del baño",
+          "description": "Qué incluye el baño en suite.",
+          "type": "enum_multiselect",
+          "shown_if": {
+            "field": "sf.en_suite_bathroom",
+            "equals": true
+          },
+          "options": [
+            {
+              "id": "toilet",
+              "label": "Inodoro"
+            },
+            {
+              "id": "shower",
+              "label": "Ducha"
+            },
+            {
+              "id": "bathtub",
+              "label": "Bañera"
+            },
+            {
+              "id": "hair_dryer",
+              "label": "Secador de pelo"
+            }
+          ]
+        },
+        {
+          "id": "sf.ensuite_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos del baño en suite. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Doble lavabo', 'Bañera con hidromasaje', 'Ducha sin mampara'.",
+          "type": "text_chips",
+          "shown_if": {
+            "field": "sf.en_suite_bathroom",
+            "equals": true
+          }
         }
       ]
     },
@@ -557,13 +608,9 @@
           "id": "sf.bathroom_access_type",
           "label": "Acceso",
           "description": "Indica si el baño es de uso exclusivo o compartido.",
-          "tooltip": "¿Quién tiene acceso a este baño? Un baño en-suite está conectado directamente a un dormitorio.",
+          "tooltip": "¿Quién tiene acceso a este baño? Este espacio es un baño independiente — un baño en suite se configura dentro de su dormitorio.",
           "type": "enum",
           "options": [
-            {
-              "id": "ensuite",
-              "label": "En-suite: conectado a un dormitorio"
-            },
             {
               "id": "private_dedicated",
               "label": "Privado: uso exclusivo de los huéspedes"
