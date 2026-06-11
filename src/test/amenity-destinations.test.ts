@@ -173,6 +173,14 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     ["am.safe", "sfg.bedroom_storage", "sf.safe"],
     ["am.mosquito_net", "sfg.bedroom_privacy", "sf.mosquito_screens"],
     ["am.outdoor_shower", "sfg.outdoor_setup", "sf.outdoor_shower"],
+    ["am.hangers", "sfg.bedroom_storage", "sf.hangers"],
+    ["am.clothing_storage", "sfg.bedroom_storage", "sf.wardrobe"],
+    // The four toiletries resolve to one multiselect (options: hand_soap,
+    // shower_gel, shampoo, conditioner, body_lotion).
+    ["am.body_soap", "sfg.bathroom_fixtures", "sf.toiletries"],
+    ["am.shower_gel", "sfg.bathroom_fixtures", "sf.toiletries"],
+    ["am.shampoo", "sfg.bathroom_fixtures", "sf.toiletries"],
+    ["am.conditioner", "sfg.bathroom_fixtures", "sf.toiletries"],
   ];
 
   it("space-backed amenities are derived_from_space and have their space-feature field", () => {

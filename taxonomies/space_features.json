@@ -113,6 +113,12 @@
           "type": "boolean"
         },
         {
+          "id": "sf.hangers",
+          "label": "Perchas",
+          "description": "Perchas disponibles en el armario.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.walk_in_wardrobe",
           "label": "Vestidor (walk-in)",
           "description": "Zona o espacio separado dedicado exclusivamente al vestidor.",
@@ -134,12 +140,6 @@
           "id": "sf.full_length_mirror",
           "label": "Espejo de cuerpo entero",
           "description": "Espejo de longitud completa fijado a la pared o puerta del armario.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.desk_workspace",
-          "label": "Zona de trabajo",
-          "description": "Mesa o escritorio apto para trabajar con portátil.",
           "type": "boolean"
         },
         {
@@ -624,6 +624,34 @@
           "type": "text_chips"
         },
         {
+          "id": "sf.toiletries",
+          "label": "Artículos de aseo incluidos",
+          "description": "Artículos de aseo que el huésped encontrará en este baño.",
+          "type": "enum_multiselect",
+          "options": [
+            {
+              "id": "hand_soap",
+              "label": "Jabón de manos"
+            },
+            {
+              "id": "shower_gel",
+              "label": "Gel de ducha"
+            },
+            {
+              "id": "shampoo",
+              "label": "Champú"
+            },
+            {
+              "id": "conditioner",
+              "label": "Acondicionador"
+            },
+            {
+              "id": "body_lotion",
+              "label": "Crema hidratante"
+            }
+          ]
+        },
+        {
           "id": "sf.ventilation",
           "label": "Ventilación",
           "description": "Tipo de ventilación disponible.",
@@ -1000,6 +1028,12 @@
           "label": "Iluminación regulable",
           "description": "Las luces del salón pueden regularse en intensidad.",
           "type": "boolean"
+        },
+        {
+          "id": "sf.mosquito_screens",
+          "label": "Mosquiteras",
+          "description": "Mosquiteras instaladas en las ventanas.",
+          "type": "boolean"
         }
       ]
     },
@@ -1105,6 +1139,39 @@
           "description": "Vistas que no están en la lista. Escribe y pulsa Enter para añadir.",
           "tooltip": "Por ejemplo: 'Patio de luces', 'Aparcamiento', 'Pared de edificio'.",
           "type": "text_chips"
+        }
+      ]
+    },
+    {
+      "id": "sfg.workspace",
+      "label": "Zona de trabajo",
+      "description": "Zona apta para trabajar dentro de la estancia. El despacho dedicado (sp.office) usa su propio grupo completo.",
+      "applies_to": [
+        "sp.bedroom",
+        "sp.living_room",
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
+      ],
+      "fields": [
+        {
+          "id": "sf.desk_workspace",
+          "label": "Zona de trabajo",
+          "description": "Mesa o escritorio apto para trabajar con portátil.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.workspace_other_tags",
+          "label": "Detalles",
+          "description": "Detalles de la zona de trabajo. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Escritorio amplio', 'Junto a la ventana', 'Segunda silla'.",
+          "type": "text_chips",
+          "shown_if": {
+            "field": "sf.desk_workspace",
+            "equals": true
+          }
         }
       ]
     },
