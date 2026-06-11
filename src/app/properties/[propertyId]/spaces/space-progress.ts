@@ -60,6 +60,11 @@ export function missingSpaceSignals(args: {
   return missing;
 }
 
+/** A space expects beds when its type sleeps guests or it already has beds. */
+export function isSleepingSpace(spaceType: string, bedCount: number): boolean {
+  return (getSpaceTypeItem(spaceType)?.allowsSleeping ?? false) || bedCount > 0;
+}
+
 /**
  * Convenience wrapper that resolves the sleeping affordance from the taxonomy.
  * Used by the server (page aggregate) where only the stored `featuresJson`,
@@ -71,6 +76,5 @@ export function resolveSpaceStatus(
   bedCount: number,
   hasPhoto: boolean,
 ): SpaceProgressLevel {
-  const isSleeping = (getSpaceTypeItem(spaceType)?.allowsSleeping ?? false) || bedCount > 0;
-  return computeSpaceStatus({ features, isSleeping, bedCount, hasPhoto });
+  return computeSpaceStatus({ features, isSleeping: isSleepingSpace(spaceType, bedCount), bedCount, hasPhoto });
 }

@@ -133,7 +133,7 @@ export function EntityMediaCard({
            • else → the whole title row is the collapse trigger (Access). */}
         {titleNode ? (
           <div className="flex items-center gap-3 p-5">
-            <span aria-hidden="true"><IconBadge icon={icon} /></span>
+            <IconBadge icon={icon} />
             <span className="flex min-w-0 flex-col gap-1">
               <span id={titleId} className="min-w-0">{titleNode}</span>
               {subtitle && (
@@ -297,17 +297,18 @@ export const ENTITY_CARD_STATUS_META: Record<
 // label on hover (consistent app tooltip format, never the native gray/black
 // `title=`). `aria-label` announces the status even when icon-only.
 export function EntityCardStatusPill({
-  tone,
-  icon: Icon,
+  status,
   label,
   detail,
 }: {
-  tone: BadgeTone;
-  icon: LucideIcon;
+  /** Canonical state — the pill resolves icon+tone from ENTITY_CARD_STATUS_META
+   * itself, so consumers can't hand-pick circles (entity-card-status.test.ts). */
+  status: EntityCardStatus;
   label: string;
   /** Optional hover explanation — e.g. what's still missing to be complete. */
   detail?: string;
 }) {
+  const { tone, icon: Icon } = ENTITY_CARD_STATUS_META[status];
   const tooltip = detail ? `${label} · ${detail}` : label;
   return (
     <Tooltip text={tooltip} className="flex-none">

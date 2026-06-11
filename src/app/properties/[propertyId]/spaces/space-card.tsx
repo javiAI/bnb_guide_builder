@@ -8,7 +8,6 @@ import {
   BedDouble,
   ChevronDown,
   Cog,
-  Minus,
   Move,
   Plus,
   Ruler,
@@ -24,8 +23,8 @@ import {
 } from "@/lib/actions/editor.actions";
 import { deleteMediaAction } from "@/lib/actions/media.actions";
 import type { ActionResult } from "@/lib/types/action-result";
-import { spaceTypes, getSpaceTypeItem } from "@/lib/taxonomies/space-types";
-import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { spaceTypes } from "@/lib/taxonomies/space-types";
+import { bedPlaces } from "@/lib/taxonomies/bed-types";
 import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
@@ -37,7 +36,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import {
   EntityMediaCard,
   EntityCardStatusPill,
-  ENTITY_CARD_STATUS_META,
   type EntityCardRole,
   type EntityCardStatus,
 } from "@/components/ui/entity-media-card";
@@ -48,7 +46,8 @@ import {
   type MediaCarouselSlide,
 } from "@/components/ui/media-carousel";
 import { SectionEyebrow } from "@/components/ui/section-eyebrow";
-import { ToggleChip } from "@/components/ui/toggle-chip";
+import { CHIP_ACTIVE_CLASS, CHIP_BASE_CLASS, ToggleChip } from "@/components/ui/toggle-chip";
+import { InlineStepper } from "@/components/ui/inline-stepper";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { SpaceSystemsCoverage, type SpaceCoverageSystem } from "./space-systems-coverage";
 import { FieldInput, fieldControlClass } from "@/components/ui/field";
@@ -58,6 +57,7 @@ import { cn } from "@/lib/cn";
 import { BedManager, type BedData } from "./bed-manager";
 import {
   computeSpaceStatus,
+  isSleepingSpace,
   missingSpaceSignals,
   type FeatureState,
   type FeatureValue,
@@ -161,15 +161,16 @@ export function SpaceCard({
     setFeatures((prev) => ({ ...prev, [fieldId]: value }));
   }
   const featureGroups = useMemo(() => getSpaceFeatureGroups(space.spaceType), [space.spaceType]);
-  const hasBeds = (getSpaceTypeItem(space.spaceType)?.allowsSleeping ?? false) || beds.length > 0;
-  const progressLevel = useMemo(
-    () => computeSpaceStatus({ features, isSleeping: hasBeds, bedCount: beds.length, hasPhoto: photoCount > 0 }),
-    [features, hasBeds, beds.length, photoCount],
-  );
+  const hasBeds = isSleepingSpace(space.spaceType, beds.length);
+  const { progressLevel, statusDetail } = useMemo(() => {
+    const args = { features, isSleeping: hasBeds, bedCount: beds.length, hasPhoto: photoCount > 0 };
+    const missing = missingSpaceSignals(args);
+    return {
+      progressLevel: computeSpaceStatus(args),
+      statusDetail: missing.length > 0 ? `Falta: ${missing.join(", ")}` : undefined,
+    };
+  }, [features, hasBeds, beds.length, photoCount]);
   const featuresJson = useMemo(() => JSON.stringify(features), [features]);
-  const statusMeta = ENTITY_CARD_STATUS_META[STATUS_KEY[progressLevel]];
-  const statusMissing = missingSpaceSignals({ features, isSleeping: hasBeds, bedCount: beds.length, hasPhoto: photoCount > 0 });
-  const statusDetail = statusMissing.length > 0 ? `Falta: ${statusMissing.join(", ")}` : undefined;
 
   // ── Cover carousel ──
   const carouselSlides = useMemo(() => toCarouselSlides(slides), [slides]);
@@ -183,18 +184,9 @@ export function SpaceCard({
   const router = useRouter();
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const usageKey = `space.${space.id}`;
+  // SpaceMediaSlide is a strict subset of SubsystemSlide (only usageKey missing).
   const lightboxSlides = useMemo<SubsystemSlide[]>(
-    () =>
-      slides.map((s) => ({
-        id: s.id,
-        assetId: s.assetId,
-        kind: s.kind,
-        url: s.url,
-        alt: s.alt,
-        blurhash: s.blurhash,
-        title: s.title,
-        usageKey,
-      })),
+    () => slides.map((s) => ({ ...s, usageKey })),
     [slides, usageKey],
   );
   const uploadConfig = useMemo(
@@ -247,14 +239,7 @@ export function SpaceCard({
   // ── Derived (facts + icon) ──
   const TypeIcon = getSpaceIcon(space.spaceType);
   const typeInfo = findItem(spaceTypes, space.spaceType);
-  const adultCapacity = beds.reduce((sum, bed) => {
-    if (bed.bedType === "bt.other") {
-      const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
-      return sum + customCap * bed.quantity;
-    }
-    const bt = findItem(bedTypes, bed.bedType);
-    return sum + (bt?.sleepingCapacity ?? 1) * bed.quantity;
-  }, 0);
+  const adultCapacity = bedPlaces(beds);
   const cribCount = beds
     .filter((b) => b.bedType === "bt.crib")
     .reduce((sum, b) => sum + b.quantity, 0);
@@ -319,10 +304,6 @@ export function SpaceCard({
     ) : null;
 
   // ── Delete + media-upload affordances (shared across collapsed/expanded) ──
-  const deleteAction = deleteSpaceAction as (
-    prev: { success: boolean } | null,
-    formData: FormData,
-  ) => Promise<{ success: boolean }>;
   const deleteDescription = `Se eliminará "${space.name}" y todos sus datos (camas, fotos y características). Esta acción no se puede deshacer.`;
 
   // Collapsed: action cluster at the body's bottom-right corner — NOT over the
@@ -340,7 +321,7 @@ export function SpaceCard({
         description={deleteDescription}
         entityId={space.id}
         fieldName="spaceId"
-        action={deleteAction}
+        action={deleteSpaceAction}
         triggerClassName="rounded-full bg-[var(--color-background-muted)]"
       />
     </div>
@@ -349,6 +330,21 @@ export function SpaceCard({
   // Expanded: the same upload control in the header.
   const headerAction = (
     <SpaceMediaUpload propertyId={propertyId} spaceId={space.id} className="mr-4" />
+  );
+
+  // ── Editor structure (taxonomy-static per space type — memoized so feature
+  // keystrokes don't rebuild the group/zone scaffolding) ──
+  const { bodyGroups, zones } = useMemo(() => {
+    const body = featureGroups.filter((g) => g.id !== "sfg.dimensions");
+    return { bodyGroups: body, zones: zonesOf(body) };
+  }, [featureGroups]);
+  const renderGroup = (group: SpaceFeatureGroup) => (
+    <EditorSection key={group.id} label={group.label}>
+      {group.operatorHint && (
+        <p className="mb-2 text-xs text-[var(--color-text-muted)]">{group.operatorHint}</p>
+      )}
+      <GroupFields group={group} features={features} onChangeFeature={setFeature} />
+    </EditorSection>
   );
 
   // ── Editor body — only built in the active role. EntityMediaCard ignores
@@ -420,39 +416,18 @@ export function SpaceCard({
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="featuresJson" value={featuresJson} />
 
-        {(() => {
-          const bodyGroups = featureGroups.filter((g) => g.id !== "sfg.dimensions");
-          const zonesPresent = new Set(bodyGroups.map((g) => g.zone).filter(Boolean));
-          const useZones = zonesPresent.size >= 2;
-          const renderGroup = (group: SpaceFeatureGroup) => (
-            <EditorSection key={group.id} label={group.label}>
-              {group.operatorHint && (
-                <p className="mb-2 text-xs text-[var(--color-text-muted)]">{group.operatorHint}</p>
-              )}
-              <GroupFields group={group} features={features} onChangeFeature={setFeature} />
-            </EditorSection>
-          );
-          if (useZones) {
-            const zones: { label: string | null; groups: SpaceFeatureGroup[] }[] = [];
-            for (const g of bodyGroups) {
-              const z = g.zone ?? null;
-              const last = zones[zones.length - 1];
-              if (last && last.label === z) last.groups.push(g);
-              else zones.push({ label: z, groups: [g] });
-            }
-            return (
-              <div className="space-y-8">
-                {zones.map((zone, i) => (
-                  <div key={i} className="space-y-5">
-                    {zone.label && <ZoneHeader label={zone.label} />}
-                    {zone.groups.map(renderGroup)}
-                  </div>
-                ))}
+        {zones ? (
+          <div className="space-y-8">
+            {zones.map((zone, i) => (
+              <div key={i} className="space-y-5">
+                {zone.label && <ZoneHeader label={zone.label} />}
+                {zone.groups.map(renderGroup)}
               </div>
-            );
-          }
-          return <div className="space-y-6">{bodyGroups.map(renderGroup)}</div>;
-        })()}
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-6">{bodyGroups.map(renderGroup)}</div>
+        )}
 
         <EditorSection icon={StickyNote} label="Notas para el huésped">
           <textarea
@@ -515,7 +490,7 @@ export function SpaceCard({
           description={deleteDescription}
           entityId={space.id}
           fieldName="spaceId"
-          action={deleteAction}
+          action={deleteSpaceAction}
         />
       </div>
     </div>
@@ -541,7 +516,7 @@ export function SpaceCard({
           />
         ) : undefined
       }
-      status={<EntityCardStatusPill tone={statusMeta.tone} icon={statusMeta.icon} label={STATUS_LABEL[progressLevel]} detail={statusDetail} />}
+      status={<EntityCardStatusPill status={STATUS_KEY[progressLevel]} label={STATUS_LABEL[progressLevel]} detail={statusDetail} />}
       media={media}
       overlay={overlay}
       collapsedContent={collapsedContent}
@@ -689,6 +664,36 @@ function blockFieldIds(block: Block): string[] {
   return [block.field.id];
 }
 
+/** Cluster consecutive same-zone groups for the multi-zone editors (combos,
+ * studio/loft). Returns null when fewer than 2 distinct zones — single-zone
+ * types (dormitorio, baño…) render flat, without headers. */
+function zonesOf(
+  groups: SpaceFeatureGroup[],
+): { label: string | null; groups: SpaceFeatureGroup[] }[] | null {
+  const present = new Set(groups.map((g) => g.zone).filter(Boolean));
+  if (present.size < 2) return null;
+  const zones: { label: string | null; groups: SpaceFeatureGroup[] }[] = [];
+  for (const g of groups) {
+    const z = g.zone ?? null;
+    const last = zones[zones.length - 1];
+    if (last && last.label === z) last.groups.push(g);
+    else zones.push({ label: z, groups: [g] });
+  }
+  return zones;
+}
+
+/** Group fields by their shown_if trigger; mains live under `null`. */
+function fieldsByTrigger(group: SpaceFeatureGroup): Map<string | null, SpaceFeatureField[]> {
+  const map = new Map<string | null, SpaceFeatureField[]>();
+  for (const f of group.fields) {
+    const key = f.shown_if?.field ?? null;
+    const list = map.get(key);
+    if (list) list.push(f);
+    else map.set(key, [f]);
+  }
+  return map;
+}
+
 function GroupFields({
   group,
   features,
@@ -698,37 +703,29 @@ function GroupFields({
   features: FeatureState;
   onChangeFeature: (fieldId: string, value: FeatureValue) => void;
 }) {
-  const byId = new Map(group.fields.map((f) => [f.id, f] as const));
-  // Cascade visibility: a conditional field shows only when its trigger value
-  // matches AND the trigger field is itself visible — so a gated subtree
-  // (e.g. the en-suite include) folds away with its toggle even though its
-  // inner reveals only reference their direct trigger (no compound shown_if).
-  const isVisible = (f: SpaceFeatureField): boolean => {
-    if (!f.shown_if) return true;
-    if (features[f.shown_if.field] !== f.shown_if.equals) return false;
-    const trigger = byId.get(f.shown_if.field);
-    return !trigger || isVisible(trigger);
-  };
-  const mainFields = group.fields.filter((f) => !f.shown_if);
+  // Static per group — fields keyed by their trigger (mains under null).
+  const childrenOf = useMemo(() => fieldsByTrigger(group), [group]);
+  const mainFields = childrenOf.get(null) ?? [];
   // A group whose only main control is a single labeled field is already named
   // by its section header — drop the redundant field label.
   const soleLabel =
     mainFields.length === 1 &&
     mainFields[0].type !== "boolean" &&
     mainFields[0].type !== "text_chips";
+  const conditionMet = (f: SpaceFeatureField) =>
+    !!f.shown_if && features[f.shown_if.field] === f.shown_if.equals;
 
   // Conditional fields render right below the block holding their trigger —
   // "Cierre de la ducha" sits under the chips row with "Ducha", never pooled
   // at the end of the group — and recursively form blocks of their own.
-  const renderedDeps = new Set<string>();
-  const depsOf = (ids: string[]) =>
-    group.fields.filter(
-      (f) => f.shown_if && ids.includes(f.shown_if.field) && isVisible(f) && !renderedDeps.has(f.id),
-    );
+  // Visibility cascades structurally: a dep is only reached through its
+  // trigger's block, which itself only renders when the trigger is visible —
+  // so a gated subtree (e.g. the en-suite include) folds away with its toggle.
   const renderLevel = (fields: SpaceFeatureField[], depth: number): ReactNode[] =>
     buildBlocks(fields).map((block, i) => {
-      const deps = depsOf(blockFieldIds(block));
-      deps.forEach((f) => renderedDeps.add(f.id));
+      const deps = blockFieldIds(block)
+        .flatMap((id) => childrenOf.get(id) ?? [])
+        .filter(conditionMet);
       return (
         <Fragment key={`${depth}-${i}`}>
           {renderBlock(block, i, features, onChangeFeature, depth === 0 && soleLabel)}
@@ -741,13 +738,14 @@ function GroupFields({
       );
     });
 
-  const body = renderLevel(mainFields, 0);
   // Safety net: a visible conditional whose trigger lives outside this group
-  // (none in the catalog today) still renders, at the end.
-  const orphans = group.fields.filter((f) => f.shown_if && isVisible(f) && !renderedDeps.has(f.id));
+  // (cross-group shown_if, e.g. pool lifeguard ↔ access type) renders at the end.
+  const orphans = group.fields.filter(
+    (f) => f.shown_if && !group.fields.some((t) => t.id === f.shown_if!.field) && conditionMet(f),
+  );
   return (
     <div className="space-y-4">
-      {body}
+      {renderLevel(mainFields, 0)}
       {orphans.length > 0 && (
         <div className="space-y-4 border-l-2 border-[var(--color-border-default)] pl-4">
           {renderLevel(orphans, 1)}
@@ -888,27 +886,15 @@ function MultiChips({
   );
 }
 
-// Integer counts use a compact chip-height stepper (matches the bed config);
+// Integer counts use the shared compact stepper (same as the bed config);
 // decimals (m², m³…) keep a narrow numeric input.
-const COUNT_BTN_CLS =
-  "recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-full border border-[var(--color-border-default)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
-
 function NumberOrCount({ field, value, onChange }: { field: SpaceFeatureField; value: number | null; onChange: (v: FeatureValue) => void }) {
   if (field.type === "integer_optional") {
     const v = value ?? 0;
-    const set = (n: number) => onChange(n <= 0 ? null : n);
     return (
       <div>
         <FieldLabel field={field} />
-        <div className="inline-flex items-center gap-2">
-          <button type="button" disabled={v <= 0} onClick={() => set(v - 1)} aria-label={`Reducir ${field.label}`} className={COUNT_BTN_CLS}>
-            <Minus size={14} aria-hidden="true" />
-          </button>
-          <span className="min-w-[1.75rem] text-center text-sm font-semibold text-[var(--color-text-primary)]">{v}</span>
-          <button type="button" onClick={() => set(v + 1)} aria-label={`Aumentar ${field.label}`} className={COUNT_BTN_CLS}>
-            <Plus size={14} aria-hidden="true" />
-          </button>
-        </div>
+        <InlineStepper value={v} label={field.label} onChange={(n) => onChange(n <= 0 ? null : n)} />
       </div>
     );
   }
@@ -981,10 +967,7 @@ function InlineTagChips({
   return (
     <>
       {chips.map((chip) => (
-        <span
-          key={chip}
-          className="recipe-chip-28 inline-flex h-7 items-center gap-1 rounded-full border border-[var(--color-action-primary)] bg-[var(--color-action-primary)] px-3 text-xs font-semibold text-[var(--color-action-primary-fg)]"
-        >
+        <span key={chip} className={cn(CHIP_BASE_CLASS, CHIP_ACTIVE_CLASS)}>
           {chip}
           <button
             type="button"
@@ -1014,7 +997,10 @@ function InlineTagChips({
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="recipe-chip-28 inline-flex h-7 items-center gap-1 rounded-full border border-dashed border-[var(--color-border-strong)] px-3 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+          className={cn(
+            CHIP_BASE_CLASS,
+            "border-dashed border-[var(--color-border-strong)] font-medium text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]",
+          )}
         >
           <Plus size={13} aria-hidden="true" /> Añadir otro…
         </button>

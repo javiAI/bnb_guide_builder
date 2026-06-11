@@ -31,7 +31,10 @@ describe("entity-card status vocabulary", () => {
     expect(ENTITY_CARD_STATUS_META.empty).toEqual({ tone: "neutral", icon: CircleDashed });
   });
 
-  it("every EntityCardStatusPill consumer uses the canonical meta (no hand-picked circles)", () => {
+  it("no EntityCardStatusPill consumer hand-picks circle icons", () => {
+    // The pill resolves icon+tone from META internally (it only accepts a
+    // `status`), so the one remaining way to diverge is rendering circles
+    // beside it — ban the circle family from consumer imports outright.
     const files = walk(join(process.cwd(), "src", "app")).filter((f) =>
       readFileSync(f, "utf8").includes("EntityCardStatusPill"),
     );
@@ -39,11 +42,6 @@ describe("entity-card status vocabulary", () => {
 
     for (const file of files) {
       const src = readFileSync(file, "utf8");
-      expect(
-        src.includes("ENTITY_CARD_STATUS_META"),
-        `${file} renders the status pill without the canonical META`,
-      ).toBe(true);
-      // The status circle family must come exclusively via the META record.
       const lucideImport = src.match(/import\s*\{([^}]*)\}\s*from\s*"lucide-react"/)?.[1] ?? "";
       const banned = lucideImport
         .split(",")

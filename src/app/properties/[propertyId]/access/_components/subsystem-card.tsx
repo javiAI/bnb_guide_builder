@@ -9,7 +9,6 @@ import { deleteMediaAction } from "@/lib/actions/media.actions";
 import {
   EntityMediaCard,
   EntityCardStatusPill,
-  ENTITY_CARD_STATUS_META,
   type EntityCardRole,
 } from "@/components/ui/entity-media-card";
 import { HoverCard } from "@/components/ui/hover-card";
@@ -676,8 +675,7 @@ export function SubsystemCard({
           subtitle={expandedSubtitle}
           status={
             <EntityCardStatusPill
-              tone={ENTITY_CARD_STATUS_META[status === "configured" ? "complete" : "empty"].tone}
-              icon={ENTITY_CARD_STATUS_META[status === "configured" ? "complete" : "empty"].icon}
+              status={status === "configured" ? "complete" : "empty"}
               label={status === "configured" ? "Configurado" : "Pendiente"}
               detail={status === "configured" ? undefined : "Sin configurar todavía"}
             />

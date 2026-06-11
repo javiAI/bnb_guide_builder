@@ -37,7 +37,9 @@ export default async function SpacesPage({
 }) {
   const { propertyId } = await params;
 
-  const [property, allSpaces, propertySystems, systemCoverages] = await Promise.all([
+  // Media chains directly onto the space query (batched loader, no N+1) so the
+  // mediaAssignment query + presigning never wait for the slower siblings.
+  const [property, { allSpaces, media }, propertySystems, systemCoverages] = await Promise.all([
     prisma.property.findUnique({
       where: { id: propertyId },
       select: {
@@ -50,11 +52,13 @@ export default async function SpacesPage({
         ceilingHeightCm: true,
       },
     }),
-    prisma.space.findMany({
-      where: { propertyId },
-      orderBy: { sortOrder: "asc" },
-      include: { beds: { orderBy: { createdAt: "asc" } } },
-    }),
+    prisma.space
+      .findMany({
+        where: { propertyId },
+        orderBy: { sortOrder: "asc" },
+        include: { beds: { orderBy: { createdAt: "asc" } } },
+      })
+      .then(async (rows) => ({ allSpaces: rows, media: await loadSpaceMedia(rows.map((s) => s.id)) })),
     prisma.propertySystem.findMany({
       where: { propertyId },
       select: { id: true, systemKey: true },
@@ -72,10 +76,6 @@ export default async function SpacesPage({
   // card (it stays excluded from derived counts via the status filter in the
   // derivation services).
   const spaces = allSpaces;
-
-  // Batched media loader (one findMany for all spaces — no N+1). Returns the
-  // full ordered slide set per space so each card cover is a MediaCarousel.
-  const media = await loadSpaceMedia(allSpaces.map((s) => s.id));
 
   // Per-space EDITABLE system coverage (Opción 1). Every configured system is
   // selectable per space EXCEPT building/property-infrastructure ones that never

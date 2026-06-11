@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { updateSystemCoverageAction } from "@/lib/actions/editor.actions";
 import { systemIconFor } from "@/lib/icons/system-icons";
+import { fieldControlClass } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
 export interface SpaceCoverageSystem {
@@ -131,7 +132,10 @@ export function SpaceSystemsCoverage({
                 disabled={!s.covered}
                 placeholder={s.covered ? "Matiz para esta estancia (opcional)" : "Actívalo para añadir un matiz"}
                 onBlur={(e) => saveNote(s.systemId, e.target.value.trim())}
-                className="min-h-[36px] w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-2.5 py-1.5 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:outline-none focus-visible:border-[var(--color-border-focus)] focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] disabled:cursor-not-allowed disabled:bg-[var(--color-background-muted)]/40 disabled:text-[var(--color-text-muted)]"
+                className={cn(
+                  fieldControlClass,
+                  "min-h-[36px] px-2.5 py-1.5 text-xs disabled:cursor-not-allowed disabled:bg-[var(--color-background-muted)]/40 disabled:text-[var(--color-text-muted)]",
+                )}
               />
             </div>
           </div>

@@ -9,11 +9,17 @@
  * FUTURE.md §19) — silence exactly that message until the upgrade lands.
  */
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  // Dev-only: in production the deprecation in server logs is legitimate ops
+  // signal. The AWS warning is one-shot, so restore the original right after
+  // suppressing it — the monkey-patch doesn't outlive its purpose.
+  if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.NODE_ENV === "production") return;
   const original = process.emitWarning.bind(process);
   process.emitWarning = ((warning: string | Error, ...args: unknown[]) => {
     const text = typeof warning === "string" ? warning : (warning?.message ?? "");
-    if (text.includes("AWS SDK for JavaScript (v3)")) return;
+    if (text.includes("AWS SDK for JavaScript (v3)")) {
+      process.emitWarning = original;
+      return;
+    }
     return (original as (w: string | Error, ...rest: unknown[]) => void)(warning, ...args);
   }) as typeof process.emitWarning;
 }

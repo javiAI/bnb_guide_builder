@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { createSpaceAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
@@ -25,18 +25,13 @@ export function AddSpaceChips({
   propertyId: string;
   options: AddSpaceOption[];
 }) {
-  const [state, formAction] = useActionState<ActionResult | null, FormData>(
+  const [state, formAction, isPending] = useActionState<ActionResult | null, FormData>(
     createSpaceAction,
     null,
   );
   const [, startTransition] = useTransition();
+  // Which chip fired — only for the spinner; disabling rides on isPending.
   const [pendingType, setPendingType] = useState<string | null>(null);
-
-  // Re-enable the chips once the action settles (success or error) — the new
-  // card arrives via revalidation, this component keeps its local state.
-  useEffect(() => {
-    setPendingType(null);
-  }, [state]);
 
   function add(typeId: string) {
     const fd = new FormData();
@@ -70,10 +65,10 @@ export function AddSpaceChips({
                 key={opt.id}
                 type="button"
                 onClick={() => add(opt.id)}
-                disabled={pendingType !== null}
+                disabled={isPending}
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-[var(--color-border-strong)] bg-transparent px-4 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
               >
-                {pendingType === opt.id ? (
+                {isPending && pendingType === opt.id ? (
                   <Loader2 size={14} aria-hidden="true" className="animate-spin" />
                 ) : (
                   <Plus size={14} aria-hidden="true" />

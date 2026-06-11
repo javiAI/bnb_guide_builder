@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useMemo, useState, useRef, useTransition } from "react";
+import { useActionState, useState, useRef, useTransition } from "react";
 import {
   addBedAction,
   updateBedAction,
@@ -9,12 +9,14 @@ import {
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
+import { autoSaveSubmit, useFormAutoSave, usePortalFormRef } from "@/lib/use-form-auto-save";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ToggleChip } from "@/components/ui/toggle-chip";
+import { InlineStepper } from "@/components/ui/inline-stepper";
+import { fieldControlClass } from "@/components/ui/field";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Minus, Plus, Settings2, Trash2, TriangleAlert, X } from "lucide-react";
-import { bedTypes } from "@/lib/taxonomies/bed-types";
+import { Settings2, Trash2, TriangleAlert, X } from "lucide-react";
+import { bedTypes, bedPlaces } from "@/lib/taxonomies/bed-types";
 import {
   mattressTypes as mattressTypeOptions,
   mattressFirmness as mattressFirmnessOptions,
@@ -23,8 +25,6 @@ import {
 import { getItems, findItem } from "@/lib/taxonomies/_helpers";
 
 const bedTypeOptions = getItems(bedTypes);
-
-const STEPPER_BTN_SM_CLS = "flex recipe-icon-btn-32 items-center justify-center rounded-full border border-[var(--color-border-default)] text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] disabled:opacity-40";
 
 export interface BedData {
   id: string;
@@ -63,14 +63,7 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests, propertyBedCa
     startTransition(() => { addAction(fd); });
   }
 
-  const totalCapacity = beds.reduce((sum, bed) => {
-    if (bed.bedType === "bt.other") {
-      const customCap = (bed.configJson?.customCapacity as number | undefined) ?? 1;
-      return sum + customCap * bed.quantity;
-    }
-    const typeInfo = findItem(bedTypes, bed.bedType);
-    return sum + (typeInfo?.sleepingCapacity ?? 1) * bed.quantity;
-  }, 0);
+  const totalCapacity = bedPlaces(beds);
 
   return (
     <div className="space-y-3">
@@ -122,6 +115,47 @@ export function BedManager({ propertyId, spaceId, beds, maxGuests, propertyBedCa
   );
 }
 
+// Modal checkbox lists (crib options, linen) share one scaffold.
+function CheckboxList({
+  items,
+  value,
+  onToggle,
+}: {
+  items: ReadonlyArray<{ key: string; label: string }>;
+  value: (key: string) => boolean;
+  onToggle: (key: string, checked: boolean) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {items.map(({ key, label }) => (
+        <label key={key} className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--color-action-primary)]"
+            checked={value(key)}
+            onChange={(e) => onToggle(key, e.target.checked)}
+          />
+          <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+const CRIB_ITEMS = [
+  { key: "cribMattress", label: "Colchón incluido" },
+  { key: "cribMattressExtra", label: "Colchón extra disponible" },
+  { key: "cribLinen", label: "Ropa de cuna incluida" },
+  { key: "cribMobile", label: "Movible (con ruedas)" },
+  { key: "cribFoldable", label: "Plegable / de viaje" },
+] as const;
+
+const LINEN_ITEMS = [
+  { key: "linenIncluded", label: "Ropa de cama incluida" },
+  { key: "extraBlanket", label: "Manta extra disponible" },
+  { key: "mattressProtector", label: "Protector de colchón" },
+] as const;
+
 function BedRow({
   bed,
   propertyId,
@@ -149,84 +183,50 @@ function BedRow({
   // Auto-save: quantity changes persist via a hidden mirror form; the config
   // panel persists as you edit (configJson is mirrored into a hidden input, so
   // the FormData diff catches every control). `flushConfig()` runs on collapse.
+  // The config form lives in a Radix Portal → portal-aware ref (see hook docs).
   const qtyFormRef = useRef<HTMLFormElement>(null);
   useFormAutoSave(qtyFormRef);
   const configFormRef = useRef<HTMLFormElement | null>(null);
   const flushConfig = useFormAutoSave(configFormRef);
-  // The config form lives in a Radix Portal, which mounts its children one
-  // tick AFTER this row's render — so the auto-save effect runs with a null
-  // ref and never baselines, and the user's first edit gets absorbed as the
-  // baseline instead of saved. Force one re-render when the form attaches so
-  // the hook binds & baselines against the pre-edit values.
-  const [, bumpConfigFormMounted] = useState(0);
-  const attachConfigForm = useCallback((el: HTMLFormElement | null) => {
-    configFormRef.current = el;
-    if (el) bumpConfigFormMounted((n) => n + 1);
-  }, []);
+  const attachConfigForm = usePortalFormRef(configFormRef);
 
-  const cfg = bed.configJson ?? {};
   const typeInfo = findItem(bedTypes, bed.bedType);
   const isCustom = bed.bedType === "bt.other";
   // A crib is not a regular bed — its config is about safety/portability, not
   // mattress firmness or pillows. It gets its own field set.
   const isCrib = bed.bedType === "bt.crib";
 
-  const [mattressType, setMattressType] = useState<string>((cfg.mattressType as string) ?? "");
-  const [mattressTypeCustom, setMattressTypeCustom] = useState<string>((cfg.mattressTypeCustom as string) ?? "");
-  const [mattressFirmness, setMattressFirmness] = useState<string>((cfg.mattressFirmness as string) ?? "");
-  const [pillowTypes, setPillowTypes] = useState<string[]>((cfg.pillowTypes as string[]) ?? []);
-  const [linenIncluded, setLinenIncluded] = useState<boolean>((cfg.linenIncluded as boolean) ?? false);
-  const [extraBlanket, setExtraBlanket] = useState<boolean>((cfg.extraBlanket as boolean) ?? false);
-  const [mattressProtector, setMattressProtector] = useState<boolean>((cfg.mattressProtector as boolean) ?? false);
-  const [customCapacity, setCustomCapacity] = useState<number>((cfg.customCapacity as number) ?? 1);
-  const [customLabelEdit, setCustomLabelEdit] = useState<string>((cfg.customLabel as string) ?? "");
-  // Crib-specific config.
-  const [cribMattress, setCribMattress] = useState<boolean>((cfg.cribMattress as boolean) ?? false);
-  const [cribMattressExtra, setCribMattressExtra] = useState<boolean>((cfg.cribMattressExtra as boolean) ?? false);
-  const [cribLinen, setCribLinen] = useState<boolean>((cfg.cribLinen as boolean) ?? false);
-  const [cribMobile, setCribMobile] = useState<boolean>((cfg.cribMobile as boolean) ?? false);
-  const [cribFoldable, setCribFoldable] = useState<boolean>((cfg.cribFoldable as boolean) ?? false);
+  // One state record for the whole config modal — every control reads/patches
+  // this; the serializer below builds the persisted shape per bed kind. Every
+  // key it emits must be declared in bedConfigSchema (Zod strips unknowns).
+  const [cfg, setCfg] = useState<Record<string, unknown>>(bed.configJson ?? {});
+  const patch = (key: string, value: unknown) => setCfg((prev) => ({ ...prev, [key]: value }));
+  const bool = (key: string) => Boolean(cfg[key]);
+  const str = (key: string) => (cfg[key] as string) ?? "";
 
+  const mattressType = str("mattressType");
+  const pillowTypes = (cfg.pillowTypes as string[]) ?? [];
+  const customLabel = str("customLabel");
+  const customCapacity = (cfg.customCapacity as number) ?? 1;
   const cap = isCustom ? customCapacity : (typeInfo?.sleepingCapacity ?? 1);
 
-  const configSerialized = useMemo(
-    () =>
-      JSON.stringify(
-        isCrib
-          ? { cribMattress, cribMattressExtra, cribLinen, cribMobile, cribFoldable }
-          : {
-              mattressType,
-              mattressFirmness,
-              pillowTypes,
-              linenIncluded,
-              extraBlanket,
-              mattressProtector,
-              ...(mattressType === "other" ? { mattressTypeCustom } : {}),
-              ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}),
-            },
-      ),
-    [
-      isCrib,
-      cribMattress,
-      cribMattressExtra,
-      cribLinen,
-      cribMobile,
-      cribFoldable,
-      mattressType,
-      mattressTypeCustom,
-      mattressFirmness,
-      pillowTypes,
-      linenIncluded,
-      extraBlanket,
-      mattressProtector,
-      isCustom,
-      customLabelEdit,
-      customCapacity,
-    ],
+  const configSerialized = JSON.stringify(
+    isCrib
+      ? Object.fromEntries(CRIB_ITEMS.map(({ key }) => [key, bool(key)]))
+      : {
+          mattressType,
+          mattressFirmness: str("mattressFirmness"),
+          pillowTypes,
+          linenIncluded: bool("linenIncluded"),
+          extraBlanket: bool("extraBlanket"),
+          mattressProtector: bool("mattressProtector"),
+          ...(mattressType === "other" ? { mattressTypeCustom: str("mattressTypeCustom") } : {}),
+          ...(isCustom ? { customLabel, customCapacity } : {}),
+        },
   );
 
   function togglePillow(id: string) {
-    setPillowTypes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
+    patch("pillowTypes", pillowTypes.includes(id) ? pillowTypes.filter((v) => v !== id) : [...pillowTypes, id]);
   }
 
   return (
@@ -236,13 +236,11 @@ function BedRow({
         {/* Bed label */}
         <div className="flex-1 min-w-0">
           <span className="text-sm text-[var(--color-text-primary)]">
-            {isCustom
-              ? ((cfg.customLabel as string) || "Cama personalizada")
-              : (typeInfo?.label ?? bed.bedType)}
+            {isCustom ? (customLabel || "Cama personalizada") : (typeInfo?.label ?? bed.bedType)}
           </span>
           {cap > 0 && (
             <span className="ml-1.5 text-xs text-[var(--color-text-muted)]">
-              · {cap * quantity} {cap * quantity === 1 ? "pers." : "pers."}
+              · {cap * quantity} pers.
             </span>
           )}
         </div>
@@ -261,29 +259,13 @@ function BedRow({
         </Tooltip>
 
         {/* Inline quantity stepper */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={quantity <= 1}
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            className={STEPPER_BTN_SM_CLS}
-            aria-label={`Reducir cantidad de ${typeInfo?.label ?? bed.bedType}`}
-          >
-            <Minus size={14} aria-hidden="true" />
-          </button>
-          <span className="w-5 text-center text-sm font-medium text-[var(--color-text-primary)]">
-            {quantity}
-          </span>
-          <button
-            type="button"
-            disabled={quantity >= 10}
-            onClick={() => setQuantity((q) => Math.min(10, q + 1))}
-            className={STEPPER_BTN_SM_CLS}
-            aria-label={`Aumentar cantidad de ${typeInfo?.label ?? bed.bedType}`}
-          >
-            <Plus size={14} aria-hidden="true" />
-          </button>
-        </div>
+        <InlineStepper
+          value={quantity}
+          min={1}
+          max={10}
+          onChange={setQuantity}
+          label={`cantidad de ${typeInfo?.label ?? bed.bedType}`}
+        />
 
         {/* Quantity auto-saves on change via this hidden mirror form
             (display:contents so it adds no layout box). */}
@@ -323,7 +305,7 @@ function BedRow({
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <Dialog.Title className="text-base font-semibold text-[var(--color-text-primary)]">
-                {isCustom ? (customLabelEdit || "Cama personalizada") : (typeInfo?.label ?? bed.bedType)}
+                {isCustom ? (customLabel || "Cama personalizada") : (typeInfo?.label ?? bed.bedType)}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <button
@@ -349,20 +331,23 @@ function BedRow({
                   <span className="text-xs font-semibold text-[var(--color-text-primary)] mb-1 block">Nombre</span>
                   <input
                     type="text"
-                    value={customLabelEdit}
-                    onChange={(e) => setCustomLabelEdit(e.target.value)}
+                    value={customLabel}
+                    onChange={(e) => patch("customLabel", e.target.value)}
                     placeholder="Ej. Futón, Hammock, Tatami…"
-                    className="block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
+                    className={fieldControlClass}
                   />
                 </label>
-                <label className="block">
+                <div>
                   <span className="text-xs font-semibold text-[var(--color-text-primary)] mb-1 block">Capacidad (personas)</span>
-                  <div className="flex items-center gap-1 mt-1">
-                    <button type="button" onClick={() => setCustomCapacity(Math.max(1, customCapacity - 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)] disabled:opacity-40" disabled={customCapacity <= 1} aria-label="Reducir capacidad"><Minus size={14} aria-hidden="true" /></button>
-                    <span className="w-6 text-center text-sm font-medium">{customCapacity}</span>
-                    <button type="button" onClick={() => setCustomCapacity(Math.min(20, customCapacity + 1))} className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border-default)] text-sm hover:bg-[var(--color-interactive-hover)]" aria-label="Aumentar capacidad"><Plus size={14} aria-hidden="true" /></button>
-                  </div>
-                </label>
+                  <InlineStepper
+                    value={customCapacity}
+                    min={1}
+                    max={20}
+                    onChange={(n) => patch("customCapacity", n)}
+                    label="capacidad"
+                    className="mt-1"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -371,20 +356,7 @@ function BedRow({
           {isCrib && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Cuna</p>
-              <div className="space-y-1.5">
-                {[
-                  { key: "cribMattress", label: "Colchón incluido", val: cribMattress, set: setCribMattress },
-                  { key: "cribMattressExtra", label: "Colchón extra disponible", val: cribMattressExtra, set: setCribMattressExtra },
-                  { key: "cribLinen", label: "Ropa de cuna incluida", val: cribLinen, set: setCribLinen },
-                  { key: "cribMobile", label: "Movible (con ruedas)", val: cribMobile, set: setCribMobile },
-                  { key: "cribFoldable", label: "Plegable / de viaje", val: cribFoldable, set: setCribFoldable },
-                ].map(({ key, label, val, set }) => (
-                  <label key={key} className="flex cursor-pointer items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={val} onChange={(e) => set(e.target.checked)} />
-                    <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
-                  </label>
-                ))}
-              </div>
+              <CheckboxList items={CRIB_ITEMS} value={bool} onToggle={patch} />
             </div>
           )}
 
@@ -398,7 +370,7 @@ function BedRow({
                   key={opt.id}
                   active={mattressType === opt.id}
                   hideCheck
-                  onToggle={() => setMattressType(mattressType === opt.id ? "" : opt.id)}
+                  onToggle={() => patch("mattressType", mattressType === opt.id ? "" : opt.id)}
                 >
                   {opt.label}
                 </ToggleChip>
@@ -407,11 +379,11 @@ function BedRow({
             {mattressType === "other" && (
               <input
                 type="text"
-                value={mattressTypeCustom}
-                onChange={(e) => setMattressTypeCustom(e.target.value)}
+                value={str("mattressTypeCustom")}
+                onChange={(e) => patch("mattressTypeCustom", e.target.value)}
                 placeholder="Ej. Enrollable, Futón…"
                 aria-label="Tipo de colchón personalizado"
-                className="mt-2 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
+                className={`mt-2 ${fieldControlClass}`}
               />
             )}
             {mattressType && (
@@ -419,9 +391,9 @@ function BedRow({
                 {mattressFirmnessOptions.map((opt) => (
                   <ToggleChip
                     key={opt.id}
-                    active={mattressFirmness === opt.id}
+                    active={str("mattressFirmness") === opt.id}
                     hideCheck
-                    onToggle={() => setMattressFirmness(mattressFirmness === opt.id ? "" : opt.id)}
+                    onToggle={() => patch("mattressFirmness", str("mattressFirmness") === opt.id ? "" : opt.id)}
                   >
                     {opt.label}
                   </ToggleChip>
@@ -453,18 +425,7 @@ function BedRow({
           {!isCrib && (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">Ropa de cama</p>
-            <div className="space-y-1.5">
-              {[
-                { key: "linenIncluded", label: "Ropa de cama incluida", val: linenIncluded, set: setLinenIncluded },
-                { key: "extraBlanket", label: "Manta extra disponible", val: extraBlanket, set: setExtraBlanket },
-                { key: "mattressProtector", label: "Protector de colchón", val: mattressProtector, set: setMattressProtector },
-              ].map(({ key, label, val, set }) => (
-                <label key={key} className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-[var(--color-action-primary)]" checked={val} onChange={(e) => set(e.target.checked)} />
-                  <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
-                </label>
-              ))}
-            </div>
+            <CheckboxList items={LINEN_ITEMS} value={bool} onToggle={patch} />
           </div>
           )}
 
