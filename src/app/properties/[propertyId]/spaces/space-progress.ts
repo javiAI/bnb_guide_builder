@@ -42,6 +42,25 @@ export function computeSpaceStatus(args: {
 }
 
 /**
+ * The unmet signals behind a non-complete status, as operator-facing labels —
+ * surfaced on the status pill's hover so "En progreso" explains itself.
+ * Mirrors computeSpaceStatus exactly: same signals, same applicability.
+ */
+export function missingSpaceSignals(args: {
+  features: FeatureState;
+  isSleeping: boolean;
+  bedCount: number;
+  hasPhoto: boolean;
+}): string[] {
+  const { features, isSleeping, bedCount, hasPhoto } = args;
+  const missing: string[] = [];
+  if (!hasPhoto) missing.push("una foto");
+  if (isSleeping && bedCount === 0) missing.push("camas");
+  if (!hasAnyFeature(features)) missing.push("algún detalle de la estancia");
+  return missing;
+}
+
+/**
  * Convenience wrapper that resolves the sleeping affordance from the taxonomy.
  * Used by the server (page aggregate) where only the stored `featuresJson`,
  * bed count and photo count are available.

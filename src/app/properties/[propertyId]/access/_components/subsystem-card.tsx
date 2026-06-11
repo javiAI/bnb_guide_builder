@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, CircleDashed, Loader2, Plus, Star, Upload, Video } from "lucide-react";
+import { Loader2, Plus, Star, Upload, Video } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { deleteMediaAction } from "@/lib/actions/media.actions";
 import {
   EntityMediaCard,
   EntityCardStatusPill,
+  ENTITY_CARD_STATUS_META,
   type EntityCardRole,
 } from "@/components/ui/entity-media-card";
 import { HoverCard } from "@/components/ui/hover-card";
@@ -675,9 +676,10 @@ export function SubsystemCard({
           subtitle={expandedSubtitle}
           status={
             <EntityCardStatusPill
-              tone={status === "configured" ? "success" : "warning"}
-              icon={status === "configured" ? CircleCheck : CircleDashed}
+              tone={ENTITY_CARD_STATUS_META[status === "configured" ? "complete" : "empty"].tone}
+              icon={ENTITY_CARD_STATUS_META[status === "configured" ? "complete" : "empty"].icon}
               label={status === "configured" ? "Configurado" : "Pendiente"}
+              detail={status === "configured" ? undefined : "Sin configurar todavía"}
             />
           }
           media={media}

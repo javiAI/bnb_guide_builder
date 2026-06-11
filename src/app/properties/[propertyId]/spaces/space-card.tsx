@@ -7,9 +7,6 @@ import { useRouter } from "next/navigation";
 import {
   BedDouble,
   ChevronDown,
-  Circle,
-  CircleCheck,
-  CircleDot,
   Cog,
   Minus,
   Move,
@@ -32,7 +29,6 @@ import { bedTypes } from "@/lib/taxonomies/bed-types";
 import { getSpaceFeatureGroups } from "@/lib/taxonomies/space-features";
 import { findItem } from "@/lib/taxonomies/_helpers";
 import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy";
-import type { BadgeTone } from "@/lib/types";
 import { getSpaceIcon } from "@/lib/icons/space-icons";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
@@ -41,7 +37,9 @@ import { Tooltip } from "@/components/ui/tooltip";
 import {
   EntityMediaCard,
   EntityCardStatusPill,
+  ENTITY_CARD_STATUS_META,
   type EntityCardRole,
+  type EntityCardStatus,
 } from "@/components/ui/entity-media-card";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import { SpaceMediaUpload } from "./space-media-upload";
@@ -60,6 +58,7 @@ import { cn } from "@/lib/cn";
 import { BedManager, type BedData } from "./bed-manager";
 import {
   computeSpaceStatus,
+  missingSpaceSignals,
   type FeatureState,
   type FeatureValue,
   type SpaceProgressLevel,
@@ -113,14 +112,17 @@ interface SpaceCardProps {
 const PLACEHOLDER_GRADIENT =
   "linear-gradient(135deg, var(--color-action-primary-subtle), var(--color-background-muted))";
 
-const STATUS_META: Record<
-  SpaceProgressLevel,
-  { tone: BadgeTone; icon: LucideIcon; label: string }
-> = {
-  // Intuitive completion progression: empty ring -> ring+dot -> ring+check.
-  complete: { tone: "success", icon: CircleCheck, label: "Completa" },
-  partial: { tone: "warning", icon: CircleDot, label: "En progreso" },
-  none: { tone: "neutral", icon: Circle, label: "Sin datos" },
+// Icons/tones come from the canonical entity-card vocabulary (check/dot/dashed)
+// — only the domain copy lives here.
+const STATUS_KEY: Record<SpaceProgressLevel, EntityCardStatus> = {
+  complete: "complete",
+  partial: "partial",
+  none: "empty",
+};
+const STATUS_LABEL: Record<SpaceProgressLevel, string> = {
+  complete: "Completa",
+  partial: "En progreso",
+  none: "Sin datos",
 };
 
 function toCarouselSlides(slides: readonly SpaceMediaSlide[]): MediaCarouselSlide[] {
@@ -165,7 +167,9 @@ export function SpaceCard({
     [features, hasBeds, beds.length, photoCount],
   );
   const featuresJson = useMemo(() => JSON.stringify(features), [features]);
-  const status = STATUS_META[progressLevel];
+  const statusMeta = ENTITY_CARD_STATUS_META[STATUS_KEY[progressLevel]];
+  const statusMissing = missingSpaceSignals({ features, isSleeping: hasBeds, bedCount: beds.length, hasPhoto: photoCount > 0 });
+  const statusDetail = statusMissing.length > 0 ? `Falta: ${statusMissing.join(", ")}` : undefined;
 
   // ── Cover carousel ──
   const carouselSlides = useMemo(() => toCarouselSlides(slides), [slides]);
@@ -537,7 +541,7 @@ export function SpaceCard({
           />
         ) : undefined
       }
-      status={<EntityCardStatusPill tone={status.tone} icon={status.icon} label={status.label} />}
+      status={<EntityCardStatusPill tone={statusMeta.tone} icon={statusMeta.icon} label={STATUS_LABEL[progressLevel]} detail={statusDetail} />}
       media={media}
       overlay={overlay}
       collapsedContent={collapsedContent}

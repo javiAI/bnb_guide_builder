@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronUp, type LucideIcon } from "lucide-react";
+import { ChevronUp, CircleCheck, CircleDashed, CircleDot, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import type { BadgeTone } from "@/lib/types";
@@ -272,6 +272,22 @@ export function EntityMediaCard({
 // Shared across entity cards so Access (configured/pending) and Spaces
 // (complete/partial/none) render an identical pill. Tone-keyed via tone.ts.
 
+// Canonical status vocabulary for entity cards — ONE icon+tone per state,
+// everywhere: check = done, dot = started, dashed = nothing yet. Surfaces map
+// their domain states onto these three and provide only the label/detail copy.
+// `entity-card-status.test.ts` pins the mapping and that pill consumers don't
+// hand-pick circle icons.
+export type EntityCardStatus = "complete" | "partial" | "empty";
+
+export const ENTITY_CARD_STATUS_META: Record<
+  EntityCardStatus,
+  { tone: BadgeTone; icon: LucideIcon }
+> = {
+  complete: { tone: "success", icon: CircleCheck },
+  partial: { tone: "warning", icon: CircleDot },
+  empty: { tone: "neutral", icon: CircleDashed },
+};
+
 // Tone-keyed status indicator: a single cohesive circular Lucide glyph
 // (CircleCheck / CircleDot / CircleDashed / Circle — passed by the caller) in
 // the tone color, followed by the label. One glyph = perfectly centered, and
@@ -284,14 +300,18 @@ export function EntityCardStatusPill({
   tone,
   icon: Icon,
   label,
+  detail,
 }: {
   tone: BadgeTone;
   icon: LucideIcon;
   label: string;
+  /** Optional hover explanation — e.g. what's still missing to be complete. */
+  detail?: string;
 }) {
+  const tooltip = detail ? `${label} · ${detail}` : label;
   return (
-    <Tooltip text={label} className="flex-none">
-      <span aria-label={label} className="inline-flex flex-none items-center gap-1.5">
+    <Tooltip text={tooltip} className="flex-none">
+      <span aria-label={tooltip} className="inline-flex flex-none items-center gap-1.5">
         <Icon size={20} strokeWidth={2} aria-hidden="true" className={cn("flex-none", TONE_PILL_TEXT[tone])} />
         <span
           className={cn(

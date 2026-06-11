@@ -8,7 +8,7 @@ import { NumberedSection } from "@/components/ui/numbered-section";
 import { Banner } from "@/components/ui/banner";
 import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
 import { type SpaceCoverageSystem } from "./space-systems-coverage";
-import { CreateSpaceForm } from "./create-space-form";
+import { AddSpaceChips } from "./add-space-chips";
 import { resolveSpaceStatus, type FeatureState } from "./space-progress";
 import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
@@ -138,10 +138,16 @@ export default async function SpacesPage({
   // Required types not yet added
   const missingRequired = required.filter((id) => !existingTypes.has(id));
 
-  // Build filtered space type options for the create form
+  // Space type options for one-click creation, grouped by urgency: required
+  // types still missing surface first, then recommended, then the rest.
   const availableTypeOptions = spaceTypes.items
     .filter((st) => allAvailable.includes(st.id) || allAvailable.length === 0)
-    .map((st) => ({ id: st.id, label: st.label, recommended: recommended.includes(st.id) }));
+    .map((st) => ({
+      id: st.id,
+      label: st.label,
+      missingRequired: missingRequired.includes(st.id),
+      recommended: recommended.includes(st.id),
+    }));
 
   // ── Header chips (derived from real data) ──
   const totalPhotos = spaces.reduce((sum, s) => sum + spaceMediaOf(media, s.id).photoCount, 0);
@@ -289,7 +295,7 @@ export default async function SpacesPage({
       </NumberedSection>
 
       <NumberedSection number="02" title="Añadir espacio">
-        <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
+        <AddSpaceChips propertyId={propertyId} options={availableTypeOptions} />
       </NumberedSection>
     </div>
   );

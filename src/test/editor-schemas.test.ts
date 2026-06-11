@@ -187,11 +187,15 @@ describe("Space schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("createSpaceSchema rejects empty name", () => {
-    const result = createSpaceSchema.safeParse({
-      spaceType: "sp.kitchen",
-      name: "",
-    });
+  // Name is optional since one-click creation (16I-4): the action derives
+  // "Dormitorio 2"-style defaults from the type; only the type is required.
+  it("createSpaceSchema accepts a missing name (action auto-derives it)", () => {
+    const result = createSpaceSchema.safeParse({ spaceType: "sp.kitchen" });
+    expect(result.success).toBe(true);
+  });
+
+  it("createSpaceSchema still requires a space type", () => {
+    const result = createSpaceSchema.safeParse({ spaceType: "" });
     expect(result.success).toBe(false);
   });
 

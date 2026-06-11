@@ -190,7 +190,9 @@ export type SpaceFeaturesData = z.infer<typeof spaceFeaturesSchema>;
 
 export const createSpaceSchema = z.object({
   spaceType: z.string().min(1, "El tipo de espacio es obligatorio"),
-  name: z.string().min(1, "El nombre es obligatorio"),
+  // Optional: the action derives "Dormitorio 2"-style defaults from the type;
+  // the operator renames inline on the card (InlineEditText).
+  name: z.string().optional(),
   guestNotes: z.string().optional(),
   internalNotes: z.string().optional(),
 });

@@ -10,7 +10,7 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
 import {
@@ -538,7 +538,7 @@ export async function createSpaceAction(
   const propertyId = formData.get("propertyId") as string;
   const raw = {
     spaceType: formData.get("spaceType") as string,
-    name: formData.get("name") as string,
+    name: (formData.get("name") as string) || undefined,
     guestNotes: (formData.get("guestNotes") as string) || undefined,
     internalNotes: (formData.get("internalNotes") as string) || undefined,
   };
@@ -551,10 +551,22 @@ export async function createSpaceAction(
     };
   }
 
+  // Default name from the type: first of its kind = the type label ("Cocina"),
+  // siblings get a counter ("Dormitorio 2"). Renameable inline on the card.
+  let name = result.data.name?.trim();
+  if (!name) {
+    const label = getSpaceTypeLabel(result.data.spaceType) ?? result.data.spaceType;
+    const siblings = await prisma.space.count({
+      where: { propertyId, spaceType: result.data.spaceType, status: "active" },
+    });
+    name = siblings === 0 ? label : `${label} ${siblings + 1}`;
+  }
+
   const createdSpaceId = await prisma.$transaction(async (tx) => {
     const created = await tx.space.create({
       data: {
         ...result.data,
+        name,
         property: { connect: { id: propertyId } },
       },
       select: { id: true },
