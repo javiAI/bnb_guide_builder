@@ -422,6 +422,14 @@ export interface SpaceFeatureGroup {
    * e.g. pointing out that movable equipment lives in Equipamiento. Plain
    * `description` is catalog documentation and is never rendered. */
   operatorHint?: string;
+  /** Reuse another group's field catalog by reference (single source of
+   * truth — e.g. the en-suite bathroom mirrors sfg.bathroom_fixtures). The
+   * loader appends the referenced group's fields after this group's own. */
+  include_fields_from?: string;
+  /** Gate injected into included fields that have no `shown_if` of their own
+   * (fields with one keep it — the editor cascades visibility through their
+   * trigger, which itself carries the gate). */
+  include_gate?: { field: string; equals: unknown };
   fields: SpaceFeatureField[];
 }
 

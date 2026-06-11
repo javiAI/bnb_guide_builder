@@ -198,16 +198,40 @@ describe("Space features taxonomy", () => {
     expect(bedroomIds).not.toContain("sfg.bedroom_cooling");
   });
 
+  // En-suite parity: the bedroom's "Baño en suite" group mirrors the full
+  // bathroom fixtures catalog via include_fields_from (single source). The
+  // loader injects the toggle gate into included fields without a shown_if;
+  // fields with their own trigger keep it (the editor cascades visibility).
+  it("sfg.ensuite_bathroom includes every sfg.bathroom_fixtures field, gated by the toggle", () => {
+    const bedroomGroups = getSpaceFeatureGroups("sp.bedroom");
+    const ensuite = bedroomGroups.find((g) => g.id === "sfg.ensuite_bathroom");
+    const fixtures = getSpaceFeatureGroups("sp.bathroom").find((g) => g.id === "sfg.bathroom_fixtures");
+    expect(ensuite).toBeDefined();
+    expect(fixtures).toBeDefined();
+    expect(ensuite!.fields[0].id).toBe("sf.en_suite_bathroom");
+    const ensuiteById = new Map(ensuite!.fields.map((f) => [f.id, f]));
+    for (const f of fixtures!.fields) {
+      const mirrored = ensuiteById.get(f.id);
+      expect(mirrored, `${f.id} missing from ensuite include`).toBeDefined();
+      if (f.shown_if) {
+        expect(mirrored!.shown_if).toEqual(f.shown_if);
+      } else {
+        expect(mirrored!.shown_if).toEqual({ field: "sf.en_suite_bathroom", equals: true });
+      }
+    }
+  });
+
   it("living room intrinsic groups are returned for sp.living_room", () => {
     const livingGroups = getSpaceFeatureGroups("sp.living_room");
     const bathroomGroups = getSpaceFeatureGroups("sp.bathroom");
     const livingIds = livingGroups.map((g) => g.id);
     const bathroomIds = bathroomGroups.map((g) => g.id);
     expect(livingIds).toContain("sfg.living_seating");
-    // Light split into single-select quality + multiselect ambience controls.
-    expect(livingIds).toContain("sfg.living_light");
+    // Light merged into one "Luz y ambiente" group (16I-4 coherence pass);
+    // views/orientation got their own structured group mirroring the bedroom.
+    expect(livingIds).not.toContain("sfg.living_light");
     expect(livingIds).toContain("sfg.living_ambience");
-    expect(livingIds).not.toContain("sfg.living_views");
+    expect(livingIds).toContain("sfg.living_views");
     expect(bathroomIds).not.toContain("sfg.living_seating");
     // Entertainment → amenities; comfort (heating/AC) → systems.
     expect(livingIds).not.toContain("sfg.living_entertainment");

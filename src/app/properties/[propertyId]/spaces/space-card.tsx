@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useActionState, useCallback, useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -679,6 +679,12 @@ function buildBlocks(fields: SpaceFeatureField[]): Block[] {
   return blocks;
 }
 
+function blockFieldIds(block: Block): string[] {
+  if (block.kind === "chips") return [...block.bools.map((f) => f.id), ...(block.tags ? [block.tags.id] : [])];
+  if (block.kind === "numbers") return block.fields.map((f) => f.id);
+  return [block.field.id];
+}
+
 function GroupFields({
   group,
   features,
@@ -688,11 +694,18 @@ function GroupFields({
   features: FeatureState;
   onChangeFeature: (fieldId: string, value: FeatureValue) => void;
 }) {
-  const isVisible = (f: SpaceFeatureField) =>
-    !f.shown_if || features[f.shown_if.field] === f.shown_if.equals;
+  const byId = new Map(group.fields.map((f) => [f.id, f] as const));
+  // Cascade visibility: a conditional field shows only when its trigger value
+  // matches AND the trigger field is itself visible — so a gated subtree
+  // (e.g. the en-suite include) folds away with its toggle even though its
+  // inner reveals only reference their direct trigger (no compound shown_if).
+  const isVisible = (f: SpaceFeatureField): boolean => {
+    if (!f.shown_if) return true;
+    if (features[f.shown_if.field] !== f.shown_if.equals) return false;
+    const trigger = byId.get(f.shown_if.field);
+    return !trigger || isVisible(trigger);
+  };
   const mainFields = group.fields.filter((f) => !f.shown_if);
-  const revealFields = group.fields.filter((f) => f.shown_if && isVisible(f));
-  const blocks = buildBlocks(mainFields);
   // A group whose only main control is a single labeled field is already named
   // by its section header — drop the redundant field label.
   const soleLabel =
@@ -700,19 +713,40 @@ function GroupFields({
     mainFields[0].type !== "boolean" &&
     mainFields[0].type !== "text_chips";
 
+  // Conditional fields render right below the block holding their trigger —
+  // "Cierre de la ducha" sits under the chips row with "Ducha", never pooled
+  // at the end of the group — and recursively form blocks of their own.
+  const renderedDeps = new Set<string>();
+  const depsOf = (ids: string[]) =>
+    group.fields.filter(
+      (f) => f.shown_if && ids.includes(f.shown_if.field) && isVisible(f) && !renderedDeps.has(f.id),
+    );
+  const renderLevel = (fields: SpaceFeatureField[], depth: number): ReactNode[] =>
+    buildBlocks(fields).map((block, i) => {
+      const deps = depsOf(blockFieldIds(block));
+      deps.forEach((f) => renderedDeps.add(f.id));
+      return (
+        <Fragment key={`${depth}-${i}`}>
+          {renderBlock(block, i, features, onChangeFeature, depth === 0 && soleLabel)}
+          {deps.length > 0 && (
+            <div className="space-y-4 border-l-2 border-[var(--color-border-default)] pl-4">
+              {renderLevel(deps, depth + 1)}
+            </div>
+          )}
+        </Fragment>
+      );
+    });
+
+  const body = renderLevel(mainFields, 0);
+  // Safety net: a visible conditional whose trigger lives outside this group
+  // (none in the catalog today) still renders, at the end.
+  const orphans = group.fields.filter((f) => f.shown_if && isVisible(f) && !renderedDeps.has(f.id));
   return (
     <div className="space-y-4">
-      {blocks.map((block, i) => renderBlock(block, i, features, onChangeFeature, soleLabel))}
-      {revealFields.length > 0 && (
+      {body}
+      {orphans.length > 0 && (
         <div className="space-y-4 border-l-2 border-[var(--color-border-default)] pl-4">
-          {revealFields.map((f) => (
-            <RevealField
-              key={f.id}
-              field={f}
-              value={features[f.id] ?? null}
-              onChange={(v) => onChangeFeature(f.id, v)}
-            />
-          ))}
+          {renderLevel(orphans, 1)}
         </div>
       )}
     </div>
@@ -774,32 +808,6 @@ function renderBlock(
 }
 
 // A single shown_if field rendered in the right-hand detail panel.
-function RevealField({ field, value, onChange }: { field: SpaceFeatureField; value: FeatureValue; onChange: (v: FeatureValue) => void }) {
-  if (field.type === "enum") {
-    return <EnumChips field={field} value={(value as string) ?? null} onChange={onChange} />;
-  }
-  if (field.type === "enum_multiselect") {
-    return <MultiChips field={field} value={(value as string[]) ?? null} onChange={onChange} tagsValue={null} />;
-  }
-  if (field.type === "integer_optional" || field.type === "number_optional") {
-    return <NumberOrCount field={field} value={(value as number) ?? null} onChange={onChange} />;
-  }
-  if (field.type === "text") {
-    return <TextField field={field} value={(value as string) ?? ""} onChange={onChange} />;
-  }
-  if (field.type === "text_chips") {
-    return <LabeledTags field={field} value={value} onChange={onChange} />;
-  }
-  // boolean reveal → a single labeled toggle chip
-  return (
-    <div>
-      <Tooltip text={field.description}>
-        <ToggleChip active={Boolean(value)} onToggle={() => onChange(!value)}>{field.label}</ToggleChip>
-      </Tooltip>
-    </div>
-  );
-}
-
 // ── Field option renderers — one chips/options system, no dropdowns ──
 
 function fieldLabelContent(field: SpaceFeatureField) {

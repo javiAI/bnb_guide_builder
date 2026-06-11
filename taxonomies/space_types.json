@@ -459,7 +459,7 @@
     {
       "id": "sp.pool",
       "label": "Piscina",
-      "description": "Espacio con piscina privada o de uso exclusivo.",
+      "description": "Piscina privada o compartida asociada a la propiedad.",
       "parent_id": null,
       "recommended": false,
       "allowsSleeping": false,

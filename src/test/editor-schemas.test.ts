@@ -264,7 +264,7 @@ describe("Space features schema", () => {
       "sf.ac": true,
       "sf.wardrobe_type": "built_in",
       "sf.area_sqm": 18.5,
-      "sf.sink_count": 2,
+      "sf.dining_seats": 2,
       "sf.outdoor_views": ["garden", "sea"],
     });
     expect(result.success).toBe(true);

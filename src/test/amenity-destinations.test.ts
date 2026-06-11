@@ -170,6 +170,9 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     ["am.bathtub", "sfg.bathroom_fixtures", "sf.bathtub"],
     ["am.bidet", "sfg.bathroom_fixtures", "sf.bidet"],
     ["am.hair_dryer", "sfg.bathroom_fixtures", "sf.hair_dryer"],
+    ["am.safe", "sfg.bedroom_storage", "sf.safe"],
+    ["am.mosquito_net", "sfg.bedroom_privacy", "sf.mosquito_screens"],
+    ["am.outdoor_shower", "sfg.outdoor_setup", "sf.outdoor_shower"],
   ];
 
   it("space-backed amenities are derived_from_space and have their space-feature field", () => {

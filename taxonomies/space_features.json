@@ -35,9 +35,71 @@
       ]
     },
     {
+      "id": "sfg.studio_layout",
+      "label": "Configuración del espacio",
+      "description": "Distribución y zonas diferenciadas del estudio o loft.",
+      "applies_to": [
+        "sp.studio",
+        "sp.loft"
+      ],
+      "fields": [
+        {
+          "id": "sf.studio_plan",
+          "label": "Distribución del espacio",
+          "description": "Cómo se organiza la zona de dormir respecto al resto del espacio.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "open",
+              "label": "Planta totalmente abierta"
+            },
+            {
+              "id": "zoned",
+              "label": "Zona de dormir diferenciada"
+            }
+          ]
+        },
+        {
+          "id": "sf.studio_sleep_separator",
+          "label": "Tipo de separación",
+          "description": "Cómo está separada la zona de dormir.",
+          "type": "enum",
+          "shown_if": {
+            "field": "sf.studio_plan",
+            "equals": "zoned"
+          },
+          "options": [
+            {
+              "id": "screen",
+              "label": "Biombo o cortina"
+            },
+            {
+              "id": "level",
+              "label": "Cambio de nivel / tarima"
+            },
+            {
+              "id": "partial_wall",
+              "label": "Tabique parcial"
+            },
+            {
+              "id": "mezzanine",
+              "label": "Altillo / entresuelo"
+            }
+          ]
+        },
+        {
+          "id": "sf.studio_layout_tags",
+          "label": "Otras características de distribución",
+          "description": "Otros detalles de la distribución del estudio.",
+          "tooltip": "Por ejemplo: 'Doble altura', 'Altillo accesible por escalera de mano', 'Luz cenital'.",
+          "type": "text_chips"
+        }
+      ]
+    },
+    {
       "id": "sfg.bedroom_storage",
-      "label": "Almacenamiento",
-      "description": "Mobiliario de almacenamiento disponible. Puedes marcar varias opciones si el espacio tiene más de un tipo.",
+      "label": "Mobiliario y almacenamiento",
+      "description": "Mobiliario de la estancia. Puedes marcar varias opciones.",
       "applies_to": [
         "sp.bedroom",
         "sp.studio",
@@ -46,32 +108,14 @@
       "fields": [
         {
           "id": "sf.wardrobe",
-          "label": "Armario con puertas",
-          "description": "Armario con puertas abatibles o correderas, no empotrado.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.open_wardrobe",
-          "label": "Armario abierto (sin puertas)",
-          "description": "Armario o estructura de almacenamiento sin puertas, con barras y/o estantes visibles.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.built_in_wardrobe",
-          "label": "Armario empotrado",
-          "description": "Armario integrado en la pared o estructura del espacio.",
+          "label": "Armario",
+          "description": "Armario disponible, empotrado o no.",
           "type": "boolean"
         },
         {
           "id": "sf.walk_in_wardrobe",
           "label": "Vestidor (walk-in)",
           "description": "Zona o espacio separado dedicado exclusivamente al vestidor.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.drawers_integrated",
-          "label": "Cajones en el armario",
-          "description": "El armario principal tiene cajones integrados además del espacio de colgado.",
           "type": "boolean"
         },
         {
@@ -93,13 +137,26 @@
           "type": "boolean"
         },
         {
+          "id": "sf.desk_workspace",
+          "label": "Zona de trabajo",
+          "description": "Mesa o escritorio apto para trabajar con portátil.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.safe",
+          "label": "Caja fuerte",
+          "description": "Caja fuerte disponible en la estancia.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.storage_other_tags",
           "label": "Otro almacenamiento",
           "description": "Elementos de almacenamiento adicionales no listados. Escribe y pulsa Enter para añadir.",
-          "tooltip": "Añade etiquetas para elementos que no están en la lista: p.ej. 'Baúl al pie de cama', 'Estantería', 'Taquilla'.",
+          "tooltip": "Añade etiquetas para elementos que no están en la lista: p.ej. 'Armario abierto', 'Baúl al pie de cama', 'Estantería'.",
           "type": "text_chips"
         }
-      ]
+      ],
+      "zone": "Descanso"
     },
     {
       "id": "sfg.bedroom_privacy",
@@ -119,6 +176,12 @@
           "source": [
             "airbnb:lock_on_bedroom_door"
           ]
+        },
+        {
+          "id": "sf.mosquito_screens",
+          "label": "Mosquiteras",
+          "description": "Mosquiteras instaladas en las ventanas.",
+          "type": "boolean"
         },
         {
           "id": "sf.window_blinds",
@@ -183,74 +246,21 @@
               "label": "Ambas capas: filtrantes + blackout"
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "sfg.ensuite_bathroom",
-      "label": "Baño en suite",
-      "description": "Baño privado dentro del dormitorio. Los baños independientes (no atados a un dormitorio) se configuran como espacio Baño propio.",
-      "applies_to": [
-        "sp.bedroom",
-        "sp.studio",
-        "sp.loft"
-      ],
-      "fields": [
-        {
-          "id": "sf.en_suite_bathroom",
-          "label": "Baño en suite",
-          "description": "Baño privado dentro de este dormitorio.",
-          "type": "boolean",
-          "source": [
-            "airbnb:private_bathroom",
-            "booking:en_suite_bathroom"
-          ]
         },
         {
-          "id": "sf.ensuite_fixtures",
-          "label": "Instalaciones del baño",
-          "description": "Qué incluye el baño en suite.",
-          "type": "enum_multiselect",
-          "shown_if": {
-            "field": "sf.en_suite_bathroom",
-            "equals": true
-          },
-          "options": [
-            {
-              "id": "toilet",
-              "label": "Inodoro"
-            },
-            {
-              "id": "shower",
-              "label": "Ducha"
-            },
-            {
-              "id": "bathtub",
-              "label": "Bañera"
-            },
-            {
-              "id": "hair_dryer",
-              "label": "Secador de pelo"
-            }
-          ]
-        },
-        {
-          "id": "sf.ensuite_other_tags",
+          "id": "sf.bedroom_privacy_other_tags",
           "label": "Otros elementos",
-          "description": "Otros elementos del baño en suite. Escribe y pulsa Enter para añadir.",
-          "tooltip": "Por ejemplo: 'Doble lavabo', 'Bañera con hidromasaje', 'Ducha sin mampara'.",
-          "type": "text_chips",
-          "shown_if": {
-            "field": "sf.en_suite_bathroom",
-            "equals": true
-          }
+          "description": "Otros elementos de privacidad o control de luz. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Contraventanas', 'Cortina separadora', 'Vidrio opaco'.",
+          "type": "text_chips"
         }
-      ]
+      ],
+      "zone": "Descanso"
     },
     {
       "id": "sfg.bedroom_views",
       "label": "Orientación y vistas",
-      "description": "Orientación del dormitorio, vistas desde la ventana y nivel de ruido.",
+      "description": "Orientación de la estancia, vistas desde la ventana y nivel de ruido.",
       "applies_to": [
         "sp.bedroom",
         "sp.studio",
@@ -300,7 +310,7 @@
         {
           "id": "sf.bedroom_views",
           "label": "Vistas",
-          "description": "Tipo de vistas desde este dormitorio.",
+          "description": "Tipo de vistas desde esta estancia.",
           "type": "enum_multiselect",
           "options": [
             {
@@ -318,6 +328,10 @@
             {
               "id": "courtyard",
               "label": "Patio interior"
+            },
+            {
+              "id": "lightwell",
+              "label": "Patio de luces"
             },
             {
               "id": "sea",
@@ -352,7 +366,7 @@
           "id": "sf.noise_level",
           "label": "Nivel de ruido exterior",
           "description": "Ruido esperable desde el exterior durante la noche.",
-          "tooltip": "Muy tranquilo = zona residencial silenciosa. Ruido ocasional = tráfico puntual, vecinos audibles a veces. Ruidoso de día = calle con tráfico frecuente, actividad diurna notable pero noches razonables. Ruidoso día y noche = zona de ocio, mercado o tráfico nocturno — indícalo claramente al huésped.",
+          "tooltip": "Muy tranquilo = zona residencial silenciosa. Ruido ocasional = tráfico puntual, vecinos audibles a veces. Ruidoso de día = calle con tráfico frecuente, actividad diurna notable pero noches razonables. Ruidoso de noche = bares u ocio nocturno cerca. Ruidoso día y noche = zona de ocio, mercado o tráfico nocturno — indícalo claramente al huésped.",
           "type": "enum",
           "options": [
             {
@@ -368,12 +382,17 @@
               "label": "Ruidoso de día"
             },
             {
+              "id": "noisy_night",
+              "label": "Ruidoso de noche"
+            },
+            {
               "id": "noisy_allday",
               "label": "Ruidoso día y noche"
             }
           ]
         }
-      ]
+      ],
+      "zone": "Descanso"
     },
     {
       "id": "sfg.bedroom_accessibility",
@@ -387,20 +406,150 @@
       "fields": [
         {
           "id": "sf.step_free_bedroom_access",
-          "label": "Acceso al dormitorio sin escalones",
-          "description": "Se puede llegar al dormitorio sin subir ni bajar escalones.",
+          "label": "Acceso sin escalones",
+          "description": "Se puede llegar a la estancia sin subir ni bajar escalones.",
           "type": "boolean"
         },
         {
           "id": "sf.bedroom_entrance_wide_81cm",
-          "label": "Entrada del dormitorio de más de 81 cm",
-          "description": "La puerta del dormitorio tiene un ancho libre de al menos 81 cm.",
+          "label": "Entrada de más de 81 cm",
+          "description": "La puerta de la estancia tiene un ancho libre de al menos 81 cm.",
           "type": "boolean"
         },
         {
           "id": "sf.bedroom_accessibility_other_tags",
-          "label": "Otro",
+          "label": "Otras adaptaciones",
           "description": "Otros elementos de accesibilidad del dormitorio.",
+          "type": "text_chips",
+          "tooltip": "Por ejemplo: 'Cama de altura accesible', 'Espacio libre junto a la cama', 'Interruptores a altura accesible'."
+        }
+      ],
+      "zone": "Descanso"
+    },
+    {
+      "id": "sfg.ensuite_bathroom",
+      "label": "Baño en suite",
+      "description": "Baño privado dentro de la estancia, con el mismo catálogo de instalaciones que un espacio Baño. Los baños independientes se configuran como espacio Baño propio.",
+      "applies_to": [
+        "sp.bedroom",
+        "sp.studio",
+        "sp.loft"
+      ],
+      "include_fields_from": "sfg.bathroom_fixtures",
+      "include_gate": {
+        "field": "sf.en_suite_bathroom",
+        "equals": true
+      },
+      "fields": [
+        {
+          "id": "sf.en_suite_bathroom",
+          "label": "Baño en suite",
+          "description": "Baño privado dentro de la estancia.",
+          "type": "boolean",
+          "source": [
+            "airbnb:private_bathroom",
+            "booking:en_suite_bathroom"
+          ]
+        }
+      ],
+      "zone": "Descanso"
+    },
+    {
+      "id": "sfg.bathroom_accessibility",
+      "label": "Acceso y accesibilidad",
+      "description": "Quién usa el baño y sus adaptaciones de accesibilidad.",
+      "applies_to": [
+        "sp.bathroom"
+      ],
+      "fields": [
+        {
+          "id": "sf.bathroom_access_type",
+          "label": "Acceso",
+          "description": "Indica si el baño es de uso exclusivo o compartido.",
+          "tooltip": "¿Quién tiene acceso a este baño? Este espacio es un baño independiente — un baño en suite se configura dentro de su dormitorio.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "private_dedicated",
+              "label": "Privado: uso exclusivo de los huéspedes"
+            },
+            {
+              "id": "shared_guests",
+              "label": "Compartido entre habitaciones"
+            },
+            {
+              "id": "shared_host",
+              "label": "Compartido con el anfitrión"
+            }
+          ],
+          "source": [
+            "airbnb:private_bathroom",
+            "booking:private_bathroom"
+          ]
+        },
+        {
+          "id": "sf.step_free_bathroom_access",
+          "label": "Acceso al baño sin escalones",
+          "description": "Se puede llegar al baño sin subir ni bajar escalones.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.bathroom_entrance_wide_81cm",
+          "label": "Entrada de más de 81 cm",
+          "description": "La puerta del baño tiene un ancho libre de al menos 81 cm.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.wheelchair_accessible",
+          "label": "Accesible en silla de ruedas",
+          "description": "Espacio suficiente para maniobrar con silla de ruedas.",
+          "type": "boolean",
+          "source": [
+            "airbnb:wheelchair_accessible",
+            "booking:wheelchair_accessible"
+          ]
+        },
+        {
+          "id": "sf.roll_in_shower",
+          "label": "Ducha sin barreras",
+          "description": "Acceso a nivel del suelo, sin escalón ni bañera.",
+          "type": "boolean",
+          "source": [
+            "airbnb:roll_in_shower"
+          ]
+        },
+        {
+          "id": "sf.grab_bars",
+          "label": "Barras de apoyo",
+          "description": "Barras de apoyo instaladas en ducha o bañera.",
+          "type": "boolean",
+          "source": [
+            "airbnb:grab_rails_or_bars"
+          ]
+        },
+        {
+          "id": "sf.toilet_grab_bar",
+          "label": "Barra de apoyo en inodoro",
+          "description": "Barra de apoyo instalada junto al inodoro.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.shower_chair",
+          "label": "Silla de ducha",
+          "description": "Silla de ducha disponible para personas con movilidad reducida.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.ceiling_mobile_hoist",
+          "label": "Grúa fija o móvil",
+          "description": "Grúa de techo o portátil para transferencias.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.accessibility_other_tags",
+          "label": "Otras adaptaciones",
+          "description": "Otras adaptaciones de accesibilidad no listadas.",
+          "tooltip": "Por ejemplo: 'Asidero WC', 'Alzador de inodoro', 'Rampa de acceso'.",
           "type": "text_chips"
         }
       ]
@@ -434,7 +583,7 @@
         {
           "id": "sf.shower",
           "label": "Ducha",
-          "description": "Ducha disponible.",
+          "description": "Ducha independiente. Si la ducha está sobre la bañera, marca 'La bañera también tiene ducha'.",
           "type": "boolean",
           "source": [
             "airbnb:shower",
@@ -453,7 +602,7 @@
         },
         {
           "id": "sf.towel_rail",
-          "label": "Toallero eléctrico",
+          "label": "Toallero calefactado",
           "description": "Toallero calefactor eléctrico o hidráulico instalado.",
           "type": "boolean"
         },
@@ -468,10 +617,11 @@
           ]
         },
         {
-          "id": "sf.sink_count",
-          "label": "Número de lavabos",
-          "description": "Cantidad de lavabos en el baño.",
-          "type": "integer_optional"
+          "id": "sf.bathroom_fixtures_other_tags",
+          "label": "Otras instalaciones",
+          "description": "Otros elementos fijos del baño no listados. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Doble lavabo', 'Espejo con luz', 'Suelo radiante'.",
+          "type": "text_chips"
         },
         {
           "id": "sf.ventilation",
@@ -495,7 +645,8 @@
               "id": "none",
               "label": "Sin ventilación"
             }
-          ]
+          ],
+          "tooltip": "Extractor o ventana de este baño. La ventilación mecánica de toda la vivienda se gestiona en Sistemas."
         },
         {
           "id": "sf.shower_type",
@@ -545,11 +696,11 @@
             },
             {
               "id": "handheld",
-              "label": "Telefonillo (mano)"
+              "label": "De mano (teléfono de ducha)"
             },
             {
               "id": "rain_handheld",
-              "label": "Lluvia + telefonillo"
+              "label": "Lluvia + de mano"
             }
           ]
         },
@@ -586,114 +737,13 @@
             "field": "sf.bathtub",
             "equals": true
           }
-        },
-        {
-          "id": "sf.bathroom_fixtures_other_tags",
-          "label": "Otras instalaciones",
-          "description": "Otros elementos fijos del baño no listados. Escribe y pulsa Enter para añadir.",
-          "tooltip": "Por ejemplo: 'Espejo con luz', 'Mueble bajo lavabo', 'Suelo radiante'.",
-          "type": "text_chips"
-        }
-      ]
-    },
-    {
-      "id": "sfg.bathroom_accessibility",
-      "label": "Acceso y accesibilidad",
-      "description": "Quién usa el baño y sus adaptaciones de accesibilidad.",
-      "applies_to": [
-        "sp.bathroom"
-      ],
-      "fields": [
-        {
-          "id": "sf.bathroom_access_type",
-          "label": "Acceso",
-          "description": "Indica si el baño es de uso exclusivo o compartido.",
-          "tooltip": "¿Quién tiene acceso a este baño? Este espacio es un baño independiente — un baño en suite se configura dentro de su dormitorio.",
-          "type": "enum",
-          "options": [
-            {
-              "id": "private_dedicated",
-              "label": "Privado: uso exclusivo de los huéspedes"
-            },
-            {
-              "id": "shared_guests",
-              "label": "Compartido entre habitaciones"
-            },
-            {
-              "id": "shared_host",
-              "label": "Compartido con el anfitrión"
-            }
-          ],
-          "source": [
-            "airbnb:private_bathroom",
-            "booking:private_bathroom"
-          ]
-        },
-        {
-          "id": "sf.grab_bars",
-          "label": "Barras de apoyo",
-          "description": "Barras de apoyo instaladas en ducha o bañera.",
-          "type": "boolean",
-          "source": [
-            "airbnb:grab_rails_or_bars"
-          ]
-        },
-        {
-          "id": "sf.roll_in_shower",
-          "label": "Ducha sin barreras",
-          "description": "Acceso a nivel del suelo, sin escalón ni bañera.",
-          "type": "boolean",
-          "source": [
-            "airbnb:roll_in_shower"
-          ]
-        },
-        {
-          "id": "sf.wheelchair_accessible",
-          "label": "Accesible en silla de ruedas",
-          "description": "Espacio suficiente para maniobrar con silla de ruedas.",
-          "type": "boolean",
-          "source": [
-            "airbnb:wheelchair_accessible",
-            "booking:wheelchair_accessible"
-          ]
-        },
-        {
-          "id": "sf.shower_chair",
-          "label": "Silla de ducha",
-          "description": "Silla de ducha disponible para personas con movilidad reducida.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.step_free_bathroom_access",
-          "label": "Acceso al baño sin escalones",
-          "description": "Se puede llegar al baño sin subir ni bajar escalones.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.toilet_grab_bar",
-          "label": "Barra de apoyo en inodoro",
-          "description": "Barra de apoyo instalada junto al inodoro.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.ceiling_mobile_hoist",
-          "label": "Grúa fija o móvil",
-          "description": "Grúa de techo o portátil para transferencias.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.accessibility_other_tags",
-          "label": "Otras adaptaciones",
-          "description": "Otras adaptaciones de accesibilidad no listadas.",
-          "tooltip": "Por ejemplo: 'Asidero WC', 'Alzador de inodoro', 'Rampa de acceso'.",
-          "type": "text_chips"
         }
       ]
     },
     {
       "id": "sfg.kitchen_equipment",
-      "label": "Equipamiento",
-      "description": "Electrodomésticos y zona de cocción de esta cocina.",
+      "label": "Electrodomésticos",
+      "description": "Electrodomésticos fijos y zona de cocción.",
       "applies_to": [
         "sp.kitchen",
         "sp.kitchen_living",
@@ -734,12 +784,6 @@
           "type": "boolean"
         },
         {
-          "id": "sf.extractor_hood",
-          "label": "Campana extractora",
-          "description": "Extractor de humos sobre la zona de cocción.",
-          "type": "boolean"
-        },
-        {
           "id": "sf.kitchen_hob",
           "label": "Placa de cocción",
           "description": "Superficie para cocinar (fuegos de gas, vitrocerámica o inducción).",
@@ -774,8 +818,14 @@
           ]
         },
         {
+          "id": "sf.extractor_hood",
+          "label": "Campana extractora",
+          "description": "Extractor de humos sobre la zona de cocción.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.cooking_other_tags",
-          "label": "Otro equipamiento",
+          "label": "Otros electrodomésticos",
           "description": "Otros electrodomésticos o elementos de cocción.",
           "type": "text_chips"
         }
@@ -803,7 +853,7 @@
         {
           "id": "sf.kitchen_table",
           "label": "Mesa en cocina",
-          "description": "Mesa o barra para comer en la propia cocina.",
+          "description": "Mesa o barra para comer en este espacio.",
           "type": "boolean"
         },
         {
@@ -821,13 +871,20 @@
           "label": "Despensa",
           "description": "Despensa o armario de almacenamiento de alimentos.",
           "type": "boolean"
+        },
+        {
+          "id": "sf.kitchen_layout_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos de la distribución. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Office', 'Barra americana', 'Despensa exterior'.",
+          "type": "text_chips"
         }
       ]
     },
     {
       "id": "sfg.living_seating",
-      "label": "Asientos",
-      "description": "Mobiliario para sentarse en la zona de estar.",
+      "label": "Mobiliario",
+      "description": "Mobiliario de la zona de estar.",
       "applies_to": [
         "sp.living_room",
         "sp.open_plan",
@@ -848,12 +905,6 @@
           "id": "sf.armchairs",
           "label": "Sillones o butacas",
           "description": "Asientos individuales tipo sillón o butaca.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.coffee_table",
-          "label": "Mesa de centro",
-          "description": "Mesa baja frente al sofá.",
           "type": "boolean"
         },
         {
@@ -882,9 +933,10 @@
             },
             {
               "id": "sectional",
-              "label": "Sofá rinconero"
+              "label": "Rinconero / chaise longue"
             }
-          ]
+          ],
+          "tooltip": "Si es un sofá cama, añádelo también en la sección Camas para que cuente en la capacidad."
         },
         {
           "id": "sf.seating_capacity",
@@ -900,21 +952,20 @@
           "id": "sf.seating_other_tags",
           "label": "Otro mobiliario",
           "description": "Otros asientos o mobiliario de la zona de estar.",
-          "type": "text_chips"
+          "type": "text_chips",
+          "tooltip": "Por ejemplo: 'Mesa de centro', 'Puf', 'Mecedora'."
         }
       ]
     },
     {
-      "id": "sfg.living_light",
-      "label": "Luz natural",
-      "description": "Cantidad de luz natural que recibe la zona de estar.",
+      "id": "sfg.living_ambience",
+      "label": "Luz y ambiente",
+      "description": "Luz natural, oscurecimiento e iluminación regulable.",
       "applies_to": [
         "sp.living_room",
         "sp.open_plan",
         "sp.kitchen_living",
-        "sp.kitchen_dining_living",
-        "sp.studio",
-        "sp.loft"
+        "sp.kitchen_dining_living"
       ],
       "zone": "Salón",
       "fields": [
@@ -937,23 +988,7 @@
               "label": "Poca (espacio oscuro)"
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "sfg.living_ambience",
-      "label": "Iluminación y oscurecimiento",
-      "description": "Control de la luz: oscurecimiento e iluminación regulable.",
-      "applies_to": [
-        "sp.living_room",
-        "sp.open_plan",
-        "sp.kitchen_living",
-        "sp.kitchen_dining_living",
-        "sp.studio",
-        "sp.loft"
-      ],
-      "zone": "Salón",
-      "fields": [
+        },
         {
           "id": "sf.blackout_curtains_living",
           "label": "Cortinas o persianas opacas",
@@ -965,12 +1000,110 @@
           "label": "Iluminación regulable",
           "description": "Las luces del salón pueden regularse en intensidad.",
           "type": "boolean"
+        }
+      ]
+    },
+    {
+      "id": "sfg.living_views",
+      "label": "Orientación y vistas",
+      "description": "Orientación de la zona de estar y vistas desde sus ventanas.",
+      "applies_to": [
+        "sp.living_room",
+        "sp.open_plan",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living"
+      ],
+      "zone": "Salón",
+      "fields": [
+        {
+          "id": "sf.living_orientation",
+          "label": "Orientación",
+          "description": "Orientación cardinal de las ventanas principales.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "north",
+              "label": "Norte"
+            },
+            {
+              "id": "south",
+              "label": "Sur"
+            },
+            {
+              "id": "east",
+              "label": "Este"
+            },
+            {
+              "id": "west",
+              "label": "Oeste"
+            },
+            {
+              "id": "northeast",
+              "label": "Noreste"
+            },
+            {
+              "id": "northwest",
+              "label": "Noroeste"
+            },
+            {
+              "id": "southeast",
+              "label": "Sureste"
+            },
+            {
+              "id": "southwest",
+              "label": "Suroeste"
+            }
+          ]
+        },
+        {
+          "id": "sf.living_views",
+          "label": "Vistas",
+          "description": "Tipo de vistas desde la zona de estar.",
+          "type": "enum_multiselect",
+          "options": [
+            {
+              "id": "garden",
+              "label": "Jardín"
+            },
+            {
+              "id": "pool",
+              "label": "Piscina"
+            },
+            {
+              "id": "street",
+              "label": "Calle"
+            },
+            {
+              "id": "courtyard",
+              "label": "Patio interior"
+            },
+            {
+              "id": "lightwell",
+              "label": "Patio de luces"
+            },
+            {
+              "id": "sea",
+              "label": "Mar"
+            },
+            {
+              "id": "mountain",
+              "label": "Montaña"
+            },
+            {
+              "id": "city",
+              "label": "Ciudad"
+            },
+            {
+              "id": "nature",
+              "label": "Naturaleza"
+            }
+          ]
         },
         {
           "id": "sf.living_views_other_tags",
-          "label": "Vistas u otras notas",
-          "description": "Descripción de las vistas u otros aspectos ambientales.",
-          "tooltip": "Por ejemplo: 'Vistas al mar', 'Terraza integrada', 'Patio interior'.",
+          "label": "Otras vistas",
+          "description": "Vistas que no están en la lista. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Patio de luces', 'Aparcamiento', 'Pared de edificio'.",
           "type": "text_chips"
         }
       ]
@@ -986,6 +1119,16 @@
       ],
       "zone": "Comedor",
       "fields": [
+        {
+          "id": "sf.dining_seats",
+          "label": "Plazas en la mesa",
+          "description": "Número de personas que pueden sentarse a la mesa.",
+          "type": "integer_optional",
+          "source": [
+            "airbnb:dining_table",
+            "booking:dining_area"
+          ]
+        },
         {
           "id": "sf.dining_table_type",
           "label": "Tipo de mesa",
@@ -1011,16 +1154,6 @@
           ]
         },
         {
-          "id": "sf.dining_seats",
-          "label": "Plazas en mesa",
-          "description": "Número de personas que pueden sentarse a la mesa.",
-          "type": "integer_optional",
-          "source": [
-            "airbnb:dining_table",
-            "booking:dining_area"
-          ]
-        },
-        {
           "id": "sf.dining_seats_extended",
           "label": "Plazas máx. con extensión",
           "description": "Plazas totales cuando la mesa está completamente extendida.",
@@ -1029,6 +1162,13 @@
             "field": "sf.dining_table_type",
             "equals": "extendable"
           }
+        },
+        {
+          "id": "sf.dining_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos del comedor. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Banco corrido', 'Mesa auxiliar', 'Aparador'.",
+          "type": "text_chips"
         }
       ]
     },
@@ -1044,8 +1184,22 @@
         {
           "id": "sf.dining_natural_light",
           "label": "Luz natural",
-          "description": "El comedor tiene luz natural directa.",
-          "type": "boolean"
+          "description": "Nivel de luz natural que entra en el comedor.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "abundant",
+              "label": "Mucha (espacio muy luminoso)"
+            },
+            {
+              "id": "moderate",
+              "label": "Suficiente (luz moderada)"
+            },
+            {
+              "id": "low",
+              "label": "Poca (espacio oscuro)"
+            }
+          ]
         },
         {
           "id": "sf.dining_dimmable_lights",
@@ -1063,68 +1217,9 @@
       ]
     },
     {
-      "id": "sfg.studio_layout",
-      "label": "Configuración del espacio",
-      "description": "Distribución y zonas diferenciadas del estudio o loft.",
-      "applies_to": [
-        "sp.studio",
-        "sp.loft"
-      ],
-      "fields": [
-        {
-          "id": "sf.studio_sleep_zone",
-          "label": "Zona de dormir diferenciada",
-          "description": "La zona de cama está separada visualmente del resto del espacio.",
-          "tooltip": "Por ejemplo mediante una tarima, biombo o cambio de altura de techo.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.studio_sleep_separator",
-          "label": "Tipo de separación",
-          "description": "Cómo está separada la zona de dormir.",
-          "type": "enum",
-          "shown_if": {
-            "field": "sf.studio_sleep_zone",
-            "equals": true
-          },
-          "options": [
-            {
-              "id": "screen",
-              "label": "Biombo o cortina"
-            },
-            {
-              "id": "level",
-              "label": "Cambio de nivel / tarima"
-            },
-            {
-              "id": "partial_wall",
-              "label": "Tabique parcial"
-            },
-            {
-              "id": "mezzanine",
-              "label": "Altillo / entresuelo"
-            }
-          ]
-        },
-        {
-          "id": "sf.studio_open_plan",
-          "label": "Planta totalmente abierta",
-          "description": "Sin separaciones: cocina, salón y zona de dormir en el mismo espacio abierto.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.studio_layout_tags",
-          "label": "Otras características de distribución",
-          "description": "Otros detalles de la distribución del estudio.",
-          "tooltip": "Por ejemplo: 'Doble altura', 'Altillo accesible por escalera de mano', 'Luz cenital'.",
-          "type": "text_chips"
-        }
-      ]
-    },
-    {
       "id": "sfg.office_workspace",
       "label": "Puesto de trabajo",
-      "description": "Escritorio y equipamiento de la zona de trabajo.",
+      "description": "Escritorio, asientos y características de la zona de trabajo.",
       "applies_to": [
         "sp.office"
       ],
@@ -1146,10 +1241,6 @@
             {
               "id": "corner",
               "label": "Esquinero"
-            },
-            {
-              "id": "shared_table",
-              "label": "Mesa compartida"
             }
           ],
           "source": [
@@ -1169,6 +1260,19 @@
           "type": "boolean"
         },
         {
+          "id": "sf.whiteboard",
+          "label": "Pizarra",
+          "description": "Pizarra disponible para reuniones o brainstorming.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.office_workspace_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos del puesto de trabajo no listados.",
+          "tooltip": "Por ejemplo: 'Estanterías de pared', 'Doble puesto de trabajo', 'Panel de corcho'.",
+          "type": "text_chips"
+        },
+        {
           "id": "sf.acoustic_privacy",
           "label": "Privacidad acústica",
           "description": "Nivel de aislamiento acústico de este espacio.",
@@ -1176,32 +1280,40 @@
           "options": [
             {
               "id": "silent",
-              "label": "Silencioso (puerta con cierre)"
+              "label": "Silencioso (espacio cerrado con puerta)"
             },
             {
               "id": "some_noise",
               "label": "Algo de ruido del exterior"
             },
             {
-              "id": "shared",
+              "id": "open",
               "label": "Abierto / sin aislamiento"
             }
           ]
         },
         {
-          "id": "sf.whiteboard",
-          "label": "Pizarra / whiteboard",
-          "description": "Pizarra disponible para reuniones o brainstorming.",
-          "type": "boolean"
-        },
-        {
-          "id": "sf.office_workspace_other_tags",
-          "label": "Otro equipamiento",
-          "description": "Otros elementos del puesto de trabajo no listados.",
-          "tooltip": "Por ejemplo: 'Soporte para portátil', 'Reposapiés', 'Cámara web'.",
-          "type": "text_chips"
+          "id": "sf.office_natural_light",
+          "label": "Luz natural",
+          "description": "Nivel de luz natural que entra en el despacho.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "abundant",
+              "label": "Mucha (espacio muy luminoso)"
+            },
+            {
+              "id": "moderate",
+              "label": "Suficiente (luz moderada)"
+            },
+            {
+              "id": "low",
+              "label": "Poca (espacio oscuro)"
+            }
+          ]
         }
-      ]
+      ],
+      "operatorHint": "El monitor, la impresora o la webcam se configuran en Equipamiento."
     },
     {
       "id": "sfg.laundry_setup",
@@ -1213,6 +1325,26 @@
       ],
       "fields": [
         {
+          "id": "sf.laundry_access",
+          "label": "Acceso",
+          "description": "Indica si la lavandería es de uso exclusivo o compartido.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "private_dedicated",
+              "label": "Privada: uso exclusivo de los huéspedes"
+            },
+            {
+              "id": "shared_building",
+              "label": "Compartida (edificio o comunidad)"
+            },
+            {
+              "id": "shared_host",
+              "label": "Compartida con el anfitrión"
+            }
+          ]
+        },
+        {
           "id": "sf.laundry_sink",
           "label": "Pila / lavadero",
           "description": "Pila o lavadero para lavar a mano.",
@@ -1220,7 +1352,7 @@
         },
         {
           "id": "sf.laundry_counter",
-          "label": "Bancada o zona de plegado",
+          "label": "Encimera o zona de plegado",
           "description": "Superficie para doblar o tratar la ropa.",
           "type": "boolean"
         },
@@ -1229,6 +1361,13 @@
           "label": "Estanterías o armarios",
           "description": "Almacenamiento para detergentes y útiles de limpieza.",
           "type": "boolean"
+        },
+        {
+          "id": "sf.laundry_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos del espacio de colada no listados. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Toma de agua', 'Suelo de drenaje', 'Calentador propio'.",
+          "type": "text_chips"
         },
         {
           "id": "sf.laundry_ventilation",
@@ -1253,13 +1392,6 @@
               "label": "Sin ventilación"
             }
           ]
-        },
-        {
-          "id": "sf.laundry_other_tags",
-          "label": "Otros elementos",
-          "description": "Otros elementos del espacio de colada no listados. Escribe y pulsa Enter para añadir.",
-          "tooltip": "Por ejemplo: 'Cuerda de tender exterior', 'Toma de agua', 'Suelo de drenaje'.",
-          "type": "text_chips"
         }
       ]
     },
@@ -1275,8 +1407,8 @@
       "fields": [
         {
           "id": "sf.outdoor_furniture",
-          "label": "Mobiliario exterior",
-          "description": "Mesa, sillas u otro mobiliario exterior.",
+          "label": "Zona de estar exterior",
+          "description": "Sillas, sofá o butacas de exterior para estar (la zona de comedor y las tumbonas se marcan aparte).",
           "type": "boolean",
           "source": [
             "airbnb:patio_or_balcony",
@@ -1301,14 +1433,14 @@
         },
         {
           "id": "sf.sun_loungers",
-          "label": "Hamacas / tumbonas",
+          "label": "Tumbonas",
           "description": "Hamacas o tumbonas disponibles.",
           "type": "boolean"
         },
         {
           "id": "sf.outdoor_shade",
-          "label": "Sombrilla o pérgola",
-          "description": "Zona de sombra en el exterior.",
+          "label": "Zona de sombra (toldo, pérgola o sombrilla)",
+          "description": "Hay sombra disponible en el exterior, fija o desplegable.",
           "type": "boolean"
         },
         {
@@ -1318,10 +1450,16 @@
           "type": "boolean"
         },
         {
+          "id": "sf.outdoor_shower",
+          "label": "Ducha exterior",
+          "description": "Ducha exterior disponible.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.outdoor_furniture_other_tags",
           "label": "Otro equipamiento exterior",
           "description": "Otros elementos exteriores no listados.",
-          "tooltip": "Por ejemplo: 'Jacuzzi exterior', 'Ducha exterior', 'Zona de juegos'.",
+          "tooltip": "Por ejemplo: 'Jacuzzi exterior', 'Zona chill-out', 'Fuente'.",
           "type": "text_chips"
         }
       ]
@@ -1369,6 +1507,10 @@
             {
               "id": "street",
               "label": "Calle"
+            },
+            {
+              "id": "courtyard",
+              "label": "Patio interior"
             },
             {
               "id": "sea",
@@ -1438,8 +1580,8 @@
         },
         {
           "id": "sf.sun_hours",
-          "label": "Horas de sol aproximadas",
-          "description": "En qué momento del día recibe más sol este espacio.",
+          "label": "Sol directo",
+          "description": "¿En qué momento del día recibe sol directo este espacio?",
           "type": "enum",
           "options": [
             {
@@ -1490,12 +1632,6 @@
           "type": "boolean"
         },
         {
-          "id": "sf.garden_pool",
-          "label": "Piscina en jardín",
-          "description": "El jardín cuenta con piscina.",
-          "type": "boolean"
-        },
-        {
           "id": "sf.garden_children_play",
           "label": "Zona de juegos infantiles",
           "description": "Columpios, tobogán u otros juegos para niños.",
@@ -1516,7 +1652,7 @@
     {
       "id": "sfg.garage_setup",
       "label": "Características del garaje",
-      "description": "Capacidad y equipamiento del garaje.",
+      "description": "Capacidad y características del garaje.",
       "applies_to": [
         "sp.garage"
       ],
@@ -1532,6 +1668,12 @@
           ]
         },
         {
+          "id": "sf.garage_entry_height_cm",
+          "label": "Altura de entrada (cm)",
+          "description": "Altura libre de la entrada del garaje, relevante para caravanas o furgonetas altas.",
+          "type": "integer_optional"
+        },
+        {
           "id": "sf.garage_door_type",
           "label": "Tipo de puerta",
           "description": "Tipo de apertura del garaje.",
@@ -1542,20 +1684,44 @@
               "label": "Manual"
             },
             {
-              "id": "automated",
-              "label": "Automatizada"
-            },
-            {
-              "id": "remote",
-              "label": "Mando a distancia"
+              "id": "motorized",
+              "label": "Motorizada"
             }
           ]
         },
         {
-          "id": "sf.garage_entry_height_cm",
-          "label": "Altura de entrada (cm)",
-          "description": "Altura libre de la entrada del garaje, relevante para caravanas o furgonetas altas.",
-          "type": "integer_optional"
+          "id": "sf.garage_door_control",
+          "label": "Apertura",
+          "description": "Cómo se acciona la puerta motorizada.",
+          "type": "enum_multiselect",
+          "shown_if": {
+            "field": "sf.garage_door_type",
+            "equals": "motorized"
+          },
+          "options": [
+            {
+              "id": "remote",
+              "label": "Mando a distancia"
+            },
+            {
+              "id": "key",
+              "label": "Llave / llavín"
+            },
+            {
+              "id": "keypad",
+              "label": "Teclado con código"
+            },
+            {
+              "id": "app",
+              "label": "App móvil"
+            }
+          ]
+        },
+        {
+          "id": "sf.garage_direct_access",
+          "label": "Acceso directo a la vivienda",
+          "description": "Se puede entrar a la vivienda directamente desde el garaje.",
+          "type": "boolean"
         },
         {
           "id": "sf.garage_bike_storage",
@@ -1565,9 +1731,19 @@
         },
         {
           "id": "sf.garage_shared",
-          "label": "Compartido con otros propietarios",
-          "description": "El garaje es de uso compartido.",
+          "label": "Garaje compartido",
+          "description": "El garaje se comparte con otros usuarios (comunidad u otras plazas).",
           "type": "boolean"
+        },
+        {
+          "id": "sf.garage_assigned_spot",
+          "label": "Plaza asignada",
+          "description": "La plaza está reservada y señalizada para los huéspedes.",
+          "type": "boolean",
+          "shown_if": {
+            "field": "sf.garage_shared",
+            "equals": true
+          }
         },
         {
           "id": "sf.garage_24h",
@@ -1593,15 +1769,15 @@
       ],
       "fields": [
         {
-          "id": "sf.storage_lockable",
-          "label": "Con cerradura",
-          "description": "El trastero tiene cerradura propia.",
+          "id": "sf.storage_accessible",
+          "label": "Disponible para huéspedes",
+          "description": "Los huéspedes pueden utilizar el trastero.",
           "type": "boolean"
         },
         {
-          "id": "sf.storage_accessible",
-          "label": "Accesible a huéspedes",
-          "description": "Los huéspedes pueden utilizar el trastero.",
+          "id": "sf.storage_lockable",
+          "label": "Con cerradura",
+          "description": "El trastero tiene cerradura propia.",
           "type": "boolean"
         },
         {
@@ -1613,14 +1789,8 @@
         {
           "id": "sf.storage_climate_controlled",
           "label": "Temperatura controlada",
-          "description": "El trastero mantiene temperatura estable (sin humedad extrema).",
+          "description": "El trastero está protegido de temperaturas y humedad extremas.",
           "type": "boolean"
-        },
-        {
-          "id": "sf.storage_volume_m3",
-          "label": "Volumen aproximado (m³)",
-          "description": "Capacidad útil estimada del trastero.",
-          "type": "number_optional"
         },
         {
           "id": "sf.storage_other_tags",
@@ -1628,6 +1798,26 @@
           "description": "Otros aspectos del trastero no listados.",
           "tooltip": "Por ejemplo: 'Acceso exterior', 'Con rampa de carga', 'Luz interior'.",
           "type": "text_chips"
+        },
+        {
+          "id": "sf.storage_location",
+          "label": "Ubicación",
+          "description": "Dónde se encuentra el trastero.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "in_unit",
+              "label": "Dentro de la vivienda"
+            },
+            {
+              "id": "building",
+              "label": "En el mismo edificio"
+            },
+            {
+              "id": "external",
+              "label": "Separado / exterior"
+            }
+          ]
         }
       ]
     },
@@ -1640,16 +1830,35 @@
       ],
       "fields": [
         {
+          "id": "sf.shared_area_type_tags",
+          "label": "Tipo de zona",
+          "description": "Qué es esta zona compartida. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Azotea', 'Piscina comunitaria', 'Gimnasio', 'Patio común'.",
+          "type": "text_chips"
+        },
+        {
           "id": "sf.stairs_only",
-          "label": "Solo escaleras",
+          "label": "Acceso solo por escaleras",
           "description": "El acceso es únicamente por escaleras.",
-          "type": "boolean"
+          "type": "boolean",
+          "tooltip": "Márcalo si no hay ascensor ni rampa para llegar a esta zona."
         },
         {
           "id": "sf.shared_24h_access",
           "label": "Acceso 24 horas",
           "description": "La zona común es accesible en cualquier horario.",
           "type": "boolean"
+        },
+        {
+          "id": "sf.shared_access_schedule_tags",
+          "label": "Horario de uso",
+          "description": "Cuándo pueden usarla los huéspedes. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: '8:00–22:00', 'Cerrado los domingos'.",
+          "type": "text_chips",
+          "shown_if": {
+            "field": "sf.shared_24h_access",
+            "equals": false
+          }
         },
         {
           "id": "sf.shared_wheelchair_accessible",
@@ -1668,6 +1877,12 @@
       ],
       "fields": [
         {
+          "id": "sf.other_space_guest_access",
+          "label": "Disponible para huéspedes",
+          "description": "Los huéspedes pueden utilizar este espacio.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.other_space_type_tags",
           "label": "Tipo de espacio",
           "description": "Describe brevemente qué tipo de espacio es.",
@@ -1678,7 +1893,7 @@
           "id": "sf.other_space_features_tags",
           "label": "Características principales",
           "description": "Características más relevantes de este espacio.",
-          "tooltip": "Por ejemplo: 'Con projector y pantalla', 'Mesa de billar', 'Barra de bar'.",
+          "tooltip": "Por ejemplo: 'Insonorizada', 'Acceso independiente', 'Con ventanal'.",
           "type": "text_chips"
         }
       ]
@@ -1709,16 +1924,6 @@
           "source": [
             "airbnb:private_pool",
             "booking:swimming_pool"
-          ]
-        },
-        {
-          "id": "sf.pool_heated",
-          "label": "Piscina climatizada",
-          "description": "El agua de la piscina está calefactada.",
-          "type": "boolean",
-          "source": [
-            "airbnb:heated_pool",
-            "booking:heated_pool"
           ]
         },
         {
@@ -1770,6 +1975,16 @@
           ]
         },
         {
+          "id": "sf.pool_heated",
+          "label": "Piscina climatizada",
+          "description": "El agua de la piscina está calefactada.",
+          "type": "boolean",
+          "source": [
+            "airbnb:heated_pool",
+            "booking:heated_pool"
+          ]
+        },
+        {
           "id": "sf.pool_length_m",
           "label": "Longitud (m)",
           "description": "Longitud de la piscina en metros.",
@@ -1780,22 +1995,6 @@
           "label": "Profundidad máxima (m)",
           "description": "Profundidad máxima de la piscina.",
           "type": "number_optional"
-        },
-        {
-          "id": "sf.pool_hours",
-          "label": "Horario de uso",
-          "description": "Disponibilidad horaria de la piscina.",
-          "type": "enum",
-          "options": [
-            {
-              "id": "all_day",
-              "label": "Disponible todo el día"
-            },
-            {
-              "id": "restricted",
-              "label": "Horario restringido"
-            }
-          ]
         },
         {
           "id": "sf.pool_features_other_tags",
@@ -1847,6 +2046,32 @@
           "description": "Normas o medidas de seguridad adicionales.",
           "tooltip": "Por ejemplo: 'Prohibido correr', 'Sin menores sin adulto', 'Salvavidas disponible'.",
           "type": "text_chips"
+        },
+        {
+          "id": "sf.pool_lifeguard",
+          "label": "Socorrista",
+          "description": "La piscina cuenta con servicio de socorrista.",
+          "type": "boolean",
+          "shown_if": {
+            "field": "sf.pool_access",
+            "equals": "shared"
+          }
+        },
+        {
+          "id": "sf.pool_hours",
+          "label": "Horario de uso",
+          "description": "Disponibilidad horaria de la piscina.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "all_day",
+              "label": "Disponible todo el día"
+            },
+            {
+              "id": "restricted",
+              "label": "Horario restringido"
+            }
+          ]
         }
       ]
     },
