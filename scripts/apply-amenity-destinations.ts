@@ -42,8 +42,12 @@ export interface AmenityDestinationEntry {
 
 /**
  * The canonical 150-item audit mapping (142 original + 8 branch 7B additions).
- * DO NOT edit by hand — sourced from the research doc. Changes must be
- * reflected in `docs/deep_research_2/amenities_arquitecture.md` first.
+ * DO NOT edit by hand — sourced from the research doc (now archived at
+ * `docs/archive/v1-deep-research-phase-2/amenities_arquitecture.md`).
+ * Amendment (16I-4): the six fitted kitchen appliances (refrigerator, freezer,
+ * dishwasher, microwave, oven, stove) flipped to `derived_from_space` — the
+ * Espacios editor captures them as space features (sf.kitchen_*), so keeping
+ * them configurable would duplicate the truth (same rationale as am.bathtub).
  */
 export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [
   { id: "am.wifi", destination: "derived_from_system", target: "sys.internet", note: "La configuración vive en Systems (canonicalOwner). Este item se exporta como amenity derivada." },
@@ -129,16 +133,16 @@ export const DESTINATIONS: ReadonlyArray<AmenityDestinationEntry> = [
   { id: "am.cooking_basics", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
   { id: "am.dining_table", destination: "derived_from_space", note: "Derivado de espacios/features (no se captura en PropertyAmenityInstance)." },
   { id: "am.dishes_silverware", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
-  { id: "am.dishwasher", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
-  { id: "am.freezer", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
+  { id: "am.dishwasher", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
+  { id: "am.freezer", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
   { id: "am.kettle", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
   { id: "am.kitchenette", destination: "derived_from_space", target: "sp.studio|sp.loft", note: "Es tipo/layout de cocina, no inventario; se deriva por spaceType/features." },
-  { id: "am.microwave", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
+  { id: "am.microwave", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
   { id: "am.mini_fridge", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
-  { id: "am.oven", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
-  { id: "am.refrigerator", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
+  { id: "am.oven", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
+  { id: "am.refrigerator", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
   { id: "am.rice_maker", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
-  { id: "am.stove", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
+  { id: "am.stove", destination: "derived_from_space", note: "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)." },
   { id: "am.toaster", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
   { id: "am.trash_compactor", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },
   { id: "am.wine_glasses", destination: "amenity_configurable", note: "Amenity configurable (inventario/experiencia)." },

@@ -17,7 +17,7 @@ function ids(list: { id: string }[]) {
 
 describe("bedding-options taxonomy", () => {
   it("exposes the three option lists with stable, persisted ids", () => {
-    expect(ids(mattressTypes)).toEqual(["spring", "memory_foam", "latex", "foam", "hybrid"]);
+    expect(ids(mattressTypes)).toEqual(["spring", "memory_foam", "latex", "foam", "hybrid", "air", "other"]);
     expect(ids(mattressFirmness)).toEqual(["soft", "medium", "firm"]);
     expect(ids(pillowTypes)).toEqual(["down", "synthetic", "memory_foam", "bamboo", "firm", "adjustable"]);
   });

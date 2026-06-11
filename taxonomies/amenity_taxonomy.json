@@ -306,7 +306,10 @@
       "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
-        "sp.studio"
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.microwave": {
@@ -314,21 +317,32 @@
       "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
-        "sp.studio"
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.oven": {
       "scopePolicy": "derived",
       "isDerived": true,
       "suggestedSpaceTypes": [
-        "sp.kitchen"
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.dishwasher": {
       "scopePolicy": "derived",
       "isDerived": true,
       "suggestedSpaceTypes": [
-        "sp.kitchen"
+        "sp.kitchen",
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.stove": {
@@ -336,7 +350,10 @@
       "isDerived": true,
       "suggestedSpaceTypes": [
         "sp.kitchen",
-        "sp.studio"
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.first_aid_kit": {
@@ -844,7 +861,9 @@
       "suggestedSpaceTypes": [
         "sp.kitchen",
         "sp.kitchen_living",
-        "sp.kitchen_dining_living"
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ]
     },
     "am.high_chair": {
@@ -3085,7 +3104,7 @@
         }
       ],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.freezer",
@@ -3108,7 +3127,7 @@
         }
       ],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.kettle",
@@ -3183,7 +3202,7 @@
         }
       ],
       "importanceLevel": "highlight",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.mini_fridge",
@@ -3229,7 +3248,7 @@
         }
       ],
       "importanceLevel": "standard",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.refrigerator",
@@ -3257,7 +3276,7 @@
         }
       ],
       "importanceLevel": "highlight",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.rice_maker",
@@ -3279,7 +3298,7 @@
     },
     {
       "id": "am.stove",
-      "label": "Placa de cocina",
+      "label": "Placa de cocción",
       "description": "Sistema de cocción de fuegos o inducción.",
       "parent_id": "ag.kitchen_dining",
       "recommended": true,
@@ -3298,7 +3317,7 @@
         }
       ],
       "importanceLevel": "highlight",
-      "destination": "amenity_configurable"
+      "destination": "derived_from_space"
     },
     {
       "id": "am.toaster",

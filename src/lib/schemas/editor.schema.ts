@@ -221,6 +221,8 @@ export type UpdateBedData = CreateBedData;
 
 export const bedConfigSchema = z.object({
   mattressType: z.string().optional(),
+  // Free-text mattress type when mattressType === "other".
+  mattressTypeCustom: z.string().max(100).optional(),
   mattressFirmness: z.string().optional(),
   pillowTypes: z.array(z.string()).optional(),
   linenIncluded: z.boolean().optional(),
@@ -228,6 +230,13 @@ export const bedConfigSchema = z.object({
   mattressProtector: z.boolean().optional(),
   customLabel: z.string().max(100).optional(),
   customCapacity: z.number().int().min(1).max(20).optional(),
+  // Crib config (bt.crib). Zod strips undeclared keys on parse, so every key
+  // the BedManager modal sends must be listed here or it is silently dropped.
+  cribMattress: z.boolean().optional(),
+  cribMattressExtra: z.boolean().optional(),
+  cribLinen: z.boolean().optional(),
+  cribMobile: z.boolean().optional(),
+  cribFoldable: z.boolean().optional(),
 });
 
 export type BedConfigData = z.infer<typeof bedConfigSchema>;

@@ -418,6 +418,10 @@ export interface SpaceFeatureGroup {
   /** Optional editor zone label (e.g. "Cocina"). On multi-zone combos the
    * editor groups sections under these headers; single-zone types ignore it. */
   zone?: string;
+  /** Optional one-line hint shown to the operator under the group label —
+   * e.g. pointing out that movable equipment lives in Equipamiento. Plain
+   * `description` is catalog documentation and is never rendered. */
+  operatorHint?: string;
   fields: SpaceFeatureField[];
 }
 

@@ -407,6 +407,16 @@
           "type": "boolean"
         },
         {
+          "id": "sf.hair_dryer",
+          "label": "Secador de pelo",
+          "description": "Secador de pelo disponible en este baño.",
+          "type": "boolean",
+          "source": [
+            "airbnb:hair_dryer",
+            "booking:hairdryer"
+          ]
+        },
+        {
           "id": "sf.sink_count",
           "label": "Número de lavabos",
           "description": "Cantidad de lavabos en el baño.",
@@ -525,6 +535,13 @@
             "field": "sf.bathtub",
             "equals": true
           }
+        },
+        {
+          "id": "sf.bathroom_fixtures_other_tags",
+          "label": "Otras instalaciones",
+          "description": "Otros elementos fijos del baño no listados. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Espejo con luz', 'Mueble bajo lavabo', 'Suelo radiante'.",
+          "type": "text_chips"
         }
       ]
     },
@@ -652,6 +669,12 @@
           "type": "boolean"
         },
         {
+          "id": "sf.kitchen_dishwasher",
+          "label": "Lavavajillas",
+          "description": "Lavavajillas disponible en la cocina.",
+          "type": "boolean"
+        },
+        {
           "id": "sf.kitchen_microwave",
           "label": "Microondas",
           "description": "Horno microondas.",
@@ -714,19 +737,16 @@
     {
       "id": "sfg.kitchen_layout",
       "label": "Distribución",
-      "description": "Configuración física y zona de desayuno o comida informal.",
+      "description": "Configuración física y zona de desayuno o comida informal. La apertura al salón ya la expresa el tipo de espacio (cocina-salón, salón-comedor-cocina…).",
       "applies_to": [
         "sp.kitchen",
-        "sp.studio"
+        "sp.kitchen_living",
+        "sp.kitchen_dining_living",
+        "sp.studio",
+        "sp.loft"
       ],
       "zone": "Cocina",
       "fields": [
-        {
-          "id": "sf.open_kitchen",
-          "label": "Cocina abierta",
-          "description": "La cocina está integrada en el salón o comedor sin separación.",
-          "type": "boolean"
-        },
         {
           "id": "sf.kitchen_island",
           "label": "Isla central",
@@ -748,6 +768,12 @@
             "field": "sf.kitchen_table",
             "equals": true
           }
+        },
+        {
+          "id": "sf.kitchen_pantry",
+          "label": "Despensa",
+          "description": "Despensa o armario de almacenamiento de alimentos.",
+          "type": "boolean"
         }
       ]
     },
@@ -1126,6 +1152,66 @@
           "label": "Otro equipamiento",
           "description": "Otros elementos del puesto de trabajo no listados.",
           "tooltip": "Por ejemplo: 'Soporte para portátil', 'Reposapiés', 'Cámara web'.",
+          "type": "text_chips"
+        }
+      ]
+    },
+    {
+      "id": "sfg.laundry_setup",
+      "label": "Características de la lavandería",
+      "description": "Instalaciones fijas del espacio de colada.",
+      "operatorHint": "La lavadora, secadora, plancha o tendedero se configuran en Equipamiento.",
+      "applies_to": [
+        "sp.laundry"
+      ],
+      "fields": [
+        {
+          "id": "sf.laundry_sink",
+          "label": "Pila / lavadero",
+          "description": "Pila o lavadero para lavar a mano.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.laundry_counter",
+          "label": "Bancada o zona de plegado",
+          "description": "Superficie para doblar o tratar la ropa.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.laundry_shelving",
+          "label": "Estanterías o armarios",
+          "description": "Almacenamiento para detergentes y útiles de limpieza.",
+          "type": "boolean"
+        },
+        {
+          "id": "sf.laundry_ventilation",
+          "label": "Ventilación",
+          "description": "Tipo de ventilación disponible para el secado.",
+          "type": "enum",
+          "options": [
+            {
+              "id": "window",
+              "label": "Ventana"
+            },
+            {
+              "id": "extractor",
+              "label": "Extractor mecánico"
+            },
+            {
+              "id": "both",
+              "label": "Ventana y extractor"
+            },
+            {
+              "id": "none",
+              "label": "Sin ventilación"
+            }
+          ]
+        },
+        {
+          "id": "sf.laundry_other_tags",
+          "label": "Otros elementos",
+          "description": "Otros elementos del espacio de colada no listados. Escribe y pulsa Enter para añadir.",
+          "tooltip": "Por ejemplo: 'Cuerda de tender exterior', 'Toma de agua', 'Suelo de drenaje'.",
           "type": "text_chips"
         }
       ]

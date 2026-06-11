@@ -35,7 +35,7 @@ import type { SpaceFeatureGroup, SpaceFeatureField } from "@/lib/types/taxonomy"
 import type { BadgeTone } from "@/lib/types";
 import { getSpaceIcon } from "@/lib/icons/space-icons";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
@@ -411,7 +411,7 @@ export function SpaceCard({
       {/* Details form — type-specific feature groups + notes (auto-saved). Each
          group renders its main options on the left and any conditional reveals
          in a right-hand detail panel. */}
-      <form id={`details-${space.id}`} ref={detailsFormRef} action={detailsAction} className="space-y-6">
+      <form id={`details-${space.id}`} ref={detailsFormRef} onSubmit={autoSaveSubmit(detailsAction)} className="space-y-6">
         <input type="hidden" name="spaceId" value={space.id} />
         <input type="hidden" name="propertyId" value={propertyId} />
         <input type="hidden" name="featuresJson" value={featuresJson} />
@@ -422,6 +422,9 @@ export function SpaceCard({
           const useZones = zonesPresent.size >= 2;
           const renderGroup = (group: SpaceFeatureGroup) => (
             <EditorSection key={group.id} label={group.label}>
+              {group.operatorHint && (
+                <p className="mb-2 text-xs text-[var(--color-text-muted)]">{group.operatorHint}</p>
+              )}
               <GroupFields group={group} features={features} onChangeFeature={setFeature} />
             </EditorSection>
           );

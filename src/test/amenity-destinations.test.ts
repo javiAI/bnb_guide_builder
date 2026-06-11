@@ -7,6 +7,7 @@ import {
   getCompletenessRule,
 } from "@/lib/taxonomy-loader";
 import type { AmenityDestination } from "@/lib/types/taxonomy";
+import { spaceFeatures } from "@/lib/taxonomies/space-features";
 
 import { DESTINATIONS, applyDestinations } from "../../scripts/apply-amenity-destinations";
 
@@ -125,15 +126,18 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     }
   });
 
-  it("counts per destination match the audit (95 / 20 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
+  // 16I-4 flipped the six fitted kitchen appliances (fridge/freezer/dishwasher/
+  // microwave/oven/stove) from configurable to derived_from_space — their truth
+  // lives in the Espacios editor (sf.kitchen_*), like am.bathtub's does.
+  it("counts per destination match the audit (89 / 26 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
     const counts: Record<string, number> = {};
     for (const item of amenityTaxonomy.items) {
       const d = item.destination as string;
       counts[d] = (counts[d] ?? 0) + 1;
     }
     expect(counts).toEqual({
-      amenity_configurable: 95,
-      derived_from_space: 20,
+      amenity_configurable: 89,
+      derived_from_space: 26,
       moved_to_access: 18,
       moved_to_property_attribute: 6,
       derived_from_system: 5,
@@ -150,5 +154,34 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     >[0];
     const { updated } = applyDestinations(clone);
     expect(updated).toBe(0);
+  });
+
+  // ── Space-backed amenities (16I-4): each flipped amenity must keep a
+  // matching space-feature field — that's where its truth is captured. If a
+  // field is renamed/removed in space_features.json, this fails instead of
+  // silently leaving the amenity underivable (the am.hair_dryer gap).
+  const SPACE_BACKED_FIELD: ReadonlyArray<[amenityId: string, groupId: string, fieldId: string]> = [
+    ["am.refrigerator", "sfg.kitchen_equipment", "sf.kitchen_fridge"],
+    ["am.freezer", "sfg.kitchen_equipment", "sf.kitchen_freezer"],
+    ["am.dishwasher", "sfg.kitchen_equipment", "sf.kitchen_dishwasher"],
+    ["am.microwave", "sfg.kitchen_equipment", "sf.kitchen_microwave"],
+    ["am.oven", "sfg.kitchen_equipment", "sf.kitchen_oven"],
+    ["am.stove", "sfg.kitchen_equipment", "sf.kitchen_hob"],
+    ["am.bathtub", "sfg.bathroom_fixtures", "sf.bathtub"],
+    ["am.bidet", "sfg.bathroom_fixtures", "sf.bidet"],
+    ["am.hair_dryer", "sfg.bathroom_fixtures", "sf.hair_dryer"],
+  ];
+
+  it("space-backed amenities are derived_from_space and have their space-feature field", () => {
+    for (const [amenityId, groupId, fieldId] of SPACE_BACKED_FIELD) {
+      const item = amenityTaxonomy.items.find((i) => i.id === amenityId);
+      expect(item?.destination, amenityId).toBe("derived_from_space");
+      const group = spaceFeatures.groups.find((g) => g.id === groupId);
+      expect(group, groupId).toBeDefined();
+      expect(
+        group!.fields.some((f) => f.id === fieldId),
+        `${amenityId} → ${fieldId} missing in ${groupId}`,
+      ).toBe(true);
+    }
   });
 });

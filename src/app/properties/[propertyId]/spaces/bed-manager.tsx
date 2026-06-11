@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState, useRef, useTransition } from "react";
+import { useActionState, useCallback, useMemo, useState, useRef, useTransition } from "react";
 import {
   addBedAction,
   updateBedAction,
@@ -9,7 +9,7 @@ import {
 } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ToggleChip } from "@/components/ui/toggle-chip";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -151,8 +151,18 @@ function BedRow({
   // the FormData diff catches every control). `flushConfig()` runs on collapse.
   const qtyFormRef = useRef<HTMLFormElement>(null);
   useFormAutoSave(qtyFormRef);
-  const configFormRef = useRef<HTMLFormElement>(null);
+  const configFormRef = useRef<HTMLFormElement | null>(null);
   const flushConfig = useFormAutoSave(configFormRef);
+  // The config form lives in a Radix Portal, which mounts its children one
+  // tick AFTER this row's render — so the auto-save effect runs with a null
+  // ref and never baselines, and the user's first edit gets absorbed as the
+  // baseline instead of saved. Force one re-render when the form attaches so
+  // the hook binds & baselines against the pre-edit values.
+  const [, bumpConfigFormMounted] = useState(0);
+  const attachConfigForm = useCallback((el: HTMLFormElement | null) => {
+    configFormRef.current = el;
+    if (el) bumpConfigFormMounted((n) => n + 1);
+  }, []);
 
   const cfg = bed.configJson ?? {};
   const typeInfo = findItem(bedTypes, bed.bedType);
@@ -162,6 +172,7 @@ function BedRow({
   const isCrib = bed.bedType === "bt.crib";
 
   const [mattressType, setMattressType] = useState<string>((cfg.mattressType as string) ?? "");
+  const [mattressTypeCustom, setMattressTypeCustom] = useState<string>((cfg.mattressTypeCustom as string) ?? "");
   const [mattressFirmness, setMattressFirmness] = useState<string>((cfg.mattressFirmness as string) ?? "");
   const [pillowTypes, setPillowTypes] = useState<string[]>((cfg.pillowTypes as string[]) ?? []);
   const [linenIncluded, setLinenIncluded] = useState<boolean>((cfg.linenIncluded as boolean) ?? false);
@@ -190,6 +201,7 @@ function BedRow({
               linenIncluded,
               extraBlanket,
               mattressProtector,
+              ...(mattressType === "other" ? { mattressTypeCustom } : {}),
               ...(isCustom ? { customLabel: customLabelEdit, customCapacity } : {}),
             },
       ),
@@ -201,6 +213,7 @@ function BedRow({
       cribMobile,
       cribFoldable,
       mattressType,
+      mattressTypeCustom,
       mattressFirmness,
       pillowTypes,
       linenIncluded,
@@ -215,11 +228,6 @@ function BedRow({
   function togglePillow(id: string) {
     setPillowTypes((prev) => prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]);
   }
-
-  // Has any config been set?
-  const hasConfig = isCrib
-    ? !!(cfg.cribMattress || cfg.cribMattressExtra || cfg.cribLinen || cfg.cribMobile || cfg.cribFoldable)
-    : !!(cfg.mattressType || cfg.mattressFirmness || (cfg.pillowTypes as string[] | undefined)?.length || cfg.linenIncluded || cfg.extraBlanket || cfg.mattressProtector || cfg.customLabel);
 
   return (
     <div className="py-2">
@@ -246,11 +254,7 @@ function BedRow({
             type="button"
             onClick={() => setExpanded(true)}
             aria-label={isCrib ? "Configurar la cuna" : "Configurar colchón, almohada y ropa de cama"}
-            className={`recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[var(--radius-md)] border transition-colors ${
-              hasConfig
-                ? "border-[var(--color-action-primary)] bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)] hover:bg-[var(--color-interactive-hover)]"
-                : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
-            }`}
+            className="recipe-icon-btn-32 grid h-8 w-8 flex-none place-items-center rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-text-muted)] hover:bg-[var(--color-interactive-hover)]"
           >
             <Settings2 size={14} aria-hidden="true" />
           </button>
@@ -283,7 +287,7 @@ function BedRow({
 
         {/* Quantity auto-saves on change via this hidden mirror form
             (display:contents so it adds no layout box). */}
-        <form ref={qtyFormRef} action={updateAction} className="contents">
+        <form ref={qtyFormRef} onSubmit={autoSaveSubmit(updateAction)} className="contents">
           <input type="hidden" name="bedId" value={bed.id} />
           <input type="hidden" name="propertyId" value={propertyId} />
           <input type="hidden" name="spaceId" value={spaceId} />
@@ -331,7 +335,7 @@ function BedRow({
                 </button>
               </Dialog.Close>
             </div>
-            <form ref={configFormRef} action={configAction} className="space-y-4">
+            <form ref={attachConfigForm} onSubmit={autoSaveSubmit(configAction)} className="space-y-4">
               <input type="hidden" name="bedId" value={bed.id} />
               <input type="hidden" name="spaceId" value={spaceId} />
               <input type="hidden" name="configJson" value={configSerialized} />
@@ -400,6 +404,16 @@ function BedRow({
                 </ToggleChip>
               ))}
             </div>
+            {mattressType === "other" && (
+              <input
+                type="text"
+                value={mattressTypeCustom}
+                onChange={(e) => setMattressTypeCustom(e.target.value)}
+                placeholder="Ej. Enrollable, Futón…"
+                aria-label="Tipo de colchón personalizado"
+                className="mt-2 block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-2 py-1.5 text-sm focus:border-[var(--color-border-focus)] focus:outline-none placeholder:text-[var(--color-text-muted)]"
+              />
+            )}
             {mattressType && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {mattressFirmnessOptions.map((opt) => (
