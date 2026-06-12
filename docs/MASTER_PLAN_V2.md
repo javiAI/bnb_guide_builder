@@ -4066,6 +4066,8 @@ La spec Fase -1 (decisiones 1–10) evolucionó durante la ejecución vía feedb
 
 ### Rama 16I-4 — `feat/liora-16I-4-spaces-polish` (Espacios)
 
+> **Estado (2026-06-12): ✅ implementada y cerrada con PR (sin merge — pendiente de aprobación del usuario).** Parity 9.4 (baseline 9.0), axe serious/critical 0 (light+dark × grid/editor/modal), suite 2185, /simplify convergido. Alcance ejecutado según Fase -1 ampliada + 4 rondas de iteración con el usuario (punch-lists 2026-06-10/11).
+
 > **16I-3 Acceso DIFERIDO** (decisión del usuario 2026-06-05): se ejecuta después. 16I-4 va a continuación. Como 16I-4 **migra Acceso al primitivo extraído** (sin rediseño), el futuro 16I-3 quedará sobre el primitivo ya compartido (menos alcance).
 
 **Propósito**: 4ª pestaña de FASE 16I, con **scope ampliado aprobado en Fase -1 (2026-06-05)**. Deja de ser solo "pulir Espacios": **extrae el patrón cockpit/card de Acceso a primitivos compartidos**, **migra Acceso** a ese primitivo sin cambio de comportamiento, lo **adopta en Espacios** (misma tarjeta, mismo acordeón "abre-una-esconde-resto", misma transición View-Transitions), **reescribe el editor de Espacios** con mejor UX, **migra la config de cama a taxonomía** y **estandariza los banners**. Activa explícitamente la extracción de `EntityMediaCard` (`FUTURE §23`, antes diferida a un 3er adopter — el usuario la adelanta por consistencia cross-superficie). Pensado para reutilizarse luego en Sistemas/Equipamiento.

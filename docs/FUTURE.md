@@ -510,7 +510,9 @@ Cuando producto priorice una feature de floor-plan (geometría por espacio) en e
 
 ---
 
-## 23. EntityMediaCard — extracción del card "media-backed summary" (2 adopters alcanzados)
+## 23. EntityMediaCard — extracción del card "media-backed summary" — ✅ EJECUTADO en 16I-4 (2026-06-05/12)
+
+> Resuelto: `src/components/ui/entity-media-card.tsx` + `entity-card-accordion.tsx` + `src/lib/use-cockpit-accordion.ts` + VT class `entity-card`; Acceso y Espacios lo consumen (gate de equivalencia validado). El texto original se conserva como histórico.
 
 **Estado**: trigger de extracción **alcanzado** (2 adopters) — extracción diferida a rama dedicada post-16F (decisión Fase -1 de 16E.5-spaces).
 
