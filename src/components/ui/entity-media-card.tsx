@@ -75,6 +75,11 @@ interface EntityMediaCardProps {
   headerAction?: ReactNode;
   /** Active body. */
   children?: ReactNode;
+  /** No-media entities (contacts, playbooks, places): drops the cover-driven
+   * min-height so the idle card reads as a compact header card. Media-backed
+   * cards (and siblings sharing a row with them, e.g. Access parking) keep
+   * the default tall silhouette. */
+  compact?: boolean;
   onExpand: () => void;
   onCollapse: () => void;
   className?: string;
@@ -110,6 +115,7 @@ export function EntityMediaCard({
   hoverOverlay,
   headerAction,
   children,
+  compact = false,
   onExpand,
   onCollapse,
   className,
@@ -221,7 +227,8 @@ export function EntityMediaCard({
       aria-labelledby={titleId}
       style={cardStyle}
       className={cn(
-        "recipe-entity-card-vt group relative flex h-full min-h-[260px] w-full flex-col overflow-hidden rounded-[20px] text-left",
+        "recipe-entity-card-vt group relative flex h-full w-full flex-col overflow-hidden rounded-[20px] text-left",
+        !compact && "min-h-[260px]",
         "transition-[border-color,box-shadow] duration-200 ease-out",
         "border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-action-primary)]",
         // `shadow-[var(--…)]` is mis-parsed by Tailwind v3 as a shadow color;
