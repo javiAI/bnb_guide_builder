@@ -1,25 +1,7 @@
 import type { Prisma } from "@prisma/client";
-import { bedTypes } from "@/lib/taxonomy-loader";
 
-/**
- * Computes sleeping capacity for a bed type and quantity.
- * Uses the `sleepingCapacity` field from bed_types.json.
- * Custom beds use configJson.customCapacity, defaulting to 1.
- */
-export function getBedSleepingCapacity(
-  bedType: string,
-  quantity: number,
-  configJson?: Record<string, unknown> | null,
-): number {
-  if (bedType === "bt.other") {
-    const custom = typeof configJson?.customCapacity === "number" ? configJson.customCapacity : 1;
-    return custom * quantity;
-  }
-  const item = (bedTypes.items as Array<{ id: string; sleepingCapacity?: number }>).find(
-    (b) => b.id === bedType,
-  );
-  return (item?.sleepingCapacity ?? 1) * quantity;
-}
+// Capacity rule lives with the bed-types taxonomy (client-safe module).
+export { getBedSleepingCapacity } from "@/lib/taxonomies/bed-types";
 
 /**
  * Recomputes bedroomsCount, bathroomsCount, and bedsCount from actual Space/Bed

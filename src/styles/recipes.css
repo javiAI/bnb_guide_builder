@@ -49,6 +49,28 @@
 }
 
 /*
+ * Toggle chip — 28px visual + 8px ::before slop = 44 hit area on fine pointers.
+ * For compact, text-bearing selectable chips (space editor features/segments)
+ * that must stay visually small (Access-sized) without breaking the touch
+ * target. On coarse pointers the visual grows to 44 (min-height) and the slop
+ * collapses. Width comes from the chip's text + padding (always ≥ the icon
+ * minimums); the slop also widens the hit area by 16px. Used by
+ * src/components/ui/toggle-chip.tsx + the spaces editor segmented control.
+ */
+.recipe-chip-28 {
+  position: relative;
+}
+.recipe-chip-28::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+@media (pointer: coarse) {
+  .recipe-chip-28 { min-height: 44px; }
+  .recipe-chip-28::before { inset: 0; }
+}
+
+/*
  * Carousel dot — 24 visual + 20px ::before slop = 44 hit area on fine pointers.
  * On coarse pointers the visual itself grows to 44 and the slop collapses.
  *
@@ -176,25 +198,37 @@
 }
 
 /*
- * Cockpit view-transition tuning. Each card has view-transition-name set in
- * subsystem-card.tsx as `cockpit-card-${id}`; here we tune timing/easing for all
- * four. Default UA value is ~250ms linear-ish; we want slightly longer + emphasis.
+ * Entity cockpit card view-transition (shared primitive — Access + Spaces +
+ * future media-backed surfaces). Each card carries a unique inline
+ * `view-transition-name` (`cockpit-card-${id}` for Access, `space-card-${id}`
+ * for Spaces) so the browser morphs it individually, plus the
+ * `recipe-entity-card-vt` class which assigns `view-transition-class:
+ * entity-card`. Tuning the CLASS (one rule) covers every card — including
+ * DYNAMIC ids (Spaces) that static per-name rules cannot enumerate — using the
+ * same class-based mechanism the method rows already rely on. 320ms emphasis.
+ */
+.recipe-entity-card-vt {
+  view-transition-class: entity-card;
+}
+@supports (view-transition-class: none) {
+  ::view-transition-group(.entity-card),
+  ::view-transition-old(.entity-card),
+  ::view-transition-new(.entity-card) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+/*
+ * Root + method-row view-transition tuning. The cockpit cards are tuned by the
+ * `.entity-card` class above (was per-name `cockpit-card-*` — migrated in
+ * 16I-4). Default UA value is ~250ms linear-ish; we want slightly longer +
+ * emphasis.
  */
 @supports (view-transition-name: none) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 280ms;
-    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  ::view-transition-old(cockpit-card-building),
-  ::view-transition-new(cockpit-card-building),
-  ::view-transition-old(cockpit-card-unit),
-  ::view-transition-new(cockpit-card-unit),
-  ::view-transition-old(cockpit-card-parking),
-  ::view-transition-new(cockpit-card-parking),
-  ::view-transition-old(cockpit-card-accessibility),
-  ::view-transition-new(cockpit-card-accessibility) {
-    animation-duration: 320ms;
     animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   /* MethodRow rows carry view-transition-class: method-row + a unique
@@ -260,6 +294,43 @@ html.vt-expand .method-row {
 @container cockpit-list (min-width: 500px) {
   .recipe-cockpit-list-grid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/*
+ * Entity-card cockpit grid — shared by Spaces + Access (+ future media-backed
+ * surfaces) via <EntityCardAccordion>. Container-query responsive so the column
+ * count tracks the CONTAINER width (not the viewport): 1 col when narrow, 2 in
+ * the middle band, 4 when the host is wide enough that 4 cards stay comfortable.
+ * Deliberately skips 3 columns — the design contract is 1 / 2 / 4 only.
+ * `minmax(0, 1fr)` lets cards shrink without overflowing their content.
+ * The host carries `container-type: inline-size`; the expanded (single active
+ * card) state uses `grid-cols-1` directly and ignores these queries.
+ */
+.recipe-entity-card-grid-host {
+  container-type: inline-size;
+  container-name: entity-card-grid;
+}
+.recipe-entity-card-grid {
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+@container entity-card-grid (min-width: 30rem) {
+  .recipe-entity-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container entity-card-grid (min-width: 64rem) {
+  .recipe-entity-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  /* At 4 columns the cards are narrow — collapse the status pill to its icon
+     (the styled Tooltip still surfaces the label on hover) so it never crowds
+     the card name. Tied to the SAME breakpoint that triggers 4-col, so the
+     label hides exactly when cards get tight. */
+  .recipe-card-status-label {
+    display: none;
   }
 }
 

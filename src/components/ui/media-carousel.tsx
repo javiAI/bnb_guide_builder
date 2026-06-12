@@ -58,6 +58,9 @@ export interface MediaCarouselProps {
   variant: "collapsed" | "active";
   /** Entity type forwarded to `assignMediaAction` after upload (e.g. `"access_method"`, `"space"`). */
   uploadEntityType: MediaEntityType;
+  /** Entity id the upload assigns to. Defaults to `propertyId` (correct for
+   * `access_method` whose entity is the property). For `space` pass the spaceId. */
+  uploadEntityId?: string;
   /** Usage key forwarded to `assignMediaAction` (e.g. `"access.parking"`, `"space.<spaceId>"`). */
   uploadUsageKey: string;
   /** CSS background string used when `slides.length === 0`. Defaults to a neutral gradient. */
@@ -119,6 +122,7 @@ export function MediaCarousel({
   title,
   variant,
   uploadEntityType,
+  uploadEntityId,
   uploadUsageKey,
   placeholderGradient,
   onExpand,
@@ -146,9 +150,10 @@ export function MediaCarousel({
     () => ({
       propertyId,
       entityType: uploadEntityType,
+      entityId: uploadEntityId,
       usageKey: uploadUsageKey,
     }),
-    [propertyId, uploadEntityType, uploadUsageKey],
+    [propertyId, uploadEntityType, uploadEntityId, uploadUsageKey],
   );
   const {
     fileInputRef,

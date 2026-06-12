@@ -10,7 +10,7 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
 import { normaliseVisibility } from "@/lib/visibility";
 import {
@@ -167,6 +167,8 @@ export async function savePropertyAction(
     hasPrivateEntrance: formData.get("hasPrivateEntrance") === "on" || formData.get("hasPrivateEntrance") === "true",
     latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
     longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
+    usableAreaSqm: formData.get("usableAreaSqm") ? Number(formData.get("usableAreaSqm")) : null,
+    ceilingHeightCm: formData.get("ceilingHeightCm") ? Number(formData.get("ceilingHeightCm")) : null,
   };
 
   const infraRaw = formData.get("infrastructureJson") as string | null;
@@ -536,7 +538,7 @@ export async function createSpaceAction(
   const propertyId = formData.get("propertyId") as string;
   const raw = {
     spaceType: formData.get("spaceType") as string,
-    name: formData.get("name") as string,
+    name: (formData.get("name") as string) || undefined,
     guestNotes: (formData.get("guestNotes") as string) || undefined,
     internalNotes: (formData.get("internalNotes") as string) || undefined,
   };
@@ -549,10 +551,22 @@ export async function createSpaceAction(
     };
   }
 
+  // Default name from the type: first of its kind = the type label ("Cocina"),
+  // siblings get a counter ("Dormitorio 2"). Renameable inline on the card.
+  let name = result.data.name?.trim();
+  if (!name) {
+    const label = getSpaceTypeLabel(result.data.spaceType) ?? result.data.spaceType;
+    const siblings = await prisma.space.count({
+      where: { propertyId, spaceType: result.data.spaceType, status: "active" },
+    });
+    name = siblings === 0 ? label : `${label} ${siblings + 1}`;
+  }
+
   const createdSpaceId = await prisma.$transaction(async (tx) => {
     const created = await tx.space.create({
       data: {
         ...result.data,
+        name,
         property: { connect: { id: propertyId } },
       },
       select: { id: true },
@@ -606,18 +620,12 @@ export async function updateSpaceAction(
   return { success: true };
 }
 
-export async function archiveSpaceAction(
+export async function deleteSpaceAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const spaceId = formData.get("spaceId") as string;
-  const rawStatus = formData.get("status");
-
   if (!spaceId) return { success: false, error: "Espacio no encontrado" };
-  if (rawStatus !== "active" && rawStatus !== "archived") {
-    return { success: false, error: "Estado inválido" };
-  }
-  const nextStatus = rawStatus;
 
   const space = await prisma.space.findUnique({
     where: { id: spaceId },
@@ -626,7 +634,11 @@ export async function archiveSpaceAction(
   if (!space) return { success: false, error: "Espacio no encontrado" };
 
   await prisma.$transaction(async (tx) => {
-    await tx.space.update({ where: { id: spaceId }, data: { status: nextStatus } });
+    // Polymorphic media links (entityType/entityId) are not a FK relation, so
+    // they don't cascade — remove them explicitly. Beds + system coverage
+    // cascade via their own FK onDelete.
+    await tx.mediaAssignment.deleteMany({ where: { entityType: "space", entityId: spaceId } });
+    await tx.space.delete({ where: { id: spaceId } });
     await recomputePropertyCounts(tx, space.propertyId);
   });
 

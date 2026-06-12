@@ -1,18 +1,24 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Camera, CheckCheck, DoorOpen, Info, Plus, TriangleAlert } from "lucide-react";
+import { Camera, CheckCheck, DoorOpen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
-import { ButtonLink } from "@/components/ui/button-link";
-import { SpaceCard } from "./space-card";
-import { CreateSpaceForm } from "./create-space-form";
-import { resolveSpaceProgress, PROGRESS_PERCENT, type FeatureState } from "./space-progress";
+import { Banner } from "@/components/ui/banner";
+import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
+import { type SpaceCoverageSystem } from "./space-systems-coverage";
+import { AddSpaceChips } from "./add-space-chips";
+import { resolveSpaceStatus, type FeatureState } from "./space-progress";
 import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-loader";
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
-import { loadSpaceCovers } from "@/lib/services/space-cover.service";
+import { loadSpaceMedia, spaceMediaOf } from "@/lib/services/space-media.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
+
+/** Building/property-infrastructure systems that never belong to a single room
+ * — excluded from per-space coverage (an elevator is the building's, refuse
+ * collection is the property's). */
+const SPACE_SYSTEM_BLACKLIST = new Set<string>(["sys.elevator", "sys.garbage"]);
 
 /** Header chip label: bold count + pluralized noun (e.g. "5 espacios"). */
 function countChipLabel(n: number, singular: string, plural: string) {
@@ -31,7 +37,9 @@ export default async function SpacesPage({
 }) {
   const { propertyId } = await params;
 
-  const [property, allSpaces, propertySystems, systemCoverages] = await Promise.all([
+  // Media chains directly onto the space query (batched loader, no N+1) so the
+  // mediaAssignment query + presigning never wait for the slower siblings.
+  const [property, { allSpaces, media }, propertySystems, systemCoverages] = await Promise.all([
     prisma.property.findUnique({
       where: { id: propertyId },
       select: {
@@ -40,13 +48,17 @@ export default async function SpacesPage({
         roomType: true,
         propertyType: true,
         propertyEnvironments: true,
+        usableAreaSqm: true,
+        ceilingHeightCm: true,
       },
     }),
-    prisma.space.findMany({
-      where: { propertyId },
-      orderBy: { sortOrder: "asc" },
-      include: { beds: { orderBy: { createdAt: "asc" } } },
-    }),
+    prisma.space
+      .findMany({
+        where: { propertyId },
+        orderBy: { sortOrder: "asc" },
+        include: { beds: { orderBy: { createdAt: "asc" } } },
+      })
+      .then(async (rows) => ({ allSpaces: rows, media: await loadSpaceMedia(rows.map((s) => s.id)) })),
     prisma.propertySystem.findMany({
       where: { propertyId },
       select: { id: true, systemKey: true },
@@ -59,42 +71,34 @@ export default async function SpacesPage({
 
   if (!property) notFound();
 
-  const spaces = allSpaces.filter((s) => s.status !== "archived");
-  const archivedSpaces = allSpaces.filter((s) => s.status === "archived");
+  // Archiving was removed (spaces are deleted, not archived) — show every
+  // space in one grid. Any legacy archived row renders as a normal, deletable
+  // card (it stays excluded from derived counts via the status filter in the
+  // derivation services).
+  const spaces = allSpaces;
 
-  // Batched cover loader (one findMany for all spaces — no N+1).
-  const covers = await loadSpaceCovers(allSpaces.map((s) => s.id));
-
-  // Build default set respecting defaultCoverageRule from taxonomy:
-  // - all_relevant_spaces: shown on all spaces by default (can be overridden)
-  // - selected_spaces: only shown when explicitly override_yes
-  // - property_only: never shown on space cards
-  const defaultSystems = propertySystems.flatMap((sys) => {
+  // Per-space EDITABLE system coverage (Opción 1). Every configured system is
+  // selectable per space EXCEPT building/property-infrastructure ones that never
+  // belong to a single room (the elevator is the building's, refuse collection
+  // is the property's). The taxonomy default drives the initial state
+  // (`all_relevant_spaces` defaults ON; everything else, incl. property-global
+  // systems like water/electricity, defaults OFF and is opt-in). For each we
+  // resolve the EFFECTIVE state (explicit override, else the default) + the note.
+  const spaceRelevantSystems = propertySystems.flatMap((sys) => {
     const item = findSystemItem(sys.systemKey);
-    if (!item || item.defaultCoverageRule !== "all_relevant_spaces") return [];
-    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label }];
+    if (!item || SPACE_SYSTEM_BLACKLIST.has(sys.systemKey)) return [];
+    return [{ id: sys.id, systemKey: sys.systemKey, label: item.label, defaultsOn: item.defaultCoverageRule === "all_relevant_spaces" }];
   });
-
-  // Build map: spaceId → SpaceSystem[], starting from inherited defaults then applying overrides
-  const systemsBySpace = new Map<string, { id: string; systemKey: string; label: string }[]>();
-  for (const space of spaces) {
-    systemsBySpace.set(space.id, [...defaultSystems]);
+  const coverageByKey = new Map<string, { mode: string; note: string | null }>();
+  for (const c of systemCoverages) {
+    coverageByKey.set(`${c.spaceId}|${c.systemId}`, { mode: c.mode, note: c.note ?? null });
   }
-  for (const coverage of systemCoverages) {
-    const item = findSystemItem(coverage.system.systemKey);
-    if (!item) continue;
-    const spaceId = coverage.spaceId;
-    const current = systemsBySpace.get(spaceId) ?? [];
-    if (coverage.mode === "override_no") {
-      systemsBySpace.set(spaceId, current.filter((s) => s.id !== coverage.system.id));
-    } else if (
-      coverage.mode === "override_yes" &&
-      item.defaultCoverageRule !== "property_only" &&
-      !current.some((s) => s.id === coverage.system.id)
-    ) {
-      current.push({ id: coverage.system.id, systemKey: coverage.system.systemKey, label: item.label });
-      systemsBySpace.set(spaceId, current);
-    }
+  function coverageFor(spaceId: string): SpaceCoverageSystem[] {
+    return spaceRelevantSystems.map((sys) => {
+      const cov = coverageByKey.get(`${spaceId}|${sys.id}`);
+      const covered = cov?.mode === "override_yes" ? true : cov?.mode === "override_no" ? false : sys.defaultsOn;
+      return { systemId: sys.id, systemKey: sys.systemKey, label: sys.label, covered, note: cov?.note ?? "", defaultsOn: sys.defaultsOn };
+    });
   }
 
   // Compute available space types from roomType + overlays (propertyType +
@@ -134,54 +138,57 @@ export default async function SpacesPage({
   // Required types not yet added
   const missingRequired = required.filter((id) => !existingTypes.has(id));
 
-  // Build filtered space type options for the create form
+  // Space type options for one-click creation, grouped by urgency: required
+  // types still missing surface first, then recommended, then the rest.
   const availableTypeOptions = spaceTypes.items
     .filter((st) => allAvailable.includes(st.id) || allAvailable.length === 0)
-    .map((st) => ({ id: st.id, label: st.label, recommended: recommended.includes(st.id) }));
+    .map((st) => ({
+      id: st.id,
+      label: st.label,
+      missingRequired: missingRequired.includes(st.id),
+      recommended: recommended.includes(st.id),
+    }));
 
   // ── Header chips (derived from real data) ──
-  const totalPhotos = spaces.reduce((sum, s) => sum + (covers.get(s.id)?.photoCount ?? 0), 0);
-  const completionPct =
-    spaces.length === 0
-      ? 0
-      : Math.round(
-          spaces.reduce((sum, s) => {
-            const level = resolveSpaceProgress(
-              s.spaceType,
-              (s.featuresJson as FeatureState) ?? {},
-              s.beds.length,
-            );
-            return sum + PROGRESS_PERCENT[level];
-          }, 0) / spaces.length,
-        );
+  const totalPhotos = spaces.reduce((sum, s) => sum + spaceMediaOf(media, s.id).photoCount, 0);
+  // Honest readiness: how many spaces meet every applicable signal (photo +
+  // beds-if-sleeping + details). No fake average percentage.
+  const readyCount = spaces.filter(
+    (s) =>
+      resolveSpaceStatus(
+        s.spaceType,
+        (s.featuresJson as FeatureState) ?? {},
+        s.beds.length,
+        spaceMediaOf(media, s.id).photoCount > 0,
+      ) === "complete",
+  ).length;
 
-  function renderCard(space: (typeof allSpaces)[number]) {
-    return (
-      <SpaceCard
-        key={space.id}
-        propertyId={propertyId}
-        maxGuests={property!.maxGuests}
-        coverThumbUrl={covers.get(space.id)?.coverUrl ?? null}
-        photoCount={covers.get(space.id)?.photoCount ?? 0}
-        space={{
-          id: space.id,
-          spaceType: space.spaceType,
-          name: space.name,
-          guestNotes: space.guestNotes,
-          internalNotes: space.internalNotes,
-          featuresJson: space.featuresJson as Record<string, unknown> | null,
-          status: space.status === "archived" ? "archived" : "active",
-        }}
-        beds={space.beds.map((b) => ({
-          id: b.id,
-          bedType: b.bedType,
-          quantity: b.quantity,
-          configJson: b.configJson as Record<string, unknown> | null,
-        }))}
-        spaceSystems={space.status === "archived" ? [] : (systemsBySpace.get(space.id) ?? [])}
-      />
-    );
+  function toCard(space: (typeof allSpaces)[number]): SpaceCardData {
+    const m = spaceMediaOf(media, space.id);
+    return {
+      space: {
+        id: space.id,
+        spaceType: space.spaceType,
+        name: space.name,
+        guestNotes: space.guestNotes,
+        internalNotes: space.internalNotes,
+        featuresJson: space.featuresJson as Record<string, unknown> | null,
+        status: space.status === "archived" ? "archived" : "active",
+      },
+      beds: space.beds.map((b) => ({
+        id: b.id,
+        bedType: b.bedType,
+        quantity: b.quantity,
+        configJson: b.configJson as Record<string, unknown> | null,
+      })),
+      coverageSystems: space.status === "archived" ? [] : coverageFor(space.id),
+      slides: m.slides,
+      photoCount: m.photoCount,
+      videoCount: m.videoCount,
+    };
   }
+
+  const activeCards = spaces.map(toCard);
 
   return (
     <div>
@@ -189,18 +196,20 @@ export default async function SpacesPage({
         eyebrow="Propiedad · Espacios"
         title="Espacios"
         description="Cada espacio tiene su ficha en la guía del huésped: una foto principal, dimensiones, camas y las peculiaridades que lo hacen único."
-        actions={
-          <ButtonLink href="#anadir-espacio">
-            <Plus size={15} aria-hidden="true" />
-            Añadir espacio
-          </ButtonLink>
-        }
         chips={
           <>
             <PageHeaderChip icon={DoorOpen} label={countChipLabel(spaces.length, "espacio", "espacios")} />
             <PageHeaderChip icon={Camera} label={countChipLabel(totalPhotos, "foto", "fotos")} />
             {spaces.length > 0 && (
-              <PageHeaderChip icon={CheckCheck} label="Completado" value={`${completionPct}%`} />
+              <PageHeaderChip
+                icon={CheckCheck}
+                label={
+                  <>
+                    <span className="font-semibold text-[var(--color-text-primary)]">{readyCount}</span>{" "}
+                    de {spaces.length} listos
+                  </>
+                }
+              />
             )}
           </>
         }
@@ -208,44 +217,55 @@ export default async function SpacesPage({
 
       {/* Layout conflicts warning */}
       {conflictingSpaces.length > 0 && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-[var(--radius-lg)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-4 py-3">
-          <TriangleAlert size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-[var(--color-status-warning-icon)]" />
-          <div>
-            <p className="text-sm font-medium text-[var(--color-status-warning-text)]">Conflicto de distribución</p>
-            <p className="mt-1 text-xs text-[var(--color-status-warning-text)]">
-              Los siguientes espacios no son compatibles con la distribución actual y deberían eliminarse:{" "}
-              <span className="font-medium">{conflictingSpaces.map((s) => s.name || getSpaceTypeLabel(s.spaceType)).join(", ")}</span>
-            </p>
-          </div>
+        <div className="mb-4">
+          <Banner
+            type="warning"
+            title="Conflicto de distribución"
+            message={
+              <>
+                Los siguientes espacios no son compatibles con la distribución actual y deberían eliminarse:{" "}
+                <span className="font-medium">{conflictingSpaces.map((s) => s.name || getSpaceTypeLabel(s.spaceType)).join(", ")}</span>
+              </>
+            }
+          />
         </div>
       )}
 
-      {/* Capacity mismatch banner */}
+      {/* Capacity mismatch banner — under capacity (not enough beds). */}
       {capacityMismatch && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-[var(--radius-lg)] border border-[var(--color-status-warning-border)] bg-[var(--color-status-warning-bg)] px-4 py-3">
-          <TriangleAlert size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-[var(--color-status-warning-icon)]" />
-          <div>
-            <p className="text-sm font-medium text-[var(--color-status-warning-text)]">Capacidad insuficiente</p>
-            <p className="mt-1 text-xs text-[var(--color-status-warning-text)]">
-              Las camas configuradas permiten{" "}
-              <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "huésped" : "huéspedes"}</span>
-              {" "}pero el máximo de huéspedes es{" "}
-              <span className="font-medium">{property.maxGuests}</span>.
-              {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
-              <Link href={`/properties/${propertyId}/property`} className="font-medium text-[var(--color-text-link)] hover:underline">Propiedad</Link>.
-            </p>
-          </div>
+        <div className="mb-4">
+          <Banner
+            type="warning"
+            title="Capacidad insuficiente"
+            message={
+              <>
+                Las camas configuradas permiten{" "}
+                <span className="font-medium">{totalBedCapacity} {totalBedCapacity === 1 ? "huésped" : "huéspedes"}</span>
+                {" "}pero el máximo de huéspedes es{" "}
+                <span className="font-medium">{property.maxGuests}</span>.
+                {" "}Añade más camas o reduce el máximo de huéspedes en{" "}
+                <Link href={`/properties/${propertyId}/property`} className="font-medium text-[var(--color-text-link)] hover:underline">Propiedad</Link>.
+              </>
+            }
+          />
         </div>
       )}
+
+      {/* Over-capacity is surfaced inside each space's bed section (under "Plazas
+         en esta estancia"), not as a top banner — it appears where you add beds. */}
 
       {/* Missing required spaces hint */}
       {missingRequired.length > 0 && spaces.length > 0 && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-[var(--radius-lg)] border border-[var(--color-status-info-border)] bg-[var(--color-status-info-bg)] px-4 py-3">
-          <Info size={16} aria-hidden="true" className="mt-0.5 flex-shrink-0 text-[var(--color-status-info-icon)]" />
-          <p className="text-xs text-[var(--color-status-info-text)]">
-            Espacios obligatorios para este tipo de alojamiento aún no añadidos:{" "}
-            <span className="font-medium">{missingRequired.map((id) => getSpaceTypeLabel(id)).join(", ")}</span>
-          </p>
+        <div className="mb-4">
+          <Banner
+            type="info"
+            message={
+              <>
+                Espacios obligatorios para este tipo de alojamiento aún no añadidos:{" "}
+                <span className="font-medium">{missingRequired.map((id) => getSpaceTypeLabel(id)).join(", ")}</span>
+              </>
+            }
+          />
         </div>
       )}
 
@@ -263,28 +283,20 @@ export default async function SpacesPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
-            {spaces.map(renderCard)}
-          </div>
+          <SpacesGrid
+            propertyId={propertyId}
+            maxGuests={property.maxGuests}
+            propertyBedCapacity={totalBedCapacity}
+            propertyAreaSqm={property.usableAreaSqm}
+            propertyCeilingCm={property.ceilingHeightCm}
+            cards={activeCards}
+          />
         )}
       </NumberedSection>
 
-      <div id="anadir-espacio" className="scroll-mt-20">
-        <NumberedSection number="02" title="Añadir espacio">
-          <CreateSpaceForm propertyId={propertyId} availableTypeOptions={availableTypeOptions} />
-        </NumberedSection>
-      </div>
-
-      {archivedSpaces.length > 0 && (
-        <NumberedSection number="03" title={`Archivados (${archivedSpaces.length})`}>
-          <p className="mb-4 text-xs text-[var(--color-text-secondary)]">
-            Los espacios archivados no cuentan en capacidad ni aparecen en la guía del huésped. Puedes restaurarlos en cualquier momento.
-          </p>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-4">
-            {archivedSpaces.map(renderCard)}
-          </div>
-        </NumberedSection>
-      )}
+      <NumberedSection number="02" title="Añadir espacio">
+        <AddSpaceChips propertyId={propertyId} options={availableTypeOptions} />
+      </NumberedSection>
     </div>
   );
 }

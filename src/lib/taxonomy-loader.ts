@@ -12,8 +12,6 @@ import type {
   PolicyGroupedFile,
   SubtypeTaxonomyFile,
   RuleTaxonomyFile,
-  SpaceFeatureGroup,
-  SpaceFeaturesFile,
   SpaceTypeItem,
   SpaceTypesTaxonomyFile,
   SpaceAvailabilityRule,
@@ -57,7 +55,6 @@ import bedTypesJson from "../../taxonomies/bed_types.json";
 import spanishProvincesJson from "../../taxonomies/spanish_provinces.json";
 import buildingAccessMethodsJson from "../../taxonomies/building_access_methods.json";
 import contactTypesJson from "../../taxonomies/contact_types.json";
-import spaceFeaturesJson from "../../taxonomies/space_features.json";
 import spaceAvailabilityRulesJson from "../../taxonomies/space_availability_rules.json";
 import systemTaxonomyJson from "../../taxonomies/system_taxonomy.json";
 import systemSubtypesJson from "../../taxonomies/system_subtypes.json";
@@ -190,7 +187,9 @@ export const parkingOptions = parkingOptionsJson as unknown as ItemTaxonomyFile;
 export const accessibilityFeatures = accessibilityFeaturesJson as unknown as ItemTaxonomyFile;
 export const propertyEnvironments = propertyEnvironmentsJson as unknown as ItemTaxonomyFile;
 export const contactTypes = contactTypesJson as unknown as import("./types/taxonomy").ContactTypesTaxonomyFile;
-export const spaceFeatures = spaceFeaturesJson as unknown as SpaceFeaturesFile;
+// Space features resolve include_fields_from references at load — single
+// resolved instance shared with the editor (src/lib/taxonomies/space-features).
+export { spaceFeatures, getSpaceFeatureGroups } from "./taxonomies/space-features";
 export const spaceAvailabilityRules = spaceAvailabilityRulesJson as unknown as SpaceAvailabilityRulesFile;
 export const systemTaxonomy = systemTaxonomyJson as unknown as SystemTaxonomyFile;
 export const systemSubtypes = systemSubtypesJson as unknown as SystemSubtypesTaxonomyFile;
@@ -1113,14 +1112,6 @@ export function findSubtype(
   amenityId: string,
 ): AmenitySubtype | undefined {
   return _subtypesByAmenityId.get(amenityId);
-}
-
-// ── Space feature helpers ──
-
-export function getSpaceFeatureGroups(spaceTypeId: string): SpaceFeatureGroup[] {
-  return spaceFeatures.groups.filter(
-    (g) => g.applies_to.includes("*") || g.applies_to.includes(spaceTypeId),
-  );
 }
 
 // ── Space type metadata helpers ──

@@ -2,7 +2,11 @@
 
 import { useActionState } from "react";
 import { useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/cn";
 import { Icon } from "./icon";
+
+const DEFAULT_TRIGGER_CLASS =
+  "recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-action-destructive)] hover:bg-[var(--color-action-destructive-subtle)] transition-colors";
 
 interface DeleteConfirmationButtonProps {
   title: string;
@@ -11,7 +15,16 @@ interface DeleteConfirmationButtonProps {
   fieldName: string;
   action: (prev: { success: boolean } | null, formData: FormData) => Promise<{ success: boolean }>;
   requireConfirmText?: string;
+  /** Override the trigger styling (e.g. an overlay variant on a media cover).
+   * Merged over the default 32px icon-button chrome. */
+  triggerClassName?: string;
+  /** Render a labeled text+icon trigger (e.g. "Eliminar espacio") instead of the
+   * icon-only square — for footers/danger rows where a bare icon reads as orphan. */
+  triggerLabel?: string;
 }
+
+const LABEL_TRIGGER_CLASS =
+  "inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-md)] px-3 text-sm font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-action-destructive-subtle)] hover:text-[var(--color-action-destructive)]";
 
 export function DeleteConfirmationButton({
   title,
@@ -20,6 +33,8 @@ export function DeleteConfirmationButton({
   fieldName,
   action,
   requireConfirmText,
+  triggerClassName,
+  triggerLabel,
 }: DeleteConfirmationButtonProps) {
   const [open, setOpen] = useState(false);
   const [confirmation, setConfirmation] = useState("");
@@ -54,11 +69,12 @@ export function DeleteConfirmationButton({
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
-        className="recipe-icon-btn-32 grid h-8 w-8 place-items-center rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-action-destructive)] hover:bg-[var(--color-action-destructive-subtle)] transition-colors"
+        className={triggerLabel ? cn(LABEL_TRIGGER_CLASS, triggerClassName) : cn(DEFAULT_TRIGGER_CLASS, triggerClassName)}
         aria-label={title}
         title={title}
       >
         <Icon name="trash" size="sm" tone="inherit" />
+        {triggerLabel && <span>{triggerLabel}</span>}
       </button>
 
       <dialog

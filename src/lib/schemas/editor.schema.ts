@@ -36,6 +36,9 @@ export const propertySchema = z.object({
     buildingFloors: z.number().int().min(1).max(200).optional(),
     floorLevel: z.number().int().min(0).max(200).optional(),
   }).optional(),
+  // Property-wide defaults each space inherits + can override (spaces editor).
+  usableAreaSqm: z.number().positive("Debe ser mayor que 0").optional().nullable(),
+  ceilingHeightCm: z.number().int().positive("Debe ser mayor que 0").optional().nullable(),
 }).refine(
   (d) => (d.latitude == null) === (d.longitude == null),
   { message: "Latitud y longitud deben proporcionarse juntas", path: ["latitude"] },
@@ -187,7 +190,9 @@ export type SpaceFeaturesData = z.infer<typeof spaceFeaturesSchema>;
 
 export const createSpaceSchema = z.object({
   spaceType: z.string().min(1, "El tipo de espacio es obligatorio"),
-  name: z.string().min(1, "El nombre es obligatorio"),
+  // Optional: the action derives "Dormitorio 2"-style defaults from the type;
+  // the operator renames inline on the card (InlineEditText).
+  name: z.string().optional(),
   guestNotes: z.string().optional(),
   internalNotes: z.string().optional(),
 });
@@ -218,6 +223,8 @@ export type UpdateBedData = CreateBedData;
 
 export const bedConfigSchema = z.object({
   mattressType: z.string().optional(),
+  // Free-text mattress type when mattressType === "other".
+  mattressTypeCustom: z.string().max(100).optional(),
   mattressFirmness: z.string().optional(),
   pillowTypes: z.array(z.string()).optional(),
   linenIncluded: z.boolean().optional(),
@@ -225,6 +232,13 @@ export const bedConfigSchema = z.object({
   mattressProtector: z.boolean().optional(),
   customLabel: z.string().max(100).optional(),
   customCapacity: z.number().int().min(1).max(20).optional(),
+  // Crib config (bt.crib). Zod strips undeclared keys on parse, so every key
+  // the BedManager modal sends must be listed here or it is silently dropped.
+  cribMattress: z.boolean().optional(),
+  cribMattressExtra: z.boolean().optional(),
+  cribLinen: z.boolean().optional(),
+  cribMobile: z.boolean().optional(),
+  cribFoldable: z.boolean().optional(),
 });
 
 export type BedConfigData = z.infer<typeof bedConfigSchema>;

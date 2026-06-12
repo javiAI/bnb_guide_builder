@@ -5,8 +5,8 @@
   "total": 150,
   "countsByDestination": {
     "derived_from_system": 5,
-    "amenity_configurable": 95,
-    "derived_from_space": 20,
+    "amenity_configurable": 89,
+    "derived_from_space": 26,
     "moved_to_property_attribute": 6,
     "moved_to_system": 4,
     "derived_from_access": 1,
@@ -255,8 +255,8 @@
     },
     {
       "id": "am.dishwasher",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.dryer",
@@ -341,8 +341,8 @@
     },
     {
       "id": "am.freezer",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.game_console",
@@ -466,8 +466,8 @@
     },
     {
       "id": "am.microwave",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.mini_fridge",
@@ -521,8 +521,8 @@
     },
     {
       "id": "am.oven",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.pack_n_play",
@@ -595,8 +595,8 @@
     },
     {
       "id": "am.refrigerator",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.resort_access",
@@ -664,8 +664,8 @@
     },
     {
       "id": "am.stove",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Derivado de espacios/features (sf.kitchen_*, editor de Espacios; flip 16I-4)."
     },
     {
       "id": "am.sun_loungers",

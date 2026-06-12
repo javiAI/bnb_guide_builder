@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useRef, useEffect, useMemo } from "react";
-import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, ArrowUpDown, type LucideIcon } from "lucide-react";
+import { Search, Home, UsersRound, DoorOpen, MapPin, Plus, X, Baby, ArrowUpDown, Ruler, type LucideIcon } from "lucide-react";
 import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
 import { CheckboxCardGroup, type CheckboxCardOption } from "@/components/ui/checkbox-card-group";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
@@ -156,6 +156,8 @@ interface PropertyFormProps {
     hasPrivateEntrance: boolean;
     latitude: number | null;
     longitude: number | null;
+    usableAreaSqm: number | null;
+    ceilingHeightCm: number | null;
     infrastructureJson: unknown;
   };
 }
@@ -187,6 +189,9 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
     [p.streetAddress, p.addressExtra].map((s) => s?.trim()).filter(Boolean).join(", "),
   );
   const [postalCode, setPostalCode] = useState(p.postalCode ?? "");
+  // Property-wide dimension defaults (each space inherits + can override).
+  const [usableAreaSqm, setUsableAreaSqm] = useState(p.usableAreaSqm?.toString() ?? "");
+  const [ceilingHeightCm, setCeilingHeightCm] = useState(p.ceilingHeightCm?.toString() ?? "");
   const [timezone, setTimezone] = useState(p.timezone ?? "Europe/Madrid");
   const [autoFilled, setAutoFilled] = useState<Set<string>>(new Set());
   const [latitude, setLatitude] = useState<number | null>(p.latitude != null ? roundCoord(p.latitude) : null);
@@ -517,6 +522,45 @@ export function PropertyForm({ propertyId, hasElevatorSystem, property: p }: Pro
                 onChange={setInfantsAllowed}
                 className="mt-3 border-t border-[var(--color-border-default)] pt-3"
               />
+            </Card>
+
+            {/* Dimensiones generales de la vivienda — valores por defecto que
+                cada espacio hereda y puede ajustar individualmente. */}
+            <Card variant="overview">
+              <div className="flex items-center gap-2">
+                <IconBadge icon={Ruler} tone="primary" />
+                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Dimensiones de la vivienda</h3>
+                <InfoTooltip text="Valores generales de la vivienda. Cada espacio los hereda automáticamente y podrás ajustarlos de forma individual si alguna estancia difiere (p. ej. un abuhardillado)." />
+              </div>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Valores generales de toda la vivienda. Los podrás ajustar por espacio si alguno difiere.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <FieldInput
+                  label="Superficie útil total"
+                  name="usableAreaSqm"
+                  type="number"
+                  min={0}
+                  step="0.1"
+                  inputMode="decimal"
+                  value={usableAreaSqm}
+                  onChange={(e) => setUsableAreaSqm(e.target.value)}
+                  placeholder="—"
+                  help="m² habitables aproximados."
+                />
+                <FieldInput
+                  label="Altura de techo"
+                  name="ceilingHeightCm"
+                  type="number"
+                  min={0}
+                  step="1"
+                  inputMode="numeric"
+                  value={ceilingHeightCm}
+                  onChange={(e) => setCeilingHeightCm(e.target.value)}
+                  placeholder="—"
+                  help="cm de altura libre habitual."
+                />
+              </div>
             </Card>
             {/* Dormitorios y baños viven en Espacios (fuente de verdad); no se
                 duplican aquí — la distribución ya no se configura en Propiedad. */}

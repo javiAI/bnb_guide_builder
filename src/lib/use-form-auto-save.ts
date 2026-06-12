@@ -41,7 +41,11 @@ import { startTransition, useCallback, useEffect, useRef, useState, type FormEve
  * Conditionally-mounted forms (edit-cards, collapsible bodies) are supported:
  * the hook re-attaches its listeners and re-establishes the baseline whenever
  * `formRef.current` changes, so a form that mounts after the hook does still
- * auto-saves.
+ * auto-saves. CAVEAT: that re-attach piggybacks on the owner re-rendering —
+ * a form mounted inside a PORTAL (Radix Dialog) attaches its ref without any
+ * owner re-render, so the baseline would only be taken at the user's first
+ * edit (absorbing it). Wire those forms with `usePortalFormRef` instead of a
+ * plain ref so the attach itself forces the re-render.
  *
  * Lossless on close/navigate: a pending debounced save is flushed (a) on
  * unmount, and (b) on demand via the returned `flush()` — call it right before
@@ -78,6 +82,27 @@ export function autoSaveSubmit(dispatch: (formData: FormData) => void) {
     const formData = new FormData(event.currentTarget);
     startTransition(() => dispatch(formData));
   };
+}
+
+/**
+ * Callback ref for auto-saved forms that mount inside a portal (Radix Dialog,
+ * createPortal): the portal commits the <form> without re-rendering the
+ * hook's owner, so `useFormAutoSave`'s per-render effect would never bind its
+ * listeners nor take the baseline — and the user's FIRST edit would be
+ * silently absorbed as the baseline. This ref stores the element and bumps a
+ * re-render on attach so the hook baselines against the pre-edit values.
+ */
+export function usePortalFormRef(
+  formRef: RefObject<HTMLFormElement | null>,
+): (el: HTMLFormElement | null) => void {
+  const [, bump] = useState(0);
+  return useCallback(
+    (el: HTMLFormElement | null) => {
+      formRef.current = el;
+      if (el) bump((n) => n + 1);
+    },
+    [formRef],
+  );
 }
 
 export function useFormAutoSave(

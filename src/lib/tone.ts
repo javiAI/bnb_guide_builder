@@ -14,3 +14,11 @@ export const TONE_DOT_FILL: Record<BadgeTone, string> = {
   warning: "bg-[var(--color-status-warning-solid)]",
   danger:  "bg-[var(--color-status-error-solid)]",
 };
+
+/** Pill text — tonal status-pill foreground (entity cards), AA in light + dark. */
+export const TONE_PILL_TEXT: Record<BadgeTone, string> = {
+  neutral: "text-[var(--color-status-neutral-text)]",
+  success: "text-[var(--color-status-success-text)]",
+  warning: "text-[var(--color-status-warning-text)]",
+  danger:  "text-[var(--color-status-error-text)]",
+};

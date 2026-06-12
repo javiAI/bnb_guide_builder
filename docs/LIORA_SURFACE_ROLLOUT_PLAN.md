@@ -549,7 +549,7 @@ Key files: `src/components/messaging/`, `src/components/public-guide/guide-searc
 | 1 | `feat/liora-16I-1-overview-polish` | Resumen | audited (16D) | UX refinement, primitive standardization (low) |
 | 2 | `feat/liora-16I-2-property-polish` | Propiedad | baseline + waiver | UX + own silhouette (no editor kit ref) |
 | 3 | `feat/liora-16I-3-access-polish` | Acceso | cockpit (16E.6) | refinement on cockpit |
-| 4 | `feat/liora-16I-4-spaces-polish` | Espacios | parity 9.0 | beyond-floor refinement (§22 plano, §23 EntityMediaCard deferred) |
+| 4 | `feat/liora-16I-4-spaces-polish` | Espacios | parity 9.0 | ✅ **DONE (2026-06-12, parity 9.4, axe 0, PR abierta)** — EntityMediaCard/accordion extraídos (§23 ejecutado), editor lean v3, autosave de raíz, alta one-click, estado canónico, en-suite include, coherencia 20 estancias (§22 plano sigue diferido) |
 | 5 | `feat/liora-16I-5-systems-polish` | Sistemas | parity 9.0 | refinement (§21 meta deferred) |
 | 6 | `feat/liora-16I-6-amenities-polish` | Equipamiento | parity 8.9 | refinement (§24 tri-state, §18.2 split deferred) |
 | 7 | `feat/liora-16I-7-local-guide-parity` | Guía local | tokens-only, **unaudited** | **full port + audit** (kit `page-guialocal`) — HIGH |
