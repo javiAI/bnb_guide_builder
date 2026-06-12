@@ -3,6 +3,28 @@
   "version": "2026-04-07",
   "locale": "es-ES",
   "units_system": "metric",
+  "severity_levels": [
+    {
+      "id": "low",
+      "label": "Baja",
+      "tone": "neutral"
+    },
+    {
+      "id": "medium",
+      "label": "Media",
+      "tone": "warning"
+    },
+    {
+      "id": "high",
+      "label": "Alta",
+      "tone": "danger"
+    },
+    {
+      "id": "critical",
+      "label": "Crítica",
+      "tone": "danger"
+    }
+  ],
   "items": [
     {
       "id": "tr.lockout",

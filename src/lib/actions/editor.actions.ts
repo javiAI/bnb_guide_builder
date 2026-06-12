@@ -10,8 +10,10 @@ import {
   deleteEntityChunksInBackground,
   extractFromPropertyAll,
 } from "@/lib/services/knowledge-extract.service";
-import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods, getSpaceTypeLabel } from "@/lib/taxonomy-loader";
+import { findSystemItem, findSubtype, buildingAccessMethods, parkingOptions, accessibilityFeatures as accessibilityFeatures_taxonomy, accessMethods, getSpaceTypeLabel, contactTypes, troubleshootingTaxonomy } from "@/lib/taxonomy-loader";
 import { stripNulls, isPrismaUniqueViolation } from "@/lib/utils";
+import { findItem } from "@/lib/taxonomies/_helpers";
+import { visibilityLevels } from "@/lib/visibility";
 import { normaliseVisibility } from "@/lib/visibility";
 import {
   deriveAccessibilityPersistence,
@@ -47,9 +49,12 @@ import type { ActionResult } from "@/lib/types/action-result";
 
 function extractContactFields(formData: FormData) {
   return {
-    roleKey: formData.get("roleKey") as string,
-    entityType: (formData.get("entityType") as string) || "person",
-    displayName: formData.get("displayName") as string,
+    // roleKey/displayName/entityType/visibility may be absent: the create
+    // action derives them from contact_types.json (one-click add) and the
+    // update action drops them entirely (type immutable, rename dedicated).
+    roleKey: (formData.get("roleKey") as string) || undefined,
+    entityType: (formData.get("entityType") as string) || undefined,
+    displayName: (formData.get("displayName") as string) || undefined,
     contactPersonName: (formData.get("contactPersonName") as string) || null,
     phone: (formData.get("phone") as string) || null,
     phoneSecondary: (formData.get("phoneSecondary") as string) || null,
@@ -61,7 +66,7 @@ function extractContactFields(formData: FormData) {
     hasPropertyAccess: formData.get("hasPropertyAccess") === "on",
     internalNotes: (formData.get("internalNotes") as string) || null,
     guestVisibleNotes: (formData.get("guestVisibleNotes") as string) || null,
-    visibility: (formData.get("visibility") as string) || "internal",
+    visibility: (formData.get("visibility") as string) || undefined,
     isPrimary: formData.get("isPrimary") === "on",
   };
 }
@@ -441,10 +446,33 @@ export async function createContactAction(
   if (!result.success) {
     return { success: false, fieldErrors: result.error.flatten().fieldErrors as Record<string, string[]> };
   }
+  if (!result.data.roleKey) {
+    return { success: false, error: "El tipo de contacto es obligatorio" };
+  }
+
+  // One-click add: name + defaults derive from contact_types.json. First of
+  // its type = the type label ("Fontanero"); siblings get a counter.
+  const item = contactTypes.items.find((t) => t.id === result.data.roleKey);
+  let displayName = result.data.displayName;
+  if (!displayName) {
+    const label = item?.label ?? result.data.roleKey;
+    const siblings = await prisma.contact.count({ where: { propertyId, roleKey: result.data.roleKey } });
+    displayName = siblings === 0 ? label : `${label} ${siblings + 1}`;
+  }
+  const entityType = result.data.entityType ?? item?.defaultEntityType ?? "person";
+  const visibility =
+    result.data.visibility ??
+    (visibilityLevels.includes(item?.defaultVisibility as (typeof visibilityLevels)[number])
+      ? (item?.defaultVisibility as (typeof visibilityLevels)[number])
+      : "internal");
 
   const created = await prisma.contact.create({
     data: {
       ...result.data,
+      roleKey: result.data.roleKey,
+      displayName,
+      entityType,
+      visibility,
       property: { connect: { id: propertyId } },
     },
     select: { id: true },
@@ -455,13 +483,37 @@ export async function createContactAction(
   return { success: true };
 }
 
+export async function renameContactAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const contactId = formData.get("contactId") as string;
+  const displayName = (formData.get("displayName") as string)?.trim();
+  if (!contactId) return { success: false, error: "Falta el contacto" };
+  if (!displayName) return { success: false, error: "El nombre es obligatorio" };
+
+  const contact = await prisma.contact.findUnique({
+    where: { id: contactId },
+    select: { propertyId: true },
+  });
+  if (!contact) return { success: false, error: "Contacto no encontrado" };
+
+  await prisma.contact.update({ where: { id: contactId }, data: { displayName } });
+
+  invalidateKnowledgeInBackground(contact.propertyId, "contact", contactId);
+  revalidatePath(`/properties/${contact.propertyId}/contacts`);
+  return { success: true };
+}
+
 export async function updateContactAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   const contactId = formData.get("contactId") as string;
   const propertyId = formData.get("propertyId") as string;
-  const raw = extractContactFields(formData);
+  // Type is immutable post-creation and the name has its own action — the
+  // body autosave must never overwrite a concurrent rename.
+  const { roleKey: _roleKey, displayName: _displayName, ...raw } = extractContactFields(formData);
 
   const result = updateContactSchema.safeParse(raw);
   if (!result.success) {
@@ -924,6 +976,11 @@ export async function toggleAmenityAction(
   const amenityKey = formData.get("amenityKey") as string;
   const spaceId = (formData.get("spaceId") as string) || null;
   const enabled = formData.get("enabled") === "true";
+  // Custom amenities (`custom.<slug>`): the slug loses casing/accents, so the
+  // operator's original label travels in detailsJson._label.
+  const customLabel = (formData.get("customLabel") as string)?.trim().slice(0, 80) || null;
+  const createDetails =
+    customLabel && amenityKey.startsWith("custom.") ? { detailsJson: { _label: customLabel } } : {};
 
   if (spaceId) {
     const space = await prisma.space.findUnique({ where: { id: spaceId }, select: { propertyId: true } });
@@ -941,7 +998,7 @@ export async function toggleAmenityAction(
           where: {
             propertyId_amenityKey_instanceKey: { propertyId, amenityKey, instanceKey },
           },
-          create: { propertyId, amenityKey, instanceKey },
+          create: { propertyId, amenityKey, instanceKey, ...createDetails },
           update: {},
         });
         if (spaceId) {
@@ -1075,11 +1132,7 @@ export async function createPlaybookAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const propertyId = formData.get("propertyId") as string;
-  const raw = {
-    playbookKey: formData.get("playbookKey") as string,
-    title: formData.get("title") as string,
-    severity: (formData.get("severity") as string) || undefined,
-  };
+  const raw = { playbookKey: formData.get("playbookKey") as string };
 
   const result = createPlaybookSchema.safeParse(raw);
   if (!result.success) {
@@ -1089,15 +1142,65 @@ export async function createPlaybookAction(
     };
   }
 
+  // One-click add: title + default severity derive from the taxonomy.
+  const item = findItem(troubleshootingTaxonomy, result.data.playbookKey);
+  if (!item) {
+    return { success: false, error: "Tipo de solución no válido" };
+  }
+  const siblings = await prisma.troubleshootingPlaybook.count({
+    where: { propertyId, playbookKey: result.data.playbookKey },
+  });
+  const title = siblings === 0 ? item.label : `${item.label} ${siblings + 1}`;
+
   await prisma.troubleshootingPlaybook.create({
     data: {
-      ...result.data,
-      severity: result.data.severity ?? "medium",
+      playbookKey: result.data.playbookKey,
+      title,
+      severity: item.severity_default ?? "medium",
       property: { connect: { id: propertyId } },
     },
   });
 
   revalidatePath(`/properties/${propertyId}/troubleshooting`);
+  return { success: true };
+}
+
+export async function renamePlaybookAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const playbookId = formData.get("playbookId") as string;
+  const title = (formData.get("title") as string)?.trim();
+  if (!playbookId) return { success: false, error: "Falta la solución" };
+  if (!title) return { success: false, error: "El nombre es obligatorio" };
+
+  const playbook = await prisma.troubleshootingPlaybook.findUnique({
+    where: { id: playbookId },
+    select: { propertyId: true },
+  });
+  if (!playbook) return { success: false, error: "Solución no encontrada" };
+
+  await prisma.troubleshootingPlaybook.update({ where: { id: playbookId }, data: { title } });
+  revalidatePath(`/properties/${playbook.propertyId}/troubleshooting`);
+  return { success: true };
+}
+
+export async function deletePlaybookAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const playbookId = formData.get("playbookId") as string;
+  if (!playbookId) return { success: false, error: "Falta la solución" };
+
+  const playbook = await prisma.troubleshootingPlaybook.findUnique({
+    where: { id: playbookId },
+    select: { propertyId: true },
+  });
+  if (!playbook) return { success: false, error: "Solución no encontrada" };
+
+  // Incidents keep their rows (FK SetNull) — only the playbook goes.
+  await prisma.troubleshootingPlaybook.delete({ where: { id: playbookId } });
+  revalidatePath(`/properties/${playbook.propertyId}/troubleshooting`);
   return { success: true };
 }
 
@@ -1117,8 +1220,9 @@ export async function updatePlaybookAction(
     return { success: false, error: "El playbook no pertenece a la propiedad indicada" };
   }
 
+  // Title is renamed via renamePlaybookAction (InlineEditText) — never here,
+  // so the body autosave can't overwrite a concurrent rename.
   const raw = {
-    title: formData.get("title") as string,
     severity: (formData.get("severity") as string) || undefined,
     symptomsMd: (formData.get("symptomsMd") as string) || undefined,
     guestStepsMd: (formData.get("guestStepsMd") as string) || undefined,
@@ -1257,18 +1361,28 @@ export async function updateLocalPlaceAction(
     return { success: false, error: "El lugar no pertenece a la propiedad indicada" };
   }
 
+  // Presence-based mapping (inline autosave editor): absent field → untouched;
+  // present-but-empty → null (clear). The old `|| undefined` made clearing a
+  // note impossible and renaming required re-posting the whole record.
+  const clearable = (key: string) => {
+    const v = formData.get(key);
+    return v === null ? undefined : (String(v).trim() || null);
+  };
+  const nameRaw = formData.get("name");
+  const categoryRaw = formData.get("categoryKey");
+  const distanceRaw = formData.get("distanceMeters");
   const raw = {
-    name: formData.get("name") as string,
-    shortNote: (formData.get("shortNote") as string) || undefined,
-    guestDescription: (formData.get("guestDescription") as string) || undefined,
-    aiNotes: (formData.get("aiNotes") as string) || undefined,
-    distanceMeters: formData.get("distanceMeters")
-      ? Number(formData.get("distanceMeters"))
-      : undefined,
-    hoursText: (formData.get("hoursText") as string) || undefined,
-    linkUrl: (formData.get("linkUrl") as string) || undefined,
-    bestFor: (formData.get("bestFor") as string) || undefined,
-    seasonalNotes: (formData.get("seasonalNotes") as string) || undefined,
+    name: nameRaw === null ? undefined : String(nameRaw),
+    categoryKey: categoryRaw === null ? undefined : String(categoryRaw),
+    shortNote: clearable("shortNote"),
+    guestDescription: clearable("guestDescription"),
+    aiNotes: clearable("aiNotes"),
+    distanceMeters:
+      distanceRaw === null ? undefined : String(distanceRaw).trim() === "" ? null : Number(distanceRaw),
+    hoursText: clearable("hoursText"),
+    linkUrl: clearable("linkUrl"),
+    bestFor: clearable("bestFor"),
+    seasonalNotes: clearable("seasonalNotes"),
     visibility: (formData.get("visibility") as string) || undefined,
   };
 
@@ -1530,7 +1644,9 @@ export async function deleteSystemAction(
   recomputeAllInBackground(system.propertyId);
   revalidatePath(`/properties/${system.propertyId}/systems`);
   revalidatePath(`/properties/${system.propertyId}/spaces`);
-  return { success: true };
+  // The only caller is the system detail page — without this the route 404s
+  // after deleting. NEXT_REDIRECT must propagate (no try/catch).
+  redirect(`/properties/${system.propertyId}/systems`);
 }
 
 export async function updateSystemCoverageAction(

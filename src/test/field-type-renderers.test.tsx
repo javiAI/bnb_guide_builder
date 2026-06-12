@@ -12,11 +12,13 @@ function mk(overrides: Partial<FieldTypeMeta> & { type: FieldTypeMeta["type"] })
 }
 
 describe("field-type-renderers — renderInput", () => {
-  it("boolean renders a checkbox with an inline label", () => {
+  it("boolean renders a canonical Switch with an inline label", () => {
     const { container } = render(
       <>{renderFieldInput({ field: mk({ type: "boolean" }), value: false, onChange: () => {} })}</>,
     );
-    expect(container.querySelector("input[type=checkbox]")).not.toBeNull();
+    const sw = container.querySelector('[role="switch"]');
+    expect(sw).not.toBeNull();
+    expect(sw?.getAttribute("aria-checked")).toBe("false");
     expect(screen.getByText("Mi campo")).toBeInTheDocument();
   });
 
@@ -52,7 +54,7 @@ describe("field-type-renderers — renderInput", () => {
     expect(captured).toBeNull();
   });
 
-  it("enum renders a select with every option", () => {
+  it("enum renders a single-select chip group (no dropdown)", () => {
     const { container } = render(
       <>{renderFieldInput({
         field: mk({
@@ -62,15 +64,15 @@ describe("field-type-renderers — renderInput", () => {
             { id: "b", label: "Beta", description: "" },
           ],
         }),
-        value: null,
+        value: "a",
         onChange: () => {},
       })}</>,
     );
-    const opts = container.querySelectorAll("option");
-    // placeholder "—" + 2 options
-    expect(opts.length).toBe(3);
-    expect(screen.getByText("Alfa")).toBeInTheDocument();
-    expect(screen.getByText("Beta")).toBeInTheDocument();
+    expect(container.querySelector("select")).toBeNull();
+    const chips = container.querySelectorAll("button[aria-pressed]");
+    expect(chips.length).toBe(2);
+    expect(screen.getByText("Alfa").closest("button")?.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("Beta").closest("button")?.getAttribute("aria-pressed")).toBe("false");
   });
 
   it("password hides the value (type=password)", () => {

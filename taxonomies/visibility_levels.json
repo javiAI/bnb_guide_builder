@@ -14,7 +14,7 @@
     },
     {
       "id": "vis.ai",
-      "label": "Visible para AI",
+      "label": "Visible para la IA",
       "description": "Contenido incluido en export AI por defecto cuando no es sensible.",
       "parent_id": null,
       "recommended": true,

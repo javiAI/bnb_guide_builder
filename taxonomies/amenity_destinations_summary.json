@@ -5,8 +5,8 @@
   "total": 150,
   "countsByDestination": {
     "derived_from_system": 5,
-    "amenity_configurable": 89,
-    "derived_from_space": 26,
+    "amenity_configurable": 85,
+    "derived_from_space": 30,
     "moved_to_property_attribute": 6,
     "moved_to_system": 4,
     "derived_from_access": 1,
@@ -491,13 +491,13 @@
     },
     {
       "id": "am.outdoor_dining_area",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Fijo/instalación del espacio — respaldado por sf.outdoor_dining (flip 16I-6, FUTURE §29.7)."
     },
     {
       "id": "am.outdoor_furniture",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Fijo/instalación del espacio — respaldado por sf.outdoor_furniture (flip 16I-6, FUTURE §29.7)."
     },
     {
       "id": "am.outdoor_kitchen",
@@ -506,8 +506,8 @@
     },
     {
       "id": "am.outdoor_playground",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Fijo/instalación del espacio — respaldado por sf.garden_children_play (flip 16I-6, FUTURE §29.7)."
     },
     {
       "id": "am.outdoor_shower",
@@ -669,8 +669,8 @@
     },
     {
       "id": "am.sun_loungers",
-      "destination": "amenity_configurable",
-      "note": "Amenity configurable (inventario/experiencia)."
+      "destination": "derived_from_space",
+      "note": "Fijo/instalación del espacio — respaldado por sf.sun_loungers (flip 16I-6, FUTURE §29.7)."
     },
     {
       "id": "am.table_corner_guards",

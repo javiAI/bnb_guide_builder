@@ -2,6 +2,17 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
+/** Chip label "bold count + pluralized noun" (e.g. "5 espacios") — the
+ * count-first convention shared by the content tabs' header chips. */
+export function countChipLabel(n: number, singular: string, plural: string) {
+  return (
+    <>
+      <span className="font-semibold text-[var(--color-text-primary)]">{n}</span>{" "}
+      {n === 1 ? singular : plural}
+    </>
+  );
+}
+
 interface PageHeaderChipProps {
   icon?: LucideIcon;
   iconSize?: number;

@@ -23,9 +23,10 @@ export function Switch({
   size?: "sm" | "md";
   className?: string;
 }) {
+  // travel = track − thumb − 2×padding: md 44−16−4 = 24px; sm 38−18−4 = 16px.
   const track = size === "md" ? "h-6 w-11" : "h-[22px] w-[38px]";
   const thumb = size === "md" ? "h-4 w-4" : "h-[18px] w-[18px]";
-  const travel = size === "md" ? "translate-x-5" : "translate-x-4";
+  const travel = size === "md" ? "translate-x-6" : "translate-x-4";
   return (
     <button
       type="button"

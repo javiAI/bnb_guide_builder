@@ -149,7 +149,7 @@ export async function getOperatorSearchIndex(
       label: playbook.title,
       sublabel: "Solución",
       group: "Soluciones",
-      href: `${base}/troubleshooting/${playbook.playbookKey}`,
+      href: `${base}/troubleshooting#playbook-${playbook.id}`,
     });
   }
 

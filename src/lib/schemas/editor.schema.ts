@@ -81,9 +81,12 @@ export type AccessData = z.infer<typeof accessSchema>;
 // ── Contact schemas ──
 
 export const createContactSchema = z.object({
-  roleKey: z.string().min(1, "Selecciona un tipo de contacto"),
-  entityType: z.string().min(1),
-  displayName: z.string().min(1, "El nombre es obligatorio"),
+  // roleKey/displayName/entityType optional at the schema layer: the create
+  // action derives them from contact_types.json (one-click add) and validates
+  // roleKey presence itself.
+  roleKey: z.string().min(1, "Selecciona un tipo de contacto").optional(),
+  entityType: z.string().min(1).optional(),
+  displayName: z.string().min(1, "El nombre es obligatorio").optional(),
   contactPersonName: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
   phoneSecondary: z.string().nullable().optional(),
@@ -99,23 +102,23 @@ export const createContactSchema = z.object({
   isPrimary: z.boolean().optional(),
 });
 
-export const updateContactSchema = createContactSchema.partial().extend({
-  displayName: z.string().min(1, "El nombre es obligatorio"),
-});
+// Type is immutable post-creation and the name is renamed via its dedicated
+// action — the body autosave never carries either.
+export const updateContactSchema = createContactSchema.omit({ roleKey: true, displayName: true }).partial();
 
 // ── Policies editor ──
 
 const timeFormat = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const policiesSchema = z.object({
+  // Completeness is a UI signal (policy-progress missing-signals), never a
+  // persistence gate: partial-but-shape-valid branches MUST save (autosave
+  // contract — the all-or-nothing superRefines were the Zod equivalent of the
+  // banned `required` HTML and reverted unrelated edits cross-reload).
   quietHours: z.object({
     enabled: z.boolean(),
     from: z.string().regex(timeFormat, "Formato inválido, usa HH:MM").optional(),
     to: z.string().regex(timeFormat, "Formato inválido, usa HH:MM").optional(),
-  }).superRefine((v, ctx) => {
-    if (!v.enabled) return;
-    if (!v.from) ctx.addIssue({ code: "custom", path: ["from"], message: "La hora de inicio es obligatoria" });
-    if (!v.to) ctx.addIssue({ code: "custom", path: ["to"], message: "La hora de fin es obligatoria" });
   }),
   smoking: z.enum(["not_allowed", "outdoors_only", "designated_area", "no_restriction"]),
   smokingArea: z.string().nullable().optional(),
@@ -123,13 +126,6 @@ export const policiesSchema = z.object({
     policy: z.enum(["not_allowed", "small_gatherings", "with_approval"]),
     maxPeople: z.number().int().min(1).optional(),
     approvalInstructions: z.string().nullable().optional(),
-  }).superRefine((v, ctx) => {
-    if (v.policy === "small_gatherings" && v.maxPeople === undefined) {
-      ctx.addIssue({ code: "custom", path: ["maxPeople"], message: "Indica el máximo de personas" });
-    }
-    if (v.policy === "with_approval" && (!v.approvalInstructions || v.approvalInstructions.trim().length === 0)) {
-      ctx.addIssue({ code: "custom", path: ["approvalInstructions"], message: "Indica las instrucciones de aprobación" });
-    }
   }),
   commercialPhotography: z.enum(["not_allowed", "with_permission"]),
   pets: z.object({
@@ -142,24 +138,10 @@ export const policiesSchema = z.object({
     feeAmount: z.number().min(0).optional(),
     restrictions: z.array(z.string()).optional(),
     notes: z.string().nullable().optional(),
-  }).superRefine((v, ctx) => {
-    if (!v.allowed) return;
-    if (!v.types || v.types.length === 0) ctx.addIssue({ code: "custom", path: ["types"], message: "Selecciona al menos un tipo de mascota" });
-    if (v.sizeRestriction === undefined) ctx.addIssue({ code: "custom", path: ["sizeRestriction"], message: "Indica la restricción de tamaño" });
-    if (v.maxCount === undefined) ctx.addIssue({ code: "custom", path: ["maxCount"], message: "Indica el número máximo de mascotas" });
-    if (v.feeMode === undefined) ctx.addIssue({ code: "custom", path: ["feeMode"], message: "Indica el tipo de cargo" });
-    if (v.sizeRestriction === "custom_weight" && v.maxWeightKg === undefined) ctx.addIssue({ code: "custom", path: ["maxWeightKg"], message: "Indica el peso máximo" });
-    if (v.feeMode && v.feeMode !== "none" && v.feeAmount === undefined) ctx.addIssue({ code: "custom", path: ["feeAmount"], message: "Indica el importe del cargo" });
   }),
   supplements: z.object({
-    cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }).superRefine((v, ctx) => {
-      if (v.enabled && v.amount === undefined) ctx.addIssue({ code: "custom", path: ["amount"], message: "Indica el importe del suplemento de limpieza" });
-    }),
-    extraGuest: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional(), fromGuest: z.number().int().min(1).optional() }).superRefine((v, ctx) => {
-      if (!v.enabled) return;
-      if (v.amount === undefined) ctx.addIssue({ code: "custom", path: ["amount"], message: "Indica el importe por huésped extra" });
-      if (v.fromGuest === undefined) ctx.addIssue({ code: "custom", path: ["fromGuest"], message: "Indica a partir de cuántos huéspedes" });
-    }),
+    cleaning: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional() }),
+    extraGuest: z.object({ enabled: z.boolean(), amount: z.number().min(0).optional(), fromGuest: z.number().int().min(1).optional() }),
   }),
   services: z.object({
     allowed: z.boolean(),
@@ -318,15 +300,15 @@ export type UpdateAmenityInstanceData = z.infer<typeof updateAmenityInstanceSche
 
 // ── Troubleshooting (S-16, S-17) ──
 
+// One-click add: only the type travels — title (label + counter) and default
+// severity derive from troubleshooting_taxonomy.json in the action.
 export const createPlaybookSchema = z.object({
-  playbookKey: z.string().min(1, "El tipo de incidencia es obligatorio"),
-  title: z.string().min(1, "El título es obligatorio"),
-  severity: z.string().optional(),
+  playbookKey: z.string().min(1, "El tipo de solución es obligatorio"),
 });
 
+// Title is renamed via renamePlaybookAction (InlineEditText), never here.
 export const updatePlaybookSchema = z
   .object({
-    title: z.string().min(1, "El título es obligatorio"),
     severity: z.string().optional(),
     symptomsMd: z.string().optional(),
     guestStepsMd: z.string().optional(),
@@ -402,16 +384,24 @@ export const createLocalPlaceSchema = z
     }
   });
 
+// Inline autosave editor contract: absent → untouched, present-empty → null
+// (clear). Category is editable but never an arrival_* key (those belong to
+// Acceso) and the name renames via the same partial shape.
 export const updateLocalPlaceSchema = z.object({
-  name: z.string().min(1, "El nombre es obligatorio"),
-  shortNote: z.string().optional(),
-  guestDescription: z.string().optional(),
-  aiNotes: z.string().optional(),
-  distanceMeters: z.number().int().min(0).optional(),
-  hoursText: z.string().optional(),
-  linkUrl: z.string().optional(),
-  bestFor: z.string().optional(),
-  seasonalNotes: z.string().optional(),
+  name: z.string().min(1, "El nombre es obligatorio").optional(),
+  categoryKey: z
+    .string()
+    .refine(isLocalPlaceCategoryKey, { message: "Categoría no válida" })
+    .refine((k) => !k.startsWith("lp.arrival_"), { message: "Las opciones de llegada se gestionan en Acceso" })
+    .optional(),
+  shortNote: z.string().nullable().optional(),
+  guestDescription: z.string().nullable().optional(),
+  aiNotes: z.string().nullable().optional(),
+  distanceMeters: z.number().int().min(0).nullable().optional(),
+  hoursText: z.string().nullable().optional(),
+  linkUrl: z.string().nullable().optional(),
+  bestFor: z.string().nullable().optional(),
+  seasonalNotes: z.string().nullable().optional(),
   visibility: z.enum(visibilityLevels).optional(),
 });
 
