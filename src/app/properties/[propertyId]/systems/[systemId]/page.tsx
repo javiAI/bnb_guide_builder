@@ -99,17 +99,17 @@ export default async function SystemDetailPage({
           visibility={system.visibility}
         />
 
-        {/* Troubleshooting relacionado */}
+        {/* Soluciones relacionadas */}
         <Card variant="overview">
           <SectionEyebrow icon={LifeBuoy} className="mb-1">
-            Troubleshooting relacionado
+            Soluciones relacionadas
           </SectionEyebrow>
           <p className="mb-3 text-[12px] text-[var(--color-text-secondary)]">
-            Playbooks vinculados a este sistema.
+            Soluciones vinculadas a este sistema.
           </p>
           {relatedPlaybooks.length === 0 ? (
             <p className="text-[12px] text-[var(--color-text-muted)]">
-              No hay playbooks vinculados a este sistema.
+              No hay soluciones vinculadas a este sistema.
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
@@ -118,7 +118,7 @@ export default async function SystemDetailPage({
                 return (
                   <li key={pb.id}>
                     <Link
-                      href={`/properties/${propertyId}/troubleshooting/${pb.id}`}
+                      href={`/properties/${propertyId}/troubleshooting#playbook-${pb.id}`}
                       className="flex min-h-[44px] items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] px-3 no-underline transition-colors hover:bg-[var(--color-interactive-hover)] hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
                     >
                       <span className="text-[13px] font-medium text-[var(--color-text-primary)]">

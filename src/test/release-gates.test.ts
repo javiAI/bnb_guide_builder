@@ -28,7 +28,6 @@ describe("Canonical screens exist", () => {
     "properties/[propertyId]/amenities",
     "properties/[propertyId]/amenities/[amenityId]",
     "properties/[propertyId]/troubleshooting",
-    "properties/[propertyId]/troubleshooting/[playbookKey]",
     "properties/[propertyId]/local-guide",
     "properties/[propertyId]/knowledge",
     "properties/[propertyId]/guest-guide",
