@@ -118,11 +118,18 @@ export function ContactCard({
 
   // ── Body autosave (mounts only while active) ──
   const detailsFormRef = useRef<HTMLFormElement>(null);
-  useFormAutoSave(detailsFormRef);
+  const flushDetails = useFormAutoSave(detailsFormRef);
   const [detailsState, detailsAction, detailsPending] = useActionState<ActionResult | null, FormData>(
     updateContactAction,
     null,
   );
+
+  // Collapse must flush any debounced edit before the form unmounts — same belt
+  // as LocalPlaceCard/PlaybookCard (the unmount cleanup alone races teardown).
+  const handleCollapse = useCallback(() => {
+    flushDetails();
+    onCollapse();
+  }, [flushDetails, onCollapse]);
 
   // ── Controlled state for chips/switches (hidden-mirror) + reveals ──
   const [entityType, setEntityType] = useState(contact.entityType);
@@ -372,7 +379,7 @@ export function ContactCard({
       collapsedContent={collapsedContent}
       hoverOverlay={hoverOverlay}
       onExpand={onExpand}
-      onCollapse={onCollapse}
+      onCollapse={handleCollapse}
       className={isEmergency && role === "idle" ? "border-[var(--color-status-error-border)]" : undefined}
     >
       {editor}
