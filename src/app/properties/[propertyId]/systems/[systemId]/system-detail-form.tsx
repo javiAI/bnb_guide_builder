@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition, useRef, type FormEvent } from "react";
-import { Settings2, Users, Wrench } from "lucide-react";
+import { useActionState, useState, useTransition, useRef, type FormEvent, type ReactNode } from "react";
 import { updateSystemAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import type { SystemSubtype, SystemSubtypeField } from "@/lib/types/taxonomy";
@@ -9,7 +8,9 @@ import { stripNulls } from "@/lib/utils";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
 import { useFormAutoSave } from "@/lib/use-form-auto-save";
 import { Card } from "@/components/ui/card";
-import { SectionEyebrow } from "@/components/ui/section-eyebrow";
+import { NumberedSection } from "@/components/ui/numbered-section";
+import { Switch } from "@/components/ui/switch";
+import { FieldTextarea } from "@/components/ui/field";
 import {
   renderFieldInput,
   fieldTypeWrapsOwnLabel,
@@ -23,6 +24,11 @@ interface Props {
   opsJson: Record<string, unknown>;
   internalNotes: string | null;
   visibility: string;
+  /** Section numbers assigned by the page so the detail form's cards align with
+   * the page's dynamic NumberedSection sequence (01 details · 02 ops · 03 settings). */
+  detailsNumber?: string;
+  opsNumber: string | null;
+  settingsNumber: string;
 }
 
 function FieldInput({
@@ -68,6 +74,22 @@ function FieldInput({
   );
 }
 
+function FieldsCard({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <NumberedSection number={number} title={title} className="mb-0">
+      <Card variant="overview">{children}</Card>
+    </NumberedSection>
+  );
+}
+
 export function SystemDetailForm({
   systemId,
   propertyId,
@@ -76,6 +98,9 @@ export function SystemDetailForm({
   opsJson,
   internalNotes,
   visibility,
+  detailsNumber,
+  opsNumber,
+  settingsNumber,
 }: Props) {
   const [result, action] = useActionState<ActionResult | null, FormData>(
     updateSystemAction,
@@ -90,8 +115,8 @@ export function SystemDetailForm({
 
   // Auto-save: edits persist as you make them (no "Guardar" button). The form
   // has no `name`-bearing inputs — the payload is built from state in
-  // `handleSubmit` — so `watch` is the change signal; `requestSubmit()` fires
-  // the submit below.
+  // `handleSubmit` — so `watch` is the authoritative change signal;
+  // `requestSubmit()` fires the submit below.
   const formRef = useRef<HTMLFormElement>(null);
   useFormAutoSave(formRef, 700, () => JSON.stringify({ details, ops, notes, vis }));
 
@@ -107,16 +132,15 @@ export function SystemDetailForm({
     startTransition(() => action(fd));
   }
 
-  const hasFields = subtype && (subtype.detailsFields.length > 0 || subtype.opsFields.length > 0);
+  const showDetails = Boolean(subtype && subtype.detailsFields.length > 0 && detailsNumber);
+  const showOps = Boolean(subtype && subtype.opsFields.length > 0 && opsNumber);
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-5">
       <AutoSaveStatus pending={isPending} />
-      {hasFields && subtype.detailsFields.length > 0 && (
-        <Card variant="overview">
-          <SectionEyebrow icon={Users} className="mb-4">
-            Información para huéspedes
-          </SectionEyebrow>
+
+      {showDetails && subtype && detailsNumber && (
+        <FieldsCard number={detailsNumber} title="Información para huéspedes">
           <div className="grid gap-4 sm:grid-cols-2">
             {subtype.detailsFields.map((field) => (
               <FieldInput
@@ -127,14 +151,11 @@ export function SystemDetailForm({
               />
             ))}
           </div>
-        </Card>
+        </FieldsCard>
       )}
 
-      {hasFields && subtype.opsFields.length > 0 && (
-        <Card variant="overview">
-          <SectionEyebrow icon={Wrench} className="mb-4">
-            Operaciones e incidencias
-          </SectionEyebrow>
+      {showOps && subtype && opsNumber && (
+        <FieldsCard number={opsNumber} title="Operaciones e incidencias">
           <div className="grid gap-4 sm:grid-cols-2">
             {subtype.opsFields.map((field) => (
               <FieldInput
@@ -145,42 +166,37 @@ export function SystemDetailForm({
               />
             ))}
           </div>
-        </Card>
+        </FieldsCard>
       )}
 
-      <Card variant="overview">
-        <SectionEyebrow icon={Settings2} className="mb-4">
-          Ajustes
-        </SectionEyebrow>
+      <FieldsCard number={settingsNumber} title="Ajustes">
         <div className="flex flex-col gap-4">
-          <label className="block">
-            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
-              Notas internas
-            </span>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Notas para el equipo, no visibles para huéspedes…"
-              className="mt-1 block w-full resize-none rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-[14px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] focus:border-[var(--color-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
+          <div className="flex min-h-[44px] items-center justify-between gap-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                Visible en la guía del huésped
+              </span>
+              <span className="text-[12px] text-[var(--color-text-muted)]">
+                Desactívalo para usar este sistema solo como referencia interna.
+              </span>
+            </div>
+            <Switch
+              checked={vis === "guest"}
+              onChange={(next) => setVis(next ? "guest" : "internal")}
+              ariaLabel="Visible en la guía del huésped"
             />
-          </label>
-          <label className="block">
-            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
-              Visibilidad
-            </span>
-            <select
-              value={vis}
-              onChange={(e) => setVis(e.target.value)}
-              aria-label="Visibilidad del sistema"
-              className="mt-1 block min-h-[44px] w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 text-[14px] text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
-            >
-              <option value="guest">Huésped</option>
-              <option value="internal">Solo interno</option>
-            </select>
-          </label>
+          </div>
+          <FieldTextarea
+            label="Notas internas"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Notas para el equipo, no visibles para huéspedes…"
+            help="Solo visibles para el operador."
+            className="resize-none"
+          />
         </div>
-      </Card>
+      </FieldsCard>
 
       {result && !result.success && result.error && (
         <p className="text-[12px] text-[var(--color-status-error-text)]">{result.error}</p>
