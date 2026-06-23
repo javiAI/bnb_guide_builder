@@ -2,18 +2,15 @@ import Link from "next/link";
 import {
   ArrowRight,
   Camera,
-  Check,
-  CircleDashed,
   EyeOff,
   ListChecks,
-  PenLine,
   TriangleAlert,
   Video,
   type LucideIcon,
 } from "lucide-react";
 import { IconBadge } from "@/components/ui/icon-badge";
-import { SystemRing } from "./system-ring";
-import type { SystemStatus } from "./system-status";
+import { EntityCardStatusPill } from "@/components/ui/entity-media-card";
+import { SYSTEM_STATUS_KEY, SYSTEM_STATUS_LABEL, type SystemStatus } from "./system-status";
 
 export interface SystemRowData {
   href: string;
@@ -22,8 +19,8 @@ export interface SystemRowData {
   description?: string | null;
   groupLabel: string;
   status: SystemStatus;
-  /** null = subtypeless system → render "Activo" instead of a ring (Q4). */
-  pct: number | null;
+  /** Hover explanation of what's still missing (only when partial / empty). */
+  statusDetail?: string;
   fieldsFilled: number;
   fieldsTotal: number;
   photos: number;
@@ -31,27 +28,6 @@ export interface SystemRowData {
   openIncidents: number;
   internal: boolean;
 }
-
-const STATUS_PILL: Record<
-  SystemStatus,
-  { label: string; icon: LucideIcon; cls: string }
-> = {
-  configured: {
-    label: "Configurado",
-    icon: Check,
-    cls: "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-text)]",
-  },
-  incomplete: {
-    label: "Incompleto",
-    icon: PenLine,
-    cls: "bg-[var(--color-status-warning-bg)] text-[var(--color-status-warning-text)]",
-  },
-  empty: {
-    label: "Vacío",
-    icon: CircleDashed,
-    cls: "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-  },
-};
 
 function Meta({
   icon: Icon,
@@ -81,7 +57,7 @@ export function SystemRow({
   description,
   groupLabel,
   status,
-  pct,
+  statusDetail,
   fieldsFilled,
   fieldsTotal,
   photos,
@@ -89,9 +65,6 @@ export function SystemRow({
   openIncidents,
   internal,
 }: SystemRowData) {
-  const pill = STATUS_PILL[status];
-  const PillIcon = pill.icon;
-
   return (
     <Link
       href={href}
@@ -161,21 +134,12 @@ export function SystemRow({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <span
-          className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${pill.cls}`}
-        >
-          <PillIcon size={12} aria-hidden="true" />
-          {pill.label}
-        </span>
-        {pct === null ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--color-status-success-text)]">
-            <Check size={13} aria-hidden="true" />
-            Activo
-          </span>
-        ) : (
-          <SystemRing pct={pct} status={status} />
-        )}
+      <div className="flex shrink-0 self-center">
+        <EntityCardStatusPill
+          status={SYSTEM_STATUS_KEY[status]}
+          label={SYSTEM_STATUS_LABEL[status]}
+          detail={statusDetail}
+        />
       </div>
 
       <ArrowRight

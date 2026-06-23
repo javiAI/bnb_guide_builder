@@ -257,20 +257,19 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
-    // 16E content modules — systems (sistemas: clima, agua, electricidad,
-    // conectividad). Kit reference: `page-sistemas` in subpages.html.
-    // **16E.5 visual-parity port complete** (`feat/liora-systems-visual-parity`):
-    // list page rebuilt to the sys-card silhouette — PageHeader (eyebrow/title/
-    // chips/status pill) + NON-AI tip card + three completeness NumberedSections
-    // (Configurados / Incompletos / Por configurar) with sys-card rows (IconBadge
-    // + group chip + meta + status pill + ring-pct) and per-row quick-add for
-    // recommended systems; detail page on the generic operator card grammar
-    // (<Card variant="overview"> + <SectionEyebrow>). Lucide icons replace the
-    // ← / → / ★ glyphs (canonical mapping in src/lib/icons/system-icons.ts,
-    // pinned by system-icon-coverage.test.ts). All clickables ≥44 hit area,
-    // selects carry aria-label (select-name baseline violation cleared), axe
-    // serious|critical = 0 light + dark. No schema/functional change. Audit +
-    // 7-criterion scores in LIORA_SURFACE_ROLLOUT_PLAN.md § systems.
+    // 16I-5 full port to la carta (builds on the 16E.5 sys-card baseline). List
+    // collapses the three completeness buckets into a single "01 Sistemas de la
+    // propiedad" + "02 Añadir sistema" (AddEntityChips one-click, groups =
+    // Recomendados + per-taxonomy-group); the actions status pill and the
+    // SystemRing are removed — the canonical EntityCardStatusPill (with
+    // missing-field hover via missingSystemFieldLabels/formatMissingDetail) is
+    // the single status signal. Detail page on numbered sections 01–05 with a
+    // visibility Switch ("Visible en la guía del huésped") and a coverage list
+    // mirroring SpaceSystemsCoverage (Switch + inherited-on-default, hidden for
+    // SPACE_SYSTEM_BLACKLIST); DeleteConfirmationButton + server redirect replace
+    // the native confirm(). enum→chips / boolean→Switch / fieldControlClass come
+    // from the shared field-type-renderers. Kit waivers (ring removed, buckets
+    // fused) documented in the PR. axe serious|critical = 0 light + dark.
     id: "operator-systems",
     routes: [
       "/properties/[propertyId]/systems",
@@ -279,6 +278,8 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     profile: "operator",
     files: [
       "src/app/properties/[propertyId]/systems/**/*.tsx",
+      // status helper imports the EntityCardStatus type (Liora primitive path)
+      "src/app/properties/[propertyId]/systems/**/*.ts",
     ],
   },
   {
@@ -362,22 +363,17 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
-    // 16E.5 content module — policies (normas de la casa). Kit reference
-    // exists (`page-normas` in subpages.html): eyebrow row (Propiedad ·
-    // Normas) → title → sub (firme/cálido voice) → rule, then numbered
-    // sections (01 Horarios y silencio, 02 Qué se permite). **Policies had
-    // NO 16E E1 baseline** (it was not in AUDITED_SURFACES nor
-    // EXPECTED_OPERATOR_SCOPE_PATTERNS before this branch), so this PR ships
-    // E2-baseline (semantic tokens + a11y + 44 hit-targets) AND the Liora
-    // silhouette (PageHeader, NumberedSection always-expanded with sub-form
-    // toggles preserved, editorial empty states) in one PR. Acceptance gate
-    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies.
-    // Divergence from the kit, documented in the PR description: the kit
-    // chip-strip ("N definidas / N sin decidir") is OMITTED — the binary
-    // policy data model has no honest mapping to a "decided/undecided" count.
-    // The kit's tri-state rule-card grid is not adopted either — the real
-    // model uses radio/checkbox cards + sub-form toggles (RadioCardGroup,
-    // CheckboxCardGroup, NumberStepper), preserved per zero-functional-change.
+    // 16I-9 full port to la carta (builds on the 16E.5 baseline). policies-form
+    // rewritten to canonical controls with the same section structure: the hour
+    // <select> (48 options) and any <select> become chips / cyclic 30-min
+    // InlineSteppers (slot↔HH:MM round-trip); on/off rules are Switch rows;
+    // enum/multi rules are ToggleChip groups with Tooltip descriptions; the
+    // `action=` form wrapper is replaced by onSubmit={autoSaveSubmit(...)} +
+    // useFormAutoSave with a `watch` over the state→JSON payload (no native
+    // required). Header chips ("X de 8 definidas" + conditional "N por
+    // completar" with a Falta: tooltip from policy-progress.ts). FieldInput/
+    // FieldTextarea + semantic tokens throughout. Kit chip-strip + tri-state
+    // grid remain waived (binary model). axe serious|critical = 0 light + dark.
     id: "operator-policies",
     routes: ["/properties/[propertyId]/policies"],
     profile: "operator",
@@ -386,25 +382,25 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
-    // 16E.5 content modules — contacts (contactos). Kit reference exists
-    // (`page-contactos` in subpages.html) with a rich visual silhouette:
-    // `pg` page header (eyebrow / title / editorial subtitle / count chips /
-    // "Añadir contacto" CTA), numbered sections per non-empty contact group
-    // (01 Anfitrión / 02 Emergencia / …), and `cn-grid` of `cn-card` rows
-    // (avatar + name + role + phone + action buttons), with an emergency card
-    // variant. This branch ships the **full UI Kit visual silhouette port**
-    // (not a baseline E1): semantic tokens, PageHeader/NumberedSection/
-    // PageHeaderChip/ButtonLink primitives, avatar icon registry
-    // (`src/lib/icons/contact-icons.ts`), quick-action links, and 44 hit-area
-    // targets. Zero functional/server-action/schema changes. Acceptance gate
-    // (≥8.5 global / ≥7.5 per criterion + screenshots) applies. Emergency
-    // contacts are wired inside this module (no dedicated `emergency/` route —
-    // MASTER_PLAN_V2 § rama 16E.5 Decisión F).
+    // 16I-10 full port to la carta (builds on the 16E.5 silhouette). contacts
+    // rebuilt to the cockpit standard: a single page-wide useCockpitAccordion
+    // with per-group EntityCardAccordion (scoped expandedId) over EntityMediaCard
+    // compact cards; inline editor with autosave (onSubmit={autoSaveSubmit(...)}
+    // + useFormAutoSave, no `action=`/required), InlineEditText rename, ToggleChip
+    // single-selects (entityType/visibility) + Switch rows for the booleans, and
+    // a footer DeleteConfirmationButton outside the form. Status is canonical
+    // EntityCardStatusPill (complete/empty ⇔ ≥1 channel). Alta one-click via
+    // AddEntityChips (createContactAction with server-side auto-name + taxonomy
+    // defaults). Header chips with countChipLabel. The old contacts-form +
+    // form-bits + styles are deleted (no-legacy). axe serious|critical = 0
+    // light + dark.
     id: "operator-contacts",
     routes: ["/properties/[propertyId]/contacts"],
     profile: "operator",
     files: [
       "src/app/properties/[propertyId]/contacts/**/*.tsx",
+      // progress helper imports the EntityCardStatus type (Liora primitive path)
+      "src/app/properties/[propertyId]/contacts/**/*.ts",
     ],
   },
 ];
