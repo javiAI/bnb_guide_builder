@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ExternalLink } from "lucide-react";
 import { toggleLocalEventPublishedAction } from "@/lib/actions/editor.actions";
 import { findLocalEventCategory } from "@/lib/taxonomies/local-event-categories";
 import { formatLocalEventSourceLabel } from "@/lib/services/local-events/source-label";
 import { isHttpUrl } from "@/lib/services/local-events/url-utils";
+import { Switch } from "@/components/ui/switch";
 import type { LocalEventForAdmin } from "@/lib/services/guide-local-data";
 
 interface Props {
@@ -18,11 +20,10 @@ interface Props {
 export function LocalEventsList({ events }: Props) {
   if (events.length === 0) {
     return (
-      <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-neutral-300)] bg-[var(--surface)] px-6 py-8 text-center">
-        <p className="text-sm text-[var(--color-neutral-500)]">
-          Aún no hay eventos sincronizados. Pulsa{" "}
-          <span className="font-semibold">Sincronizar ahora</span> para
-          consultar las fuentes automáticas.
+      <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-background-surface)] px-6 py-8 text-center">
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Aún no hay eventos sincronizados. La sincronización nocturna los traerá,
+          o puedes lanzarla ahora con «Sincronizar».
         </p>
       </div>
     );
@@ -32,8 +33,12 @@ export function LocalEventsList({ events }: Props) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-[var(--color-neutral-500)]">
-        {events.length} candidatos · {publishedCount} publicados en la guía del huésped.
+      <p className="text-xs text-[var(--color-text-muted)]">
+        {events.length} eventos encontrados ·{" "}
+        <span className="font-semibold text-[var(--color-text-primary)]">
+          {publishedCount}
+        </span>{" "}
+        publicados en la guía del huésped
       </p>
       <ul className="space-y-2">
         {events.map((event) => (
@@ -75,16 +80,16 @@ function LocalEventRow({ event }: { event: LocalEventForAdmin }) {
   }
 
   return (
-    <li className="flex flex-wrap items-start gap-3 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3">
+    <li className="flex flex-wrap items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <p className="truncate text-sm font-semibold text-[var(--foreground)]">
+        <p className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
           {event.title}
         </p>
-        <p className="text-xs text-[var(--color-neutral-500)]">
+        <p className="text-xs text-[var(--color-text-secondary)]">
           {dateLabel} · {categoryLabel}
           {event.venueName ? ` · ${event.venueName}` : ""}
         </p>
-        <p className="text-xs text-[var(--color-neutral-400)]">
+        <p className="text-xs text-[var(--color-text-muted)]">
           Fuente: {formatLocalEventSourceLabel(event.primarySource)}
           {event.contributingSources.length > 1
             ? ` (+${event.contributingSources.length - 1})`
@@ -96,34 +101,30 @@ function LocalEventRow({ event }: { event: LocalEventForAdmin }) {
                 href={event.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:text-[var(--color-primary-600)]"
+                className="inline-flex items-center gap-0.5 text-[var(--color-text-link)] hover:underline"
               >
-                Ver detalles ↗
+                Ver fuente
+                <ExternalLink size={12} aria-hidden="true" />
               </a>
             </>
           ) : null}
         </p>
         {error ? (
-          <p className="text-xs text-[var(--color-danger-600,#dc2626)]">
-            {error}
-          </p>
+          <p className="text-xs text-[var(--color-status-error-text)]">{error}</p>
         ) : null}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={optimistic}
-        aria-label={optimistic ? "Ocultar de la guía" : "Publicar en la guía"}
-        disabled={pending}
-        onClick={() => onToggle(!optimistic)}
-        className={`shrink-0 rounded-[var(--radius-md)] px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          optimistic
-            ? "bg-[var(--color-primary-500)] text-white"
-            : "border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
-        }`}
-      >
-        {optimistic ? "Publicado" : "Publicar"}
-      </button>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="text-xs text-[var(--color-text-secondary)]">
+          {optimistic ? "Publicado" : "Oculto"}
+        </span>
+        <Switch
+          size="sm"
+          checked={optimistic}
+          onChange={onToggle}
+          disabled={pending}
+          ariaLabel={optimistic ? "Ocultar de la guía" : "Publicar en la guía"}
+        />
+      </div>
     </li>
   );
 }

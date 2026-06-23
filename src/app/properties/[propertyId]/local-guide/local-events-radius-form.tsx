@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useActionState, useRef } from "react";
 import { updateLocalEventsRadiusAction } from "@/lib/actions/editor.actions";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { FieldInput } from "@/components/ui/field";
+import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
+import type { ActionResult } from "@/lib/types/action-result";
 
 interface Props {
   propertyId: string;
@@ -13,70 +15,43 @@ interface Props {
 /** Host-facing control for the per-property event-search radius. Drives the
  * PHQ/Ticketmaster `within` / `radius` query params and widens Firecrawl's
  * curated-source applicability filter on the next sync tick. Auto-saves as you
- * edit (no "Guardar" button). */
+ * edit (no "Guardar" button); native min/max gate the save via `checkValidity`. */
 export function LocalEventsRadiusForm({ propertyId, initialRadiusKm }: Props) {
-  const [value, setValue] = useState<string>(String(initialRadiusKm));
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-
   const formRef = useRef<HTMLFormElement>(null);
-  useFormAutoSave(formRef, 700);
+  const [state, dispatch, pending] = useActionState<ActionResult | null, FormData>(
+    updateLocalEventsRadiusAction,
+    null,
+  );
+  useFormAutoSave(formRef);
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    // Skip invalid intermediate states (e.g. the field cleared mid-edit) so
-    // auto-save never persists garbage or flashes an error while typing.
-    const n = Number(value);
-    if (!value.trim() || !Number.isInteger(n) || n < 1 || n > 200) return;
-    const fd = new FormData();
-    fd.append("propertyId", propertyId);
-    fd.append("radiusKm", value);
-    startTransition(async () => {
-      const res = await updateLocalEventsRadiusAction(null, fd);
-      setError(
-        res.success
-          ? null
-          : (res.fieldErrors?.radiusKm?.[0] ?? res.error ?? "No se pudo actualizar."),
-      );
-    });
-  }
+  const error =
+    state && !state.success
+      ? (state.fieldErrors?.radiusKm?.[0] ?? state.error ?? "No se pudo actualizar.")
+      : null;
 
   return (
     <form
       ref={formRef}
-      onSubmit={onSubmit}
+      onSubmit={autoSaveSubmit(dispatch)}
       className="flex flex-wrap items-end gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] p-4"
     >
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="local-events-radius-km"
-          className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]"
-        >
-          Radio de búsqueda (km)
-        </label>
-        <input
-          id="local-events-radius-km"
-          name="radiusKm"
-          type="number"
-          min={1}
-          max={200}
-          step={1}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setError(null);
-          }}
-          className="w-28 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
-        />
+      <input type="hidden" name="propertyId" value={propertyId} />
+      <FieldInput
+        name="radiusKm"
+        label="Radio de búsqueda (km)"
+        type="number"
+        min={1}
+        max={200}
+        defaultValue={initialRadiusKm}
+        className="w-28"
+        help="Aplicado en la próxima sincronización (PredictHQ, Ticketmaster y Firecrawl)."
+      />
+      <div className="flex min-h-[44px] items-center">
+        <AutoSaveStatus pending={pending} />
       </div>
-      <AutoSaveStatus pending={pending} />
-      {error ? (
+      {error && (
         <p role="status" className="text-sm text-[var(--color-status-error-text)]">
           {error}
-        </p>
-      ) : (
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Aplicado en la próxima sincronización de eventos (PredictHQ, Ticketmaster y Firecrawl).
         </p>
       )}
     </form>
