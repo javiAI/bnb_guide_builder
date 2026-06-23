@@ -17,6 +17,8 @@ export function InlineStepper({
   max,
   onChange,
   label,
+  format,
+  wrap = false,
   className,
 }: {
   value: number;
@@ -25,26 +27,42 @@ export function InlineStepper({
   onChange: (next: number) => void;
   /** Accessible subject for the buttons: "Reducir/Aumentar {label}". */
   label: string;
+  /** Optional value formatter (e.g. slot → "22:00", kg → "15 kg"). */
+  format?: (n: number) => string;
+  /** Cycle past the bounds (23:30 → 00:00). Requires BOTH min and max set;
+   * otherwise it no-ops and the bounds disable the buttons as usual. */
+  wrap?: boolean;
   className?: string;
 }) {
+  const canWrap = wrap && max != null;
+  const dec = () => onChange(canWrap && value <= min ? max! : Math.max(min, value - 1));
+  const inc = () =>
+    onChange(
+      canWrap && max != null && value >= max ? min : max == null ? value + 1 : Math.min(max, value + 1),
+    );
   return (
     <div className={cn("inline-flex items-center gap-2", className)}>
       <button
         type="button"
-        disabled={value <= min}
-        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={!canWrap && value <= min}
+        onClick={dec}
         aria-label={`Reducir ${label}`}
         className={STEPPER_BTN_CLS}
       >
         <Minus size={14} aria-hidden="true" />
       </button>
-      <span className="min-w-[1.75rem] text-center text-sm font-semibold text-[var(--color-text-primary)]">
-        {value}
+      <span
+        className={cn(
+          "text-center text-sm font-semibold text-[var(--color-text-primary)]",
+          format ? "min-w-[3.25rem]" : "min-w-[1.75rem]",
+        )}
+      >
+        {format ? format(value) : value}
       </span>
       <button
         type="button"
-        disabled={max != null && value >= max}
-        onClick={() => onChange(max == null ? value + 1 : Math.min(max, value + 1))}
+        disabled={!canWrap && max != null && value >= max}
+        onClick={inc}
         aria-label={`Aumentar ${label}`}
         className={STEPPER_BTN_CLS}
       >

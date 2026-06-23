@@ -8,7 +8,16 @@
 // validator registry).
 
 import { useEffect, useState, type ReactNode } from "react";
-import { checkboxClass, inputClass, textareaClass } from "./field-styles";
+import { cn } from "@/lib/cn";
+import { fieldControlClass } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
+import { ToggleChip } from "@/components/ui/toggle-chip";
+import { Tooltip } from "@/components/ui/tooltip";
+
+// Canonical control surfaces (carta 16I): chips for enums, Switch for
+// booleans, fieldControlClass (44px + focus ring) for text-ish inputs.
+const inputClass = cn(fieldControlClass, "mt-1");
+const textareaClass = cn(fieldControlClass, "mt-1 resize-none");
 import {
   FIELD_TYPES,
   getFieldType,
@@ -80,7 +89,7 @@ function TimeRangeInput({ field, value, onChange }: FieldInputProps) {
         }}
         className={inputClass + " flex-1"}
       />
-      <span className="text-xs text-[var(--color-neutral-400)]">a</span>
+      <span className="text-xs text-[var(--color-text-muted)]">a</span>
       <input
         type="time"
         value={to}
@@ -96,19 +105,41 @@ function TimeRangeInput({ field, value, onChange }: FieldInputProps) {
   );
 }
 
+function EnumChipGroup({ field, value, onChange }: FieldInputProps) {
+  const current = strOf(value);
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5" role="radiogroup" aria-label={field.label}>
+      {(field.options ?? []).map((opt) => {
+        const chip = (
+          <ToggleChip
+            key={opt.id}
+            hideCheck
+            active={current === opt.id}
+            onToggle={() => onChange(current === opt.id ? null : opt.id)}
+          >
+            {opt.label}
+          </ToggleChip>
+        );
+        return opt.description ? (
+          <Tooltip key={opt.id} text={opt.description}>
+            {chip}
+          </Tooltip>
+        ) : (
+          chip
+        );
+      })}
+    </div>
+  );
+}
+
 const RENDERERS: Record<SubtypeFieldType, Renderer> = {
   boolean: ({ field, value, onChange }) => {
     const checked = value === true || value === "true";
     return (
-      <label className="mt-1 flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          className={checkboxClass}
-        />
-        <span className="text-sm text-[var(--foreground)]">{field.label}</span>
-      </label>
+      <div className="mt-1 flex min-h-[44px] items-center justify-between gap-2">
+        <span className="text-sm text-[var(--color-text-primary)]">{field.label}</span>
+        <Switch size="sm" checked={checked} onChange={onChange} ariaLabel={field.label} />
+      </div>
     );
   },
 
@@ -179,38 +210,12 @@ const RENDERERS: Record<SubtypeFieldType, Renderer> = {
     />
   ),
 
-  enum: ({ field, value, onChange }) => (
-    <select
-      value={strOf(value)}
-      required={field.required}
-      onChange={(e) => onChange(e.target.value || null)}
-      className={inputClass}
-    >
-      <option value="">—</option>
-      {(field.options ?? []).map((opt) => (
-        <option key={opt.id} value={opt.id}>
-          {opt.label}
-          {opt.recommended ? " ★" : ""}
-        </option>
-      ))}
-    </select>
-  ),
+  // Enums render as single-select chip groups (no dropdowns). Clicking the
+  // active chip deselects (→ null) — required-ness is a soft hint only
+  // (incremental autosave forbids hard gating).
+  enum: (props) => <EnumChipGroup {...props} />,
 
-  enum_optional: ({ field, value, onChange }) => (
-    <select
-      value={strOf(value)}
-      onChange={(e) => onChange(e.target.value || null)}
-      className={inputClass}
-    >
-      <option value="">— Seleccionar —</option>
-      {(field.options ?? []).map((opt) => (
-        <option key={opt.id} value={opt.id}>
-          {opt.label}
-          {opt.recommended ? " ★" : ""}
-        </option>
-      ))}
-    </select>
-  ),
+  enum_optional: (props) => <EnumChipGroup {...props} />,
 
   number: ({ field, value, onChange }) => (
     <input

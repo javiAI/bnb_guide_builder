@@ -139,6 +139,12 @@ export interface TaxonomyItem {
   destination?: AmenityDestination;
   /** Optional target module/attribute id for moved/derived amenities (e.g. "sys.internet", "parking_options"). */
   target?: string;
+  /** One-line operator hint for cross-tab boundaries (e.g. "el detalle por
+   * cama se indica en Espacios · Camas") — mirror of SpaceFeatureGroup's. */
+  operatorHint?: string;
+  // Troubleshooting playbook types
+  /** Default severity applied when a playbook of this type is created. */
+  severity_default?: "low" | "medium" | "high" | "critical";
   // Policy items can have extra fields
   type?: string;
   required?: boolean;

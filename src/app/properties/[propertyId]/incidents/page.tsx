@@ -8,7 +8,7 @@ import { ModuleContainer } from "@/components/layout/module-container";
 
 interface Props {
   params: Promise<{ propertyId: string }>;
-  searchParams: Promise<{ origin?: string; status?: string }>;
+  searchParams: Promise<{ origin?: string; status?: string; playbookId?: string }>;
 }
 
 const ORIGIN_FILTERS: { value: string | "all"; label: string }[] = [
@@ -68,6 +68,8 @@ export default async function IncidentsPage({ params, searchParams }: Props) {
     propertyId,
     ...(originFilter !== "all" ? { origin: originFilter } : {}),
     ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    // Deep link from a Soluciones playbook ("ver incidencias vinculadas").
+    ...(sp.playbookId ? { playbookId: sp.playbookId } : {}),
   };
 
   const [property, incidents, guestCount] = await Promise.all([

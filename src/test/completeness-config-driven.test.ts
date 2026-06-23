@@ -145,8 +145,9 @@ describe("completeness rules — config-driven", () => {
     });
 
     it("amenityRequiresPlacement returns false for property_only amenities and true for unknown keys", () => {
-      // am.wifi is declared scopePolicy=property_only in amenity_taxonomy.json.
-      expect(amenityRequiresPlacement("am.wifi")).toBe(false);
+      // am.bed_linens is property_only (16I-6 §29 reclassification; am.wifi is
+      // a derived amenity now and no longer a valid property_only example).
+      expect(amenityRequiresPlacement("am.bed_linens")).toBe(false);
       // Unknown amenity keys default to requiring placement (no free credit).
       expect(amenityRequiresPlacement("am.definitely_not_a_real_key")).toBe(true);
     });

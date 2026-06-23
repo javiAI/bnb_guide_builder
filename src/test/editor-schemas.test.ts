@@ -162,16 +162,23 @@ describe("Contact schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("updateContactSchema rejects empty displayName", () => {
+  // 16I: type is immutable and the name renames via renameContactAction —
+  // the update schema strips both (roleKey/displayName never travel here).
+  it("updateContactSchema strips roleKey/displayName", () => {
     const result = updateContactSchema.safeParse({
-      displayName: "",
+      roleKey: "ct.host",
+      displayName: "X",
+      phone: "+34 600 000 000",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect("roleKey" in result.data).toBe(false);
+      expect("displayName" in result.data).toBe(false);
+    }
   });
 
   it("updateContactSchema accepts partial update", () => {
     const result = updateContactSchema.safeParse({
-      displayName: "Updated Name",
       phone: "+34 622 222 222",
     });
     expect(result.success).toBe(true);
@@ -408,12 +415,15 @@ describe("Policies schema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects quietHours enabled without from/to", () => {
+  // 16I autosave contract: partial-but-shape-valid branches PERSIST (the
+  // all-or-nothing superRefines reverted unrelated edits). Completeness is a
+  // UI signal (policy-progress missing-signals), not a persistence gate.
+  it("accepts quietHours enabled without from/to (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       quietHours: { enabled: true },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects invalid time format in quietHours", () => {
@@ -432,31 +442,31 @@ describe("Policies schema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects small_gatherings without maxPeople", () => {
+  it("accepts small_gatherings without maxPeople (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       events: { policy: "small_gatherings" },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects with_approval without instructions", () => {
+  it("accepts with_approval without instructions (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       events: { policy: "with_approval" },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects pets allowed without required fields", () => {
+  it("accepts pets allowed without detail fields (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       pets: { allowed: true },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects pets custom_weight without maxWeightKg", () => {
+  it("accepts pets custom_weight without maxWeightKg (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       pets: {
@@ -467,10 +477,10 @@ describe("Policies schema", () => {
         feeMode: "none",
       },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects pets feeMode with charge but no feeAmount", () => {
+  it("accepts pets feeMode with charge but no feeAmount (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       pets: {
@@ -481,10 +491,10 @@ describe("Policies schema", () => {
         feeMode: "per_booking",
       },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects cleaning enabled without amount", () => {
+  it("accepts cleaning enabled without amount (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       supplements: {
@@ -492,10 +502,10 @@ describe("Policies schema", () => {
         extraGuest: { enabled: false },
       },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects extraGuest enabled without amount", () => {
+  it("accepts extraGuest enabled without amount (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       supplements: {
@@ -503,10 +513,10 @@ describe("Policies schema", () => {
         extraGuest: { enabled: true, fromGuest: 3 },
       },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
-  it("rejects extraGuest enabled without fromGuest", () => {
+  it("accepts extraGuest enabled without fromGuest (partial persists)", () => {
     const result = policiesSchema.safeParse({
       ...validPolicies,
       supplements: {
@@ -514,7 +524,7 @@ describe("Policies schema", () => {
         extraGuest: { enabled: true, amount: 20 },
       },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("accepts supplements disabled without amounts", () => {

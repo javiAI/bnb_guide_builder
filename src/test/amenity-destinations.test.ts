@@ -129,15 +129,15 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
   // 16I-4 flipped the six fitted kitchen appliances (fridge/freezer/dishwasher/
   // microwave/oven/stove) from configurable to derived_from_space — their truth
   // lives in the Espacios editor (sf.kitchen_*), like am.bathtub's does.
-  it("counts per destination match the audit (89 / 26 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
+  it("counts per destination match the audit (85 / 30 / 18 / 6 / 5 / 4 / 1 / 1)", () => {
     const counts: Record<string, number> = {};
     for (const item of amenityTaxonomy.items) {
       const d = item.destination as string;
       counts[d] = (counts[d] ?? 0) + 1;
     }
     expect(counts).toEqual({
-      amenity_configurable: 89,
-      derived_from_space: 26,
+      amenity_configurable: 85,
+      derived_from_space: 30,
       moved_to_access: 18,
       moved_to_property_attribute: 6,
       derived_from_system: 5,
@@ -181,6 +181,11 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
     ["am.shower_gel", "sfg.bathroom_fixtures", "sf.toiletries"],
     ["am.shampoo", "sfg.bathroom_fixtures", "sf.toiletries"],
     ["am.conditioner", "sfg.bathroom_fixtures", "sf.toiletries"],
+    // 16I-6 outdoor flips (FUTURE §29.7 — fixed installations of the space).
+    ["am.outdoor_furniture", "sfg.outdoor_setup", "sf.outdoor_furniture"],
+    ["am.outdoor_dining_area", "sfg.outdoor_setup", "sf.outdoor_dining"],
+    ["am.sun_loungers", "sfg.outdoor_setup", "sf.sun_loungers"],
+    ["am.outdoor_playground", "sfg.garden_features", "sf.garden_children_play"],
   ];
 
   it("space-backed amenities are derived_from_space and have their space-feature field", () => {
@@ -194,5 +199,28 @@ describe("amenity audit destinations (branch 1B+7B)", () => {
         `${amenityId} → ${fieldId} missing in ${groupId}`,
       ).toBe(true);
     }
+  });
+
+  // ── scopePolicy ⇄ destination coherence (16I-6, FUTURE §29.6) ──
+  // The April bug class: a configurable amenity whose scopePolicy was
+  // "derived" fell through every partition of the Equipamiento page and was
+  // silently unconfigurable. Make the mismatch structurally impossible.
+  it("every configurable amenity has a renderable scopePolicy", () => {
+    const offenders = amenityTaxonomy.items
+      .filter((i) => i.destination === "amenity_configurable")
+      .filter((i) => {
+        const pol = amenityTaxonomy.scopePolicies?.[i.id]?.scopePolicy;
+        return pol !== "property_only" && pol !== "space_only" && pol !== "multi_instance";
+      })
+      .map((i) => i.id);
+    expect(offenders).toEqual([]);
+  });
+
+  it("every derived_* amenity carries scopePolicy 'derived'", () => {
+    const offenders = amenityTaxonomy.items
+      .filter((i) => String(i.destination).startsWith("derived_"))
+      .filter((i) => amenityTaxonomy.scopePolicies?.[i.id]?.scopePolicy !== "derived")
+      .map((i) => i.id);
+    expect(offenders).toEqual([]);
   });
 });

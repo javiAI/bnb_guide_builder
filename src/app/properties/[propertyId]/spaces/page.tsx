@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Camera, CheckCheck, DoorOpen } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
-import { PageHeaderChip } from "@/components/ui/page-header-chip";
+import { PageHeaderChip, countChipLabel } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { Banner } from "@/components/ui/banner";
 import { SpacesGrid, type SpaceCardData } from "./spaces-grid";
@@ -14,21 +14,9 @@ import { spaceTypes, getSpaceTypeLabel, findSystemItem } from "@/lib/taxonomy-lo
 import { resolveSpaceAvailability } from "@/lib/services/space-availability.service";
 import { loadSpaceMedia, spaceMediaOf } from "@/lib/services/space-media.service";
 import { getBedSleepingCapacity } from "@/lib/property-counts";
+import { SPACE_SYSTEM_BLACKLIST } from "@/lib/taxonomies/systems";
 
-/** Building/property-infrastructure systems that never belong to a single room
- * — excluded from per-space coverage (an elevator is the building's, refuse
- * collection is the property's). */
-const SPACE_SYSTEM_BLACKLIST = new Set<string>(["sys.elevator", "sys.garbage"]);
 
-/** Header chip label: bold count + pluralized noun (e.g. "5 espacios"). */
-function countChipLabel(n: number, singular: string, plural: string) {
-  return (
-    <>
-      <span className="font-semibold text-[var(--color-text-primary)]">{n}</span>{" "}
-      {n === 1 ? singular : plural}
-    </>
-  );
-}
 
 export default async function SpacesPage({
   params,

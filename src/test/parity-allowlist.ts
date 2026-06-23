@@ -84,6 +84,13 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
       // cockpit; adopted by Access + Spaces, designed for future surfaces).
       "src/components/ui/entity-media-card.tsx",
       "src/components/ui/entity-card-accordion.tsx",
+      // 16I-5…10 consolidation (PR 0) — canonical controls + the shared
+      // subtype-field renderer registry (chips/Switch/fieldControlClass),
+      // consumed by Sistemas + Equipamiento detail editors.
+      "src/components/ui/add-entity-chips.tsx",
+      "src/components/ui/switch.tsx",
+      "src/components/ui/inline-stepper.tsx",
+      "src/config/registries/field-type-renderers.tsx",
       "src/lib/tone.ts",
     ],
   },

@@ -540,6 +540,27 @@ Key files: `src/components/messaging/`, `src/components/public-guide/guide-searc
 
 ### 16I — Content tab polish 🔜 (planned 2026-06-02)
 
+#### 16I — Carta de estandarización de contenido (2026-06-12, vinculante para 16I-5…10)
+
+El estándar forjado en **Acceso + Espacios** es la verdad; el kit HTML aporta solo silueta (desviaciones = waivers en el parity report). Toda pestaña de contenido cumple TODO lo siguiente:
+
+**Anatomía de página**: `PageHeader` (eyebrow `Propiedad · <Pestaña>` → título → descripción de 1 línea → chips de datos reales) + `NumberedSection` (fórmula: `01` contenido existente · `02` añadir · `03` config/extras solo si existe). Sin `ModuleContainer` a pelo, sin `<h2>` manuales. Empty state = IconBadge circular + h2 + copy de 1-2 líneas (plantilla: el de Espacios).
+
+**Colecciones de entidades**: cockpit cards `EntityMediaCard` + `useCockpitAccordion` + `recipe-entity-card-grid` (1/2/4, nunca 3) cuando la entidad tiene media o ficha rica (espacios, métodos de acceso, sistemas, lugares, playbooks, contactos — con `media` opcional: sin cover ⇒ header compacto IconBadge+título+status). Catálogos masivos de toggles (Equipamiento, ~90 filas) NO son cockpit: filas con `ToggleChip`/`Switch` + detalle como reveal indentado. Editores profundos conservan ruta propia (detalle de sistema, playbook) pero con la misma anatomía.
+
+**Inputs**: chips como única moneda — `ToggleChip` (+`CHIP_*_CLASS`), enums como chips single-select, multiselects con check, **cero `<select>`** (excepción única: quick-add discreto estilo "+ Añadir cama…"), `InlineStepper` para enteros, `<Field*>`/`fieldControlClass` para texto (44px + focus ring), `Switch` para on/off con estado visible. Reveals condicionales **indentados bajo el bloque de su disparador**. Escape hatches `_other_tags` ("Añadir otro…" inline) donde quepan ítems libres. Opciones SIEMPRE de taxonomía — cero listas hardcodeadas.
+
+**Alta de entidades**: one-click vía `AddEntityChips` (chips por tipo, grupos Obligatorios/Recomendados/Otros cuando aplique, nombre auto-derivado server-side "Etiqueta N", spinner en el chip, errores visibles). Donde el alta exige búsqueda (lugares con autocomplete) el paso `02` mantiene UN solo control primario, sin campos prematuros (las notas viven en el editor, no en el alta).
+
+**Edición**: autosave SIEMPRE — `onSubmit={autoSaveSubmit(action)}` (jamás `<form action=` en forms auto-guardados), `useFormAutoSave` (+`watch` para payloads estado→JSON; `usePortalFormRef` si el form monta en portal), cierre con "Listo"/colapso + `flush()`, `AutoSaveStatus` como único feedback. Renombrar = `InlineEditText` en el título. Borrar = `DeleteConfirmationButton`. `required` HTML prohibido en forms incrementales (asterisco visual).
+
+**Estado**: vocabulario canónico `EntityCardStatusPill status=` (check/dot/dashed — `entity-card-status.test.ts`); semántica por entidad definida en su dossier con `missing-signals` y hover "Falta: …" (sin porcentajes inventados). Cabeceras "X de Y listos" cuando haya colección.
+
+**Detalles**: `Tooltip` canónico (nunca `title=`), `InfoTooltip` solo si el label es ambiguo, `operatorHint` para fronteras entre pestañas ("la lavadora se configura en Equipamiento"), targets ≥44 (recipes registrados), labels es-ES / ids EN, tokens semánticos (0 hex), Lucide only, copy sobrio sin imperativos hacia el huésped.
+
+**Gates por pestaña**: tsc + invariantes + axe 0 (light/dark, datos reales) + live Playwright del flujo completo (añadir → editar con autosave sin revert cross-reload → borrar → hover de estado) + `/liora-ui-kit-parity` ≥8.5 (o subir baseline) + AUDITED_SURFACES same-commit.
+
+
 **Goal**: take each of the 10 operator **content** tabs from "parity floor met" to "perfected experience" — better visuals, UX, component coherence, and primitive standardization. Spec: `MASTER_PLAN_V2.md § FASE 16I`. **One branch per tab, sequential**, each its own PR + user approval before merge (all touch `parity-allowlist.ts` + shared primitives → not parallelizable). `CURRENT_LIORA_PHASE` → `"16I"`.
 
 **Scope**: primarily visual/UX/standardization. **Minor taxonomy/DB changes are permitted per tab** when a polish genuinely needs them (explicit exception to the Liora 0-functional contract — requires a mini Fase -1 + migration note in that branch's PR). Each tab re-runs `/liora-ui-kit-parity` aiming to **raise** the already-ported scores, not just maintain ≥8.5.
