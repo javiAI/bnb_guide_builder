@@ -150,12 +150,12 @@ Key files: `src/components/wizard/`, `src/components/overview/`.
 | `access/` | ✅ baseline migrated | ✅ **cockpit port (16E.6, #106)** — media-backed arrival cockpit | `feat/liora-access-parking-map-autodiscovery` (16E.6) |
 | `spaces/` | ✅ baseline migrated | ✅ **parity ported (global 9.0, PASS, #113)** | `feat/liora-spaces-visual-parity` |
 | `amenities/` | ✅ baseline migrated | ✅ **parity ported (global 8.9, PASS, #107)** | `feat/liora-amenities-visual-parity` |
-| `systems/` | ✅ baseline migrated | ✅ parity ported (global 9.0, PASS, #109) | `feat/liora-systems-visual-parity` |
-| `troubleshooting/` | ✅ baseline migrated | ⬜ **NOT ported** — baseline-only, no full silhouette port (kit `page-averias` has no 1:1 editor/registry ref). **Scheduled in 16I** (`feat/liora-16I-8-troubleshooting-parity`). | 16I |
+| `systems/` | ✅ baseline migrated | ✅ **16I-5 polish (`df9cb9c`)** — lista única, pill canónica, cobertura espejo, alta one-click; sobre parity 9.0 (#109) | `feat/liora-16I-shared-infra` |
+| `troubleshooting/` | ✅ baseline migrated | ✅ **16I-8 full port + audit (`9fdf1d4`)** — cockpit inline, alta one-click, ruta `[playbookKey]/` eliminada; kit `page-averias` waiver | `feat/liora-16I-shared-infra` |
 | `property/` | ✅ baseline migrated | 🟡 partial — waiver (kit `page-propiedades` is listing+detail, no editor form; #112). **Polish + own silhouette in 16I** (`feat/liora-16I-2-property-polish`). | 16I |
-| `policies/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ parity ported (global 8.7, PASS, #110) | `feat/liora-policies-visual-parity` |
-| `contacts/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ parity ported (global 9.1, PASS, #111) | `feat/liora-contacts-visual-parity` |
-| `local-guide/` | 🟡 tokens-only (16F.6) | ⬜ **NOT ported** — only legacy→semantic token migration in 16F.6; never audited (absent from `AUDITED_SURFACES`). **Full port + audit in 16I** (`feat/liora-16I-7-local-guide-parity`, kit `page-guialocal`). | 16I |
+| `policies/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ **16I-9 polish (`fb8fe32`)** — chips + steppers cíclicos (sin `<select>`), autosave sin `action=`; sobre parity 8.7 (#110) | `feat/liora-16I-shared-infra` |
+| `contacts/` | ⬜ no E1 baseline (shipped in parity branch) | ✅ **16I-10 polish (`ac486f3`)** — cockpit cards, alta one-click, autosave inline; sobre parity 9.1 (#111) | `feat/liora-16I-shared-infra` |
+| `local-guide/` | 🟡 tokens-only (16F.6) | ✅ **16I-7 full port + first audit (`7c7bb63`)** — `operator-local-guide` añadido a `AUDITED_SURFACES`; cockpit cards, autocomplete one-click, eventos canónicos; kit `page-guialocal` (waiver mapa de barrio). | `feat/liora-16I-shared-infra` |
 | wizard (`src/components/wizard/` + `src/app/properties/new/`) | ✅ baseline migrated | ⬜ deferred (no kit ref) | future rama once `subpages.html` adds `page-onboarding` |
 
 ##### Parity audit verdict — `policies/` (`feat/liora-policies-visual-parity`)
@@ -571,12 +571,14 @@ El estándar forjado en **Acceso + Espacios** es la verdad; el kit HTML aporta s
 | 2 | `feat/liora-16I-2-property-polish` | Propiedad | baseline + waiver | UX + own silhouette (no editor kit ref) |
 | 3 | `feat/liora-16I-3-access-polish` | Acceso | cockpit (16E.6) | refinement on cockpit |
 | 4 | `feat/liora-16I-4-spaces-polish` | Espacios | parity 9.0 | ✅ **DONE (2026-06-12, parity 9.4, axe 0, PR abierta)** — EntityMediaCard/accordion extraídos (§23 ejecutado), editor lean v3, autosave de raíz, alta one-click, estado canónico, en-suite include, coherencia 20 estancias (§22 plano sigue diferido) |
-| 5 | `feat/liora-16I-5-systems-polish` | Sistemas | parity 9.0 | refinement (§21 meta deferred) |
-| 6 | `feat/liora-16I-6-amenities-polish` | Equipamiento | parity 8.9 | refinement (§24 tri-state, §18.2 split deferred) |
-| 7 | `feat/liora-16I-7-local-guide-parity` | Guía local | tokens-only, **unaudited** | **full port + audit** (kit `page-guialocal`) — HIGH |
-| 8 | `feat/liora-16I-8-troubleshooting-parity` | Soluciones | baseline, no port | **full UX port + audit** (kit `page-averias` partial) — HIGH |
-| 9 | `feat/liora-16I-9-policies-polish` | Normas | parity 8.7 | refinement |
-| 10 | `feat/liora-16I-10-contacts-polish` | Contactos | parity 9.1 | refinement |
+| 5 | (consolidada en `feat/liora-16I-shared-infra`, `df9cb9c`) | Sistemas | parity 9.0 | ✅ **DONE (2026-06-23)** — lista única + alta one-click chips, pill canónica con missing-signals, ring retirado, cobertura espejo de Espacios, visibilidad Switch, delete + redirect; §21 meta diferido |
+| 6 | (consolidada, `2cca8af`) | Equipamiento | parity 8.9 | ✅ **DONE (2026-06-23)** — NumberedSection 01/02/03, Switch canónico, sección "Equipamiento propio" (rescata custom + huérfanos), §29 resuelto; §24/§18.2 diferidos |
+| 7 | (consolidada, `7c7bb63`) | Guía local | tokens-only, **unaudited** | ✅ **DONE (2026-06-23)** — **primer audit** (`operator-local-guide`): cockpit cards, autocomplete one-click, eventos canónicos, iconos Lucide; waiver mapa de barrio |
+| 8 | (consolidada, `9fdf1d4`) | Soluciones | baseline, no port | ✅ **DONE (2026-06-23)** — port completo: cockpit compact inline, alta one-click, severidad a taxonomía; **ruta `[playbookKey]/` eliminada** (deep-links `#playbook-<id>`); waiver kit `page-averias` |
+| 9 | (consolidada, `fb8fe32`) | Normas | parity 8.7 | ✅ **DONE (2026-06-23)** — chips + steppers cíclicos 30 min (sin `<select>`), autosave sin `action=`, chips "X de 8 definidas" |
+| 10 | (consolidada, `ac486f3`+`446dba0`) | Contactos | parity 9.1 | ✅ **DONE (2026-06-23)** — cockpit page-wide accordion, alta one-click, autosave inline + flush-on-collapse, contacts-form legacy borrado |
+
+> **Ejecución real de 16I-5…10**: consolidadas en `feat/liora-16I-shared-infra` (historia lineal, **7 PRs apiladas sin merge** = PR 0 infra + 6 por pestaña), no en 6 ramas individuales. Ver `MASTER_PLAN_V2.md § FASE 16I` (nota 2026-06-23).
 
 **Per-branch gate**: Fase -1 → `/frontend-design` → implement → `/liora-ui-kit-parity` (raise score) → `/simplify` → axe 0 serious/critical light+dark + `component-invariants`/`parity-static`/`dark-parity` green → add/refresh `AUDITED_SURFACES` entry (`profile: "operator"`) in the same commit → PR → **user approval** → merge. Branches 7 & 8 add their surfaces to `AUDITED_SURFACES` + `EXPECTED_OPERATOR_SCOPE_PATTERNS` for the first time (local-guide, and a full troubleshooting port).
 
