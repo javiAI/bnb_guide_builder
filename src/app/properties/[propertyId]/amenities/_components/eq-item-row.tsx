@@ -153,27 +153,29 @@ export function EqItemRow({
           className="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] rounded-[6px]"
         >
           <span className="min-w-0 flex-1">{nameBlock}</span>
-          {isPartial ? (
-            <Tooltip text="Falta: detalles de uso" className="shrink-0">
+          {(() => {
+            const chevron = (
               <ChevronDown
                 size={16}
                 aria-hidden="true"
                 className={cn(
-                  "text-[var(--color-status-warning-icon)] transition-transform",
+                  "shrink-0 transition-transform",
+                  isPartial
+                    ? "text-[var(--color-status-warning-icon)]"
+                    : "text-[var(--color-text-muted)]",
                   isExpanded && "rotate-180",
                 )}
               />
-            </Tooltip>
-          ) : (
-            <ChevronDown
-              size={16}
-              aria-hidden="true"
-              className={cn(
-                "shrink-0 text-[var(--color-text-muted)] transition-transform",
-                isExpanded && "rotate-180",
-              )}
-            />
-          )}
+            );
+            // Partial items explain the missing detail on hover.
+            return isPartial ? (
+              <Tooltip text="Falta: detalles de uso" className="shrink-0">
+                {chevron}
+              </Tooltip>
+            ) : (
+              chevron
+            );
+          })()}
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col justify-center py-2.5">

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { createSystemAction } from "@/lib/actions/editor.actions";
-import type { ActionResult } from "@/lib/types/action-result";
+import { firstActionError, type ActionResult } from "@/lib/types/action-result";
 import { AddEntityChips, type AddEntityChipGroup } from "@/components/ui/add-entity-chips";
 
 /**
@@ -51,12 +51,7 @@ export function AddSystemChips({
       onAdd={add}
       busy={isPending}
       pendingId={pendingId}
-      error={
-        state?.error ??
-        (state?.fieldErrors
-          ? (Object.values(state.fieldErrors).flat()[0] ?? "No se pudo añadir el sistema.")
-          : null)
-      }
+      error={firstActionError(state, "No se pudo añadir el sistema.")}
     />
   );
 }

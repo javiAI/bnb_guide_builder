@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { createPlaybookAction } from "@/lib/actions/editor.actions";
-import type { ActionResult } from "@/lib/types/action-result";
+import { firstActionError, type ActionResult } from "@/lib/types/action-result";
 import { AddEntityChips } from "@/components/ui/add-entity-chips";
 
 export interface AddPlaybookOption {
@@ -50,12 +50,7 @@ export function AddPlaybookChips({
       onAdd={add}
       busy={isPending}
       pendingId={pendingType}
-      error={
-        state?.error ??
-        (state?.fieldErrors
-          ? (Object.values(state.fieldErrors).flat()[0] ?? "No se pudo añadir la solución.")
-          : null)
-      }
+      error={firstActionError(state, "No se pudo añadir la solución.")}
     />
   );
 }
