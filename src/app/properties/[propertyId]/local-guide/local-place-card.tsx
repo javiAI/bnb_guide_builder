@@ -4,7 +4,6 @@ import {
   useActionState,
   useCallback,
   useId,
-  useMemo,
   useRef,
   useState,
   useTransition,
@@ -93,13 +92,9 @@ export function LocalPlaceCard({
   const categoryLabel =
     findLocalPlaceCategory(place.categoryKey)?.label ?? place.categoryKey;
 
-  const { progressLevel, statusDetail } = useMemo(() => {
-    const missing = missingLocalPlaceSignals(place);
-    return {
-      progressLevel: resolveLocalPlaceStatus(place),
-      statusDetail: missing.length > 0 ? `Falta: ${missing.join(", ")}` : undefined,
-    };
-  }, [place]);
+  const progressLevel = resolveLocalPlaceStatus(place);
+  const missing = missingLocalPlaceSignals(place);
+  const statusDetail = missing.length > 0 ? `Falta: ${missing.join(", ")}` : undefined;
 
   // ── Category chips (controlled state → hidden mirror in the autosave form) ──
   const [categoryKey, setCategoryKey] = useState(place.categoryKey);

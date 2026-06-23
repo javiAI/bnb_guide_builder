@@ -42,7 +42,7 @@ export function ContactQuickActions({
   if (!tel && !wa && !mail && !maps) return null;
 
   return (
-    <div className="mt-auto flex flex-wrap gap-2 pt-1">
+    <div className="flex flex-wrap gap-2">
       {tel && (
         <ButtonLink href={tel} variant="primary" size="md" className={ACTION_CLASS}>
           <Phone size={14} aria-hidden="true" />
