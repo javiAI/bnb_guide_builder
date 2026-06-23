@@ -285,23 +285,23 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     // 16E content modules — troubleshooting (incidencias: playbooks +
     // ocurrencias). NO single-page kit reference exists in subpages.html for
     // a playbook editor or incident registry — `page-troubleshooting` is a
-    // surface conceptually adjacent to system detail but the UI Kit does
-    // not ship distinct silhouettes for the playbook list, the playbook
-    // editor form, the incident registry table, or the incident row
-    // actions. **E1 ships baseline-only** (semantic error tokens replacing
-    // `--color-danger-*` legacy aliases, 44 hit-targets on submits + filter
-    // + row actions, primitives where they fit). Tab-row navigation
-    // (TroubleshootingTabs) and inline list-row patterns are preserved.
-    // Glyphs (← back arrow, severity badges) are kept as-is. Full UI Kit
-    // visual silhouette port is **deferred to required follow-up rama
-    // 16E.5** (`feat/liora-operator-content-visual-parity`) per
-    // LIORA_SURFACE_ROLLOUT_PLAN.md § "Deferred visual parity — required
-    // follow-up". Acceptance gate (≥8.5 global / ≥7.5 per criterion +
-    // screenshots) applies to 16E.5, not E1.
+    // 16I-8 full port to la carta. Playbooks ("soluciones") rebuilt to the
+    // gold standard: PageHeader + real chips (soluciones / tipos cubiertos /
+    // listas / incidencias abiertas) + NumberedSection 01 Soluciones (cockpit
+    // EntityMediaCard compact cards, shared useCockpitAccordion, inline editor
+    // with autosave + rename + delete) · 02 Añadir (AddEntityChips one-click,
+    // title + severity defaulted server-side). The legacy `[playbookKey]/`
+    // detail route is removed (inline editor); deep-links now anchor on
+    // `#playbook-<id>` (⌘K + systems detail updated). Severity scale moved to
+    // taxonomy (severity_levels). Switch / ToggleChip / DeleteConfirmationButton
+    // / InlineEditText canonical. Lucide icons (troubleshooting-icons.ts,
+    // coverage-tested). Kit `page-averias` is an incident registry, not a
+    // playbook editor → waiver (header/rhythm/row→facts silhouette adopted).
+    // `troubleshooting/incidents/**` left untouched (Operations surface, out of
+    // 16I scope). All clickables ≥44 hit, axe serious|critical = 0 light + dark.
     id: "operator-troubleshooting",
     routes: [
       "/properties/[propertyId]/troubleshooting",
-      "/properties/[propertyId]/troubleshooting/[playbookKey]",
       "/properties/[propertyId]/troubleshooting/incidents",
     ],
     profile: "operator",
