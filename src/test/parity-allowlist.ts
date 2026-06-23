@@ -238,6 +238,25 @@ export const AUDITED_SURFACES: ReadonlyArray<AuditedSurface> = [
     ],
   },
   {
+    // 16I-7 full port + first audit. Local-guide was never audited (only partial
+    // token migration in 16F.6). Rebuilt to the gold standard: PageHeader +
+    // real chips (lugares/categorías/listos/eventos) + NumberedSection 01
+    // Lugares (cockpit EntityMediaCard cards grouped by category, shared
+    // useCockpitAccordion) · 02 Añadir (PlaceAutocomplete one-click + manual
+    // fallback) · 03 Eventos (FieldInput radio + Button sync + Switch rows).
+    // Kit page-guialocal: header/section silhouette adopted; no 1:1 POI editor
+    // (standard cockpit per la carta); neighborhood map waived (D8). Switch /
+    // ToggleChip / DeleteConfirmationButton / InlineEditText canonical. Lucide
+    // category icons (src/lib/icons/local-place-icons.ts, coverage-tested). All
+    // clickables ≥44 hit, axe serious|critical = 0 light + dark.
+    id: "operator-local-guide",
+    routes: ["/properties/[propertyId]/local-guide"],
+    profile: "operator",
+    files: [
+      "src/app/properties/[propertyId]/local-guide/**/*.tsx",
+    ],
+  },
+  {
     // 16E content modules — systems (sistemas: clima, agua, electricidad,
     // conectividad). Kit reference: `page-sistemas` in subpages.html.
     // **16E.5 visual-parity port complete** (`feat/liora-systems-visual-parity`):
@@ -421,6 +440,7 @@ export const EXPECTED_OPERATOR_SCOPE_PATTERNS: ReadonlyArray<string> = [
   "src/app/properties/[propertyId]/spaces/**/*.tsx",
   "src/app/properties/[propertyId]/amenities/**/*.tsx",
   "src/app/properties/[propertyId]/systems/**/*.tsx",
+  "src/app/properties/[propertyId]/local-guide/**/*.tsx",
   "src/app/properties/[propertyId]/troubleshooting/**/*.tsx",
   "src/app/properties/[propertyId]/messaging/**/*.tsx",
   "src/components/messaging/**/*.tsx",

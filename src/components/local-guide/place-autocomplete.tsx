@@ -1,5 +1,6 @@
 "use client";
 
+import { fieldControlClass } from "@/components/ui/field";
 import {
   useCallback,
   useEffect,
@@ -134,8 +135,7 @@ export function PlaceAutocomplete({
     }
   };
 
-  const inputClass =
-    "block w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--color-primary-400)] focus:outline-none";
+  const inputClass = fieldControlClass;
 
   return (
     <div className={`relative ${className ?? ""}`}>
@@ -190,12 +190,12 @@ function PlaceAutocompleteList({
   if (state.kind === "idle") return null;
 
   const shell =
-    "absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm";
+    "absolute z-10 mt-1 w-full overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] shadow-sm";
 
   if (state.kind === "loading") {
     return (
       <div className={shell}>
-        <p className="px-3 py-2 text-xs text-[var(--color-neutral-500)]">
+        <p className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
           Buscando…
         </p>
       </div>
@@ -205,7 +205,7 @@ function PlaceAutocompleteList({
   if (state.kind === "rate_limited") {
     return (
       <div className={shell}>
-        <p className="px-3 py-2 text-xs text-[var(--color-neutral-500)]">
+        <p className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
           Demasiadas búsquedas. Vuelve a probar en{" "}
           {Math.max(1, state.retryAfter)} s.
         </p>
@@ -216,7 +216,7 @@ function PlaceAutocompleteList({
   if (state.kind === "property_missing_coordinates") {
     return (
       <div className={shell}>
-        <p className="px-3 py-2 text-xs text-[var(--color-neutral-500)]">
+        <p className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
           La propiedad aún no tiene coordenadas. Configura la ubicación para
           buscar lugares cercanos.
         </p>
@@ -227,7 +227,7 @@ function PlaceAutocompleteList({
   if (state.kind === "provider_unavailable" || state.kind === "error") {
     return (
       <div className={shell}>
-        <p className="px-3 py-2 text-xs text-[var(--color-neutral-500)]">
+        <p className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
           No se pudo conectar con el buscador.{" "}
           {onManualFallback && (
             <button
@@ -246,7 +246,7 @@ function PlaceAutocompleteList({
   if (state.suggestions.length === 0) {
     return (
       <div className={shell}>
-        <p className="px-3 py-2 text-xs text-[var(--color-neutral-500)]">
+        <p className="px-3 py-2 text-xs text-[var(--color-text-secondary)]">
           Sin resultados.{" "}
           {onManualFallback && (
             <button
@@ -276,22 +276,22 @@ function PlaceAutocompleteList({
             onSelect(s);
           }}
           className={
-            "flex cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm " +
+            "flex min-h-[44px] cursor-pointer items-center justify-between gap-3 px-3 py-2 text-sm " +
             (i === highlight
-              ? "bg-[var(--color-primary-50)] text-[var(--foreground)]"
-              : "text-[var(--foreground)] hover:bg-[var(--color-neutral-100)]")
+              ? "bg-[var(--color-interactive-hover)] text-[var(--color-text-primary)]"
+              : "text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-hover)]")
           }
         >
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{s.name}</div>
             {s.address && (
-              <div className="truncate text-xs text-[var(--color-neutral-500)]">
+              <div className="truncate text-xs text-[var(--color-text-secondary)]">
                 {s.address}
               </div>
             )}
           </div>
           {typeof s.distanceMeters === "number" && (
-            <span className="shrink-0 text-xs text-[var(--color-neutral-500)]">
+            <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">
               {formatDistance(s.distanceMeters)}
             </span>
           )}
