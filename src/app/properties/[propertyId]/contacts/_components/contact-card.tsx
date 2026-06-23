@@ -1,19 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
-import { Phone, Pencil } from "lucide-react";
-import { IconButton } from "@/components/ui/icon-button";
+import { useCallback, useId, useRef, useState, useActionState, useTransition } from "react";
+import { ChevronDown, Clock, Contact as ContactIcon, Eye, Phone } from "lucide-react";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useAutoSaveEditToggle } from "@/lib/use-form-auto-save";
+import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
 import { DeleteConfirmationButton } from "@/components/ui/delete-confirmation-button";
 import { cn } from "@/lib/cn";
-import { updateContactAction, deleteContactAction } from "@/lib/actions/editor.actions";
+import {
+  renameContactAction,
+  updateContactAction,
+  deleteContactAction,
+} from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
 import { contactTypes } from "@/lib/contact-types-loader";
 import { contactIconFor, type ContactGroupTone } from "@/lib/icons/contact-icons";
+import {
+  EntityMediaCard,
+  EntityCardStatusPill,
+  type EntityCardRole,
+} from "@/components/ui/entity-media-card";
+import { SectionEyebrow } from "@/components/ui/section-eyebrow";
+import { ToggleChip } from "@/components/ui/toggle-chip";
+import { Switch } from "@/components/ui/switch";
+import { InlineEditText } from "@/components/ui/inline-edit-text";
+import { FieldInput, FieldTextarea, fieldControlClass } from "@/components/ui/field";
 import { ContactQuickActions } from "./contact-quick-actions";
-import { ContactTypeSelect, FormErrors } from "./contact-form-bits";
-import { FIELD, FIELD_PH, PRIMARY_BTN } from "./styles";
+import {
+  computeContactStatus,
+  missingContactSignals,
+  STATUS_LABEL,
+} from "./contact-progress";
 
 export interface Contact {
   id: string;
@@ -37,221 +53,329 @@ export interface Contact {
 
 const typeItems = contactTypes.items;
 
-const AVATAR_TONE: Record<ContactGroupTone, string> = {
-  primary: "bg-[var(--color-action-primary-subtle)] text-[var(--color-action-primary-subtle-fg)]",
-  danger: "bg-[var(--color-status-error-bg)] text-[var(--color-status-error-text)]",
-  success: "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-text)]",
-  neutral: "bg-[var(--color-background-muted)] text-[var(--color-text-secondary)]",
-};
-
 function getTypeLabel(roleKey: string): string {
   return typeItems.find((t) => t.id === roleKey)?.label ?? roleKey;
 }
 
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return (words[0][0] + words[1][0]).toUpperCase();
-}
+// Prisma model enums (not domain taxonomies) — local label records, same
+// pattern as Systems. The real catalog (contact types) is the taxonomy.
+const ENTITY_TYPE_LABELS: { id: string; label: string }[] = [
+  { id: "person", label: "Persona" },
+  { id: "company", label: "Empresa" },
+  { id: "institution", label: "Institución" },
+  { id: "platform", label: "Plataforma" },
+];
 
-function ContactAvatar({
-  contact,
-  tone,
-}: {
-  contact: Contact;
-  tone: ContactGroupTone;
-}) {
-  const Icon = contactIconFor(contact.roleKey);
-  const isPerson = contact.entityType === "person";
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-semibold",
-        AVATAR_TONE[tone],
-      )}
-    >
-      {isPerson ? initials(contact.displayName) : <Icon size={20} />}
-    </span>
-  );
-}
+const VISIBILITY_LABELS: { id: string; label: string }[] = [
+  { id: "internal", label: "Solo interno" },
+  { id: "guest", label: "Visible en la guía" },
+  { id: "sensitive", label: "Sensible" },
+];
 
 export function ContactCard({
   contact,
   propertyId,
   tone,
+  role,
+  onExpand,
+  onCollapse,
 }: {
   contact: Contact;
   propertyId: string;
   tone: ContactGroupTone;
+  role: EntityCardRole;
+  onExpand: () => void;
+  onCollapse: () => void;
 }) {
-  // Auto-save: edits persist as you make them (no "Guardar" button); the card
-  // opens to edit and closes with "Listo" (which flushes the pending save).
-  const { editing, formRef, open, close } = useAutoSaveEditToggle();
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
+  const titleId = useId();
+  const bodyId = useId();
+  const TypeIcon = contactIconFor(contact.roleKey);
+  const typeLabel = getTypeLabel(contact.roleKey);
+  const isEmergency = tone === "danger";
+
+  // ── Status (derived from server props; refreshed on collapse via revalidate) ──
+  const status = computeContactStatus(contact);
+  const missing = missingContactSignals(contact);
+  const statusDetail = missing.length > 0 ? `Falta: ${missing.join(", ")}` : undefined;
+
+  // ── Rename (InlineEditText on the title) ──
+  const [renameState, renameAction, renamePending] = useActionState<ActionResult | null, FormData>(
+    renameContactAction,
+    null,
+  );
+  const [, startRenameTransition] = useTransition();
+  const handleRename = useCallback(
+    (next: string) => {
+      const trimmed = next.trim();
+      if (!trimmed || trimmed === contact.displayName) return;
+      const fd = new FormData();
+      fd.append("contactId", contact.id);
+      fd.append("displayName", trimmed);
+      startRenameTransition(() => { renameAction(fd); });
+    },
+    [contact.id, contact.displayName, renameAction],
+  );
+
+  // ── Body autosave (mounts only while active) ──
+  const detailsFormRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(detailsFormRef);
+  const [detailsState, detailsAction, detailsPending] = useActionState<ActionResult | null, FormData>(
     updateContactAction,
     null,
   );
 
-  const typeLabel = getTypeLabel(contact.roleKey);
-  const isEmergency = tone === "danger";
+  // ── Controlled state for chips/switches (hidden-mirror) + reveals ──
+  const [entityType, setEntityType] = useState(contact.entityType);
+  const [visibility, setVisibility] = useState(contact.visibility);
+  const [emergencyAvailable, setEmergencyAvailable] = useState(contact.emergencyAvailable);
+  const [hasPropertyAccess, setHasPropertyAccess] = useState(contact.hasPropertyAccess);
+  const [isPrimary, setIsPrimary] = useState(contact.isPrimary);
+  const [showInternalNotes, setShowInternalNotes] = useState(Boolean(contact.internalNotes));
+  const [internalNotes, setInternalNotes] = useState(contact.internalNotes ?? "");
 
+  // ── Idle subtitle / collapsed detail ──
   const details: string[] = [];
   if (contact.isPrimary) details.push("Principal");
   if (contact.emergencyAvailable) details.push("Disponible 24h");
   if (contact.availabilitySchedule) details.push(contact.availabilitySchedule);
+  const detailSuffix = details.length > 0 ? ` · ${details.join(" · ")}` : "";
 
-  return (
-    <article
-      className={cn(
-        "flex flex-col gap-3 rounded-[var(--radius-lg)] border p-4 transition-colors",
-        editing && "col-span-full",
-        isEmergency
-          ? "border-[var(--color-status-error-border)] bg-[linear-gradient(135deg,var(--color-status-error-bg),var(--color-background-elevated))]"
-          : "border-[var(--color-border-default)] bg-[var(--color-background-elevated)] hover:border-[var(--color-border-strong)]",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <ContactAvatar contact={contact} tone={tone} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
-            {contact.displayName}
-          </div>
-          <div className="mt-0.5 text-[11.5px] text-[var(--color-text-muted)]">
-            <span className="font-medium text-[var(--color-text-primary)]">{typeLabel}</span>
-            {details.length > 0 && ` · ${details.join(" · ")}`}
-          </div>
-        </div>
-        <IconButton
-          icon={Pencil}
-          size="md"
-          aria-label={editing ? `Cerrar edición de ${contact.displayName}` : `Editar ${contact.displayName}`}
-          aria-expanded={editing}
-          onClick={() => (editing ? close() : open())}
-        />
-      </div>
-
+  const collapsedContent = (
+    <div className="flex w-full flex-col gap-1 pb-12 text-[12px] text-[var(--color-text-secondary)]">
+      <span className="min-w-0">
+        <span className="font-medium text-[var(--color-text-primary)]">{typeLabel}</span>
+        {detailSuffix && <span className="text-[var(--color-text-muted)]">{detailSuffix}</span>}
+      </span>
       {contact.phone && (
-        <div className="flex items-center gap-1.5 font-mono text-[13px] text-[var(--color-text-primary)]">
+        <span className="inline-flex items-center gap-1.5 font-mono text-[13px] text-[var(--color-text-primary)]">
           <Phone size={13} aria-hidden="true" className="text-[var(--color-text-muted)]" />
           {contact.phone}
-        </div>
+        </span>
       )}
+    </div>
+  );
 
+  // Quick actions are the card's primary value — always visible (not hover-gated).
+  const hoverOverlay = (
+    <div className="absolute inset-x-4 bottom-3 z-20">
       <ContactQuickActions
         phone={contact.phone}
         email={contact.email}
         whatsapp={contact.whatsapp}
         address={contact.address}
       />
+    </div>
+  );
 
-      {editing && (
-        <form ref={formRef} action={formAction} className="space-y-4 border-t border-[var(--color-border-subtle)] pt-4">
-          <input type="hidden" name="contactId" value={contact.id} />
-          <input type="hidden" name="propertyId" value={propertyId} />
+  // ── Editor (active only) ──
+  const deleteDescription = `Se eliminará "${contact.displayName}". Esta acción no se puede deshacer.`;
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-medium">Tipo</span>
-              <ContactTypeSelect defaultValue={contact.roleKey} />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Persona / Empresa</span>
-              <select name="entityType" defaultValue={contact.entityType} className={FIELD}>
-                <option value="person">Persona</option>
-                <option value="company">Empresa</option>
-                <option value="institution">Institución</option>
-                <option value="platform">Plataforma</option>
-              </select>
-            </label>
-          </div>
+  const editor = role !== "active" ? null : (
+    <div className="space-y-6">
+      {renameState?.error && (
+        <p className="-mt-2 text-xs text-[var(--color-status-error-text)]">{renameState.error}</p>
+      )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-medium">Nombre *</span>
-              <input name="displayName" type="text" required defaultValue={contact.displayName} className={FIELD} />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Persona de contacto</span>
-              <input name="contactPersonName" type="text" defaultValue={contact.contactPersonName ?? ""} placeholder="Si es empresa, quién llamar" className={FIELD_PH} />
-            </label>
-          </div>
+      <form ref={detailsFormRef} onSubmit={autoSaveSubmit(detailsAction)} className="space-y-6">
+        <input type="hidden" name="contactId" value={contact.id} />
+        <input type="hidden" name="propertyId" value={propertyId} />
+        <input type="hidden" name="entityType" value={entityType} />
+        <input type="hidden" name="visibility" value={visibility} />
+        <input type="hidden" name="emergencyAvailable" value={emergencyAvailable ? "on" : ""} />
+        <input type="hidden" name="hasPropertyAccess" value={hasPropertyAccess ? "on" : ""} />
+        <input type="hidden" name="isPrimary" value={isPrimary ? "on" : ""} />
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="block">
-              <span className="text-sm font-medium">Teléfono</span>
-              <input name="phone" type="tel" defaultValue={contact.phone ?? ""} placeholder="+34 600 000 000" className={FIELD_PH} />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Email</span>
-              <input name="email" type="email" defaultValue={contact.email ?? ""} className={FIELD} />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">WhatsApp</span>
-              <input name="whatsapp" type="tel" defaultValue={contact.whatsapp ?? ""} placeholder="+34 600 000 000" className={FIELD_PH} />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="text-sm font-medium">Disponibilidad</span>
-            <input name="availabilitySchedule" type="text" defaultValue={contact.availabilitySchedule ?? ""} placeholder="ej. L-V 9:00-18:00" className={FIELD_PH} />
-          </label>
-
-          <div className="flex flex-wrap gap-4">
-            <label className="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" name="emergencyAvailable" defaultChecked={contact.emergencyAvailable} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-              <span className="text-sm">Disponible 24h</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" name="hasPropertyAccess" defaultChecked={contact.hasPropertyAccess} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-              <span className="text-sm">Tiene acceso a la propiedad</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input type="checkbox" name="isPrimary" defaultChecked={contact.isPrimary} className="h-4 w-4 accent-[var(--color-action-primary)]" />
-              <span className="text-sm">Contacto principal</span>
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-sm font-medium">Notas internas</span>
-              <textarea name="internalNotes" rows={2} defaultValue={contact.internalNotes ?? ""} placeholder="Información privada (tarifas, contrato, etc.)" className={FIELD_PH} />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">Notas para huéspedes</span>
-              <textarea name="guestVisibleNotes" rows={2} defaultValue={contact.guestVisibleNotes ?? ""} placeholder="Información visible para el huésped" className={FIELD_PH} />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="text-sm font-medium">Visibilidad</span>
-            <select name="visibility" defaultValue={contact.visibility} className={FIELD}>
-              <option value="internal">Solo interno</option>
-              <option value="guest">Visible para huéspedes</option>
-              <option value="sensitive">Sensible</option>
-            </select>
-          </label>
-
-          <FormErrors state={state} />
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={close} className={PRIMARY_BTN}>
-                Listo
-              </button>
-              <AutoSaveStatus pending={pending} />
-            </div>
-            <DeleteConfirmationButton
-              title="Eliminar contacto"
-              description={`Se eliminará ${contact.displayName}. Esta acción no se puede deshacer.`}
-              entityId={contact.id}
-              fieldName="contactId"
-              action={deleteContactAction as (prev: { success: boolean } | null, formData: FormData) => Promise<{ success: boolean }>}
+        {/* Canales */}
+        <section className="space-y-3">
+          <SectionEyebrow icon={Phone}>Canales</SectionEyebrow>
+          <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+            <FieldInput name="phone" type="tel" label="Teléfono" defaultValue={contact.phone ?? ""} placeholder="+34 600 000 000" />
+            <FieldInput name="phoneSecondary" type="tel" label="Teléfono secundario" defaultValue={contact.phoneSecondary ?? ""} placeholder="+34 600 000 000" />
+            <FieldInput name="whatsapp" type="tel" label="WhatsApp" defaultValue={contact.whatsapp ?? ""} placeholder="+34 600 000 000" />
+            <FieldInput name="email" type="email" label="Correo electrónico" defaultValue={contact.email ?? ""} placeholder="contacto@ejemplo.com" />
+            <FieldInput
+              name="address"
+              label="Dirección"
+              defaultValue={contact.address ?? ""}
+              help="Para contactos con ubicación física (hospital, farmacia…)"
+              className="sm:col-span-2"
             />
           </div>
-        </form>
-      )}
-    </article>
+        </section>
+
+        {/* Disponibilidad */}
+        <section className="space-y-3">
+          <SectionEyebrow icon={Clock}>Disponibilidad</SectionEyebrow>
+          <FieldInput
+            name="availabilitySchedule"
+            label="Disponibilidad"
+            defaultValue={contact.availabilitySchedule ?? ""}
+            placeholder="p. ej. L–V 9:00–18:00"
+          />
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-[var(--color-text-primary)]">Disponible 24h</span>
+            <Switch
+              checked={emergencyAvailable}
+              onChange={setEmergencyAvailable}
+              ariaLabel="Disponible 24h"
+            />
+          </div>
+        </section>
+
+        {/* Detalles */}
+        <section className="space-y-3">
+          <SectionEyebrow icon={ContactIcon}>Detalles</SectionEyebrow>
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-[var(--color-text-primary)]">Tipo de entidad</p>
+            <div className="flex flex-wrap gap-2">
+              {ENTITY_TYPE_LABELS.map((opt) => (
+                <ToggleChip
+                  key={opt.id}
+                  active={entityType === opt.id}
+                  hideCheck
+                  onToggle={() => setEntityType(opt.id)}
+                >
+                  {opt.label}
+                </ToggleChip>
+              ))}
+            </div>
+            {entityType !== "person" && (
+              <div className="mt-3 border-l-2 border-[var(--color-border-default)] pl-4">
+                <FieldInput
+                  name="contactPersonName"
+                  label="Persona de contacto"
+                  defaultValue={contact.contactPersonName ?? ""}
+                  placeholder="A quién llamar si es una empresa"
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-[var(--color-text-primary)]">Tiene acceso a la propiedad</span>
+            <Switch
+              checked={hasPropertyAccess}
+              onChange={setHasPropertyAccess}
+              ariaLabel="Tiene acceso a la propiedad"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-[var(--color-text-primary)]">Contacto principal</span>
+            <Switch
+              checked={isPrimary}
+              onChange={setIsPrimary}
+              ariaLabel="Contacto principal"
+            />
+          </div>
+        </section>
+
+        {/* Visibilidad y notas */}
+        <section className="space-y-3">
+          <SectionEyebrow icon={Eye}>Visibilidad y notas</SectionEyebrow>
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-[var(--color-text-primary)]">Visibilidad</p>
+            <div className="flex flex-wrap gap-2">
+              {VISIBILITY_LABELS.map((opt) => (
+                <ToggleChip
+                  key={opt.id}
+                  active={visibility === opt.id}
+                  hideCheck
+                  onToggle={() => setVisibility(opt.id)}
+                >
+                  {opt.label}
+                </ToggleChip>
+              ))}
+            </div>
+          </div>
+          <FieldTextarea
+            name="guestVisibleNotes"
+            label="Notas para el huésped"
+            rows={2}
+            defaultValue={contact.guestVisibleNotes ?? ""}
+            placeholder="Información visible para el huésped…"
+          />
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowInternalNotes((v) => !v)}
+              className="flex min-h-[44px] items-center gap-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            >
+              <ChevronDown
+                size={14}
+                aria-hidden="true"
+                className={cn("-rotate-90 transition-transform duration-150", showInternalNotes && "rotate-0")}
+              />
+              Notas internas
+              {internalNotes && (
+                <span className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-text-muted)]" />
+              )}
+            </button>
+            {showInternalNotes ? (
+              <textarea
+                name="internalNotes"
+                rows={2}
+                aria-label="Notas internas"
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
+                placeholder="Información privada (tarifas, contrato…)"
+                className={cn(fieldControlClass, "mt-2")}
+              />
+            ) : (
+              <input type="hidden" name="internalNotes" value={internalNotes} />
+            )}
+          </div>
+        </section>
+      </form>
+
+      {/* Footer — autosave status (left) + delete (right), OUTSIDE the form. */}
+      <div className="flex items-center justify-between border-t border-[var(--color-border-default)] pt-4">
+        <div className="flex items-center gap-3">
+          <AutoSaveStatus pending={detailsPending || renamePending} />
+          {detailsState?.error && (
+            <span className="text-xs text-[var(--color-status-error-text)]">{detailsState.error}</span>
+          )}
+        </div>
+        <DeleteConfirmationButton
+          title="Eliminar contacto"
+          triggerLabel="Eliminar contacto"
+          description={deleteDescription}
+          entityId={contact.id}
+          fieldName="contactId"
+          action={deleteContactAction as (prev: { success: boolean } | null, formData: FormData) => Promise<{ success: boolean }>}
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    <EntityMediaCard
+      role={role}
+      compact
+      viewTransitionName={`contact-card-${contact.id}`}
+      titleId={titleId}
+      bodyId={bodyId}
+      icon={TypeIcon}
+      title={contact.displayName}
+      titleNode={
+        role === "active" ? (
+          <InlineEditText
+            value={contact.displayName}
+            onCommit={handleRename}
+            placeholder="Nombre del contacto"
+            ariaLabel="Nombre del contacto"
+            textClassName="text-[16px] font-semibold leading-tight text-[var(--color-text-primary)]"
+            withTooltip
+          />
+        ) : undefined
+      }
+      subtitle={role === "active" ? `${typeLabel}${detailSuffix}` : undefined}
+      status={<EntityCardStatusPill status={status} label={STATUS_LABEL[status]} detail={statusDetail} />}
+      collapsedContent={collapsedContent}
+      hoverOverlay={hoverOverlay}
+      onExpand={onExpand}
+      onCollapse={onCollapse}
+      className={isEmergency && role === "idle" ? "border-[var(--color-status-error-border)]" : undefined}
+    >
+      {editor}
+    </EntityMediaCard>
   );
 }
