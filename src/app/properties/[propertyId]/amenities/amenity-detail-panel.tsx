@@ -81,11 +81,8 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
   const visibleFields = item.subtypeFields.filter((f) => isFieldVisible(f, details));
 
   return (
-    <div className="mt-3 rounded-[var(--radius-lg)] border border-[var(--color-border-default)] bg-[var(--color-background-subtle)] p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-semibold text-[var(--color-text-primary)]">
-          {item.label}
-        </h4>
+    <div className="mb-3 ml-3 border-l-2 border-[var(--color-border-default)] pb-1 pl-4 pt-1">
+      <div className="mb-2 flex items-center justify-end">
         <AutoSaveStatus pending={isPending} />
       </div>
 
@@ -104,19 +101,25 @@ export function AmenityDetailPanel({ propertyId, item, spaceId }: AmenityDetailP
       >
         <div className="space-y-3">
           {visibleFields.map((field) => {
+            // Conditional fields (shown_if) render indented under their trigger,
+            // mirroring Espacios' reveal-below-trigger pattern.
+            const revealClass = field.shown_if
+              ? "border-l-2 border-[var(--color-border-default)] pl-3"
+              : undefined;
             // Boolean fields render their own label inline
             if (field.type === "boolean") {
               return (
-                <SubtypeFieldInput
-                  key={field.id}
-                  field={field}
-                  value={details[field.id]}
-                  onChange={handleFieldChange}
-                />
+                <div key={field.id} className={revealClass}>
+                  <SubtypeFieldInput
+                    field={field}
+                    value={details[field.id]}
+                    onChange={handleFieldChange}
+                  />
+                </div>
               );
             }
             return (
-              <div key={field.id}>
+              <div key={field.id} className={revealClass}>
                 <label className="block">
                   <span className="text-xs font-medium text-[var(--color-text-primary)]">
                     {field.label}

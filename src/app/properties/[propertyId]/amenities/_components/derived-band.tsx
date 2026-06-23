@@ -1,6 +1,5 @@
 import { cn } from "@/lib/cn";
 import { TextLink } from "@/components/ui/text-link";
-import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import type { DerivedAmenityItem } from "../page";
 
 interface DerivedBandProps {
@@ -16,13 +15,10 @@ export function DerivedBand({ items }: DerivedBandProps) {
   if (items.length === 0) return null;
 
   return (
-    <section className="mb-6">
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 border-b border-[var(--color-border-default)] py-2.5 pl-3">
-        <SectionEyebrow>Derivado de otros módulos</SectionEyebrow>
-        <span className="text-[11.5px] text-[var(--color-text-muted)]">
-          Se gestiona en Sistemas · Espacios · Acceso
-        </span>
-      </div>
+    <section>
+      <p className="mb-2 pl-3 text-[11.5px] text-[var(--color-text-muted)]">
+        Se gestiona en Sistemas · Espacios · Acceso
+      </p>
 
       <div>
         {items.map((item) => (

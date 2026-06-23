@@ -4,7 +4,6 @@ import { SectionEyebrow } from "@/components/ui/section-eyebrow";
 import { AmenityDetailPanel } from "../amenity-detail-panel";
 import type { EnrichedAmenityItem } from "../page";
 import { EqItemRow, canExpandItem } from "./eq-item-row";
-import { CustomAmenityInput } from "./custom-amenity-input";
 
 function panelIdFor(itemId: string, spaceId: string | null): string {
   return `eq-panel-${itemId}-${spaceId ?? "general"}`;
@@ -21,8 +20,6 @@ interface EqGroupBandProps {
   totalCount: number;
   expandedDetail: string | null;
   onExpand: (key: string | null) => void;
-  /** Anchor id for the group's custom-add input (set on the general group). */
-  addInputId?: string;
 }
 
 export function EqGroupBand({
@@ -34,7 +31,6 @@ export function EqGroupBand({
   totalCount,
   expandedDetail,
   onExpand,
-  addInputId,
 }: EqGroupBandProps) {
   const pct = totalCount > 0 ? Math.round((enabledCount / totalCount) * 100) : 0;
 
@@ -86,12 +82,6 @@ export function EqGroupBand({
           );
         })}
       </div>
-
-      <CustomAmenityInput
-        propertyId={propertyId}
-        spaceId={spaceId}
-        inputId={addInputId}
-      />
     </section>
   );
 }
