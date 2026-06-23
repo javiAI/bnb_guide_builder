@@ -3,10 +3,11 @@
 import { useTransition } from "react";
 import { ChevronDown, StickyNote, Camera } from "lucide-react";
 import { toggleAmenityAction } from "@/lib/actions/editor.actions";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import type { EnrichedAmenityItem } from "../page";
 import { TIER_META } from "./eq-tier";
-import { LcCheckbox } from "./lc-checkbox";
 
 /** Presence indicator (note / photo) — informational, not interactive. */
 function EqAttach({
@@ -19,17 +20,19 @@ function EqAttach({
   tone: "note" | "photo";
 }) {
   return (
-    <span
-      className={cn(
-        "grid h-6 w-6 place-items-center rounded-[6px]",
-        tone === "note"
-          ? "bg-[var(--color-accent-subtle)] text-[var(--color-accent-fg)]"
-          : "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-icon)]",
-      )}
-    >
-      <Icon size={12} aria-hidden="true" />
-      <span className="sr-only">{label}</span>
-    </span>
+    <Tooltip text={label}>
+      <span
+        className={cn(
+          "grid h-6 w-6 place-items-center rounded-[6px]",
+          tone === "note"
+            ? "bg-[var(--color-accent-subtle)] text-[var(--color-accent-fg)]"
+            : "bg-[var(--color-status-success-bg)] text-[var(--color-status-success-icon)]",
+        )}
+      >
+        <Icon size={12} aria-hidden="true" />
+        <span className="sr-only">{label}</span>
+      </span>
+    </Tooltip>
   );
 }
 
@@ -88,13 +91,18 @@ export function EqItemRow({
       ? "text-[var(--color-text-primary)]"
       : "text-[var(--color-text-secondary)]",
   );
+  // `partial` (enabled, has a subtype, but no detail value yet) surfaces a
+  // missing-signal on the chevron hover, mirroring Espacios' status hint.
+  const isPartial = canExpand && !item.hasNote;
   const customBadge = item.isCustomInstance ? (
-    <span
-      title="Instancia personalizada"
-      className="ml-2 rounded-full bg-[var(--color-action-primary-subtle)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--color-action-primary-subtle-fg)] align-middle"
+    <Tooltip
+      text="Equipamiento propio"
+      className="ml-2 inline-flex align-middle"
     >
-      Personalizado
-    </span>
+      <span className="rounded-full bg-[var(--color-action-primary-subtle)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--color-action-primary-subtle-fg)]">
+        Personalizado
+      </span>
+    </Tooltip>
   ) : null;
 
   // Label + optional description — identical in the expandable and static
@@ -110,6 +118,11 @@ export function EqItemRow({
           {item.description}
         </span>
       )}
+      {item.operatorHint && (
+        <span className="mt-0.5 block text-[11px] leading-snug text-[var(--color-text-muted)]">
+          {item.operatorHint}
+        </span>
+      )}
     </>
   );
 
@@ -123,11 +136,12 @@ export function EqItemRow({
       )}
     >
       <span className="sr-only">{tier.label}</span>
-      <LcCheckbox
+      <Switch
         checked={item.enabled}
-        onToggle={handleToggle}
+        onChange={handleToggle}
         disabled={isPending}
-        label={item.label}
+        size="sm"
+        ariaLabel={item.label}
       />
 
       {canExpand ? (
@@ -139,14 +153,27 @@ export function EqItemRow({
           className="flex min-w-0 flex-1 items-center gap-2 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)] rounded-[6px]"
         >
           <span className="min-w-0 flex-1">{nameBlock}</span>
-          <ChevronDown
-            size={16}
-            aria-hidden="true"
-            className={cn(
-              "shrink-0 text-[var(--color-text-muted)] transition-transform",
-              isExpanded && "rotate-180",
-            )}
-          />
+          {isPartial ? (
+            <Tooltip text="Falta: detalles de uso" className="shrink-0">
+              <ChevronDown
+                size={16}
+                aria-hidden="true"
+                className={cn(
+                  "text-[var(--color-status-warning-icon)] transition-transform",
+                  isExpanded && "rotate-180",
+                )}
+              />
+            </Tooltip>
+          ) : (
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className={cn(
+                "shrink-0 text-[var(--color-text-muted)] transition-transform",
+                isExpanded && "rotate-180",
+              )}
+            />
+          )}
         </button>
       ) : (
         <div className="flex min-w-0 flex-1 flex-col justify-center py-2.5">

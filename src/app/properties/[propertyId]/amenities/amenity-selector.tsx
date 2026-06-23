@@ -1,20 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { Sofa } from "lucide-react";
+import { NumberedSection } from "@/components/ui/numbered-section";
 import { AmenitiesToolbar } from "./_components/amenities-toolbar";
 import { EqGroupBand } from "./_components/eq-group-band";
 import { DerivedBand } from "./_components/derived-band";
+import { CustomAmenitySection } from "./_components/custom-amenity-section";
 import { TIER_META } from "./_components/eq-tier";
 import { fold } from "./_components/text";
-import type { EnrichedAmenityItem, SpaceSection, DerivedAmenityItem } from "./page";
+import type {
+  EnrichedAmenityItem,
+  SpaceSection,
+  DerivedAmenityItem,
+  CustomAmenityEntry,
+} from "./page";
 
-const GENERAL_ADD_ID = "eq-add-general";
+const CUSTOM_ADD_INPUT_ID = "eq-add-custom";
 
 interface AmenitySelectorProps {
   propertyId: string;
   generalItems: EnrichedAmenityItem[];
   generalDerived: DerivedAmenityItem[];
   spaceSections: SpaceSection[];
+  customEntries: CustomAmenityEntry[];
 }
 
 interface Group {
@@ -29,6 +38,7 @@ export function AmenitySelector({
   generalItems,
   generalDerived,
   spaceSections,
+  customEntries,
 }: AmenitySelectorProps) {
   const [query, setQuery] = useState("");
   const [onlyConfigured, setOnlyConfigured] = useState(false);
@@ -67,8 +77,8 @@ export function AmenitySelector({
     .map((g) => ({ ...g, visible: visibleItems(g.items) }))
     .filter((g) => g.visible.length > 0);
 
-  // The derived band follows the same search (label or source summary). It is
-  // not affected by "Sólo configurados" — derived state is reference, not an
+  // The derived section follows the same search (label or source summary). It
+  // is not affected by "Solo disponibles" — derived state is reference, not an
   // operator-configured value.
   const visibleDerived = generalDerived.filter(
     (d) =>
@@ -76,56 +86,82 @@ export function AmenitySelector({
       fold(d.label).includes(q) ||
       (d.status.sourceSummary ? fold(d.status.sourceSummary).includes(q) : false),
   );
-  const showEmpty = renderedGroups.length === 0 && visibleDerived.length === 0;
 
   function handleAdd() {
-    // Reset filters so the destination group is visible, then focus the
-    // general custom-add input (simple scroll anchor — no scroll-spy).
-    setQuery("");
-    setOnlyConfigured(false);
-    requestAnimationFrame(() => {
-      const el = document.getElementById(GENERAL_ADD_ID);
-      if (el instanceof HTMLInputElement) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.focus();
-      }
-    });
+    // The free-label add control lives in section 02 — scroll to it and focus.
+    const el = document.getElementById(CUSTOM_ADD_INPUT_ID);
+    if (el instanceof HTMLInputElement) {
+      el.focus({ preventScroll: true });
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }
 
   return (
     <div>
-      <AmenitiesToolbar
-        query={query}
-        onQueryChange={setQuery}
-        onlyConfigured={onlyConfigured}
-        onToggleOnlyConfigured={() => setOnlyConfigured((v) => !v)}
-        onAdd={handleAdd}
-      />
-
-      {renderedGroups.map((g) => (
-        <EqGroupBand
-          key={g.key}
-          propertyId={propertyId}
-          title={g.title}
-          spaceId={g.spaceId}
-          items={g.visible}
-          enabledCount={g.items.filter((i) => i.enabled).length}
-          totalCount={g.items.length}
-          expandedDetail={expandedDetail}
-          onExpand={setExpandedDetail}
-          addInputId={g.spaceId === null ? GENERAL_ADD_ID : undefined}
+      <NumberedSection number="01" title="Catálogo">
+        <AmenitiesToolbar
+          query={query}
+          onQueryChange={setQuery}
+          onlyConfigured={onlyConfigured}
+          onToggleOnlyConfigured={() => setOnlyConfigured((v) => !v)}
+          onAdd={handleAdd}
         />
-      ))}
 
-      {showEmpty && (
-        <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-          {onlyConfigured && query.trim() === ""
-            ? "Aún no hay equipamiento configurado."
-            : "No hay equipamiento que coincida con la búsqueda."}
-        </p>
+        {renderedGroups.map((g) => (
+          <EqGroupBand
+            key={g.key}
+            propertyId={propertyId}
+            title={g.title}
+            spaceId={g.spaceId}
+            items={g.visible}
+            enabledCount={g.items.filter((i) => i.enabled).length}
+            totalCount={g.items.length}
+            expandedDetail={expandedDetail}
+            onExpand={setExpandedDetail}
+          />
+        ))}
+
+        {renderedGroups.length === 0 &&
+          (groups.length === 0 ? (
+            <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-strong)] bg-[var(--color-background-elevated)] px-8 py-12 text-center">
+              <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-full bg-[var(--color-action-primary-subtle)]">
+                <Sofa
+                  size={20}
+                  aria-hidden="true"
+                  className="text-[var(--color-action-primary)]"
+                />
+              </div>
+              <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
+                Aún no hay equipamiento
+              </h2>
+              <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--color-text-secondary)]">
+                El catálogo se construye a partir de tus espacios. Añade el
+                primero en Espacios y aquí aparecerá su equipamiento.
+              </p>
+            </div>
+          ) : (
+            <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
+              {onlyConfigured && query.trim() === ""
+                ? "Aún no hay equipamiento disponible."
+                : "No hay equipamiento que coincida con la búsqueda."}
+            </p>
+          ))}
+      </NumberedSection>
+
+      <NumberedSection number="02" title="Equipamiento propio">
+        <CustomAmenitySection
+          propertyId={propertyId}
+          entries={customEntries}
+          spaces={spaceSections.map((s) => ({ id: s.spaceId, name: s.spaceName }))}
+          inputId={CUSTOM_ADD_INPUT_ID}
+        />
+      </NumberedSection>
+
+      {visibleDerived.length > 0 && (
+        <NumberedSection number="03" title="Derivado de otros módulos">
+          <DerivedBand items={visibleDerived} />
+        </NumberedSection>
       )}
-
-      <DerivedBand items={visibleDerived} />
     </div>
   );
 }

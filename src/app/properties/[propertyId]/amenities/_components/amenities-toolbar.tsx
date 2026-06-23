@@ -53,7 +53,7 @@ export function AmenitiesToolbar({
         )}
       >
         <Eye size={13} aria-hidden="true" />
-        Sólo configurados
+        Solo disponibles
       </button>
 
       <button
@@ -62,7 +62,7 @@ export function AmenitiesToolbar({
         className="ml-auto inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-background-surface)] px-3 text-[12px] font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-interactive-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-border-focus)]"
       >
         <Plus size={13} aria-hidden="true" />
-        Añadir item
+        Añadir equipamiento
       </button>
     </div>
   );

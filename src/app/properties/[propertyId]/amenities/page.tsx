@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import {
   amenityTaxonomy,
+  findAmenityItem,
   findSubtype,
   getAmenityScopePolicy,
   isAmenityMoved,
   isAmenityDerived,
   isAmenityConfigurable,
 } from "@/lib/taxonomy-loader";
+import { prettifySlug } from "./_components/text";
 import type { ImportanceLevel, SubtypeField, AmenityItem } from "@/lib/types/taxonomy";
 import {
   isCanonicalInstanceKey,
@@ -49,6 +51,26 @@ export interface EnrichedAmenityItem {
   hasPhoto: boolean;
   /** Instance has at least one meaningful detail value (eq-attach note indicator). */
   hasNote: boolean;
+  /** Cross-tab boundary hint from the taxonomy (e.g. bed linens → Espacios · Camas). */
+  operatorHint?: string;
+}
+
+/**
+ * Row for the "Equipamiento propio" section (02): operator-created `custom.*`
+ * instances plus orphaned instances whose slot no rendered row consumed
+ * (e.g. pre-April `default`-keyed rows of items that are space-bound today —
+ * FUTURE §29.5). Nothing persisted stays invisible.
+ */
+export interface CustomAmenityEntry {
+  /** `PropertyAmenityInstance.id` — React key only (deletes go through the amenityKey slot). */
+  dbId: string;
+  amenityKey: string;
+  label: string;
+  /** "General" | space name | "Sin ubicación" — muted scope tag. */
+  scopeLabel: string;
+  /** spaceId encoded in the instanceKey, threaded into the delete payload. */
+  spaceId: string | null;
+  isOrphan: boolean;
 }
 
 export interface DerivedAmenityItem {
@@ -237,11 +259,17 @@ export default async function AmenitiesPage({
     }
   }
 
+  // Every slot a rendered row reads. Instances left at unread slots (plus all
+  // `custom.*` instances, which no taxonomy row ever reads) surface in the
+  // "Equipamiento propio" section instead of silently disappearing.
+  const consumedSlots = new Set<string>();
+
   function enrichItem(
     item: AmenityItem,
     spaceId: string | null,
   ): EnrichedAmenityItem {
     const key = `${item.id}|${spaceId ?? ""}`;
+    consumedSlots.add(key);
     const existing = instanceIndex.get(key);
     const subtype = findSubtype(item.id);
     const detailsJson = (existing?.detailsJson as Record<string, unknown>) ?? null;
@@ -259,6 +287,7 @@ export default async function AmenitiesPage({
       isCustomInstance: existing?.isCustomInstance ?? false,
       hasPhoto: existing ? (photoCountByDbId.get(existing.id) ?? 0) > 0 : false,
       hasNote: hasMeaningfulDetails(detailsJson),
+      operatorHint: item.operatorHint,
     };
   }
 
@@ -297,15 +326,66 @@ export default async function AmenitiesPage({
     })
     .filter((x): x is DerivedAmenityItem => x !== null);
 
+  // ── Equipamiento propio (02): custom.* instances + orphans ──
+  //
+  // `custom.*` keys are never taxonomy items, so the catalog never reads their
+  // slots; before 16I-6 they were created and then never rendered (FUTURE §29.5).
+  // Orphans are `am.*` instances whose every indexed slot went unread by the
+  // rows above (e.g. a `default`-keyed TV row from when TV was property-wide).
+  const consumedInstanceIds = new Set<string>();
+  for (const slot of consumedSlots) {
+    const entry = instanceIndex.get(slot);
+    if (entry) consumedInstanceIds.add(entry.id);
+  }
+  const spaceNameById = new Map(property.spaces.map((s) => [s.id, s.name]));
+
+  const customEntries: CustomAmenityEntry[] = [];
+  for (const inst of existingInstances) {
+    const isCustomKey = inst.amenityKey.startsWith("custom.");
+    if (!isCustomKey && consumedInstanceIds.has(inst.id)) continue;
+    const spaceId = spaceIdFromInstanceKey(inst.instanceKey);
+    if (isCustomKey) {
+      const details = inst.detailsJson as Record<string, unknown> | null;
+      const storedLabel = typeof details?._label === "string" ? details._label.trim() : "";
+      customEntries.push({
+        dbId: inst.id,
+        amenityKey: inst.amenityKey,
+        label: storedLabel || prettifySlug(inst.amenityKey.slice("custom.".length)),
+        scopeLabel: spaceId ? (spaceNameById.get(spaceId) ?? "Sin ubicación") : "General",
+        spaceId,
+        isOrphan: false,
+      });
+    } else {
+      customEntries.push({
+        dbId: inst.id,
+        amenityKey: inst.amenityKey,
+        label:
+          findAmenityItem(inst.amenityKey)?.label ??
+          prettifySlug(inst.amenityKey.split(".").pop() ?? inst.amenityKey),
+        scopeLabel: "Sin ubicación",
+        spaceId,
+        isOrphan: true,
+      });
+    }
+  }
+  // Own items first, orphans (cleanup candidates) after.
+  customEntries.sort((a, b) => Number(a.isOrphan) - Number(b.isOrphan));
+
   // Header counts (server-derived; reflect the real state after each toggle's
-  // revalidation). "con foto" counts enabled instances with ≥1 image.
+  // revalidation). "con foto" counts enabled instances with ≥1 image. Own
+  // (custom.*) items count as shown + enabled — they exist iff enabled;
+  // orphans stay out (they are cleanup data, not catalog state).
   const allConfigurable = [
     ...generalItems,
     ...spaceSections.flatMap((s) => s.items),
   ];
-  const totalShown = allConfigurable.length;
-  const totalEnabled = allConfigurable.filter((i) => i.enabled).length;
-  const totalWithPhoto = allConfigurable.filter((i) => i.hasPhoto).length;
+  const ownEntries = customEntries.filter((e) => !e.isOrphan);
+  const totalShown = allConfigurable.length + ownEntries.length;
+  const totalEnabled =
+    allConfigurable.filter((i) => i.enabled).length + ownEntries.length;
+  const totalWithPhoto =
+    allConfigurable.filter((i) => i.hasPhoto).length +
+    ownEntries.filter((e) => (photoCountByDbId.get(e.dbId) ?? 0) > 0).length;
 
   return (
     <>
@@ -352,6 +432,7 @@ export default async function AmenitiesPage({
         generalItems={generalItems}
         generalDerived={generalDerived}
         spaceSections={spaceSections}
+        customEntries={customEntries}
       />
     </>
   );
