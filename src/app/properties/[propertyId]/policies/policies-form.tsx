@@ -1,30 +1,42 @@
 "use client";
 
-import { useActionState, useState, useRef } from "react";
-import Link from "next/link";
-import { Moon, Cigarette, PartyPopper, Camera, SprayCan, UserPlus } from "lucide-react";
+import { useActionState, useState, useRef, type ReactNode } from "react";
+import {
+  Moon,
+  Cigarette,
+  PartyPopper,
+  Camera,
+  SprayCan,
+  UserPlus,
+  CheckCheck,
+  CircleAlert,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageHeaderChip } from "@/components/ui/page-header-chip";
 import { NumberedSection } from "@/components/ui/numbered-section";
 import { IconBadge } from "@/components/ui/icon-badge";
-import { RadioCardGroup } from "@/components/ui/radio-card-group";
-import { CheckboxCardGroup } from "@/components/ui/checkbox-card-group";
-import { NumberStepper } from "@/components/ui/number-stepper";
+import { Switch } from "@/components/ui/switch";
+import { ToggleChip } from "@/components/ui/toggle-chip";
+import { Tooltip } from "@/components/ui/tooltip";
+import { InlineStepper } from "@/components/ui/inline-stepper";
+import { FieldInput, FieldTextarea } from "@/components/ui/field";
+import { Banner } from "@/components/ui/banner";
+import { TextLink } from "@/components/ui/text-link";
 import { AutoSaveStatus } from "@/components/ui/auto-save-status";
-import { useFormAutoSave } from "@/lib/use-form-auto-save";
+import { autoSaveSubmit, useFormAutoSave } from "@/lib/use-form-auto-save";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { savePoliciesAction } from "@/lib/actions/editor.actions";
 import type { ActionResult } from "@/lib/types/action-result";
+import type { TaxonomyOption } from "@/lib/types/taxonomy";
 import { getPolicyOptions, getPolicyFieldOptions } from "@/lib/taxonomies/policies";
 import type { PoliciesData } from "@/lib/schemas/editor.schema";
-
-// ── Time options (30min intervals) ──
-
-const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
-  const h = String(Math.floor(i / 2)).padStart(2, "0");
-  const m = i % 2 === 0 ? "00" : "30";
-  return `${h}:${m}`;
-});
+import {
+  policyMissingSignals,
+  POLICY_RULE_COUNT,
+  slotToHHMM,
+  hhmmToSlot,
+} from "./policy-progress";
 
 // ── Options loaded from policy_taxonomy.json ──
 
@@ -39,32 +51,175 @@ const SERVICE_TYPE_OPTIONS = getPolicyOptions("pol.services_in_home");
 
 // ── Field heading (icon-led — mirrors the per-rule icon anatomy of the
 // page-normas kit, where every rule leads with a circular Lucide glyph in a
-// tinted badge: `.rn-ic` 32×32 accent for narrative rows). We use the
-// canonical <IconBadge tone="primary" size="md"> so the accent circle reads
-// as the kit's leading affordance, not a flat inline glyph. ──
+// tinted badge. The `value` slot is the kit's right-aligned `.val` (rule-narr) —
+// used only where the value isn't already visible as an active chip below. ──
 
 function FieldHeading({
   icon,
   label,
   hint,
   tooltip,
+  value,
 }: {
   icon: LucideIcon;
   label: string;
   hint?: string;
   tooltip?: string;
+  value?: ReactNode;
 }) {
   return (
     <div className="mb-3 flex items-start gap-3">
       <IconBadge icon={icon} tone="primary" size="md" iconSize={16} />
-      <div className="min-w-0 pt-1">
+      <div className="min-w-0 flex-1 pt-1">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">{label}</span>
           {tooltip && <InfoTooltip text={tooltip} />}
+          {value != null && (
+            <span className="ml-auto text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
+              {value}
+            </span>
+          )}
         </div>
         {hint && <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{hint}</p>}
       </div>
     </div>
+  );
+}
+
+// ── Switch + visible (non-clickable) label. Wrapping both in a button would
+// nest buttons (invalid HTML), so the label-click is dropped by design — the
+// Switch keeps its own 44px hit area and aria-label. ──
+
+function SwitchRow({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+}) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <Switch checked={checked} onChange={onChange} ariaLabel={label} size="md" />
+      <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
+    </div>
+  );
+}
+
+// ── Policy enum chips (single-select, no null state — the schema always has a
+// value) + multiselect chips; both mirror the Spaces gold standard, descriptions
+// surfaced via the canonical Tooltip. ──
+
+function PolicyEnumChips({
+  options,
+  value,
+  onChange,
+}: {
+  options: TaxonomyOption[];
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <Tooltip key={opt.id} text={opt.description}>
+          <ToggleChip active={value === opt.id} hideCheck onToggle={() => onChange(opt.id)}>
+            {opt.label}
+          </ToggleChip>
+        </Tooltip>
+      ))}
+    </div>
+  );
+}
+
+function PolicyMultiChips({
+  options,
+  value,
+  onChange,
+}: {
+  options: TaxonomyOption[];
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const checked = value.includes(opt.id);
+        return (
+          <Tooltip key={opt.id} text={opt.description}>
+            <ToggleChip
+              active={checked}
+              onToggle={() =>
+                onChange(checked ? value.filter((id) => id !== opt.id) : [...value, opt.id])
+              }
+            >
+              {opt.label}
+            </ToggleChip>
+          </Tooltip>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Quiet-hours range — one InlineStepper per bound, slot 0–47 (30-min steps),
+// cyclic wrap (23:30 → 00:00 in one click), formatted HH:MM. Labels above. ──
+
+function TimeRangeSteppers({
+  fromSlot,
+  toSlot,
+  onFromChange,
+  onToChange,
+}: {
+  fromSlot: number;
+  toSlot: number;
+  onFromChange: (slot: number) => void;
+  onToChange: (slot: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-start gap-6">
+      <div>
+        <p className="mb-1.5 text-xs font-semibold text-[var(--color-text-primary)]">Desde</p>
+        <InlineStepper
+          value={fromSlot}
+          min={0}
+          max={47}
+          wrap
+          format={slotToHHMM}
+          label="hora de inicio del silencio"
+          onChange={onFromChange}
+        />
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-semibold text-[var(--color-text-primary)]">Hasta</p>
+        <InlineStepper
+          value={toSlot}
+          min={0}
+          max={47}
+          wrap
+          format={slotToHHMM}
+          label="hora de fin del silencio"
+          onChange={onToChange}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Indented reveal wrapper for conditional sub-fields (mirrors the Spaces
+// shown_if indent).
+function Reveal({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-3 space-y-3 border-l-2 border-[var(--color-border-default)] pl-4">
+      {children}
+    </div>
+  );
+}
+
+function FieldLabelXs({ children }: { children: ReactNode }) {
+  return (
+    <p className="mb-1.5 text-xs font-semibold text-[var(--color-text-primary)]">{children}</p>
   );
 }
 
@@ -81,8 +236,8 @@ interface PoliciesFormProps {
 export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }: PoliciesFormProps) {
   // ── Convivencia state ──
   const [quietEnabled, setQuietEnabled] = useState(initial.quietHours.enabled);
-  const [quietFrom, setQuietFrom] = useState(initial.quietHours.from ?? "22:00");
-  const [quietTo, setQuietTo] = useState(initial.quietHours.to ?? "08:00");
+  const [quietFromSlot, setQuietFromSlot] = useState(hhmmToSlot(initial.quietHours.from ?? "22:00"));
+  const [quietToSlot, setQuietToSlot] = useState(hhmmToSlot(initial.quietHours.to ?? "08:00"));
   const [smoking, setSmoking] = useState(initial.smoking);
   const [smokingArea, setSmokingArea] = useState(initial.smokingArea ?? "");
   const [eventsPolicy, setEventsPolicy] = useState(initial.events.policy);
@@ -120,20 +275,13 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
   // ── Form action ──
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(savePoliciesAction, null);
 
-  // Auto-save: edits persist as you make them (no "Guardar" button). The
-  // payload is built state→JSON at submit time, so `watch` is the change signal
-  // — the per-render FormData diff alone misses the toggles/steppers/textareas
-  // that have no `name`. `requestSubmit()` runs the form action below, which
-  // serialises the same JSON.
-  const formRef = useRef<HTMLFormElement>(null);
-  useFormAutoSave(formRef, 700, () => JSON.stringify(buildPoliciesJson()));
-
-  // Build the typed JSON for submission
+  // Build the typed JSON for submission (per render — cheap). Both the hidden
+  // mirror and the autosave `watch` signal read this same string.
   function buildPoliciesJson(): PoliciesData {
     return {
       quietHours: {
         enabled: quietEnabled,
-        ...(quietEnabled ? { from: quietFrom, to: quietTo } : {}),
+        ...(quietEnabled ? { from: slotToHHMM(quietFromSlot), to: slotToHHMM(quietToSlot) } : {}),
       },
       smoking,
       ...(smoking === "designated_area" ? { smokingArea: smokingArea || null } : {}),
@@ -175,60 +323,67 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
     };
   }
 
-  // ── Shared styles (Liora semantic tokens) ──
-  const inputCls = "block w-full rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-background-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-border-focus)] focus:outline-none";
-  const labelCls = "block text-sm font-medium text-[var(--color-text-primary)]";
-  const subLabelCls = "block text-xs text-[var(--color-text-secondary)] mt-0.5 mb-2";
+  const data = buildPoliciesJson();
+  const policiesJson = JSON.stringify(data);
 
-  // Switch: the visual track (h-6) sits inside a 44-tall button so the hit
-  // area meets the touch-target floor without inflating the control. The
-  // background lives on the inner span, so the touch-target gate reads the
-  // button as a min-h floor, not a fixed-square icon button. Tapping either
-  // the track or the label toggles.
-  function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-    return (
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        onClick={() => onChange(!checked)}
-        className="inline-flex min-h-[44px] cursor-pointer items-center gap-3 text-left"
-      >
-        <span
-          aria-hidden="true"
-          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${checked ? "bg-[var(--color-action-primary)]" : "bg-[var(--color-border-strong)]"}`}
-        >
-          <span
-            className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-6" : "translate-x-1"}`}
-          />
-        </span>
-        <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
-      </button>
-    );
-  }
+  // Auto-save: edits persist as you make them (no "Guardar" button). The payload
+  // is built state→JSON, so the watch string (same as the hidden mirror) is the
+  // authoritative change signal — toggles/steppers/chips have no `name`. The
+  // hidden-mirror pattern (identical to featuresJson in space-card) carries the
+  // JSON to the action; the action persists partial-but-shape-valid JSON
+  // (completeness is a UI signal, never a persistence gate).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFormAutoSave(formRef, 700, () => policiesJson);
+
+  // Header chips — live counts from the policy-progress missing-signals (honest
+  // "X de 8 definidas / N por completar", computed from the live state).
+  const missing = policyMissingSignals(data);
+  const defined = POLICY_RULE_COUNT - missing.length;
 
   return (
-    <form
-      ref={formRef}
-      action={(formData) => {
-        formData.set("policiesJson", JSON.stringify(buildPoliciesJson()));
-        formAction(formData);
-      }}
-    >
+    <form ref={formRef} onSubmit={autoSaveSubmit(formAction)}>
       <PageHeader
         eyebrow="Propiedad · Normas"
         title="Normas de la casa"
         description="Lo que puede y no puede hacer el huésped. Escribe con el mismo tono con el que hablarías en persona — firme y cálido, no burocrático."
         actions={<AutoSaveStatus pending={pending} />}
+        chips={
+          <>
+            <PageHeaderChip
+              icon={CheckCheck}
+              label={
+                <>
+                  <b className="font-semibold text-[var(--color-text-primary)]">{defined}</b> de{" "}
+                  {POLICY_RULE_COUNT} definidas
+                </>
+              }
+            />
+            {missing.length > 0 && (
+              <Tooltip text={`Falta: ${missing.join(" · ")}`}>
+                <PageHeaderChip
+                  icon={CircleAlert}
+                  label={
+                    <>
+                      <b className="font-semibold text-[var(--color-text-primary)]">
+                        {missing.length}
+                      </b>{" "}
+                      por completar
+                    </>
+                  }
+                />
+              </Tooltip>
+            )}
+          </>
+        }
       />
 
       <input type="hidden" name="propertyId" value={propertyId} />
+      <input type="hidden" name="policiesJson" value={policiesJson} />
 
       {state?.error && (
-        <p className="mb-4 rounded-[var(--radius-md)] bg-[var(--color-status-error-bg)] p-3 text-sm text-[var(--color-status-error-text)]">
-          {state.error}
-        </p>
+        <div className="mb-4">
+          <Banner type="danger" message={state.error} />
+        </div>
       )}
 
       {/* ── Block 1: Convivencia ── */}
@@ -240,59 +395,85 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               icon={Moon}
               label="Horario de silencio"
               tooltip="El horario de silencio se comunicará a los huéspedes en la guía. Establece las horas en las que se debe evitar ruido excesivo."
+              value={quietEnabled ? `${slotToHHMM(quietFromSlot)} – ${slotToHHMM(quietToSlot)}` : undefined}
             />
-            <Toggle checked={quietEnabled} onChange={setQuietEnabled} label="¿Hay restricción de ruido?" />
+            <SwitchRow checked={quietEnabled} onChange={setQuietEnabled} label="¿Hay restricción de ruido?" />
             {quietEnabled && (
-              <div className="mt-3 flex items-center gap-3">
-                <label className="block">
-                  <span className="text-xs text-[var(--color-text-muted)]">Desde</span>
-                  <select value={quietFrom} onChange={(e) => setQuietFrom(e.target.value)} className={inputCls}>
-                    {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="text-xs text-[var(--color-text-muted)]">Hasta</span>
-                  <select value={quietTo} onChange={(e) => setQuietTo(e.target.value)} className={inputCls}>
-                    {TIME_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </label>
-              </div>
+              <Reveal>
+                <TimeRangeSteppers
+                  fromSlot={quietFromSlot}
+                  toSlot={quietToSlot}
+                  onFromChange={setQuietFromSlot}
+                  onToChange={setQuietToSlot}
+                />
+              </Reveal>
             )}
           </div>
 
           {/* Smoking */}
           <div>
             <FieldHeading icon={Cigarette} label="Fumar" hint="Política de tabaco en la propiedad" />
-            <RadioCardGroup name="_smoking" options={SMOKING_OPTIONS} value={smoking} onChange={(v) => setSmoking(v as PoliciesData["smoking"])} showRecommended={false} />
+            <PolicyEnumChips
+              options={SMOKING_OPTIONS}
+              value={smoking}
+              onChange={(v) => setSmoking(v as PoliciesData["smoking"])}
+            />
             {smoking === "designated_area" && (
-              <label className="mt-3 block">
-                <span className="text-xs text-[var(--color-text-muted)]">¿Dónde se puede fumar?</span>
-                <input type="text" value={smokingArea} onChange={(e) => setSmokingArea(e.target.value)} placeholder="Ej: terraza trasera" className={inputCls} />
-              </label>
+              <Reveal>
+                <FieldInput
+                  label="¿Dónde se puede fumar?"
+                  type="text"
+                  value={smokingArea}
+                  placeholder="Ej: terraza trasera"
+                  onChange={(e) => setSmokingArea(e.target.value)}
+                />
+              </Reveal>
             )}
           </div>
 
           {/* Events */}
           <div>
             <FieldHeading icon={PartyPopper} label="Eventos y reuniones" hint="Política sobre reuniones y eventos en la propiedad" />
-            <RadioCardGroup name="_events" options={EVENTS_OPTIONS} value={eventsPolicy} onChange={(v) => setEventsPolicy(v as PoliciesData["events"]["policy"])} showRecommended={false} />
+            <PolicyEnumChips
+              options={EVENTS_OPTIONS}
+              value={eventsPolicy}
+              onChange={(v) => setEventsPolicy(v as PoliciesData["events"]["policy"])}
+            />
             {eventsPolicy === "small_gatherings" && (
-              <div className="mt-3">
-                <NumberStepper label="Máximo de personas" value={eventsMaxPeople} onChange={setEventsMaxPeople} min={2} max={50} />
-              </div>
+              <Reveal>
+                <div>
+                  <FieldLabelXs>Máximo de personas</FieldLabelXs>
+                  <InlineStepper
+                    value={eventsMaxPeople}
+                    min={2}
+                    max={50}
+                    label="máximo de personas"
+                    onChange={setEventsMaxPeople}
+                  />
+                </div>
+              </Reveal>
             )}
             {eventsPolicy === "with_approval" && (
-              <label className="mt-3 block">
-                <span className="text-xs text-[var(--color-text-muted)]">Instrucciones para solicitar aprobación</span>
-                <textarea value={eventsApproval} onChange={(e) => setEventsApproval(e.target.value)} rows={2} placeholder="Ej: contactar al anfitrión con 48h de antelación" className={inputCls} />
-              </label>
+              <Reveal>
+                <FieldTextarea
+                  label="Instrucciones para solicitar aprobación"
+                  rows={2}
+                  value={eventsApproval}
+                  placeholder="Ej: avisar al anfitrión con 48 h de antelación"
+                  onChange={(e) => setEventsApproval(e.target.value)}
+                />
+              </Reveal>
             )}
           </div>
 
           {/* Commercial photography */}
           <div>
             <FieldHeading icon={Camera} label="Fotografía / filmación comercial" hint="Uso comercial de la propiedad para sesiones de foto o vídeo" />
-            <RadioCardGroup name="_photo" options={PHOTOGRAPHY_OPTIONS} value={commercialPhoto} onChange={(v) => setCommercialPhoto(v as PoliciesData["commercialPhotography"])} showRecommended={false} />
+            <PolicyEnumChips
+              options={PHOTOGRAPHY_OPTIONS}
+              value={commercialPhoto}
+              onChange={(v) => setCommercialPhoto(v as PoliciesData["commercialPhotography"])}
+            />
           </div>
         </div>
       </NumberedSection>
@@ -300,73 +481,103 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
       {/* ── Block 2: Mascotas ── */}
       <NumberedSection number="02" title="Mascotas">
         <div className="space-y-6">
-          <Toggle checked={petsAllowed} onChange={setPetsAllowed} label="¿Se admiten mascotas?" />
+          <SwitchRow checked={petsAllowed} onChange={setPetsAllowed} label="¿Se admiten mascotas?" />
 
           {petsAllowed ? (
             <>
               {/* Pet types */}
               <div>
-                <span className={labelCls}>Tipos permitidos</span>
-                <span className={subLabelCls}>¿Qué tipos de mascotas se admiten?</span>
-                <CheckboxCardGroup name="_petTypes" options={PET_TYPE_OPTIONS} value={petTypes} onChange={setPetTypes} showRecommended={false} />
+                <FieldLabelXs>Tipos permitidos</FieldLabelXs>
+                <PolicyMultiChips options={PET_TYPE_OPTIONS} value={petTypes} onChange={setPetTypes} />
               </div>
 
               {/* Size restriction */}
               <div>
-                <span className={labelCls}>Restricción de tamaño</span>
-                <span className={subLabelCls}>Límite de peso para mascotas</span>
-                <RadioCardGroup name="_petSize" options={PET_SIZE_OPTIONS} value={petSize} onChange={(v) => setPetSize(v as NonNullable<PoliciesData["pets"]["sizeRestriction"]>)} showRecommended={false} />
+                <FieldLabelXs>Restricción de tamaño</FieldLabelXs>
+                <PolicyEnumChips
+                  options={PET_SIZE_OPTIONS}
+                  value={petSize}
+                  onChange={(v) => setPetSize(v as NonNullable<PoliciesData["pets"]["sizeRestriction"]>)}
+                />
                 {petSize === "custom_weight" && (
-                  <div className="mt-3">
-                    <NumberStepper label="Peso máximo" value={petMaxWeight} onChange={setPetMaxWeight} min={1} max={100} suffix="kg" />
-                  </div>
+                  <Reveal>
+                    <div>
+                      <FieldLabelXs>Peso máximo</FieldLabelXs>
+                      <InlineStepper
+                        value={petMaxWeight}
+                        min={1}
+                        max={100}
+                        format={(n) => `${n} kg`}
+                        label="peso máximo de la mascota"
+                        onChange={setPetMaxWeight}
+                      />
+                    </div>
+                  </Reveal>
                 )}
               </div>
 
               {/* Max count */}
               <div>
-                <NumberStepper label="Número máximo de mascotas" value={petMaxCount} onChange={setPetMaxCount} min={1} max={10} />
+                <FieldLabelXs>Número máximo de mascotas</FieldLabelXs>
+                <InlineStepper
+                  value={petMaxCount}
+                  min={1}
+                  max={10}
+                  label="número máximo de mascotas"
+                  onChange={setPetMaxCount}
+                />
               </div>
 
               {/* Fee */}
               <div>
-                <span className={labelCls}>Cargos por mascota</span>
-                <span className={subLabelCls}>¿Se cobra suplemento por traer mascotas?</span>
-                <RadioCardGroup name="_petFee" options={PET_FEE_OPTIONS} value={petFeeMode} onChange={(v) => setPetFeeMode(v as NonNullable<PoliciesData["pets"]["feeMode"]>)} showRecommended={false} />
+                <FieldLabelXs>Cargos por mascota</FieldLabelXs>
+                <PolicyEnumChips
+                  options={PET_FEE_OPTIONS}
+                  value={petFeeMode}
+                  onChange={(v) => setPetFeeMode(v as NonNullable<PoliciesData["pets"]["feeMode"]>)}
+                />
                 {petFeeMode !== "none" && (
-                  <label className="mt-3 block">
-                    <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={petFeeAmount}
-                      onChange={(e) => setPetFeeAmount(Number(e.target.value))}
-                      className={`${inputCls} max-w-[10rem]`}
-                    />
-                  </label>
+                  <Reveal>
+                    <div className="w-36">
+                      <FieldInput
+                        label="Importe (EUR)"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        inputMode="decimal"
+                        value={petFeeAmount}
+                        onChange={(e) => setPetFeeAmount(Number(e.target.value))}
+                      />
+                    </div>
+                  </Reveal>
                 )}
               </div>
 
               {/* Restrictions */}
               <div>
-                <span className={labelCls}>Restricciones adicionales</span>
-                <CheckboxCardGroup name="_petRestrictions" options={PET_RESTRICTION_OPTIONS} value={petRestrictions} onChange={setPetRestrictions} showRecommended={false} />
+                <FieldLabelXs>Restricciones adicionales</FieldLabelXs>
+                <PolicyMultiChips
+                  options={PET_RESTRICTION_OPTIONS}
+                  value={petRestrictions}
+                  onChange={setPetRestrictions}
+                />
               </div>
 
               {/* Service animals info */}
-              <div className="rounded-[var(--radius-md)] bg-[var(--color-action-primary-subtle)] p-3">
-                <p className="text-xs text-[var(--color-action-primary-subtle-fg)]">
-                  Los animales de servicio / asistencia están siempre permitidos sin cargo adicional, según la legislación vigente.
-                </p>
-              </div>
+              <Banner
+                type="info"
+                message="Los animales de servicio / asistencia están siempre permitidos sin cargo adicional, según la legislación vigente."
+              />
 
               {/* Notes */}
-              <label className="block">
-                <span className={labelCls}>Notas adicionales</span>
-                <span className={subLabelCls}>Información extra sobre la política de mascotas (opcional)</span>
-                <textarea value={petNotes} onChange={(e) => setPetNotes(e.target.value)} rows={2} placeholder="Ej: se requiere documentación veterinaria al día" className={inputCls} />
-              </label>
+              <FieldTextarea
+                label="Notas adicionales"
+                help="Información extra sobre la política de mascotas (opcional)"
+                rows={2}
+                value={petNotes}
+                placeholder="Ej: se requiere documentación veterinaria al día"
+                onChange={(e) => setPetNotes(e.target.value)}
+              />
             </>
           ) : (
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
@@ -385,20 +596,23 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               icon={SprayCan}
               label="Suplemento de limpieza"
               tooltip="Cargo único que se aplica una vez por reserva, independientemente de la duración de la estancia."
+              value={cleaningEnabled && cleaningAmount > 0 ? `${cleaningAmount} EUR` : undefined}
             />
-            <Toggle checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
+            <SwitchRow checked={cleaningEnabled} onChange={setCleaningEnabled} label="¿Se cobra suplemento de limpieza?" />
             {cleaningEnabled && (
-              <label className="mt-3 block">
-                <span className="text-xs text-[var(--color-text-muted)]">Importe (EUR)</span>
-                <input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={cleaningAmount}
-                  onChange={(e) => setCleaningAmount(Number(e.target.value))}
-                  className={`${inputCls} max-w-[10rem]`}
-                />
-              </label>
+              <Reveal>
+                <div className="w-36">
+                  <FieldInput
+                    label="Importe (EUR)"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    inputMode="decimal"
+                    value={cleaningAmount}
+                    onChange={(e) => setCleaningAmount(Number(e.target.value))}
+                  />
+                </div>
+              </Reveal>
             )}
           </div>
 
@@ -408,31 +622,39 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
               icon={UserPlus}
               label="Suplemento por huésped extra"
               tooltip="Cargo adicional por noche para cada huésped que exceda el límite base. Se aplica por noche y por persona."
+              value={extraGuestEnabled && extraGuestAmount > 0 ? `${extraGuestAmount} EUR/noche` : undefined}
             />
-            <Toggle checked={extraGuestEnabled} onChange={setExtraGuestEnabled} label="¿Se cobra suplemento por huésped extra?" />
+            <SwitchRow checked={extraGuestEnabled} onChange={setExtraGuestEnabled} label="¿Se cobra suplemento por huésped extra?" />
             {extraGuestEnabled && (
-              <div className="mt-3 space-y-3">
-                <label className="block">
-                  <span className="text-xs text-[var(--color-text-muted)]">Importe por huésped extra (EUR / noche)</span>
-                  <input
+              <Reveal>
+                <div className="w-44">
+                  <FieldInput
+                    label="Importe por huésped extra (EUR / noche)"
                     type="number"
                     min={0}
-                    step={0.01}
+                    step="0.01"
+                    inputMode="decimal"
                     value={extraGuestAmount}
                     onChange={(e) => setExtraGuestAmount(Number(e.target.value))}
-                    className={`${inputCls} max-w-[10rem]`}
                   />
-                </label>
+                </div>
                 <div>
-                  <NumberStepper label="A partir de cuántos huéspedes" value={extraGuestFrom} onChange={setExtraGuestFrom} min={1} max={propertyDefaults.maxGuests ?? 20} />
+                  <FieldLabelXs>A partir de cuántos huéspedes</FieldLabelXs>
+                  <InlineStepper
+                    value={extraGuestFrom}
+                    min={1}
+                    max={propertyDefaults.maxGuests ?? 20}
+                    label="a partir de cuántos huéspedes"
+                    onChange={setExtraGuestFrom}
+                  />
                   <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
                     Máximo de huéspedes: {propertyDefaults.maxGuests ?? "—"} ·{" "}
-                    <Link href={`/properties/${propertyId}/property`} className="text-[var(--color-text-link)] underline">
+                    <TextLink size="xs" href={`/properties/${propertyId}/property`}>
                       Editar en Propiedad
-                    </Link>
+                    </TextLink>
                   </p>
                 </div>
-              </div>
+              </Reveal>
             )}
           </div>
 
@@ -451,22 +673,31 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
         </div>
       </NumberedSection>
 
-      {/* ── Block 4: Servicios ── */}
-      <NumberedSection number="04" title="Servicios permitidos">
+      {/* ── Block 4: Servicios externos ── */}
+      <NumberedSection number="04" title="Servicios externos">
         <div className="space-y-6">
-          <Toggle checked={servicesAllowed} onChange={setServicesAllowed} label="¿Se permite contratar servicios externos?" />
+          <SwitchRow checked={servicesAllowed} onChange={setServicesAllowed} label="¿Se permite contratar servicios externos?" />
 
           {servicesAllowed ? (
             <>
               <div>
-                <span className={labelCls}>Tipos de servicio permitidos</span>
-                <span className={subLabelCls}>Selecciona los servicios que los huéspedes pueden contratar</span>
-                <CheckboxCardGroup name="_serviceTypes" options={SERVICE_TYPE_OPTIONS} value={serviceTypes} onChange={setServiceTypes} showRecommended={false} />
+                <FieldLabelXs>Tipos de servicio permitidos</FieldLabelXs>
+                <p className="mb-2 text-xs text-[var(--color-text-secondary)]">
+                  Selecciona los servicios que los huéspedes pueden contratar
+                </p>
+                <PolicyMultiChips
+                  options={SERVICE_TYPE_OPTIONS}
+                  value={serviceTypes}
+                  onChange={setServiceTypes}
+                />
               </div>
-              <label className="block">
-                <span className={labelCls}>Notas sobre servicios</span>
-                <textarea value={serviceNotes} onChange={(e) => setServiceNotes(e.target.value)} rows={2} placeholder="Ej: coordinar con el anfitrión con 24h de antelación" className={inputCls} />
-              </label>
+              <FieldTextarea
+                label="Notas sobre servicios"
+                rows={2}
+                value={serviceNotes}
+                placeholder="Ej: coordinar con el anfitrión con 24h de antelación"
+                onChange={(e) => setServiceNotes(e.target.value)}
+              />
             </>
           ) : (
             <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
@@ -475,7 +706,6 @@ export function PoliciesForm({ propertyId, policies: initial, propertyDefaults }
           )}
         </div>
       </NumberedSection>
-
     </form>
   );
 }
